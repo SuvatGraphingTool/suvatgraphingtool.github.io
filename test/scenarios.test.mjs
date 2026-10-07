@@ -32,7 +32,7 @@ group('Fired and dropped — they land together, whatever the muzzle speed', () 
   ok(s.second.from({ u: 120, theta: 0, h: 0, g: 9.81 }, null) === null, 'no height, no second bullet');
 });
 
-group('Monkey and hunter — aimed straight at it, it cannot miss', () => {
+group('Monkey vs Hunter — aimed straight at it, it cannot miss', () => {
   const s = byId('monkey');
   const aim = (m, h) => (Math.atan2(m.y - h, m.x) * 180) / Math.PI;
 

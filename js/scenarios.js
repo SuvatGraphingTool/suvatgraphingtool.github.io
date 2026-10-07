@@ -93,7 +93,7 @@ export const SCENARIOS = [
     } },
 
   /* ── the two that are not at the stadium ──────────────────────────── */
-  { id: 'bullet', group: 'look', name: 'Drop one, fire one',
+  { id: 'bullet', group: 'look', name: 'Dropping vs Firing a Bullet',
     sub: 'which lands first?',
     note: 'Two identical rounds leave the bench at the same instant: one fired flat, one simply released. Vertically they are the same problem — u_y = 0, a = −g — because firing adds velocity along x only, and the two components are independent. The horizontal push buys no hang time at all, at any muzzle speed.',
     params: { u: 360, theta: 0, h: 1.5, g: 9.81 }, lockAngle: true,
@@ -120,7 +120,7 @@ export const SCENARIOS = [
       },
     } },
 
-  { id: 'monkey', group: 'look', name: 'Monkey and hunter',
+  { id: 'monkey', group: 'look', name: 'Monkey vs Hunter',
     sub: 'aim straight at it',
     note: 'The hunter aims directly AT the monkey; the monkey drops the instant the shot leaves. In the time the banana takes to cover the horizontal gap, both have fallen the same ½gt² below where they would have been without gravity — so the aim that would have been right without gravity is still right with it. Drag the monkey anywhere: it only fails if the monkey reaches the sand first.',
     params: { u: 22, theta: 0, h: 1.5, g: 9.81 },
