@@ -15,7 +15,7 @@ import { siteFor } from './world/world.js';
 import { dropToneCache } from './render/world2d.js';
 import { drawGraph, graphSpecs } from './render/graphs.js';
 import { fmt, palette, clamp } from './render/util.js';
-import { M } from './notation.js';
+import { M, num } from './notation.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -261,9 +261,28 @@ function buildValuesScreen() {
   // Only what this situation genuinely cannot do without.
   const rows = [];
   if (!scenario.noAngle && !scenario.lockAngle) {
-    rows.push(`<div class="xrow" data-x="theta"><label for="x-theta">Angle of projection θ (°)</label>
-      <input id="x-theta" type="number" step="any" value="${state.theta ?? ''}" placeholder="—">
-      <p class="xhint">Optional.</p></div>`);
+    rows.push(`<div class="xrow wide" data-x="theta">
+      <label for="x-theta">Angle of projection θ (°)</label>
+      <div class="angle-ctl">
+        <svg class="angle-dia" id="theta-dia" viewBox="0 0 132 96" aria-hidden="true">
+          <path id="td-wedge" fill="var(--accent)" opacity=".16"></path>
+          <line x1="16" y1="48" x2="126" y2="48" stroke="var(--ink-faint)"
+                stroke-width="1.6" stroke-dasharray="5 4"></line>
+          <line x1="16" y1="8" x2="16" y2="88" stroke="var(--border)" stroke-width="1.4"></line>
+          <path id="td-arc" fill="none" stroke="var(--accent)" stroke-width="1.6"></path>
+          <line id="td-ray" x1="16" y1="48" x2="126" y2="48" stroke="var(--vel)"
+                stroke-width="3" stroke-linecap="round"></line>
+          <circle cx="16" cy="48" r="3.4" fill="var(--vel)"></circle>
+        </svg>
+        <div class="angle-set">
+          <input id="x-theta" type="text" inputmode="decimal" autocomplete="off"
+                 value="${state.theta == null ? '' : fmt(state.theta, 2)}" placeholder="—"
+                 aria-label="Angle of projection in degrees">
+          <input id="theta-slider" type="range" min="-90" max="90" step="0.5"
+                 value="${state.theta ?? 0}" aria-label="Angle of projection">
+        </div>
+      </div>
+      <p class="xhint" id="x-theta-hint">${THETA_HINT}</p></div>`);
   }
   rows.push(`<div class="xrow" data-x="h"><label for="x-h">Launch height h (m)</label>
     <input id="x-h" type="number" step="any" value="${state.h ?? ''}" placeholder="—">
@@ -285,9 +304,7 @@ function buildValuesScreen() {
   }</div></div>`);
   $('extra').innerHTML = rows.join('');
 
-  $('x-theta')?.addEventListener('input', (e) => {
-    const v = parseFloat(e.target.value); state.theta = isFinite(v) ? v : undefined; recompute();
-  });
+  wireAngle();
   $('x-h').addEventListener('input', (e) => {
     const v = parseFloat(e.target.value); state.h = isFinite(v) ? v : undefined; recompute();
   });
@@ -426,6 +443,120 @@ function shift(f, x0) {
     path: (n, tEnd) => f.path(n, tEnd).map(move),
     ticks: (n, tEnd) => f.ticks(n, tEnd).map(move),
     range: f.range + x0 };
+}
+
+/* ── the angle of projection ─────────────────────────────────────────
+   One of the most-used controls in the app, and until now a bare number box
+   that would cheerfully accept −400°, 720° and 1e9 and hand every one of them
+   to the solver. Three things that stay in sync replace it:
+
+     a SLIDER, for finding the angle you want rather than knowing it
+     a DIAGRAM, so you can see 38° instead of reading it
+     a BOX, for the exact value a question gives you
+
+   Typing wins. The box takes as many decimal places as you like and nothing
+   rounds what you typed — the slider and the diagram follow it, and only when
+   the app itself sets the box (from the slider) is it written to two places.
+
+   ±90° INCLUSIVE, and the cap belongs HERE, at the boundary, not in the
+   engine. Past 90° you are launching backwards, which this model does not
+   describe. Negative means thrown downwards, which is a real exam setup and
+   now has a scenario of its own. But solve.js derives θ by atan2 and by the
+   range equation and can legitimately land outside ±90°; clamping there would
+   break a correct answer, so js/core/ is left alone. */
+const THETA_HINT = 'Optional — leave it blank and the engine works it out, or '
+  + 'says it only needs a straight line. Anything from −90° to 90°; negative '
+  + 'is thrown downwards.';
+const THETA_LIMIT = 90;
+
+function wireAngle() {
+  const box = $('x-theta'), sld = $('theta-slider');
+  if (!box) return;
+
+  const set = (v, fromBox) => {
+    state.theta = v;
+    if (!fromBox) box.value = v == null ? '' : fmt(v, 2);
+    if (sld) sld.value = String(v ?? 0);
+    drawAngle(v);
+    recompute();
+  };
+
+  box.addEventListener('input', (e) => {
+    const v = parseValue(e.target.value);
+    const hint = $('x-theta-hint');
+    if (v === undefined) { say(hint, false, THETA_HINT); set(undefined, true); return; }
+    if (!isFinite(v)) { say(hint, true, 'That is not an angle. Degrees, between −90 and 90.'); return; }
+    if (Math.abs(v) > THETA_LIMIT) {
+      // Say what was done and why. Rewriting the box under the cursor of
+      // someone who is still typing is how a control loses their trust.
+      const capped = clamp(v, -THETA_LIMIT, THETA_LIMIT);
+      say(hint, true, `Angles stop at ${M`±90`}°. Past 90° the launch is backwards, which `
+        + `this model does not describe, so ${M`${num(capped, 0)}`}° is what gets used.`);
+      set(capped, true);
+      return;
+    }
+    say(hint, false, THETA_HINT);
+    set(v, true);
+  });
+
+  // Two decimal places is the DISPLAY, and only once typing has stopped: a
+  // box that reformats between keystrokes eats digits out from under you.
+  // The value itself keeps every place that was typed, and when the two
+  // differ the hint says so rather than leaving a number on screen that is
+  // not the number being used.
+  box.addEventListener('blur', () => {
+    if (state.theta == null) { box.value = ''; return; }
+    const shown = fmt(state.theta, 2);
+    box.value = shown;
+    const exact = Math.abs(state.theta - Math.round(state.theta * 100) / 100) > 1e-12;
+    say($('x-theta-hint'), false, exact
+      ? `Shown to two places. Working with ${M`${num(state.theta, 10, { trim: true })}`}°, exactly as typed.`
+      : THETA_HINT);
+  });
+
+  sld?.addEventListener('input', (e) => {
+    say($('x-theta-hint'), false, THETA_HINT);
+    set(parseFloat(e.target.value), false);
+  });
+
+  drawAngle(state.theta);
+}
+
+/**
+ * The ray, the wedge and the arc, at whatever the box currently holds.
+ *
+ * The origin sits in the MIDDLE of the frame, not on its floor, because the
+ * control covers −90° to +90° and a downward throw needs as much room as an
+ * upward one. The ray is then drawn out to whichever edge it meets first, so
+ * it fills the frame at every angle instead of poking through the top at 45°
+ * and petering out at 5°.
+ */
+function drawAngle(theta) {
+  const ray = $('td-ray'), arc = $('td-arc'), wedge = $('td-wedge');
+  if (!ray) return;
+  const t = clamp(isFinite(theta) ? theta : 0, -THETA_LIMIT, THETA_LIMIT);
+  const a = (t * Math.PI) / 180;
+  const OX = 16, OY = 48, AR = 26;
+  const ca = Math.cos(a), sa = Math.sin(a);
+  const R = Math.min(
+    ca > 1e-6 ? (126 - OX) / ca : Infinity,
+    sa > 1e-6 ? (OY - 8) / sa : Infinity,
+    sa < -1e-6 ? (OY - 88) / sa : Infinity,
+  );
+  const ex = OX + R * ca, ey = OY - R * sa;
+  ray.setAttribute('x2', ex.toFixed(2));
+  ray.setAttribute('y2', ey.toFixed(2));
+  ray.setAttribute('stroke', theta == null ? 'var(--ink-faint)' : 'var(--vel)');
+
+  // The arc runs from the horizontal round to the ray, either way.
+  const ax = OX + AR, ay = OY;
+  const bx = OX + AR * ca, by = OY - AR * sa;
+  const sweep = t >= 0 ? 0 : 1;
+  const flat = Math.abs(t) < 0.05;
+  arc.setAttribute('d', flat ? ''
+    : `M${ax.toFixed(2)} ${ay.toFixed(2)} A${AR} ${AR} 0 0 ${sweep} ${bx.toFixed(2)} ${by.toFixed(2)}`);
+  wedge.setAttribute('d', flat ? ''
+    : `M${OX} ${OY} L${ax.toFixed(2)} ${ay.toFixed(2)} A${AR} ${AR} 0 0 ${sweep} ${bx.toFixed(2)} ${by.toFixed(2)} Z`);
 }
 
 /* ── the line, from either end ───────────────────────────────────────

@@ -240,5 +240,30 @@ group('Answering the question asked, not just the whole flight', () => {
   ok(plain.answer === null && plain.moment === null, 'a plain drop has no separate moment');
 });
 
+/* ── the input's cap is the input's, not the engine's ────────────────────
+   The angle box on the values screen stops at ±90°, because past 90° the
+   launch is backwards and this model does not describe it. The ENGINE must
+   not inherit that cap: it derives θ by atan2 and by the range equation, and
+   a negative horizontal displacement legitimately produces an angle outside
+   the range the box will accept. Clamping in js/core/ would turn a correct
+   answer into a wrong one, so this is here to catch anyone who tries. */
+group('A derived angle is never clamped to the input\'s range', () => {
+  const back = solveLaunch({ s: -40, t: 3, g: 9.81, h: 0 });
+  ok(back.ok, 'a flight that goes backwards still solves');
+  ok(Math.abs(back.params.theta) > 90,
+     `and keeps its angle outside ±90° (${back.params.theta.toFixed(2)}°)`);
+  near(flight(back.params).range, -40, 1e-6, 'and the flight really does land there');
+
+  const high = solveLaunch({ s: -40, t: 3, g: 9.81, h: 12 });
+  ok(high.ok && Math.abs(high.params.theta) > 90,
+     `the same from a platform (${high.params.theta.toFixed(2)}°)`);
+
+  // The range equation's two answers are both kept, and both are usable.
+  const two = solveLaunch({ s: 60, u: 30, g: 9.81, h: 0 });
+  ok(two.ok && two.altTheta != null, 'the range equation still returns both angles');
+  near(flight({ ...two.params, theta: two.altTheta }).range, 60, 1e-6,
+       'and the other one lands in the same place');
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
