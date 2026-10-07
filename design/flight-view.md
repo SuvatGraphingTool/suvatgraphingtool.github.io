@@ -341,3 +341,85 @@ what the renderer does: 120 × 80 m. `D.lod.players` went with the players.
 `question.js` — is untouched. All 149 engine, solver and question tests still
 pass. The five physics hues are the same five. Every overlay that existed before
 still exists and still works.
+
+---
+
+## The framing band, reconsidered — 7 October 2026
+
+The brief this view was built to is one sentence: *fit before launch and do not
+rescale during it.* A camera that keeps rescaling turns a fast launch and a
+slow one into the same picture, which destroys the one thing the view exists
+to show. That brief is right and it has not changed.
+
+What was wrong was how it was kept. `autoFit` enforced it with a single floor,
+`MIN_SPAN = 96` metres, plus two more floors that pushed the same way: `yHi`
+starting at 4 m, and the roof forced into the frame at no less than 34% of its
+height whatever the flight was doing. The effect was that **every flight from
+about 0.1 m to 85 m got the identical 96 m frame**.
+
+That is not preserving a comparison. Two throws of 40 m and 60 m are worth
+comparing; a 0.4 m one has nothing to do with either. Giving all three the same
+picture does not protect the first comparison — they would have shared a frame
+anyway — it only refuses to show the third.
+
+### What it does now
+
+The frame a flight needs is worked out honestly, with no floor except the
+object's own size. Then one question: **does the frame already on screen still
+hold this flight, and does this flight fill at least 45% of it?** If yes, the
+frame does not move at all. If no, it refits.
+
+```
+want      = max(width × 1.2, height × 0.9, 14 ball-widths)
+frame     = fits the one already up ? keep it : want
+```
+
+Measured, five launches in a row from the same scenario:
+
+| launch | range | frame |
+|---|---|---|
+| 25 m s⁻¹ | 63.7 m | 133.8 m |
+| 22 m s⁻¹ | 49.3 m | **133.8 m** — held |
+| 18 m s⁻¹ | 33.0 m | 55.0 m — let go |
+| 25 m s⁻¹ | 63.7 m | 133.8 m |
+| 3 m s⁻¹ | 0.9 m | 4.5 m |
+
+The second launch is the case the brief cares about and it gets a
+pixel-identical frame. The third has dropped below 45% and takes its own. The
+last is a different question entirely and is finally visible: under the old
+floor its parabola was about nine pixels wide.
+
+### Why 45%
+
+Below about a half the smaller flight stops being readable inside the larger
+flight's frame, which is the point at which holding the band costs more than
+it buys. It is also comfortably more than the 2× gap between successive
+launches a student actually makes while sweeping a value, so the common case
+holds the frame.
+
+### Why there is still a floor, and why it is the ball
+
+Zooming into a 15 cm flight until it fills the frame puts a football two
+thirds of a metre across on the screen. A ball bigger than the motion is no
+more readable than a motion too small to see, so the floor is fourteen drawn
+ball-widths — close enough to look at, far enough that the ball is still a
+ball. It is derived from `D.prop.ball × D.prop.ballDraw` rather than written
+down, so it follows the ball if the ball changes.
+
+### What makes leaving the band safe
+
+The scale bar and the band label were already on screen and already correct.
+They are what turns "this frame is not the last frame" from a trap into a
+reading: at 4.5 m the bar says 0.5 m and the label says *Pitch level · 1 unit
+= 1 m*, so the size of what you are looking at is never in doubt. Leaving the
+band would not be safe without them.
+
+### And the fit travels
+
+`autoFit` used to end with `snapWant`, so the whole fit happened between one
+frame and the next and a launch was an instant cut — which reads as a bug
+rather than as a camera. Band changes already eased through `easeCamera`, so
+the launch fit goes the same way. Measured on a launch that needs a very
+different frame: the scale moves 6.4 doublings over 34 frames, with the
+largest single step 15% of the journey. The first fit of a session still
+lands directly, because there is nothing to travel from.

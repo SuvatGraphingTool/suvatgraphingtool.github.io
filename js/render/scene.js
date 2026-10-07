@@ -113,9 +113,38 @@ const snapWant = (cam) => { cam.want = { scale: cam.scale, cx: cam.cx, cy: cam.c
 /* ── fitting, once ───────────────────────────────────────────────────────
    The brief is explicit: fit before launch and do not rescale during it. A
    camera that keeps rescaling turns a fast launch and a slow one into the
-   same picture, which destroys the one thing the view exists to show. */
+   same picture, which destroys the one thing the view exists to show.
+
+   That brief is right and it is kept. What was wrong was HOW it was kept: a
+   single floor of 96 m, which meant every flight from about 0.1 m to 85 m got
+   the identical frame. That is not preserving a comparison. Two throws of
+   40 m and 60 m are worth comparing and a 0.4 m one has nothing to do with
+   either; giving all three the same picture refuses to show the third at all.
+
+   So the band STICKS rather than being fixed. The frame a flight needs is
+   worked out honestly, and then: if the frame already on screen still holds
+   this flight, and this flight fills at least 45% of it, the frame does not
+   move at all. Launch 60 m and then 30 m and you get the identical picture,
+   which is the comparison the brief is protecting and exactly the case it
+   cares about. Launch 60 m and then 0.4 m and the band is abandoned, because
+   two flights that far apart were never comparable and pretending otherwise
+   just hides the second one.
+
+   That is the whole fix. No floor, so nothing is given a frame two hundred
+   times its own size; no rescaling during a flight, so a fast launch and a
+   slow one of similar size still look like each other; and the scale bar and
+   band label already on screen say which frame you are in, which is what
+   makes leaving the band safe.
+
+   Written up in design/flight-view.md. */
+
+/** The frame this flight needs, or the one already up if it still fits. */
+function heldSpan(want, held) {
+  return (held && want <= held && want >= held * 0.45) ? held : want;
+}
+
 function autoFit(cam, flights, markers, w, h, u0, section) {
-  let uLo = u0, uHi = u0, yHi = 4;
+  let uLo = u0, uHi = u0, yHi = 0;
   for (const f of flights) {
     if (!f) continue;
     const end = f.pos(f.tMax);
@@ -133,7 +162,11 @@ function autoFit(cam, flights, markers, w, h, u0, section) {
      pixels to the south stand and four hundred and eighty to the north one.
      The bowl is brought into the fit, weighted so it widens the frame without
      ever shrinking the flight to a scratch. */
-  const flightSpan = Math.max(12, uHi - uLo);
+  // The flight's own width, used to weight how much of the place is pulled
+  // into the frame. It used to be floored at 12 m, which on a half-metre
+  // throw pulled in a metre and a half of stadium either side and trebled the
+  // frame before anything else had a say.
+  const flightSpan = uHi - uLo;
   if (section) {
     let bLo = Infinity, bHi = -Infinity, bTop = 0;
     for (const deck of section.decks) {
@@ -152,26 +185,51 @@ function autoFit(cam, flights, markers, w, h, u0, section) {
       const k = clamp(flightSpan / 170, 0, 0.45);
       uLo += (Math.max(bLo, uLo - flightSpan) - uLo) * k;
       uHi += (Math.min(bHi, uHi + flightSpan) - uHi) * k;
-      yHi = Math.max(yHi, bTop * clamp(flightSpan / 120, 0.34, 1));
+      // The roof used to be forced into the frame at 34% of its height NO
+      // MATTER WHAT, which on a two-metre flight meant sixteen metres of
+      // stand above a motion you could not see. It is pulled in on the same
+      // sliding weight as the width, and at the small end it is not pulled in
+      // at all — if you are looking at half a metre you are not looking at
+      // the stadium.
+      yHi = Math.max(yHi, bTop * clamp((flightSpan - 20) / 120, 0, 1));
     }
   }
 
-  // A minimum span, so the flight is always seen somewhere rather than nowhere:
-  // 96 m is a little under the length of the pitch.
-  const MIN_SPAN = 96;
-  const spanU = Math.max(MIN_SPAN, (uHi - uLo) * 1.14 + 10);
-  const spanY = Math.max(22, yHi * 1.2 + 6);
+  // THE ONE NUMBER THAT DECIDES THE FRAME, and the only place the old 96 m
+  // floor lived. A flight with no width at all — thrown straight up — still
+  // needs some, so the height has a say in it.
+  //
+  // There is still a floor, but it is the right one: THE OBJECT'S OWN SIZE.
+  // Zooming into a 15 cm flight until it fills the frame puts a football two
+  // thirds of a metre across on the screen, and a ball bigger than the motion
+  // is no more readable than a motion too small to see. Fourteen ball widths
+  // is close enough to look at and far enough to still be a ball.
+  const FLOOR = D.prop.ball * D.prop.ballDraw * 14;
+  const want = Math.max((uHi - uLo) * 1.2, yHi * 0.9, FLOOR);
+  const spanU = heldSpan(want, cam.heldSpan);
+  cam.heldSpan = spanU;
+  const spanY = Math.max(spanU / 5, yHi * 1.26);
   const sU = (w - 130) / spanU, sY = (h - 128) / spanY;
-  cam.scale = Math.max(0.004, Math.min(sU, sY));
-  cam.cx = (uLo + uHi) / 2;
-
+  const scale = Math.max(0.004, Math.min(sU, sY));
   // The ground sits as low as the chrome below it allows, always. Nothing in
   // this model goes below the ground, so any space under the datum is spent
   // on earth nobody needs to look at.
   const BOTTOM = 74;                      // range bar, its label, the scale bar
-  cam.cy = (h - BOTTOM - h / 2) / cam.scale;
+  const target = { scale, cx: (uLo + uHi) / 2, cy: (h - BOTTOM - h / 2) / scale };
   cam.fit = false;
-  snapWant(cam);                          // a fit arrives, it does not travel
+
+  // A FIT TRAVELS. It used to end in snapWant, so the whole thing happened
+  // between one frame and the next and a launch was an instant cut — which
+  // reads as a bug rather than as a camera. Band changes already ease through
+  // easeCamera, so the launch fit goes the same way and the view arrives
+  // instead of appearing.
+  //
+  // The very first fit of a session has nothing to travel FROM — the camera
+  // is still at its construction defaults — so that one lands directly.
+  cam.want = target;
+  if (!cam.placed) { cam.scale = target.scale; cam.cx = target.cx; cam.cy = target.cy; }
+  else setMoving(cam, true);
+  cam.placed = true;
 }
 
 export function render(canvas, cam, o) {
