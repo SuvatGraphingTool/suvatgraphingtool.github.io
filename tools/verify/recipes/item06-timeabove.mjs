@@ -12,6 +12,9 @@ const open = async (page, wait) => {
 const fly = async (page, wait) => {
   await open(page, wait);
   await page.click('#launch');
+  await wait(300);
+  const pace = page.locator('#pace-go');
+  if (await pace.count() && await pace.isVisible()) await pace.click();
   await wait(2500);
   const see = page.locator('#done button', { hasText: /See the diagram/ });
   if (await see.count()) await see.first().click();

@@ -6,6 +6,9 @@ const fly = async (page, wait) => {
   await page.fill('#x-theta', '55');
   await wait(200);
   await page.click('#launch');
+  await wait(300);
+  const pace = page.locator('#pace-go');
+  if (await pace.count() && await pace.isVisible()) await pace.click();
   await wait(2400);
   const see = page.locator('#done button', { hasText: /See the diagram/ });
   if (await see.count()) await see.first().click();

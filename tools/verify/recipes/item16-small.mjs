@@ -6,6 +6,9 @@ const fly = (u, theta) => async (page, { wait }) => {
   await page.fill('#x-theta', String(theta));
   await wait(250);
   await page.click('#launch');
+  await wait(300);
+  const pace = page.locator('#pace-go');
+  if (await pace.count() && await pace.isVisible()) await pace.click();
   await wait(2600);
   const see = page.locator('#done button', { hasText: /See the diagram/ });
   if (await see.count()) await see.first().click();
@@ -36,6 +39,9 @@ export default [
         await page.fill('#x-theta', '45');
         await wait(250);
         await page.click('#launch');
+  await wait(300);
+  const pace = page.locator('#pace-go');
+  if (await pace.count() && await pace.isVisible()) await pace.click();
         await wait(2600);
         const d = page.locator('#done button', { hasText: /See the diagram/ });
         if (await d.count()) await d.first().click();

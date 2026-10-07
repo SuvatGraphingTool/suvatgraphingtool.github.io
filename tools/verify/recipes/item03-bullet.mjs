@@ -9,6 +9,9 @@ const run = async (page, wait, name, settle = 2600) => {
   if (await b.count()) { await b.first().click(); await wait(250); }
   const go = page.locator('.intro button', { hasText: /Run it/ });
   if (await go.count()) { await go.first().click(); }
+  await wait(300);
+  const pace = page.locator('#pace-go');            // the speed card, since item 17
+  if (await pace.count() && await pace.isVisible()) await pace.click();
   await wait(settle);
 };
 export default [
