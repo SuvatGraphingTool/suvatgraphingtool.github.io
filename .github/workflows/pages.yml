@@ -1,0 +1,63 @@
+# Deploy the site to GitHub Pages.
+#
+# There is nothing to build: no bundler, no dependencies, no Jekyll. The repo
+# IS the site, so this uploads it as it stands. It replaces the legacy
+# branch-deploy builder, which failed three times running and reported only
+# "Page build failed." with no log to work from.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it half-way.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # The physics, the solver, the question reader, the scenarios, and the
+      # sweep that fails if any computer maths can reach a student. Nothing
+      # goes live without all five passing.
+      - run: for t in test/*.test.mjs; do node "$t" || exit 1; done
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      # enablement turns Pages on for a repo that has never deployed, so a
+      # fresh clone of this project deploys on its first push without
+      # anyone visiting the settings page first.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      # The artifact index is eventually consistent. On 7 October 2026 the
+      # upload finalized at 16:35:54.97 and deploy-pages listed the run's
+      # artifacts 350 ms later, found zero, and failed the deploy with
+      # "No artifacts named github-pages were found" — while the artifact
+      # sat there with an ID and a byte count. The site stayed on the
+      # previous commit until someone noticed. Five seconds is cheaper than
+      # a silent stale deploy.
+      - run: sleep 5
+      - id: deployment
+        uses: actions/deploy-pages@v4

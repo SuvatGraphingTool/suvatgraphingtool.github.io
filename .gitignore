@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+*.log
+shots/
+dev-drive.js
+
+# local screenshots and captures (design docs use SVG)
+*.png
