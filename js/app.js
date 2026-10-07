@@ -703,8 +703,50 @@ function say(el, bad, html) {
 }
 
 /* ── step 3 · flight ────────────────────────────────────────────────── */
+/* ── one decision before it runs ─────────────────────────────────────────
+   The speed control lived in the flight bar, which meant it was unreachable
+   until the flight screen had been entered at least once — so the first time
+   you watched anything, you watched it at whatever speed it happened to be,
+   and by the time you could slow it down you had already missed it.
+
+   It is asked before the launch instead, over the blurred stage, using the
+   same treatment the intro card already uses. The answer is remembered, so
+   the tenth launch is Enter and Enter. A REPLAY IS NOT A LAUNCH and does not
+   ask — asking every time something runs again is what would turn this into
+   a wall. */
 function launch() {
   if (!traj) return;
+  closeIntro();
+  go('flight');                 // so there is a stage to blur behind the card
+  openPace();
+}
+
+function openPace() {
+  $('pace-rate').value = String(state.rate);
+  $('pace-val').textContent = `${state.rate}×`;
+  $('pace').hidden = false;
+  // FOCUS THE SLIDER, NOT THE BUTTON. Focusing the button meant the very
+  // keypress that opened this card activated it on the way back up, so Enter
+  // from the values screen blew straight through the card without it ever
+  // being seen. The slider ignores Enter, which is handled below instead —
+  // and it puts the left and right arrows on the speed, which is the thing
+  // the card is for.
+  $('pace-rate').focus();
+}
+function closePace() { $('pace').hidden = true; }
+
+/** Keep the card and the flight bar saying the same thing. */
+function syncRate() {
+  $('pace-rate').value = String(state.rate);
+  $('pace-val').textContent = `${state.rate}×`;
+  for (const x of $('rate-seg').children) {
+    x.setAttribute('aria-pressed', String(parseFloat(x.dataset.rate) === state.rate));
+  }
+}
+
+function runFlight() {
+  if (!traj) return;
+  closePace();
   closeIntro();
   closeResolve();
   if (state.firedBefore) ghost = traj.path(260);
@@ -1130,6 +1172,12 @@ $('back-1').addEventListener('click', () => go('scenario'));
 $('back-2').addEventListener('click', () => { hideDone(); closeResolve(); go('values'); });
 $('launch').addEventListener('click', launch);
 $('intro-go').addEventListener('click', () => { closeIntro(); launch(); });
+$('pace-go').addEventListener('click', runFlight);
+$('pace-back').addEventListener('click', () => { closePace(); go('values'); });
+$('pace-rate').addEventListener('input', (e) => {
+  state.rate = parseFloat(e.target.value);
+  syncRate();
+});
 $('intro-values').addEventListener('click', () => { closeIntro(); go('values'); });
 $('play').addEventListener('click', togglePlay);
 const replay = () => { hideDone(); closeResolve(); state.t = 0; state.playing = true; setPlayIcon(true); dirty = true; };
@@ -1162,7 +1210,7 @@ $('res-go').addEventListener('click', () => {
 for (const b of $('rate-seg').children) {
   b.addEventListener('click', () => {
     state.rate = parseFloat(b.dataset.rate);
-    for (const x of $('rate-seg').children) x.setAttribute('aria-pressed', String(x === b));
+    syncRate();                 // the card and the bar are one setting
   });
 }
 for (const b of $('band-seg').children) {
@@ -1192,6 +1240,13 @@ $('options-btn').addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', (e) => {
+  // The speed card first, and above the input guard: its slider IS an input,
+  // and Enter on a slider means nothing, so it can mean "go".
+  if (!$('pace').hidden) {
+    if (e.key === 'Enter') { e.preventDefault(); runFlight(); }
+    else if (e.key === 'Escape') { closePace(); go('values'); }
+    return;
+  }
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
   if (state.step === 'values' && e.key === 'Enter' && !$('launch').disabled) { launch(); return; }
   if (state.step !== 'flight') return;
@@ -1251,6 +1306,6 @@ go('scenario');
 requestAnimationFrame(frame);
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
-                 cam, choose: chooseScenario, launch, go,
+                 cam, choose: chooseScenario, launch, runFlight, go,
                  showDone, hideDone, openResolve, closeResolve,
                  redraw() { recompute(); draw(); } };

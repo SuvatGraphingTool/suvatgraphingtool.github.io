@@ -93,6 +93,7 @@
           </div>
           <div class="seg" id="rate-seg" aria-label="Playback speed">
             <button data-rate="1" aria-pressed="true">Real time</button>
+            <button data-rate="0.75" aria-pressed="false">0.75&times;</button>
             <button data-rate="0.5" aria-pressed="false">0.5&times;</button>
             <button data-rate="0.25" aria-pressed="false">0.25&times;</button>
           </div>
@@ -124,6 +125,29 @@
               <div class="intro-acts">
                 <button class="ghost" id="intro-values">Type my own numbers</button>
                 <button class="fire sm" id="intro-go">Run it</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- one decision between the values and the flight: how fast -->
+          <div class="intro pace" id="pace" hidden>
+            <div class="intro-card pace-card" role="dialog" aria-labelledby="pace-title">
+              <p class="intro-eyebrow">Before it runs</p>
+              <h2 class="intro-h" id="pace-title">How fast should it go?</h2>
+              <p class="intro-body" id="pace-body">Real time is what actually happens. Slower is easier to read.</p>
+              <div class="pace-row">
+                <output class="pace-val" id="pace-val">1×</output>
+                <input type="range" id="pace-rate" min="0.25" max="1" step="0.25" value="1"
+                       aria-label="Playback speed" list="pace-stops">
+                <datalist id="pace-stops">
+                  <option value="0.25"></option><option value="0.5"></option>
+                  <option value="0.75"></option><option value="1"></option>
+                </datalist>
+              </div>
+              <p class="pace-scale"><span>0.25×</span><span>0.5×</span><span>0.75×</span><span>real time</span></p>
+              <div class="intro-acts">
+                <button class="ghost" id="pace-back">Back to the values</button>
+                <button class="fire sm" id="pace-go">Launch</button>
               </div>
             </div>
           </div>
