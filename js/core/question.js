@@ -71,7 +71,12 @@ export function speedFromApex(riseAboveLaunch, thetaDeg, g) {
 
 /* ── Extraction → engine ─────────────────────────────────────────────── */
 
-const DEFAULT_G = 9.8;
+// 9.81, the same number every scenario seeds and the same one GRAVITY offers
+// for Earth. A paper that states its own value still wins — see toEngine —
+// and plenty state 10; this is only what to assume when a question says
+// nothing at all, and assuming a different number from the rest of the app
+// meant a photographed question and a typed one could disagree.
+const DEFAULT_G = 9.81;
 
 /**
  * @param {Object} x  the extraction object (see worker/src/schema.js)

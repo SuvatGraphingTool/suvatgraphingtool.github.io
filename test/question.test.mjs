@@ -3,6 +3,8 @@
 
 import { toEngine, resolveAngle, speedFromRange, speedFromApex } from '../js/core/question.js';
 import { flight } from '../js/core/projectile.js';
+import { GRAVITY, SCENARIOS } from '../js/scenarios.js';
+import { GRAVITY as GRAV } from '../js/core/projectile.js';
 
 let pass = 0, fail = 0;
 const near = (a, e, tol, label) => {
@@ -105,9 +107,14 @@ group('Refusing rather than guessing', () => {
   ok(!toEngine({ understood: false, note: 'blurry' }).ok, 'an unreadable image is reported, not faked');
   ok(!toEngine(null).ok, 'null input is handled');
 
-  // g defaults to 9.8 but the paper's value wins — several use g = 10.
-  near(toEngine({ understood: true, scenario: 'dropped', h: 10 }).params.g, 9.8, 1e-9, 'g defaults to 9.8');
+  // g defaults to 9.81, the value the rest of the app uses — but the paper's
+  // own value wins, and several papers state 10. The explicit 9.8 arguments
+  // elsewhere in this file stay as they are: they are testing that a stated
+  // value beats the default, which needs a value that differs from it.
+  near(toEngine({ understood: true, scenario: 'dropped', h: 10 }).params.g, 9.81, 1e-9, 'g defaults to 9.81');
   near(toEngine({ understood: true, scenario: 'dropped', h: 10, g: 10 }).params.g, 10, 1e-9, "g = 10 is honoured");
+  near(toEngine({ understood: true, scenario: 'dropped', h: 10, g: 9.8 }).params.g, 9.8, 1e-9,
+       "and a paper that says 9.8 still gets 9.8");
 });
 
 group('Markers the scene should draw', () => {
@@ -117,6 +124,25 @@ group('Markers the scene should draw', () => {
   });
   ok(r.markers.obstacle.x === 10 && r.markers.obstacle.height === 2, 'fence at 10 m, 2 m high');
   ok(r.markers.heightLine === 4, 'height line at 4 m');
+});
+
+/* ── one value of g, across the whole app ───────────────────────────────
+   Three modules carry an idea of what Earth's gravity is: the scenario data
+   every card is seeded from, the GRAVITY list the chips are built from, and
+   this reader's default for a question that does not state one. They drifted:
+   the reader said 9.8 while everything else said 9.81, so the same question
+   typed in and photographed in gave different answers in the last decimal.
+   A paper's own stated value still beats all three. */
+group('Every part of the app means the same thing by g', () => {
+  const fromReader = toEngine({ understood: true, scenario: 'dropped', h: 10 }).params.g;
+  const fromChips = GRAVITY.find((x) => x.label === 'Earth').g;
+  const fromModel = GRAV.earth.g;
+  ok(fromReader === fromChips && fromReader === fromModel,
+     `the reader, the chips and the model all say ${fromReader}`);
+  ok(fromReader === 9.81, 'and that value is 9.81');
+  const seeded = SCENARIOS.map((x) => x.params.g).filter((g) => g > 1);
+  ok(seeded.length > 0 && seeded.every((g) => g === 9.81),
+     `every scenario on Earth is seeded at 9.81 (${seeded.length} of them)`);
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
