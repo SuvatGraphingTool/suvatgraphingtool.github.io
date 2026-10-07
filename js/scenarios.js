@@ -98,7 +98,7 @@ export const SCENARIOS = [
   /* ── the two that are not at the stadium ──────────────────────────── */
   { id: 'bullet', group: 'look', name: 'Dropping vs Firing a Bullet',
     sub: 'which lands first?',
-    note: 'Two identical rounds leave the bench at the same instant: one fired flat, one simply released. Vertically they are the same problem — u_y = 0, a = −g — because firing adds velocity along x only, and the two components are independent. The horizontal push buys no hang time at all, at any muzzle speed.',
+    note: 'Two identical rounds leave the bench at the same instant: one fired flat, one simply released. Vertically they are the same problem — neither starts with any upward speed, and both are pulled down at the same rate — because firing adds velocity sideways only, and the two components are independent. The horizontal push buys no hang time at all, at any muzzle speed.',
     params: { u: 360, theta: 0, h: 1.5, g: 9.81 }, lockAngle: true,
     exhibit: true, backdrop: 'warehouse', site: FLAT_SITE, secondSprite: true,
     card: 'range',
@@ -114,6 +114,20 @@ export const SCENARIOS = [
         { name: 'Pistol', u: 360, note: '9 mm, typical service load' },
         { name: 'Service rifle', u: 920, note: '5.56 mm' },
       ],
+    },
+    ending: {
+      title: 'Both hit the ground at the same time.',
+      realTitle: 'In the real world there is a difference. It is small.',
+      realLead: 'Careful experiments with a real rifle have timed the fired round landing a few tens of milliseconds after the dropped one — a few per cent of a fall lasting about half a second. Every reason for it is something this app does not model.',
+      why: [
+        ['Air resistance', 'the fired round meets drag along its whole path, and the moment it pitches even slightly, that drag gets a vertical component. This is the dominant term.'],
+        ['Lift from a spinning round', 'a rifled bullet is stabilised and does not sit perfectly along its own velocity, so it generates a small lift force.'],
+        ['The Magnus effect', 'that same spin, in moving air, pushes it sideways and a little upwards.'],
+        ['The Earth is round', 'over a long enough shot the ground curves away underneath, so "the same height" slowly stops meaning the same thing.'],
+        ['The Coriolis effect', 'on a fast, long shot the rotation of the Earth deflects it measurably.'],
+        ['g falls with altitude', 'very slightly — so a round that rises at all is pulled a shade less hard.'],
+      ],
+      caveat: 'None of that is in the picture you just watched. This app implements the idealised A-level model — no air, no wind, no spin, flat ground, uniform g — and it has computed none of those six effects. They are listed because they are the honest reason a slow-motion video does not quite match, not because anything here accounted for them.',
     },
     second: {
       label: 'released',

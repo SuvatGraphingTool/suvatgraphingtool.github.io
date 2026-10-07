@@ -209,6 +209,34 @@ h1, h2 { margin: 0; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1
 
 .done-note { font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.55; margin: var(--sp-4) 0 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--accent-soft); }
 .done-note:empty { display: none; }
+
+/* ── the range exhibit's own ending ─────────────────────────────────────
+   The generic card is a grid of the SUVAT five, which is the wrong shape for
+   a result whose whole content is "these two numbers are equal". This one is
+   prose with the numbers set into it, and it is wider than the five-grid
+   because the honest part — what a model with no air in it is leaving out —
+   is a list, and a list that needs scrolling does not get read. */
+#exdone .done-card { width: min(780px, 100%); max-height: calc(100% - var(--sp-5)); overflow-y: auto;
+                     padding-bottom: 0; }
+.ex-body { font-size: var(--fs-base); color: var(--ink-strong); line-height: 1.62; margin: var(--sp-4) 0 0; }
+.ex-body p { margin: 0 0 var(--sp-3); }
+.ex-body p:last-child { margin-bottom: 0; }
+.ex-body .ex-eq { display: block; margin: var(--sp-4) 0; text-align: center; font-size: var(--fs-lg); }
+.ex-body b { color: var(--ink); font-weight: 700; }
+.ex-real { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--border-soft); }
+.ex-h { font-size: var(--fs-sm); font-weight: 700; margin: 0 0 var(--sp-2); color: var(--ink); }
+.ex-lead { font-size: var(--fs-sm); color: var(--ink-muted); line-height: 1.6; margin: 0 0 var(--sp-3); }
+.ex-why { list-style: none; margin: 0 0 var(--sp-3); padding: 0; display: grid; gap: var(--sp-2) var(--sp-5); }
+@media (min-width: 620px) { .ex-why { grid-template-columns: 1fr 1fr; } }
+.ex-why li { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; padding-left: var(--sp-4); position: relative; }
+.ex-why li::before { content: ''; position: absolute; left: 0; top: .55em; width: 5px; height: 5px;
+                     border-radius: 50%; background: var(--accent); opacity: .7; }
+.ex-why li b { color: var(--ink-strong); font-weight: 650; }
+#exdone .done-acts { position: sticky; bottom: 0; margin: 0; padding: var(--sp-4) 0;
+                     background: var(--card); box-shadow: 0 -10px 16px -10px var(--card); }
+.ex-caveat { font-size: var(--fs-xs); color: var(--ink-strong); line-height: 1.55; margin: 0;
+             padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--accent-soft); }
+
 .done-acts { display: flex; gap: var(--sp-3); margin-top: var(--sp-5); }
 .done-acts .ghost, .done-acts .tbtn { flex: none; }
 .fire.sm { height: 40px; font-size: var(--fs-sm); flex: 1; }

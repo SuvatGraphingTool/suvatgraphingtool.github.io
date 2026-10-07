@@ -54,6 +54,7 @@ const state = {
   extras: { graphs: false, working: false, energy: false },
   options: false,
   resolve: false, hover: false,
+  overview: false,
 };
 
 const cam = scene.createCamera();
@@ -398,6 +399,7 @@ function launch() {
   closeResolve();
   if (state.firedBefore) ghost = traj.path(260);
   state.firedBefore = true; state.launched = true;
+  state.overview = false;               // every run starts from the panes
   state.t = 0; state.playing = true;
   cam.fit = true;
   setPlayIcon(true);
@@ -563,7 +565,60 @@ function title(r) {
   return 'It landed';
 }
 
-function hideDone() { $('done').hidden = true; }
+/**
+ * Which card the end of a flight deserves.
+ *
+ * The SUVAT-five grid is the right answer almost everywhere: five boxes,
+ * which were given and which were worked out. It is the wrong answer for the
+ * range, where the whole result is that two of those numbers came out equal —
+ * a grid makes you hunt for that, and the fact actually worth having is not in
+ * the grid at all. So a scenario may bring its own ending.
+ */
+function showEnding() {
+  if (scenario?.ending && second && solved?.ok && state.step === 'flight') showRangeDone();
+  else showDone();
+}
+
+/**
+ * The range's ending: the claim, the size of it in the student's own numbers,
+ * and an honest account of what the idealised model is leaving out.
+ *
+ * Every number here is read back off the run. Nothing on this card computes
+ * anything — house rule 4 — and nothing on it claims the engine modelled air,
+ * spin or a round Earth, because it did not.
+ */
+function showRangeDone() {
+  const e = scenario.ending;
+  const p = solved.params;
+  const tF = traj.tFlight ?? traj.tMax;
+  const range = isFinite(traj.range) ? traj.range : traj.horiz * tF;
+
+  $('exdone-eyebrow').textContent = `Both rounds in the air for ${fmt(tF, 2)} s`;
+  $('exdone-title').textContent = e.title;
+
+  // The size of it, which is the part a grid of five numbers cannot say. Then
+  // WHY, as the one line of algebra that settles it: the time of the fall has
+  // no u in it anywhere, so there is no muzzle speed that could change it.
+  $('exdone-body').innerHTML = `
+    <p>The fired round covered <b>${fmt(range, 0)} m</b>. The released one covered
+       <b>none</b>. Both were in the air for the same ${fmt(tF, 2)} s — so
+       ${fmt(p.u, 0)} m s⁻¹ of muzzle speed bought <b>no extra hang time at all</b>.</p>
+    <span class="ex-eq">${M`t^2 = (2h)/g = (2 × ${fmt(p.h, 2)})/${fmt(p.g, 2)}`},
+      so ${M`t = ${fmt(tF, 2)}`} s</span>
+    <p>There is no ${M`u`} in it. Firing adds velocity sideways, the two components
+       are independent, and the sideways one has nothing to do with how long the
+       fall takes. Try the other rounds: the first number changes every time and
+       the second one never does.</p>`;
+
+  $('exdone-real-h').textContent = e.realTitle;
+  $('exdone-real-lead').textContent = e.realLead;
+  $('exdone-why').innerHTML = e.why.map(([k, v]) => `<li><b>${k}</b> — ${v}</li>`).join('');
+  $('exdone-caveat').textContent = e.caveat;
+
+  $('exdone').hidden = false;
+}
+
+function hideDone() { $('done').hidden = true; $('exdone').hidden = true; }
 
 function renderWorking() {
   if (!state.extras.working || !traj) return;
@@ -585,7 +640,7 @@ function draw() {
   if (state.step !== 'flight' || !traj) { dirty = false; return; }
   const R = state.resolve ? resolveAt(traj, state.t) : null;
   const opts = { traj, second, ghost, t: state.t, show: state.show, fired: state.launched,
-                 verdict: state.verdict,
+                 verdict: state.verdict, overview: state.overview,
                  markers: state.markers || {}, scenario, secondLabel: scenario.second?.label,
                  resolve: R, hover: state.hover };
   // An exhibit is staged rather than surveyed: its own plate and its own scale
@@ -611,7 +666,7 @@ function frame(now) {
     const tStop = Math.max(traj.tMax, scenario?.exhibit && second ? second.tMax : 0);
     if (state.t >= tStop) {
       state.t = tStop; state.playing = false; setPlayIcon(false);
-      showDone();                       // only ever on a flight that ran its course
+      showEnding();                     // only ever on a flight that ran its course
     }
     dirty = true;
   }
@@ -661,6 +716,16 @@ $('replay').addEventListener('click', replay);
 $('done-replay').addEventListener('click', replay);
 $('done-close').addEventListener('click', hideDone);
 $('done-values').addEventListener('click', () => { hideDone(); go('values'); });
+
+$('exdone-replay').addEventListener('click', replay);
+$('exdone-close').addEventListener('click', hideDone);
+// THE PROOF, kept back until the end. One frame, both whole paths, and every
+// exposure of both rounds — so the two columns of flashes are side by side and
+// visibly falling in lockstep. It is squeezed sideways, and it says so in the
+// footer, which is exactly why it is not the view you watch the flight in.
+$('exdone-all').addEventListener('click', () => {
+  state.overview = true; hideDone(); dirty = true;
+});
 $('scrub').addEventListener('input', (e) => {
   if (!traj) return;
   hideDone();
