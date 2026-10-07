@@ -291,7 +291,8 @@ function buildValuesScreen() {
                  value="${state.theta ?? 0}" aria-label="Angle of projection">
         </div>
       </div>
-      <p class="xhint" id="x-theta-hint">${THETA_HINT}</p></div>`);
+      <p class="xhint" id="x-theta-hint">${THETA_HINT}</p>
+      <div class="angle-say" id="theta-say"></div></div>`);
   }
   rows.push(`<div class="xrow" data-x="h"><label for="x-h">Launch height h (m)</label>
     <input id="x-h" type="number" step="any" value="${state.h ?? ''}" placeholder="—">
@@ -374,7 +375,7 @@ function recompute() {
     $('notes').innerHTML = '';
     btn.disabled = true; btn.textContent = 'Launch';
     $('launch-hint').textContent = '';
-    traj = null; refreshSteps(); applyGuard(); return;
+    traj = null; refreshSteps(); applyGuard(); sayAngle(); return;
   }
 
   msg.dataset.ok = 'true';
@@ -421,6 +422,8 @@ function recompute() {
   showAbove();                   // the line's hint quotes the flight it belongs to
   refreshSteps();                // and Flight is reachable now that one exists
   applyGuard();
+  sayAngle();
+  if (state.theta === undefined) drawAngle(undefined);   // show what it found
   dirty = true;
 }
 
@@ -463,6 +466,79 @@ function shift(f, x0) {
     path: (n, tEnd) => f.path(n, tEnd).map(move),
     ticks: (n, tEnd) => f.ticks(n, tEnd).map(move),
     range: f.range + x0 };
+}
+
+/* ── the angle question, answered where it is asked ──────────────────────
+   A lot of exam questions give you everything except the angle of projection,
+   and a student who has not been told otherwise assumes they are stuck. The
+   app knew the answer and kept it in a list at the bottom of the screen.
+
+   The answer is that you almost never need it. Any three of s, u, v, a, t
+   determine the other two — that is the whole of SUVAT and it never mentions
+   a direction. The angle is needed only to DRAW the arc, and when it is
+   needed it can usually be recovered from the numbers you already have.
+
+   So three things get said, between the five boxes and the angle box, which
+   is where the question gets asked:
+
+     · which kind of motion is being solved, and why
+     · when the engine worked the angle out, that it did and from what
+     · when the range equation gives TWO answers, what the other one is —
+       and a way to take it
+
+   The reasoning is written up in design/angles.md. */
+function sayAngle() {
+  const band = $('mode-say'), say = $('theta-say');
+  if (band) { band.innerHTML = ''; band.removeAttribute('data-mode'); }
+  if (say) say.innerHTML = '';
+  if (!solved?.ok) return;
+
+  const gaveTheta = (solved.given || []).includes('theta');
+  const derived = !!solved.filled?.theta;
+
+  if (band) {
+    band.dataset.mode = solved.mode;
+    band.innerHTML = solved.mode === '1d'
+      ? `<b>Straight-line motion.</b> No angle was given and none can be worked out from
+         these values — so the engine is solving the five along one line, which is the
+         correct answer to a question that never mentioned a direction. Nothing is
+         missing. Add the angle, or give where it lands, if you want the arc drawn.`
+      : gaveTheta
+        ? `<b>A two-dimensional arc</b> at the angle you gave, ${M`${fmt(solved.params.theta, 1)}`}°.`
+        : derived
+          ? `<b>A two-dimensional arc.</b> You did not give the angle and did not need to —
+             the engine recovered it as ${M`theta = ${fmt(solved.params.theta, 1)}`}°.`
+          : `<b>A two-dimensional arc</b> at ${M`theta = ${fmt(solved.params.theta, 1)}`}°.`;
+  }
+
+  if (!say) return;
+  const bits = [];
+  if (derived) {
+    bits.push(`<b>Worked out, not needed.</b> ${solved.filled.theta} — from the values you
+      already gave. Leaving this box blank is a normal thing to do and usually the
+      right one.`);
+  } else if (!gaveTheta && solved.mode === '1d') {
+    bits.push(`<b>Leave it blank.</b> The five equations never mention an angle, so one is
+      only wanted here to draw an arc. Without it the motion is solved along a line
+      and every number is still exact.`);
+  }
+  if (solved.altTheta != null) {
+    bits.push(`<b>There are two.</b> ${M`${fmt(solved.params.theta, 1)}`}° and
+      ${M`${fmt(solved.altTheta, 1)}`}° both land in the same place — the low ball and the
+      high ball. This is the shallower.
+      <button class="linkish" id="theta-alt">Use ${fmt(solved.altTheta, 1)}° instead</button>`);
+  }
+  say.innerHTML = bits.join('<br><br>');
+  $('theta-alt')?.addEventListener('click', () => {
+    const v = solved.altTheta;
+    state.theta = v;
+    const box = $('x-theta');
+    if (box) box.value = fmt(v, 2);
+    const sld = $('theta-slider');
+    if (sld) sld.value = String(clamp(v, +sld.min, +sld.max));
+    drawAngle(v);
+    recompute();
+  });
 }
 
 /* ── the over-filling guard ──────────────────────────────────────────────
@@ -670,7 +746,13 @@ function wireAngle() {
 function drawAngle(theta) {
   const ray = $('td-ray'), arc = $('td-arc'), wedge = $('td-wedge');
   if (!ray) return;
-  const t = clamp(isFinite(theta) ? theta : 0, -THETA_LIMIT, THETA_LIMIT);
+  // WITH THE BOX BLANK, DRAW WHAT THE ENGINE FOUND. Leaving the diagram flat
+  // while the panel underneath says "the engine recovered it as 20.4°" makes
+  // the two disagree, and the picture is the part that gets believed.
+  const own = isFinite(theta);
+  const found = !own && solved?.ok ? solved.params.theta : undefined;
+  const shown = own ? theta : found;
+  const t = clamp(isFinite(shown) ? shown : 0, -THETA_LIMIT, THETA_LIMIT);
   const a = (t * Math.PI) / 180;
   const OX = 16, OY = 48, AR = 26;
   const ca = Math.cos(a), sa = Math.sin(a);
@@ -682,7 +764,8 @@ function drawAngle(theta) {
   const ex = OX + R * ca, ey = OY - R * sa;
   ray.setAttribute('x2', ex.toFixed(2));
   ray.setAttribute('y2', ey.toFixed(2));
-  ray.setAttribute('stroke', theta == null ? 'var(--ink-faint)' : 'var(--vel)');
+  // Faint while it is the engine's answer rather than yours.
+  ray.setAttribute('stroke', own ? 'var(--vel)' : (isFinite(found) ? 'var(--ink-muted)' : 'var(--ink-faint)'));
 
   // The arc runs from the horizontal round to the ray, either way.
   const ax = OX + AR, ay = OY;

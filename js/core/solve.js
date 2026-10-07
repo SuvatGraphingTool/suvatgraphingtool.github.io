@@ -63,8 +63,9 @@ export function solveLaunch(input = {}, opts = {}) {
     if (r.spare.length) {
       const NAME = { s: 'S', u: 'U', v: 'V', g: 'A', t: 'T', h: 'the launch height', theta: 'the angle' };
       const list = r.spare.map((x) => NAME[x] || x.toUpperCase());
+      const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
       r.notes = [...r.notes, r.spare.length === 1
-        ? `${list[0]} was more than enough — the rest already fixed the motion, and it agrees with them.`
+        ? `${cap(list[0])} was more than enough — the rest already fixed the motion, and it agrees with them.`
         : `There is one value more here than the motion needs. Any one of ${list.join(', ')} `
           + 'could be left out and nothing would change, because they all agree.'];
     }

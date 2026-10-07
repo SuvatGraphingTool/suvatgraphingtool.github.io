@@ -243,6 +243,8 @@ const MATH_SINKS = [
   'done-five',
   'done-extra',
   'exdone-body',   // the range exhibit's ending
+  'mode-say',      // which motion is being solved
+  'theta-say',     // how the angle was recovered, and the other one
 ];
 
 group('Nothing that can hold an equation is filled with textContent', () => {
@@ -265,10 +267,12 @@ group('Nothing that can hold an equation is filled with textContent', () => {
   ok(offences.length === 0, 'every maths sink in app.js takes innerHTML', offences.join('\n         '));
 
   // And the sinks have to still exist, or the list above is quietly dead.
+  // Some are in the markup and some are built by app.js — the angle panel is
+  // only there for scenarios that have an angle to show — so look in both.
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const gone = MATH_SINKS.filter((id) => !html.includes(`id="${id}"`));
-  ok(gone.length === 0, 'and every one of them is still in the page',
-     gone.length ? `missing from index.html: ${gone.join(', ')}` : '');
+  const gone = MATH_SINKS.filter((id) => !html.includes(`id="${id}"`) && !src.includes(`id="${id}"`));
+  ok(gone.length === 0, 'and every one of them still exists',
+     gone.length ? `found in neither index.html nor app.js: ${gone.join(', ')}` : '');
 });
 
 /* == 3 · the prose the scenarios carry ================================

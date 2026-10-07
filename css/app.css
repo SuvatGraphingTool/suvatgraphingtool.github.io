@@ -246,6 +246,24 @@ h1, h2 { margin: 0; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1
 .done-note { font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.55; margin: var(--sp-4) 0 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--accent-soft); }
 .done-note:empty { display: none; }
 
+/* ── what the engine is actually solving ────────────────────────────────
+   The answer to "how do I find the angle" is usually "you do not", and the
+   app knew that and said it in a list at the bottom of the screen. It is
+   stated here instead, between the five boxes and the angle box, which is
+   where the question gets asked. */
+.mode-say { margin: 0 0 var(--sp-5); padding: var(--sp-3) var(--sp-4);
+            border-radius: var(--r-lg); border: 1px solid var(--border-soft);
+            font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.55; }
+.mode-say:empty { display: none; }
+.mode-say b { color: var(--ink); font-weight: 700; }
+.mode-say[data-mode='1d'] { background: var(--accent-soft); border-color: transparent; }
+.angle-say { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5;
+             margin: var(--sp-3) 0 0; padding-top: var(--sp-3);
+             border-top: 1px solid var(--border-soft); }
+.angle-say:empty { display: none; }
+.angle-say b { color: var(--ink-strong); font-weight: 650; }
+.angle-say .m { color: var(--ink); }
+
 /* ── the over-filling guard ─────────────────────────────────────────────
    It is a setting, and it lives beside the boxes it governs rather than
    behind a panel that is only reachable from another screen. In both states
