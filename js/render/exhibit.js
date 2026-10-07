@@ -487,11 +487,20 @@ function heightLines(g, shot, o, box) {
   const last = pair[pair.length - 1];
   const gap = last?.b ? Math.hypot(last.a.x - last.b.x, last.a.y - last.b.y) : Infinity;
   const done = fired && t >= f.tMax - 1e-6;
-  if (verdict?.kind === 'short' && done) {
-    // It fell short. Saying "same fall" here would be a lie: the monkey
-    // stopped falling the moment it hit the sand.
-    labelPair(g, pair, last, scenario, box);          // the lines still mean something
-    pill(g, box.x + box.w / 2, box.y + 56, verdict.text, 14);
+  // WHAT HAPPENED, in the engine's four words. It used to know one: 'short'.
+  // Now the aim can be wrong, so the plate has to be able to say how.
+  const SAID = {
+    short: 'too slow — it never got there',
+    high:  'too high — it passed over',
+    low:   'too low — it passed under',
+  };
+  if (verdict && SAID[verdict.kind] && done) {
+    // Saying "same fall" over a miss would be a lie about which one. The
+    // lines between the exposures still mean what they always meant, though:
+    // both objects fell exactly the same distance, and that is why a miss is
+    // a miss of AIM rather than of timing.
+    labelPair(g, pair, last, scenario, box);
+    pill(g, box.x + box.w / 2, box.y + 56, SAID[verdict.kind], 14);
   } else if (last?.b && gap > 90) {
     labelPair(g, pair, last, scenario, box);
   } else if (last?.b && gap < 14 && done) {

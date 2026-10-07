@@ -13,6 +13,7 @@
 <link rel="modulepreload" href="./js/core/solve.js">
 <link rel="modulepreload" href="./js/core/trajectory.js">
 <link rel="modulepreload" href="./js/core/projectile.js">
+<link rel="modulepreload" href="./js/core/intercept.js">
 <link rel="modulepreload" href="./js/scenarios.js">
 <link rel="modulepreload" href="./js/working.js">
 <link rel="modulepreload" href="./js/render/scene.js">
@@ -94,6 +95,14 @@
             <button data-rate="1" aria-pressed="true">Real time</button>
             <button data-rate="0.5" aria-pressed="false">0.5&times;</button>
             <button data-rate="0.25" aria-pressed="false">0.25&times;</button>
+          </div>
+          <!-- live controls for an exhibit you play with rather than set up -->
+          <div class="live" id="live" hidden>
+            <label class="lv"><span>angle <b id="lv-theta-v">—</b></span>
+              <input type="range" id="lv-theta" aria-label="Angle of the throw"></label>
+            <label class="lv"><span>speed <b id="lv-u-v">—</b></span>
+              <input type="range" id="lv-u" aria-label="Speed of the throw"></label>
+            <button class="tbtn sm" id="lv-aim" aria-pressed="true">Aim at the monkey</button>
           </div>
           <label class="ck inline"><input type="checkbox" id="bounce-ck"><span class="box-ck"></span>Bounce</label>
           <div class="bounce-opts" id="bounce-opts" hidden>

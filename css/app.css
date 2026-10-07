@@ -246,6 +246,19 @@ h1, h2 { margin: 0; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1
 .done-note { font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.55; margin: var(--sp-4) 0 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--accent-soft); }
 .done-note:empty { display: none; }
 
+/* ── live controls, on the scene ────────────────────────────────────────
+   Monkey vs Hunter is a toy you play with, and three preset buttons behind a
+   card is a menu. These sit in the bar directly over the canvas and move the
+   flight as they move. */
+.live { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
+.lv { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs);
+      color: var(--ink-muted); cursor: pointer; }
+.lv span { white-space: nowrap; }
+.lv b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums;
+        display: inline-block; min-width: 4.4ch; text-align: right; }
+.lv input[type='range'] { width: 132px; height: 24px; }
+#lv-aim[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
 /* ── the range exhibit's own ending ─────────────────────────────────────
    The generic card is a grid of the SUVAT five, which is the wrong shape for
    a result whose whole content is "these two numbers are equal". This one is

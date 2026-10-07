@@ -92,6 +92,7 @@ export const SCENARIOS = [
       ],
     },
     ending: {
+      close: 'See the panes',
       title: 'Both hit the ground at the same time.',
       realTitle: 'In the real world there is a difference. It is small.',
       realLead: 'Careful experiments with a real rifle have timed the fired round landing a few tens of milliseconds after the dropped one — a few per cent of a fall lasting about half a second. Every reason for it is something this app does not model.',
@@ -125,15 +126,27 @@ export const SCENARIOS = [
     caughtLabel: 'caught — every time',
     seed: { u: 22, h: 1.5, g: 9.81 },
     markers: { target: { x: 12, y: 9 } }, dragTarget: true, aimAtTarget: true,
-    intro: {
-      title: 'How hard do you throw?',
-      body: 'Speed decides whether the banana arrives before the monkey lands. It does not decide whether the aim is right — aimed straight at the monkey, every one of these connects.',
-      field: 'u', unit: 'm s⁻¹',
-      models: [
-        { name: 'Lob', u: 13, note: 'only just gets there' },
-        { name: 'Throw', u: 22, note: 'comfortable' },
-        { name: 'Hurl', u: 38, note: 'barely time to fall' },
-      ],
+    // Live, on the scene. Three preset buttons were a menu; this is a toy.
+    live: { u: { min: 4, max: 60, step: 0.5, label: 'speed', unit: 'm s⁻¹' },
+            theta: { min: -20, max: 85, step: 0.5, label: 'angle', unit: '°' } },
+    ending: {
+      kind: 'monkey',
+      close: 'See the beach',
+      caught: { title: 'Caught.' },
+      high:   { title: 'It passed above the monkey.' },
+      low:    { title: 'It passed below the monkey.' },
+      short:  { title: 'The monkey reached the sand first.' },
+      why: {
+        aimed: ['Aimed straight at it, it cannot miss',
+          'Not because the banana was quick, and not because the numbers were kind. In the time it takes to cover the horizontal gap, both have fallen the same amount below where they would have been without gravity — and that amount is the same for both because it does not depend on what either of them weighs or how fast either was going. So it cancels, and the aim that would have been right with no gravity is still right with it. Move the speed slider: the answer does not change.'],
+        slow: ['Too slow — and this is the only real failure there is',
+          'The aim was never wrong. The banana simply ran out of flight before it covered the gap, and the monkey was on the sand by the time it arrived. Nothing here contradicts the rule; the demonstration just needs both of them to still be in the air when they meet. Throw harder, or drag the monkey closer or higher.'],
+        fast: ['Too fast to see anything',
+          'It connected, and the rule held perfectly — but the banana arrived so quickly that neither object had time to fall anything worth looking at. The whole demonstration is about a distance they share, and at this speed that distance is a few millimetres. The picture stops showing it long before the physics stops working. Slow the throw down.'],
+        nog: ['No gravity, and it still hits',
+          'Nothing falls, so the banana travels in a dead straight line — and it still arrives exactly where the monkey is, because the aim pointed straight at it and neither of them moved off that line. This is worth sitting with: the result does not depend on the value of g at all. It works at 9.81, it works on the Moon, and it works at zero.'],
+      },
+      caveat: 'The idealised A-level model, as everywhere else on this site: no air resistance, no wind, a point mass, flat ground and uniform g. The banana and the monkey are drawn at a size you can see rather than at the size they are.',
     },
     second: {
       label: 'the monkey',

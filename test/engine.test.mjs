@@ -6,6 +6,7 @@
 
 import { solve } from '../js/core/suvat.js';
 import { flight, optimumAngle, timeAbove, heightForTime } from '../js/core/projectile.js';
+import { intercept, corners } from '../js/core/intercept.js';
 
 let pass = 0, fail = 0;
 
@@ -174,6 +175,93 @@ group('Thrown downwards, the greatest height is where it started', () => {
   // Thrown up it still works, which is the half the formula was written for.
   near(flight({ u: 28, theta: 45, h: 25, g: 9.81 }).apexHeight, 44.9796, 5e-4,
        'thrown up at 45° off the same platform still peaks at');
+});
+
+/* ── the monkey and the hunter ──────────────────────────────────────────
+   The aim that would be right without gravity is still right with it, because
+   both objects fall the same ½gt² below where they would otherwise have been
+   and the ½gt² cancels. The app could only ever say "too slow" before, because
+   the angle was computed FROM the monkey and a vertical miss was impossible.
+   Now that the angle can be wrong, all four answers have to be right. */
+const AIM = (m, h) => (Math.atan2(m.y - h, m.x) * 180) / Math.PI;
+
+group('Aimed straight at it, it cannot miss — at any speed or gravity', () => {
+  // The theorem is about DIRECTION, so the claim has to be stated that way:
+  // whenever the throw arrives at all, it arrives level with the monkey. It
+  // can still run out of flight first, and a monkey 60 m away hanging only
+  // 4 m up is on the sand in 0.9 s, which a 22 m s⁻¹ throw cannot beat. That
+  // is the one real failure and it is not a failure of aim.
+  let hits = 0, tooSlow = 0;
+  for (const m of [{ x: 12, y: 9 }, { x: 26, y: 11.5 }, { x: 8, y: 20 }, { x: 60, y: 4 }]) {
+    for (const u of [22, 40, 90]) {
+      for (const g of [9.81, 1.62]) {
+        const h = 1.5;
+        const f = flight({ u, theta: AIM(m, h), h, g });
+        const v = intercept(f, m, g);
+        if (v.kind === 'short') { tooSlow++; continue; }
+        hits++;
+        ok(v.kind === 'caught',
+           `monkey at (${m.x}, ${m.y}), ${u} m s⁻¹, g = ${g} — ${v.kind}`);
+      }
+    }
+  }
+  ok(hits >= 18, `${hits} of the 24 arrive, and every one of them connects`);
+  ok(tooSlow > 0, `and ${tooSlow} genuinely run out of flight, so the test is not trivial`);
+  // and with no gravity at all it still hits, because the aim was straight
+  // at it and nothing has moved off that line
+  const m = { x: 12, y: 9 };
+  const z = intercept(flight({ u: 22, theta: AIM(m, 1.5), h: 1.5, g: 0 }), m, 0);
+  ok(z.kind === 'caught' && z.fall === 0, 'with g = 0 nothing falls and it still hits');
+  ok(corners(z, 0, true, m).includes('nog'), 'and the app is told to explain that');
+});
+
+group('Aim it wrong and it misses, in the direction you aimed', () => {
+  const m = { x: 12, y: 9 }, h = 1.5, g = 9.81, u = 22;
+  const right = AIM(m, h);
+  const up = intercept(flight({ u, theta: right + 12, h, g }), m, g);
+  const down = intercept(flight({ u, theta: right - 12, h, g }), m, g);
+  ok(up.kind === 'high', `aimed 12° over the monkey — ${up.kind}`);
+  ok(down.kind === 'low', `aimed 12° under it — ${down.kind}`);
+  ok(up.gap > 0 && down.gap < 0, 'and the gap is signed the way it reads');
+  // the miss grows with the error, which is what makes it a control and not
+  // a coin toss
+  const far = intercept(flight({ u, theta: right + 25, h, g }), m, g);
+  ok(far.gap > up.gap, 'aiming further off misses by more');
+});
+
+group('Too slow is the one real boundary', () => {
+  const m = { x: 12, y: 9 }, h = 1.5, g = 9.81;
+  const slow = intercept(flight({ u: 4, theta: AIM(m, h), h, g }), m, g);
+  ok(slow.kind === 'short', 'a feeble throw never gets there');
+  ok(corners(slow, g, true, m).includes('slow'), 'and that is the honest boundary');
+  near(slow.landed, Math.sqrt((2 * 9) / 9.81), 1e-9, 'the monkey was on the sand at');
+  ok(slow.reach < m.x, `the throw only reached ${slow.reach.toFixed(2)} m of the ${m.x} m`);
+
+  // a straight-up throw has no horizontal speed, so it is not an aim problem
+  const upward = intercept(flight({ u: 22, theta: 90, h, g }), m, g);
+  ok(upward.kind === 'short' && upward.reach === 0, 'straight up never arrives either');
+});
+
+group('Too fast hides the very thing it is demonstrating', () => {
+  const m = { x: 12, y: 9 }, h = 1.5, g = 9.81;
+  const quick = intercept(flight({ u: 400, theta: AIM(m, h), h, g }), m, g);
+  ok(quick.kind === 'caught', 'a very fast throw still connects');
+  ok(quick.fall < 0.01, `but both had fallen only ${(quick.fall * 1000).toFixed(2)} mm by then`);
+  ok(corners(quick, g, true, m).includes('fast'), 'so the app is told to say why nothing moved');
+  // slow enough and the shared fall is the obvious thing in the picture
+  const easy = intercept(flight({ u: 13, theta: AIM(m, h), h, g }), m, g);
+  ok(easy.fall > 0.8, `a gentle throw lets them fall ${easy.fall.toFixed(2)} m together`);
+  // "too small to see" is relative to the frame. A 0.26 m shared fall is
+  // obvious under a monkey hanging at 1 m and invisible under one at 9 m, so
+  // the same throw has to be called differently in the two pictures.
+  const mid = intercept(flight({ u: 60, theta: AIM(m, h), h, g }), m, g);
+  ok(corners(mid, g, true, m).includes('fast'),
+     `${mid.fall.toFixed(2)} m under a monkey at ${m.y} m is too little to read`);
+  const lowM = { x: 12, y: 1.6 };
+  const same = intercept(flight({ u: 60, theta: AIM(lowM, h), h, g }), lowM, g);
+  ok(!corners(same, g, true, lowM).includes('fast'),
+     `the same ${same.fall.toFixed(2)} m under one at ${lowM.y} m reads perfectly well`);
+  ok(!corners(easy, g, true, m).includes('fast'), 'and needs no explaining');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

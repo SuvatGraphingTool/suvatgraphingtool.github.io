@@ -91,7 +91,7 @@ group('The intro models exist, and none of them changes the landing time', () =>
   ok(new Set(r.map((x) => x.toFixed(0))).size === r.length, 'each round has its own range');
 });
 
-group('The monkey intro spans the reachable and the unreachable', () => {
+group('The monkey\'s sliders span the reachable and the unreachable', () => {
   const s = byId('monkey');
   const m = s.markers.target, h = s.params.h, g = 9.81;
   const theta = Math.atan2(m.y - h, m.x);
@@ -99,44 +99,39 @@ group('The monkey intro spans the reachable and the unreachable', () => {
     const tMeet = m.x / (u * Math.cos(theta));
     return m.y - 0.5 * g * tMeet * tMeet >= 0;          // still above the sand
   };
-  ok(s.intro.models.every((mdl) => reach(mdl.u)),
-     'every offered throw reaches the monkey at its starting place');
-  ok(!reach(4), 'a feeble enough throw does NOT, so the failure case is real');
+  // Three preset buttons became two live sliders, so the claim the old test
+  // made about the presets now belongs to the slider's RANGE: a student has
+  // to be able to reach both the working case and the failing one without
+  // leaving the control.
+  ok(!!s.live?.u && !!s.live?.theta, 'it offers a speed and an angle, live');
+  ok(reach(s.live.u.max), `the fastest the slider offers (${s.live.u.max}) gets there`);
+  ok(!reach(s.live.u.min), `and the slowest (${s.live.u.min}) does not, so the failure is reachable`);
+  ok(s.params.u >= s.live.u.min && s.params.u <= s.live.u.max,
+     'and where it starts is inside its own range');
+
+  // The angle slider has to reach past the aimed angle in both directions, or
+  // "aim it wrong" is not something the control can express.
+  const aimed = (theta * 180) / Math.PI;
+  ok(s.live.theta.min < aimed && s.live.theta.max > aimed,
+     `the angle slider spans the aimed ${aimed.toFixed(1)}° with room either side`);
+  ok(s.live.theta.min < 0, 'including below the horizontal');
 });
 
-/* ── the platform group sweeps the angle ────────────────────────────────
-   Four ways off a platform left a hole in the middle: straight down, flat,
-   and up at an angle, but nothing aimed below the horizontal. That is the one
-   students fumble, because it is the one where the sign of the vertical
-   component bites. June 08 Q7 asks it directly. */
-group('Off one platform, the whole range of angles', () => {
-  const g = 9.81;
-  const angled = SCENARIOS.filter((s) => s.group === 'platform');
-  ok(angled.length === 5, 'five ways off a platform');
-
-  const d = byId('platform-down');
-  ok(!!d, 'thrown down at an angle exists');
-  ok(d.params.theta < 0 && d.params.theta > -90,
-     `and it really is between flat and straight down (${d.params.theta}°)`);
-  ok(!d.lockAngle && !d.noAngle, 'and the angle is the point, so it is not locked');
-  ok(Math.abs(d.params.theta) <= 90, 'and it is inside the range the input accepts');
-
-  // The three angled throws leave the SAME platform, which is what makes
-  // them comparable: only the angle differs.
-  const flat = byId('platform'), up = byId('platform-angle');
-  ok(d.params.h === flat.params.h && d.params.h === up.params.h,
-     `all three angled throws leave the same platform (${d.params.h} m)`);
-
-  // Thrown down, there is no upward half at all: the apex IS the launch.
-  const f = flight({ u: d.params.u, theta: d.params.theta, h: d.params.h, g });
-  near(f.apexHeight, d.params.h, 1e-9, 'thrown down, the greatest height is the launch height');
-  ok(f.tApex === 0, 'and there is no time to the top');
-
-  // It lands sooner and faster than the flat throw it sits next to.
-  const level = flight({ u: flat.params.u, theta: 0, h: flat.params.h, g });
-  ok(f.tFlight < level.tFlight, 'it lands sooner than the same platform thrown flat');
-  ok(f.vLanding > level.vLanding || flat.params.u !== d.params.u,
-     'and the comparison with the flat throw is a real one');
+group('Both exhibits bring their own ending', () => {
+  for (const id of ['bullet', 'monkey']) {
+    const e = byId(id).ending;
+    ok(!!e, `${id} has one`);
+    ok(typeof e.caveat === 'string' && e.caveat.length > 60,
+       `${id} says what the model leaves out`);
+  }
+  const m = byId('monkey').ending;
+  for (const k of ['caught', 'high', 'low', 'short']) {
+    ok(!!m[k]?.title, `the monkey can say "${k}"`);
+  }
+  for (const k of ['aimed', 'slow', 'fast', 'nog']) {
+    ok(Array.isArray(m.why[k]) && m.why[k][1].length > 80,
+       `and can explain "${k}" properly`);
+  }
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

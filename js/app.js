@@ -7,6 +7,7 @@
 import { solveLaunch } from './core/solve.js';
 import { trajectory } from './core/trajectory.js';
 import { flight, timeAbove, heightForTime } from './core/projectile.js';
+import { intercept, corners } from './core/intercept.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
 import * as scene from './render/scene.js';
@@ -77,6 +78,7 @@ const state = {
   options: false,
   resolve: false, hover: null, hoverMark: null,
   overview: false,
+  aimed: true,                   // the hunter is pointing at the monkey
 };
 
 const cam = scene.createCamera();
@@ -187,18 +189,22 @@ function chooseScenario(id) {
   state.h = undefined;
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
   state.firedBefore = false; ghost = null;
+  state.aimed = true;                  // the hunter starts pointing at it
   $('chosen').textContent = scenario.name;
   buildValuesScreen();
-  // An exhibit opens on the experiment itself. The card over the blurred
-  // stage is where the numbers get chosen, and the values screen is still a
-  // click away for anyone who would rather type them.
-  if (scenario.intro) {
+  // An exhibit opens on the experiment itself, not on a form. The gate is
+  // `exhibit` rather than `intro`, because Monkey vs Hunter no longer has an
+  // intro card to open with — its controls are on the scene — and it still
+  // has to arrive at the scene. The values screen stays one click away for
+  // anyone who would rather type the numbers.
+  if (scenario.exhibit) {
     seedExhibit();
     recompute();
     if (traj) { state.launched = true; state.firedBefore = false; state.t = 0; state.playing = false; }
+    buildLive();
     go('flight');
-    openIntro();
-  } else go('values');
+    if (scenario.intro) openIntro();
+  } else { $('live').hidden = true; go('values'); }
 }
 
 /** Fill in the scenario's own starting numbers, so the stage has something to show. */
@@ -347,7 +353,11 @@ function recompute() {
   if (scenario.lockAngle) k.theta = scenario.params.theta;
   // AIMED, not angled. The hunter points straight at the monkey, so the angle
   // is a consequence of where the monkey is — drag it and the angle follows.
-  if (scenario.aimAtTarget) k.theta = aimAngle();
+  // AIMED, not angled — while the student leaves it that way. The hunter
+  // points straight at the monkey by default, and the angle is a consequence
+  // of where the monkey is. Move the angle slider and it becomes yours, which
+  // is the only way to find out that the aimed one always works.
+  if (scenario.aimAtTarget && state.aimed) k.theta = aimAngle();
 
   solved = solveLaunch(k, { noAngle: scenario.noAngle,
                             lockAngle: scenario.lockAngle || scenario.aimAtTarget });
@@ -377,24 +387,29 @@ function recompute() {
   // THE CATCH ENDS IT. Aimed straight at the monkey, the banana arrives when
   // its horizontal displacement equals the monkey's — and watching it sail on
   // through would undo the whole point of the scenario.
-  if (scenario.aimAtTarget && second) {
-    const tg = state.markers?.target;
-    const tMeet = tg && traj.horiz > 1e-6 ? tg.x / traj.horiz : null;
-    if (tMeet != null && tMeet > 0 && tMeet < traj.tMax) {
-      traj = endAt(traj, tMeet);
-      second = endAt(second, tMeet);
-      state.caught = { t: tMeet, y: tg.y - 0.5 * solved.params.g * tMeet * tMeet };
+  // WHAT HAPPENED, worked out by the engine and only displayed here. It used
+  // to model exactly one failure — "too slow" — because the angle was computed
+  // from the monkey and a vertical miss could not happen. Now that the angle
+  // is the student's, it can.
+  const tg = scenario.aimAtTarget ? state.markers?.target : null;
+  if (tg && second) {
+    const v = intercept(traj, tg, solved.params.g);
+    state.verdict = { ...v, why: corners(v, solved.params.g, state.aimed, tg) };
+    if (v.kind === 'caught') {
+      // THE CATCH ENDS IT. Watching it sail on through would undo the point.
+      traj = endAt(traj, v.t);
+      second = endAt(second, v.t);
+      state.caught = { t: v.t, y: tg.y - v.fall };
     } else {
-      // It never gets there. Work out WHY, because "it missed" is the one
-      // thing this scenario is not allowed to leave unexplained.
       state.caught = null;
-      const fall = tg && solved.params.g > 0 ? Math.sqrt((2 * tg.y) / solved.params.g) : Infinity;
-      const got = traj.horiz * Math.min(fall, traj.tMax);
-      state.verdict = { kind: 'short', landed: fall,
-        text: `Too slow — the monkey was on the sand after ${fmt(fall, 2)} s, with the banana still ${fmt(Math.max(0, tg.x - got), 0)} m short. Throw harder.` };
+      // A miss is watched all the way past, or you cannot see HOW it missed.
+      if (v.kind !== 'short') {
+        const past = Math.min(traj.tMax, (tg.x / traj.horiz) * 1.35);
+        traj = endAt(traj, past);
+      }
     }
   } else { state.caught = null; state.verdict = null; }
-  if (state.caught) state.verdict = { kind: 'caught' };
+  syncLive();
   btn.disabled = false;
   btn.textContent = solved.params.u < 0.05
     ? 'Release it'                      // a drop has no launch speed to quote
@@ -444,6 +459,63 @@ function shift(f, x0) {
     path: (n, tEnd) => f.path(n, tEnd).map(move),
     ticks: (n, tEnd) => f.ticks(n, tEnd).map(move),
     range: f.range + x0 };
+}
+
+/* ── live controls, for an exhibit you play with ─────────────────────────
+   Monkey vs Hunter opened onto a card offering three speeds. That is a menu,
+   and the scenario is a toy: you want to move something and watch the answer
+   move. Two sliders over the canvas do that, and both are live — every drag
+   re-solves, rebuilds the flight and redraws.
+
+   The angle is the interesting one, because offering it at all changes the
+   premise. The hunter used to aim straight at the monkey BY CONSTRUCTION, so
+   the demonstration could not fail and there was no such thing as a vertical
+   miss. Touch the angle and the aim becomes yours — which is the only way to
+   discover that the aimed one always works. One button puts it back. */
+function buildLive() {
+  const spec = scenario?.live;
+  $('live').hidden = !spec;
+  if (!spec) return;
+  for (const [k, o] of Object.entries(spec)) {
+    const el = $(`lv-${k}`);
+    el.min = o.min; el.max = o.max; el.step = o.step;
+  }
+  syncLive();
+}
+
+/** Put the sliders and the readouts where the solve actually ended up. */
+function syncLive() {
+  if (!scenario?.live || !solved?.ok) return;
+  const p = solved.params;
+  const set = (k, v, dp, unit) => {
+    const el = $(`lv-${k}`), out = $(`lv-${k}-v`);
+    if (!el) return;
+    if (document.activeElement !== el) el.value = String(clamp(v, +el.min, +el.max));
+    out.textContent = `${fmt(v, dp)}${unit}`;
+  };
+  set('u', p.u, 1, '');
+  set('theta', p.theta, 1, '°');
+  $('lv-aim').setAttribute('aria-pressed', String(!!state.aimed));
+}
+
+function wireLive() {
+  $('lv-u').addEventListener('input', (e) => {
+    state.given.u = parseFloat(e.target.value);
+    buildValuesScreen();              // the typed boxes agree with the slider
+    recompute(); dirty = true;
+  });
+  $('lv-theta').addEventListener('input', (e) => {
+    // TAKING THE AIM OVER. Until this happens the hunter points at the monkey
+    // and the angle is a consequence of where it hangs.
+    state.aimed = false;
+    state.theta = parseFloat(e.target.value);
+    recompute(); dirty = true;
+  });
+  $('lv-aim').addEventListener('click', () => {
+    state.aimed = true;
+    state.theta = undefined;
+    recompute(); dirty = true;
+  });
 }
 
 /* ── the angle of projection ─────────────────────────────────────────
@@ -864,8 +936,58 @@ function title(r) {
  * the grid at all. So a scenario may bring its own ending.
  */
 function showEnding() {
-  if (scenario?.ending && second && solved?.ok && state.step === 'flight') showRangeDone();
-  else showDone();
+  if (!(scenario?.ending && second && solved?.ok && state.step === 'flight')) return showDone();
+  if (scenario.ending.kind === 'monkey') return showMonkeyDone();
+  return showRangeDone();
+}
+
+/**
+ * The monkey's ending: what happened, and — when the picture is misleading —
+ * why it is the picture at fault rather than the physics.
+ *
+ * The verdict comes from js/core/intercept.js and so do the corners worth
+ * explaining. Nothing here decides anything; it chooses which of the
+ * scenario's own paragraphs the run has earned.
+ */
+function showMonkeyDone() {
+  const e = scenario.ending, v = state.verdict;
+  if (!v) return showDone();
+  const head = e[v.kind] || e.caught;
+  const tg = state.markers.target;
+
+  $('exdone-eyebrow').textContent = state.aimed
+    ? 'Aimed straight at the monkey' : `Aimed at ${fmt(solved.params.theta, 1)}°`;
+  $('exdone-title').textContent = head.title;
+
+  const body = [];
+  if (v.kind === 'caught') {
+    body.push(`<p>The banana covered the <b>${fmt(tg.x, 1)} m</b> to the monkey in
+      <b>${fmt(v.t, 2)} s</b>. In that time both of them fell
+      <b>${fmt(v.fall, v.fall < 0.1 ? 3 : 2)} m</b> below where they would have been
+      with no gravity at all — the same ${M`½g t^2`}, for both, which is why the
+      two cancel and the aim survives.</p>`);
+  } else if (v.kind === 'short') {
+    body.push(`<p>The monkey was on the sand after <b>${fmt(v.landed, 2)} s</b>. The
+      banana only reached <b>${fmt(v.reach, 1)} m</b> of the <b>${fmt(tg.x, 1)} m</b>
+      it needed. It is not that the aim was wrong — it never arrived.</p>`);
+  } else {
+    body.push(`<p>The banana arrived after <b>${fmt(v.t, 2)} s</b> and passed
+      <b>${fmt(Math.abs(v.gap), 2)} m</b> ${v.kind === 'high' ? 'over' : 'under'} the
+      monkey. Both had fallen the same <b>${fmt(v.fall, 2)} m</b> by then — the shared
+      fall was never the problem. The aim was ${fmt(Math.abs(solved.params.theta - (aimAngle() ?? 0)), 1)}°
+      ${v.kind === 'high' ? 'above' : 'below'} the line to the monkey, and that is
+      exactly what it missed by.</p>`);
+  }
+  $('exdone-body').innerHTML = body.join('');
+
+  const why = (v.why || []).map((k) => e.why[k]).filter(Boolean);
+  $('exdone-real-h').textContent = why.length ? 'Why' : '';
+  $('exdone-real-lead').textContent = '';
+  $('exdone-why').innerHTML = why.map(([k, t]) => `<li><b>${k}</b> — ${t}</li>`).join('');
+  $('exdone-caveat').textContent = e.caveat;
+  $('exdone-close').textContent = e.close || 'See the diagram';
+  $('exdone-all').hidden = true;      // there is no second view to offer here
+  $('exdone').hidden = false;
 }
 
 /**
@@ -903,7 +1025,8 @@ function showRangeDone() {
   $('exdone-real-lead').textContent = e.realLead;
   $('exdone-why').innerHTML = e.why.map(([k, v]) => `<li><b>${k}</b> — ${v}</li>`).join('');
   $('exdone-caveat').textContent = e.caveat;
-
+  $('exdone-close').textContent = e.close || 'See the diagram';
+  $('exdone-all').hidden = false;
   $('exdone').hidden = false;
 }
 
@@ -994,6 +1117,7 @@ function applyTheme(mode) {
   dirty = true;
 }
 
+wireLive();
 $('brand').addEventListener('click', () => go('scenario'));
 for (const b of $('steps').querySelectorAll('.step')) {
   b.addEventListener('click', () => {
@@ -1102,7 +1226,13 @@ scene.attachControls($('scene'), cam, () => { dirty = true; },
   pickScene,
   (kind, world) => {
     if (kind === 'obstacle') { state.markers.obstacle.x = Math.max(0.5, world.x); state.markers.obstacle.height = Math.max(0, world.y); }
-    else if (kind === 'target') { state.markers.target.x = Math.max(0.5, world.x); state.markers.target.y = Math.max(0, world.y); }
+    else if (kind === 'target') {
+      state.markers.target.x = Math.max(0.5, world.x);
+      state.markers.target.y = Math.max(0, world.y);
+      // Dragging the monkey moves the aim, the flight and the verdict, so it
+      // has to re-solve rather than only redraw.
+      recompute();
+    }
     else if (kind === 'heightLine') {
       state.markers.heightLine = scene.snapHeight(Math.max(0, world.y));
       syncLineBoxes();                    // the boxes follow the drag
