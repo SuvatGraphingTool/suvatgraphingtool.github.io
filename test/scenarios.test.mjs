@@ -1,5 +1,5 @@
 // scenarios.test.mjs — the claims the two new cards make. Run: node test/scenarios.test.mjs
-import { SCENARIOS, byId } from '../js/scenarios.js';
+import { SCENARIOS, GROUPS, byId } from '../js/scenarios.js';
 import { flight } from '../js/core/projectile.js';
 
 let pass = 0, fail = 0;
@@ -66,7 +66,13 @@ group('Both sit under Interesting ones, with everything a card needs', () => {
     ok(!!s.backdrop && !!s.site, `${id} brings its own place`);
     ok((s.note || '').length > 80 && !!s.sub, `${id} says what it is for`);
   }
-  ok(SCENARIOS.length === 11, 'eleven scenarios in all');
+  // A bare count catches a scenario going missing by accident. It went from
+  // eleven to nine deliberately: "Throw at a target" and "Two that collide"
+  // were both built so they could not fail, and a demonstration that cannot
+  // fail demonstrates nothing. See design/presets.md.
+  ok(SCENARIOS.length === 9, 'nine scenarios in all');
+  ok(new Set(SCENARIOS.map((x) => x.id)).size === SCENARIOS.length, 'and every id is its own');
+  ok(SCENARIOS.every((x) => GROUPS.some((grp) => grp.id === x.group)), 'every one in a declared group');
 });
 
 group('The intro models exist, and none of them changes the landing time', () => {

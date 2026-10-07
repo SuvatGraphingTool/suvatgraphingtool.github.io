@@ -145,3 +145,11 @@ Every one of these is lifted from an actual question.
 | Thrown downwards | 25 | −30° | 12 m | 9.8 | June 08 Q7 |
 | Stone into the sea | 65 | tan α given | 70 m | **10** | PMT Y2 Q5 |
 | Two stones colliding | 28 / 35 | 0° / α | 73.5 m / 0 | 9.8 | June 06 Q5 |
+
+Two of these were built and then removed from the app — "Throw at a target"
+and "Two that collide". Both were implemented so that they could not fail: the
+aim was computed from the target in one, and the second launch was derived to
+guarantee the meeting in the other. The questions above are real and still
+worth answering; what was built was not an answer to them. See
+`design/presets.md` for the fuller note. The row above stays because it
+records what June 06 Q5 asked, which has not changed.

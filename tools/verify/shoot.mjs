@@ -6,8 +6,9 @@
 //
 //   node tools/verify/shoot.mjs <recipe.mjs> [outDir]
 //
-// A recipe default-exports an array of { name, el?, async run(page) }. `el` is a
-// selector to shoot instead of the viewport; `run` may also return a locator.
+// A recipe default-exports an array of { name, el?, full?, async run(page) }.
+// `el` is a selector to shoot instead of the viewport, `full` takes the whole
+// scrollable page, and `run` may also return a locator.
 
 import { chromium } from 'playwright-core';
 import { spawn } from 'node:child_process';
@@ -55,7 +56,7 @@ for (const shot of shots) {
     await page.goto(`${ORIGIN}/index.html`, { waitUntil: 'load' });
     const target = await shot.run(page, { wait, ORIGIN });
     const subject = shot.el ? page.locator(shot.el) : (target && target.screenshot ? target : page);
-    await subject.screenshot({ path: `${outDir}/${shot.name}.png` });
+    await subject.screenshot({ path: `${outDir}/${shot.name}.png`, fullPage: !!shot.full });
     console.log(`  ok   ${shot.name}${noise.length ? `  [console: ${noise.slice(0, 3).join(' | ')}]` : ''}`);
     if (noise.length) failed++;
   } catch (e) {

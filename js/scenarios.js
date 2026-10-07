@@ -60,40 +60,11 @@ export const SCENARIOS = [
     params: { u: 28, theta: 45, h: 25, g: 9.81 } },
 
   /* ── interesting ones ─────────────────────────────────────────────── */
-  { id: 'target', group: 'look', name: 'Throw at a target',
-    sub: 'hit a point, not a place',
-    note: 'The path must pass through the target, not land near it. Drag it anywhere.',
-    params: { u: 14, theta: 40, h: 1, g: 9.81 },
-    markers: { target: { x: 16.5, y: 2.44 } }, dragTarget: true },
-
   { id: 'time-above', group: 'look', name: 'Time above a line',
     sub: 'how long is it up there?',
     note: 'It crosses the line twice. The gap between those times is the answer. Drag the line.',
     params: { u: 24, theta: 40, h: 0.9, g: 9.81 },
     markers: { heightLine: 6 }, dragLine: true },
-
-  { id: 'collide', group: 'look', name: 'Two that collide',
-    sub: 'they always meet',
-    note: 'Same horizontal speed, so they stay in line and always meet. Change any number — they still meet.',
-    params: { u: 28, theta: 0, h: 73.5, g: 9.81 }, lockAngle: true,
-    second: {
-      label: 'from the foot of the platform',
-      /**
-       * Aim the second object so the two ALWAYS meet, whatever is typed.
-       * Give it the same horizontal speed, so they stay on one vertical line,
-       * and a vertical speed that closes the height h by the chosen moment:
-       *   they meet when  h − ½gt² = u_y t − ½gt²,  i.e. when  u_y = h / t.
-       * The ½gt² cancels — that is the whole trick, and why it cannot miss.
-       */
-      from(p) {
-        if (!(p.g > 1e-6) || !(p.h > 1)) return null;   // needs a real drop
-        const fall = Math.sqrt((2 * p.h) / p.g);
-        const meet = 0.9 * fall;                        // just before it lands
-        const uy = p.h / meet;
-        const ux = Math.max(p.u, 1e-6);
-        return { u: Math.hypot(ux, uy), theta: (Math.atan2(uy, ux) * 180) / Math.PI, h: 0 };
-      },
-    } },
 
   /* ── the two that are not at the stadium ──────────────────────────── */
   { id: 'bullet', group: 'look', name: 'Dropping vs Firing a Bullet',

@@ -225,7 +225,15 @@ export function render(canvas, cam, o) {
           p.x, p.y - 28, { color: hit ? P.good : col, align: 'center', pri: 9, size: 18, weight: 600 });
   }
 
-  /* ── second object ────────────────────────────────────────────────── */
+  /* ── second object ──────────────────────────────────────────────────
+     Nothing reaches this at the moment. "Two that collide" was the only
+     stadium scenario with a second object and it has been removed; the two
+     that still have one are exhibits, and they are drawn by exhibit.js.
+
+     It is kept rather than deleted because design/presets.md still wants
+     three scenarios that need it — the moving catcher, the head start, and a
+     collision that can actually fail — and this is the generic renderer all
+     three would use. If none of those gets built, delete it. */
   if (second) {
     const delay = o.secondDelay || 0;
     stroke(ctx, second.path(200).map(M), { color: P.second, width: 3.4, dash: [9, 6], alpha: .9 });
@@ -596,7 +604,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
       if (near(m.sx(b.x), m.sy(b.y))) return { kind: 'ball', t };
     }
     if (scenario?.dragTarget && markers?.target && near(m.sx(markers.target.x), m.sy(markers.target.y))) return { kind: 'target' };
-    if (scenario?.dragObstacle && markers?.obstacle && near(m.sx(markers.obstacle.x), m.sy(markers.obstacle.height))) return { kind: 'obstacle' };
+    if (markers?.obstacle && near(m.sx(markers.obstacle.x), m.sy(markers.obstacle.height))) return { kind: 'obstacle' };
     if (scenario?.dragLine && markers?.heightLine != null && Math.abs(w.syp - m.sy(markers.heightLine)) < 18) return { kind: 'heightLine' };
 
     // Anywhere on the arc already flown gives the same card at that instant —

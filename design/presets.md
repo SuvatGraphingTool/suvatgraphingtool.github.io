@@ -45,13 +45,11 @@ worth looking at. Numbers are defaults to be dragged, never fixed answers.
 | **Up and off a cliff** | Thrown upward from a height, lands far below |
 | **Downwards off a height** | Thrown *below* the horizontal, so it drops faster |
 | **Hit from just above the ground** | A cricket or golf shot — launched from about hand height |
-| **Throw at a target** | Must pass through a specific point |
 
 ## Two objects at once
 
 | Scenario | What happens |
 |---|---|
-| **Two that collide** | Launched at the same moment from different places, meeting mid-air |
 | **Catch it** | One thrown, one runner setting off later to intercept it |
 | **Head start** | The same throw twice, one delayed |
 
@@ -65,6 +63,22 @@ worth looking at. Numbers are defaults to be dragged, never fixed answers.
 | **One second at a time** | How much further it falls in each successive second |
 | **Low gravity** | The same throw somewhere gravity is weaker |
 | **No gravity** | It never comes down — shows what gravity was doing all along |
+
+---
+
+## Built, then removed
+
+Two of the above were implemented and have since been taken out. The research
+behind them is still sound — `design/scenarios.md` records how often the exams
+ask for each — so this is a note about the product, not a correction to the
+evidence.
+
+| Scenario | Why it went |
+|---|---|
+| **Throw at a target** | The aim was computed FROM the target, so the path could not miss it. Dragging the point moved the answer rather than testing it, which made it a picture of a throw rather than a question about one. The draggable target itself survives, in Monkey vs Hunter, where never missing is the whole result. |
+| **Two that collide** | Same problem, worse. The second object's launch was derived so that the two always met, whatever was typed — so "they still meet" was true by construction and not by physics. A demonstration that cannot fail demonstrates nothing. |
+
+The machinery each needed is gone with them where nothing else used it.
 
 ---
 
