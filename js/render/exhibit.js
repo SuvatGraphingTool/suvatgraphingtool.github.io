@@ -2,15 +2,31 @@
 //
 // WHY THIS IS NOT scene.js. Everywhere else, one unit is one metre on both
 // axes: 45° looks like 45°, and it has to, because reading an angle off the
-// screen is half the point. These two are different. A bullet leaving a barrel
-// at 360 m s⁻¹ falls 1.5 m while it travels 180 — at true scale that is a
-// horizontal scratch, and the thing you are meant to see (two bullets at the
-// same height at every instant) is invisible.
+// screen is half the point. These two cannot both be shown that way in one
+// frame. A bullet leaving a barrel at 360 m s⁻¹ falls 1.5 m while it travels
+// 180 — at true scale in a single frame that is a horizontal scratch, and the
+// thing you are meant to see (two rounds at the same height at every instant)
+// is invisible.
 //
-// So the sideways axis is COMPRESSED, and the plate says so, every time, with
-// the real distance written out. The vertical axis is never touched, the
-// engine never knows, and the numbers on screen are the numbers the engine
-// produced. A squeezed picture that admits it beats a true one nobody can read.
+// There are two answers to that and this file now uses both.
+//
+// ONE FRAME, SQUEEZED SIDEWAYS. The beach keeps this. The banana and the
+// monkey are metres apart, not hundreds, so the squeeze is mild and the frame
+// holds the whole story at once. `kx` is how badly the sideways axis had to be
+// squeezed, it is the only number in this file allowed to lie, and the plate
+// prints it every time.
+//
+// TWO FRAMES, NEITHER SQUEEZED. The range uses this. Each round gets its own
+// pane and its own window onto the room, both panes at ONE metres-per-pixel
+// and 1:1 on both axes — so a millimetre of fall is the same number of pixels
+// in both, which is the entire claim the exhibit makes. The fired round's pane
+// travels with it; the released round's does not have to, because it does not
+// go anywhere. What you give up is seeing the whole 200 m at once, and that was
+// never worth having: nobody can read a path squeezed 93×. What you gain is
+// that the picture no longer has to be apologised for.
+//
+// The vertical axis is never touched in either mode, the engine never knows,
+// and the numbers on screen are the numbers the engine produced.
 //
 // The stage itself is a dark plate in both themes, because this is a
 // photograph: a strobe lamp firing every 50 ms in a blacked-out room. Light
@@ -40,10 +56,27 @@ const round = (g, x, y, w, h, r) => {
 };
 
 /* ── the mapping ────────────────────────────────────────────────────────
-   One scale for height, another for distance. `kx` is how badly the sideways
-   axis had to be squeezed to make the flight fit, and it is the only number
-   in this file that is allowed to lie — which is why it is printed. */
-function stage(o, w, h, pad) {
+   One `S` is one window onto the room: a scale on each axis, an origin, and
+   the three conversions everything in this file and in backdrops.js goes
+   through. There is no coordinate arithmetic anywhere outside it.
+
+   It is built two ways.
+
+   FITTED (no `scale`) — work out what it takes to get the whole flight in,
+   squeezing sideways if it has to and never stretching. `kx` reports the
+   squeeze and the plate prints it. This is what the beach uses.
+
+   GIVEN (`scale` supplied) — you have already decided the metres-per-pixel,
+   and you say which world x sits at which fraction across the pane. The
+   window is then whatever that leaves visible. Two of these built with the
+   same `scale` are two panes a student can compare directly, which is the
+   whole reason the option exists.
+
+   `m` is vertical metres and `mx` is horizontal ones. They are the same
+   number under a GIVEN scale and they are not under a FITTED one, and the
+   difference matters: anything drawn across the frame has to use `mx` or it
+   comes out stretched by exactly the factor the plate is apologising for. */
+function stage(o, rect, opts = {}) {
   const { traj: f, second, markers, scenario } = o;
   const ex = EXTENT[scenario.backdrop] || { x0: 0, x1: 10, yTop: 10 };
 
@@ -56,23 +89,33 @@ function stage(o, w, h, pad) {
     // the palm is a fixed object; the frame holds it and little else above
     yHi = Math.max(f.apexHeight, f.params.h, markers.target.y + 2.2, PALM_H + 1.4);
   }
-  const xLo = Math.min(0, ex.x0);
+  let xLo = Math.min(0, ex.x0);
+  if (opts.yHi) yHi = opts.yHi;
 
-  const bw = w - pad.l - pad.r, bh = h - pad.t - pad.b;
-  const sy = (bh * 0.92) / (yHi * 1.1);               // height is never distorted
-  const sxRaw = (bw * 0.93) / (xHi - xLo);
-  // Never STRETCH sideways: a squeeze is a reading aid, a stretch is a lie
-  // with no upside. Beyond that, the sideways scale is whatever fits.
-  const sx = Math.min(sxRaw, sy);
+  const sy = opts.scale ?? (rect.h * 0.92) / (yHi * 1.1);
+  let sx, originX;
+  if (opts.scale != null) {
+    // GIVEN: square pixels, and `centre` metres parked `at` across the pane.
+    sx = opts.scale;
+    originX = rect.x + rect.w * (opts.at ?? 0.5) - (opts.centre ?? 0) * sx;
+    xLo = (rect.x - originX) / sx;
+    xHi = (rect.x + rect.w - originX) / sx;
+  } else {
+    const sxRaw = (rect.w * 0.93) / (xHi - xLo);
+    // Never STRETCH sideways: a squeeze is a reading aid, a stretch is a lie
+    // with no upside. Beyond that, the sideways scale is whatever fits.
+    sx = Math.min(sxRaw, sy);
+    originX = rect.x + rect.w * 0.035 - xLo * sx;
+  }
   const kx = sx / sy;
-
-  const originX = pad.l + bw * 0.035 - xLo * sx;
-  const groundY = pad.t + bh * 0.92;
+  const groundY = rect.y + rect.h * 0.92;
   return {
-    sx, sy, kx, xHi, yHi, groundY,
+    sx, sy, kx, xLo, xHi, yHi, groundY, originX,
+    xSpan: xHi - xLo,                                  // metres actually in view
     X: (x) => originX + x * sx,
     Y: (y) => groundY - y * sy,
     m: (v) => v * sy,                                  // metres → px, vertically
+    mx: (v) => v * sx,                                 // metres → px, horizontally
   };
 }
 
@@ -155,19 +198,175 @@ function strobeTimes(tMax) {
   return { dt: tMax / 12, n: 12 };
 }
 
+/* ── how many frames, and what each one is looking at ───────────────────
+   The beach gets one. Everything that matters there happens inside a few
+   metres, the squeeze is mild, and one frame holds the whole story.
+
+   The range gets two, as soon as there is a second round to compare against.
+   The two rounds end up hundreds of metres apart and one centimetre apart
+   vertically, and no single frame can be honest about both. So: one pane each,
+   ONE scale shared between them, square pixels in both.
+
+   The scale is set by the HEIGHT, because the height is what the exhibit is
+   about. That decides everything else, including the part that looks like a
+   cost: each pane then holds only a couple of metres of floor, so the fired
+   round's pane has to travel with it and the floor streams past far too fast
+   to read. That is not a flaw in the picture. A round doing 360 m s⁻¹ really
+   does cross two metres in six milliseconds, and a frame that let you read it
+   would be lying about the speed the way the old one lied about the shape.
+   The downrange figure is there to be read instead, and the playback speed
+   control is there for anyone who wants to watch it happen.
+
+   Widths are 40/60 because the released round needs only enough floor to fall
+   past and the fired one wants as much warning of what is coming as it can
+   get. */
+const GUTTER = 16;
+
+function planPanes(o, box, rect) {
+  const { scenario, traj: f, second, t, overview } = o;
+  const single = (ghosts) => [{
+    box, S: stage(o, rect), only: null, rule: true, ghosts, label: null,
+  }];
+  // `overview` is the end-of-run view: one frame, both paths, every exposure.
+  if (scenario.id !== 'bullet' || !second || overview) return single(true);
+
+  const lw = Math.round((box.w - GUTTER) * 0.40);
+  const rw = box.w - GUTTER - lw;
+  const yHi = Math.max(EXTENT.warehouse.yTop, f.apexHeight, f.params.h);
+  const scale = (rect.h * 0.92) / (yHi * 1.1);          // one scale, both panes
+
+  const pane = (x, w, opts) => ({
+    box: { x, y: box.y, w, h: box.h },
+    S: stage(o, { x, y: rect.y, w, h: rect.h }, { scale, yHi, ...opts }),
+  });
+
+  const at = Math.min(t, f.tMax), bt = Math.min(t, second.tMax);
+  return [
+    { ...pane(box.x, lw, { centre: second.pos(bt).x, at: 0.5 }),
+      only: 'b', rule: false, ghosts: false, label: 'Released  ·  straight down' },
+    { ...pane(box.x + lw + GUTTER, rw, { centre: f.pos(at).x, at: 0.3 }),
+      only: 'a', rule: true, ghosts: false,
+      label: `Fired at ${fmt(f.params.u, 0)} m s⁻¹` },
+  ];
+}
+
+/** The seam. Two frames on a contact sheet, not one frame with a crack in it. */
+function gutter(g, panes, box) {
+  for (let i = 1; i < panes.length; i++) {
+    const x = panes[i - 1].box.x + panes[i - 1].box.w;
+    g.save();
+    g.fillStyle = 'rgba(0,0,0,0.55)';
+    g.fillRect(x, box.y, GUTTER, box.h);
+    g.strokeStyle = PLATE.ruleFaint; g.lineWidth = 1;
+    for (const rx of [x + 0.5, x + GUTTER - 0.5]) {
+      g.beginPath(); g.moveTo(rx, box.y); g.lineTo(rx, box.y + box.h); g.stroke();
+    }
+    g.restore();
+  }
+}
+
+/* ── the argument, drawn across the seam ────────────────────────────────
+   In one frame the claim is made with a line joining the two rounds. Two
+   panes cannot join anything — but they share a scale and a ground line, so
+   a height in one pane is the same screen row as that height in the other,
+   and a single rule drawn straight across both lands on both rounds at once.
+   That is a stronger version of the same argument, and it only works because
+   the two panes really are at one scale. */
+function sameHeight(g, panes, o, box) {
+  const { traj: f, second, t } = o;
+  const ya = f.pos(Math.min(t, f.tMax)).y, yb = second.pos(Math.min(t, second.tMax)).y;
+  const S = panes[0].S;
+  const Ya = S.Y(ya), Yb = S.Y(yb);
+  g.save();
+  g.setLineDash([3, 5]); g.lineWidth = 1.3; g.strokeStyle = PLATE.ink;
+  g.globalAlpha = 0.85;
+  g.beginPath(); g.moveTo(box.x + 6, Ya); g.lineTo(box.x + box.w - 6, Ya); g.stroke();
+  if (Math.abs(Ya - Yb) > 1.5) {                        // they have come apart
+    g.globalAlpha = 0.5;
+    g.beginPath(); g.moveTo(box.x + 6, Yb); g.lineTo(box.x + box.w - 6, Yb); g.stroke();
+  }
+  g.restore();
+  // Only claim it when it is true. They do stay level — that is the result —
+  // but the plate says so because it checked, not because it was told to.
+  if (Math.abs(Ya - Yb) <= 1.5) {
+    text(g, box.x + box.w / 2, Ya - 13, 'same height',
+         { align: 'center', size: 13, col: PLATE.ink, weight: 600 });
+  }
+}
+
 /* ══ the renderer ═══════════════════════════════════════════════════════ */
 export function render(canvas, cam, o) {
-  const { traj: f, second, t, show, markers = {}, scenario, fired = true, verdict = null } = o;
+  const { traj: f, second, t, show, scenario, fired = true, verdict = null } = o;
   if (!f) return null;
   const { ctx: g, w, h } = fitCanvas(canvas);
-  const P = palette();
   const L = labels();
   const pad = { l: 34, r: 34, t: 30, b: 54 };
   const box = plate(g, w, h, pad);
-  const S = stage(o, w, h, pad);
+  const rect = { x: pad.l, y: pad.t, w: w - pad.l - pad.r, h: h - pad.t - pad.b };
+
+  const panes = planPanes(o, box, rect);
+  const split = panes.length > 1;
+
+  // Nothing in backdrops.js clips itself — a palm crown or a barrel is drawn
+  // wherever the maths puts it — so each pane gets its own clip before
+  // anything is painted into it. Without this the two panes bleed.
+  let shot = null;
+  for (const pane of panes) {
+    g.save();
+    if (split) { round(g, pane.box.x, pane.box.y, pane.box.w, pane.box.h, 10); g.clip(); }
+    shot = drawPane(g, pane, o, shot);
+    g.restore();
+  }
+
+  if (split) {
+    gutter(g, panes, box);
+    sameHeight(g, panes, o, box);
+    // Centred at the top of each pane, because the corners of this canvas
+    // belong to the HUD cards, which are DOM and sit over the top of it.
+    const down = f.pos(Math.min(t, f.tMax)).x;
+    for (const pane of panes) {
+      if (!pane.label) continue;
+      // A chase pane cannot show you how far it has come by moving — at this
+      // scale the floor is a blur — so it says so instead.
+      const line = pane.only === 'a' ? `${pane.label}  ·  ${fmt(down, 0)} m downrange` : pane.label;
+      text(g, pane.box.x + pane.box.w / 2, pane.box.y + 18, line,
+           { align: 'center', size: 13, col: PLATE.ink, weight: 600 });
+    }
+  } else if (show.heightLines !== false && second) {
+    heightLines(g, shot, o, box);
+  }
+
+  footer(g, box, panes, o, shot);
+  g.restore();                                          // the plate clip
+
+  // The inverse projections, so a drag on the plate lands in metres. They are
+  // the pane's own X and Y turned round — see `toWorld` in scene.js.
+  const act = panes[panes.length - 1].S;
+  cam._map = {
+    sx: act.X, sy: act.Y,
+    px: (X) => (X - act.originX) / act.sx,
+    py: (Y) => (act.groundY - Y) / act.sy,
+    su: act.X, pu: (X) => (X - act.originX) / act.sx, u0: 0,
+  };
+  cam._stage = act;
+  L.draw(g, w, h);
+  return { sx: act.X, sy: act.Y };
+}
+
+/* ── one frame's worth ──────────────────────────────────────────────────
+   The place, the floor, the height rule and the exposures. `only` picks which
+   object this pane is following; `ghosts` says whether the earlier exposures
+   are kept. A pane that is chasing one round has no business showing a trail
+   of where it has been — at a 2 m window the trail is off the edge before the
+   second flash — so the split panes run with ghosts off and the overview at
+   the end turns them back on, which is the only place they earn their keep. */
+function drawPane(g, pane, o, prev) {
+  const { traj: f, second, t, scenario, fired = true, markers = {} } = o;
+  const S = pane.S;
+  const box = pane.box;
 
   const back = scenario.backdrop === 'beach' ? beachBack : warehouseBack;
-  back(g, S, box, { t, fired, markers, second, PLATE,
+  back(g, S, box, { t, fired, markers, PLATE,
                     launchY: f.params.h, theta: f.params.theta });
 
   /* ── ground line ──────────────────────────────────────────────────── */
@@ -175,15 +374,17 @@ export function render(canvas, cam, o) {
   g.beginPath(); g.moveTo(box.x, S.groundY + 3.5); g.lineTo(box.x + box.w, S.groundY + 3.5); g.stroke();
 
   /* ── height rule down the right ───────────────────────────────────── */
-  const rx = box.x + box.w - 30;
-  g.strokeStyle = PLATE.ruleFaint; g.lineWidth = 1;
-  g.beginPath(); g.moveTo(rx, S.Y(S.yHi * 1.02)); g.lineTo(rx, S.groundY); g.stroke();
-  const stepY = S.yHi > 24 ? 10 : S.yHi > 9 ? 5 : S.yHi > 3.5 ? 1 : 0.5;
-  for (let y = 0; y <= S.yHi * 1.02; y += stepY / 2) {
-    const major = Math.abs(y / stepY - Math.round(y / stepY)) < 1e-9;
-    g.beginPath(); g.moveTo(rx - (major ? 9 : 5), S.Y(y)); g.lineTo(rx, S.Y(y)); g.stroke();
-    if (major && y > 0) text(g, rx - 13, S.Y(y), `${fmt(y, stepY < 1 ? 1 : 0)} m`,
-                            { align: 'right', size: 13, col: PLATE.inkMid });
+  if (pane.rule) {
+    const rx = box.x + box.w - 30;
+    g.strokeStyle = PLATE.ruleFaint; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(rx, S.Y(S.yHi * 1.02)); g.lineTo(rx, S.groundY); g.stroke();
+    const stepY = S.yHi > 24 ? 10 : S.yHi > 9 ? 5 : S.yHi > 3.5 ? 1 : 0.5;
+    for (let y = 0; y <= S.yHi * 1.02; y += stepY / 2) {
+      const major = Math.abs(y / stepY - Math.round(y / stepY)) < 1e-9;
+      g.beginPath(); g.moveTo(rx - (major ? 9 : 5), S.Y(y)); g.lineTo(rx, S.Y(y)); g.stroke();
+      if (major && y > 0) text(g, rx - 13, S.Y(y), `${fmt(y, stepY < 1 ? 1 : 0)} m`,
+                              { align: 'right', size: 13, col: PLATE.inkMid });
+    }
   }
 
   /* ── the exposures ────────────────────────────────────────────────── */
@@ -223,18 +424,21 @@ export function render(canvas, cam, o) {
   let stride = 1;
   while (stride < 8 && firstDrop * stride * stride < 7 && shots.length / (stride + 1) > 4) stride++;
 
+  const wantA = pane.only !== 'b', wantB = pane.only !== 'a';
+
   for (let i = 0; i < shots.length; i++) {
     const ti = shots[i];
     const last = i === shots.length - 1;
+    if (!pane.ghosts && !last) continue;                // this pane keeps one exposure
     const age = shots.length > 1 ? i / (shots.length - 1) : 1;
-    const a = fired ? 0.28 + 0.72 * age : 1;
+    const a = fired && pane.ghosts ? 0.28 + 0.72 * age : 1;
 
     const tA = Math.min(ti, f.tMax);
     const p = f.pos(tA), v = f.pos(Math.min(tA + 0.004, f.tMax));
     const px = S.X(p.x), py = S.Y(p.y);
     const ang = Math.atan2(-(S.Y(v.y) - py), S.X(v.x) - px);
 
-    const showA = last || i % stride === 0;
+    const showA = wantA && (last || i % stride === 0);
     if (showA) {
       g.save(); g.globalAlpha = a;
       halo(g, px, py, Lbul * (last ? 1.7 : 1.1));
@@ -248,7 +452,7 @@ export function render(canvas, cam, o) {
       const q = second.pos(Math.min(ti, second.tMax));
       const qx = S.X(q.x), qy = S.Y(q.y);
       const Lsec = scenario.backdrop === 'beach' ? Math.max(Lbul, 26) : Lbul;
-      if (last || i % stride === 0) {
+      if (wantB && (last || i % stride === 0)) {
         drewB = true;
         g.save(); g.globalAlpha = a;
         halo(g, qx, qy, Lsec * (last ? 1.7 : 1.1));
@@ -261,60 +465,70 @@ export function render(canvas, cam, o) {
     pair.push({ a: { x: px, y: py }, b: qp, i, last, drawn: showA && drewB });
   }
 
-  /* ── the height lines: the argument, drawn ────────────────────────── */
-  if (show.heightLines !== false && second) {
-    g.save();
-    g.setLineDash([2.5, 5]); g.lineWidth = 1.2;
-    const grounded = second && isFinite(second.tFlight) ? second.tFlight : Infinity;
-    for (const s of pair) {
-      if (!s.b) continue;
-      if (shots[s.i] > grounded + 1e-9) continue;       // it has landed; no shared fall left
-      if (!s.drawn && !s.last) continue;                // no line to an exposure nobody can see
-      g.globalAlpha = s.last ? 0.95 : 0.6;
-      g.strokeStyle = PLATE.ink;                       // near-white: this is the point
-      g.beginPath(); g.moveTo(s.b.x, s.b.y); g.lineTo(s.a.x, s.a.y); g.stroke();
-    }
-    g.restore();
-    const last = pair[pair.length - 1];
-    const gap = last?.b ? Math.hypot(last.a.x - last.b.x, last.a.y - last.b.y) : Infinity;
-    const done = fired && t >= f.tMax - 1e-6;
-    if (verdict?.kind === 'short' && done) {
-      // It fell short. Saying "same fall" here would be a lie: the monkey
-      // stopped falling the moment it hit the sand.
-      labelPair(g, pair, last, scenario, box);          // the lines still mean something
-      pill(g, box.x + box.w / 2, box.y + 56, verdict.text, 14);
-    } else if (last?.b && gap > 90) {
-      labelPair(g, pair, last, scenario, box);
-    } else if (last?.b && gap < 14 && done) {
-      // they have met. Say so where it happened, not in a corner.
-      const cx = (last.a.x + last.b.x) / 2, cy = (last.a.y + last.b.y) / 2;
-      halo(g, cx, cy, 34);
-      // offset the label clear of the catch itself — a pill over the moment it
-      // is naming hides the only thing worth looking at
-      const side = cx > box.x + box.w * 0.55 ? -1 : 1;
-      const lx = clamp(cx + side * 150, box.x + 90, box.x + box.w - 90);
-      g.save(); g.globalAlpha = 0.5; g.strokeStyle = PLATE.ink; g.lineWidth = 1.1;
-      g.setLineDash([3, 4]);
-      g.beginPath(); g.moveTo(cx + side * 26, cy); g.lineTo(lx - side * 60, cy); g.stroke();
-      g.restore();
-      pill(g, lx, cy, scenario.caughtLabel || 'caught');
-    }
+  return prev || { pair, shots, dt, stride };
+}
+
+/* ── the height lines: the argument, drawn, in a single frame ─────────── */
+function heightLines(g, shot, o, box) {
+  const { traj: f, second, t, scenario, fired = true, verdict = null } = o;
+  const { pair, shots } = shot;
+  g.save();
+  g.setLineDash([2.5, 5]); g.lineWidth = 1.2;
+  const grounded = second && isFinite(second.tFlight) ? second.tFlight : Infinity;
+  for (const s of pair) {
+    if (!s.b) continue;
+    if (shots[s.i] > grounded + 1e-9) continue;       // it has landed; no shared fall left
+    if (!s.drawn && !s.last) continue;                // no line to an exposure nobody can see
+    g.globalAlpha = s.last ? 0.95 : 0.6;
+    g.strokeStyle = PLATE.ink;                       // near-white: this is the point
+    g.beginPath(); g.moveTo(s.b.x, s.b.y); g.lineTo(s.a.x, s.a.y); g.stroke();
   }
+  g.restore();
+  const last = pair[pair.length - 1];
+  const gap = last?.b ? Math.hypot(last.a.x - last.b.x, last.a.y - last.b.y) : Infinity;
+  const done = fired && t >= f.tMax - 1e-6;
+  if (verdict?.kind === 'short' && done) {
+    // It fell short. Saying "same fall" here would be a lie: the monkey
+    // stopped falling the moment it hit the sand.
+    labelPair(g, pair, last, scenario, box);          // the lines still mean something
+    pill(g, box.x + box.w / 2, box.y + 56, verdict.text, 14);
+  } else if (last?.b && gap > 90) {
+    labelPair(g, pair, last, scenario, box);
+  } else if (last?.b && gap < 14 && done) {
+    // they have met. Say so where it happened, not in a corner.
+    const cx = (last.a.x + last.b.x) / 2, cy = (last.a.y + last.b.y) / 2;
+    halo(g, cx, cy, 34);
+    // offset the label clear of the catch itself — a pill over the moment it
+    // is naming hides the only thing worth looking at
+    const side = cx > box.x + box.w * 0.55 ? -1 : 1;
+    const lx = clamp(cx + side * 150, box.x + 90, box.x + box.w - 90);
+    g.save(); g.globalAlpha = 0.5; g.strokeStyle = PLATE.ink; g.lineWidth = 1.1;
+    g.setLineDash([3, 4]);
+    g.beginPath(); g.moveTo(cx + side * 26, cy); g.lineTo(lx - side * 60, cy); g.stroke();
+    g.restore();
+    pill(g, lx, cy, scenario.caughtLabel || 'caught');
+  }
+}
 
-  /* ── what the plate is not telling you straight ───────────────────── */
+/* ── what the plate is not telling you straight ─────────────────────────
+   The whole reason the split exists is so this line can stop apologising. */
+function footer(g, box, panes, o, shot) {
+  const { traj: f } = o;
   const real = isFinite(f.range) ? f.range : f.horiz * f.tMax;
-  const foot = S.kx < 0.92
-    ? `Sideways squeezed ${fmt(1 / S.kx, 1)}× to fit — the real path is far flatter than this · range ${fmt(real, 0)} m`
-    : `No squeeze — 1 m is 1 m both ways · range ${fmt(real, 1)} m`;
-  text(g, box.x + box.w - 14, box.y + box.h - 16, foot, { align: 'right', size: 13, col: PLATE.inkMid });
-  text(g, box.x + box.w - 14, box.y + 18, `Flash every ${fmt(dt * stride, dt * stride < 0.1 ? 3 : 2)} s`,
-       { align: 'right', size: 13, col: PLATE.inkFaint });
-
-  g.restore();                                          // the plate clip
-  cam._map = { sx: S.X, sy: S.Y, px: (X) => X, py: (Y) => Y, su: S.X, pu: (X) => X, u0: 0 };
-  cam._stage = S;
-  L.draw(g, w, h);
-  return { sx: S.X, sy: S.Y };
+  const S = panes[0].S;
+  const foot = panes.length > 1
+    ? `No squeeze — 1 m is 1 m, both panes, same scale · range ${fmt(real, 0)} m`
+    : S.kx < 0.92
+      ? `Sideways squeezed ${fmt(1 / S.kx, 1)}× to fit — the real path is far flatter than this · range ${fmt(real, 0)} m`
+      : `No squeeze — 1 m is 1 m both ways · range ${fmt(real, 1)} m`;
+  text(g, box.x + box.w - 14, box.y + box.h - 16, foot,
+       { align: 'right', size: 13, col: PLATE.inkMid });
+  // Only a frame that KEEPS its exposures has a flash rate worth quoting.
+  if (panes.length === 1 && panes[0].ghosts && shot) {
+    const every = shot.dt * shot.stride;
+    text(g, box.x + box.w - 14, box.y + 18, `Flash every ${fmt(every, every < 0.1 ? 3 : 2)} s`,
+         { align: 'right', size: 13, col: PLATE.inkFaint });
+  }
 }
 
 /** Put the pair label on a mid-flight pair, on a leader, clear of the lines. */
