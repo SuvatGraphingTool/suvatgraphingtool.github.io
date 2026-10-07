@@ -13,7 +13,7 @@
 // axis label the student reads is in flight x; every piece of scenery is
 // placed in section u. Nothing is ever converted twice.
 
-import { fitCanvas, palette, stroke, arrow, dot, ballSprite, fmt, niceStep, clamp, labels, cssVar } from './util.js';
+import { fitCanvas, palette, stroke, arrow, dot, ballSprite, ballRadius, fmt, niceStep, clamp, labels, cssVar } from './util.js';
 import { timeAbove } from '../core/projectile.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
@@ -261,7 +261,7 @@ export function render(canvas, cam, o) {
     const t2 = clamp(t - delay, 0, second.tMax);
     if (t >= delay) {
       const q = M(second.pos(t2));
-      ballSprite(ctx, q.x, q.y, (D.prop.ball / 2) * cam.scale, { ring: P.second });
+      ballSprite(ctx, q.x, q.y, ballRadius(cam.scale), { ring: P.second });
     }
     L.add(o.secondLabel || 'second object', sx(second.range), groundY - 22,
           { color: P.second, align: 'center', pri: 3, size: 17 });
@@ -366,7 +366,7 @@ export function render(canvas, cam, o) {
     L.add(`g ${fmt(f.params.g, 2)} m s⁻²`, p.x - 10, p.y + len + 4, { color: P.acc, align: 'right', pri: 5, size: 17 });
   }
 
-  ballSprite(ctx, p.x, p.y, (D.prop.ball / 2) * cam.scale, { ring: P.vel, fired });
+  ballSprite(ctx, p.x, p.y, ballRadius(cam.scale), { ring: P.vel, fired });
 
   /* ── resolving, at the instant that was clicked ───────────────────── */
   if (fired && resolve) {
