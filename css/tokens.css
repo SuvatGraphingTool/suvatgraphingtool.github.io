@@ -66,6 +66,11 @@
   --grid:       rgba(255,255,255,0.13);
   --grid-major: rgba(255,255,255,0.26);
   --axis:       rgba(255,255,255,0.45);
+  /* A BOX-SHADOW, for the chrome. The scenery's shadow COLOUR is
+     --scene-shadow: they were both called --shadow, declared in that order,
+     so the colour won and every `box-shadow: var(--shadow)` in app.css
+     resolved to a bare colour — an invalid box-shadow, and therefore no
+     shadow at all on six kinds of card. */
   --shadow: none;
 }
 
@@ -205,7 +210,7 @@
   /* night */
   --sky-top: #05070e; --sky-mid: #0a1020; --sky-bottom: #182440; --haze: #182440;
   --sun: #ffe9b8; --sun-glow: rgba(255,228,170,0.40);
-  --shadow: rgba(0,0,0,0.42); --sky-fill: #2a3a58;
+  --scene-shadow: rgba(0,0,0,0.42); --sky-fill: #2a3a58;
   --earth: #1c1c23; --interior: #1a1a23; --terrain: #1f2622;
   --grass: #3f7a4a; --grass-alt: #2f6239; --runoff: #28472f;
   --pitchline: rgba(255,255,255,0.80);
@@ -237,7 +242,7 @@
   /* late afternoon */
   --sky-top: #4a86bd; --sky-mid: #a6c8e2; --sky-bottom: #f0cfa8; --haze: #e7dcc8;
   --sun: #ffeacb; --sun-glow: rgba(255,206,138,0.50);
-  --shadow: rgba(54,42,30,0.26); --sky-fill: #b9d2e8;
+  --scene-shadow: rgba(54,42,30,0.26); --sky-fill: #b9d2e8;
   --earth: #6e675d; --interior: #b6ad9a; --terrain: #9fae86;
   --grass: #76a660; --grass-alt: #5e8b4d; --runoff: #567e46;
   --pitchline: rgba(255,255,255,0.95);

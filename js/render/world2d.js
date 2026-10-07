@@ -17,7 +17,7 @@ import { D } from '../world/dims.js';
 let TONE = null, TONE_KEY = '';
 const KEYS = {
   skyTop: '--sky-top', skyMid: '--sky-mid', skyBottom: '--sky-bottom', haze: '--haze',
-  sun: '--sun', sunGlow: '--sun-glow', shadow: '--shadow', skyFill: '--sky-fill',
+  sun: '--sun', sunGlow: '--sun-glow', shadow: '--scene-shadow', skyFill: '--sky-fill',
   render: '--render', panel: '--panel', roofingAlt: '--roofing-alt',
   seatHi: '--seat-hi', parkAlt: '--park-alt',
   carA: '--car-a', carB: '--car-b', carC: '--car-c', carD: '--car-d', carE: '--car-e',

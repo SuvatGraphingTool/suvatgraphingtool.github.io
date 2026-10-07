@@ -86,8 +86,18 @@ function stage(o, rect, opts = {}) {
   // the tree stands beside the monkey, so the frame has to hold it too
   if (markers?.target) {
     xHi = Math.max(xHi, markers.target.x + 4.5);
-    // the palm is a fixed object; the frame holds it and little else above
-    yHi = Math.max(f.apexHeight, f.params.h, markers.target.y + 2.2, PALM_H + 1.4);
+    // THE FRAME HOLDS THE PHYSICS, AND AS MUCH TREE AS IT TAKES TO READ AS A
+    // TREE. It used to hold the whole palm — PALM_H + 1.4, so 13.9 m — and
+    // the palm is taller than anything the physics touches, which put about
+    // six metres of empty sky above a demonstration happening at nine. The
+    // crown is allowed to run out of the top now.
+    //
+    // What it must NOT do is tie the frame to the monkey's height, which is
+    // what backdrops.js warns about: the tree would change height every time
+    // the monkey was dragged and the one fixed object in the picture would
+    // stop being fixed. The floor here is a constant, so the tree stands at
+    // PALM_H whatever the monkey does — it is only the CROP that moves.
+    yHi = Math.max(f.apexHeight, f.params.h, markers.target.y + 2.2, PALM_H * 0.62);
   }
   let xLo = Math.min(0, ex.x0);
   if (opts.yHi) yHi = opts.yHi;

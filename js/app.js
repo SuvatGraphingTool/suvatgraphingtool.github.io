@@ -374,7 +374,6 @@ function recompute() {
     msg.dataset.ok = 'false'; msg.innerHTML = solved.reason;
     $('notes').innerHTML = '';
     btn.disabled = true; btn.textContent = 'Launch';
-    $('launch-hint').textContent = '';
     traj = null; refreshSteps(); applyGuard(); sayAngle(); return;
   }
 
@@ -418,7 +417,6 @@ function recompute() {
   btn.textContent = solved.params.u < 0.05
     ? 'Release it'                      // a drop has no launch speed to quote
     : `Launch at ${fmt(solved.params.u, 1)} m s⁻¹`;
-  $('launch-hint').textContent = '';
   showAbove();                   // the line's hint quotes the flight it belongs to
   refreshSteps();                // and Flight is reachable now that one exists
   applyGuard();
@@ -614,6 +612,20 @@ function setGuard(on) {
 function buildLive() {
   const spec = scenario?.live;
   $('live').hidden = !spec;
+  // AN EXHIBIT IGNORES THE CAMERA AND THE SHOW LIST. exhibit.js recomputes
+  // its own projection every frame and never reads cam.scale, so Pitch /
+  // Stadium / District are inert on it; and `show` is consulted once in the
+  // whole file, for a key that is not in state.show, so none of the seven
+  // checkboxes does anything either. Offering a control that cannot work is
+  // worse than not offering it: the student concludes the app is broken.
+  // Bounce goes the same way — a bullet does not bounce, and the monkey is
+  // not a ball.
+  const ex = !!scenario?.exhibit;
+  $('band-seg').hidden = ex;
+  $('rate-seg').hidden = false;
+  $('shows').previousElementSibling.hidden = ex;   // its "Show" heading
+  $('shows').hidden = ex;
+  for (const el of document.querySelectorAll('.ck.inline')) el.hidden = ex;
   if (!spec) return;
   for (const [k, o] of Object.entries(spec)) {
     const el = $(`lv-${k}`);
@@ -1066,9 +1078,12 @@ function renderHud() {
   }
   $('hud-left').innerHTML = left.join('');
   $('hud-right').innerHTML = b('Time', fmt(state.t, 2), 's');
+  // An exhibit happens somewhere else and says where in its own `place`.
+  // Falling back to siteFor meant the range and the beach were both captioned
+  // "A goal kick from the west goal line".
   const site = siteFor(state.id);
-  $('place').textContent = site.place;
-  $('place-note').textContent = site.note || '';
+  $('place').textContent = scenario?.place || site.place;
+  $('place-note').textContent = scenario?.exhibit ? '' : (site.note || '');
 }
 
 /* ── the landing card: the whole of SUVAT, once it has settled ───────── */

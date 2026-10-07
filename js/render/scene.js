@@ -373,13 +373,9 @@ export function render(canvas, cam, o) {
      collision that can actually fail — and this is the generic renderer all
      three would use. If none of those gets built, delete it. */
   if (second) {
-    const delay = o.secondDelay || 0;
     stroke(ctx, second.path(200).map(M), { color: P.second, width: 3.4, dash: [9, 6], alpha: .9 });
-    const t2 = clamp(t - delay, 0, second.tMax);
-    if (t >= delay) {
-      const q = M(second.pos(t2));
-      ballSprite(ctx, q.x, q.y, ballRadius(cam.scale), { ring: P.second });
-    }
+    const q = M(second.pos(clamp(t, 0, second.tMax)));
+    ballSprite(ctx, q.x, q.y, ballRadius(cam.scale), { ring: P.second });
     L.add(o.secondLabel || 'second object', sx(second.range), groundY - 22,
           { color: P.second, align: 'center', pri: 3, size: 17 });
   }
@@ -402,18 +398,17 @@ export function render(canvas, cam, o) {
   }
 
   /* ── markers at equal time steps ──────────────────────────────────── */
+  // `scenario.secondMarks` chose one-second marks instead of ten equal ones.
+  // No scenario has ever set it, so only the ten-equal branch was reachable.
   if (fired && show.ticks) {
-    const n = scenario?.secondMarks ? Math.min(12, Math.max(2, Math.floor(f.tMax))) : 10;
-    const marks = scenario?.secondMarks
-      ? Array.from({ length: n + 1 }, (_, i) => ({ t: i, ...f.pos(i) })).filter((m) => m.t <= f.tMax)
-      : f.ticks(n);
+    const marks = f.ticks(10);
     for (const k of marks) {
       const p = M(k);
       dot(ctx, p.x, p.y, 3.5, { fill: P.surface, stroke: P.strong, width: 1.8 });
     }
     if (marks.length > 2) {
       const p = M(marks[1]);
-      L.add(scenario?.secondMarks ? 'every 1 s' : 'equal time steps', p.x, p.y - 20,
+      L.add('equal time steps', p.x, p.y - 20,
             { color: P.muted, align: 'center', pri: 2, size: 16 });
     }
   }
