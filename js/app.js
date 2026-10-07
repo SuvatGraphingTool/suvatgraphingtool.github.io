@@ -75,7 +75,7 @@ const state = {
           components: false, ticks: false, acceleration: false },
   extras: { graphs: false, working: false, energy: false },
   options: false,
-  resolve: false, hover: false, hoverMark: null,
+  resolve: false, hover: null, hoverMark: null,
   overview: false,
 };
 
@@ -729,7 +729,7 @@ function openResolve(t) {
   hideDone();
   state.t = clamp(t ?? state.t, 0, traj.tMax);
   state.playing = false; setPlayIcon(false);
-  state.resolve = true; state.hover = false;
+  state.resolve = true; state.hover = null;
   dirty = true;
 }
 
@@ -1088,7 +1088,12 @@ addEventListener('resize', () => {
 const pickScene = () => ({ markers: state.markers, scenario, traj, t: state.t,
                            fired: state.launched });
 const resolveHooks = {
-  hover(on) { if (state.hover !== on) { state.hover = on; dirty = true; } },
+  // The INSTANT under the pointer, or null — not a bare yes/no. The ring and
+  // the highlight have to land where the pointer actually is.
+  hover(t) {
+    const next = t == null ? null : { t };
+    if ((state.hover?.t ?? null) !== (next?.t ?? null)) { state.hover = next; dirty = true; }
+  },
   mark(kind) { if (state.hoverMark !== kind) { state.hoverMark = kind; dirty = true; } },
   click(t) { openResolve(t); },
 };

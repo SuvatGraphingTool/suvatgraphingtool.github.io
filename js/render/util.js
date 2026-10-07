@@ -199,30 +199,52 @@ export function stroke(ctx, pts, { color, width = 2, dash = null, alpha = 1 } = 
   ctx.stroke(); ctx.restore();
 }
 
-export function arrow(ctx, x0, y0, x1, y1, { color, width = 2.4, head = 11, dash = null, casing = true }) {
+/**
+ * A vector: a shaft and a head, and whatever casing it still needs.
+ *
+ * THE CASING USED TO BE THE PROBLEM. It was the surface colour at alpha 0.55
+ * and `width + 3.4`, which on a 2.3-wide shaft is a 5.7-wide pale slab — wider
+ * than the mark it exists to protect, and squared off at both ends because it
+ * followed the shaft only and stopped where the head began. That pale slab
+ * with a dark line down the middle is what read as a rectangle.
+ *
+ * It still exists, because an arrow crosses sky, lit grass, dark seating and
+ * bare concrete in one stroke and there is always some background it nearly
+ * matches. But it is proportional now rather than a fixed 3.4 px, it is
+ * lighter, and it follows the HEAD as well as the shaft, so the silhouette it
+ * protects is arrow-shaped. Pushing the stadium back behind the flight took
+ * most of the work off it in the first place.
+ */
+export function arrow(ctx, x0, y0, x1, y1,
+                      { color, width = 2.4, head = 11, dash = null, casing = true, alpha = 1 } = {}) {
   const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy);
   if (len < 2) return;
   const ux = dx / len, uy = dy / len, hl = Math.min(head, len * 0.5);
-  // A casing in the surface colour. An arrow crosses sky, lit grass, dark
-  // seating and bare concrete in one stroke; there is always some background
-  // it nearly matches, and the arrow is not allowed to lose.
+  // the head, as a path, so the casing and the fill can share it
+  const nose = () => {
+    ctx.beginPath(); ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - ux * hl - uy * hl * 0.38, y1 - uy * hl + ux * hl * 0.38);
+    ctx.lineTo(x1 - ux * hl + uy * hl * 0.38, y1 - uy * hl - ux * hl * 0.38);
+    ctx.closePath();
+  };
   if (casing) {
     ctx.save();
     ctx.strokeStyle = cssVar('--surface', '#131210');
-    ctx.globalAlpha = 0.55; ctx.lineWidth = width + 3.4; ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.4 * alpha; ctx.lineWidth = width * 1.75; ctx.lineCap = 'round';
     ctx.lineJoin = 'round'; ctx.setLineDash([]);
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    nose(); ctx.lineWidth = width * 1.3; ctx.stroke();
     ctx.restore();
   }
   ctx.save();
+  ctx.globalAlpha = alpha;
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width; ctx.lineCap = 'butt';
+  ctx.lineJoin = 'round';
   ctx.setLineDash(dash || []);
   ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * hl * 0.9, y1 - uy * hl * 0.9); ctx.stroke();
   ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(x1, y1);
-  ctx.lineTo(x1 - ux * hl - uy * hl * 0.38, y1 - uy * hl + ux * hl * 0.38);
-  ctx.lineTo(x1 - ux * hl + uy * hl * 0.38, y1 - uy * hl - ux * hl * 0.38);
-  ctx.closePath(); ctx.fill(); ctx.restore();
+  nose(); ctx.fill();
+  ctx.restore();
 }
 
 export function dot(ctx, x, y, r, { fill, stroke: st, width = 2 } = {}) {

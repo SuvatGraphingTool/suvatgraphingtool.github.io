@@ -412,12 +412,27 @@ export function render(canvas, cam, o) {
     L.add(`horizontal ${fmt(v.x, 1)}`, hx + 8, p.y + 16, { color: P.velVec, pri: 4, maxPush: 40, size: 17 });
     L.add(`vertical ${fmt(v.y, 1)}`, p.x + 10, vy - 14, { color: P.velVec, pri: 4, maxPush: 40, size: 17 });
   }
+  // Is the pointer on the OBJECT, as opposed to somewhere else on the arc?
+  // That is what the resultant should answer to; pointing at a distant part
+  // of the path is about that part of the path, not about this vector.
+  const onObject = !!hover && Math.abs(hover.t - (fired ? t : 0)) < 1e-6;
+
   if (fired && show.velocity && !resolve) {
     const ex = p.x + v.x * vScale, ey = p.y - v.y * vScale;
     // Thinner than the path it is leaving behind, and a shade apart from it:
     // a long shaft with a big head reads as a vector, a fat one reads as a pipe.
-    arrow(ctx, p.x, p.y, ex, ey, { color: P.velVec, width: 2.3, head: 14 });
-    L.add(`velocity ${fmt(Math.hypot(v.x, v.y), 2)} m s⁻¹`, ex + 12, ey - 12, { color: P.velVec, pri: 10, weight: 600, size: 19 });
+    //
+    // Under the pointer it LIGHTS UP: brighter within its own hue, a little
+    // heavier, a bigger head — and the speed label lifts with it, because the
+    // vector and the number are one thing and should answer as one.
+    arrow(ctx, p.x, p.y, ex, ey, {
+      color: onObject ? P.vel : P.velVec,
+      width: onObject ? 3.2 : 2.3,
+      head: onObject ? 18 : 14,
+    });
+    L.add(`velocity ${fmt(Math.hypot(v.x, v.y), 2)} m s⁻¹`, ex + 12, ey - 12,
+          { color: onObject ? P.vel : P.velVec, pri: 10, weight: onObject ? 700 : 600,
+            size: onObject ? 21 : 19 });
   }
   if (fired && show.acceleration && f.params.g > 0) {
     const len = clamp(f.params.g * vScale * 0.5, 14, 60);
@@ -462,8 +477,13 @@ export function render(canvas, cam, o) {
       });
     }
   } else if (fired && hover) {
-    dot(ctx, p.x, p.y, 16, { stroke: P.vel, width: 2 });
-    L.add('click to resolve', p.x, p.y - 34,
+    // THE RING GOES WHERE THE POINTER IS. `hover` used to be a bare boolean,
+    // true for the object OR anywhere along the flown arc, and the ring was
+    // drawn at the object regardless — so pointing at a distant part of the
+    // path lit up something else entirely, several hundred pixels away.
+    const q = onObject ? p : M(f.pos(hover.t));
+    dot(ctx, q.x, q.y, onObject ? 19 : 14, { stroke: P.vel, width: onObject ? 2.6 : 2 });
+    L.add(onObject ? 'click to resolve' : `resolve at ${fmt(hover.t, 2)} s`, q.x, q.y - 34,
           { color: P.vel, align: 'center', pri: 9, size: 15, weight: 600 });
   }
 
@@ -684,7 +704,7 @@ function perpendicularTime(f) {
 }
 
 export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, onResolve = {}) {
-  let drag = false, lx = 0, ly = 0, dragging = null, down = null, hovering = false;
+  let drag = false, lx = 0, ly = 0, dragging = null, down = null, hovering = null;
 
   const active = () => (getScene?.() || {});
 
@@ -736,9 +756,10 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
                    target: 'move', obstacle: 'move' };
   canvas.addEventListener('pointermove', (e) => {
     if (drag || dragging) return;
-    const k = pick(e)?.kind || null;
+    const got = pick(e);
+    const k = got?.kind || null;
     canvas.style.cursor = CURSOR[k] || 'grab';
-    const hv = isResolve(k);
+    const hv = isResolve(got?.kind) ? got.t : null;
     if (hv !== hovering) { hovering = hv; onResolve.hover?.(hv); }
     onResolve.mark?.(isResolve(k) ? null : k);
   });
