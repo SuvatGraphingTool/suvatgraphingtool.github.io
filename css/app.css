@@ -29,18 +29,35 @@ h1, h2 { margin: 0; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1
   paint-order: stroke fill;
 }
 
-.steps { display: flex; gap: var(--sp-5); list-style: none; margin: 0; padding: 0; }
-.steps li { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--ink-faint); }
+.steps { display: flex; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; }
+/* ── the three steps, which are now the way back ────────────────────────
+   They were three bare <li>s with no handler, no tabindex and no role, and
+   they looked exactly like what they were: static text. Now they are buttons,
+   so they need to look like something you can press — a hover, a focus ring
+   and a cursor — and the two that lead nowhere yet have to say so rather than
+   landing you on an empty screen. */
+.steps li { display: flex; }
+.step {
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-size: var(--fs-sm); color: var(--ink-faint);
+  padding: var(--sp-2) var(--sp-3); margin: calc(var(--sp-2) * -1) 0;
+  border-radius: var(--r-pill); cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.step:hover:not([aria-disabled='true']) { background: var(--hover); color: var(--ink); }
+.step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.step[aria-disabled='true'] { cursor: not-allowed; opacity: .45; }
+.step[aria-current='step'] { background: var(--accent-soft); }
 .steps li span {
   width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
   font-size: var(--fs-xs); border: 1.5px solid currentColor;
 }
-.app[data-step='scenario'] .steps li[data-s='scenario'],
-.app[data-step='values']   .steps li[data-s='values'],
-.app[data-step='flight']   .steps li[data-s='flight'] { color: var(--accent); font-weight: 600; }
-.app[data-step='values']   .steps li[data-s='scenario'],
-.app[data-step='flight']   .steps li[data-s='scenario'],
-.app[data-step='flight']   .steps li[data-s='values'] { color: var(--ink-muted); }
+.app[data-step='scenario'] .step[data-s='scenario'],
+.app[data-step='values']   .step[data-s='values'],
+.app[data-step='flight']   .step[data-s='flight'] { color: var(--accent); font-weight: 600; }
+.app[data-step='values']   .step[data-s='scenario'],
+.app[data-step='flight']   .step[data-s='scenario'],
+.app[data-step='flight']   .step[data-s='values'] { color: var(--ink-muted); }
 
 .top-right { margin-left: auto; display: flex; gap: var(--sp-2); flex: none; }
 .tbtn, .ghost {
@@ -313,7 +330,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   .hbox { min-width: 112px; padding: 6px var(--sp-3); }
   .hbox-v { font-size: var(--fs-lg); }
   .app { height: auto; min-height: 100dvh; }
-  .steps li span { display: none; }
+  .step span { display: none; }
   .suvat { grid-template-columns: repeat(2, 1fr); }
   .main { height: auto; }
   .stage { grid-template-rows: auto 56vh auto; padding: 0 var(--sp-4) var(--sp-4); }

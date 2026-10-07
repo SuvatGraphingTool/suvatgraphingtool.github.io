@@ -361,7 +361,7 @@ function recompute() {
     $('notes').innerHTML = '';
     btn.disabled = true; btn.textContent = 'Launch';
     $('launch-hint').textContent = '';
-    traj = null; return;
+    traj = null; refreshSteps(); return;
   }
 
   msg.dataset.ok = 'true';
@@ -401,6 +401,7 @@ function recompute() {
     : `Launch at ${fmt(solved.params.u, 1)} m s⁻¹`;
   $('launch-hint').textContent = '';
   showAbove();                   // the line's hint quotes the flight it belongs to
+  refreshSteps();                // and Flight is reachable now that one exists
   dirty = true;
 }
 
@@ -644,12 +645,63 @@ function launch() {
   go('flight');
 }
 
+/* ── moving between the three screens ───────────────────────────────────
+   go() used to set three things and nothing else, which is why jumping
+   between steps costs nothing: the five boxes, the angle, the height, the
+   markers, the solve and the camera all live outside it and simply persist.
+   Two things did need deciding.
+
+   A FLIGHT LEFT MID-PLAY used to keep running. state.playing stayed true, so
+   coming back a minute later dropped you into the middle of a flight that had
+   been going the whole time you were on another screen. It pauses on the way
+   out instead: you come back to the frame you left, and press play.
+
+   AND THE DONE CARD used to survive. #brand jumped to the scenario screen
+   without hiding it, so a card could sit invisibly behind that screen and
+   reappear later. Rather than patch the one handler that forgot, go() hides
+   it whenever the destination is not the flight screen — there is nowhere
+   else it means anything. */
 function go(step) {
+  if (state.step === 'flight' && step !== 'flight' && state.playing) {
+    state.playing = false; setPlayIcon(false);
+  }
+  if (step !== 'flight') hideDone();
   state.step = step;
   $('app').dataset.step = step;
   $('options-btn').hidden = step !== 'flight';
+  refreshSteps();
   dirty = true;
   requestAnimationFrame(() => { dirty = true; });
+}
+
+/**
+ * Which steps you can reach from here, and which one you are on.
+ *
+ * A step that leads nowhere is disabled rather than left to land you on an
+ * empty screen: Values needs a scenario to have values FOR, and Flight needs
+ * the engine to be able to determine the motion, which is the same condition
+ * the Launch button uses.
+ *
+ * The two exhibits open straight onto the flight screen and never show the
+ * values screen on the way. Step 2 is still enabled for them, because they do
+ * have values — their intro card's "Type my own numbers" goes exactly there —
+ * and a step that works from one route and not another would be the
+ * inconsistency, not the fix.
+ */
+function refreshSteps() {
+  const reach = { scenario: true, values: !!scenario, flight: !!traj };
+  for (const b of $('steps').querySelectorAll('.step')) {
+    const to = b.dataset.s;
+    const on = state.step === to;
+    const can = reach[to] || on;
+    b.setAttribute('aria-disabled', String(!can));
+    if (on) b.setAttribute('aria-current', 'step');
+    else b.removeAttribute('aria-current');
+    b.setAttribute('aria-label', can || on
+      ? `Step ${b.querySelector('span').textContent}, ${b.textContent.slice(1)}`
+      : (to === 'values' ? 'Values — pick a scenario first'
+                         : 'Flight — fill in enough values first'));
+  }
 }
 
 function togglePlay() {
@@ -943,6 +995,13 @@ function applyTheme(mode) {
 }
 
 $('brand').addEventListener('click', () => go('scenario'));
+for (const b of $('steps').querySelectorAll('.step')) {
+  b.addEventListener('click', () => {
+    if (b.getAttribute('aria-disabled') === 'true') return;
+    closeResolve();
+    go(b.dataset.s);
+  });
+}
 $('back-1').addEventListener('click', () => go('scenario'));
 $('back-2').addEventListener('click', () => { hideDone(); closeResolve(); go('values'); });
 $('launch').addEventListener('click', launch);
