@@ -136,8 +136,6 @@ export function drawSection(A) {
   sky(A);
   nightGlow(A);
   farField(A);
-  strata(A);
-  foundations(A);
   surfaces(A);
   groundShade(A);
   groundMarks(A);
@@ -146,7 +144,9 @@ export function drawSection(A) {
   decks(A);
   roofSection(A);
   props(A);
-  datumLine(A);
+  // The ground is NOT drawn here. It is the one thing the ball touches, so it
+  // is painted by ground() after this layer has been washed back — see the
+  // comment on ground() and WORLD_BACK in scene.js.
 }
 
 /* ── sky ────────────────────────────────────────────────────────────── */
@@ -194,14 +194,6 @@ function sky(A) {
     ctx.globalAlpha = 0.14; ctx.fillStyle = band;
     ctx.fillRect(0, top, w, gy - top);
     ctx.globalAlpha = 1;
-  }
-  // Below the datum is ground, and ground is solid. Saying so is what makes
-  // the flat plane the model assumes look like a plane rather than a line.
-  if (gy < h) {
-    const e = ctx.createLinearGradient(0, Math.max(0, gy), 0, h);
-    e.addColorStop(0, tn.earth);
-    e.addColorStop(1, TONE_KEY === 'light' ? '#574f45' : '#111118');
-    ctx.fillStyle = e; ctx.fillRect(0, Math.max(0, gy), w, h - Math.max(0, gy));
   }
 }
 
@@ -268,76 +260,50 @@ function farField(A) {
   ctx.restore();
 }
 
-/* ── the ground, in section ─────────────────────────────────────────────
-   Below the datum is not simply "not sky". This is a SECTION: it has been
-   cut through the ground as much as through the building, and what a cut
-   through ground shows is what the ground is made of. A flat slab of brown
-   says nothing, and it was a quarter of the frame saying it.
+/* ── the ground ─────────────────────────────────────────────────────────
+   THE GROUND IS THE ONE THING ON THIS SCREEN THE BALL ACTUALLY TOUCHES, so
+   it is drawn last, outside the layer that gets washed back behind the
+   flight, at full strength. Everything else in this file is scenery.
 
-   Two strata and a hatch. Topsoil and subsoil are drawn in METRES like
-   everything else in this world, so at pitch level they are the depth they
-   really are and at district zoom they are the two pixels they should be.
-   The hatch below them is spaced in PIXELS on purpose: it is the drawing
-   convention for "ground, continuing", not a thing with a size, and a hatch
-   measured in metres would either vanish or turn into fence posts. */
-function strata(A) {
+   It used to be the opposite. Below the datum sat an earth gradient, two soil
+   strata, two full-width grey rules, about a hundred diagonal hatch strokes,
+   a 92%-opaque foundation raft under every stand and every block, the bodies
+   of every flat surface painted downward THROUGH the datum with a kerb below
+   that, two pixels of shadow bleed, an ellipse under every prop, and the
+   metre grid's verticals running the full height of the canvas. Above all
+   that the ground itself was a 2 px line where it was open and a 1 px [3,7]
+   dashed line wherever a stand stood over it — which, under the bowl, is most
+   of the frame. A hundred strokes of texture and no mass: it could not read
+   as solid because nothing in it was.
+
+   Now it is mass and an edge. An opaque earth, one thin skin of topsoil so
+   the surface is a surface rather than the top of a void, and one unbroken
+   line. The line still says where scenery stands over open ground, but it
+   says it with weight rather than by breaking up — a ball has to visibly hit
+   something, and it cannot hit a dashed hairline. */
+export function ground(A) {
   const { ctx, w, h, sy, tn } = A;
   const gy = sy(0);
   if (gy >= h) return;
   const top = Math.max(0, gy);
   ctx.save();
-  const soil = [[0.4, mixTone(tn.earth, tn.terrain, 0.5)],
-                [2.6, mixTone(tn.earth, tn.terrain, 0.18)]];
-  let prev = 0;
-  for (const [d, tone] of soil) {
-    const y0 = Math.max(top, sy(-prev)), y1 = Math.min(h, sy(-d));
-    if (y1 - y0 > 0.6) { ctx.fillStyle = tone; ctx.fillRect(0, y0, w, y1 - y0); }
-    prev = d;
-  }
-  ctx.strokeStyle = tn.structureDark; ctx.globalAlpha = 0.28; ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (const [d] of soil) {
-    const y = Math.round(sy(-d)) + 0.5;
-    if (y > top + 1 && y < h) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
-  }
-  ctx.stroke();
-  const yH = Math.max(top, sy(-2.6));
-  if (h - yH > 10) {
-    ctx.globalAlpha = 0.15; ctx.strokeStyle = tn.structure;
-    ctx.beginPath();
-    for (let x = -h; x < w + h; x += 26) { ctx.moveTo(x, h); ctx.lineTo(x + (h - yH), yH); }
-    ctx.stroke();
-  }
-  ctx.restore();
-}
 
-/* Nothing this heavy stands on turf. Every stand, and every building above
-   about three metres, gets the raft it would really need, sized off its own
-   height — which is also the cue that says the dark wedge above the datum is
-   a BUILDING and not a hill. */
-function foundations(A) {
-  const { ctx, sx, sy, tn, section, span } = A;
-  if (span > 1100) return;
-  const gy = sy(0);
-  if (gy > A.h) return;
-  ctx.save();
-  ctx.fillStyle = tn.structureDark; ctx.globalAlpha = 0.92;
-  const pad = (u0, u1, depth) => {
-    const x0 = Math.min(sx(u0), sx(u1)), x1 = Math.max(sx(u0), sx(u1));
-    if (x1 - x0 < 2 || x1 < 0 || x0 > A.w) return;
-    ctx.fillRect(x0, gy, x1 - x0, Math.max(2, sy(-depth) - gy));
-  };
-  for (const deck of section.decks || []) {
-    const prof = deckProfile(deck);
-    if (!prof.length) continue;
-    const us = prof.flatMap((q) => [q.u0, q.u1]);
-    const top = Math.max(...prof.map((q) => Math.max(q.y0, q.y1)));
-    pad(Math.min(...us), Math.max(...us), 1.2 + top / 14);
+  const e = ctx.createLinearGradient(0, top, 0, h);
+  e.addColorStop(0, tn.earth);
+  e.addColorStop(1, TONE_KEY === 'light' ? '#574f45' : '#111118');
+  ctx.fillStyle = e; ctx.fillRect(0, top, w, h - top);
+
+  // One stratum, in METRES like everything else in this world, so at pitch
+  // level it is the depth topsoil really is and at district zoom it is the
+  // pixel it should be. Two strata plus a hatch was a drawing of geology,
+  // and this is not a drawing of geology.
+  const skin = Math.min(h, sy(-0.35));
+  if (skin - top > 0.6) {
+    ctx.fillStyle = mixTone(tn.earth, tn.terrain, 0.45);
+    ctx.fillRect(0, top, w, skin - top);
   }
-  for (const b of section.blocks) {
-    if (b.y1 - b.y0 < 3 || b.tag === 'goal net') continue;
-    pad(b.u0, b.u1, 0.5 + (b.y1 - b.y0) / 16);
-  }
+
+  datumLine(A);
   ctx.restore();
 }
 
@@ -345,6 +311,11 @@ function foundations(A) {
 function surfaces(A) {
   const { ctx, sx, sy, h, tn, span, section } = A;
   const stripeF = fade(span, D.lod.grassStripes);
+  // It set globalAlpha and walked out still holding it, and the next painter
+  // — groundShade — opens with a save(), so it CAPTURED the leak and ran the
+  // whole shadow pass at whatever alpha the last surface happened to use.
+  ctx.save();
+  const datum = sy(0);
   for (const s of section.surfaces) {
     if (!A.vis(s.u0, s.u1)) continue;
     if (s.tag === 'mowing stripe' && stripeF <= 0) continue;
@@ -354,23 +325,33 @@ function surfaces(A) {
     // real depth of turf or blacktop — is what lets you tell grass from
     // tarmac in a section, and it is a thickness, not an exaggeration.
     const body = Math.max(s.tag === 'pitch' || s.tag === 'mowing stripe' ? 4 : 3, 0.5 * A.scale);
-    if (s.y > 0.2) rect(ctx, x0, y, x1, sy(0), tn.concrete);   // the face it stands on
-    rect(ctx, x0, y, x1, y + body, tn[s.tone] || tn.ground);
+    if (s.y > 0.2) rect(ctx, x0, y, x1, datum, tn.concrete);   // the face it stands on
+    // NOTHING BELOW THE DATUM. A surface at ground level used to paint its
+    // body downward from y = 0, so the turf hung under the ground line with a
+    // kerb below that again. A surface at ground level now sits ON the
+    // ground, and an elevated one stops when it reaches it. groundMarks
+    // already took this view of the pitch lines, for the same reason.
+    const atGround = s.y <= 0.2;
+    const yT = atGround ? datum - body : y;
+    const yB = atGround ? datum : Math.min(y + body, datum);
+    if (yB > yT) rect(ctx, x0, yT, x1, yB, tn[s.tone] || tn.ground);
     // a kerb, so tarmac stops being paving stops being turf when the band is
-    // only three pixels deep
-    if (Math.abs(x1 - x0) > 3) {
+    // only three pixels deep. Never below the datum, where the ground's own
+    // edge already draws a far better line.
+    if (Math.abs(x1 - x0) > 3 && yB < datum - 0.5) {
       ctx.globalAlpha *= 0.5; ctx.fillStyle = tn.structureDark;
-      ctx.fillRect(Math.min(x0, x1), y + body, Math.abs(x1 - x0), 1);
+      ctx.fillRect(Math.min(x0, x1), yB, Math.abs(x1 - x0), 1);
       ctx.globalAlpha = s.tag === 'mowing stripe' ? 0.6 * stripeF : 1;
     }
     // Under floodlights the turf is the brightest surface in the stadium, so
     // at night it gets a lit top edge. In daylight it does not need one.
     if (TONE_KEY !== 'light' && (s.tag === 'pitch' || s.tag === 'run-off')) {
       ctx.globalAlpha = s.tag === 'pitch' ? 0.5 : 0.25;
-      rect(ctx, x0, y, x1, y + Math.max(1.4, body * 0.3), tn.flood);
+      rect(ctx, x0, yT, x1, yT + Math.max(1.4, body * 0.3), tn.flood);
       ctx.globalAlpha = 1;
     }
   }
+  ctx.restore();
 }
 
 /* ── what the stands throw across the ground ────────────────────────────
@@ -412,7 +393,8 @@ function groundShade(A) {
     g.addColorStop(0.72, tn.shadow);
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
-    ctx.fillRect(Math.min(x0, x1), gy - thick, Math.abs(x1 - x0), thick + 2);
+    // `thick + 2` put two pixels of every stand's shadow under the ground.
+    ctx.fillRect(Math.min(x0, x1), gy - thick, Math.abs(x1 - x0), thick);
   }
   ctx.restore();
 }
@@ -421,6 +403,9 @@ function groundShade(A) {
 function groundMarks(A) {
   const { ctx, sx, sy, tn, span, section } = A;
   const pf = fade(span, D.lod.pitchLines), rf = fade(span, D.lod.roadLines);
+  // Sets globalAlpha, then `continue`s past the line that resets it, so an
+  // off-screen mark leaked its fade into whatever drew next.
+  ctx.save();
   for (const m of section.marks) {
     const isRoad = m.tone === 'roadline' || m.tone === 'metal';
     const f = isRoad ? rf : pf;
@@ -443,6 +428,7 @@ function groundMarks(A) {
     }
     ctx.globalAlpha = 1;
   }
+  ctx.restore();
 }
 
 /** Built things the plane misses but that stand just beyond it. Drawn first,
@@ -468,9 +454,12 @@ function beyond(A) {
 
 /* ── boxes: houses, station, hoardings, goals ───────────────────────── */
 function blocks(A) {
+  // Same family of bug as surfaces() and groundMarks(): several paths here
+  // set globalAlpha and leave by a route that does not reset it.
   const { ctx, sx, sy, tn, span, section } = A;
   const list = section.blocks.slice().sort((a, b) => Math.abs(b.u0) - Math.abs(a.u0));
   const houseF = fade(span, D.lod.houseBlock), detF = fade(span, D.lod.houseDetail);
+  ctx.save();
   for (const b of list) {
     if (!A.vis(b.u0, b.u1)) continue;
     const x0 = sx(b.u0), x1 = sx(b.u1), yT = sy(b.y1), yB = sy(b.y0);
@@ -522,6 +511,7 @@ function blocks(A) {
     }
     if (hpx > 2.5 && wpx > 2.5) { ctx.strokeStyle = tn.structureDark; ctx.lineWidth = 1; ctx.strokeRect(Math.min(x0, x1) + .5, yT + .5, wpx - 1, hpx - 1); }
   }
+  ctx.restore();
 }
 
 /** The 5.5 m frontage rhythm of a terrace row, once it is big enough to see. */
@@ -983,9 +973,12 @@ function roofSection(A) {
         const lx = sx(inner), ly = sy(R.lightStripY);
         const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, 60);
         g.addColorStop(0, tn.flood); g.addColorStop(1, 'rgba(0,0,0,0)');
+        // The save() used to come AFTER this alpha, so the matching restore()
+        // put 0.3 back rather than 1 and the next painter — props() — drew
+        // every person, car and tree at a third of its own opacity.
+        ctx.save();
         ctx.globalAlpha = 0.3; ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(lx, ly, 60, 0, 7); ctx.fill();
-        ctx.save();
         if (A.lightClip) {
           ctx.beginPath();
           ctx.rect(Math.min(sx(A.lightClip[0]), sx(A.lightClip[1])), 0,
@@ -1038,10 +1031,15 @@ function props(A) {
 
 /** Contact with the ground. Without it everything looks pasted on. */
 function footing(A, X, Y, wpx, alpha) {
-  const { ctx, tn } = A;
+  const { ctx, tn, sy, w, h } = A;
   if (wpx < 3) return;
-  ctx.save(); ctx.globalAlpha = alpha * 0.22; ctx.fillStyle = tn.earth;
-  ctx.beginPath(); ctx.ellipse(X, Y + 1, wpx * 0.75, Math.max(1, wpx * 0.22), 0, 0, 7);
+  ctx.save();
+  // Centred one pixel BELOW the ground, it put a little ellipse of earth
+  // under the ground line beneath every prop in the frame. Clipped to above
+  // the datum it is what it was always meant to be: a contact shadow.
+  ctx.beginPath(); ctx.rect(0, 0, w, Math.max(0, sy(0))); ctx.clip();
+  ctx.globalAlpha = alpha * 0.22; ctx.fillStyle = tn.earth;
+  ctx.beginPath(); ctx.ellipse(X, Y, wpx * 0.75, Math.max(1, wpx * 0.22), 0, 0, 7);
   ctx.fill(); ctx.restore();
 }
 
@@ -1186,9 +1184,13 @@ function lightCluster(A, p) {
 function datumLine(A) {
   const { ctx, w, sx, sy, tn, section } = A;
   const Y = Math.round(sy(0)) + 0.5;
-  // Where the ground really is open the datum is solid; where scenery stands
-  // over it the same plane continues as a hairline, because the model's flat
-  // ground runs under the stands whether or not the building does.
+  // Where the ground really is open the datum is at full weight; where scenery
+  // stands over it the same plane continues a little lighter, because the
+  // model's flat ground runs under the stands whether or not the building
+  // does. It used to make that distinction by going to a 1 px [3,7] DASH —
+  // and under the bowl that is most of the frame, so the ground the ball has
+  // to visibly hit was a broken hairline across most of its own width. The
+  // distinction is worth keeping; breaking the line to make it was not.
   const covered = [];
   for (const b of section.blocks) {
     if (b.y1 - b.y0 < 1.5) continue;
@@ -1202,15 +1204,16 @@ function datumLine(A) {
   covered.sort((a, b) => a[0] - b[0]);
   ctx.save();
   ctx.strokeStyle = cssVar('--axis', tn.prop);
+  ctx.setLineDash([]);
   let x = 0;
   for (const [a, b] of covered) {
     if (b < 0 || a > w) continue;
-    if (a > x) { ctx.setLineDash([]); ctx.lineWidth = 2; line(ctx, x, Math.min(a, w), Y); }
-    ctx.setLineDash([3, 7]); ctx.lineWidth = 1;
+    if (a > x) { ctx.globalAlpha = 1; ctx.lineWidth = 2.6; line(ctx, x, Math.min(a, w), Y); }
+    ctx.globalAlpha = 0.5; ctx.lineWidth = 2;
     line(ctx, Math.max(x, a), Math.min(b, w), Y);
     x = Math.max(x, b);
   }
-  if (x < w) { ctx.setLineDash([]); ctx.lineWidth = 2; line(ctx, x, w, Y); }
+  if (x < w) { ctx.globalAlpha = 1; ctx.lineWidth = 2.6; line(ctx, x, w, Y); }
   ctx.restore();
 }
 const line = (ctx, x0, x1, y) => {

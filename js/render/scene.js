@@ -21,6 +21,18 @@ import * as W2 from './world2d.js';
 
 export function createCamera() { return { cx: 0, cy: 0, scale: 8, fit: true, touched: false, band: 'stadium' }; }
 
+/**
+ * How much of the place survives the wash that pushes it behind the flight.
+ *
+ * The thing you are meant to be looking at on this screen is the trajectory,
+ * and at full strength the stands, seats and roof were competing with it on
+ * equal terms. This is low enough that the path and its annotation lines sit
+ * clearly in front, and high enough that the stadium is still legible as a
+ * place rather than a smear — which matters, because being somewhere real at
+ * a scale you can judge is the other half of what the view is for.
+ */
+const WORLD_BACK = 0.58;
+
 /* ── the three zoom bands, as places to stand rather than crops ────────
    Pitch level follows the ball at a span where a 1.8 m person is 60 px and
    the 0.22 m ball is a real disc. Stadium is the fit. District pulls back to
@@ -175,7 +187,30 @@ export function render(canvas, cam, o) {
     W2.drawSection({ ctx: g, w, h, span, scale: cam.scale, sx: su, sy, px: pu, py,
                      section, tn, L: null, moving: cam.moving });
   });
+  // PUSH THE PLACE BACK. The stands, the seats, the roof and the surfaces are
+  // all painted at full strength, and against that the trajectory is one more
+  // line among hundreds rather than the subject. The whole world arrives as a
+  // single drawImage, which honours globalAlpha, so one number moves all of it
+  // at once — no change to world2d.js and no invalidation of the layer cache.
+  //
+  // It is not erased, because it is half the subject: the comment at the top
+  // of autoFit says why a flight is shown somewhere real, and that still
+  // holds. A wash of --surface over the top keeps the far detail legible while
+  // dropping its contrast, which reads as distance rather than as fog.
+  // fitCanvas has already filled the canvas with --surface, so ONE alpha on
+  // the drawImage is the whole operation: what lands is WORLD_BACK of the
+  // world over (1 − WORLD_BACK) of the surface colour. Washing it a second
+  // time with a fillRect squares the effect and erases the place.
+  ctx.save();
+  ctx.globalAlpha = WORLD_BACK;
   ctx.drawImage(bg, 0, 0, w, h);
+  ctx.restore();
+
+  // THE GROUND IS NOT SCENERY. It is the thing the ball hits, so it is
+  // painted here, after the wash, at full strength — which is also why it is
+  // not inside the cached layer above. See ground() in world2d.js for what
+  // used to be down there instead.
+  W2.ground({ ctx, w, h, sx: su, sy, tn, section });
 
   /* ── readability chrome ───────────────────────────────────────────── */
   if (show.grid) metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 });
@@ -489,8 +524,13 @@ function metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 }) {
   ctx.beginPath();
   // The grid is pinned to the LAUNCH POINT, not to the world origin, because
   // every number the student reads off it is a distance from the launch.
+  // The verticals stop AT THE GROUND, the way the horizontals already do.
+  // Running them to the bottom of the canvas drew a metre grid through the
+  // earth, which measures nothing and is most of what made below the line
+  // look busy.
+  const datum = Math.min(h, sy(0));
   for (let x = Math.floor((pu(0) - u0) / stepX) * stepX; x <= pu(w) - u0; x += stepX) {
-    const X = Math.round(su(u0 + x)) + 0.5; ctx.moveTo(X, 0); ctx.lineTo(X, h);
+    const X = Math.round(su(u0 + x)) + 0.5; ctx.moveTo(X, 0); ctx.lineTo(X, datum);
   }
   for (let y = Math.max(0, Math.floor(py(h) / stepY) * stepY); y <= py(0); y += stepY) {
     const Y = Math.round(sy(y)) + 0.5; ctx.moveTo(0, Y); ctx.lineTo(w, Y);
@@ -499,7 +539,7 @@ function metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 }) {
   ctx.strokeStyle = P.gridMajor; ctx.lineWidth = 2;
   ctx.beginPath();
   const X0 = Math.round(su(u0)) + 0.5;
-  if (X0 > 0 && X0 < w) { ctx.moveTo(X0, 0); ctx.lineTo(X0, h); }
+  if (X0 > 0 && X0 < w) { ctx.moveTo(X0, 0); ctx.lineTo(X0, datum); }
   ctx.stroke();
   ctx.restore();
 
