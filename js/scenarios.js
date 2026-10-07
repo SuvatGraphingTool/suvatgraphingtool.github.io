@@ -9,6 +9,9 @@
 //
 // Three groups, by where the object starts:
 //   from the ground · from a platform · and the ones worth a detour.
+//
+// `card` names a palette for the scenario's picture on the chooser, defined in
+// css/tokens.css. It is a NAME, not a colour — no hex belongs in this file.
 
 /** A scenario away from the stadium stands at the world origin. */
 export const FLAT_SITE = { axis: 'x', at: 0, dir: 1, origin: { x: 0, z: 0 }, place: '', view: '' };
@@ -98,6 +101,7 @@ export const SCENARIOS = [
     note: 'Two identical rounds leave the bench at the same instant: one fired flat, one simply released. Vertically they are the same problem — u_y = 0, a = −g — because firing adds velocity along x only, and the two components are independent. The horizontal push buys no hang time at all, at any muzzle speed.',
     params: { u: 360, theta: 0, h: 1.5, g: 9.81 }, lockAngle: true,
     exhibit: true, backdrop: 'warehouse', site: FLAT_SITE, secondSprite: true,
+    card: 'range',
     place: 'An indoor range, lit by a strobe',
     pairLabel: 'same height',
     seed: { u: 360, h: 1.5, g: 9.81 },
@@ -125,6 +129,7 @@ export const SCENARIOS = [
     note: 'The hunter aims directly AT the monkey; the monkey drops the instant the shot leaves. In the time the banana takes to cover the horizontal gap, both have fallen the same ½gt² below where they would have been without gravity — so the aim that would have been right without gravity is still right with it. Drag the monkey anywhere: it only fails if the monkey reaches the sand first.',
     params: { u: 22, theta: 0, h: 1.5, g: 9.81 },
     exhibit: true, backdrop: 'beach', site: FLAT_SITE, secondSprite: true,
+    card: 'dusk',
     place: 'A beach at dusk',
     pairLabel: 'same fall',
     caughtLabel: 'caught — every time',

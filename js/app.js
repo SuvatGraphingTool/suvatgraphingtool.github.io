@@ -63,7 +63,7 @@ let scenario = null, solved = null, traj = null, second = null, ghost = null, di
 function buildScenarioScreen() {
   $('pgrid').innerHTML = GROUPS.map((g) => {
     const cards = SCENARIOS.filter((s) => s.group === g.id).map((s) => `
-      <button class="pcard" data-id="${s.id}">
+      <button class="pcard" data-id="${s.id}"${s.card ? ` data-card="${s.card}"` : ''}>
         ${thumb(s)}
         <b>${s.name}</b>
         ${s.sub ? `<span class="pc-sub">${s.sub}</span>` : ''}
