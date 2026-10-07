@@ -5,7 +5,7 @@
 // or the interface is at fault.
 
 import { solve } from '../js/core/suvat.js';
-import { flight, optimumAngle } from '../js/core/projectile.js';
+import { flight, optimumAngle, timeAbove, heightForTime } from '../js/core/projectile.js';
 
 let pass = 0, fail = 0;
 
@@ -13,6 +13,11 @@ function near(actual, expected, tol, label) {
   const ok = Math.abs(actual - expected) <= tol;
   if (ok) { pass++; console.log(`  ok   ${label}  =  ${actual.toFixed(4)}`); }
   else { fail++; console.log(`  FAIL ${label}  =  ${actual.toFixed(4)}  expected ${expected} (±${tol})`); }
+}
+
+function ok(cond, label) {
+  if (cond) { pass++; console.log(`  ok   ${label}`); }
+  else { fail++; console.log(`  FAIL ${label}`); }
 }
 
 function group(name, fn) { console.log(`\n${name}`); fn(); }
@@ -94,6 +99,62 @@ group('Projectile model', () => {
   const z = flight({ u: 20, theta: 45, h: 0, g: 0 });
   if (!isFinite(z.tFlight)) { pass++; console.log('  ok   zero-g flight never lands'); }
   else { fail++; console.log('  FAIL zero-g flight returned a finite time'); }
+});
+
+/* ── a line across the flight ───────────────────────────────────────────
+   Hand-worked from Jan 09 Q6e's shape: u = 24, θ = 40°, h = 0.9, g = 9.81.
+   u_y = 24 sin 40° = 15.4270, apex = 0.9 + u_y²/(2g) = 13.0299,
+   t of flight = (u_y + √(u_y² + 2gh))/g = 3.2024. */
+group('Time above a line, both ways round', () => {
+  const f = flight({ u: 24, theta: 40, h: 0.9, g: 9.81 });
+
+  // Above the launch point: two crossings, Δt = 2√(u_y² − 2g(L − h))/g.
+  near(timeAbove(f, 6).above, 2.3943, 5e-4, 'above 6 m for');
+  near(timeAbove(f, 12).above, 0.9165, 5e-4, 'above 12 m for');
+  ok(timeAbove(f, 6).crosses === 2, 'a line above the launch is crossed twice');
+
+  // At the apex the interval closes; above it there is none at all.
+  near(timeAbove(f, f.apexHeight).above, 0, 1e-6, 'above the apex itself for');
+  ok(timeAbove(f, f.apexHeight + 1).above === 0, 'a line over the apex is never cleared');
+
+  // Below the launch point it starts above the line, so t1 is zero and the
+  // interval runs to the single downward crossing.
+  const low = timeAbove(f, 0.4);
+  ok(low.t1 === 0 && low.crosses === 1, 'a line below the launch is crossed once, on the way down');
+  // t = (u_y + √(u_y² + 2g(h − L)))⁄g = (15.4269 + √(237.989 + 9.81))⁄9.81
+  near(low.above, 3.1772, 5e-4, 'above 0.4 m for');
+  near(timeAbove(f, 0).above, f.tFlight, 1e-9, 'above the ground for the whole flight');
+
+  // The two cases have to agree where they meet, or the inverse is not
+  // single-valued and typing a time would be ambiguous.
+  near(timeAbove(f, 0.9 - 1e-9).above, timeAbove(f, 0.9 + 1e-9).above, 1e-5,
+       'the two cases agree at the launch height');
+});
+
+group('Asking for a time gives back the line that produces it', () => {
+  const f = flight({ u: 24, theta: 40, h: 0.9, g: 9.81 });
+  for (const want of [0.25, 1, 1.5, 2, 2.5, 3, 3.19]) {
+    const r = heightForTime(f, want);
+    ok(r.ok, `${want} s is possible`);
+    near(timeAbove(f, r.height).above, want, 1e-9, `and a line at ${r.height.toFixed(4)} m gives`);
+  }
+  // 1.5 s, worked by hand: L = apex − g(Δt)²⁄8 = 13.0299 − 9.81 × 2.25 ⁄ 8
+  near(heightForTime(f, 1.5).height, 10.2708, 5e-4, 'the line for 1.5 s above it');
+
+  // It refuses rather than guessing.
+  ok(!heightForTime(f, 5).ok, 'longer than the whole flight is refused');
+  ok(/3\.20 s/.test(heightForTime(f, 5).reason), 'and the refusal quotes the flight it has');
+  ok(!heightForTime(f, 0).ok, 'zero seconds is refused');
+  ok(!heightForTime(f, -2).ok, 'a negative time is refused');
+  ok(!heightForTime(flight({ u: 24, theta: 40, h: 0.9, g: 0 }), 1).ok,
+     'with no gravity there is no interval to match');
+
+  // A flight thrown flat has no upward half at all, so every line is the
+  // one-crossing case. The round trip still has to hold.
+  const flat = flight({ u: 20, theta: 0, h: 25, g: 9.81 });
+  const r = heightForTime(flat, 1.2);
+  ok(r.ok, 'a flat throw can still be asked for a time');
+  near(timeAbove(flat, r.height).above, 1.2, 1e-9, 'and it comes back exactly');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

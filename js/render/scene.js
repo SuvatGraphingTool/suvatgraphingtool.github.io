@@ -14,6 +14,7 @@
 // placed in section u. Nothing is ever converted twice.
 
 import { fitCanvas, palette, stroke, arrow, dot, ballSprite, fmt, niceStep, clamp, labels, cssVar } from './util.js';
+import { timeAbove } from '../core/projectile.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
 import * as W2 from './world2d.js';
@@ -139,7 +140,7 @@ function autoFit(cam, flights, markers, w, h, u0, section) {
 
 export function render(canvas, cam, o) {
   const { traj: f, second, ghost, t, show, markers = {}, scenario, fired = true,
-          resolve = null, hover = null } = o;
+          resolve = null, hover = null, hoverMark = null } = o;
   if (!f) { return null; }
   const { ctx, w, h } = fitCanvas(canvas);
   const P = palette();
@@ -185,22 +186,42 @@ export function render(canvas, cam, o) {
   /* ── height line, fence, target ───────────────────────────────────── */
   if (markers.heightLine != null) {
     const Y = sy(markers.heightLine);
-    stroke(ctx, [{ x: 0, y: Y }, { x: w, y: Y }], { color: P.mark, width: 2.8, dash: [10, 7], alpha: .92 });
-    const snapped = snapName(markers.heightLine);
-    L.add(`${fmt(markers.heightLine, 1)} m${snapped ? ` — ${snapped}` : ''}${fired ? '' : ' · drag me'}`,
-          w - 12, Y, { color: P.mark, align: 'right', pri: 6, size: 17 });
-    dot(ctx, 76, Y, 8, { fill: P.surface, stroke: P.mark, width: 3 });
+    const grabbed = hoverMark === 'heightLine';
 
+    // THE REGION IS BOUNDED BY THE CURVE, not by a box around it. It used to
+    // be a fillRect from apex height down to the line, which shaded the whole
+    // rectangle the arc sits inside — including a large area ABOVE the
+    // parabola, outside the curve entirely. The answer the student is being
+    // shown is an area under an arc and over a line, so draw that: walk the
+    // trajectory between the two crossings and close the path along the line.
+    //
+    // Sampling through f.pos also fixes a second thing. The old corners were
+    // computed as `f.horiz * t`, which ignores a bounce's x-offset, so the
+    // band drifted off the path the moment restitution was switched on.
     const bandT = fired ? timeAbove(f, markers.heightLine) : null;
-    if (bandT) {
+    if (bandT && bandT.above > 1e-9) {
+      const n = 96;
       ctx.save(); ctx.globalAlpha = .14; ctx.fillStyle = P.mark;
-      ctx.fillRect(sx(f.horiz * bandT.t1), sy(f.apexHeight),
-                   (bandT.t2 - bandT.t1) * f.horiz * cam.scale, sy(markers.heightLine) - sy(f.apexHeight));
-      ctx.restore();
-      L.add(`above for ${fmt(bandT.t2 - bandT.t1, 2)} s`,
-            sx(f.horiz * (bandT.t1 + bandT.t2) / 2), sy(markers.heightLine) - 24,
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const tt = bandT.t1 + ((bandT.t2 - bandT.t1) * i) / n;
+        const q = M(f.pos(tt));
+        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      }
+      ctx.lineTo(sx(f.pos(bandT.t2).x), Y);
+      ctx.lineTo(sx(f.pos(bandT.t1).x), Y);
+      ctx.closePath(); ctx.fill(); ctx.restore();
+      L.add(`above for ${fmt(bandT.above, 2)} s`,
+            sx(f.pos((bandT.t1 + bandT.t2) / 2).x), Y - 24,
             { color: P.mark, align: 'center', pri: 7, size: 18 });
     }
+
+    stroke(ctx, [{ x: 0, y: Y }, { x: w, y: Y }],
+           { color: P.mark, width: grabbed ? 3.6 : 2.8, dash: [10, 7], alpha: grabbed ? 1 : .92 });
+    const snapped = snapName(markers.heightLine);
+    L.add(`${fmt(markers.heightLine, 1)} m${snapped ? ` — ${snapped}` : ''}`,
+          w - 12, Y, { color: P.mark, align: 'right', pri: 6, size: 17 });
+    heightGrip(ctx, 76, Y, P, grabbed);
   }
 
   if (markers.obstacle) {
@@ -538,18 +559,39 @@ function defensiveWall(A, ob) {
   ctx.restore();
 }
 
-/* ── small geometric questions the scene needs answered ─────────────── */
-
-function timeAbove(f, height) {
-  const { h, g } = f.params, uy = f.uy;
-  if (g <= 1e-9) return null;
-  const disc = uy * uy - 2 * g * (height - h);
-  if (disc <= 0) return null;
-  const r = Math.sqrt(disc);
-  const t1 = (uy - r) / g, t2 = (uy + r) / g;
-  const a = Math.max(0, Math.min(t1, t2)), b = Math.min(f.tMax, Math.max(t1, t2));
-  return b > a ? { t1: a, t2: b } : null;
+/**
+ * The height line's handle.
+ *
+ * The line has always been draggable along its whole width — the hit test is
+ * an 18 px strip right across the canvas — but it only said so in a label,
+ * and only before launch, so after a launch it looked like a fixed annotation.
+ * An 8 px dot is not a handle. This is: a grip with ridges, the shape every
+ * other draggable divider on a screen has, which grows and fills when the
+ * pointer is on it.
+ */
+function heightGrip(ctx, x, y, P, hot) {
+  const wd = hot ? 44 : 38, ht = hot ? 20 : 17;
+  ctx.save();
+  ctx.beginPath();
+  const r = ht / 2;
+  ctx.moveTo(x - wd / 2 + r, y - ht / 2);
+  ctx.arcTo(x + wd / 2, y - ht / 2, x + wd / 2, y + ht / 2, r);
+  ctx.arcTo(x + wd / 2, y + ht / 2, x - wd / 2, y + ht / 2, r);
+  ctx.arcTo(x - wd / 2, y + ht / 2, x - wd / 2, y - ht / 2, r);
+  ctx.arcTo(x - wd / 2, y - ht / 2, x + wd / 2, y - ht / 2, r);
+  ctx.closePath();
+  ctx.fillStyle = P.surface; ctx.globalAlpha = hot ? 0.98 : 0.92; ctx.fill();
+  ctx.globalAlpha = 1; ctx.strokeStyle = P.mark; ctx.lineWidth = hot ? 3.2 : 2.4; ctx.stroke();
+  // three ridges — the universal "take hold of this"
+  ctx.strokeStyle = P.mark; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+  ctx.globalAlpha = hot ? 1 : 0.8;
+  for (const dy of [-4, 0, 4]) {
+    ctx.beginPath(); ctx.moveTo(x - 7, y + dy); ctx.lineTo(x + 7, y + dy); ctx.stroke();
+  }
+  ctx.restore();
 }
+
+/* ── small geometric questions the scene needs answered ─────────────── */
 
 function clearsObstacle(f, ob) {
   if (f.horiz <= 1e-9) return false;
@@ -622,12 +664,19 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
 
   const isResolve = (k) => k === 'ball' || k === 'path';
 
+  // The cursor used to say `grab` for the sky, the height line and the target
+  // alike, so a draggable handle felt exactly like empty canvas. Now each
+  // kind gets the cursor that describes what it does, and the kind is passed
+  // out so the renderer can light the handle up as well.
+  const CURSOR = { ball: 'pointer', path: 'pointer', heightLine: 'ns-resize',
+                   target: 'move', obstacle: 'move' };
   canvas.addEventListener('pointermove', (e) => {
     if (drag || dragging) return;
     const k = pick(e)?.kind || null;
-    canvas.style.cursor = isResolve(k) ? 'pointer' : 'grab';
+    canvas.style.cursor = CURSOR[k] || 'grab';
     const hv = isResolve(k);
     if (hv !== hovering) { hovering = hv; onResolve.hover?.(hv); }
+    onResolve.mark?.(isResolve(k) ? null : k);
   });
 
   canvas.addEventListener('pointerdown', (e) => {

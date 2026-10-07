@@ -6,7 +6,7 @@
 
 import { solveLaunch } from './core/solve.js';
 import { trajectory } from './core/trajectory.js';
-import { flight } from './core/projectile.js';
+import { flight, timeAbove, heightForTime } from './core/projectile.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
 import * as scene from './render/scene.js';
@@ -18,6 +18,28 @@ import { fmt, palette, clamp } from './render/util.js';
 import { M } from './notation.js';
 
 const $ = (id) => document.getElementById(id);
+
+/**
+ * A number the way a student writes one.
+ *
+ * Papers give heights as fractions at least as often as decimals, and a box
+ * that only takes 3.5 makes someone convert 7/2 by hand before they can ask
+ * the question. Both are accepted, and so is a typed minus sign, because that
+ * is the character this site prints everywhere and it is the one people copy.
+ *
+ * Returns undefined for empty, NaN for something that is not a number — the
+ * caller needs to tell "cleared" from "mistyped".
+ */
+function parseValue(raw) {
+  const s = String(raw ?? '').trim().replace(/[\u2212\u2013\u2014]/g, '-');
+  if (!s) return undefined;
+  const frac = s.match(/^([+-]?\d*\.?\d+)\s*\/\s*([+-]?\d*\.?\d+)$/);
+  if (frac) {
+    const b = parseFloat(frac[2]);
+    return b === 0 ? NaN : parseFloat(frac[1]) / b;
+  }
+  return /^[+-]?\d*\.?\d+$/.test(s) ? parseFloat(s) : NaN;
+}
 
 /* The five. Everything else is scenario-specific and shown only when needed. */
 const SUVAT = [
@@ -53,7 +75,7 @@ const state = {
           components: false, ticks: false, acceleration: false },
   extras: { graphs: false, working: false, energy: false },
   options: false,
-  resolve: false, hover: false,
+  resolve: false, hover: false, hoverMark: null,
   overview: false,
 };
 
@@ -246,6 +268,18 @@ function buildValuesScreen() {
   rows.push(`<div class="xrow" data-x="h"><label for="x-h">Launch height h (m)</label>
     <input id="x-h" type="number" step="any" value="${state.h ?? ''}" placeholder="—">
     <p class="xhint">Optional. Blank means ground level, or it works the height out.</p></div>`);
+  // Time above a line can be asked in either direction, so it is offered in
+  // both. The height moves the line; the time asks the engine which line
+  // would give that answer and moves it there.
+  if (scenario.dragLine && state.markers?.heightLine != null) {
+    rows.push(`<div class="xrow" data-x="line"><label for="x-line">Height of the line (m)</label>
+      <input id="x-line" type="text" inputmode="decimal" autocomplete="off"
+             value="${fmt(state.markers.heightLine, 2)}" placeholder="—">
+      <p class="xhint" id="x-line-hint">A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.</p></div>`);
+    rows.push(`<div class="xrow" data-x="above"><label for="x-above">Time above the line (s)</label>
+      <input id="x-above" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="—">
+      <p class="xhint" id="x-above-hint">Type the answer you want and the line moves to give it.</p></div>`);
+  }
   rows.push(`<div class="xrow"><label>Gravitational field</label><div class="chips" id="g-chips">${
     GRAVITY.map((x) => `<button class="chip" data-g="${x.g}" aria-pressed="${state.given.g === x.g}">${x.label} ${x.g}</button>`).join('')
   }</div></div>`);
@@ -257,6 +291,7 @@ function buildValuesScreen() {
   $('x-h').addEventListener('input', (e) => {
     const v = parseFloat(e.target.value); state.h = isFinite(v) ? v : undefined; recompute();
   });
+  wireLineBoxes();
   for (const b of $('g-chips').querySelectorAll('.chip')) {
     b.addEventListener('click', () => {
       state.given.g = parseFloat(b.dataset.g);
@@ -348,6 +383,7 @@ function recompute() {
     ? 'Release it'                      // a drop has no launch speed to quote
     : `Launch at ${fmt(solved.params.u, 1)} m s⁻¹`;
   $('launch-hint').textContent = '';
+  showAbove();                   // the line's hint quotes the flight it belongs to
   dirty = true;
 }
 
@@ -390,6 +426,76 @@ function shift(f, x0) {
     path: (n, tEnd) => f.path(n, tEnd).map(move),
     ticks: (n, tEnd) => f.ticks(n, tEnd).map(move),
     range: f.range + x0 };
+}
+
+/* ── the line, from either end ───────────────────────────────────────
+   Both boxes set the same one thing, so each has to show what the other did.
+   The time box is the useful one in an exam — "for how long is it above 4 m"
+   is usually asked the other way round, as "what height does it clear for
+   1.2 s" — and it is the one that can be asked for something impossible, so
+   it is the one that can refuse. The refusal comes from the engine, which is
+   the only thing that knows the flight. */
+function wireLineBoxes() {
+  const hb = $('x-line'), tb = $('x-above');
+  if (!hb) return;
+
+  hb.addEventListener('input', (e) => {
+    const v = parseValue(e.target.value);
+    const hint = $('x-line-hint');
+    if (v === undefined) { say(hint, false, 'A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.'); return; }
+    if (!isFinite(v) || v < 0) {
+      say(hint, true, 'That is not a height. Try a number, or a fraction like 7/2.');
+      return;
+    }
+    state.markers.heightLine = v;
+    say(hint, false, 'A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.');
+    if (tb) tb.value = '';
+    showAbove();
+    dirty = true;
+  });
+
+  tb.addEventListener('input', (e) => {
+    const v = parseValue(e.target.value);
+    const hint = $('x-above-hint');
+    if (v === undefined) { say(hint, false, 'Type the answer you want and the line moves to give it.'); return; }
+    if (!traj) { say(hint, true, 'Fill in enough of the five first — there is no flight to put a line across yet.'); return; }
+    if (!isFinite(v)) { say(hint, true, 'That is not a time. Try a number, or a fraction like 7/2.'); return; }
+    const r = heightForTime(traj, v);
+    if (!r.ok) { say(hint, true, r.reason); return; }
+    state.markers.heightLine = r.height;
+    hb.value = fmt(r.height, 2);
+    say(hint, false, `A line at ${fmt(r.height, 2)} m gives exactly that.`);
+    dirty = true;
+  });
+
+  showAbove();
+}
+
+/** Say how long the current line is cleared for, under the height box. */
+function showAbove() {
+  const hint = $('x-line-hint');
+  if (!hint || !traj || state.markers?.heightLine == null) return;
+  const r = timeAbove(traj, state.markers.heightLine);
+  say(hint, false, r.above > 1e-9
+    ? `It is above that for ${fmt(r.above, 2)} s. A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.`
+    : 'It never gets that high. A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.');
+}
+
+/** Keep the boxes honest when the line is dragged rather than typed. */
+function syncLineBoxes() {
+  const hb = $('x-line');
+  if (hb) hb.value = fmt(state.markers.heightLine, 2);
+  const tb = $('x-above');
+  if (tb) tb.value = '';
+  showAbove();
+}
+
+// The engine's refusals are prose, but a hint can also carry a typeset
+// quantity, so this sink takes innerHTML. See CLAUDE.md.
+function say(el, bad, html) {
+  if (!el) return;
+  el.dataset.bad = String(!!bad);
+  el.innerHTML = html;
 }
 
 /* ── step 3 · flight ────────────────────────────────────────────────── */
@@ -641,6 +747,7 @@ function draw() {
   const R = state.resolve ? resolveAt(traj, state.t) : null;
   const opts = { traj, second, ghost, t: state.t, show: state.show, fired: state.launched,
                  verdict: state.verdict, overview: state.overview,
+                 hoverMark: state.hoverMark,
                  markers: state.markers || {}, scenario, secondLabel: scenario.second?.label,
                  resolve: R, hover: state.hover };
   // An exhibit is staged rather than surveyed: its own plate and its own scale
@@ -792,6 +899,7 @@ const pickScene = () => ({ markers: state.markers, scenario, traj, t: state.t,
                            fired: state.launched });
 const resolveHooks = {
   hover(on) { if (state.hover !== on) { state.hover = on; dirty = true; } },
+  mark(kind) { if (state.hoverMark !== kind) { state.hoverMark = kind; dirty = true; } },
   click(t) { openResolve(t); },
 };
 
@@ -800,7 +908,10 @@ scene.attachControls($('scene'), cam, () => { dirty = true; },
   (kind, world) => {
     if (kind === 'obstacle') { state.markers.obstacle.x = Math.max(0.5, world.x); state.markers.obstacle.height = Math.max(0, world.y); }
     else if (kind === 'target') { state.markers.target.x = Math.max(0.5, world.x); state.markers.target.y = Math.max(0, world.y); }
-    else if (kind === 'heightLine') { state.markers.heightLine = scene.snapHeight(Math.max(0, world.y)); }
+    else if (kind === 'heightLine') {
+      state.markers.heightLine = scene.snapHeight(Math.max(0, world.y));
+      syncLineBoxes();                    // the boxes follow the drag
+    }
     dirty = true;
   },
   resolveHooks);
