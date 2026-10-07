@@ -67,6 +67,12 @@
 
       <div class="suvat" id="suvat"></div>
 
+      <!-- the one setting that belongs beside the boxes it governs -->
+      <p class="guard" id="guard">
+        <span id="guard-say"></span>
+        <button class="linkish" id="guard-toggle" aria-pressed="true"></button>
+      </p>
+
       <div class="extra" id="extra"></div>
 
       <div class="solve" id="solve-msg"></div>
@@ -226,6 +232,7 @@
         <div class="checks" id="shows"></div>
         <h2 class="otitle">Also</h2>
         <div class="checks" id="extras"></div>
+        <label class="ck"><input type="checkbox" id="guard-ck" checked><span class="box-ck"></span>Stop me over-filling the five</label>
         <div id="graphs-wrap" hidden>
           <h2 class="otitle">Graphs</h2>
           <div class="graphs">

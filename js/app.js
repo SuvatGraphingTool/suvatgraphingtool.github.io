@@ -79,6 +79,7 @@ const state = {
   resolve: false, hover: null, hoverMark: null,
   overview: false,
   aimed: true,                   // the hunter is pointing at the monkey
+  guard: true,                   // stop the five being over-filled
 };
 
 const cam = scene.createCamera();
@@ -249,13 +250,15 @@ function buildValuesScreen() {
       <div class="s-sym">${f.sym}</div>
       <div class="s-name">${f.name}</div>
       <input type="number" step="any" data-k="${f.k}" placeholder="—"
-             value="${state.given[f.k] ?? ''}" aria-label="${f.name} in ${f.unit}"${locked ? ' readonly' : ''}>
+             value="${state.given[f.k] ?? ''}" aria-label="${f.name} in ${f.unit}"
+             data-fixed="${locked}"${locked ? ' readonly' : ''}>
       <div class="s-unit">${f.unit}</div>
     </div>`;
   }).join('');
 
   for (const i of $('suvat').querySelectorAll('input')) {
     i.addEventListener('input', (e) => {
+      if (e.target.readOnly) { e.target.value = state.given[e.target.dataset.k] ?? ''; return; }
       const raw = e.target.value.trim();
       const v = raw === '' ? undefined : parseFloat(raw);
       if (raw === '' || !isFinite(v)) delete state.given[e.target.dataset.k];
@@ -371,7 +374,7 @@ function recompute() {
     $('notes').innerHTML = '';
     btn.disabled = true; btn.textContent = 'Launch';
     $('launch-hint').textContent = '';
-    traj = null; refreshSteps(); return;
+    traj = null; refreshSteps(); applyGuard(); return;
   }
 
   msg.dataset.ok = 'true';
@@ -417,6 +420,7 @@ function recompute() {
   $('launch-hint').textContent = '';
   showAbove();                   // the line's hint quotes the flight it belongs to
   refreshSteps();                // and Flight is reachable now that one exists
+  applyGuard();
   dirty = true;
 }
 
@@ -459,6 +463,65 @@ function shift(f, x0) {
     path: (n, tEnd) => f.path(n, tEnd).map(move),
     ticks: (n, tEnd) => f.ticks(n, tEnd).map(move),
     range: f.range + x0 };
+}
+
+/* ── the over-filling guard ──────────────────────────────────────────────
+   Enter the landing speed, the acceleration and the angle and you have said
+   enough: the motion is determined, and a displacement typed on top of that
+   can only agree redundantly or contradict. The engine has always known this
+   — runLine worked out which values it leaned on, which were spare and which
+   disagreed — and then flattened all three into a sentence and threw the data
+   away. It returns them now, so the interface can act on them.
+
+   What acting on them means: once the motion is determined, the boxes that
+   are still empty are closed, greyed, with one line saying why. Clearing a
+   box you did fill opens them all again, so changing your mind costs nothing.
+
+   It is a setting, on by default, and it lives beside the boxes rather than
+   behind a panel reachable only from another screen. In both states it says
+   what it is doing and offers the other one, which makes it the way out as
+   well as the way in. It is remembered the way the theme is remembered,
+   because that is the only persistence pattern this codebase has.
+
+   The ANGLE is never locked. It is not one of the five, it is optional by
+   design, and item 19's whole point is that a student should feel free to
+   leave it blank or fill it in. */
+function applyGuard() {
+  const say = $('guard-say'), btn = $('guard-toggle');
+  if (!btn) return;
+  btn.setAttribute('aria-pressed', String(state.guard));
+  $('guard-ck').checked = state.guard;
+
+  const determined = state.guard && !!solved?.ok;
+  let shut = 0;
+  for (const box of $('suvat').querySelectorAll('.sbox')) {
+    const key = box.dataset.k;
+    const input = box.querySelector('input');
+    const scenarioLock = input.dataset.fixed === 'true';
+    const empty = state.given[key] === undefined;
+    const lock = scenarioLock || (determined && empty);
+    if (lock && !scenarioLock) shut++;
+    box.dataset.locked = String(lock);
+    input.readOnly = lock;
+    input.setAttribute('aria-disabled', String(lock));
+  }
+
+  if (!state.guard) {
+    say.textContent = 'Extra values are allowed. The engine will still refuse ones that contradict.';
+    btn.textContent = 'Guard them';
+  } else if (shut) {
+    say.textContent = `The motion is already determined, so the ${shut === 1 ? 'remaining box is' : `remaining ${shut} boxes are`} closed — anything typed there could only repeat or contradict what is here.`;
+    btn.textContent = 'Let me fill them anyway';
+  } else {
+    say.textContent = 'Fill in any three. The rest will close once the motion is determined.';
+    btn.textContent = 'Let me fill them anyway';
+  }
+}
+
+function setGuard(on) {
+  state.guard = on;
+  try { localStorage.setItem('suvat-guard', on ? 'on' : 'off'); } catch {}
+  applyGuard();
 }
 
 /* ── live controls, for an exhibit you play with ─────────────────────────
@@ -1172,6 +1235,8 @@ $('back-1').addEventListener('click', () => go('scenario'));
 $('back-2').addEventListener('click', () => { hideDone(); closeResolve(); go('values'); });
 $('launch').addEventListener('click', launch);
 $('intro-go').addEventListener('click', () => { closeIntro(); launch(); });
+$('guard-toggle').addEventListener('click', () => setGuard(!state.guard));
+$('guard-ck').addEventListener('change', (e) => setGuard(e.target.checked));
 $('pace-go').addEventListener('click', runFlight);
 $('pace-back').addEventListener('click', () => { closePace(); go('values'); });
 $('pace-rate').addEventListener('input', (e) => {
@@ -1297,6 +1362,10 @@ scene.attachControls($('scene'), cam, () => { dirty = true; },
   resolveHooks);
 
 /* ── boot ───────────────────────────────────────────────────────────── */
+let guard = null;
+try { guard = localStorage.getItem('suvat-guard'); } catch {}
+state.guard = guard !== 'off';         // on unless it was deliberately turned off
+
 let saved = null;
 try { saved = localStorage.getItem('suvat-theme'); } catch {}
 applyTheme(saved || 'light');
