@@ -51,7 +51,12 @@ export function flight({ u, theta, h, g }) {
   const bounded = isFinite(tFlight) ? tFlight : Math.max(8, (2 * u) / 9.81);
   const tApex = g > 1e-9 ? uy / g : (uy > 0 ? bounded : 0);
   const apexInFlight = tApex > 0 && tApex < bounded;
-  const apexHeight = g > 1e-9 ? h + (uy * uy) / (2 * g) : h + uy * bounded;
+  // THROWN DOWNWARDS, THE APEX IS THE LAUNCH. h + u_y²⁄(2g) squares u_y, so it
+  // rises above the launch height whichever way the throw went — which had
+  // "Thrown straight down" from 45 m reporting a greatest height of 50.1 m.
+  // The rearrangement is only valid while there is an upward half to rearrange.
+  const apexHeight = uy <= 0 ? h
+    : (g > 1e-9 ? h + (uy * uy) / (2 * g) : h + uy * bounded);
   const range = horiz * bounded;
 
   const pos = (t) => ({

@@ -14,7 +14,7 @@
  <marker id="az" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4a4660"/></marker>
 </defs>
 <text class="t" x="40" y="46">Where every scenario launches from</text>
-<text class="s" x="40" y="68">One world, seven situations. Plan, north up, 1 unit = 1 metre. Every arrow is the flight the engine actually computes from that scenario's own numbers.</text>
+<text class="s" x="40" y="68">One world, eight situations. Plan, north up, 1 unit = 1 metre. Every arrow is the flight the engine actually computes from that scenario's own numbers.</text>
 <clipPath id="clip4092"><rect x="40" y="92" width="880" height="760" rx="12"/></clipPath>
 <g clip-path="url(#clip4092)">
 <rect x="40" y="92" width="880" height="760" fill="#e6e2db"/>
@@ -108,10 +108,12 @@
 <circle cx="496.6" cy="496.7" r="3.2" fill="#4c5a3f"/>
 <circle cx="343.4" cy="487.6" r="4" fill="#ffffff" stroke="#1a1714" stroke-width="1.6"/>
 <circle cx="480.0" cy="380.9" r="4" fill="#ffffff" stroke="#1a1714" stroke-width="1.6"/>
-<line x1="498.2" y1="284.6" x2="498.2" y2="402.1" stroke="#4a4660" stroke-width="2.2" opacity="0.8" marker-end="url(#az)"/>
-<circle cx="498.2" cy="402.1" r="3.2" fill="#4a4660"/>
-<line x1="516.4" y1="284.6" x2="516.4" y2="544.7" stroke="#4a4660" stroke-width="2.2" opacity="0.8" marker-end="url(#az)"/>
-<circle cx="516.4" cy="544.7" r="3.2" fill="#4a4660"/>
+<line x1="489.1" y1="284.6" x2="489.1" y2="358.9" stroke="#4a4660" stroke-width="2.2" opacity="0.8" marker-end="url(#az)"/>
+<circle cx="489.1" cy="358.9" r="3.2" fill="#4a4660"/>
+<line x1="507.3" y1="284.6" x2="507.3" y2="402.1" stroke="#4a4660" stroke-width="2.2" opacity="0.8" marker-end="url(#az)"/>
+<circle cx="507.3" cy="402.1" r="3.2" fill="#4a4660"/>
+<line x1="525.5" y1="284.6" x2="525.5" y2="544.7" stroke="#4a4660" stroke-width="2.2" opacity="0.8" marker-end="url(#az)"/>
+<circle cx="525.5" cy="544.7" r="3.2" fill="#4a4660"/>
 <circle cx="480.0" cy="284.6" r="4" fill="#ffffff" stroke="#1a1714" stroke-width="1.6"/>
 <circle cx="480.0" cy="487.6" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
 <text class="n" x="480.0" y="487.6" text-anchor="middle" dy="4.6">1</text>
@@ -122,7 +124,7 @@
 <text class="n" x="343.4" y="487.6" text-anchor="middle" dy="4.6">2</text>
 <line x1="343.4" y1="487.6" x2="343.4" y2="457.6" stroke="#ffffff" stroke-width="3" opacity="0.85"/><line x1="343.4" y1="487.6" x2="343.4" y2="457.6" stroke="#4a463f" stroke-width="1.2"/>
 <circle cx="343.4" cy="457.6" r="11.5" fill="#4c5a3f" stroke="#fff" stroke-width="1.8"/>
-<text class="n" x="343.4" y="457.6" text-anchor="middle" dy="4.6">7</text>
+<text class="n" x="343.4" y="457.6" text-anchor="middle" dy="4.6">8</text>
 <circle cx="480.0" cy="380.9" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
 <text class="n" x="480.0" y="380.9" text-anchor="middle" dy="4.6">4</text>
 <circle cx="480.0" cy="284.6" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
@@ -130,8 +132,11 @@
 <line x1="480.0" y1="284.6" x2="450.0" y2="284.6" stroke="#ffffff" stroke-width="3" opacity="0.85"/><line x1="480.0" y1="284.6" x2="450.0" y2="284.6" stroke="#4a463f" stroke-width="1.2"/>
 <circle cx="450.0" cy="284.6" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
 <text class="n" x="450.0" y="284.6" text-anchor="middle" dy="4.6">6</text>
-<text class="h" x="948" y="548">3 · The seven</text>
-<rect x="948" y="560" width="572" height="259" fill="#fff" rx="12" stroke="#e2ddd5"/>
+<line x1="480.0" y1="284.6" x2="510.0" y2="284.6" stroke="#ffffff" stroke-width="3" opacity="0.85"/><line x1="480.0" y1="284.6" x2="510.0" y2="284.6" stroke="#4a463f" stroke-width="1.2"/>
+<circle cx="510.0" cy="284.6" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
+<text class="n" x="510.0" y="284.6" text-anchor="middle" dy="4.6">7</text>
+<text class="h" x="948" y="548">3 · The eight</text>
+<rect x="948" y="560" width="572" height="288" fill="#fff" rx="12" stroke="#e2ddd5"/>
 <circle cx="972" cy="586" r="10" fill="#4a4660"/>
 <text class="n" x="972" y="586" text-anchor="middle" dy="4.4">1</text>
 <text class="k" x="992" y="583">Thrown straight up</text>
@@ -150,21 +155,25 @@
 <text class="km" x="992" y="686">The roof edge, at the inner compression ring</text>
 <circle cx="972" cy="702" r="10" fill="#4a4660"/>
 <text class="n" x="972" y="702" text-anchor="middle" dy="4.4">5</text>
-<text class="k" x="992" y="699">Off a platform</text>
+<text class="k" x="992" y="699">Down and off a platform</text>
 <text class="km" x="992" y="715">Front row of the north upper tier, 25 m up</text>
 <circle cx="972" cy="731" r="10" fill="#4a4660"/>
 <text class="n" x="972" y="731" text-anchor="middle" dy="4.4">6</text>
-<text class="k" x="992" y="728">Up and off a platform</text>
+<text class="k" x="992" y="728">Off a platform</text>
 <text class="km" x="992" y="744">Front row of the north upper tier, 25 m up</text>
-<circle cx="972" cy="760" r="10" fill="#4c5a3f"/>
+<circle cx="972" cy="760" r="10" fill="#4a4660"/>
 <text class="n" x="972" y="760" text-anchor="middle" dy="4.4">7</text>
-<text class="k" x="992" y="757">Time above a line</text>
-<text class="km" x="992" y="773">A clearance from the west goal line</text>
-<line x1="964" y1="787" x2="1504" y2="787" stroke="#e2ddd5"/>
-<circle cx="972" cy="807" r="6" fill="#4c5a3f"/>
-<text class="km" x="988" y="811">cut ALONG the pitch</text>
-<circle cx="1162" cy="807" r="6" fill="#4a4660"/>
-<text class="km" x="1178" y="811">cut ACROSS the pitch</text>
+<text class="k" x="992" y="757">Up and off a platform</text>
+<text class="km" x="992" y="773">Front row of the north upper tier, 25 m up</text>
+<circle cx="972" cy="789" r="10" fill="#4c5a3f"/>
+<text class="n" x="972" y="789" text-anchor="middle" dy="4.4">8</text>
+<text class="k" x="992" y="786">Time above a line</text>
+<text class="km" x="992" y="802">A clearance from the west goal line</text>
+<line x1="964" y1="816" x2="1504" y2="816" stroke="#e2ddd5"/>
+<circle cx="972" cy="836" r="6" fill="#4c5a3f"/>
+<text class="km" x="988" y="840">cut ALONG the pitch</text>
+<circle cx="1162" cy="836" r="6" fill="#4a4660"/>
+<text class="km" x="1178" y="840">cut ACROSS the pitch</text>
 <g transform="translate(64, 826)">
  <rect x="-14" y="-22" width="350" height="34" fill="#ffffffcc" rx="7"/>
  <line x1="0" y1="0" x2="260.3" y2="0" stroke="#1a1714" stroke-width="2"/>

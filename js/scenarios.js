@@ -20,7 +20,7 @@ export const GROUPS = [
   { id: 'ground',   label: 'From the ground',
     blurb: 'Starts and lands at the same level, so the path is symmetrical.' },
   { id: 'platform', label: 'From a platform',
-    blurb: 'Four ways off one platform. All land lower, so none is symmetrical.' },
+    blurb: 'Five ways off one platform. All land lower, so none is symmetrical.' },
   { id: 'look',     label: 'Interesting ones',
     blurb: 'Questions about a moment mid-flight, not the end of it.' },
 ];
@@ -48,6 +48,11 @@ export const SCENARIOS = [
     sub: 'straight down, with a push',
     note: 'A drop with a head start. Lands sooner and faster than if released.',
     params: { u: 10, theta: -90, h: 45, g: 9.81 }, lockAngle: true },
+
+  { id: 'platform-down', group: 'platform', name: 'Down and off a platform',
+    sub: 'thrown down, at an angle',
+    note: 'Aimed below the horizontal, so it is falling before it has gone anywhere. No upward half, no greatest height — and a negative angle, which is where the marks go.',
+    params: { u: 25, theta: -30, h: 25, g: 9.81 } },
 
   { id: 'platform', group: 'platform', name: 'Off a platform',
     sub: 'thrown flat',

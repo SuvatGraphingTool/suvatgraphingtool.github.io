@@ -157,5 +157,24 @@ group('Asking for a time gives back the line that produces it', () => {
   near(timeAbove(flat, r.height).above, 1.2, 1e-9, 'and it comes back exactly');
 });
 
+group('Thrown downwards, the greatest height is where it started', () => {
+  // h + u_y²⁄(2g) squares u_y, so it climbs above the launch whichever way the
+  // throw went. That had the shipped "Thrown straight down" scenario — 10 m s⁻¹
+  // off a 45 m roof — reporting a greatest height of 50.10 m, five metres above
+  // the roof it was thrown from. The rearrangement is only valid while there
+  // is an upward half to rearrange.
+  near(flight({ u: 10, theta: -90, h: 45, g: 9.81 }).apexHeight, 45, 1e-12,
+       'straight down off a 45 m roof peaks at');
+  near(flight({ u: 25, theta: -30, h: 25, g: 9.81 }).apexHeight, 25, 1e-12,
+       'down at 30° off a 25 m platform peaks at');
+  near(flight({ u: 20, theta: 0, h: 25, g: 9.81 }).apexHeight, 25, 1e-12,
+       'thrown flat peaks at');
+  ok(flight({ u: 10, theta: -90, h: 45, g: 9.81 }).tApex === 0,
+     'and none of them takes any time to get there');
+  // Thrown up it still works, which is the half the formula was written for.
+  near(flight({ u: 28, theta: 45, h: 25, g: 9.81 }).apexHeight, 44.9796, 5e-4,
+       'thrown up at 45° off the same platform still peaks at');
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

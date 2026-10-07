@@ -43,7 +43,7 @@ worth looking at. Numbers are defaults to be dragged, never fixed answers.
 | Scenario | What happens |
 |---|---|
 | **Up and off a cliff** | Thrown upward from a height, lands far below |
-| **Downwards off a height** | Thrown *below* the horizontal, so it drops faster |
+| **Downwards off a height** ✓ | Thrown *below* the horizontal, so it drops faster — built, as *Down and off a platform* |
 | **Hit from just above the ground** | A cricket or golf shot — launched from about hand height |
 
 ## Two objects at once

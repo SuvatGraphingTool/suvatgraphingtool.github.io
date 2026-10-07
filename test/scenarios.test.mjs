@@ -66,11 +66,12 @@ group('Both sit under Interesting ones, with everything a card needs', () => {
     ok(!!s.backdrop && !!s.site, `${id} brings its own place`);
     ok((s.note || '').length > 80 && !!s.sub, `${id} says what it is for`);
   }
-  // A bare count catches a scenario going missing by accident. It went from
-  // eleven to nine deliberately: "Throw at a target" and "Two that collide"
-  // were both built so they could not fail, and a demonstration that cannot
-  // fail demonstrates nothing. See design/presets.md.
-  ok(SCENARIOS.length === 9, 'nine scenarios in all');
+  // A bare count catches a scenario going missing by accident. Eleven became
+  // nine when "Throw at a target" and "Two that collide" went — both built so
+  // they could not fail, and a demonstration that cannot fail demonstrates
+  // nothing (see design/presets.md) — and ten when the missing downward
+  // angle was added.
+  ok(SCENARIOS.length === 10, 'ten scenarios in all');
   ok(new Set(SCENARIOS.map((x) => x.id)).size === SCENARIOS.length, 'and every id is its own');
   ok(SCENARIOS.every((x) => GROUPS.some((grp) => grp.id === x.group)), 'every one in a declared group');
 });
@@ -101,6 +102,41 @@ group('The monkey intro spans the reachable and the unreachable', () => {
   ok(s.intro.models.every((mdl) => reach(mdl.u)),
      'every offered throw reaches the monkey at its starting place');
   ok(!reach(4), 'a feeble enough throw does NOT, so the failure case is real');
+});
+
+/* ── the platform group sweeps the angle ────────────────────────────────
+   Four ways off a platform left a hole in the middle: straight down, flat,
+   and up at an angle, but nothing aimed below the horizontal. That is the one
+   students fumble, because it is the one where the sign of the vertical
+   component bites. June 08 Q7 asks it directly. */
+group('Off one platform, the whole range of angles', () => {
+  const g = 9.81;
+  const angled = SCENARIOS.filter((s) => s.group === 'platform');
+  ok(angled.length === 5, 'five ways off a platform');
+
+  const d = byId('platform-down');
+  ok(!!d, 'thrown down at an angle exists');
+  ok(d.params.theta < 0 && d.params.theta > -90,
+     `and it really is between flat and straight down (${d.params.theta}°)`);
+  ok(!d.lockAngle && !d.noAngle, 'and the angle is the point, so it is not locked');
+  ok(Math.abs(d.params.theta) <= 90, 'and it is inside the range the input accepts');
+
+  // The three angled throws leave the SAME platform, which is what makes
+  // them comparable: only the angle differs.
+  const flat = byId('platform'), up = byId('platform-angle');
+  ok(d.params.h === flat.params.h && d.params.h === up.params.h,
+     `all three angled throws leave the same platform (${d.params.h} m)`);
+
+  // Thrown down, there is no upward half at all: the apex IS the launch.
+  const f = flight({ u: d.params.u, theta: d.params.theta, h: d.params.h, g });
+  near(f.apexHeight, d.params.h, 1e-9, 'thrown down, the greatest height is the launch height');
+  ok(f.tApex === 0, 'and there is no time to the top');
+
+  // It lands sooner and faster than the flat throw it sits next to.
+  const level = flight({ u: flat.params.u, theta: 0, h: flat.params.h, g });
+  ok(f.tFlight < level.tFlight, 'it lands sooner than the same platform thrown flat');
+  ok(f.vLanding > level.vLanding || flat.params.u !== d.params.u,
+     'and the comparison with the flat throw is a real one');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
