@@ -14,7 +14,7 @@
  <marker id="az" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4a4660"/></marker>
 </defs>
 <text class="t" x="40" y="46">Where every scenario launches from</text>
-<text class="s" x="40" y="68">One world, nine situations. Plan, north up, 1 unit = 1 metre. Every arrow is the flight the engine actually computes from that scenario's own numbers.</text>
+<text class="s" x="40" y="68">One world, seven situations. Plan, north up, 1 unit = 1 metre. Every arrow is the flight the engine actually computes from that scenario's own numbers.</text>
 <clipPath id="clip4092"><rect x="40" y="92" width="880" height="760" rx="12"/></clipPath>
 <g clip-path="url(#clip4092)">
 <rect x="40" y="92" width="880" height="760" fill="#e6e2db"/>
@@ -102,12 +102,10 @@
 <text class="l" x="727.3" y="326.2" text-anchor="middle">4 tiers</text>
 <text class="l" x="480.0" y="649.0" text-anchor="middle">3 tiers + boxes (north and south)</text>
 <circle cx="480.0" cy="487.6" r="4" fill="#ffffff" stroke="#1a1714" stroke-width="1.6"/>
-<line x1="343.4" y1="460.3" x2="509.2" y2="460.3" stroke="#4c5a3f" stroke-width="2.2" opacity="0.8" marker-end="url(#ax)"/>
-<circle cx="509.2" cy="460.3" r="3.2" fill="#4c5a3f"/>
+<line x1="343.4" y1="478.5" x2="509.2" y2="478.5" stroke="#4c5a3f" stroke-width="2.2" opacity="0.8" marker-end="url(#ax)"/>
+<circle cx="509.2" cy="478.5" r="3.2" fill="#4c5a3f"/>
 <line x1="343.4" y1="496.7" x2="496.6" y2="496.7" stroke="#4c5a3f" stroke-width="2.2" opacity="0.8" marker-end="url(#ax)"/>
 <circle cx="496.6" cy="496.7" r="3.2" fill="#4c5a3f"/>
-<line x1="343.4" y1="514.9" x2="625.5" y2="514.9" stroke="#4c5a3f" stroke-width="2.2" opacity="0.8" marker-end="url(#ax)"/>
-<circle cx="625.5" cy="514.9" r="3.2" fill="#4c5a3f"/>
 <circle cx="343.4" cy="487.6" r="4" fill="#ffffff" stroke="#1a1714" stroke-width="1.6"/>
 <circle cx="480.0" cy="380.9" r="4" fill="#ffffff" stroke="#1a1714" stroke-width="1.6"/>
 <line x1="498.2" y1="284.6" x2="498.2" y2="402.1" stroke="#4a4660" stroke-width="2.2" opacity="0.8" marker-end="url(#az)"/>
@@ -115,9 +113,6 @@
 <line x1="516.4" y1="284.6" x2="516.4" y2="544.7" stroke="#4a4660" stroke-width="2.2" opacity="0.8" marker-end="url(#az)"/>
 <circle cx="516.4" cy="544.7" r="3.2" fill="#4a4660"/>
 <circle cx="480.0" cy="284.6" r="4" fill="#ffffff" stroke="#1a1714" stroke-width="1.6"/>
-<line x1="386.3" y1="478.5" x2="332.2" y2="478.5" stroke="#4c5a3f" stroke-width="2.2" opacity="0.8" marker-end="url(#ax)"/>
-<circle cx="332.2" cy="478.5" r="3.2" fill="#4c5a3f"/>
-<circle cx="386.3" cy="487.6" r="4" fill="#ffffff" stroke="#1a1714" stroke-width="1.6"/>
 <circle cx="480.0" cy="487.6" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
 <text class="n" x="480.0" y="487.6" text-anchor="middle" dy="4.6">1</text>
 <line x1="480.0" y1="487.6" x2="450.0" y2="487.6" stroke="#ffffff" stroke-width="3" opacity="0.85"/><line x1="480.0" y1="487.6" x2="450.0" y2="487.6" stroke="#4a463f" stroke-width="1.2"/>
@@ -127,10 +122,7 @@
 <text class="n" x="343.4" y="487.6" text-anchor="middle" dy="4.6">2</text>
 <line x1="343.4" y1="487.6" x2="343.4" y2="457.6" stroke="#ffffff" stroke-width="3" opacity="0.85"/><line x1="343.4" y1="487.6" x2="343.4" y2="457.6" stroke="#4a463f" stroke-width="1.2"/>
 <circle cx="343.4" cy="457.6" r="11.5" fill="#4c5a3f" stroke="#fff" stroke-width="1.8"/>
-<text class="n" x="343.4" y="457.6" text-anchor="middle" dy="4.6">8</text>
-<line x1="343.4" y1="487.6" x2="343.4" y2="517.6" stroke="#ffffff" stroke-width="3" opacity="0.85"/><line x1="343.4" y1="487.6" x2="343.4" y2="517.6" stroke="#4a463f" stroke-width="1.2"/>
-<circle cx="343.4" cy="517.6" r="11.5" fill="#4c5a3f" stroke="#fff" stroke-width="1.8"/>
-<text class="n" x="343.4" y="517.6" text-anchor="middle" dy="4.6">9</text>
+<text class="n" x="343.4" y="457.6" text-anchor="middle" dy="4.6">7</text>
 <circle cx="480.0" cy="380.9" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
 <text class="n" x="480.0" y="380.9" text-anchor="middle" dy="4.6">4</text>
 <circle cx="480.0" cy="284.6" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
@@ -138,10 +130,8 @@
 <line x1="480.0" y1="284.6" x2="450.0" y2="284.6" stroke="#ffffff" stroke-width="3" opacity="0.85"/><line x1="480.0" y1="284.6" x2="450.0" y2="284.6" stroke="#4a463f" stroke-width="1.2"/>
 <circle cx="450.0" cy="284.6" r="11.5" fill="#4a4660" stroke="#fff" stroke-width="1.8"/>
 <text class="n" x="450.0" y="284.6" text-anchor="middle" dy="4.6">6</text>
-<circle cx="386.3" cy="487.6" r="11.5" fill="#4c5a3f" stroke="#fff" stroke-width="1.8"/>
-<text class="n" x="386.3" y="487.6" text-anchor="middle" dy="4.6">7</text>
-<text class="h" x="948" y="548">3 · The nine</text>
-<rect x="948" y="560" width="572" height="317" fill="#fff" rx="12" stroke="#e2ddd5"/>
+<text class="h" x="948" y="548">3 · The seven</text>
+<rect x="948" y="560" width="572" height="259" fill="#fff" rx="12" stroke="#e2ddd5"/>
 <circle cx="972" cy="586" r="10" fill="#4a4660"/>
 <text class="n" x="972" y="586" text-anchor="middle" dy="4.4">1</text>
 <text class="k" x="992" y="583">Thrown straight up</text>
@@ -168,21 +158,13 @@
 <text class="km" x="992" y="744">Front row of the north upper tier, 25 m up</text>
 <circle cx="972" cy="760" r="10" fill="#4c5a3f"/>
 <text class="n" x="972" y="760" text-anchor="middle" dy="4.4">7</text>
-<text class="k" x="992" y="757">Throw at a target</text>
-<text class="km" x="992" y="773">A shot from the edge of the penalty area</text>
-<circle cx="972" cy="789" r="10" fill="#4c5a3f"/>
-<text class="n" x="972" y="789" text-anchor="middle" dy="4.4">8</text>
-<text class="k" x="992" y="786">Time above a line</text>
-<text class="km" x="992" y="802">A clearance from the west goal line</text>
-<circle cx="972" cy="818" r="10" fill="#4c5a3f"/>
-<text class="n" x="972" y="818" text-anchor="middle" dy="4.4">9</text>
-<text class="k" x="992" y="815">Two that collide</text>
-<text class="km" x="992" y="831">A drone 73.5 m up, and a kick from the goal line below it</text>
-<line x1="964" y1="845" x2="1504" y2="845" stroke="#e2ddd5"/>
-<circle cx="972" cy="865" r="6" fill="#4c5a3f"/>
-<text class="km" x="988" y="869">cut ALONG the pitch</text>
-<circle cx="1162" cy="865" r="6" fill="#4a4660"/>
-<text class="km" x="1178" y="869">cut ACROSS the pitch</text>
+<text class="k" x="992" y="757">Time above a line</text>
+<text class="km" x="992" y="773">A clearance from the west goal line</text>
+<line x1="964" y1="787" x2="1504" y2="787" stroke="#e2ddd5"/>
+<circle cx="972" cy="807" r="6" fill="#4c5a3f"/>
+<text class="km" x="988" y="811">cut ALONG the pitch</text>
+<circle cx="1162" cy="807" r="6" fill="#4a4660"/>
+<text class="km" x="1178" y="811">cut ACROSS the pitch</text>
 <g transform="translate(64, 826)">
  <rect x="-14" y="-22" width="350" height="34" fill="#ffffffcc" rx="7"/>
  <line x1="0" y1="0" x2="260.3" y2="0" stroke="#1a1714" stroke-width="2"/>
