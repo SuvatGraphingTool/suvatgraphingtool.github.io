@@ -130,9 +130,27 @@ export function drawSection(A) {
   const mpp = 1 / A.scale;                      // metres per pixel
   A.vis = vis; A.mpp = mpp; A.uMin = uMin; A.uMax = uMax;
 
-  // while the camera is moving, the expensive layers are the ones nobody is
-  // reading: props, house windows, individual seats
-  if (A.moving) { A.span = Math.max(A.span, D.lod.people + 1); }
+  // WHILE THE CAMERA MOVES, DO LESS WORK — NOT A DIFFERENT PICTURE.
+  //
+  // This used to save that work by lying about the span: it floored A.span at
+  // D.lod.people + 1, i.e. 461 m, whatever you were actually looking at. A
+  // real stadium fit is 220-330 m, so one drag moved the span by two hundred
+  // metres, and every fade() in the file is a function of span.
+  //
+  // 461 is past seatTexture (440), so fade() for the stands snapped from
+  // about 0.9 to 0, which switches on an 85%-opaque flood fill of every stand
+  // silhouette in --structure-dark. That token and --interior are inverted
+  // value bands between the two themes, so the stands went near-black in dark
+  // mode and pale in light — and because cam.moving was alternating frame to
+  // frame, so did they. That is the flicker. It also took the goal mesh, the
+  // hoarding panels, the interior columns, the concourse floors and the stair
+  // core with it, and moved the far-field grid's step.
+  //
+  // So the span is left alone and the saving is asked for directly. `cheap`
+  // skips the three genuinely expensive per-item loops — the crowd, house
+  // windows and the prop sprites — and nothing that decides a TONE or crosses
+  // a threshold. Nothing changes value when you take hold of the view.
+  A.cheap = !!A.moving;
   sky(A);
   nightGlow(A);
   farField(A);
@@ -487,7 +505,7 @@ function blocks(A) {
         // cut along a row: a long wall under a ridge seen end-on
         rect(ctx, x0, eavesY, x1, yB, sunward(tn, wall, face));
         rect(ctx, x0, yT, x1, eavesY, mixTone(roofT, tn.sun, 0.22));
-        if (detF > 0) windowsAlong(A, b, eavesY, yB, detF * houseF, hsh);
+        if (detF > 0 && !A.cheap) windowsAlong(A, b, eavesY, yB, detF * houseF, hsh);
       }
       ctx.globalAlpha = 1; continue;
     }
@@ -890,7 +908,7 @@ function seating(A, p) {
       ctx.lineTo(sx(u + p.s * p.rowD / 2), sy(y + SEAT_BAND)); ctx.stroke();
     }
     ctx.restore();
-    crowd(A, p, rowF);
+    if (!A.cheap) crowd(A, p, rowF);
   } else if (texF > 0 && stepPx > 1.1) {
     ctx.save(); ctx.globalAlpha = 0.65 * texF;
     ctx.strokeStyle = tn.seatAlt; ctx.lineWidth = Math.max(0.8, Math.min(2.4, stepPx * 0.45));
@@ -1011,6 +1029,10 @@ function roofSection(A) {
 /* ── the scale references ───────────────────────────────────────────── */
 function props(A) {
   const { ctx, span, section } = A;
+  // One sprite per prop, and a district can hold hundreds. This is the
+  // biggest of the three savings and the least tonal: a few people and cars
+  // stop being drawn, and nothing that was drawn changes colour.
+  if (A.cheap) return;
   const peopleF = fade(span, D.lod.people), carF = fade(span, D.lod.cars);
   const treeF = fade(span, D.lod.treeBlob), detTreeF = fade(span, D.lod.treeDetail);
   for (const p of section.props) {

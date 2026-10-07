@@ -63,8 +63,30 @@ function applyBand(cam, w, h, u0, ball) {
    because zoom is multiplicative — linear easing crawls at the wide end and
    bolts at the close end. Panning and orbiting stay immediate: a drag is a
    direct manipulation and lag in one feels like a fault. */
+/* ── when the camera counts as moving ───────────────────────────────────
+   `cam.moving` turns the scenery cheap, and until now it was rewritten from
+   scratch every frame against a threshold a single wheel tick straddles:
+   deltaY = 1 gives r ≈ −0.0016, above 0.0008 for exactly one frame and below
+   it the next. So the flag alternated true, false, true, false between
+   consecutive frames — and anything keyed on it alternated with it.
+
+   It is latched now. Motion sets it; it clears only after the camera has been
+   still for DWELL, so it cannot chatter. And it is cleared explicitly in the
+   two places that used to leave it stale: the early return below, and the end
+   of a drag. easeCamera returns early whenever there is nothing to ease, which
+   is most frames, so a flag left true there stayed true indefinitely. */
+const DWELL = 180;                       // ms of stillness before it sharpens
+
+function setMoving(cam, moving) {
+  const now = performance.now();
+  if (moving) { cam._stillSince = 0; cam.moving = true; return; }
+  if (!cam.moving) return;
+  if (!cam._stillSince) cam._stillSince = now;
+  if (now - cam._stillSince >= DWELL) { cam.moving = false; cam._stillSince = 0; }
+}
+
 export function easeCamera(cam, dt) {
-  if (!cam.want) return false;
+  if (!cam.want) { setMoving(cam, false); return cam.moving; }
   const k = 1 - Math.exp(-dt * 9.5);
   let moving = false;
   if (cam.want.scale != null) {
@@ -81,8 +103,10 @@ export function easeCamera(cam, dt) {
   }
   // A travelling camera invalidates the scenery cache on every frame, so
   // while it travels it travels cheap and sharpens when it stops.
-  cam.moving = moving;
-  return moving;
+  setMoving(cam, moving);
+  // Keep reporting a frame while the dwell runs down, or the last repaint at
+  // full detail never happens.
+  return moving || cam.moving;
 }
 const snapWant = (cam) => { cam.want = { scale: cam.scale, cx: cam.cx, cy: cam.cy }; };
 
@@ -739,6 +763,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   const end = (e, clicked) => {
     const was = down;
     drag = false; dragging = null; down = null;
+    cam.moving = false; cam._stillSince = 0;   // a finished drag is not moving
     canvas.style.cursor = 'grab';
     if (e && canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     // A click is a press that did not move. Anything that moved was a pan, and
@@ -759,7 +784,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     const scale = clamp(base * Math.exp(-e.deltaY * 0.0016), 0.0035, 900);
     cam.moving = true;
     clearTimeout(attachControls._z);
-    attachControls._z = setTimeout(() => { cam.moving = false; onChange(); }, 220);
+    attachControls._z = setTimeout(() => { cam.moving = false; cam._stillSince = 0; onChange(); }, 220);
     const box = canvas.getBoundingClientRect();
     cam.want = before
       ? { scale, cx: before.u - (mx - box.width / 2) / scale, cy: before.y + (my - box.height / 2) / scale }
