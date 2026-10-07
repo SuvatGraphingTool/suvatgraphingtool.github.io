@@ -59,15 +59,18 @@ export default [
       await page.click('.pcard[data-id="arc"]'); await wait(300);
       for (const [k, v] of [['u', '60'], ['g', '9.81']]) await page.fill(`#suvat input[data-k="${k}"]`, v);
       await page.fill('#x-theta', '45'); await wait(250);
-      await page.click('#launch'); await wait(2600);
+      await page.click('#launch'); await wait(300);
+      await page.click('#pace-go'); await wait(2600);
       const d1 = page.locator('#done button', { hasText: /See the diagram/ });
-      if (await d1.count()) await d1.first().click();
+      if (await d1.count() && await d1.first().isVisible()) await d1.first().click();
       await wait(900);
-      await page.click('#steps .step[data-s="values"]'); await wait(200);
+      await page.click('#steps .step[data-s="values"]'); await wait(300);
       await page.fill('#suvat input[data-k="u"]', '4'); await wait(250);
       const seen = await page.evaluate(`(async () => {
         const out = [];
-        document.getElementById('launch').click();
+        // Straight to the flight: the speed card sits between #launch and the
+        // fit, and this is measuring the camera, not the card.
+        window.SUVAT.runFlight();
         for (let i = 0; i < 36; i++) {
           out.push(window.SUVAT.cam.scale);
           await new Promise((r) => requestAnimationFrame(r));
