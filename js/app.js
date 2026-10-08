@@ -8,6 +8,7 @@ import { solveLaunch } from './core/solve.js';
 import { trajectory } from './core/trajectory.js';
 import { flight, timeAbove, heightForTime } from './core/projectile.js';
 import { intercept, corners } from './core/intercept.js';
+import { recommend, paceNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
 import * as scene from './render/scene.js';
@@ -71,7 +72,7 @@ const state = {
   given: {}, mass: 1,
   bounce: false, restitution: 0.7,
   t: 0, playing: false, launched: false, firedBefore: false,
-  rate: 1,
+  rate: 1, rateTouched: false,
   show: { path: true, velocity: true, apex: true, range: true, grid: false, ruler: true,
           components: false, ticks: false, acceleration: false },
   extras: { graphs: false, working: false, energy: false },
@@ -880,9 +881,18 @@ function launch() {
 }
 
 function openPace() {
-  $('pace-rate').value = String(state.rate);
-  $('pace-val').textContent = `${state.rate}×`;
+  // A SPEED THE FLIGHT ASKED FOR, until somebody says otherwise. The card
+  // opens on whatever this particular flight needs — which for a round that
+  // lands in half a second is nothing like what it is for a lobbed ball — so
+  // the common case is still Enter and Enter, and the common case is now also
+  // the right one. Once a student has moved the slider themselves that choice
+  // stands, and the pin and the note say when it has stopped making sense.
+  if (!state.rateTouched && traj) state.rate = recommend(traj.tMax) / 100;
+  // SHOW IT BEFORE MEASURING IT. The pin is placed from the slider's own
+  // width, and a slider inside a hidden card has none — syncing first put the
+  // pin at zero and hid it for having nowhere to go.
   $('pace').hidden = false;
+  syncRate();
   // FOCUS THE SLIDER, NOT THE BUTTON. Focusing the button meant the very
   // keypress that opened this card activated it on the way back up, so Enter
   // from the values screen blew straight through the card without it ever
@@ -895,11 +905,32 @@ function closePace() { $('pace').hidden = true; }
 
 /** Keep the card and the flight bar saying the same thing. */
 function syncRate() {
-  $('pace-rate').value = String(state.rate);
-  $('pace-val').textContent = `${state.rate}×`;
+  const value = Math.round(state.rate * 100);
+  $('pace-rate').value = String(value);
+  $('pace-val').textContent = `${num(state.rate, 2)}×`;
   for (const x of $('rate-seg').children) {
     x.setAttribute('aria-pressed', String(parseFloat(x.dataset.rate) === state.rate));
   }
+
+  const tMax = traj?.tMax;
+  const note = $('pace-note'), pin = $('pace-pin'), use = $('pace-use');
+  if (!(tMax > 0)) { note.textContent = ''; pin.hidden = true; use.hidden = true; return; }
+
+  const best = recommend(tMax);
+  const r = paceNote(value, tMax);
+  note.textContent = r.text;
+  note.dataset.ok = String(r.ok);
+  use.hidden = r.ok;
+
+  // The thumb travels between half a thumb in at each end, so the pin has to
+  // travel the same path or it points at a number next to the one it means.
+  // Stated as a percentage rather than measured in pixels: measuring put the
+  // pin five pixels out, because the card's scrollbar comes and goes with the
+  // length of this very note and the slider is a different width by the time
+  // the answer is used. A calc cannot go stale.
+  const THUMB = 24;
+  pin.style.left = `calc(${best}% - ${(best * THUMB / 100).toFixed(3)}px + ${THUMB / 2}px)`;
+  pin.hidden = false;
 }
 
 function runFlight() {
@@ -1338,8 +1369,16 @@ $('guard-ck').addEventListener('change', (e) => setGuard(e.target.checked));
 $('pace-go').addEventListener('click', runFlight);
 $('pace-back').addEventListener('click', () => { closePace(); go('values'); });
 $('pace-rate').addEventListener('input', (e) => {
-  state.rate = parseFloat(e.target.value);
+  state.rate = parseInt(e.target.value, 10) / 100;
+  state.rateTouched = true;     // their choice now, not the recommendation's
   syncRate();
+});
+$('pace-use').addEventListener('click', () => {
+  if (!traj) return;
+  state.rate = recommend(traj.tMax) / 100;
+  state.rateTouched = false;    // back under the recommendation's wing
+  syncRate();
+  $('pace-rate').focus();
 });
 $('intro-values').addEventListener('click', () => { closeIntro(); go('values'); });
 $('play').addEventListener('click', togglePlay);
@@ -1373,6 +1412,7 @@ $('res-go').addEventListener('click', () => {
 for (const b of $('rate-seg').children) {
   b.addEventListener('click', () => {
     state.rate = parseFloat(b.dataset.rate);
+    state.rateTouched = true;
     syncRate();                 // the card and the bar are one setting
   });
 }

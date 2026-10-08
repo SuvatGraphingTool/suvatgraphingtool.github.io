@@ -14,6 +14,7 @@
 <link rel="modulepreload" href="./js/core/trajectory.js">
 <link rel="modulepreload" href="./js/core/projectile.js">
 <link rel="modulepreload" href="./js/core/intercept.js">
+<link rel="modulepreload" href="./js/core/pace.js">
 <link rel="modulepreload" href="./js/scenarios.js">
 <link rel="modulepreload" href="./js/working.js">
 <link rel="modulepreload" href="./js/render/scene.js">
@@ -142,17 +143,25 @@
             <div class="intro-card pace-card" role="dialog" aria-labelledby="pace-title">
               <p class="intro-eyebrow">Before it runs</p>
               <h2 class="intro-h" id="pace-title">How fast should it go?</h2>
-              <p class="intro-body" id="pace-body">Real time is what actually happens. Slower is easier to read.</p>
+              <p class="intro-body" id="pace-body">Real time is what actually happens, and short flights go past too quickly to read. The mark on the slider is the speed this one is easiest to watch at.</p>
               <div class="pace-row">
-                <output class="pace-val" id="pace-val">1×</output>
-                <input type="range" id="pace-rate" min="0.25" max="1" step="0.25" value="1"
-                       aria-label="Playback speed" list="pace-stops">
-                <datalist id="pace-stops">
-                  <option value="0.25"></option><option value="0.5"></option>
-                  <option value="0.75"></option><option value="1"></option>
-                </datalist>
+                <output class="pace-val" id="pace-val">1.00×</output>
+                <!-- the slot carries the recommendation pin, so the pin and
+                     the thumb share one coordinate system and cannot drift -->
+                <div class="pace-slot">
+                  <input type="range" id="pace-rate" min="0" max="100" step="1" value="100"
+                         aria-label="Playback speed, out of a hundred"
+                         aria-describedby="pace-note" list="pace-stops">
+                  <span class="pace-pin" id="pace-pin" hidden></span>
+                  <datalist id="pace-stops">
+                    <option value="0"></option><option value="25"></option><option value="50"></option>
+                    <option value="75"></option><option value="100"></option>
+                  </datalist>
+                </div>
               </div>
-              <p class="pace-scale"><span>0.25×</span><span>0.5×</span><span>0.75×</span><span>real time</span></p>
+              <p class="pace-scale"><span>frozen</span><span>0.5×</span><span>real time</span></p>
+              <p class="pace-note" id="pace-note" data-ok="true"></p>
+              <button class="pace-use" id="pace-use" hidden>Use the recommended speed</button>
               <div class="intro-acts">
                 <button class="ghost" id="pace-back">Back to the values</button>
                 <button class="fire sm" id="pace-go">Launch</button>

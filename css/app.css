@@ -294,11 +294,45 @@ h1, h2 { margin: 0; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1
    not two. It must not become a wall: the Launch button takes focus when the
    card opens, so Enter from the values screen and Enter again is the whole
    interaction for anyone who does not want to think about it. */
+/* LIGHTER THAN THE INTRO, deliberately. The intro card chooses which
+   experiment to run, so what is behind it is not yet the subject and may as
+   well be hidden. This one sits over the flight you are about to watch, and
+   seeing the shape of it through the glass is how you judge how fast to run
+   it. Enough blur to keep the card legible, not enough to hide the answer.
+
+   Both selectors are needed: `.intro` carries the heavier treatment and is
+   declared after this block, so a bare `.pace` would lose on source order. */
+.intro.pace { background: color-mix(in srgb, #0e0e0c 34%, transparent);
+              backdrop-filter: blur(4px) saturate(.95); }
 .pace-card { width: min(420px, 100%); }
 .pace-row { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-1); }
 .pace-val { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.03em;
             min-width: 3.4ch; text-align: right; font-variant-numeric: tabular-nums; }
-.pace-row input[type='range'] { flex: 1; }
+.pace-slot { position: relative; flex: 1; }
+.pace-row input[type='range'] { width: 100%; }
+/* The pin marks the speed the flight asked for. It is placed from the
+   slider's own geometry in JS — half a thumb in at each end — so it sits
+   under the thumb rather than near it. */
+.pace-pin {
+  position: absolute; top: 2px; width: 2px; height: 8px; margin-left: -1px;
+  background: var(--ink-faint); border-radius: 1px; pointer-events: none;
+}
+.pace-pin::after {
+  content: 'best'; position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; line-height: 1; color: var(--ink-faint); letter-spacing: 0.04em;
+}
+.pace-note {
+  font-size: var(--fs-sm); line-height: 1.5; margin: 0 0 var(--sp-3);
+  color: var(--ink-muted); min-height: 2.6em;
+}
+.pace-note[data-ok='false'] { color: var(--bad); }
+.pace-use {
+  display: block; width: 100%; height: 34px; margin-bottom: var(--sp-4);
+  border: 1px solid var(--border); border-radius: var(--r-pill);
+  font-size: var(--fs-sm); color: var(--ink-strong); cursor: pointer;
+  transition: background 120ms;
+}
+.pace-use:hover { background: var(--hover); }
 .pace-scale { display: flex; justify-content: space-between; margin: 0 0 var(--sp-5);
               padding-left: calc(3.4ch + var(--sp-4)); font-size: var(--fs-xs); color: var(--ink-faint); }
 
