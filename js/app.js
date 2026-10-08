@@ -292,12 +292,12 @@ function buildValuesScreen() {
                  value="${state.theta ?? 0}" aria-label="Angle of projection">
         </div>
       </div>
-      <p class="xhint" id="x-theta-hint">${THETA_HINT}</p>
+      <p class="xhint" id="x-theta-hint">${OPTIONAL_HINT}</p>
       <div class="angle-say" id="theta-say"></div></div>`);
   }
   rows.push(`<div class="xrow" data-x="h"><label for="x-h">Launch height h (m)</label>
     <input id="x-h" type="number" step="any" value="${state.h ?? ''}" placeholder="—">
-    <p class="xhint">Optional. Blank means ground level, or it works the height out.</p></div>`);
+    <p class="xhint">${OPTIONAL_HINT}</p></div>`);
   // Time above a line can be asked in either direction, so it is offered in
   // both. The height moves the line; the time asks the engine which line
   // would give that answer and moves it there.
@@ -513,9 +513,13 @@ function sayAngle() {
   if (!say) return;
   const bits = [];
   if (derived) {
-    bits.push(`<b>Worked out, not needed.</b> ${solved.filled.theta} — from the values you
-      already gave. Leaving this box blank is a normal thing to do and usually the
-      right one.`);
+    // The engine's own derivation sometimes opens with "from s = …", which
+    // dropped straight after a full stop read as a broken sentence — and
+    // then said "from" twice. It is given something to hang off instead,
+    // which works whichever form the derivation takes.
+    bits.push(`<b>Worked out, not needed.</b> The engine had everything it needed without
+      it — ${solved.filled.theta}. Leaving this box blank is a normal thing to do, and
+      usually the right one.`);
   } else if (!gaveTheta && solved.mode === '1d') {
     bits.push(`<b>Leave it blank.</b> The five equations never mention an angle, so one is
       only wanted here to draw an arc. Without it the motion is solved along a line
@@ -581,15 +585,22 @@ function applyGuard() {
     input.setAttribute('aria-disabled', String(lock));
   }
 
+  // NOTHING TO SAY UNTIL IT IS DOING SOMETHING. The idle state used to read
+  // "Fill in any three. The rest will close once the motion is determined.",
+  // directly under a subtitle already saying any three of the five give you
+  // the other two — the same sentence twice, and an offer to unlock boxes
+  // that were not locked. The row only appears once the guard has acted.
+  const row = $('guard');
   if (!state.guard) {
     say.textContent = 'Extra values are allowed. The engine will still refuse ones that contradict.';
     btn.textContent = 'Guard them';
+    row.hidden = false;
   } else if (shut) {
     say.textContent = `The motion is already determined, so the ${shut === 1 ? 'remaining box is' : `remaining ${shut} boxes are`} closed — anything typed there could only repeat or contradict what is here.`;
     btn.textContent = 'Let me fill them anyway';
+    row.hidden = false;
   } else {
-    say.textContent = 'Fill in any three. The rest will close once the motion is determined.';
-    btn.textContent = 'Let me fill them anyway';
+    row.hidden = true;
   }
 }
 
@@ -689,9 +700,22 @@ function wireLive() {
    now has a scenario of its own. But solve.js derives θ by atan2 and by the
    range equation and can legitimately land outside ±90°; clamping there would
    break a correct answer, so js/core/ is left alone. */
-const THETA_HINT = 'Optional — leave it blank and the engine works it out, or '
-  + 'says it only needs a straight line. Anything from −90° to 90°; negative '
-  + 'is thrown downwards.';
+/**
+ * ONE SENTENCE, UNDER EVERY OPTIONAL BOX, WORD FOR WORD THE SAME.
+ *
+ * The angle box used to carry three separate facts: that it was optional,
+ * what the engine would do without it, and that the range was −90° to 90°
+ * with negative meaning downwards. All three were true and none of them was
+ * what a student standing in front of an exam question needs, which is
+ * permission not to invent a number. The engine's behaviour is said by the
+ * band above the box and by the line underneath it, both of which appear the
+ * moment there is something to report; the range is enforced by the slider
+ * and the clamp, so stating it was belt and braces.
+ *
+ * What is left is the rule, and the rule is the same for every optional
+ * value on this screen, so it is written once.
+ */
+const OPTIONAL_HINT = '<b>Optional — only enter it if the question gives it.</b>';
 const THETA_LIMIT = 90;
 
 function wireAngle() {
@@ -709,7 +733,7 @@ function wireAngle() {
   box.addEventListener('input', (e) => {
     const v = parseValue(e.target.value);
     const hint = $('x-theta-hint');
-    if (v === undefined) { say(hint, false, THETA_HINT); set(undefined, true); return; }
+    if (v === undefined) { say(hint, false, OPTIONAL_HINT); set(undefined, true); return; }
     if (!isFinite(v)) { say(hint, true, 'That is not an angle. Degrees, between −90 and 90.'); return; }
     if (Math.abs(v) > THETA_LIMIT) {
       // Say what was done and why. Rewriting the box under the cursor of
@@ -720,7 +744,7 @@ function wireAngle() {
       set(capped, true);
       return;
     }
-    say(hint, false, THETA_HINT);
+    say(hint, false, OPTIONAL_HINT);
     set(v, true);
   });
 
@@ -736,11 +760,11 @@ function wireAngle() {
     const exact = Math.abs(state.theta - Math.round(state.theta * 100) / 100) > 1e-12;
     say($('x-theta-hint'), false, exact
       ? `Shown to two places. Working with ${M`${num(state.theta, 10, { trim: true })}`}°, exactly as typed.`
-      : THETA_HINT);
+      : OPTIONAL_HINT);
   });
 
   sld?.addEventListener('input', (e) => {
-    say($('x-theta-hint'), false, THETA_HINT);
+    say($('x-theta-hint'), false, OPTIONAL_HINT);
     set(parseFloat(e.target.value), false);
   });
 
