@@ -66,6 +66,11 @@
   --grid:       rgba(255,255,255,0.13);
   --grid-major: rgba(255,255,255,0.26);
   --axis:       rgba(255,255,255,0.45);
+  /* A BOX-SHADOW, for the chrome. The scenery's shadow COLOUR is
+     --scene-shadow: they were both called --shadow, declared in that order,
+     so the colour won and every `box-shadow: var(--shadow)` in app.css
+     resolved to a bare colour — an invalid box-shadow, and therefore no
+     shadow at all on six kinds of card. */
   --shadow: none;
 }
 
@@ -104,6 +109,76 @@
   --shadow: 0 1px 2px rgba(26,23,20,0.045);
 }
 
+/* ── two cards that are windows, not diagrams ─────────────────────────
+   Seven of the nine scenarios happen at the stadium and share the app's
+   palette, which is correct: the card is a diagram of a situation the app is
+   about to set up, drawn in the app's own language.
+
+   The two exhibits are not that. They happen somewhere else, and the card is
+   the first sight of that somewhere — an indoor range lit by a strobe, a beach
+   at dusk. So each gets its own small complete palette, declared here rather
+   than as hex in app.js: thumb() emits nothing but `var(--token)`, so a scoped
+   redefinition re-colours the picture, the title, the rule and the rim with no
+   JavaScript at all. The scenario data says only which palette it wants.
+
+   Both are fixed across the app's two themes, because they are pictures of a
+   place and the place does not change when the page does. That costs one
+   thing and it is handled below: a near-black card is invisible on the dark
+   page and a near-white one is invisible on the light page, so each carries a
+   rim contrasting with BOTH — gold on the range, warm earth on the dusk.
+
+   Contrast against each card's own ground (WCAG AA wants 4.5:1 for the fine
+   strokes these are, and every one of them clears it):
+     range  path 8.7:1 · second 7.4:1 · subtitle 11.8:1 · title 17.2:1
+     dusk   path 4.6:1 · second 7.2:1 · marker   5.0:1 · title 12.5:1
+   Any new colour here needs that sum redone. There is no text inside the
+   picture itself, so the 13px floor is unaffected; the card's own text is
+   --fs-xs, which IS 13px. */
+
+/* The card's own title inherits `color` from an ancestor, so redefining --ink
+   inside the card is not enough on its own — without this, a dark title sits on
+   the black range card and a light one on the pale dusk card. */
+.pcard[data-card] { color: var(--ink); }
+
+/* Light, not geometry: a strobe over the bench, the sun low off the sand.
+   The picture inside is untouched. */
+.pcard[data-card='range'] {
+  background-image: radial-gradient(120% 90% at 18% 22%, rgba(251,191,36,0.14), transparent 62%);
+}
+.pcard[data-card='dusk'] {
+  background-image: linear-gradient(176deg, rgba(180,83,9,0.10), transparent 46%);
+}
+
+.pcard[data-card='range'] {
+  --card:        #0d0b09;      /* the range, unlit                           */
+  --card-hover:  #171310;
+  --ink:         #f5efe8;
+  --ink-strong:  rgba(245,239,232,0.80);
+  --ink-muted:   rgba(245,239,232,0.62);
+  --ink-faint:   rgba(245,239,232,0.42);
+  --accent:      #fbbf24;      /* muzzle flash — the subtitle and the hover  */
+  --vel:         #fb923c;      /* the fired round's path                     */
+  --second:      #f472b6;      /* the dropped one                            */
+  --mark:        #fbbf24;
+  --border:      rgba(255,228,180,0.34);   /* the bench line                 */
+  --border-soft: rgba(251,191,36,0.34);    /* the rim, legible on both pages */
+}
+
+.pcard[data-card='dusk'] {
+  --card:        #fbf3e8;      /* sand with the sun nearly off it            */
+  --card-hover:  #fdf8f0;
+  --ink:         #3a2a20;
+  --ink-strong:  rgba(58,42,32,0.80);
+  --ink-muted:   rgba(58,42,32,0.66);
+  --ink-faint:   rgba(58,42,32,0.46);
+  --accent:      #b45309;      /* the low sun                                */
+  --vel:         #b45309;      /* the banana's path                          */
+  --second:      #9d174d;      /* the monkey's drop                          */
+  --mark:        #047857;      /* the palm, and the monkey's ring            */
+  --border:      rgba(90,66,48,0.34);      /* the sand line                  */
+  --border-soft: rgba(120,78,42,0.30);     /* the rim, legible on both pages */
+}
+
 /* ── the place the motion happens in ──────────────────────────────────
    A football stadium and the district round it, at 1 unit = 1 metre.
 
@@ -135,7 +210,7 @@
   /* night */
   --sky-top: #05070e; --sky-mid: #0a1020; --sky-bottom: #182440; --haze: #182440;
   --sun: #ffe9b8; --sun-glow: rgba(255,228,170,0.40);
-  --shadow: rgba(0,0,0,0.42); --sky-fill: #2a3a58;
+  --scene-shadow: rgba(0,0,0,0.42); --sky-fill: #2a3a58;
   --earth: #1c1c23; --interior: #1a1a23; --terrain: #1f2622;
   --grass: #3f7a4a; --grass-alt: #2f6239; --runoff: #28472f;
   --pitchline: rgba(255,255,255,0.80);
@@ -167,7 +242,7 @@
   /* late afternoon */
   --sky-top: #4a86bd; --sky-mid: #a6c8e2; --sky-bottom: #f0cfa8; --haze: #e7dcc8;
   --sun: #ffeacb; --sun-glow: rgba(255,206,138,0.50);
-  --shadow: rgba(54,42,30,0.26); --sky-fill: #b9d2e8;
+  --scene-shadow: rgba(54,42,30,0.26); --sky-fill: #b9d2e8;
   --earth: #6e675d; --interior: #b6ad9a; --terrain: #9fae86;
   --grass: #76a660; --grass-alt: #5e8b4d; --runoff: #567e46;
   --pitchline: rgba(255,255,255,0.95);

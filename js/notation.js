@@ -89,6 +89,11 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
  * @param {{trim?:boolean}} opts  trim: drop trailing zeros (9.80 → 9.8)
  */
 export function num(x, dp = 2, { trim = false } = {}) {
+  // A quantity that is zero to within floating-point noise IS zero. Without
+  // this, a flight that lands exactly where it started reported its height as
+  // −2.776 × 10⁻¹⁷ m, which is a correct number and a useless one. Nothing
+  // this app models is meaningfully smaller than a picometre.
+  if (Math.abs(x) < 1e-12) x = 0;
   if (typeof x !== 'number' || Number.isNaN(x)) return '—';
   if (!isFinite(x)) return x < 0 ? '−∞' : '∞';
   if (x !== 0 && (Math.abs(x) >= 1e5 || Math.abs(x) < 1e-4)) return standardForm(x, 3);

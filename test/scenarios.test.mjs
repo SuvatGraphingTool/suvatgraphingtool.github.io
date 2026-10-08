@@ -1,5 +1,5 @@
 // scenarios.test.mjs — the claims the two new cards make. Run: node test/scenarios.test.mjs
-import { SCENARIOS, byId } from '../js/scenarios.js';
+import { SCENARIOS, GROUPS, byId } from '../js/scenarios.js';
 import { flight } from '../js/core/projectile.js';
 
 let pass = 0, fail = 0;
@@ -32,7 +32,7 @@ group('Fired and dropped — they land together, whatever the muzzle speed', () 
   ok(s.second.from({ u: 120, theta: 0, h: 0, g: 9.81 }, null) === null, 'no height, no second bullet');
 });
 
-group('Monkey and hunter — aimed straight at it, it cannot miss', () => {
+group('Monkey vs Hunter — aimed straight at it, it cannot miss', () => {
   const s = byId('monkey');
   const aim = (m, h) => (Math.atan2(m.y - h, m.x) * 180) / Math.PI;
 
@@ -66,7 +66,14 @@ group('Both sit under Interesting ones, with everything a card needs', () => {
     ok(!!s.backdrop && !!s.site, `${id} brings its own place`);
     ok((s.note || '').length > 80 && !!s.sub, `${id} says what it is for`);
   }
-  ok(SCENARIOS.length === 11, 'eleven scenarios in all');
+  // A bare count catches a scenario going missing by accident. Eleven became
+  // nine when "Throw at a target" and "Two that collide" went — both built so
+  // they could not fail, and a demonstration that cannot fail demonstrates
+  // nothing (see design/presets.md) — and ten when the missing downward
+  // angle was added.
+  ok(SCENARIOS.length === 10, 'ten scenarios in all');
+  ok(new Set(SCENARIOS.map((x) => x.id)).size === SCENARIOS.length, 'and every id is its own');
+  ok(SCENARIOS.every((x) => GROUPS.some((grp) => grp.id === x.group)), 'every one in a declared group');
 });
 
 group('The intro models exist, and none of them changes the landing time', () => {
@@ -84,7 +91,7 @@ group('The intro models exist, and none of them changes the landing time', () =>
   ok(new Set(r.map((x) => x.toFixed(0))).size === r.length, 'each round has its own range');
 });
 
-group('The monkey intro spans the reachable and the unreachable', () => {
+group('The monkey\'s sliders span the reachable and the unreachable', () => {
   const s = byId('monkey');
   const m = s.markers.target, h = s.params.h, g = 9.81;
   const theta = Math.atan2(m.y - h, m.x);
@@ -92,9 +99,39 @@ group('The monkey intro spans the reachable and the unreachable', () => {
     const tMeet = m.x / (u * Math.cos(theta));
     return m.y - 0.5 * g * tMeet * tMeet >= 0;          // still above the sand
   };
-  ok(s.intro.models.every((mdl) => reach(mdl.u)),
-     'every offered throw reaches the monkey at its starting place');
-  ok(!reach(4), 'a feeble enough throw does NOT, so the failure case is real');
+  // Three preset buttons became two live sliders, so the claim the old test
+  // made about the presets now belongs to the slider's RANGE: a student has
+  // to be able to reach both the working case and the failing one without
+  // leaving the control.
+  ok(!!s.live?.u && !!s.live?.theta, 'it offers a speed and an angle, live');
+  ok(reach(s.live.u.max), `the fastest the slider offers (${s.live.u.max}) gets there`);
+  ok(!reach(s.live.u.min), `and the slowest (${s.live.u.min}) does not, so the failure is reachable`);
+  ok(s.params.u >= s.live.u.min && s.params.u <= s.live.u.max,
+     'and where it starts is inside its own range');
+
+  // The angle slider has to reach past the aimed angle in both directions, or
+  // "aim it wrong" is not something the control can express.
+  const aimed = (theta * 180) / Math.PI;
+  ok(s.live.theta.min < aimed && s.live.theta.max > aimed,
+     `the angle slider spans the aimed ${aimed.toFixed(1)}° with room either side`);
+  ok(s.live.theta.min < 0, 'including below the horizontal');
+});
+
+group('Both exhibits bring their own ending', () => {
+  for (const id of ['bullet', 'monkey']) {
+    const e = byId(id).ending;
+    ok(!!e, `${id} has one`);
+    ok(typeof e.caveat === 'string' && e.caveat.length > 60,
+       `${id} says what the model leaves out`);
+  }
+  const m = byId('monkey').ending;
+  for (const k of ['caught', 'high', 'low', 'short']) {
+    ok(!!m[k]?.title, `the monkey can say "${k}"`);
+  }
+  for (const k of ['aimed', 'slow', 'fast', 'nog']) {
+    ok(Array.isArray(m.why[k]) && m.why[k][1].length > 80,
+       `and can explain "${k}" properly`);
+  }
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

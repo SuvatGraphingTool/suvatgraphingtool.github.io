@@ -240,5 +240,104 @@ group('Answering the question asked, not just the whole flight', () => {
   ok(plain.answer === null && plain.moment === null, 'a plain drop has no separate moment');
 });
 
+/* ── the input's cap is the input's, not the engine's ────────────────────
+   The angle box on the values screen stops at ±90°, because past 90° the
+   launch is backwards and this model does not describe it. The ENGINE must
+   not inherit that cap: it derives θ by atan2 and by the range equation, and
+   a negative horizontal displacement legitimately produces an angle outside
+   the range the box will accept. Clamping in js/core/ would turn a correct
+   answer into a wrong one, so this is here to catch anyone who tries. */
+group('A derived angle is never clamped to the input\'s range', () => {
+  const back = solveLaunch({ s: -40, t: 3, g: 9.81, h: 0 });
+  ok(back.ok, 'a flight that goes backwards still solves');
+  ok(Math.abs(back.params.theta) > 90,
+     `and keeps its angle outside ±90° (${back.params.theta.toFixed(2)}°)`);
+  near(flight(back.params).range, -40, 1e-6, 'and the flight really does land there');
+
+  const high = solveLaunch({ s: -40, t: 3, g: 9.81, h: 12 });
+  ok(high.ok && Math.abs(high.params.theta) > 90,
+     `the same from a platform (${high.params.theta.toFixed(2)}°)`);
+
+  // The range equation's two answers are both kept, and both are usable.
+  const two = solveLaunch({ s: 60, u: 30, g: 9.81, h: 0 });
+  ok(two.ok && two.altTheta != null, 'the range equation still returns both angles');
+  near(flight({ ...two.params, theta: two.altTheta }).range, 60, 1e-6,
+       'and the other one lands in the same place');
+});
+
+/* ── what the engine knew and would not say ─────────────────────────────
+   runLine worked out which values it leaned on, which were spare and which
+   disagreed — and then flattened all three into one sentence and dropped the
+   data. ctx.given, the cleanest signal in the system, was not on the returned
+   object at all. All four are returned now, which is what lets the interface
+   close the boxes it no longer needs rather than only explain afterwards. */
+group('The engine says what it used and what it did not need', () => {
+  const r = solveLaunch({ u: 28, theta: 45, h: 25, g: 9.8 });
+  ok(r.ok, 'the minimum arc solves');
+  ok(Array.isArray(r.given) && r.given.length === 4, `it reports what was given (${r.given})`);
+  ok(r.spare.length === 0, 'and that none of it was spare');
+
+  // A value the scenario fixed is not a value the student typed, and must not
+  // be reported back to them as one they need not have given.
+  const drop = solveLaunch({ g: 9.81, h: 80, u: 0 }, { noAngle: true });
+  ok(!drop.given.includes('u') && !drop.given.includes('theta'),
+     `a dropped object's forced values are not "given" (${drop.given})`);
+  ok(drop.spare.length === 0, 'so nothing is called spare');
+
+  const lock = solveLaunch({ u: 14, g: 9.81 }, { lockAngle: true, theta: 90 });
+  ok(!lock.given.includes('theta'), 'nor is a locked angle');
+});
+
+group('A fourth value that agrees is reported, not silently ignored', () => {
+  const r = solveLaunch({ u: 28, theta: 45, h: 25, g: 9.8, s: 100 });
+  ok(r.ok, 'it still solves');
+  near(r.params.u, 28, 1e-6, 'and gets the same answer');
+  ok(r.spare.length > 0, `something is spare (${r.spare})`);
+  ok(r.notes.some((x) => /more (than enough|here than)/.test(x)),
+     'and a note says so rather than leaving it unmentioned');
+
+  // "Spare" is worked out by trying: take each value away and see whether the
+  // same motion still comes out. So it is honest about MUTUAL redundancy —
+  // any one of these could go, but not all of them.
+  for (const key of r.spare) {
+    const less = { u: 28, theta: 45, h: 25, g: 9.8, s: 100 };
+    delete less[key];
+    const t = solveLaunch(less);
+    ok(t.ok && Math.abs(t.params.u - 28) < 0.3, `dropping ${key.toUpperCase()} really does change nothing`);
+  }
+});
+
+group('An arc that contradicts itself is refused, like a line already was', () => {
+  // The 1-D path has always cross-checked its spare values. The 2-D path had
+  // NO such check: it solved from whichever values it reached first and drew
+  // the result, so a contradiction in an arc went through undetected and the
+  // diagram quietly disagreed with the numbers beside it.
+  const bad = solveLaunch({ u: 28, theta: 45, h: 25, g: 9.8, s: 300 });
+  ok(!bad.ok, 'an arc with an impossible displacement is refused');
+  ok(/300/.test(bad.reason) && /100/.test(bad.reason),
+     'and the refusal quotes both what was given and what fits');
+  ok(bad.clash.includes('s'), `and names the offender (${bad.clash})`);
+
+  const badT = solveLaunch({ u: 28, theta: 45, h: 25, g: 9.8, t: 9 });
+  ok(!badT.ok && badT.clash.includes('t'), 'the same for an impossible time');
+
+  // Within the tolerance a textbook's rounded answer still goes through.
+  const rounded = solveLaunch({ u: 28, theta: 45, h: 25, g: 9.8, s: 99 });
+  ok(rounded.ok, 'a rounded 99 m where 100 m fits is accepted');
+
+  // A refusal still carries everything the interface needs to explain itself.
+  ok(Array.isArray(bad.given) && Array.isArray(bad.spare) && Array.isArray(bad.clash),
+     'and a refusal reports given, spare and clash like a success does');
+});
+
+group('The threshold is three, and three is enough', () => {
+  // This is what the interface closes the boxes on: the point at which the
+  // motion is determined and a further value could only repeat or contradict.
+  ok(!solveLaunch({ u: 25, g: 9.81 }).ok, 'two of the five is not enough');
+  ok(solveLaunch({ u: 25, g: 9.81, t: 3 }).ok, 'three is');
+  const three = solveLaunch({ u: 25, g: 9.81, t: 3 });
+  ok(three.spare.length === 0, 'and with exactly three, nothing is spare to close over');
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

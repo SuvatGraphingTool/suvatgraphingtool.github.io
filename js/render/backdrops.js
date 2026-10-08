@@ -33,6 +33,9 @@ const grad = (g, x0, y0, x1, y1, stops) => {
   return gr;
 };
 
+/** A tick reads `120`, or `0.5` when the marks are closer together than a metre. */
+const fmtTick = (x, step) => (step < 1 ? x.toFixed(1) : String(Math.round(x)));
+
 /** Deterministic jitter — the same pebble is the same pebble on every repaint. */
 const rnd = (i) => { const s = Math.sin(i * 12.9898) * 43758.5453; return s - Math.floor(s); };
 
@@ -51,27 +54,36 @@ export function warehouseBack(g, S, box, o) {
   g.fillStyle = grad(g, 0, gy, 0, box.y + box.h, [[0, 'rgba(255,255,255,0.055)'], [1, 'rgba(255,255,255,0.012)']]);
   g.fillRect(box.x, gy, box.w, box.y + box.h - gy);
 
-  // range markers along the floor, every metre, labelled every five
-  const stepX = S.xHi > 140 ? 20 : S.xHi > 60 ? 10 : S.xHi > 18 ? 5 : 1;
+  // The downrange ruler. Its stride comes from how much floor is IN VIEW, not
+  // from how far away the far end is: a two-metre chase window and a
+  // five-hundred-metre survey both want about a dozen marks, and keying off
+  // S.xHi gave the chase window one mark every twenty metres — which is none.
+  const span = S.xSpan ?? (S.xHi - (S.xLo ?? 0));
+  const stepX = span > 140 ? 20 : span > 60 ? 10 : span > 18 ? 5 : span > 4 ? 1 : 0.5;
+  // Walk only the marks that can land in this frame.
+  const from = Math.max(0, Math.floor(((S.xLo ?? 0) / stepX)) * stepX);
+  const to = Math.min(S.xHi * 1.02, (S.xLo ?? 0) + span * 1.02);
   g.save();
-  for (let x = 0; x <= S.xHi * 1.02; x += stepX) {
+  for (let x = from; x <= to; x += stepX) {
     const X = S.X(x);
     if (X < box.x || X > box.x + box.w) continue;
     g.strokeStyle = PLATE.ruleFaint; g.lineWidth = 1;
     g.beginPath(); g.moveTo(X, gy); g.lineTo(X, gy + 9); g.stroke();
     // Label them. Evenly spaced ticks on an axis squeezed 32x read as metres
-    // unless they say what they are.
-    if (x > 0 && X < box.x + box.w - 150) {
+    // unless they say what they are. The right-hand margin only has to stop a
+    // label running off this frame's edge; it used to be 150 fixed pixels,
+    // which in a narrow pane deleted nearly all of them.
+    if (x > 0 && X < box.x + box.w - Math.min(60, box.w * 0.1)) {
       g.font = `500 12px ${getComputedStyle(document.documentElement).getPropertyValue('--font') || 'system-ui'}`;
       g.fillStyle = PLATE.inkFaint; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(`${x} m`, X, gy + 12);
+      g.fillText(`${fmtTick(x, stepX)} m`, X, gy + 12);
     }
   }
   g.restore();
 
   // the back wall, a hair lighter than the air so the barrel has something
   // to sit against
-  const wx = S.X(EXTENT.warehouse.x0 + 0.5);
+  const wx = S.X((S.xLo ?? EXTENT.warehouse.x0) + 0.5);
   g.fillStyle = 'rgba(255,255,255,0.028)';
   g.fillRect(box.x, box.y, Math.max(0, wx - box.x), gy - box.y);
 
@@ -82,6 +94,7 @@ export function warehouseBack(g, S, box, o) {
 function rig(g, S, o, PLATE) {
   const y = S.Y(o.launchY), x = S.X(0);
   const m = (v) => Math.max(1, S.m(v));                 // metres → px, vertically
+  const mx = (v) => (S.mx ? S.mx(v) : S.m(v));          // metres → px, across
   const bore = Math.max(3, m(0.09));
 
   // bench leg down to the floor
@@ -96,23 +109,32 @@ function rig(g, S, o, PLATE) {
   g.fillRect(px0 - 14, y - 7, 60, 7);                 // the bench top, to the muzzle
 
   // barrel, running back off the left edge of the plate
+  //
+  // ACROSS the frame, so it is measured with the HORIZONTAL scale. It used to
+  // use `m`, which is the vertical one, and got away with it only because the
+  // two were a factor of thirty apart and the result was then clamped to the
+  // room's left wall — a 3.4 m barrel came out two pixels long. With square
+  // pixels the mistake is visible, so the barrel is now a barrel: 0.62 m,
+  // with a pixel floor for the squeezed frame where that is a hairline.
+  const barL = Math.max(64, mx(0.62));
   const bar = grad(g, 0, y - bore, 0, y + bore,
     [[0, PLATE.leadHi], [0.3, PLATE.lead], [1, PLATE.leadLo]]);
   g.fillStyle = bar;
-  g.fillRect(Math.max(S.X(EXTENT.warehouse.x0) + 8, x - m(3.4)), y - bore * 0.5,
-             x - Math.max(S.X(EXTENT.warehouse.x0) + 8, x - m(3.4)), bore);
+  g.fillRect(x - barL, y - bore * 0.5, barL, bore);
   // muzzle brake: three ports and a crown
+  const port = Math.max(2, mx(0.018)), gap = Math.max(5, mx(0.05));
   g.fillStyle = PLATE.leadLo;
-  for (let i = 1; i <= 3; i++) g.fillRect(x - m(0.12) * i * 2.2, y - bore * 0.5, m(0.07), bore * 0.42);
+  for (let i = 1; i <= 3; i++) g.fillRect(x - gap * i * 1.6, y - bore * 0.5, port, bore * 0.42);
   g.fillStyle = PLATE.lead;
-  g.fillRect(x - m(0.1), y - bore * 0.78, m(0.12), bore * 1.56);
+  g.fillRect(x - Math.max(3, mx(0.03)), y - bore * 0.78, Math.max(4, mx(0.036)), bore * 1.56);
 
   // the clamp that holds the dropped round, directly above the bore line
   const cy = y - m(0.55);
   g.strokeStyle = 'rgba(255,255,255,0.22)'; g.lineWidth = Math.max(1.2, m(0.03));
   g.beginPath(); g.moveTo(x, cy); g.lineTo(x, y - bore * 0.7); g.stroke();
   g.fillStyle = 'rgba(255,255,255,0.14)';
-  g.fillRect(x - m(0.16), cy - m(0.1), m(0.32), m(0.1));
+  const jaw = Math.max(6, mx(0.1));
+  g.fillRect(x - jaw / 2, cy - m(0.1), jaw, m(0.1));
 
   // MUZZLE FLASH — two frames at 60 fps, which is all a real one lasts.
   //

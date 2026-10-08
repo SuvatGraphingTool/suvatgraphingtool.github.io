@@ -180,7 +180,15 @@ export const D = {
 
   /* ── scale references. Every one of these is a real measurement. ─── */
   prop: {
-    ball: 0.22,
+    ball: 0.22,                               // a size 5 football, across
+    // DRAWN LARGER THAN LIFE, on purpose, and only when drawn. A true 0.22 m
+    // ball at stadium scale is a speck, and the object the whole screen is
+    // about should not need a magnifier ring to be found. This factor lives
+    // here rather than in the renderer so the exaggeration is a stated number
+    // in the dimension sheet instead of a hidden one in a sprite — and `ball`
+    // above stays the real measurement, which is what every other entry in
+    // this block promises.
+    ballDraw: 1.45,
     person: { h: 1.8, w: 0.45 },
     car: { l: 4.5, w: 1.8, h: 1.5 },
     bus: { l: 11.2, w: 2.55, h: 4.4 },        // double-decker

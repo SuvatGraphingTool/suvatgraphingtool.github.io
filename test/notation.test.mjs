@@ -20,6 +20,7 @@ import { EQUATIONS, solve } from '../js/core/suvat.js';
 import { flight, derivation } from '../js/core/projectile.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { buildWorking, resolveAt, obstacleCheck } from '../js/working.js';
+import { SCENARIOS, GROUPS } from '../js/scenarios.js';
 
 let pass = 0, fail = 0;
 
@@ -241,6 +242,9 @@ const MATH_SINKS = [
   'done-note',     // the landing card
   'done-five',
   'done-extra',
+  'exdone-body',   // the range exhibit's ending
+  'mode-say',      // which motion is being solved
+  'theta-say',     // how the angle was recovered, and the other one
 ];
 
 group('Nothing that can hold an equation is filled with textContent', () => {
@@ -263,10 +267,40 @@ group('Nothing that can hold an equation is filled with textContent', () => {
   ok(offences.length === 0, 'every maths sink in app.js takes innerHTML', offences.join('\n         '));
 
   // And the sinks have to still exist, or the list above is quietly dead.
+  // Some are in the markup and some are built by app.js — the angle panel is
+  // only there for scenarios that have an angle to show — so look in both.
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const gone = MATH_SINKS.filter((id) => !html.includes(`id="${id}"`));
-  ok(gone.length === 0, 'and every one of them is still in the page',
-     gone.length ? `missing from index.html: ${gone.join(', ')}` : '');
+  const gone = MATH_SINKS.filter((id) => !html.includes(`id="${id}"`) && !src.includes(`id="${id}"`));
+  ok(gone.length === 0, 'and every one of them still exists',
+     gone.length ? `found in neither index.html nor app.js: ${gone.join(', ')}` : '');
+});
+
+/* == 3 · the prose the scenarios carry ================================
+   Every word in scenarios.js is displayed — the card note, the subtitle, the
+   intro card, the ending. It is as much "something the app can put on screen"
+   as any equation is, and until this ran, the bullet card had been telling
+   students about `u_y = 0` in the clear.
+
+   Prose is not an equation, so this does not ask it to go through M``. It
+   only asks that if a quantity DOES appear, it appears the way the rest of
+   the site writes it. */
+group('The scenarios say it in words, or they say it properly', () => {
+  const bag = [];
+  const look = (label, v) => {
+    if (typeof v === 'string') check(label, v, bag);
+    else if (Array.isArray(v)) v.forEach((x, i) => look(`${label}[${i}]`, x));
+    else if (v && typeof v === 'object') {
+      for (const [k, x] of Object.entries(v)) {
+        if (typeof x === 'function') continue;        // `second.from` is code, not prose
+        if (k === 'id' || k === 'group' || k === 'backdrop' || k === 'card') continue;
+        look(`${label}.${k}`, x);
+      }
+    }
+  };
+  for (const sc of SCENARIOS) look(sc.id, sc);
+  for (const g of GROUPS) look(`group ${g.id}`, g);
+  ok(bag.length === 0, 'no programmer\'s maths anywhere in the scenario prose',
+     bag.join('\n         '));
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

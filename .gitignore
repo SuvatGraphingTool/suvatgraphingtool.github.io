@@ -1,4 +1,5 @@
 node_modules/
+tools/verify/node_modules/
 .DS_Store
 *.log
 shots/
@@ -6,3 +7,6 @@ dev-drive.js
 
 # local screenshots and captures (design docs use SVG)
 *.png
+
+# verification screenshots are reviewed on the PR, so they are not ignored
+!docs/verify/*.png

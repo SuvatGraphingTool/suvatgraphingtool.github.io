@@ -490,16 +490,13 @@ export const SITES = {
   arc: { axis: 'x', at: 0, dir: 1, origin: { x: -52.5, z: 0 },
     place: 'A goal kick from the west goal line', view: 'along the pitch' },
 
+  'platform-down': { axis: 'z', at: 0, dir: 1, origin: { x: 0, z: -78 },
+    place: 'Front row of the north upper tier, 25 m up', view: 'across the pitch',
+    note: 'The same platform as the other two — thrown down at 30° instead of flat or up.' },
+
   'platform-angle': { axis: 'z', at: 0, dir: 1, origin: { x: 0, z: -78 },
     place: 'Front row of the north upper tier, 25 m up', view: 'across the pitch',
     note: 'Peaks at 45.0 m, three metres under the roof.' },
-
-  target: { axis: 'x', at: 0, dir: -1, origin: { x: -36, z: 0 },
-    place: 'A shot from the edge of the penalty area', view: 'along the pitch',
-    note: 'The target starts on the top corner of the goal: 16.5 m away, 2.44 m up.' },
-
-  collide: { axis: 'x', at: 0, dir: 1, origin: { x: -52.5, z: 0 },
-    place: 'A drone 73.5 m up, and a kick from the goal line below it', view: 'along the pitch' },
 
   'time-above': { axis: 'x', at: 0, dir: 1, origin: { x: -52.5, z: 0 },
     place: 'A clearance from the west goal line', view: 'along the pitch',

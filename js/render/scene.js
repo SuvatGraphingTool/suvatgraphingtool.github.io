@@ -13,12 +13,25 @@
 // axis label the student reads is in flight x; every piece of scenery is
 // placed in section u. Nothing is ever converted twice.
 
-import { fitCanvas, palette, stroke, arrow, dot, ballSprite, fmt, niceStep, clamp, labels, cssVar } from './util.js';
+import { fitCanvas, palette, stroke, arrow, dot, ballSprite, ballRadius, fmt, niceStep, clamp, labels, cssVar } from './util.js';
+import { timeAbove } from '../core/projectile.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
 import * as W2 from './world2d.js';
 
 export function createCamera() { return { cx: 0, cy: 0, scale: 8, fit: true, touched: false, band: 'stadium' }; }
+
+/**
+ * How much of the place survives the wash that pushes it behind the flight.
+ *
+ * The thing you are meant to be looking at on this screen is the trajectory,
+ * and at full strength the stands, seats and roof were competing with it on
+ * equal terms. This is low enough that the path and its annotation lines sit
+ * clearly in front, and high enough that the stadium is still legible as a
+ * place rather than a smear — which matters, because being somewhere real at
+ * a scale you can judge is the other half of what the view is for.
+ */
+const WORLD_BACK = 0.58;
 
 /* ── the three zoom bands, as places to stand rather than crops ────────
    Pitch level follows the ball at a span where a 1.8 m person is 60 px and
@@ -50,8 +63,30 @@ function applyBand(cam, w, h, u0, ball) {
    because zoom is multiplicative — linear easing crawls at the wide end and
    bolts at the close end. Panning and orbiting stay immediate: a drag is a
    direct manipulation and lag in one feels like a fault. */
+/* ── when the camera counts as moving ───────────────────────────────────
+   `cam.moving` turns the scenery cheap, and until now it was rewritten from
+   scratch every frame against a threshold a single wheel tick straddles:
+   deltaY = 1 gives r ≈ −0.0016, above 0.0008 for exactly one frame and below
+   it the next. So the flag alternated true, false, true, false between
+   consecutive frames — and anything keyed on it alternated with it.
+
+   It is latched now. Motion sets it; it clears only after the camera has been
+   still for DWELL, so it cannot chatter. And it is cleared explicitly in the
+   two places that used to leave it stale: the early return below, and the end
+   of a drag. easeCamera returns early whenever there is nothing to ease, which
+   is most frames, so a flag left true there stayed true indefinitely. */
+const DWELL = 180;                       // ms of stillness before it sharpens
+
+function setMoving(cam, moving) {
+  const now = performance.now();
+  if (moving) { cam._stillSince = 0; cam.moving = true; return; }
+  if (!cam.moving) return;
+  if (!cam._stillSince) cam._stillSince = now;
+  if (now - cam._stillSince >= DWELL) { cam.moving = false; cam._stillSince = 0; }
+}
+
 export function easeCamera(cam, dt) {
-  if (!cam.want) return false;
+  if (!cam.want) { setMoving(cam, false); return cam.moving; }
   const k = 1 - Math.exp(-dt * 9.5);
   let moving = false;
   if (cam.want.scale != null) {
@@ -68,17 +103,48 @@ export function easeCamera(cam, dt) {
   }
   // A travelling camera invalidates the scenery cache on every frame, so
   // while it travels it travels cheap and sharpens when it stops.
-  cam.moving = moving;
-  return moving;
+  setMoving(cam, moving);
+  // Keep reporting a frame while the dwell runs down, or the last repaint at
+  // full detail never happens.
+  return moving || cam.moving;
 }
 const snapWant = (cam) => { cam.want = { scale: cam.scale, cx: cam.cx, cy: cam.cy }; };
 
 /* ── fitting, once ───────────────────────────────────────────────────────
    The brief is explicit: fit before launch and do not rescale during it. A
    camera that keeps rescaling turns a fast launch and a slow one into the
-   same picture, which destroys the one thing the view exists to show. */
+   same picture, which destroys the one thing the view exists to show.
+
+   That brief is right and it is kept. What was wrong was HOW it was kept: a
+   single floor of 96 m, which meant every flight from about 0.1 m to 85 m got
+   the identical frame. That is not preserving a comparison. Two throws of
+   40 m and 60 m are worth comparing and a 0.4 m one has nothing to do with
+   either; giving all three the same picture refuses to show the third at all.
+
+   So the band STICKS rather than being fixed. The frame a flight needs is
+   worked out honestly, and then: if the frame already on screen still holds
+   this flight, and this flight fills at least 45% of it, the frame does not
+   move at all. Launch 60 m and then 30 m and you get the identical picture,
+   which is the comparison the brief is protecting and exactly the case it
+   cares about. Launch 60 m and then 0.4 m and the band is abandoned, because
+   two flights that far apart were never comparable and pretending otherwise
+   just hides the second one.
+
+   That is the whole fix. No floor, so nothing is given a frame two hundred
+   times its own size; no rescaling during a flight, so a fast launch and a
+   slow one of similar size still look like each other; and the scale bar and
+   band label already on screen say which frame you are in, which is what
+   makes leaving the band safe.
+
+   Written up in design/flight-view.md. */
+
+/** The frame this flight needs, or the one already up if it still fits. */
+function heldSpan(want, held) {
+  return (held && want <= held && want >= held * 0.45) ? held : want;
+}
+
 function autoFit(cam, flights, markers, w, h, u0, section) {
-  let uLo = u0, uHi = u0, yHi = 4;
+  let uLo = u0, uHi = u0, yHi = 0;
   for (const f of flights) {
     if (!f) continue;
     const end = f.pos(f.tMax);
@@ -96,7 +162,11 @@ function autoFit(cam, flights, markers, w, h, u0, section) {
      pixels to the south stand and four hundred and eighty to the north one.
      The bowl is brought into the fit, weighted so it widens the frame without
      ever shrinking the flight to a scratch. */
-  const flightSpan = Math.max(12, uHi - uLo);
+  // The flight's own width, used to weight how much of the place is pulled
+  // into the frame. It used to be floored at 12 m, which on a half-metre
+  // throw pulled in a metre and a half of stadium either side and trebled the
+  // frame before anything else had a say.
+  const flightSpan = uHi - uLo;
   if (section) {
     let bLo = Infinity, bHi = -Infinity, bTop = 0;
     for (const deck of section.decks) {
@@ -115,31 +185,56 @@ function autoFit(cam, flights, markers, w, h, u0, section) {
       const k = clamp(flightSpan / 170, 0, 0.45);
       uLo += (Math.max(bLo, uLo - flightSpan) - uLo) * k;
       uHi += (Math.min(bHi, uHi + flightSpan) - uHi) * k;
-      yHi = Math.max(yHi, bTop * clamp(flightSpan / 120, 0.34, 1));
+      // The roof used to be forced into the frame at 34% of its height NO
+      // MATTER WHAT, which on a two-metre flight meant sixteen metres of
+      // stand above a motion you could not see. It is pulled in on the same
+      // sliding weight as the width, and at the small end it is not pulled in
+      // at all — if you are looking at half a metre you are not looking at
+      // the stadium.
+      yHi = Math.max(yHi, bTop * clamp((flightSpan - 20) / 120, 0, 1));
     }
   }
 
-  // A minimum span, so the flight is always seen somewhere rather than nowhere:
-  // 96 m is a little under the length of the pitch.
-  const MIN_SPAN = 96;
-  const spanU = Math.max(MIN_SPAN, (uHi - uLo) * 1.14 + 10);
-  const spanY = Math.max(22, yHi * 1.2 + 6);
+  // THE ONE NUMBER THAT DECIDES THE FRAME, and the only place the old 96 m
+  // floor lived. A flight with no width at all — thrown straight up — still
+  // needs some, so the height has a say in it.
+  //
+  // There is still a floor, but it is the right one: THE OBJECT'S OWN SIZE.
+  // Zooming into a 15 cm flight until it fills the frame puts a football two
+  // thirds of a metre across on the screen, and a ball bigger than the motion
+  // is no more readable than a motion too small to see. Fourteen ball widths
+  // is close enough to look at and far enough to still be a ball.
+  const FLOOR = D.prop.ball * D.prop.ballDraw * 14;
+  const want = Math.max((uHi - uLo) * 1.2, yHi * 0.9, FLOOR);
+  const spanU = heldSpan(want, cam.heldSpan);
+  cam.heldSpan = spanU;
+  const spanY = Math.max(spanU / 5, yHi * 1.26);
   const sU = (w - 130) / spanU, sY = (h - 128) / spanY;
-  cam.scale = Math.max(0.004, Math.min(sU, sY));
-  cam.cx = (uLo + uHi) / 2;
-
+  const scale = Math.max(0.004, Math.min(sU, sY));
   // The ground sits as low as the chrome below it allows, always. Nothing in
   // this model goes below the ground, so any space under the datum is spent
   // on earth nobody needs to look at.
   const BOTTOM = 74;                      // range bar, its label, the scale bar
-  cam.cy = (h - BOTTOM - h / 2) / cam.scale;
+  const target = { scale, cx: (uLo + uHi) / 2, cy: (h - BOTTOM - h / 2) / scale };
   cam.fit = false;
-  snapWant(cam);                          // a fit arrives, it does not travel
+
+  // A FIT TRAVELS. It used to end in snapWant, so the whole thing happened
+  // between one frame and the next and a launch was an instant cut — which
+  // reads as a bug rather than as a camera. Band changes already ease through
+  // easeCamera, so the launch fit goes the same way and the view arrives
+  // instead of appearing.
+  //
+  // The very first fit of a session has nothing to travel FROM — the camera
+  // is still at its construction defaults — so that one lands directly.
+  cam.want = target;
+  if (!cam.placed) { cam.scale = target.scale; cam.cx = target.cx; cam.cy = target.cy; }
+  else setMoving(cam, true);
+  cam.placed = true;
 }
 
 export function render(canvas, cam, o) {
   const { traj: f, second, ghost, t, show, markers = {}, scenario, fired = true,
-          resolve = null, hover = null } = o;
+          resolve = null, hover = null, hoverMark = null } = o;
   if (!f) { return null; }
   const { ctx, w, h } = fitCanvas(canvas);
   const P = palette();
@@ -174,7 +269,30 @@ export function render(canvas, cam, o) {
     W2.drawSection({ ctx: g, w, h, span, scale: cam.scale, sx: su, sy, px: pu, py,
                      section, tn, L: null, moving: cam.moving });
   });
+  // PUSH THE PLACE BACK. The stands, the seats, the roof and the surfaces are
+  // all painted at full strength, and against that the trajectory is one more
+  // line among hundreds rather than the subject. The whole world arrives as a
+  // single drawImage, which honours globalAlpha, so one number moves all of it
+  // at once — no change to world2d.js and no invalidation of the layer cache.
+  //
+  // It is not erased, because it is half the subject: the comment at the top
+  // of autoFit says why a flight is shown somewhere real, and that still
+  // holds. A wash of --surface over the top keeps the far detail legible while
+  // dropping its contrast, which reads as distance rather than as fog.
+  // fitCanvas has already filled the canvas with --surface, so ONE alpha on
+  // the drawImage is the whole operation: what lands is WORLD_BACK of the
+  // world over (1 − WORLD_BACK) of the surface colour. Washing it a second
+  // time with a fillRect squares the effect and erases the place.
+  ctx.save();
+  ctx.globalAlpha = WORLD_BACK;
   ctx.drawImage(bg, 0, 0, w, h);
+  ctx.restore();
+
+  // THE GROUND IS NOT SCENERY. It is the thing the ball hits, so it is
+  // painted here, after the wash, at full strength — which is also why it is
+  // not inside the cached layer above. See ground() in world2d.js for what
+  // used to be down there instead.
+  W2.ground({ ctx, w, h, sx: su, sy, tn, section });
 
   /* ── readability chrome ───────────────────────────────────────────── */
   if (show.grid) metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 });
@@ -185,22 +303,42 @@ export function render(canvas, cam, o) {
   /* ── height line, fence, target ───────────────────────────────────── */
   if (markers.heightLine != null) {
     const Y = sy(markers.heightLine);
-    stroke(ctx, [{ x: 0, y: Y }, { x: w, y: Y }], { color: P.mark, width: 2.8, dash: [10, 7], alpha: .92 });
-    const snapped = snapName(markers.heightLine);
-    L.add(`${fmt(markers.heightLine, 1)} m${snapped ? ` — ${snapped}` : ''}${fired ? '' : ' · drag me'}`,
-          w - 12, Y, { color: P.mark, align: 'right', pri: 6, size: 17 });
-    dot(ctx, 76, Y, 8, { fill: P.surface, stroke: P.mark, width: 3 });
+    const grabbed = hoverMark === 'heightLine';
 
+    // THE REGION IS BOUNDED BY THE CURVE, not by a box around it. It used to
+    // be a fillRect from apex height down to the line, which shaded the whole
+    // rectangle the arc sits inside — including a large area ABOVE the
+    // parabola, outside the curve entirely. The answer the student is being
+    // shown is an area under an arc and over a line, so draw that: walk the
+    // trajectory between the two crossings and close the path along the line.
+    //
+    // Sampling through f.pos also fixes a second thing. The old corners were
+    // computed as `f.horiz * t`, which ignores a bounce's x-offset, so the
+    // band drifted off the path the moment restitution was switched on.
     const bandT = fired ? timeAbove(f, markers.heightLine) : null;
-    if (bandT) {
+    if (bandT && bandT.above > 1e-9) {
+      const n = 96;
       ctx.save(); ctx.globalAlpha = .14; ctx.fillStyle = P.mark;
-      ctx.fillRect(sx(f.horiz * bandT.t1), sy(f.apexHeight),
-                   (bandT.t2 - bandT.t1) * f.horiz * cam.scale, sy(markers.heightLine) - sy(f.apexHeight));
-      ctx.restore();
-      L.add(`above for ${fmt(bandT.t2 - bandT.t1, 2)} s`,
-            sx(f.horiz * (bandT.t1 + bandT.t2) / 2), sy(markers.heightLine) - 24,
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const tt = bandT.t1 + ((bandT.t2 - bandT.t1) * i) / n;
+        const q = M(f.pos(tt));
+        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      }
+      ctx.lineTo(sx(f.pos(bandT.t2).x), Y);
+      ctx.lineTo(sx(f.pos(bandT.t1).x), Y);
+      ctx.closePath(); ctx.fill(); ctx.restore();
+      L.add(`above for ${fmt(bandT.above, 2)} s`,
+            sx(f.pos((bandT.t1 + bandT.t2) / 2).x), Y - 24,
             { color: P.mark, align: 'center', pri: 7, size: 18 });
     }
+
+    stroke(ctx, [{ x: 0, y: Y }, { x: w, y: Y }],
+           { color: P.mark, width: grabbed ? 3.6 : 2.8, dash: [10, 7], alpha: grabbed ? 1 : .92 });
+    const snapped = snapName(markers.heightLine);
+    L.add(`${fmt(markers.heightLine, 1)} m${snapped ? ` — ${snapped}` : ''}`,
+          w - 12, Y, { color: P.mark, align: 'right', pri: 6, size: 17 });
+    heightGrip(ctx, 76, Y, P, grabbed);
   }
 
   if (markers.obstacle) {
@@ -225,15 +363,19 @@ export function render(canvas, cam, o) {
           p.x, p.y - 28, { color: hit ? P.good : col, align: 'center', pri: 9, size: 18, weight: 600 });
   }
 
-  /* ── second object ────────────────────────────────────────────────── */
+  /* ── second object ──────────────────────────────────────────────────
+     Nothing reaches this at the moment. "Two that collide" was the only
+     stadium scenario with a second object and it has been removed; the two
+     that still have one are exhibits, and they are drawn by exhibit.js.
+
+     It is kept rather than deleted because design/presets.md still wants
+     three scenarios that need it — the moving catcher, the head start, and a
+     collision that can actually fail — and this is the generic renderer all
+     three would use. If none of those gets built, delete it. */
   if (second) {
-    const delay = o.secondDelay || 0;
     stroke(ctx, second.path(200).map(M), { color: P.second, width: 3.4, dash: [9, 6], alpha: .9 });
-    const t2 = clamp(t - delay, 0, second.tMax);
-    if (t >= delay) {
-      const q = M(second.pos(t2));
-      ballSprite(ctx, q.x, q.y, (D.prop.ball / 2) * cam.scale, { ring: P.second });
-    }
+    const q = M(second.pos(clamp(t, 0, second.tMax)));
+    ballSprite(ctx, q.x, q.y, ballRadius(cam.scale), { ring: P.second });
     L.add(o.secondLabel || 'second object', sx(second.range), groundY - 22,
           { color: P.second, align: 'center', pri: 3, size: 17 });
   }
@@ -256,18 +398,17 @@ export function render(canvas, cam, o) {
   }
 
   /* ── markers at equal time steps ──────────────────────────────────── */
+  // `scenario.secondMarks` chose one-second marks instead of ten equal ones.
+  // No scenario has ever set it, so only the ten-equal branch was reachable.
   if (fired && show.ticks) {
-    const n = scenario?.secondMarks ? Math.min(12, Math.max(2, Math.floor(f.tMax))) : 10;
-    const marks = scenario?.secondMarks
-      ? Array.from({ length: n + 1 }, (_, i) => ({ t: i, ...f.pos(i) })).filter((m) => m.t <= f.tMax)
-      : f.ticks(n);
+    const marks = f.ticks(10);
     for (const k of marks) {
       const p = M(k);
       dot(ctx, p.x, p.y, 3.5, { fill: P.surface, stroke: P.strong, width: 1.8 });
     }
     if (marks.length > 2) {
       const p = M(marks[1]);
-      L.add(scenario?.secondMarks ? 'every 1 s' : 'equal time steps', p.x, p.y - 20,
+      L.add('equal time steps', p.x, p.y - 20,
             { color: P.muted, align: 'center', pri: 2, size: 16 });
     }
   }
@@ -324,12 +465,27 @@ export function render(canvas, cam, o) {
     L.add(`horizontal ${fmt(v.x, 1)}`, hx + 8, p.y + 16, { color: P.velVec, pri: 4, maxPush: 40, size: 17 });
     L.add(`vertical ${fmt(v.y, 1)}`, p.x + 10, vy - 14, { color: P.velVec, pri: 4, maxPush: 40, size: 17 });
   }
+  // Is the pointer on the OBJECT, as opposed to somewhere else on the arc?
+  // That is what the resultant should answer to; pointing at a distant part
+  // of the path is about that part of the path, not about this vector.
+  const onObject = !!hover && Math.abs(hover.t - (fired ? t : 0)) < 1e-6;
+
   if (fired && show.velocity && !resolve) {
     const ex = p.x + v.x * vScale, ey = p.y - v.y * vScale;
     // Thinner than the path it is leaving behind, and a shade apart from it:
     // a long shaft with a big head reads as a vector, a fat one reads as a pipe.
-    arrow(ctx, p.x, p.y, ex, ey, { color: P.velVec, width: 2.3, head: 14 });
-    L.add(`velocity ${fmt(Math.hypot(v.x, v.y), 2)} m s⁻¹`, ex + 12, ey - 12, { color: P.velVec, pri: 10, weight: 600, size: 19 });
+    //
+    // Under the pointer it LIGHTS UP: brighter within its own hue, a little
+    // heavier, a bigger head — and the speed label lifts with it, because the
+    // vector and the number are one thing and should answer as one.
+    arrow(ctx, p.x, p.y, ex, ey, {
+      color: onObject ? P.vel : P.velVec,
+      width: onObject ? 3.2 : 2.3,
+      head: onObject ? 18 : 14,
+    });
+    L.add(`velocity ${fmt(Math.hypot(v.x, v.y), 2)} m s⁻¹`, ex + 12, ey - 12,
+          { color: onObject ? P.vel : P.velVec, pri: 10, weight: onObject ? 700 : 600,
+            size: onObject ? 21 : 19 });
   }
   if (fired && show.acceleration && f.params.g > 0) {
     const len = clamp(f.params.g * vScale * 0.5, 14, 60);
@@ -337,7 +493,7 @@ export function render(canvas, cam, o) {
     L.add(`g ${fmt(f.params.g, 2)} m s⁻²`, p.x - 10, p.y + len + 4, { color: P.acc, align: 'right', pri: 5, size: 17 });
   }
 
-  ballSprite(ctx, p.x, p.y, (D.prop.ball / 2) * cam.scale, { ring: P.vel, fired });
+  ballSprite(ctx, p.x, p.y, ballRadius(cam.scale), { ring: P.vel, fired });
 
   /* ── resolving, at the instant that was clicked ───────────────────── */
   if (fired && resolve) {
@@ -374,8 +530,13 @@ export function render(canvas, cam, o) {
       });
     }
   } else if (fired && hover) {
-    dot(ctx, p.x, p.y, 16, { stroke: P.vel, width: 2 });
-    L.add('click to resolve', p.x, p.y - 34,
+    // THE RING GOES WHERE THE POINTER IS. `hover` used to be a bare boolean,
+    // true for the object OR anywhere along the flown arc, and the ring was
+    // drawn at the object regardless — so pointing at a distant part of the
+    // path lit up something else entirely, several hundred pixels away.
+    const q = onObject ? p : M(f.pos(hover.t));
+    dot(ctx, q.x, q.y, onObject ? 19 : 14, { stroke: P.vel, width: onObject ? 2.6 : 2 });
+    L.add(onObject ? 'click to resolve' : `resolve at ${fmt(hover.t, 2)} s`, q.x, q.y - 34,
           { color: P.vel, align: 'center', pri: 9, size: 15, weight: 600 });
   }
 
@@ -460,8 +621,13 @@ function metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 }) {
   ctx.beginPath();
   // The grid is pinned to the LAUNCH POINT, not to the world origin, because
   // every number the student reads off it is a distance from the launch.
+  // The verticals stop AT THE GROUND, the way the horizontals already do.
+  // Running them to the bottom of the canvas drew a metre grid through the
+  // earth, which measures nothing and is most of what made below the line
+  // look busy.
+  const datum = Math.min(h, sy(0));
   for (let x = Math.floor((pu(0) - u0) / stepX) * stepX; x <= pu(w) - u0; x += stepX) {
-    const X = Math.round(su(u0 + x)) + 0.5; ctx.moveTo(X, 0); ctx.lineTo(X, h);
+    const X = Math.round(su(u0 + x)) + 0.5; ctx.moveTo(X, 0); ctx.lineTo(X, datum);
   }
   for (let y = Math.max(0, Math.floor(py(h) / stepY) * stepY); y <= py(0); y += stepY) {
     const Y = Math.round(sy(y)) + 0.5; ctx.moveTo(0, Y); ctx.lineTo(w, Y);
@@ -470,7 +636,7 @@ function metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 }) {
   ctx.strokeStyle = P.gridMajor; ctx.lineWidth = 2;
   ctx.beginPath();
   const X0 = Math.round(su(u0)) + 0.5;
-  if (X0 > 0 && X0 < w) { ctx.moveTo(X0, 0); ctx.lineTo(X0, h); }
+  if (X0 > 0 && X0 < w) { ctx.moveTo(X0, 0); ctx.lineTo(X0, datum); }
   ctx.stroke();
   ctx.restore();
 
@@ -530,18 +696,39 @@ function defensiveWall(A, ob) {
   ctx.restore();
 }
 
-/* ── small geometric questions the scene needs answered ─────────────── */
-
-function timeAbove(f, height) {
-  const { h, g } = f.params, uy = f.uy;
-  if (g <= 1e-9) return null;
-  const disc = uy * uy - 2 * g * (height - h);
-  if (disc <= 0) return null;
-  const r = Math.sqrt(disc);
-  const t1 = (uy - r) / g, t2 = (uy + r) / g;
-  const a = Math.max(0, Math.min(t1, t2)), b = Math.min(f.tMax, Math.max(t1, t2));
-  return b > a ? { t1: a, t2: b } : null;
+/**
+ * The height line's handle.
+ *
+ * The line has always been draggable along its whole width — the hit test is
+ * an 18 px strip right across the canvas — but it only said so in a label,
+ * and only before launch, so after a launch it looked like a fixed annotation.
+ * An 8 px dot is not a handle. This is: a grip with ridges, the shape every
+ * other draggable divider on a screen has, which grows and fills when the
+ * pointer is on it.
+ */
+function heightGrip(ctx, x, y, P, hot) {
+  const wd = hot ? 44 : 38, ht = hot ? 20 : 17;
+  ctx.save();
+  ctx.beginPath();
+  const r = ht / 2;
+  ctx.moveTo(x - wd / 2 + r, y - ht / 2);
+  ctx.arcTo(x + wd / 2, y - ht / 2, x + wd / 2, y + ht / 2, r);
+  ctx.arcTo(x + wd / 2, y + ht / 2, x - wd / 2, y + ht / 2, r);
+  ctx.arcTo(x - wd / 2, y + ht / 2, x - wd / 2, y - ht / 2, r);
+  ctx.arcTo(x - wd / 2, y - ht / 2, x + wd / 2, y - ht / 2, r);
+  ctx.closePath();
+  ctx.fillStyle = P.surface; ctx.globalAlpha = hot ? 0.98 : 0.92; ctx.fill();
+  ctx.globalAlpha = 1; ctx.strokeStyle = P.mark; ctx.lineWidth = hot ? 3.2 : 2.4; ctx.stroke();
+  // three ridges — the universal "take hold of this"
+  ctx.strokeStyle = P.mark; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+  ctx.globalAlpha = hot ? 1 : 0.8;
+  for (const dy of [-4, 0, 4]) {
+    ctx.beginPath(); ctx.moveTo(x - 7, y + dy); ctx.lineTo(x + 7, y + dy); ctx.stroke();
+  }
+  ctx.restore();
 }
+
+/* ── small geometric questions the scene needs answered ─────────────── */
 
 function clearsObstacle(f, ob) {
   if (f.horiz <= 1e-9) return false;
@@ -570,7 +757,7 @@ function perpendicularTime(f) {
 }
 
 export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, onResolve = {}) {
-  let drag = false, lx = 0, ly = 0, dragging = null, down = null, hovering = false;
+  let drag = false, lx = 0, ly = 0, dragging = null, down = null, hovering = null;
 
   const active = () => (getScene?.() || {});
 
@@ -596,7 +783,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
       if (near(m.sx(b.x), m.sy(b.y))) return { kind: 'ball', t };
     }
     if (scenario?.dragTarget && markers?.target && near(m.sx(markers.target.x), m.sy(markers.target.y))) return { kind: 'target' };
-    if (scenario?.dragObstacle && markers?.obstacle && near(m.sx(markers.obstacle.x), m.sy(markers.obstacle.height))) return { kind: 'obstacle' };
+    if (markers?.obstacle && near(m.sx(markers.obstacle.x), m.sy(markers.obstacle.height))) return { kind: 'obstacle' };
     if (scenario?.dragLine && markers?.heightLine != null && Math.abs(w.syp - m.sy(markers.heightLine)) < 18) return { kind: 'heightLine' };
 
     // Anywhere on the arc already flown gives the same card at that instant —
@@ -614,12 +801,20 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
 
   const isResolve = (k) => k === 'ball' || k === 'path';
 
+  // The cursor used to say `grab` for the sky, the height line and the target
+  // alike, so a draggable handle felt exactly like empty canvas. Now each
+  // kind gets the cursor that describes what it does, and the kind is passed
+  // out so the renderer can light the handle up as well.
+  const CURSOR = { ball: 'pointer', path: 'pointer', heightLine: 'ns-resize',
+                   target: 'move', obstacle: 'move' };
   canvas.addEventListener('pointermove', (e) => {
     if (drag || dragging) return;
-    const k = pick(e)?.kind || null;
-    canvas.style.cursor = isResolve(k) ? 'pointer' : 'grab';
-    const hv = isResolve(k);
+    const got = pick(e);
+    const k = got?.kind || null;
+    canvas.style.cursor = CURSOR[k] || 'grab';
+    const hv = isResolve(got?.kind) ? got.t : null;
     if (hv !== hovering) { hovering = hv; onResolve.hover?.(hv); }
+    onResolve.mark?.(isResolve(k) ? null : k);
   });
 
   canvas.addEventListener('pointerdown', (e) => {
@@ -642,6 +837,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   const end = (e, clicked) => {
     const was = down;
     drag = false; dragging = null; down = null;
+    cam.moving = false; cam._stillSince = 0;   // a finished drag is not moving
     canvas.style.cursor = 'grab';
     if (e && canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     // A click is a press that did not move. Anything that moved was a pan, and
@@ -662,7 +858,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     const scale = clamp(base * Math.exp(-e.deltaY * 0.0016), 0.0035, 900);
     cam.moving = true;
     clearTimeout(attachControls._z);
-    attachControls._z = setTimeout(() => { cam.moving = false; onChange(); }, 220);
+    attachControls._z = setTimeout(() => { cam.moving = false; cam._stillSince = 0; onChange(); }, 220);
     const box = canvas.getBoundingClientRect();
     cam.want = before
       ? { scale, cx: before.u - (mx - box.width / 2) / scale, cy: before.y + (my - box.height / 2) / scale }

@@ -250,9 +250,8 @@ last quarter of its range, so nothing pops.
 | Simple arc | (-52.5, 0, 0) | along the pitch, east | A goal kick from the west goal line |
 | Dropped | (0, 80, 0) | across the pitch, south | A camera drone, 80 m above the centre circle |
 | Thrown straight down | (0, 45, -41) | across the pitch, south | The roof edge, at the inner compression ring |
+| Down and off a platform | (0, 25, -78) | across the pitch, south | Front row of the north upper tier, 25 m up |
 | Off a platform | (0, 25, -78) | across the pitch, south | Front row of the north upper tier, 25 m up |
 | Up and off a platform | (0, 25, -78) | across the pitch, south | Front row of the north upper tier, 25 m up |
-| Throw at a target | (-36, 1, 0) | along the pitch, west | A shot from the edge of the penalty area |
 | Time above a line | (-52.5, 0.9, 0) | along the pitch, east | A clearance from the west goal line |
-| Two that collide | (-52.5, 73.5, 0) | along the pitch, east | A drone 73.5 m up, and a kick from the goal line below it |
 

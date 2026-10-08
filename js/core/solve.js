@@ -47,6 +47,50 @@ const WORD = ['none', 'one', 'two', 'three', 'four', 'five'];
  * @param {Object} opts  { noAngle, lockAngle, theta } scenario constraints
  */
 export function solveLaunch(input = {}, opts = {}) {
+  const r = run(input, opts);
+  // WHICH OF THESE DID YOU NOT NEED TO TYPE? Answered by trying: take each
+  // value away in turn and see whether the same motion still comes out. That
+  // is the only definition of "spare" that does not depend on which equation
+  // happened to be reached first, and it is the same answer for the straight
+  // line and the arc. At most seven extra solves, each a handful of
+  // arithmetic, once per keystroke.
+  if (r.ok && !opts._inner) {
+    r.spare = redundant(input, opts, r);
+    // A SPARE VALUE THAT AGREES used to pass in total silence: the student
+    // typed a number the engine did not need, it was quietly ignored, and
+    // nothing ever said so. It is not an error — it is consistent — but being
+    // ignored without being told is how you end up mistrusting the answer.
+    if (r.spare.length) {
+      const NAME = { s: 'S', u: 'U', v: 'V', g: 'A', t: 'T', h: 'the launch height', theta: 'the angle' };
+      const list = r.spare.map((x) => NAME[x] || x.toUpperCase());
+      const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+      r.notes = [...r.notes, r.spare.length === 1
+        ? `${cap(list[0])} was more than enough — the rest already fixed the motion, and it agrees with them.`
+        : `There is one value more here than the motion needs. Any one of ${list.join(', ')} `
+          + 'could be left out and nothing would change, because they all agree.'];
+    }
+  }
+  return r;
+}
+
+const SAME = (a, b) => ['u', 'theta', 'h', 'g'].every((x) => {
+  const tol = Math.max(x === 'theta' ? 0.5 : 0.02, Math.abs(a[x]) * 0.01);
+  return Math.abs(a[x] - b[x]) <= tol;
+});
+
+function redundant(input, opts, r) {
+  const out = [];
+  for (const key of r.given) {
+    if (key === 'theta' && (opts.noAngle || opts.lockAngle)) continue;
+    const less = { ...input };
+    delete less[key];
+    const t = run(less, { ...opts, _inner: true });
+    if (t.ok && SAME(t.params, r.params)) out.push(key);
+  }
+  return out;
+}
+
+function run(input = {}, opts = {}) {
   const k = {};
   for (const key of ['s', 'u', 'v', 'g', 't', 'theta', 'h']) if (have(input[key])) k[key] = input[key];
 
@@ -55,7 +99,16 @@ export function solveLaunch(input = {}, opts = {}) {
   if (opts.noAngle) { k.theta = -90; k.u = 0; }
   else if (opts.lockAngle && have(opts.theta)) k.theta = opts.theta;
 
-  const ctx = newCtx(new Set(Object.keys(k)));
+  // WHAT THE STUDENT TYPED, which is not the same as what the solve is
+  // working from. A scenario fixes some values on their behalf — a dropped
+  // object starts at rest, a vertical throw has its angle — and reporting
+  // those back as "you gave this, and you need not have" is telling someone
+  // off for a decision they did not make.
+  const typed = new Set(Object.keys(k));
+  if (opts.noAngle) { typed.delete('theta'); typed.delete('u'); }
+  else if (opts.lockAngle) typed.delete('theta');
+
+  const ctx = newCtx(typed);
 
   /* ── 1 · gravity, because everything else leans on it ─────────────── */
   let g;
@@ -107,6 +160,35 @@ export function solveLaunch(input = {}, opts = {}) {
   return fail(prefer, ctx);
 }
 
+/**
+ * Does the flight these parameters describe actually match what was typed?
+ *
+ * A post-hoc check, deliberately: it does not care which equation was used or
+ * in what order, only whether the picture about to be drawn agrees with the
+ * numbers on the screen. The tolerance is the same one the 1-D path uses —
+ * loose enough for a textbook's rounded answer, tight enough to catch values
+ * that genuinely conflict.
+ */
+function disagrees(params, k, ctx) {
+  const f = flight(params);
+  const actual = {
+    s: f.range, u: params.u, v: f.vLanding, g: params.g,
+    t: f.tFlight, h: params.h, theta: params.theta,
+  };
+  const NAME = { s: 'S', u: 'U', v: 'V', g: 'A', t: 'T', h: 'the launch height', theta: 'the angle' };
+  const off = [];
+  for (const key of ctx.given) {
+    if (!(key in actual) || !have(k[key]) || !isFinite(actual[key])) continue;
+    const tol = Math.max(key === 'theta' ? 0.5 : 0.1, Math.abs(k[key]) * 0.03);
+    if (Math.abs(actual[key] - k[key]) > tol) off.push(key);
+  }
+  if (!off.length) return null;
+  ctx.clash = off;
+  const c = off[0];
+  return `These do not all fit together: ${NAME[c]} was given as ${d(k[c])}, but everything `
+    + `else makes it ${d(actual[c])}. Clear one of them, or check the signs.`;
+}
+
 /* ── bookkeeping ───────────────────────────────────────────────────── */
 function newCtx(given, from) {
   return {
@@ -114,11 +196,33 @@ function newCtx(given, from) {
     derived: from ? [...from.derived] : [],
     filled: from ? { ...from.filled } : {},
     notes: from ? [...from.notes] : [],
+    // WHAT THE ENGINE LEANED ON, kept as data rather than only as a sentence.
+    // `used` is the values it actually solved from, `spare` the ones that were
+    // present and not needed, `clash` the spare ones that disagree. All three
+    // were computed already and flattened straight into prose, which meant the
+    // interface could read the explanation but could not act on it.
+    used: from ? [...from.used] : [],
+    spare: from ? [...from.spare] : [],
+    clash: from ? [...from.clash] : [],
     add(key, how) { this.derived.push(how); this.filled[key] = how; },
+    account(used, spare, clash) {
+      this.used = [...used]; this.spare = [...spare]; this.clash = [...clash];
+    },
   };
 }
+
+/** Everything the interface needs, whether or not the solve succeeded. */
+const told = (ctx) => ({
+  derived: ctx.derived, notes: ctx.notes, filled: ctx.filled,
+  // The cleanest signal in the system, and it was not on the returned object
+  // at all: exactly which keys the STUDENT typed, as opposed to which the
+  // engine worked out.
+  given: [...ctx.given],
+  used: ctx.used, spare: ctx.spare, clash: ctx.clash,
+});
+
 function fail(reason, ctx) {
-  return { ok: false, reason, derived: ctx.derived, notes: ctx.notes, filled: ctx.filled };
+  return { ok: false, reason, ...told(ctx) };
 }
 
 /* ══ the arc — two dimensions, an angle of projection ═══════════════ */
@@ -209,6 +313,14 @@ function asArc(k, g, ctx) {
   }
 
   if (u < -EPS) return fail('The launch speed cannot be negative. Use the angle of projection to set the direction.', ctx);
+  // THE ARC HAD NO CROSS-CHECK AT ALL. The 1-D path refuses values that
+  // contradict each other; the 2-D path simply solved from whichever ones it
+  // reached first and drew the result, so a contradiction in an arc went
+  // through undetected and the diagram quietly disagreed with the numbers
+  // beside it. Whatever route it took to get here, the flight it produced has
+  // to reproduce what the student actually typed.
+  const bad = disagrees({ u: Math.abs(u), theta, h, g }, k, ctx);
+  if (bad) return fail(bad, ctx);
   return finish({ u: Math.abs(u), theta, h, g }, '2d', k, ctx, null);
 }
 
@@ -372,6 +484,7 @@ function asLine(k, g, ctx, angleKnown) {
   // Values that genuinely contradict each other must not be drawn — the
   // diagram would disagree with the numbers beside it. Refuse, and say which.
   // (`vals` may have been relabelled above, so quote sizes, not signs.)
+  ctx.account(best.used, best.spare || [], best.clash);
   if (best.clash.length) {
     const others = best.used.map((x) => x.toUpperCase()).join(', ');
     if (best.clash.includes('s') && sFromHeight) {
@@ -428,7 +541,7 @@ function runLine(known, inferred) {
     const tol = Math.max(0.1, Math.abs(known[key]) * 0.03);
     return Math.abs(r.values[key] - known[key]) > tol;
   });
-  return { ok: true, values: { ...r.values }, steps: r.steps, used: present.slice(0, 3), clash };
+  return { ok: true, values: { ...r.values }, steps: r.steps, used: present.slice(0, 3), spare, clash };
 }
 
 /* ══ assemble the answer ════════════════════════════════════════════ */
@@ -524,10 +637,14 @@ function finish(params, mode, k, ctx, lineInfo) {
     }
   }
 
+  // A SPARE VALUE THAT AGREES used to pass in total silence: the student
+  // typed a fourth number, the engine quietly ignored it, and nothing ever
+  // said so. It is not an error — it is consistent — but being ignored
+  // without being told is how you end up mistrusting the answer.
   return {
     ok: true, mode, params, f,
     axis: mode === '1d' ? (lineInfo.up ? 'up' : 'down') : null,
-    derived: ctx.derived, filled: ctx.filled, notes: ctx.notes,
+    ...told(ctx),
     convention: ctx.convention, altTheta: ctx.altTheta ?? null,
     assumedH: ctx.assumedH === true,
     five, extras, moment, answer,

@@ -40,7 +40,7 @@ and asks for speed and direction at named points along the path.
 | 5 | **Trajectory equation "show that"** | ~4 | y = x tan θ − gx² / (2u² cos²θ) |
 | 6 | **Two projectiles that collide** | 2 | Both launched at t = 0, meet mid-air |
 | 7 | **Given the apex height** (not the angle) | 2 | "The highest point is 12 m above P" — work backwards |
-| 8 | **Thrown *downwards* at an angle** | 1 | 30° **below** horizontal. Rare, and the one students fumble |
+| 8 | **Thrown *downwards* at an angle** | 1 | 30° **below** horizontal. Rare, and the one students fumble. **Built** — *Down and off a platform* |
 
 ### The sub-questions, in order of how often they appear
 
@@ -98,7 +98,13 @@ half-does this.
 a projectile to constant-velocity motion.
 
 **Thrown downwards at 30° below horizontal** (June 08 Q7). Worth a preset purely
-because the sign of `u_y` is where marks are lost.
+because the sign of `u_y` is where marks are lost. **Built**, as *Down and off a
+platform*, from the same 25 m platform as the flat and the upward throws so the
+three can be compared by changing nothing but the angle. Building it found a
+real engine bug: `apexHeight` used `h + u_y²/(2g)` unconditionally, which
+squares away the sign, so every downward throw reported a greatest height
+*above* where it was launched from — the shipped "Thrown straight down" said
+50.10 m for a throw off a 45 m roof.
 
 **Released from a moving platform.** A sandbag dropped from a balloon *ascending*
 at 8 m s⁻¹ — so `u = +8`, not 0. The single best "the model is not what you
@@ -142,6 +148,14 @@ Every one of these is lifted from an actual question.
 | Golf ball off a cliff | 35 | tan α = 3/4 | — | 9.8 | June 07 Q6 (168 m out) |
 | Cricket, near ground | 19.2 | tan α = 3/4 | 0.9 m | 9.8 | Jan 09 Q6 (3 s, 57.6 m) |
 | Over the fence | u | 45° | 0 | 9.8 | June 09 Q6 (2 m fence at 10 m) |
-| Thrown downwards | 25 | −30° | 12 m | 9.8 | June 08 Q7 |
+| Thrown downwards | 25 | −30° | 12 m | 9.8 | June 08 Q7 — built; the card draws it from the 25 m platform so it lines up with its two neighbours |
 | Stone into the sea | 65 | tan α given | 70 m | **10** | PMT Y2 Q5 |
 | Two stones colliding | 28 / 35 | 0° / α | 73.5 m / 0 | 9.8 | June 06 Q5 |
+
+Two of these were built and then removed from the app — "Throw at a target"
+and "Two that collide". Both were implemented so that they could not fail: the
+aim was computed from the target in one, and the second launch was derived to
+guarantee the meeting in the other. The questions above are real and still
+worth answering; what was built was not an answer to them. See
+`design/presets.md` for the fuller note. The row above stays because it
+records what June 06 Q5 asked, which has not changed.
