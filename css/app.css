@@ -35,29 +35,38 @@ h1, h2 { margin: 0; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1
    they looked exactly like what they were: static text. Now they are buttons,
    so they need to look like something you can press — a hover, a focus ring
    and a cursor — and the two that lead nowhere yet have to say so rather than
-   landing you on an empty screen. */
-.steps li { display: flex; }
-.step {
+   landing you on an empty screen.
+
+   THEY ARE `navstep`, NOT `step`, AND THAT MATTERS. `.step` was already taken
+   by the working panel's derivation steps further down this file, which carry
+   a 20px bottom margin and a `.step span` rule of their own. Naming the chips
+   `step` handed them both. The bottom margin pushed each chip to the top of
+   its own li, and a negative top margin was added here to compensate — which
+   cancelled the symptom at the cost of lifting all three fourteen pixels
+   above the wordmark. Two wrongs, one name. The name is the fix; the header
+   is a fixed 64px row and never needed the margin at all. */
+.steps li { display: flex; align-items: center; }
+.navstep {
   display: flex; align-items: center; gap: var(--sp-2);
   font-size: var(--fs-sm); color: var(--ink-faint);
-  padding: var(--sp-2) var(--sp-3); margin: calc(var(--sp-2) * -1) 0;
+  padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-pill); cursor: pointer;
   transition: background 120ms, color 120ms;
 }
-.step:hover:not([aria-disabled='true']) { background: var(--hover); color: var(--ink); }
-.step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.step[aria-disabled='true'] { cursor: not-allowed; opacity: .45; }
-.step[aria-current='step'] { background: var(--accent-soft); }
+.navstep:hover:not([aria-disabled='true']) { background: var(--hover); color: var(--ink); }
+.navstep:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.navstep[aria-disabled='true'] { cursor: not-allowed; opacity: .45; }
+.navstep[aria-current='step'] { background: var(--accent-soft); }
 .steps li span {
   width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
   font-size: var(--fs-xs); border: 1.5px solid currentColor;
 }
-.app[data-step='scenario'] .step[data-s='scenario'],
-.app[data-step='values']   .step[data-s='values'],
-.app[data-step='flight']   .step[data-s='flight'] { color: var(--accent); font-weight: 600; }
-.app[data-step='values']   .step[data-s='scenario'],
-.app[data-step='flight']   .step[data-s='scenario'],
-.app[data-step='flight']   .step[data-s='values'] { color: var(--ink-muted); }
+.app[data-step='scenario'] .navstep[data-s='scenario'],
+.app[data-step='values']   .navstep[data-s='values'],
+.app[data-step='flight']   .navstep[data-s='flight'] { color: var(--accent); font-weight: 600; }
+.app[data-step='values']   .navstep[data-s='scenario'],
+.app[data-step='flight']   .navstep[data-s='scenario'],
+.app[data-step='flight']   .navstep[data-s='values'] { color: var(--ink-muted); }
 
 .top-right { margin-left: auto; display: flex; gap: var(--sp-2); flex: none; }
 .tbtn, .ghost {
@@ -390,7 +399,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   .hbox { min-width: 112px; padding: 6px var(--sp-3); }
   .hbox-v { font-size: var(--fs-lg); }
   .app { height: auto; min-height: 100dvh; }
-  .step span { display: none; }
+  .navstep span { display: none; }
   .suvat { grid-template-columns: repeat(2, 1fr); }
   .main { height: auto; }
   .stage { grid-template-rows: auto 56vh auto; padding: 0 var(--sp-4) var(--sp-4); }

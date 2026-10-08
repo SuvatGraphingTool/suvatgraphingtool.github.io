@@ -962,7 +962,7 @@ function go(step) {
  */
 function refreshSteps() {
   const reach = { scenario: true, values: !!scenario, flight: !!traj };
-  for (const b of $('steps').querySelectorAll('.step')) {
+  for (const b of $('steps').querySelectorAll('.navstep')) {
     const to = b.dataset.s;
     const on = state.step === to;
     const can = reach[to] || on;
@@ -1322,7 +1322,7 @@ function applyTheme(mode) {
 
 wireLive();
 $('brand').addEventListener('click', () => go('scenario'));
-for (const b of $('steps').querySelectorAll('.step')) {
+for (const b of $('steps').querySelectorAll('.navstep')) {
   b.addEventListener('click', () => {
     if (b.getAttribute('aria-disabled') === 'true') return;
     closeResolve();
