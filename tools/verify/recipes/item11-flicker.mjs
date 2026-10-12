@@ -5,7 +5,7 @@
 // stands on every frame. If anything crosses a visual threshold while the
 // camera is "moving", that number jumps. A still frame and a moving frame
 // should differ by rounding, not by a flood fill.
-const fly = async (page, wait, band = 'stadium') => {
+const fly = async (page, wait, notches = 0) => {
   await page.click('.pcard[data-id="arc"]');
   await wait(300);
   for (const [k, v] of [['u', '25'], ['g', '9.81']]) await page.fill(`#suvat input[data-k="${k}"]`, v);
@@ -18,8 +18,14 @@ const fly = async (page, wait, band = 'stadium') => {
   await wait(2400);
   const see = page.locator('#done button', { hasText: /See the diagram/ });
   if (await see.count()) await see.first().click();
-  await page.click(`#band-seg button[data-band="${band}"]`);
+  await page.click('#fit-btn');
   await wait(900);
+  if (notches) {
+    const box = await page.locator('#scene').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    for (let i = 0; i < Math.abs(notches); i++) await page.mouse.wheel(0, notches > 0 ? -120 : 120);
+    await wait(900);
+  }
 };
 
 // mean luminance of a strip over the west stand, read straight off the canvas
@@ -77,9 +83,9 @@ const churn = async (page, wait) => {
   return samples;
 };
 
-const run = (band, theme) => async (page, { wait }) => {
+const run = (zoomLabel, notches, theme) => async (page, { wait }) => {
   if (theme === 'dark') { await page.click('#theme-btn'); await wait(200); }
-  await fly(page, wait, band);
+  await fly(page, wait, notches);
 
   // still, then held mid-drag, then still again
   const still = await page.evaluate(GRID);
@@ -96,7 +102,7 @@ const run = (band, theme) => async (page, { wait }) => {
   const s = await churn(page, wait);
   const lo = Math.min(...s), hi = Math.max(...s);
   const swing = hi - lo;
-  console.log(`       ${theme} ${band}: stands ${swing.toFixed(1)}/255 over ${s.length} frames `
+  console.log(`       ${theme} ${zoomLabel}: stands ${swing.toFixed(1)}/255 over ${s.length} frames `
     + `· worst cell while dragging ${cell.toFixed(1)}/255`);
   if (swing > 12) throw new Error(`the stands change tone by ${swing.toFixed(1)}/255 while the camera moves`);
   if (cell > 18) throw new Error(`a part of the frame changes by ${cell.toFixed(1)}/255 the moment a drag starts`);
@@ -104,8 +110,8 @@ const run = (band, theme) => async (page, { wait }) => {
 };
 
 export default [
-  { name: 'item11-light-stadium', run: run('stadium', 'light') },
-  { name: 'item11-dark-stadium',  run: run('stadium', 'dark') },
-  { name: 'item11-light-pitch',   run: run('pitch', 'light') },
-  { name: 'item11-dark-district', run: run('district', 'dark') },
+  { name: 'item11-light-fitted', run: run('fitted', 0, 'light') },
+  { name: 'item11-dark-fitted',  run: run('fitted', 0, 'dark') },
+  { name: 'item11-light-close',  run: run('close', 12, 'light') },
+  { name: 'item11-dark-wide', run: run('wide', -14, 'dark') },
 ];

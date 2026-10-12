@@ -128,73 +128,38 @@ export const D = {
     radialCables: 28, hoopCables: 3,
   },
 
-  /* ── podium and district ─────────────────────────────────────────── */
+  /* ── the podium the bowl stands on ───────────────────────────────── */
+  // The last thing out here. There was a district beyond it — a dual
+  // carriageway with its street trees and traffic, a west-side street, a rail
+  // station with four tracks, four car parks, four terraces of houses and two
+  // parks with ponds — and it has been removed; js/world/world.js says why.
+  // The podium stays because it is what the stadium stands on, and because
+  // the one deliberate disagreement with the physics noted at the top of this
+  // file is about its height.
   podium: { halfL: 165, halfW: 140, cornerR: 60, y: 1.5, railH: 1.1, stepN: 6 },
 
-  // The main road, running along x on the north side. Laid out as outward
-  // distances from the podium edge at z = −140.
-  road: {
-    axis: 'x', side: -1,
-    forecourt: [-152, -140],                // 12 m drop-off
-    pavementWide: [-164, -152],             // 12 m — the wide pavement
-    carriagewayA: [-171, -164],             // 2 lanes of 3.5
-    median: [-173.4, -171],
-    carriagewayB: [-180.4, -173.4],
-    pavement: [-186.4, -180.4],             // 6 m
-    laneW: 3.5, lampH: 6, lampEvery: 30, treeEvery: 14,
-  },
-
-  // A secondary road running along z on the west side, so the long-axis
-  // cross-section has a street in it too.
-  roadW: { axis: 'z', x: [-336, -320], pavement: 4, lampEvery: 32 },
-
-  station: {
-    x: [-60, 60], z: [-250, -210], roofY: 14,
-    canopy: { z: [-272, -250], y: 7.0 },
-    tracks: { z: [-270, -254], n: 4, gauge: 1.435, spacing: 4.0 },
-    distanceFromCentre: 210,
-  },
-
-  carPark: { bayW: 2.4, bayL: 4.8, aisle: 6.0, fill: 0.68, lampH: 8 },
-  carParks: [
-    { id: 'P1', x: [-210, -70], z: [150, 230], along: 'x' },
-    { id: 'P2', x: [80, 215],   z: [150, 215], along: 'x' },
-    { id: 'P3', x: [-450, -340], z: [-150, 150], along: 'z' },
-    // P4 straddles x = 0 so the across-the-pitch section has a car park in
-    // it. Seven of the nine scenarios cut that way; without this the whole
-    // district band was one park and one terrace for most of the app.
-    { id: 'P4', x: [-62, 62],   z: [152, 232], along: 'x' },
-  ],
-
-  house: { front: 5.5, depth: 9.0, eaves: 6.2, ridge: 9.4, garden: 10, street: 10 },
-  terraces: [
-    { x: [300, 900],   z: [-150, 250], along: 'x' },
-    { x: [-240, 240],  z: [260, 700],  along: 'x' },
-    { x: [-900, -480], z: [240, 620],  along: 'x' },
-    { x: [430, 900],   z: [-640, -200], along: 'z' },
-  ],
-  parks: [
-    { id: 'west',  x: [-900, -480], z: [-200, 180],  pond: { x: [-780, -660], z: [-80, 20] } },
-    { id: 'north', x: [-300, 300],  z: [-600, -320], pond: null },
-  ],
-
-  /* ── scale references. Every one of these is a real measurement. ─── */
+  /* ── scale references ────────────────────────────────────────────── */
+  // This block held a car, a double-decker bus, two sizes of tree and a
+  // street lamp as well, every one of them a real measurement and every one
+  // of them placed outside the bowl. They went with the district. The person
+  // stays: the free kick's defensive wall is four of them shoulder to
+  // shoulder, and that is inside the pitch markings. So does the crowd, which
+  // is generated row by row from the deck it sits in rather than from here,
+  // and which is the scale reference that was always doing the work.
   prop: {
     ball: 0.22,                               // a size 5 football, across
-    // DRAWN LARGER THAN LIFE, on purpose, and only when drawn. A true 0.22 m
-    // ball at stadium scale is a speck, and the object the whole screen is
-    // about should not need a magnifier ring to be found. This factor lives
-    // here rather than in the renderer so the exaggeration is a stated number
-    // in the dimension sheet instead of a hidden one in a sprite — and `ball`
-    // above stays the real measurement, which is what every other entry in
-    // this block promises.
-    ballDraw: 1.45,
-    person: { h: 1.8, w: 0.45 },
-    car: { l: 4.5, w: 1.8, h: 1.5 },
-    bus: { l: 11.2, w: 2.55, h: 4.4 },        // double-decker
-    treeMature: { h: 15, canopyR: 5, trunkR: 0.35 },
-    treeYoung: { h: 8, canopyR: 2.6, trunkR: 0.18 },
-    lamp: { h: 6, armL: 1.5 },
+    // DRAWN AT THAT SIZE, like everything else here. There was a 1.45 factor
+    // in this slot so the ball would not be a speck at stadium scale, and it
+    // was the wrong tool: a speck is found by the magnifier ring in
+    // ballSprite, and all the factor really did was make the ball half again
+    // too big every time you zoomed in on it. The ceiling that stops it
+    // swallowing a short flight is a screen distance, so it lives in
+    // js/render/util.js with the other pixel floors.
+    person: { h: 1.8, w: 0.45 },              // the defensive wall, and the jumper
+    // A sport parachute, across the inflated canopy. Drawn at that size like
+    // everything else, so it is honestly about four times her own height
+    // across — which is most of why the picture reads as a parachute at all.
+    canopy: { w: 7 },
     floodMast: { h: 46 },
     goalpostR: 0.06,
   },
@@ -206,12 +171,11 @@ export const D = {
      Each entry is the span at which that detail has fully gone. Fades run
      over the last quarter, so nothing ever pops. */
   lod: {
-    bands: { pitch: 30, stadium: 300, district: 2000 },
-    netMesh: 260, grassBlades: 24, people: 460, boardPanels: 260,
+    bands: { pitch: 30, stadium: 300, wide: 2000 },
+    netMesh: 260, flags: 460, boardPanels: 260,
     pitchLines: 900, seatRows: 130, seatTexture: 440,
-    roofCables: 950, floodDetail: 760, carParkBays: 950, cars: 1900,
-    treeDetail: 1200, treeBlob: 3400, houseDetail: 1500, houseBlock: 4200,
-    grassStripes: 1000, roadLines: 1100,
+    roofCables: 950, floodDetail: 760,
+    grassStripes: 1000,
   },
 };
 

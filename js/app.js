@@ -6,7 +6,8 @@
 
 import { solveLaunch } from './core/solve.js';
 import { trajectory } from './core/trajectory.js';
-import { flight, timeAbove, heightForTime } from './core/projectile.js';
+import { flight, timeAbove, heightForTime, timeAtSpeed } from './core/projectile.js';
+import { descent, solveDescent, descentWorking, resolveDescent } from './core/descent.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
@@ -17,7 +18,7 @@ import { siteFor } from './world/world.js';
 import { dropToneCache } from './render/world2d.js';
 import { drawGraph, graphSpecs } from './render/graphs.js';
 import { fmt, palette, clamp } from './render/util.js';
-import { M, num } from './notation.js';
+import { M, T, num } from './notation.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -67,10 +68,27 @@ const EXTRAS = [
   { key: 'energy',  label: 'Energy and momentum' },
 ];
 
+/* ── how hard a ball bounces ─────────────────────────────────────────────
+   The slider used to open at 0.7, which is a slider position rather than a
+   measurement — and the one thing a student cannot do with a coefficient of
+   restitution is guess a realistic one. A match football dropped onto firm
+   ground is required to come back to between about two-thirds and three
+   quarters of the height it fell from, and the height ratio is e², so e is
+   about 0.8. That is where the control opens, it is named in the panel, and
+   it is one click back from wherever the slider has been dragged.
+
+   e is a property of the two surfaces, not of the field strength, so it does
+   NOT follow the Earth / Moon / none chips. The same ball on the same ground
+   on the Moon has the same e and simply takes longer over it. */
+const EARTH_E = 0.8;
+
 const state = {
   step: 'scenario', id: null,
   given: {}, mass: 1,
-  bounce: false, restitution: 0.7,
+  // The parachute's own four, kept apart from `given` because they are not
+  // three of the five: they describe three phases rather than one motion.
+  descent: {},
+  bounce: false, restitution: EARTH_E,
   t: 0, playing: false, launched: false, firedBefore: false,
   rate: 1, rateTouched: false,
   show: { path: true, velocity: true, apex: true, range: true, grid: false, ruler: true,
@@ -78,6 +96,7 @@ const state = {
   extras: { graphs: false, working: false, energy: false },
   options: false,
   resolve: false, hover: null, hoverMark: null,
+  askT: null,                    // the instant the question named, if one did
   overview: false,
   aimed: true,                   // the hunter is pointing at the monkey
   guard: true,                   // stop the five being over-filled
@@ -116,6 +135,7 @@ function buildScenarioScreen() {
  * what you are choosing between.
  */
 function thumb(s) {
+  if (s.descent) return descentThumb(s);
   const g = s.params.g || 9.81;
   const theta = s.noAngle ? -90 : (s.aimAtTarget ? aimFor(s) : s.params.theta);
   const f = flight({ u: s.params.u || 0.001, theta, h: s.params.h, g });
@@ -172,6 +192,50 @@ function thumb(s) {
   </svg>`;
 }
 
+/**
+ * The parachute's sketch: the drop as a line, marked at equal times.
+ *
+ * A descent has no width, so the shape of the path says nothing — the whole
+ * story is in the SPACING. The dots are equally spaced in time, so they are
+ * far apart at the top where she is in free fall, crowd together through the
+ * canopy's deceleration, and then march down evenly at constant speed. That is
+ * the velocity–time graph, read off a picture of the fall itself, and it is
+ * what tells this card apart from Dropped at a glance.
+ *
+ * Drawn from the scenario's own illustrative numbers, like every other card.
+ * Nothing here is pre-filled into the boxes.
+ */
+function descentThumb(s) {
+  const r = descent({ h: s.params.h, g: s.params.g || 9.81, ...s.descent });
+  if (!r.ok) return '<svg viewBox="0 0 120 60" aria-hidden="true"></svg>';
+  const f = r.f, h = s.params.h;
+  const X = 60;
+  const Y = (y) => 6 + (1 - y / (h * 1.04)) * 45.5;
+
+  const marks = [];
+  for (let i = 0; i <= 15; i++) {
+    const t = (i / 15) * f.tMax;
+    marks.push(`<circle cx="${X}" cy="${Y(f.pos(t).y).toFixed(1)}" r="2.1" fill="var(--vel)" opacity=".95"/>`);
+  }
+  // the canopy, at the height it opens
+  const yo = Y(r.phases[0].y1);
+  const canopy = `<path d="M${X - 13} ${yo.toFixed(1)} A 13 9 0 0 1 ${X + 13} ${yo.toFixed(1)}"
+      fill="none" stroke="var(--mark)" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M${X - 13} ${yo.toFixed(1)} L${X} ${(yo + 7).toFixed(1)} M${X + 13} ${yo.toFixed(1)} L${X} ${(yo + 7).toFixed(1)}"
+      fill="none" stroke="var(--mark)" stroke-width="1" opacity=".8"/>`;
+
+  return `<svg viewBox="0 0 120 60" aria-hidden="true">
+    <line x1="2" y1="51.5" x2="118" y2="51.5" stroke="var(--border)" stroke-width="1"/>
+    <line x1="${X}" y1="${Y(h).toFixed(1)}" x2="${X}" y2="51.5"
+          stroke="var(--vel)" stroke-width="1.2" opacity=".42"/>
+    ${marks.join('')}
+    ${canopy}
+    <circle cx="${X}" cy="${Y(h).toFixed(1)}" r="2.6"
+            fill="var(--card)" stroke="var(--vel)" stroke-width="1.6"/>
+    <circle cx="${X}" cy="51.5" r="3.4" fill="var(--vel)"/>
+  </svg>`;
+}
+
 /** The sketch aims at the marker too, so the card matches what you will get. */
 function aimFor(s) {
   const t = s.markers?.target;
@@ -189,6 +253,7 @@ function chooseScenario(id) {
   if (scenario.noAngle) state.given.u = 0;
   state.theta = undefined;
   state.h = undefined;
+  state.descent = {};
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
   state.firedBefore = false; ghost = null;
   state.aimed = true;                  // the hunter starts pointing at it
@@ -206,7 +271,15 @@ function chooseScenario(id) {
     buildLive();
     go('flight');
     if (scenario.intro) openIntro();
-  } else { $('live').hidden = true; go('values'); }
+  } else {
+    // buildLive() runs for EVERY scenario now, not only the exhibits. It is
+    // the one place that decides which stage controls this situation can
+    // honour — the bounce block is hidden on three of them — and skipping it
+    // on the way out of one of those left that answer in place for whatever
+    // was picked next.
+    buildLive();
+    go('values');
+  }
 }
 
 /** Fill in the scenario's own starting numbers, so the stage has something to show. */
@@ -243,8 +316,13 @@ function openIntro() {
 }
 function closeIntro() { $('intro').hidden = true; }
 
-/* ── step 2 · the five values ───────────────────────────────────────── */
+/* ── step 2 · the five values ─────────────────────────────────────────
+   Or, for the parachute, four numbers that are not three of the five — see
+   buildDescentScreen below for why it gets a screen of its own. */
 function buildValuesScreen() {
+  if (scenario?.descent) return buildDescentScreen();
+  $('suvat').hidden = false;
+  valuesVoice(false);
   $('suvat').innerHTML = SUVAT.map((f) => {
     const locked = (f.k === 'u' && scenario.noAngle);
     return `<div class="sbox" data-k="${f.k}" data-locked="${locked}">
@@ -274,15 +352,29 @@ function buildValuesScreen() {
     rows.push(`<div class="xrow wide" data-x="theta">
       <label for="x-theta">Angle of projection θ (°)</label>
       <div class="angle-ctl">
-        <svg class="angle-dia" id="theta-dia" viewBox="0 0 132 96" aria-hidden="true">
-          <path id="td-wedge" fill="var(--accent)" opacity=".16"></path>
-          <line x1="16" y1="48" x2="126" y2="48" stroke="var(--ink-faint)"
-                stroke-width="1.6" stroke-dasharray="5 4"></line>
-          <line x1="16" y1="8" x2="16" y2="88" stroke="var(--border)" stroke-width="1.4"></line>
+        <svg class="angle-dia" id="theta-dia" viewBox="0 0 210 164" aria-hidden="true">
+          <path id="td-wedge" fill="var(--accent)" opacity=".15"></path>
+          <line x1="${AD.ox}" y1="${AD.oy}" x2="202" y2="${AD.oy}" stroke="var(--ink-faint)"
+                stroke-width="1.5" stroke-dasharray="5 4"></line>
+          <line x1="${AD.ox}" y1="10" x2="${AD.ox}" y2="154"
+                stroke="var(--border)" stroke-width="1.4"></line>
+          <!-- the launch velocity resolved, head to tail: colour is the
+               quantity and dash is the direction, the same rule the flight
+               view and the resolve card are read by -->
+          <line id="td-cx" stroke="var(--vel-vec)" stroke-width="2"
+                stroke-dasharray="6 4" opacity=".7"></line>
+          <line id="td-cy" stroke="var(--vel-vec)" stroke-width="2" opacity=".7"></line>
           <path id="td-arc" fill="none" stroke="var(--accent)" stroke-width="1.6"></path>
-          <line id="td-ray" x1="16" y1="48" x2="126" y2="48" stroke="var(--vel)"
-                stroke-width="3" stroke-linecap="round"></line>
-          <circle cx="16" cy="48" r="3.4" fill="var(--vel)"></circle>
+          <!-- A VECTOR, not a line. It has a head, and its LENGTH NEVER
+               CHANGES: what the control alters is the direction, so the
+               direction is the only thing allowed to move. The old ray was
+               drawn out to whichever frame edge it met first, which made it
+               longest at 0° and shortest at 45° — a picture of u changing. -->
+          <line id="td-ray" stroke="var(--vel)" stroke-width="3.4" stroke-linecap="round"></line>
+          <path id="td-head" fill="var(--vel)"></path>
+          <circle cx="${AD.ox}" cy="${AD.oy}" r="3.8" fill="var(--vel)"></circle>
+          <text id="td-ang" text-anchor="middle" fill="var(--accent)"></text>
+          <text id="td-u" text-anchor="middle" fill="var(--vel)">${T`u`}</text>
         </svg>
         <div class="angle-set">
           <input id="x-theta" type="text" inputmode="decimal" autocomplete="off"
@@ -331,6 +423,103 @@ function buildValuesScreen() {
   recompute();
 }
 
+/* ── the two questions the screen can ask ────────────────────────────────
+   "What do you already know?" is the right question for every scenario where
+   the motion has one acceleration, which is all of them but one. A parachute
+   drop has three, so the five boxes would be asking about a stretch of the
+   fall without saying which — and the honest question is a different one.
+   The wording lives in index.html and is read back out of it here, so there
+   is one copy of the default and no chance of the two drifting apart. */
+const VOICE = { el: null };
+function valuesVoice(descentMode) {
+  if (!VOICE.el) {
+    VOICE.el = {
+      h: document.querySelector('#screen-values .h-big'),
+      sub: document.querySelector('#screen-values .h-sub'),
+    };
+    VOICE.was = { h: VOICE.el.h.innerHTML, sub: VOICE.el.sub.innerHTML };
+  }
+  VOICE.el.h.innerHTML = descentMode ? 'How is the jump set up?' : VOICE.was.h;
+  VOICE.el.sub.innerHTML = descentMode
+    ? 'Four numbers, and none of them is one of the five. The fall is in three '
+      + 'phases and the five equations are applied to <b>each phase in turn</b> — '
+      + 'which is the whole reason this question gets set.'
+    : VOICE.was.sub;
+}
+
+/* ── the parachute's own four ────────────────────────────────────────────
+   The five boxes are deliberately not offered. They describe a stretch of
+   constant acceleration, and the point of this scenario is that the descent
+   is three such stretches with different accelerations — so a single row of
+   s, u, v, a, t could only be a question about one of them, with nothing on
+   screen to say which. What is asked for instead is the SETUP: where she
+   jumps from, when she pulls, how hard the canopy pulls back, and what it
+   settles to. The engine works out all five for each phase from those, and
+   the ending card shows them as three rows of five.
+
+   Nothing is pre-filled, as everywhere else. The hints carry the real
+   magnitudes instead, because a student who has never seen the question has
+   no idea whether a canopy pulls 2 m s⁻² or 200. */
+const DESCENT_ROWS = [
+  { k: 'h', id: 'x-h', label: 'Height she jumps from h (m)',
+    hint: 'A display team leaves the aircraft far higher than anything that fits on '
+      + 'one screen; a hundred metres or so shows the whole descent at once.' },
+  { k: 'tOpen', id: 'x-open', label: 'Free fall before the canopy opens (s)',
+    hint: 'Long enough that she is really moving. From a hundred metres there are '
+      + 'about four and a half seconds of fall to spend.' },
+  { k: 'aChute', id: 'x-chute', label: 'Deceleration once it is open (m s⁻²)',
+    hint: 'An opening is violent — somewhere around 20 to 30 m s⁻², which is two or '
+      + 'three times g, upwards.' },
+  { k: 'vTerm', id: 'x-vterm', label: 'Steady speed under the canopy (m s⁻¹)',
+    hint: 'About 5 to 7 m s⁻¹ under a sport canopy: the speed you land at stepping '
+      + 'off a two-metre wall.' },
+];
+
+function buildDescentScreen() {
+  // The five boxes, the over-filling guard and the which-motion band all
+  // belong to a one-acceleration solve. None of them has anything to say
+  // here, and a control with nothing to say is worse than no control.
+  $('suvat').innerHTML = '';
+  $('suvat').hidden = true;
+  $('guard').hidden = true;
+  $('mode-say').innerHTML = '';
+  valuesVoice(true);
+
+  const val = (k) => (k === 'h' ? state.h : state.descent[k]);
+  const rows = DESCENT_ROWS.map((r) => `
+    <div class="xrow" data-x="${r.k}"><label for="${r.id}">${r.label}</label>
+      <input id="${r.id}" type="text" inputmode="decimal" autocomplete="off"
+             value="${val(r.k) ?? ''}" placeholder="—" aria-label="${r.label}">
+      <p class="xhint">${r.hint}</p></div>`);
+  rows.push(`<div class="xrow"><label>Gravitational field</label><div class="chips" id="g-chips">${
+    GRAVITY.map((x) => `<button class="chip" data-g="${x.g}" aria-pressed="${state.given.g === x.g}">${x.label} ${x.g}</button>`).join('')
+  }</div>
+    <p class="xhint">The free fall is the only phase this governs. The other two are
+      set by the canopy, and the engine uses the figures you gave for them.</p></div>`);
+  $('extra').innerHTML = rows.join('');
+
+  for (const r of DESCENT_ROWS) {
+    $(r.id).addEventListener('input', (e) => {
+      const v = parseValue(e.target.value);
+      // A fraction is accepted here as everywhere else — papers quote a half
+      // second as often as 0.5.
+      const ok = v !== undefined && isFinite(v);
+      if (r.k === 'h') state.h = ok ? v : undefined;
+      else if (ok) state.descent[r.k] = v;
+      else delete state.descent[r.k];
+      recompute();
+    });
+  }
+  for (const b of $('g-chips').querySelectorAll('.chip')) {
+    b.addEventListener('click', () => {
+      state.given.g = parseFloat(b.dataset.g);
+      for (const x of $('g-chips').querySelectorAll('.chip')) x.setAttribute('aria-pressed', String(x === b));
+      recompute();
+    });
+  }
+  recompute();
+}
+
 /* ── solve ──────────────────────────────────────────────────────────── */
 /** The angle that points the launch straight at the draggable target. */
 function aimAngle() {
@@ -353,6 +542,7 @@ function showDerived(r) {
 }
 
 function recompute() {
+  if (scenario?.descent) return recomputeDescent();
   const k = { ...state.given, theta: state.theta, h: state.h };
   if (scenario.noAngle) { k.u = 0; delete k.theta; }
   if (scenario.lockAngle) k.theta = scenario.params.theta;
@@ -419,11 +609,59 @@ function recompute() {
     ? 'Release it'                      // a drop has no launch speed to quote
     : `Launch at ${fmt(solved.params.u, 1)} m s⁻¹`;
   showAbove();                   // the line's hint quotes the flight it belongs to
+  sayBounce();                   // and so does the restitution slider
+  // THE BAR'S SLIDER HAS TO BE RIGHT THE MOMENT THERE IS A FLIGHT, not only
+  // once the speed card has been through. The two experiments never open that
+  // card — they arrive on the stage already set up — so until the slider lived
+  // in the bar they ran at whatever state.rate happened to be, which was real
+  // time, which for a round landing in half a second is a blink. The
+  // recommendation applies to every fresh flight unless the student has
+  // chosen a speed themselves, exactly as the card's own line does.
+  if (!state.rateTouched) state.rate = recommend(traj.tMax) / 100;
+  syncRate();
   refreshSteps();                // and Flight is reachable now that one exists
   applyGuard();
   sayAngle();
   if (state.theta === undefined) drawAngle(undefined);   // show what it found
   dirty = true;
+}
+
+/**
+ * The parachute, solved.
+ *
+ * Deliberately a separate route rather than a flag through solveLaunch: that
+ * function's whole contract is "any three of the five determine the other
+ * two", and a three-phase descent has no such five. js/core/descent.js
+ * answers in the same shape, so everything downstream of here — the message,
+ * the notes, the HUD, the camera, the scrubber — carries on without knowing
+ * which engine replied.
+ */
+function recomputeDescent() {
+  solved = solveDescent({ h: state.h, g: state.given.g, ...state.descent });
+  const msg = $('solve-msg'), btn = $('launch');
+
+  if (!solved.ok) {
+    msg.dataset.ok = 'false'; msg.innerHTML = solved.reason;
+    $('notes').innerHTML = '';
+    btn.disabled = true; btn.textContent = 'Jump';
+    traj = null; second = null; state.verdict = null;
+    refreshSteps(); dirty = true; return;
+  }
+
+  msg.dataset.ok = 'true';
+  msg.innerHTML = `Ready. The rest comes out as:  ${solved.derived.join('  ·  ')}`;
+  showDerived(solved);
+
+  traj = solved.f;
+  // Mass appears in exactly two places in this app, and neither of them is
+  // the geometry: kinetic energy and momentum. trajectory() takes it as a
+  // parameter; a descent is handed it the same way.
+  traj.mass = state.mass;
+  second = null; state.verdict = null; state.caught = null;
+
+  btn.disabled = false;
+  btn.textContent = 'Jump';
+  refreshSteps(); dirty = true;
 }
 
 /**
@@ -604,6 +842,35 @@ function applyGuard() {
   }
 }
 
+/* ── what the restitution did ────────────────────────────────────────────
+   A coefficient on its own means nothing to look at. The line under the
+   slider quotes the engine's own first bounce — the height it fell from and
+   the height it came back to — so the number on the slider has a consequence
+   attached to it. Nothing here works that out: trajectory.js builds a fresh
+   flight for each bounce and this reads the apex off the second one. */
+function setRestitution(e) {
+  state.restitution = e;
+  $('rest-val').textContent = e.toFixed(2);
+  $('rest-earth').hidden = Math.abs(e - EARTH_E) < 1e-9;
+  cam.fit = true; recompute(); dirty = true;
+}
+
+function sayBounce() {
+  const el = $('rest-say');
+  if (!el) return;
+  if (!state.bounce) { el.textContent = ''; return; }
+  const seg = traj?.segments?.[1];
+  if (!seg) {
+    el.textContent = 'This flight has no bounce to shape — it either never lands or has stopped moving by the time it does.';
+    return;
+  }
+  // apexHeight is already floored at the launch height, so a ball thrown
+  // downwards reports the height it was thrown from rather than a rise it
+  // never made.
+  el.textContent = `It fell from ${fmt(traj.apexHeight, 2)} m and the first bounce takes it back to `
+    + `${fmt(seg.f.apexHeight, 2)} m, then ${traj.bounces === 1 ? 'stops' : `${traj.bounces - 1} more`}.`;
+}
+
 function setGuard(on) {
   state.guard = on;
   try { localStorage.setItem('suvat-guard', on ? 'on' : 'off'); } catch {}
@@ -624,20 +891,25 @@ function setGuard(on) {
 function buildLive() {
   const spec = scenario?.live;
   $('live').hidden = !spec;
-  // AN EXHIBIT IGNORES THE CAMERA AND THE SHOW LIST. exhibit.js recomputes
-  // its own projection every frame and never reads cam.scale, so Pitch /
-  // Stadium / District are inert on it; and `show` is consulted once in the
-  // whole file, for a key that is not in state.show, so none of the seven
-  // checkboxes does anything either. Offering a control that cannot work is
-  // worse than not offering it: the student concludes the app is broken.
-  // Bounce goes the same way — a bullet does not bounce, and the monkey is
-  // not a ball.
+  // THE CAMERA AND THE SHOW LIST WORK EVERYWHERE NOW. They used to be hidden
+  // on an exhibit, and the reason was sound at the time: exhibit.js recomputes
+  // its own projection every frame and never reads cam.scale, so framing the
+  // whole flight was inert on it, and `show` was consulted once in that whole
+  // file for a key that is not in state.show, so none of the seven checkboxes
+  // did anything either. Offering a control that cannot work is worse than
+  // not offering it.
+  //
+  // Both exhibits are drawn by scene.js now — same camera, same drag, same
+  // seven options — so there is nothing left to hide.
   const ex = !!scenario?.exhibit;
-  $('band-seg').hidden = ex;
-  $('rate-seg').hidden = false;
-  $('shows').previousElementSibling.hidden = ex;   // its "Show" heading
-  $('shows').hidden = ex;
-  for (const el of document.querySelectorAll('.ck.inline')) el.hidden = ex;
+  $('fit-btn').hidden = false;
+  $('shows').previousElementSibling.hidden = false;   // its "Show" heading
+  $('shows').hidden = false;
+  // A bullet does not bounce, a monkey is not a ball, and a parachutist under
+  // a canopy does not bounce either — so the setting is not offered on any of
+  // the three. It used to be an inline checkbox in the stage bar; it is a
+  // block in the options panel now, and the same reason applies to it there.
+  $('bounce-wrap').hidden = ex || !!scenario?.descent;
   if (!spec) return;
   for (const [k, o] of Object.entries(spec)) {
     const el = $(`lv-${k}`);
@@ -771,18 +1043,37 @@ function wireAngle() {
   drawAngle(state.theta);
 }
 
+/* ── the angle diagram's geometry, in one place ──────────────────────────
+   The launch point sits in the MIDDLE of the frame's height, not on its
+   floor, because the control covers −90° to +90° and a downward throw needs
+   as much room as an upward one. `len` is then the largest arrow that still
+   fits pointing straight up or straight down, with room above it for the
+   head and the label.
+
+   It is declared here rather than written into the markup twice, because the
+   template needs the origin and drawAngle needs all of it, and two copies of
+   a coordinate is how a diagram ends up with its arrow nailed to the wrong
+   point. */
+const AD = { ox: 32, oy: 82, len: 66, arc: 30, head: 12 };
+
 /**
- * The ray, the wedge and the arc, at whatever the box currently holds.
+ * The launch velocity, as a vector, at whatever the box currently holds.
  *
- * The origin sits in the MIDDLE of the frame, not on its floor, because the
- * control covers −90° to +90° and a downward throw needs as much room as an
- * upward one. The ray is then drawn out to whichever edge it meets first, so
- * it fills the frame at every angle instead of poking through the top at 45°
- * and petering out at 5°.
+ * IT IS A VECTOR AND NOT A LINE, which is the whole of what changed. A line
+ * says "this direction"; a vector with a head says "this much, this way", and
+ * the quantity being set here is the direction of a velocity. So it has a
+ * head, it keeps a CONSTANT LENGTH as it swings — the old ray was drawn out
+ * to whichever frame edge it met first, so it was longest at 0° and shortest
+ * at 45°, which draws u changing when only θ did — and it is resolved into
+ * the two components underneath it, head to tail, dashed across and solid up.
+ * That is the same figure the resolve card draws on the flight, which is the
+ * point: this is where the student meets it first.
  */
 function drawAngle(theta) {
   const ray = $('td-ray'), arc = $('td-arc'), wedge = $('td-wedge');
   if (!ray) return;
+  const head = $('td-head'), cx = $('td-cx'), cy = $('td-cy');
+  const angT = $('td-ang'), uT = $('td-u');
   // WITH THE BOX BLANK, DRAW WHAT THE ENGINE FOUND. Leaving the diagram flat
   // while the panel underneath says "the engine recovered it as 20.4°" makes
   // the two disagree, and the picture is the part that gets believed.
@@ -791,20 +1082,42 @@ function drawAngle(theta) {
   const shown = own ? theta : found;
   const t = clamp(isFinite(shown) ? shown : 0, -THETA_LIMIT, THETA_LIMIT);
   const a = (t * Math.PI) / 180;
-  const OX = 16, OY = 48, AR = 26;
+  const { ox: OX, oy: OY, len: L, arc: AR, head: HL } = AD;
   const ca = Math.cos(a), sa = Math.sin(a);
-  const R = Math.min(
-    ca > 1e-6 ? (126 - OX) / ca : Infinity,
-    sa > 1e-6 ? (OY - 8) / sa : Infinity,
-    sa < -1e-6 ? (OY - 88) / sa : Infinity,
-  );
-  const ex = OX + R * ca, ey = OY - R * sa;
-  ray.setAttribute('x2', ex.toFixed(2));
-  ray.setAttribute('y2', ey.toFixed(2));
-  // Faint while it is the engine's answer rather than yours.
-  ray.setAttribute('stroke', own ? 'var(--vel)' : (isFinite(found) ? 'var(--ink-muted)' : 'var(--ink-faint)'));
+  const ex = OX + L * ca, ey = OY - L * sa;
 
-  // The arc runs from the horizontal round to the ray, either way.
+  // Faint while it is the engine's answer rather than yours.
+  const hue = own ? 'var(--vel)' : (isFinite(found) ? 'var(--ink-muted)' : 'var(--ink-faint)');
+  // The shaft stops short of the head, so the round cap cannot poke out
+  // through the nose of it.
+  ray.setAttribute('x1', OX); ray.setAttribute('y1', OY);
+  ray.setAttribute('x2', (ex - ca * HL * 0.82).toFixed(2));
+  ray.setAttribute('y2', (ey + sa * HL * 0.82).toFixed(2));
+  ray.setAttribute('stroke', hue);
+
+  // The head, as a triangle on the tip, pointing along the vector.
+  const nx = -sa, ny = -ca;                    // unit normal to the direction
+  const bw = HL * 0.40;                        // half the base
+  head.setAttribute('d',
+    `M${ex.toFixed(2)} ${ey.toFixed(2)} `
+    + `L${(ex - ca * HL + nx * bw).toFixed(2)} ${(ey + sa * HL + ny * bw).toFixed(2)} `
+    + `L${(ex - ca * HL - nx * bw).toFixed(2)} ${(ey + sa * HL - ny * bw).toFixed(2)} Z`);
+  head.setAttribute('fill', hue);
+
+  // The two components, head to tail: across to the foot, then up to the tip.
+  // Each disappears when it is genuinely zero rather than being drawn as a
+  // dot — a vertical launch has no horizontal part, and saying so by leaving
+  // it out is more honest than a stub.
+  const foot = { x: ex, y: OY };
+  const showX = Math.abs(ex - OX) > 3, showY = Math.abs(ey - OY) > 3;
+  cx.setAttribute('x1', OX); cx.setAttribute('y1', OY);
+  cx.setAttribute('x2', foot.x.toFixed(2)); cx.setAttribute('y2', OY);
+  cx.style.display = showX && showY ? '' : 'none';
+  cy.setAttribute('x1', foot.x.toFixed(2)); cy.setAttribute('y1', OY);
+  cy.setAttribute('x2', foot.x.toFixed(2)); cy.setAttribute('y2', ey.toFixed(2));
+  cy.style.display = showX && showY ? '' : 'none';
+
+  // The arc runs from the horizontal round to the vector, either way.
   const ax = OX + AR, ay = OY;
   const bx = OX + AR * ca, by = OY - AR * sa;
   const sweep = t >= 0 ? 0 : 1;
@@ -813,6 +1126,24 @@ function drawAngle(theta) {
     : `M${ax.toFixed(2)} ${ay.toFixed(2)} A${AR} ${AR} 0 0 ${sweep} ${bx.toFixed(2)} ${by.toFixed(2)}`);
   wedge.setAttribute('d', flat ? ''
     : `M${OX} ${OY} L${ax.toFixed(2)} ${ay.toFixed(2)} A${AR} ${AR} 0 0 ${sweep} ${bx.toFixed(2)} ${by.toFixed(2)} Z`);
+
+  // The value, on the bisector of the wedge so it sits inside the angle it
+  // names. T`` rather than M``: this is SVG, which cannot take the markup a
+  // typeset fraction needs, and a degree sign is all it has to set.
+  const half = a / 2;
+  angT.setAttribute('x', (OX + Math.cos(half) * (AR + 17)).toFixed(2));
+  angT.setAttribute('y', (OY - Math.sin(half) * (AR + 17) + 5).toFixed(2));
+  angT.textContent = flat ? '' : T`${num(Math.abs(t), Math.abs(t) % 1 ? 1 : 0)}°`;
+
+  // `u` beside the middle of the shaft, offset on whichever side the wedge is
+  // NOT, so the two labels never land on each other: the wedge opens between
+  // the horizontal and the vector, so for an upward throw it is below-right
+  // of the shaft and the label goes above-left, and for a downward one both
+  // swap.
+  const sgn = t >= 0 ? 1 : -1;
+  uT.setAttribute('x', (OX + ca * L * 0.52 + sgn * -sa * 14).toFixed(2));
+  uT.setAttribute('y', (OY - sa * L * 0.52 + sgn * -ca * 14 + 5).toFixed(2));
+  uT.setAttribute('fill', hue);
 }
 
 /* ── the line, from either end ───────────────────────────────────────
@@ -927,34 +1258,61 @@ function openPace() {
 }
 function closePace() { $('pace').hidden = true; }
 
-/** Keep the card and the flight bar saying the same thing. */
+/**
+ * Keep the card and the flight bar saying the same thing.
+ *
+ * ONE SETTING, ONE KIND OF CONTROL. The bar used to carry four buttons —
+ * real time, 0.75x, 0.5x, 0.25x — and the card a slider over the whole range,
+ * which made them look like two different settings that happened to interact.
+ * Worse, the four named four of a hundred reachable speeds AS IF they were
+ * the choices, and the speed most short flights actually want is not among
+ * them: a round that lands in half a second asks for about 0.14x, and the
+ * slowest button on offer was nearly twice that. The bar has the slider now,
+ * with the same recommendation pin, placed by the same calc.
+ */
 function syncRate() {
   const value = Math.round(state.rate * 100);
+  const shown = `${num(state.rate, 2)}×`;
   $('pace-rate').value = String(value);
-  $('pace-val').textContent = `${num(state.rate, 2)}×`;
-  for (const x of $('rate-seg').children) {
-    x.setAttribute('aria-pressed', String(parseFloat(x.dataset.rate) === state.rate));
-  }
+  $('pace-val').textContent = shown;
+  // Not while it is being dragged: writing to a slider under the thumb is how
+  // a drag turns jumpy. Same guard syncLive already uses.
+  const bar = $('bar-rate');
+  if (document.activeElement !== bar) bar.value = String(value);
+  $('bar-rate-val').textContent = shown;
 
   const tMax = traj?.tMax;
-  const note = $('pace-note'), pin = $('pace-pin'), use = $('pace-use');
-  if (!(tMax > 0)) { note.textContent = ''; pin.hidden = true; use.hidden = true; return; }
+  const note = $('pace-note'), use = $('pace-use');
+  const pins = [$('pace-pin'), $('bar-rate-pin')];
+  if (!(tMax > 0)) {
+    note.textContent = '';
+    for (const p of pins) p.hidden = true;
+    use.hidden = true;
+    return;
+  }
 
   const best = recommend(tMax);
   const r = paceNote(value, tMax);
   note.textContent = r.text;
   note.dataset.ok = String(r.ok);
   use.hidden = r.ok;
+  // The bar has no room for the sentence, so it says the same verdict the
+  // only way a bar can: the pin is where the flight asked for, and the
+  // readout goes off-colour when the setting is nowhere near it.
+  $('bar-rate-val').dataset.ok = String(r.ok);
 
   // The thumb travels between half a thumb in at each end, so the pin has to
   // travel the same path or it points at a number next to the one it means.
   // Stated as a percentage rather than measured in pixels: measuring put the
   // pin five pixels out, because the card's scrollbar comes and goes with the
   // length of this very note and the slider is a different width by the time
-  // the answer is used. A calc cannot go stale.
+  // the answer is used. A calc cannot go stale — and it is the same calc for
+  // both sliders, whatever width each of them happens to be.
   const THUMB = 24;
-  pin.style.left = `calc(${best}% - ${(best * THUMB / 100).toFixed(3)}px + ${THUMB / 2}px)`;
-  pin.hidden = false;
+  for (const p of pins) {
+    p.style.left = `calc(${best}% - ${(best * THUMB / 100).toFixed(3)}px + ${THUMB / 2}px)`;
+    p.hidden = false;
+  }
 }
 
 function runFlight() {
@@ -992,7 +1350,7 @@ function go(step) {
   if (state.step === 'flight' && step !== 'flight' && state.playing) {
     state.playing = false; setPlayIcon(false);
   }
-  if (step !== 'flight') hideDone();
+  if (step !== 'flight') { hideDone(); closeAskAt(); }
   state.step = step;
   $('app').dataset.step = step;
   $('options-btn').hidden = step !== 'flight';
@@ -1053,7 +1411,7 @@ function setPlayIcon(on) {
    instant the question chose. */
 function openResolve(t) {
   if (!traj || state.step !== 'flight') return;
-  hideDone();
+  hideDone(); closeAskAt();
   state.t = clamp(t ?? state.t, 0, traj.tMax);
   state.playing = false; setPlayIcon(false);
   state.resolve = true; state.hover = null;
@@ -1090,7 +1448,12 @@ function renderResolve(R) {
     </div>`;
   $('res-blocks').innerHTML = block(R.velocity) + block(R.displacement);
 
-  $('res-note').textContent = R.vertical
+  $('res-note').textContent = R.phase
+    // A descent's card has to say which PHASE this instant belongs to, because
+    // u and a change twice on the way down and the formulas above quote the
+    // phase's own. The engine says it; this prints it.
+    ? R.convention
+    : R.vertical
     ? 'Vertical motion only, so there is no horizontal component.'
     : R.after
       ? 'Past the bounce, u and θ no longer apply — so these are numbers, not formulas. The horizontal component is still unchanged.'
@@ -1102,6 +1465,143 @@ function renderResolve(R) {
   const wide = $('canvas-wrap').getBoundingClientRect().width;
   if (bx != null && wide > 0) box.dataset.side = bx < wide / 2 ? 'right' : 'left';
   box.hidden = false;
+}
+
+/* ── asking for an instant instead of pointing at one ───────────────────
+   Clicking the ball resolves the instant you can see, which answers "what is
+   it doing now". A question asks the other way round: resolve it AT 1.4 s, or
+   at the moment it is doing 18 m s⁻¹. Neither of those is anywhere the
+   pointer can reach, and scrubbing for them by hand is guesswork.
+
+   Both boxes name ONE instant, so each shows what the other did — the same
+   arrangement the height line and the time above it already use, for the same
+   reason. The speed box is the interesting one, because a speed is usually
+   reached TWICE: once slowing on the way up and once gaining it back coming
+   down. Both are offered. The engine finds them (js/core/projectile.js); this
+   only picks which one was wanted. */
+const AT_T_HINT = 'Anywhere from the launch to the landing.';
+const AT_V_HINT = '<b>Or name the speed instead.</b> Most speeds happen twice.';
+
+function openAskAt() {
+  if (!traj || state.step !== 'flight') return;
+  hideDone(); closeResolve();
+  state.playing = false; setPlayIcon(false);
+  // It opens on the instant already on screen, so Resolve it always resolves
+  // something — and the student can see which instant they are editing.
+  state.askT = clamp(state.t, 0, traj.tMax);
+  $('at-t').value = fmt(state.askT, 2);
+  $('at-v').value = '';
+  $('at-picks').innerHTML = '';
+  say($('at-t-hint'), false, atTimeSay(state.askT));
+  say($('at-v-hint'), false, AT_V_HINT);
+  $('askat').hidden = false;
+  $('canvas-wrap').dataset.ask = 'on';
+  $('ask-at').setAttribute('aria-pressed', 'true');
+  $('at-t').focus();
+  $('at-t').select();
+  dirty = true;
+}
+
+function closeAskAt() {
+  $('askat').hidden = true;
+  $('canvas-wrap').dataset.ask = 'off';
+  $('ask-at').setAttribute('aria-pressed', 'false');
+}
+
+/** What the object is doing at an instant the student has just named. */
+function atTimeSay(t) {
+  if (!traj) return AT_T_HINT;
+  const v = traj.vel(t), p = traj.pos(t);
+  return `Doing ${M`${fmt(Math.hypot(v.x, v.y), 2)} [m s^-1]`} there, `
+    + `${M`${fmt(p.y, 2)} [m]`} up. ${AT_T_HINT}`;
+}
+
+/** Which way it is going at an instant, for telling two answers apart. */
+function wayAt(t) {
+  const vy = traj.vel(t).y;
+  return Math.abs(vy) < 0.05 ? 'at the top of the arc'
+    : vy > 0 ? 'on the way up' : 'on the way down';
+}
+
+/** The two or more instants that share a speed, offered as a choice. */
+function showPicks(times) {
+  const box = $('at-picks');
+  if (times.length < 2) { box.innerHTML = ''; return; }
+  box.innerHTML = times.map((t, i) => `
+    <button class="askat-pick" data-t="${t}" aria-pressed="${i === 0}">
+      <b>${M`t = ${fmt(t, 2)} [s]`}</b>
+      ${wayAt(t)}, ${M`${fmt(traj.pos(t).y, 2)} [m]`} up
+    </button>`).join('');
+  for (const b of box.children) {
+    b.addEventListener('click', () => {
+      state.askT = parseFloat(b.dataset.t);
+      for (const x of box.children) x.setAttribute('aria-pressed', String(x === b));
+      $('at-t').value = fmt(state.askT, 2);
+      say($('at-t-hint'), false, atTimeSay(state.askT));
+    });
+  }
+}
+
+function wireAskAt() {
+  const tb = $('at-t'), vb = $('at-v');
+
+  tb.addEventListener('input', (e) => {
+    const hint = $('at-t-hint');
+    const v = parseValue(e.target.value);
+    $('at-picks').innerHTML = '';
+    vb.value = '';
+    if (v === undefined) { state.askT = null; say(hint, false, AT_T_HINT); return; }
+    if (!isFinite(v)) { say(hint, true, 'That is not a time. Seconds, or a fraction like 7/2.'); return; }
+    if (!traj) { say(hint, true, 'There is no flight to look along yet.'); return; }
+    if (v < 0 || v > traj.tMax) {
+      // Say what was done rather than rewriting the box under the cursor.
+      const held = clamp(v, 0, traj.tMax);
+      state.askT = held;
+      say(hint, true, `The flight runs from ${M`t = 0`} to ${M`t = ${fmt(traj.tMax, 2)}`} s, `
+        + `so ${M`${fmt(held, 2)}`} s is what gets used.`);
+      return;
+    }
+    state.askT = v;
+    say(hint, false, atTimeSay(v));
+  });
+
+  vb.addEventListener('input', (e) => {
+    const hint = $('at-v-hint');
+    const v = parseValue(e.target.value);
+    if (v === undefined) { $('at-picks').innerHTML = ''; say(hint, false, AT_V_HINT); return; }
+    if (!isFinite(v)) { say(hint, true, 'That is not a speed. Try a number, or a fraction like 7/2.'); return; }
+    if (!traj) { say(hint, true, 'There is no flight to look along yet.'); return; }
+    const r = timeAtSpeed(traj, v);
+    if (!r.ok) { $('at-picks').innerHTML = ''; say(hint, true, r.reason); return; }
+    state.askT = r.times[0];
+    tb.value = fmt(state.askT, 2);
+    showPicks(r.times);
+    say(hint, false, r.constant
+      ? 'It travels at that speed from start to finish, so any instant will do — this is the launch.'
+      : r.times.length > 1
+        ? `It is doing that ${r.times.length === 2 ? 'twice' : `${r.times.length} times`} — pick one.`
+        : `That happens once, at ${M`t = ${fmt(state.askT, 2)}`} s.`);
+    say($('at-t-hint'), false, atTimeSay(state.askT));
+  });
+
+  const go = () => {
+    if (!traj) return;
+    if (state.askT == null) { say($('at-t-hint'), true, 'Name a time or a speed first.'); return; }
+    const t = state.askT;
+    closeAskAt();
+    openResolve(t);
+  };
+  $('at-go').addEventListener('click', go);
+  $('at-cancel').addEventListener('click', closeAskAt);
+  $('ask-at').addEventListener('click', () => {
+    if ($('askat').hidden) openAskAt(); else closeAskAt();
+  });
+  for (const el of [tb, vb]) {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); go(); }
+      else if (e.key === 'Escape') { e.preventDefault(); closeAskAt(); }
+    });
+  }
 }
 
 /* ── readouts, on the diagram ───────────────────────────────────────── */
@@ -1127,6 +1627,14 @@ function renderHud() {
         b('Horizontal distance', fmt(p.x, 1), 'm', 'disp'),
         b('Speed', fmt(Math.hypot(v.x, v.y), 1), 'm s⁻¹', 'vel'),
       ];
+  // WHICH PHASE, and what the acceleration is doing in it. On a parachute
+  // drop this is the number the whole scenario is about: it reads 9.81 down,
+  // then flips to the canopy's deceleration upwards, then goes to zero.
+  if (scenario?.descent && traj.at) {
+    const ph = traj.at(state.t);
+    left.push(b(ph.name, Math.abs(ph.a) < 1e-9 ? '0' : fmt(Math.abs(ph.a), 2),
+                Math.abs(ph.a) < 1e-9 ? 'm s⁻²' : `m s⁻² ${ph.a > 0 ? 'down' : 'up'}`, 'acc'));
+  }
   if (state.extras.energy) {
     left.push(b('Kinetic energy', fmt(traj.kineticEnergy(state.t), 0), 'J'));
     left.push(b('Momentum', fmt(traj.momentum(state.t), 1), 'kg m s⁻¹'));
@@ -1138,7 +1646,7 @@ function renderHud() {
   // "A goal kick from the west goal line".
   const site = siteFor(state.id);
   $('place').textContent = scenario?.place || site.place;
-  $('place-note').textContent = scenario?.exhibit ? '' : (site.note || '');
+  $('place-note').textContent = scenario?.plate ? '' : (site.note || '');
 }
 
 /* ── the landing card: the whole of SUVAT, once it has settled ───────── */
@@ -1194,9 +1702,131 @@ function title(r) {
  * the grid at all. So a scenario may bring its own ending.
  */
 function showEnding() {
+  // The parachute has no second object and its answer is not five numbers but
+  // three rows of five, so it brings its own card. It is gated on the solve
+  // rather than on `second`.
+  if (scenario?.descent && solved?.ok && state.step === 'flight') return showDescentDone();
   if (!(scenario?.ending && second && solved?.ok && state.step === 'flight')) return showDone();
   if (scenario.ending.kind === 'monkey') return showMonkeyDone();
   return showRangeDone();
+}
+
+/**
+ * The parachute's ending: SUVAT, three times, side by side.
+ *
+ * The SUVAT-five grid is the wrong shape for this one and the reason is the
+ * lesson. One row of five says "this is the motion"; the whole point here is
+ * that no single row of five describes the fall, and three of them do. So the
+ * card is a table with one row per phase, and every figure in it was computed
+ * by js/core/descent.js — this function reads them out and arranges them.
+ *
+ * The sketch beside it is the velocity–time graph, and it is EXACT rather
+ * than illustrative: within a phase the acceleration is constant, so the
+ * speed is linear in time, so three straight segments through the phase
+ * boundaries is not an approximation of the curve — it is the curve.
+ */
+function showDescentDone() {
+  const e = scenario.ending, p = solved.params, ph = solved.phases;
+  const land = solved.vLanding;
+
+  $('exdone-eyebrow').textContent =
+    `Down in ${fmt(solved.tMax, 2)} s · landing at ${fmt(land, 2)} m s⁻¹`;
+  $('exdone-title').textContent = solved.stillSlowing
+    ? 'She was still slowing down when she reached the ground.'
+    : e.title;
+
+  const cell = (x, dp = 2) => `<b>${fmt(x, dp)}</b>`;
+  const table = `
+    <div class="ph-tab" role="table" aria-label="Each phase, solved on its own">
+      <div class="ph-head" role="row">
+        <span role="columnheader">Phase</span>
+        <span role="columnheader">${M`u`}</span><span role="columnheader">${M`v`}</span>
+        <span role="columnheader">${M`a`}</span><span role="columnheader">${M`s`}</span>
+        <span role="columnheader">${M`t`}</span>
+      </div>
+      ${ph.map((x, i) => `
+        <div class="ph-row" role="row" data-key="${x.key}">
+          <span class="ph-name" role="cell"><b>${i + 1} · ${x.name}</b><em>${x.sub}</em></span>
+          <span role="cell">${cell(x.u)}</span><span role="cell">${cell(x.v)}</span>
+          <span role="cell">${cell(x.a)}</span><span role="cell">${cell(x.s)}</span>
+          <span role="cell">${cell(x.t)}</span>
+        </div>`).join('')}
+      <div class="ph-row ph-sum" role="row">
+        <span class="ph-name" role="cell"><b>The whole descent</b><em>the ${
+          ph.length === 3 ? 'three' : 'two'} added up</em></span>
+        <span role="cell">${cell(0)}</span><span role="cell">${cell(land)}</span>
+        <span role="cell">—</span><span role="cell">${cell(p.h)}</span>
+        <span role="cell">${cell(solved.tMax)}</span>
+      </div>
+      <p class="ph-units">Downwards is positive. ${M`u`} and ${M`v`} in ${M`[m s^-1]`},
+        ${M`a`} in ${M`[m s^-2]`}, ${M`s`} in ${M`[m]`}, ${M`t`} in ${M`[s]`} — and each
+        ${M`t`} is timed from the start of its own phase.</p>
+    </div>`;
+
+  const why = solved.stillSlowing
+    ? `<p>The canopy never finished its job: there was not enough height left to
+        bring her from ${fmt(ph[0].v, 1)} m s⁻¹ down to the ${fmt(p.vTerm, 1)} m s⁻¹ you
+        asked for, so she arrived at <b>${fmt(land, 2)} m s⁻¹</b> instead — still
+        decelerating. The row below the free fall is cut short for that reason, and
+        there is no third row at all.</p>`
+    : `<p>No single row of five describes this fall, and that is the whole point of
+        the question. Each phase has its own constant acceleration, so each one is
+        a separate SUVAT problem — and the only thing they share is that the
+        ${M`v`} of one is the ${M`u`} of the next.</p>`;
+
+  $('exdone-body').innerHTML = `${why}${table}${vtSketch(ph, solved, p)}`;
+
+  $('exdone-real-h').textContent = e.realTitle;
+  $('exdone-real-lead').textContent = e.realLead;
+  $('exdone-why').innerHTML = e.why.map(([k, v]) => `<li><b>${k}</b> — ${v}</li>`).join('');
+  $('exdone-caveat').textContent = e.caveat;
+  $('exdone-close').textContent = e.close || 'See the diagram';
+  $('exdone-all').hidden = true;        // there is no second view to offer
+  $('exdone').hidden = false;
+}
+
+/**
+ * The velocity–time graph, drawn from the phases themselves.
+ *
+ * Exact, not illustrative: constant acceleration within a phase means speed
+ * is linear in time, so the polyline through the phase boundaries IS the
+ * graph. The area under it is the height she fell, which is the other half of
+ * what a v–t graph is for, so it is shaded and labelled with the engine's own
+ * figure rather than with one measured off the picture.
+ */
+function vtSketch(ph, r, p) {
+  const W = 420, H = 150, L = 44, B = 26, T = 12, R = 14;
+  const vMax = Math.max(...ph.map((x) => Math.max(x.u, x.v))) * 1.12;
+  const X = (t) => L + (t / r.tMax) * (W - L - R);
+  const Y = (v) => T + (1 - v / vMax) * (H - T - B);
+
+  // one point per phase boundary, in order
+  const pts = [{ t: 0, v: ph[0].u }];
+  for (const x of ph) pts.push({ t: x.t0 + x.t, v: x.v });
+  const d = pts.map((q, i) => `${i ? 'L' : 'M'}${X(q.t).toFixed(1)} ${Y(q.v).toFixed(1)}`).join(' ');
+  const area = `${d} L${X(r.tMax).toFixed(1)} ${Y(0).toFixed(1)} L${X(0).toFixed(1)} ${Y(0).toFixed(1)} Z`;
+
+  const ticks = ph.slice(0, -1).map((x) => `
+    <line x1="${X(x.t0 + x.t).toFixed(1)}" y1="${T}" x2="${X(x.t0 + x.t).toFixed(1)}" y2="${Y(0).toFixed(1)}"
+          stroke="var(--border)" stroke-width="1" stroke-dasharray="3 3"/>`).join('');
+
+  return `<figure class="vt">
+    <svg viewBox="0 0 ${W} ${H}" role="img"
+         aria-label="Speed against time: it rises in free fall, drops sharply as the canopy opens, then stays level.">
+      <path d="${area}" fill="var(--vel)" opacity=".12"/>
+      ${ticks}
+      <line x1="${L}" y1="${Y(0).toFixed(1)}" x2="${W - R}" y2="${Y(0).toFixed(1)}" stroke="var(--axis, var(--ink-faint))" stroke-width="1.5"/>
+      <line x1="${L}" y1="${T}" x2="${L}" y2="${Y(0).toFixed(1)}" stroke="var(--axis, var(--ink-faint))" stroke-width="1.5"/>
+      <path d="${d}" fill="none" stroke="var(--vel)" stroke-width="2.6" stroke-linejoin="round"/>
+      <text x="${L - 6}" y="${(Y(ph[0].v) + 4).toFixed(1)}" text-anchor="end">${fmt(ph[0].v, 1)}</text>
+      <text x="${L - 6}" y="${(Y(0) + 4).toFixed(1)}" text-anchor="end">0</text>
+      <text x="${(W - R).toFixed(1)}" y="${(Y(0) + 18).toFixed(1)}" text-anchor="end">${fmt(r.tMax, 2)} s</text>
+      <text x="${L}" y="${(Y(0) + 18).toFixed(1)}" text-anchor="start">0</text>
+    </svg>
+    <figcaption>Speed against time, in ${M`[m s^-1]`} — straight lines, because the
+      acceleration is constant inside each phase. The shaded area is how far she
+      fell: ${M`${fmt(p.h, 0)} [m]`}.</figcaption>
+  </figure>`;
 }
 
 /**
@@ -1284,7 +1914,10 @@ function showRangeDone() {
   $('exdone-why').innerHTML = e.why.map(([k, v]) => `<li><b>${k}</b> — ${v}</li>`).join('');
   $('exdone-caveat').textContent = e.caveat;
   $('exdone-close').textContent = e.close || 'See the diagram';
-  $('exdone-all').hidden = false;
+  // THE OVERVIEW IS THE PLATE'S, and the plate is not what drew this. On the
+  // side-on view both whole paths are already on screen at one honest scale,
+  // which is what this button existed to go and fetch.
+  $('exdone-all').hidden = !scenario.plate;
   $('exdone').hidden = false;
 }
 
@@ -1297,7 +1930,10 @@ function renderWorking() {
     const c = obstacleCheck(traj, state.markers.obstacle);
     parts.push(`<div class="verdict" data-ok="${c.ok}">${c.text}</div>`);
   }
-  for (const s of buildWorking(traj, state.t)) {
+  // A descent's working is its three phases, each one solved on its own, and
+  // it comes from the engine that solved them. See descentWorking().
+  for (const s of (scenario?.descent ? descentWorking(traj, state.t)
+                                     : buildWorking(traj, state.t))) {
     parts.push(`<div class="step"><div class="step-h">${s.title}</div>` +
       s.rows.map((r) => `<div class="eq"><div class="eq-f">${r.f}</div><div class="eq-s">${r.s}</div>${r.r ? `<div class="eq-r">${r.r}</div>` : ''}</div>`).join('') +
       (s.note ? `<div class="step-n">${s.note}</div>` : '') + '</div>');
@@ -1308,15 +1944,33 @@ function renderWorking() {
 /* ── loop ───────────────────────────────────────────────────────────── */
 function draw() {
   if (state.step !== 'flight' || !traj) { dirty = false; return; }
-  const R = state.resolve ? resolveAt(traj, state.t) : null;
+  const R = state.resolve
+    ? (scenario?.descent ? resolveDescent(traj, state.t) : resolveAt(traj, state.t))
+    : null;
   const opts = { traj, second, ghost, t: state.t, show: state.show, fired: state.launched,
                  verdict: state.verdict, overview: state.overview,
                  hoverMark: state.hoverMark,
                  markers: state.markers || {}, scenario, secondLabel: scenario.second?.label,
                  resolve: R, hover: state.hover };
-  // An exhibit is staged rather than surveyed: its own plate and its own scale
-  // on each axis, because a strobe photograph is not a survey of a place.
-  if (scenario?.exhibit) exhibit.render($('scene'), cam, opts);
+  /* ── which renderer, and why there are still two ──────────────────────
+     Everything is drawn by the side-on view. `plate` would hand a scenario to
+     js/render/exhibit.js instead — the strobe photograph, with its own dark
+     plate, its own scale on each axis and, for the range, two panes at one
+     scale rather than one squeezed frame.
+
+     NO SCENARIO SETS IT. The two that did were the two experiments, and the
+     plate cost them everything the ordinary view gives: you could not drag
+     it, could not zoom it, could not resolve an instant anywhere on it, and
+     the seven Show options and the camera were inert because exhibit.js
+     recomputes its own projection every frame and never reads the camera. One
+     consistent map everywhere is worth more than a prettier one in two places.
+
+     It is KEPT, not deleted, because the argument for it is a real one and is
+     written up at the top of that file: a round doing 360 m s⁻¹ falls 1.5 m
+     while it travels 180, and no single honest frame shows both at once. The
+     two-pane answer to that is built and working. Set `plate: true` on a
+     scenario to get it back. */
+  if (scenario?.plate) exhibit.render($('scene'), cam, opts);
   else scene.render($('scene'), cam, opts);
 
   if (state.extras.graphs) {
@@ -1325,6 +1979,10 @@ function draw() {
   }
   renderHud(); renderWorking(); renderResolve(R);
   $('scrub').value = traj.tMax ? state.t / traj.tMax : 0;
+  // The view button lights up while the whole flight IS what you are looking
+  // at, and dims the moment a pan or a zoom takes you off it — so it reads as
+  // the way back rather than as a mode you are in.
+  $('fit-btn').setAttribute('aria-pressed', String(!cam.touched));
   dirty = false;
 }
 
@@ -1376,6 +2034,7 @@ function applyTheme(mode) {
 }
 
 wireLive();
+wireAskAt();
 $('brand').addEventListener('click', () => go('scenario'));
 for (const b of $('steps').querySelectorAll('.navstep')) {
   b.addEventListener('click', () => {
@@ -1433,29 +2092,25 @@ $('res-go').addEventListener('click', () => {
   if (traj && state.t < traj.tMax - 1e-6) { state.playing = true; setPlayIcon(true); }
   dirty = true;
 });
-for (const b of $('rate-seg').children) {
-  b.addEventListener('click', () => {
-    state.rate = parseFloat(b.dataset.rate);
-    state.rateTouched = true;
-    syncRate();                 // the card and the bar are one setting
-  });
-}
-for (const b of $('band-seg').children) {
-  b.addEventListener('click', () => {
-    scene.setBand(cam, b.dataset.band);
-    for (const x of $('band-seg').children) x.setAttribute('aria-pressed', String(x === b));
-    dirty = true;
-  });
-}
+$('bar-rate').addEventListener('input', (e) => {
+  state.rate = parseInt(e.target.value, 10) / 100;
+  state.rateTouched = true;     // their choice now, not the recommendation's
+  syncRate();                   // the card and the bar are one setting
+});
+// ONE VIEW, and the button that goes back to it. See the note above fitView
+// in js/render/scene.js for why Pitch / Stadium / Wide went.
+$('fit-btn').addEventListener('click', () => { scene.fitView(cam); dirty = true; });
 $('bounce-ck').addEventListener('change', (e) => {
   state.bounce = e.target.checked;
   $('bounce-opts').hidden = !state.bounce;
   cam.fit = true; recompute(); dirty = true;
 });
 $('restitution').addEventListener('input', (e) => {
-  state.restitution = parseFloat(e.target.value);
-  $('rest-val').textContent = state.restitution.toFixed(2);
-  cam.fit = true; recompute(); dirty = true;
+  setRestitution(parseFloat(e.target.value));
+});
+$('rest-earth').addEventListener('click', () => {
+  setRestitution(EARTH_E);
+  $('restitution').focus();
 });
 $('theme-btn').addEventListener('click', () =>
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
@@ -1472,6 +2127,13 @@ document.addEventListener('keydown', (e) => {
   if (!$('pace').hidden) {
     if (e.key === 'Enter') { e.preventDefault(); runFlight(); }
     else if (e.key === 'Escape') { closePace(); go('values'); }
+    return;
+  }
+  // The question card owns Escape while it is open; its own inputs handle
+  // Enter, so only the outside case is caught here.
+  if (!$('askat').hidden) {
+    if (e.key === 'Escape') { e.preventDefault(); closeAskAt(); }
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
     return;
   }
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
@@ -1538,5 +2200,6 @@ requestAnimationFrame(frame);
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, choose: chooseScenario, launch, runFlight, go,
-                 showDone, hideDone, openResolve, closeResolve,
+                 showDone, showEnding, hideDone, openResolve, closeResolve,
+                 openAskAt, closeAskAt,
                  redraw() { recompute(); draw(); } };

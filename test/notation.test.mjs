@@ -20,6 +20,7 @@ import { EQUATIONS, solve } from '../js/core/suvat.js';
 import { flight, derivation } from '../js/core/projectile.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { buildWorking, resolveAt, obstacleCheck } from '../js/working.js';
+import { solveDescent, descentWorking, resolveDescent } from '../js/core/descent.js';
 import { SCENARIOS, GROUPS } from '../js/scenarios.js';
 
 let pass = 0, fail = 0;
@@ -227,6 +228,62 @@ group('Whatever the engine says back on screen two', () => {
 });
 
 
+group('The parachute, which is the one motion with three accelerations', () => {
+  // Every phase's working, every phase's resolve card, and the engine's own
+  // words about a descent — swept exactly as the single-acceleration ones are.
+  const CASES = [
+    { h: 100, g: 9.81, tOpen: 3, aChute: 25, vTerm: 6 },     // the card's own numbers
+    { h: 1000, g: 9.81, tOpen: 12, aChute: 30, vTerm: 5 },   // a real jump height
+    { h: 60, g: 9.81, tOpen: 3, aChute: 3, vTerm: 6 },       // lands still slowing
+    { h: 400, g: 1.62, tOpen: 14, aChute: 8, vTerm: 4 },     // on the Moon
+    { h: 50, g: 9.81, tOpen: 9, aChute: 25, vTerm: 6 },      // refused: never opens
+    { h: 100, g: 9.81, tOpen: 0.2, aChute: 25, vTerm: 6 },   // refused: nothing to slow
+    { h: 100, g: 0, tOpen: 3, aChute: 25, vTerm: 6 },        // refused: no field
+    { h: 100 },                                              // refused: not enough
+  ];
+  const bag = [];
+  let rows = 0, said = 0;
+  for (const k of CASES) {
+    const r = solveDescent(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (!r.ok) continue;
+    check('convention', r.convention, bag);
+    for (const p of r.phases) {
+      check('phase name', p.name, bag);
+      check('phase sub', p.sub, bag);
+      check('phase note', p.note, bag);
+      for (const row of p.rows) { rows++; check('phase formula', row.f, bag); check('phase substitution', row.s, bag); }
+    }
+    for (const t of [0, k.tOpen / 2, k.tOpen, r.tMax / 2, r.tMax]) {
+      for (const st of descentWorking(r.f, t)) {
+        check('step title', st.title, bag);
+        check('step note', st.note, bag);
+        for (const row of st.rows) {
+          rows++;
+          check('formula', row.f, bag); check('substitution', row.s, bag);
+          if (row.r) check('result', row.r, bag);
+        }
+      }
+      const R = resolveDescent(r.f, t);
+      for (const b of [R.velocity, R.displacement]) {
+        for (const part of [b.x, b.y, b.r]) {
+          if (!part) continue;
+          check('resolve formula', part.formula, bag);
+          check('resolve substitution', part.sub, bag);
+          check('resolve note', part.note, bag);
+        }
+      }
+      check('resolve convention', R.convention, bag);
+    }
+  }
+  ok(rows > 60, `the sweep reaches the descent's working (${rows} rows)`);
+  ok(said > 10, `and the words it says back (${said} lines)`);
+  ok(bag.length === 0, "no programmer's maths in a parachute drop", bag.join('\n         '));
+});
+
+
 /* == 3 · the sinks ==================================================== */
 
 // Typeset maths is markup. A sink that receives it must use innerHTML, because
@@ -245,6 +302,9 @@ const MATH_SINKS = [
   'exdone-body',   // the range exhibit's ending
   'mode-say',      // which motion is being solved
   'theta-say',     // how the angle was recovered, and the other one
+  'at-t-hint',     // the question card: which instant, and what it is doing
+  'at-v-hint',
+  'at-picks',
 ];
 
 group('Nothing that can hold an equation is filled with textContent', () => {

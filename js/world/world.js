@@ -10,23 +10,17 @@
 //   ground   a flat surface at one height          {x0,x1,z0,z1,y,tone}
 //   solid    an axis-aligned box, optional ridge   {x0,x1,z0,z1,y0,y1,tone}
 //   paint    a marking lying on a surface          {kind,...,tone}
-//   prop     a point instance of a scale reference {type,x,z,rot}
+//   prop     a point instance of a fitting            {type,x,z,rot}
 //   sides    the four seating decks, as sections
 //   roof     the cable net on its elliptical ring
 //
-// Positions are deterministic: every "random" placement comes from a hash of
-// its own index, so the same crowd stands in the same seats every time and two
-// slices through the same block agree with each other.
+// There is nothing here that is placed at random. The district that used to
+// stand outside the bowl needed a hash of each item's own index to keep the
+// same tree in the same spot between two slices; the stadium is all measured
+// geometry, so the hash went with it. The one population still drawn from a
+// hash is the crowd, and it is seeded from its own row in js/render/world2d.js.
 
 import { D, tierSteps } from './dims.js';
-
-/* ── a hash that stands in for randomness ───────────────────────────── */
-function h2(i, j, salt = 0) {
-  let x = (i * 374761393 + j * 668265263 + salt * 2147483647) | 0;
-  x = (x ^ (x >>> 13)) * 1274126177 | 0;
-  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
-}
-const jitter = (i, j, s, amt) => (h2(i, j, s) - 0.5) * 2 * amt;
 
 /* ── plan helpers ───────────────────────────────────────────────────── */
 
@@ -60,163 +54,37 @@ let WORLD = null;
 export function world() { return WORLD || (WORLD = build()); }
 
 function build() {
-  const ground = [], solids = [], paint = [], props = [], bayRows = [], rowsOfHouses = [];
+  const ground = [], solids = [], paint = [], props = [];
   const G = (x0, x1, z0, z1, y, tone, tag) => ground.push({ x0, x1, z0, z1, y, tone, tag });
   const S = (x0, x1, z0, z1, y0, y1, tone, tag, extra) =>
     solids.push({ x0, x1, z0, z1, y0, y1, tone, tag, ...extra });
   const PR = (type, x, z, rot = 0, extra) => props.push({ type, x, z, rot, ...extra });
 
-  /* ── the district floor, outward in ───────────────────────────────── */
+  /* ── the ground the stadium stands on ─────────────────────────────── */
+  //
+  // NOTHING OUTSIDE THE STADIUM. There used to be a district out here: two
+  // parks with ponds and trees on a jittered grid, four terraces of houses
+  // stored as rows, four car parks full of cars, a dual carriageway with its
+  // street trees and traffic, a west-side street, a rail station with four
+  // tracks and forty people waiting on the platform. It was built as scale
+  // reference — a 1.5 m car and a 4.4 m bus next to a flight tells you how
+  // big the flight is — and on a section it did not pay for itself.
+  //
+  // Every one of those props is a POINT instance gathered by the cut inside a
+  // 9 m band, drawn one sprite at a time, and the sprite pass is one of the
+  // three loops that `A.cheap` skips while the camera moves. At pitch level
+  // the camera follows the ball, so it is moving for the whole flight: the
+  // trees and the people blinked out, came back when it settled, and blinked
+  // out again on the next drag. A scale reference that is not there whenever
+  // anything is happening is not a scale reference, and a scenery that
+  // flickers reads as a fault in the physics.
+  //
+  // The crowd in the stands is the reference that was always doing the work —
+  // forty thousand people, inside the frame, at a known 1.8 m, and part of a
+  // deck rather than a loose instance. The ground beyond the podium is left
+  // as ground.
   const FAR = 26000;
-  G(-FAR, FAR, -FAR, FAR, 0, 'ground', 'district');
-
-  for (const p of D.parks) {
-    G(p.x[0], p.x[1], p.z[0], p.z[1], 0, 'park', 'park:' + p.id);
-    if (p.pond) G(p.pond.x[0], p.pond.x[1], p.pond.z[0], p.pond.z[1], 0, 'water', 'pond');
-    // a path through the middle, and mature trees on a jittered grid
-    G(p.x[0], p.x[1], (p.z[0] + p.z[1]) / 2 - 1.5, (p.z[0] + p.z[1]) / 2 + 1.5, 0, 'paving', 'path');
-    const step = 22;
-    const ni = Math.floor((p.x[1] - p.x[0]) / step), nj = Math.floor((p.z[1] - p.z[0]) / step);
-    for (let i = 0; i < ni; i++) for (let j = 0; j < nj; j++) {
-      if (h2(i, j, 7) < 0.42) continue;
-      const x = p.x[0] + (i + 0.5) * step + jitter(i, j, 11, 7);
-      const z = p.z[0] + (j + 0.5) * step + jitter(i, j, 13, 7);
-      if (p.pond && x > p.pond.x[0] - 8 && x < p.pond.x[1] + 8 && z > p.pond.z[0] - 8 && z < p.pond.z[1] + 8) continue;
-      if (Math.abs(z - (p.z[0] + p.z[1]) / 2) < 5) continue;
-      PR(h2(i, j, 17) > 0.25 ? 'tree' : 'treeYoung', x, z, 0, { v: h2(i, j, 19) });
-    }
-  }
-
-  /* terraced streets — stored as ROWS, not as 1700 separate houses. The
-     renderer draws the 5.5 m frontage rhythm along a row when zoomed in and
-     one long block when it is not. */
-  const H = D.house;
-  const MOD = H.street + H.depth + H.garden * 2 + H.depth;   // 48 m
-  for (const t of D.terraces) {
-    const along = t.along;                            // houses run along this axis
-    const per = along === 'x' ? t.z : t.x;            // modules stack across it
-    const run = along === 'x' ? t.x : t.z;
-    G(t.x[0], t.x[1], t.z[0], t.z[1], 0, 'terrain', 'back gardens');
-    for (let m = 0; (m + 1) * MOD <= per[1] - per[0] + 1e-6; m++) {
-      const base = per[0] + m * MOD;
-      const street = [base, base + H.street];
-      const a = [base + H.street, base + H.street + H.depth];
-      const b = [base + MOD - H.depth, base + MOD];
-      // Terraces run in BLOCKS with cross streets between them. One unbroken
-      // six-hundred-metre ridge reads as a runway, not as houses.
-      const BLOCK = 88, CROSS = 11;
-      const segs = [];
-      for (let v = run[0]; v < run[1] - 12; v += BLOCK + CROSS) {
-        segs.push([v, Math.min(v + BLOCK, run[1])]);
-      }
-      if (along === 'x') {
-        G(t.x[0], t.x[1], street[0], street[1], 0, 'asphalt', 'street');
-        for (let v = run[0] + BLOCK; v < run[1]; v += BLOCK + CROSS)
-          G(v, Math.min(v + CROSS, run[1]), base, base + MOD, 0, 'asphalt', 'cross street');
-      } else {
-        G(street[0], street[1], t.z[0], t.z[1], 0, 'asphalt', 'street');
-        for (let v = run[0] + BLOCK; v < run[1]; v += BLOCK + CROSS)
-          G(base, base + MOD, v, Math.min(v + CROSS, run[1]), 0, 'asphalt', 'cross street');
-      }
-      segs.forEach((seg, k) => {
-        rowsOfHouses.push({ along, run: seg, perp: a, face: +1, seed: m * 97 + k * 3 + 1 });
-        rowsOfHouses.push({ along, run: seg, perp: b, face: -1, seed: m * 97 + k * 3 + 2 });
-      });
-    }
-  }
-  for (const r of rowsOfHouses) {
-    const [p0, p1] = r.perp;
-    if (r.along === 'x') S(r.run[0], r.run[1], p0, p1, 0, H.ridge, 'brick', 'terrace', { ridge: 'z', eaves: H.eaves, row: r });
-    else S(p0, p1, r.run[0], r.run[1], 0, H.ridge, 'brick', 'terrace', { ridge: 'x', eaves: H.eaves, row: r });
-  }
-
-  /* car parks — stored as rows of bays */
-  for (const p of D.carParks) {
-    G(p.x[0], p.x[1], p.z[0], p.z[1], 0, 'asphalt', 'carpark:' + p.id);
-    const CP = D.carPark, mod = CP.bayL * 2 + CP.aisle;      // 15.6
-    const across = p.along === 'x' ? p.z : p.x;
-    const run = p.along === 'x' ? p.x : p.z;
-    const n = Math.floor((across[1] - across[0]) / mod);
-    for (let k = 0; k < n; k++) {
-      const b0 = across[0] + k * mod;
-      for (const [edge, face] of [[b0, +1], [b0 + CP.bayL * 2, -1]]) {
-        bayRows.push({ along: p.along, run, edge, face, seed: k * 5 + (face > 0 ? 1 : 2), park: p.id });
-      }
-    }
-    for (let k = 0; k <= n; k++) {
-      const yv = across[0] + k * mod + CP.bayL;
-      if (p.along === 'x') PR('lamp', p.x[0] + 14 + ((k * 53) % Math.max(1, p.x[1] - p.x[0] - 28)), yv, 0, { h: CP.lampH });
-      else PR('lamp', yv, p.z[0] + 14 + ((k * 53) % Math.max(1, p.z[1] - p.z[0] - 28)), 0, { h: CP.lampH });
-    }
-  }
-  // the cars themselves, from the bay rows
-  for (const r of bayRows) {
-    const CP = D.carPark;
-    const n = Math.floor((r.run[1] - r.run[0]) / CP.bayW);
-    for (let i = 0; i < n; i++) {
-      if (h2(i, r.seed, 23) > CP.fill) continue;
-      const along = r.run[0] + (i + 0.5) * CP.bayW;
-      const perp = r.edge + r.face * CP.bayL * 0.5;
-      if (r.along === 'x') PR('car', along, perp, 90, { v: h2(i, r.seed, 29) });
-      else PR('car', perp, along, 0, { v: h2(i, r.seed, 29) });
-    }
-  }
-
-  /* ── the main road, north side ───────────────────────────────────── */
-  const R = D.road, RX = [-1200, 1200];
-  const strip = (zz, tone, tag) => G(RX[0], RX[1], zz[0], zz[1], 0, tone, tag);
-  strip(R.pavement, 'paving', 'pavement');
-  strip(R.carriagewayB, 'asphalt', 'carriageway');
-  strip(R.median, 'park', 'median');
-  strip(R.carriagewayA, 'asphalt', 'carriageway');
-  strip(R.pavementWide, 'paving', 'wide pavement');
-  strip(R.forecourt, 'paving', 'forecourt');
-  for (const cw of [R.carriagewayA, R.carriagewayB]) {
-    const mid = (cw[0] + cw[1]) / 2;
-    paint.push({ kind: 'dashed', axis: 'x', a: RX, p: mid, w: 0.15, dash: [4, 8], tone: 'roadline', tag: 'lane line' });
-    paint.push({ kind: 'line', axis: 'x', a: RX, p: cw[0] + 0.3, w: 0.15, tone: 'roadline' });
-    paint.push({ kind: 'line', axis: 'x', a: RX, p: cw[1] - 0.3, w: 0.15, tone: 'roadline' });
-  }
-  for (let x = RX[0]; x <= RX[1]; x += R.lampEvery) PR('lamp', x, R.median[0] + 1.2, 0, { h: R.lampH });
-  for (let x = RX[0]; x <= RX[1]; x += R.treeEvery) {
-    if (Math.abs(x) < 26) continue;              // the station entrance stays clear
-    PR('tree', x + jitter(x, 0, 31, 2), (R.pavementWide[0] + R.pavementWide[1]) / 2 - 3.5, 0, { v: h2(x, 1, 37) });
-  }
-  // traffic: parked and moving, laid out so the 4.5 m car and the 4.4 m bus
-  // sit side by side as a scale pair near the halfway line.
-  for (let i = 0; i < 160; i++) {
-    const x = -1180 + i * 14.8 + jitter(i, 0, 41, 3);
-    const lane = i % 4;
-    const cw = lane < 2 ? R.carriagewayA : R.carriagewayB;
-    const z = cw[0] + 1.75 + (lane % 2) * 3.5;
-    if (h2(i, 0, 43) < 0.45) continue;
-    PR(h2(i, 0, 47) > 0.86 ? 'bus' : 'car', x, z, lane < 2 ? 90 : -90, { v: h2(i, 0, 53) });
-  }
-
-  /* west-side street, so the long-axis section has a road in it too */
-  const RW = D.roadW, RZ = [-900, 900];
-  G(RW.x[0] - RW.pavement, RW.x[1] + RW.pavement, RZ[0], RZ[1], 0, 'paving', 'pavement');
-  G(RW.x[0], RW.x[1], RZ[0], RZ[1], 0, 'asphalt', 'carriageway');
-  paint.push({ kind: 'dashed', axis: 'z', a: RZ, p: (RW.x[0] + RW.x[1]) / 2, w: 0.15, dash: [4, 8], tone: 'roadline' });
-  for (let z = RZ[0]; z <= RZ[1]; z += RW.lampEvery) PR('lamp', RW.x[1] + 2, z, 0, { h: R.lampH });
-  for (let i = 0; i < 90; i++) {
-    const z = RZ[0] + i * 20 + jitter(i, 2, 59, 3);
-    if (h2(i, 2, 61) < 0.55) continue;
-    PR('car', RW.x[0] + 4 + (i % 2) * 8, z, 0, { v: h2(i, 2, 67) });
-  }
-
-  /* ── the station ─────────────────────────────────────────────────── */
-  const ST = D.station;
-  G(ST.x[0] - 30, ST.x[1] + 30, ST.z[0] - 40, R.pavement[0], 0, 'paving', 'station forecourt');
-  S(ST.x[0], ST.x[1], ST.z[0], ST.z[1], 0, ST.roofY, 'glass', 'station', { glazed: true });
-  S(ST.x[0] - 4, ST.x[1] + 4, ST.canopy.z[0], ST.canopy.z[1], ST.canopy.y - 0.5, ST.canopy.y, 'metal', 'platform canopy', { canopy: true });
-  for (let k = 0; k < ST.tracks.n; k++) {
-    const z = ST.tracks.z[0] + 2 + k * ST.tracks.spacing;
-    G(ST.x[0] - 160, ST.x[1] + 160, z - 1.6, z + 1.6, 0, 'ballast', 'track bed');
-    paint.push({ kind: 'line', axis: 'x', a: [ST.x[0] - 160, ST.x[1] + 160], p: z - ST.tracks.gauge / 2, w: 0.12, tone: 'metal' });
-    paint.push({ kind: 'line', axis: 'x', a: [ST.x[0] - 160, ST.x[1] + 160], p: z + ST.tracks.gauge / 2, w: 0.12, tone: 'metal' });
-  }
-  for (let i = 0; i < 40; i++) PR('person', ST.x[0] + 6 + i * 2.9, ST.z[1] + 6 + jitter(i, 3, 71, 9), 0, { v: h2(i, 3, 73) });
+  G(-FAR, FAR, -FAR, FAR, 0, 'ground', 'ground');
 
   /* ── podium plaza ────────────────────────────────────────────────── */
   // The plaza is a RING round the bowl, not a disc under it. Drawn as a disc
@@ -233,22 +101,6 @@ function build() {
     S(-70, 70, -PD.halfW - (i + 1) * 0.9, -PD.halfW - i * 0.9, 0, y, 'concrete', 'steps');
     S(-70, 70, PD.halfW + i * 0.9, PD.halfW + (i + 1) * 0.9, 0, y, 'concrete', 'steps');
   }
-  // people on the plaza, in the ring and never on the pitch
-  for (let i = 0; i < 180; i++) {
-    const a = h2(i, 5, 79) * Math.PI * 2, k = h2(i, 5, 83);
-    const x = Math.cos(a), z = Math.sin(a);
-    const r0 = Math.min(BW.halfL / Math.max(0.08, Math.abs(x)), BW.halfW / Math.max(0.08, Math.abs(z)));
-    const r1 = Math.min(PD.halfL / Math.max(0.08, Math.abs(x)), PD.halfW / Math.max(0.08, Math.abs(z)));
-    const r = r0 + 4 + k * Math.max(2, r1 - r0 - 8);
-    PR('person', x * r, z * r, 0, { v: h2(i, 5, 89), y: PD.y });
-  }
-  for (let i = 0; i < 30; i++) {
-    const a = (i / 30) * Math.PI * 2;
-    const x = Math.cos(a), z = Math.sin(a);
-    const r1 = Math.min(PD.halfL / Math.max(0.08, Math.abs(x)), PD.halfW / Math.max(0.08, Math.abs(z)));
-    PR('treeYoung', x * (r1 - 7), z * (r1 - 7), 0, { v: h2(i, 6, 97), y: PD.y });
-  }
-
   /* ── the grass, the lines, the goals, the hoardings ──────────────── */
   const P = D.pitch, SU = D.surface;
   G(-SU.halfL, SU.halfL, -SU.halfW, SU.halfW, 0, 'runoff', 'run-off');
@@ -301,9 +153,8 @@ function build() {
      the size of the ball's velocity arrow, and twenty-three of them stand in
      a field the flight has to cross — so the one thing the eye is meant to
      follow had twenty-three decoys the same size and nearly the same value.
-     The scale references live outside the bowl, where they cost nothing: the
-     crowd, the cars on the road, the people on the podium. The grass is left
-     empty for the ball. */
+     The scale reference is the crowd, which is in the stands where it costs
+     nothing. The grass is left empty for the ball. */
 
   /* ── the bowl: four sides, each a section swept along its front ───── */
   const sides = [
@@ -316,13 +167,27 @@ function build() {
   /* ── the roof ────────────────────────────────────────────────────── */
   const roof = { ...D.roof, bowl: D.bowl };
 
-  /* floodlighting: a continuous strip under the inner ring, plus corners */
-  for (let i = 0; i < 4; i++) {
-    const a = (Math.PI / 4) + (i * Math.PI) / 2;
-    PR('lightCluster', Math.cos(a) * D.roof.ringA * 0.96, Math.sin(a) * D.roof.ringB * 0.96, 0, { y: D.roof.ringBottom });
+  /* floodlighting: a continuous strip under the inner ring, plus corners.
+
+     The four corner clusters were placed on `D.roof.ringA` / `ringB`, the
+     semi-axes of an elliptical opening that stopped existing when the roof
+     and the bowl were made to share one rounded-rectangle family. Both read
+     `undefined`, so every cluster has been sitting at x = NaN — and NaN fails
+     the band test and the visibility test alike, which is why four
+     floodlights went missing without anything ever looking wrong.
+
+     The opening is the front row inset by `ringInset`, which is what the
+     renderer derives it from too. A cluster goes at 45° on each corner arc:
+     the arc centre, plus the radius resolved onto both axes. */
+  const RO = { a: D.bowl.frontL - D.roof.ringInset,
+               b: D.bowl.frontW - D.roof.ringInset,
+               r: D.bowl.frontR - D.roof.ringInset };
+  for (const sgnX of [-1, 1]) for (const sgnZ of [-1, 1]) {
+    const d = RO.r / Math.SQRT2;
+    PR('lightCluster', sgnX * (RO.a - RO.r + d), sgnZ * (RO.b - RO.r + d), 0, { y: D.roof.ringBottom });
   }
 
-  return { dims: D, ground, solids, paint, props, sides, roof, bayRows, rowsOfHouses,
+  return { dims: D, ground, solids, paint, props, sides, roof,
            counts: { ground: ground.length, solids: solids.length, paint: paint.length, props: props.length } };
 }
 
@@ -356,11 +221,12 @@ export function slice({ axis, at, dir = 1, band = 9 }) {
   for (const s of W.solids) {
     const iv = span(s);
     if (!iv) continue;
+    // `ridge`, `eaves`, `row` and a `gable` flag — "a house row cut ACROSS
+    // shows its gable, cut ALONG shows the eaves" — were carried here too. No
+    // solid has a ridge any more.
     blocks.push({ u0: iv[0], u1: iv[1], y0: s.y0, y1: s.y1, tone: s.tone, tag: s.tag,
-                  ridge: s.ridge, eaves: s.eaves, net: s.net, mesh: s.mesh, glazed: s.glazed,
-                  panel: s.panel, panelAxis: s.axis, canopy: s.canopy, row: s.row,
-                  // a house row cut ACROSS shows its gable; cut ALONG shows the eaves
-                  gable: s.ridge ? s.ridge !== axis : false });
+                  net: s.net, mesh: s.mesh, glazed: s.glazed,
+                  panel: s.panel, panelAxis: s.axis, canopy: s.canopy });
   }
 
   const marks = [];
@@ -409,8 +275,7 @@ export function slice({ axis, at, dir = 1, band = 9 }) {
     if (off > BEYOND) continue;
     const a = U(sld[axis + '0']), b = U(sld[axis + '1']);
     behind.push({ u0: Math.min(a, b), u1: Math.max(a, b), y0: sld.y0, y1: sld.y1,
-                  tone: sld.tone, tag: sld.tag, ridge: sld.ridge, eaves: sld.eaves,
-                  off: off / BEYOND });
+                  tone: sld.tone, tag: sld.tag, off: off / BEYOND });
   }
   behind.sort((a, b) => b.off - a.off);
 
@@ -498,9 +363,34 @@ export const SITES = {
     place: 'Front row of the north upper tier, 25 m up', view: 'across the pitch',
     note: 'Peaks at 45.0 m, three metres under the roof.' },
 
+  // A display jump, which is a real thing that happens in a stadium before a
+  // match: the team drops into the centre circle. The cut is across the pitch
+  // so the bowl is behind her the whole way down, which is what makes a
+  // hundred metres legible as a height rather than as a number.
+  parachute: { axis: 'z', at: 0, dir: 1, origin: { x: 0, z: 0 },
+    place: 'A display jump into the centre circle', view: 'across the pitch',
+    note: 'The roof is at 48 m and the back of the lower tier at 10 m — two heights to judge an opening against.' },
+
   'time-above': { axis: 'x', at: 0, dir: 1, origin: { x: -52.5, z: 0 },
     place: 'A clearance from the west goal line', view: 'along the pitch',
     note: 'The line snaps to the crossbar at 2.44 m and the roof at 48 m.' },
+
+  // The two experiments used to be drawn as strobe photographs of somewhere
+  // else entirely — a shooting range and a beach — on a plate of their own
+  // with its own squeezed axes. They are drawn by the side-on view now, so
+  // they need somewhere real to happen, measured in the same metres as every
+  // other scenario and reached by the same draggable camera.
+  //
+  // Both go DOWN THE PITCH rather than across it, because both need width:
+  // the fired round covers a couple of hundred metres at a service load, and
+  // the aimed shot wants room between the launch and whatever it is aimed at.
+  bullet: { axis: 'x', at: 0, dir: 1, origin: { x: -52.5, z: 0 },
+    place: 'A bench on the west goal line, 1.5 m up', view: 'along the pitch',
+    note: 'The far goal line is 105 m away.' },
+
+  monkey: { axis: 'x', at: 0, dir: 1, origin: { x: -52.5, z: 0 },
+    place: 'The west goal line, aimed down the pitch', view: 'along the pitch',
+    note: 'Drag the target; the angle follows.' },
 };
 
 export const siteFor = (id) => SITES[id] || SITES.arc;

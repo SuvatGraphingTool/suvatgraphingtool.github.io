@@ -243,3 +243,99 @@ export function optimumAngle(u, h, g) {
   const r = Math.asin(1 / Math.sqrt(2 + (2 * g * h) / (u * u)));
   return (r * 180) / Math.PI;
 }
+
+/* ── one instant, named by its speed ────────────────────────────────────
+   "Resolve it where the ball is doing 18 m s⁻¹" is the same kind of question
+   as "how long is it above 6 m": a quantity is given and the instant that
+   produces it is wanted. It lives here for the same reason timeAbove does —
+   it is arithmetic on the model, and the card that shows the answer must not
+   be the thing that worked it out.
+
+   TWO ANSWERS ARE THE NORMAL CASE. A thrown ball passes every speed between
+   its slowest and its launch speed twice: once slowing on the way up and once
+   gaining it back on the way down. Both are returned, in time order, and the
+   caller offers both rather than silently picking one.
+
+   WHY A SCAN AND NOT THE QUADRATIC. Without a bounce the speed is
+   v² = u_x² + (u_y − gt)², and the roots come straight out of it. With a
+   bounce the flight is a sequence of those, each with its own u_y and its own
+   clock, and the speed jumps at every impact. One scan over the flight's own
+   speed(t) is correct for both and cannot drift out of step with the model
+   the student is watching — which a second copy of the algebra could. */
+
+/** The slowest and the fastest the flight ever travels. */
+function speedRange(f, n = 1200) {
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i <= n; i++) {
+    const v = f.speed((i / n) * f.tMax);
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  return { lo, hi };
+}
+
+/**
+ * Every instant at which the flight's speed is `want`.
+ *
+ * @returns {{ok: true, times: number[], constant?: boolean}
+ *          | {ok: false, reason: string}}
+ *   A refusal is a result, not an error: it says what the flight can actually
+ *   manage, so the student knows what to ask for instead.
+ */
+export function timeAtSpeed(f, want) {
+  const d = (x, p = 2) => num(x, p, { trim: true });
+  if (!isFinite(want) || want < 0) {
+    return { ok: false, reason: 'A speed has to be a number, and it cannot be negative — it is the size of the velocity.' };
+  }
+  if (!(f.tMax > 0)) {
+    return { ok: false, reason: 'There is no flight to look along yet.' };
+  }
+
+  const { lo, hi } = speedRange(f);
+
+  // A flight with no field, or a drop in no field, travels at one speed the
+  // whole way — so either every instant answers, or none of them does.
+  if (hi - lo < 1e-9) {
+    return Math.abs(want - hi) < Math.max(0.005, hi * 1e-6)
+      ? { ok: true, times: [0], constant: true }
+      : { ok: false, reason: `This flight travels at ${M`${d(hi)} [m s^-1]`} from start to finish, so there is no instant at ${M`${d(want)} [m s^-1]`}.` };
+  }
+  const slack = Math.max(0.004, (hi - lo) * 1e-4);
+  if (want < lo - slack || want > hi + slack) {
+    return { ok: false, reason: `It never travels that fast or that slowly. The slowest it gets is ${M`${d(lo)} [m s^-1]`} and the fastest is ${M`${d(hi)} [m s^-1]`}.` };
+  }
+
+  // Bracket every sign change of speed(t) − want, then close on it. The
+  // bracket is coarse enough to be cheap and fine enough that the two roots
+  // either side of the apex are never in the same interval.
+  const N = 1400;
+  const at = (t) => f.speed(t) - want;
+  const times = [];
+  let tPrev = 0, fPrev = at(0);
+  if (Math.abs(fPrev) < slack) times.push(0);
+  for (let i = 1; i <= N; i++) {
+    const t = (i / N) * f.tMax, fNow = at(t);
+    if ((fPrev < 0 && fNow >= 0) || (fPrev > 0 && fNow <= 0)) {
+      let a = tPrev, b = t, fa = fPrev;
+      for (let k = 0; k < 48; k++) {
+        const m = (a + b) / 2, fm = at(m);
+        if ((fa < 0) === (fm < 0)) { a = m; fa = fm; } else b = m;
+      }
+      const root = (a + b) / 2;
+      if (!times.some((x) => Math.abs(x - root) < f.tMax * 1e-4)) times.push(root);
+    }
+    tPrev = t; fPrev = fNow;
+  }
+  // The turning point itself is a single touch rather than a crossing, so no
+  // sign change brackets it. It is still the answer when that is what was asked.
+  if (!times.length) {
+    let best = 0, bestGap = Infinity;
+    for (let i = 0; i <= N; i++) {
+      const t = (i / N) * f.tMax, gap = Math.abs(at(t));
+      if (gap < bestGap) { bestGap = gap; best = t; }
+    }
+    times.push(best);
+  }
+  times.sort((a, b) => a - b);
+  return { ok: true, times };
+}
