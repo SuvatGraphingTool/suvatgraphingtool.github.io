@@ -2198,6 +2198,26 @@ buildOptions();
 go('scenario');
 requestAnimationFrame(frame);
 
+// CANVAS TEXT IS PAINTED, NOT LAID OUT. HTML reflows the moment a webfont
+// arrives; a canvas keeps whatever pixels it already drew, so every label
+// measured and drawn before Source Sans 3 landed stays in the fallback face —
+// wrong metrics, wrong widths for the collision test that places them, and
+// visibly lighter than the page around it. One more frame once the fonts are
+// in costs nothing and fixes all of it.
+document.fonts?.ready.then(() => { dirty = true; });
+
+// ASK FOR THE MATHS FACE BEFORE AN EQUATION NEEDS IT. A webfont is fetched
+// when something that uses it is first painted, and the first thing on this
+// site to use Source Serif 4 upright is a formula — so without this, the first
+// equation a student sees appears in the system serif and swaps a moment
+// later. The five box symbols are italic and were pulling the italic subset in
+// on their own; the upright one had nothing to trigger it until the solve
+// message appeared. The sample string names the subsets wanted: latin for the
+// letters, digits and the real minus sign, greek for theta.
+for (const face of ['560 1em "Source Serif 4"', 'italic 560 1em "Source Serif 4"']) {
+  document.fonts?.load(face, 'vuat 0123456789 θ −').catch(() => {});
+}
+
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,

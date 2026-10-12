@@ -285,7 +285,7 @@ function farField(A) {
     ctx.beginPath(); ctx.moveTo(X, 0); ctx.lineTo(X, sy(0)); ctx.stroke();
     // Drawn straight to the canvas: this runs inside the cached scenery
     // layer, and the label queue belongs to the live frame.
-    ctx.font = `500 13px ${cssVar('--font', 'system-ui, sans-serif')}`;
+    ctx.font = `600 13px ${cssVar('--font', 'system-ui, sans-serif')}`;
     ctx.fillStyle = tn.prop; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(`${(Math.abs(u) / 1000).toFixed(1)} km`, X, sy(0) - 16);
   }

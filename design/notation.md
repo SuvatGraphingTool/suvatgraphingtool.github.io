@@ -75,6 +75,21 @@ The maths is also set in a **serif** face while the interface is sans — see
 from another language, and a textbook changes face for exactly that reason. It
 also buys a true italic, which the interface font does not reliably ship.
 
+The two faces are **Source Serif 4** for the maths and **Source Sans 3** for
+the interface, and both are loaded as webfonts in `index.html`. That is worth
+stating because for a long time only the sans was: the maths stack named STIX
+Two Text, Cambria Math, Latin Modern and Times New Roman, every one of which
+has to already be installed, and none of which was ever fetched. So the maths
+on this site rendered in whatever the reader's system calls `serif` — Noto
+Serif on Linux, Times New Roman on Windows, both at Regular — which at 13 to
+17 px is hairline stems under hairline fraction bars, an equation thinner than
+the sentence containing it. The pair now shares a skeleton, so a formula reads
+as a quotation rather than as a different website, and it is set one weight
+step above the prose (`--w-math`) because a serif at equal nominal weight
+carries less ink than a sans. The fraction bar and the radical's vinculum are
+strokes of the notation and scale with the equation rather than staying one
+device pixel wide.
+
 ## Where the rule is enforced
 
 [`test/notation.test.mjs`](../test/notation.test.mjs) does two things. It checks

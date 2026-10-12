@@ -3,11 +3,26 @@
    validated hues for the physics. See design/theme.js for the reasoning. */
 
 :root {
-  --font: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* Type. 13px floor — nothing on this site is smaller, canvas labels included. */
   --fs-xs: 13px; --fs-sm: 15px; --fs-base: 17px; --fs-lg: 20px;
   --fs-xl: 24px; --fs-2xl: 30px; --fs-3xl: 38px; --fs-hero: 44px;
+
+  /* ── weight, as three steps every rule in the app uses ────────────────
+     The body sits at 500, not 400. Regular is a weight for a page of prose
+     read at arm's length; this is a screen of short labels, 13 px readouts
+     and numbers over a drawing, and at that size and that length a regular
+     weight reads as faint rather than as light. 500 is one step up, not a
+     bold — the difference is that the text now has a stem.
+
+     650 is the emphasis step. With the body at 500, a 600 "semibold" was
+     barely a change; this is far enough to register and short of the real
+     bold below it. 700 is the bold: headings, numbers, the five symbols.
+
+     Source Sans 3 is served as a variable face over 400–700, so 500 and 650
+     are genuine interpolations and not a browser's synthetic smear. */
+  --w-body: 500; --w-semi: 650; --w-bold: 700;
 
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
   --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
@@ -25,8 +40,26 @@
 
   --ink: #ffffff;
   --ink-strong: rgba(255,255,255,0.80);
-  --ink-muted: rgba(255,255,255,0.60);
-  --ink-faint: rgba(255,255,255,0.40);
+  /* Raised with the weights, and for the same reason. White at 60% on a near
+     black ground is a legibility choice at paragraph size and a thinning
+     agent at 13 px — the strokes are already about a pixel wide, and taking
+     40% off their contrast takes ink off them exactly as surely as dropping a
+     weight would.
+
+     And the faint one was never passing. The light theme's pair was raised to
+     clear AA on paper months ago; the dark pair was left alone, and the sum
+     here says why it should not have been:
+
+       on --surface   muted 0.60 → 7.18:1   now 0.68 → 8.95:1
+                      faint 0.40 → 3.83:1   now 0.50 → 5.32:1
+       on --card      muted 0.60 → 6.92:1   now 0.68 → 8.54:1
+                      faint 0.40 → 3.81:1   now 0.50 → 5.20:1
+
+     3.83:1 is below the 4.5:1 AA wants for text this size, and --ink-faint is
+     on the box units, the landing card's provenance line and the slider's
+     scale. All four clear it now. */
+  --ink-muted: rgba(255,255,255,0.68);
+  --ink-faint: rgba(255,255,255,0.50);
 
   --accent: #ea580c;
   --accent-hi: #f97316;

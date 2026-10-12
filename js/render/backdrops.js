@@ -74,7 +74,7 @@ export function warehouseBack(g, S, box, o) {
     // label running off this frame's edge; it used to be 150 fixed pixels,
     // which in a narrow pane deleted nearly all of them.
     if (x > 0 && X < box.x + box.w - Math.min(60, box.w * 0.1)) {
-      g.font = `500 12px ${getComputedStyle(document.documentElement).getPropertyValue('--font') || 'system-ui'}`;
+      g.font = `600 13px ${getComputedStyle(document.documentElement).getPropertyValue('--font') || 'system-ui'}`;
       g.fillStyle = PLATE.inkFaint; g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText(`${fmtTick(x, stepX)} m`, X, gy + 12);
     }

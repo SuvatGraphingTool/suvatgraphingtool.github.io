@@ -5,22 +5,48 @@
    The maths is SERIF where the interface is sans. That is deliberate — an
    equation is a quotation from a different language, and a textbook sets it in
    a different face for exactly that reason. It also gets us a true italic for
-   variables, which Instrument Sans does not reliably ship. */
+   variables, which a UI sans does not always ship.
+
+   AND NOW IT IS ACTUALLY LOADED. Every name in this stack used to be a font
+   that had to already be on the reader's machine — STIX Two Text, Cambria
+   Math, Latin Modern, Times New Roman — and none of them was ever fetched. So
+   on most machines the whole of the maths on this site rendered in whatever
+   the system calls `serif`: Noto Serif on Linux, Times New Roman on Windows,
+   both of them at Regular. At 13 to 17 px that is hairline stems and hairline
+   fraction bars, an equation visibly fainter than the sentence it sits in, and
+   it is the single biggest reason the typography read as thin.
+
+   Source Serif 4 is loaded in index.html alongside Source Sans 3 and is the
+   same family's serif, so the equation and the prose around it are relatives
+   rather than strangers. The old names are kept below it as a fallback for a
+   failed font load. */
 
 :root {
-  --font-math: 'STIX Two Text', 'Cambria Math', 'Latin Modern Roman',
-               'Times New Roman', Cambria, Georgia, serif;
+  --font-math: 'Source Serif 4', 'STIX Two Text', 'Cambria Math',
+               'Latin Modern Roman', 'Times New Roman', Cambria, Georgia, serif;
+  /* One step up from the prose, because a serif at the same nominal weight
+     looks lighter next to a sans — the stems carry less ink and the serifs
+     themselves are the thinnest marks on the line. */
+  --w-math: 560;
 }
 
 .m {
   font-family: var(--font-math);
   font-style: normal;
+  font-weight: var(--w-math);
   font-variant-numeric: tabular-nums;
+  /* Source Serif 4 carries an optical size axis. Letting the browser drive it
+     from the rendered size is the whole point of having one: at 13 px it
+     thickens the stems and opens the counters, which is exactly where this
+     file needed help. */
+  font-optical-sizing: auto;
   line-height: 1.15;
   white-space: normal;
-  /* A maths serif has a smaller x-height than Instrument Sans, so an equation
-     set at the same nominal size reads smaller than the prose beside it. */
-  font-size: 1.05em;
+  /* Source Serif 4's x-height is a shade under Source Sans 3's, so an
+     equation set at the same nominal size reads slightly smaller than the
+     prose beside it. It used to be 1.05em against a Times fallback, whose
+     x-height is far smaller; against its own sans the correction is this. */
+  font-size: 1.03em;
 }
 
 /* ISO 80000-2: quantities italic, units and function names upright. The rule
@@ -63,15 +89,33 @@
   white-space: nowrap;
   text-align: center;
 }
-.m-fnum { padding: 0 0.3em 0.08em; border-bottom: 1px solid currentColor; }
+/* The bar is a stroke of the notation, not a border on a box: it should carry
+   the same ink as the stems either side of it, and at 15 px in a 560-weight
+   serif those stems are about two pixels. A 1 px rule under them was the
+   lightest mark in the equation and the first thing to disappear.
+
+   2px, not 1.5. A border-width is rounded DOWN to whole device pixels, so on
+   an ordinary 1× display 1.5px renders at 1px and nothing changes; the em
+   term only takes over above about a 27 px equation, where the glyph stems
+   have grown past two pixels as well. */
+.m-fnum { padding: 0 0.3em 0.08em; border-bottom: max(2px, 0.075em) solid currentColor; }
 .m-fden { padding: 0.1em 0.3em 0; }
 
 /* A radical with a vinculum — the bar is what says where the root ends, so
-   √(u² + 2gh) needs no brackets once it is drawn properly. */
+   √(u² + 2gh) needs no brackets once it is drawn properly.
+
+   ONE GLYPH HERE IS NOT SOURCE SERIF 4, and it is worth knowing which: the
+   radical sign itself. U+221A is in none of the subsets Google Fonts serves
+   for either of this site's faces, so the browser fills it per-glyph from the
+   system serif. Measured at a 17 px equation, that substitute's stroke is
+   3 px at its widest against a 4 px stem beside it — close enough to pass,
+   which is why it is left alone rather than drawn out of borders. The bar
+   above it is ours and is set to match the stems, which is the mark the eye
+   actually follows. */
 .m-sqrt { white-space: nowrap; }
 .m-radix { padding-right: 0.02em; }
 .m-rad {
-  border-top: 1px solid currentColor;
+  border-top: max(2px, 0.075em) solid currentColor;    /* the same stroke as a fraction bar */
   padding: 0.1em 0.14em 0 0.06em;
   margin-left: -0.04em;
 }
@@ -80,6 +124,7 @@
 .s-sym, .d-sym, .r-sym {
   font-family: var(--font-math);
   font-style: italic;
+  font-optical-sizing: auto;
 }
 
 /* |v| — the size of a quantity, sign discarded. */

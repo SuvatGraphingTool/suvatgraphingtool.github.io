@@ -189,7 +189,7 @@ function pill(g, x, y, text, size = 14) {
   g.restore();
 }
 
-function text(g, x, y, s, { col = PLATE.inkMid, size = 13, align = 'left', weight = 500 } = {}) {
+function text(g, x, y, s, { col = PLATE.inkMid, size = 13, align = 'left', weight = 600 } = {}) {
   g.save();
   g.font = `${weight} ${size}px ${getComputedStyle(document.documentElement).getPropertyValue('--font') || 'system-ui'}`;
   g.fillStyle = col; g.textAlign = align; g.textBaseline = 'middle';
