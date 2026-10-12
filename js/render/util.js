@@ -106,6 +106,70 @@ export function ballSprite(ctx, x, y, r, { ring = null, fired = true } = {}) {
   dot(ctx, x, y, R, { stroke: P.ballLine, width: Math.max(0.9, R * 0.085) });
 }
 
+/* MOVED HERE FROM js/render/scene.js, which is no longer the only thing that
+   draws her. The parachute drop has its own window now — four panes, one of
+   them a sky with an aircraft in it (js/render/drop.js) — and a sprite with
+   two call sites belongs with the other sprite rather than inside one of the
+   two views. The side-on stadium view still draws her for any descent that
+   reaches it. */
+/* ── the parachutist ────────────────────────────────────────────────────
+   A body, and a canopy once she has pulled. Both are drawn at their real
+   sizes in metres, taken from D.prop like every other object in the world —
+   a 1.8 m person and a 7 m canopy — so they shrink with everything else and
+   the canopy is honestly about four times her height across. At a frame
+   holding a hundred metres she is a few pixels tall and the canopy is a
+   couple of dozen across, which is enough to read as a person under a
+   parachute rather than as a dot.
+
+   THE INFLATION IS DRAWING, NOT PHYSICS. The canopy widens over the first
+   part of the deceleration phase instead of appearing full-size in one
+   frame. The model's acceleration still changes instantly at the instant she
+   pulls — descent.js says so and the ending card says so — and this is the
+   picture agreeing with the model's own story about WHY it changes: the
+   canopy is filling. Nothing is computed from it.
+
+   At a very wide frame she and the canopy both fall under a pixel. Rather
+   than drawing a smear, there is a floor: the canopy never goes below a few
+   pixels across, so "the canopy is open" stays visible from any distance.
+   The same decision ballSprite makes for a football, for the same reason. */
+export function parachutist(ctx, x, y, scale, f, t, P) {
+  // Real metres, from the one place this codebase keeps real metres.
+  const body = Math.max(3, D.prop.person.h * scale);
+  const here = f.at(t);
+  // How far through the opening she is: 0 before she pulls, 1 once the canopy
+  // is full. The phase keys come from descent.js.
+  const open = here.key === 'free' ? 0
+    : here.key === 'canopy' ? clamp((t - here.t0) / Math.max(0.28, here.t * 0.45), 0, 1)
+    : 1;
+
+  ctx.save();
+  if (open > 0.02) {
+    const half = Math.max(3.5, (D.prop.canopy.w * scale * open) / 2);
+    const rise = half * 0.62;
+    const top = y - body * 0.5 - rise - Math.max(2, body * 0.9);
+    const hang = y - body * 0.5;
+    // the lines first, so the canopy sits over them
+    ctx.strokeStyle = P.vel; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
+    for (const k of [-1, -0.45, 0.45, 1]) {
+      ctx.beginPath(); ctx.moveTo(x + half * k, top + rise); ctx.lineTo(x, hang); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - half, top + rise);
+    ctx.quadraticCurveTo(x, top - rise * 0.55, x + half, top + rise);
+    ctx.lineWidth = Math.max(1.8, body * 0.16);
+    ctx.strokeStyle = P.mark; ctx.stroke();
+    ctx.globalAlpha = 0.22; ctx.fillStyle = P.mark; ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  // the body: a head and a trunk, the same two shapes the defensive wall uses
+  ctx.fillStyle = P.vel;
+  ctx.beginPath(); ctx.arc(x, y - body * 0.34, Math.max(1.2, body * 0.17), 0, 7); ctx.fill();
+  ctx.fillRect(x - Math.max(1, body * 0.13), y - body * 0.18,
+               Math.max(2, body * 0.26), Math.max(2, body * 0.6));
+  ctx.restore();
+}
+
 /* ── the gap the object keeps around itself ──────────────────────────────
    THE BALL IS THE SUBJECT AND IT HAS TO WIN. It is drawn after the world and
    so it is never behind anything, but being in front is not the same as being

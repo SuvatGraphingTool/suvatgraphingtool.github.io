@@ -118,7 +118,10 @@ function stage(o, rect, opts = {}) {
     originX = rect.x + rect.w * 0.035 - xLo * sx;
   }
   const kx = sx / sy;
-  const groundY = rect.y + rect.h * 0.92;
+  // The ground sits 8% up from the bottom of the pane unless the caller says
+  // otherwise, and the caller that says otherwise is the camera: panning up
+  // and down is nothing more than moving this one number. See fitPlate.
+  const groundY = opts.groundY ?? (rect.y + rect.h * 0.92);
   return {
     sx, sy, kx, xLo, xHi, yHi, groundY, originX,
     xSpan: xHi - xLo,                                  // metres actually in view
@@ -127,6 +130,68 @@ function stage(o, rect, opts = {}) {
     m: (v) => v * sy,                                  // metres → px, vertically
     mx: (v) => v * sx,                                 // metres → px, horizontally
   };
+}
+
+/* ── the camera, on the plate ────────────────────────────────────────────
+   THE PLATE USED TO IGNORE THE CAMERA, and that cost it the scenario: it
+   could not be dragged, could not be zoomed, and the view button did nothing,
+   because this file worked out its own projection from the flight's extents
+   on every frame and never read cam. One consistent map everywhere was worth
+   more than a prettier one in two places, so the two experiments were moved
+   onto the ordinary side-on view and this renderer went unused.
+
+   It reads the camera now, so there is nothing left to choose between: the
+   beach keeps its dark plate, its strobe exposures and its palm, and it drags
+   and zooms like every other view on the site.
+
+   SQUARE PIXELS, as a consequence. The fitted plate squeezed sideways when a
+   flight was too wide for the frame — `kx` was the only number in this file
+   allowed to lie, and the footer printed it every time. With a camera it does
+   not have to: you zoom instead, and 45° looks like 45° at every zoom. The
+   squeeze survives only in the two-pane mode below, which is not
+   camera-driven and does not need to be.
+
+   The three numbers are the same three the side-on view uses — scale in
+   pixels per metre, and the world point at the centre of the frame — so
+   js/render/scene.js's attachControls, easeCamera and fitView all work on a
+   plate without knowing it is one. */
+function fitPlate(cam, o, rect) {
+  const { traj: f, second, markers, scenario } = o;
+  const ex = EXTENT[scenario.backdrop] || { x0: 0, x1: 10, yTop: 10 };
+
+  let xHi = Math.max(ex.x1, isFinite(f.range) ? f.range : f.horiz * f.tMax);
+  let yHi = Math.max(ex.yTop, f.apexHeight, f.params.h);
+  if (second) xHi = Math.max(xHi, second.range ?? 0);
+  if (markers?.target) {
+    xHi = Math.max(xHi, markers.target.x + 4.5);
+    // Same floor the fitted stage uses: enough palm to read as a palm, and
+    // never tied to the monkey's own height — see backdrops.js.
+    yHi = Math.max(f.apexHeight, f.params.h, markers.target.y + 2.2, PALM_H * 0.62);
+  }
+  const xLo = Math.min(0, ex.x0);
+
+  const scale = Math.min((rect.w * 0.93) / Math.max(1e-6, xHi - xLo),
+                         (rect.h * 0.92) / Math.max(1e-6, yHi * 1.1));
+  const target = {
+    scale,
+    cx: (xLo + xHi) / 2,
+    // cy is chosen to put the ground where the plate has always put it, 8% up
+    // from the bottom: cy·scale is the gap between the pane's centre and the
+    // ground line.
+    cy: (rect.h * 0.42) / scale,
+  };
+
+  // A FIT TRAVELS, as it does in the side-on view — except across a change of
+  // renderer, where there is nothing to travel from: the camera arrives
+  // holding a scale meant for a stadium 250 m wide, and easing from that to a
+  // beach 28 m wide is a long swoop through nothing anybody asked to see.
+  cam.want = target;
+  if (!cam.placed || cam._plate !== true) {
+    cam.scale = target.scale; cam.cx = target.cx; cam.cy = target.cy;
+  }
+  cam.placed = true;
+  cam._plate = true;
+  cam.fit = false;
 }
 
 /* ── the plate ─────────────────────────────────────────────────────────── */
@@ -232,10 +297,15 @@ function strobeTimes(tMax) {
    get. */
 const GUTTER = 16;
 
-function planPanes(o, box, rect) {
+function planPanes(o, box, rect, view) {
   const { scenario, traj: f, second, t, overview } = o;
+  // ONE PANE IS THE CAMERA'S. The two-pane mode below is not: it exists to
+  // put two frames at one shared scale beside each other, which is a
+  // different problem from a view you can move, and it would need a camera
+  // each to be dragged. Nothing reaches it at the moment — see the note on
+  // `plate` in js/app.js — and if it ever does, that is the work.
   const single = (ghosts) => [{
-    box, S: stage(o, rect), only: null, rule: true, ghosts, label: null,
+    box, S: stage(o, rect, view), only: null, rule: true, ghosts, label: null,
   }];
   // `overview` is the end-of-run view: one frame, both paths, every exposure.
   if (scenario.id !== 'bullet' || !second || overview) return single(true);
@@ -314,7 +384,16 @@ export function render(canvas, cam, o) {
   const box = plate(g, w, h, pad);
   const rect = { x: pad.l, y: pad.t, w: w - pad.l - pad.r, h: h - pad.t - pad.b };
 
-  const panes = planPanes(o, box, rect);
+  if (cam.fit) fitPlate(cam, o, rect);
+  // What the camera says, in the terms stage() takes. `yHi` is the world
+  // height actually visible rather than the flight's own, so the sky gradient
+  // and the height rule follow a zoom instead of being drawn for a frame that
+  // is no longer on screen.
+  const groundY = rect.y + rect.h / 2 + cam.cy * cam.scale;
+  const view = { scale: cam.scale, centre: cam.cx, at: 0.5, groundY,
+                 yHi: Math.max(1e-6, (groundY - rect.y) / cam.scale) };
+
+  const panes = planPanes(o, box, rect, view);
   const split = panes.length > 1;
 
   // Nothing in backdrops.js clips itself — a palm crown or a barrel is drawn
@@ -358,6 +437,10 @@ export function render(canvas, cam, o) {
     py: (Y) => (act.groundY - Y) / act.sy,
     su: act.X, pu: (X) => (X - act.originX) / act.sx, u0: 0,
   };
+  // Where the object is on screen, which is what renderResolve reads to put
+  // its card on the side the object is NOT on.
+  const at = Math.min(t, f.tMax);
+  cam._map.ball = { x: act.X(f.pos(at).x), y: act.Y(f.pos(at).y) };
   cam._stage = act;
   L.draw(g, w, h);
   return { sx: act.X, sy: act.Y };
@@ -539,7 +622,9 @@ function footer(g, box, panes, o, shot) {
     ? `No squeeze — 1 m is 1 m, both panes, same scale · range ${fmt(real, 0)} m`
     : S.kx < 0.92
       ? `Sideways squeezed ${fmt(1 / S.kx, 1)}× to fit — the real path is far flatter than this · range ${fmt(real, 0)} m`
-      : `No squeeze — 1 m is 1 m both ways · range ${fmt(real, 1)} m`;
+      // Now that the frame can be zoomed, how much of the place is in it is
+      // worth as much as the promise that it is not squeezed.
+      : `1 m is 1 m both ways · ${fmt(S.xSpan, S.xSpan < 20 ? 1 : 0)} m across · range ${fmt(real, 1)} m`;
   text(g, box.x + box.w - 14, box.y + box.h - 16, foot,
        { align: 'right', size: 13, col: PLATE.inkMid });
   // Only a frame that KEEPS its exposures has a flash rate worth quoting.

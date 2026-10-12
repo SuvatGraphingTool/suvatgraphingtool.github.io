@@ -367,9 +367,16 @@ export const SITES = {
   // match: the team drops into the centre circle. The cut is across the pitch
   // so the bowl is behind her the whole way down, which is what makes a
   // hundred metres legible as a height rather than as a number.
+  /* NOT AT THE STADIUM ANY MORE, and the caption had to stop saying it was.
+     The parachute drop is watched in the pane window — a sky, and the three
+     graphs against time (js/render/drop.js) — so there is no roof and no
+     lower tier to judge an opening against, and the note that offered them as
+     scale references was describing a picture the app no longer draws. The
+     site entry stays, because every scenario has one and the flight still
+     launches from the origin; what it says is now about the fall. */
   parachute: { axis: 'z', at: 0, dir: 1, origin: { x: 0, z: 0 },
-    place: 'A display jump into the centre circle', view: 'across the pitch',
-    note: 'The roof is at 48 m and the back of the lower tier at 10 m — two heights to judge an opening against.' },
+    place: 'A display jump, out of the aircraft door', view: 'across the pitch',
+    note: 'The clock starts the instant she is clear of the door. Everything before that is staging.' },
 
   'time-above': { axis: 'x', at: 0, dir: 1, origin: { x: -52.5, z: 0 },
     place: 'A clearance from the west goal line', view: 'along the pitch',

@@ -9,6 +9,15 @@
         "4173"
       ],
       "port": 4173
+    },
+    {
+      "name": "suvat-panes",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "dev-server.mjs",
+        "4199"
+      ],
+      "port": 4199
     }
   ]
 }
