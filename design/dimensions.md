@@ -125,52 +125,21 @@ A cable net on an elliptical compression ring, open over the pitch.
 The opening is bigger than the pitch in both directions, so the whole pitch is
 open to the sky and every seat is under cover.
 
-## Podium and district
+## The podium
 
 | Object | Dimension | Value (m) |
 | --- | --- | --- |
 | Podium plaza | plan, as a ring round the bowl | 330 × 280 |
 | Podium plaza | height above the datum | 1.5 |
 | Podium balustrade | height | 1.1 |
-| Forecourt / drop-off | z range, depth | -152 to -140, 12 |
-| Wide pavement | z range, depth | -164 to -152, 12 |
-| Carriageway A | z range, 2 lanes | -171 to -164, 2 × 3.5 |
-| Planted median | z range | -173.4 to -171 |
-| Carriageway B | z range, 2 lanes | -180.4 to -173.4, 2 × 3.5 |
-| Far pavement | z range, depth | -186.4 to -180.4, 6 |
-| Street lighting | height, spacing | 6, every 30 |
-| Street trees | spacing | every 14 |
-| West street | x range | -336 to -320 |
-| Station building | plan, roof height | 120 × 40, 14 |
-| Platform canopy | z range, height | -272 to -250, 7 |
-| Track bed | tracks, gauge, spacing | 4, 1.435, 4 |
-| Station | distance from the centre spot | 210 |
-| Parking bay | width × length | 2.4 × 4.8 |
-| Parking aisle | width | 6 |
-| Car park lighting | height | 8 |
-| Terraced house | frontage × depth | 5.5 × 9 |
-| Terraced house | eaves / ridge | 6.2 / 9.4 |
-| Rear gardens | depth each | 10 |
-| Residential street | width | 10 |
 
-| Car park | x range | z range |
-| --- | --- | --- |
-| P1 | -210 to -70 | 150 to 230 |
-| P2 | 80 to 215 | 150 to 215 |
-| P3 | -450 to -340 | -150 to 150 |
-| P4 | -62 to 62 | 152 to 232 |
-
-| Terrace block | x range | z range |
-| --- | --- | --- |
-| T1 | 300 to 900 | -150 to 250 |
-| T2 | -240 to 240 | 260 to 700 |
-| T3 | -900 to -480 | 240 to 620 |
-| T4 | 430 to 900 | -640 to -200 |
-
-| Park | x range | z range | Pond |
-| --- | --- | --- | --- |
-| west | -900 to -480 | -200 to 180 | -780 to -660 × -80 to 20 |
-| north | -300 to 300 | -600 to -320 | — |
+The podium is the last built thing in the model. Outside it there was a
+district — a dual carriageway and its traffic, a west-side street, a rail
+station, four car parks, four terraces of houses and two parks — and it has
+been removed. It was there as scale reference, and on a cross-section it was
+a few hundred point sprites that blinked out whenever the camera moved,
+which at pitch level is the whole of a flight. The crowd does that job from
+inside the frame.
 
 ## Scale references
 
@@ -181,24 +150,27 @@ of them looks small on screen, it is because it is small.
 | --- | --- | --- |
 | Football | diameter | 0.22 |
 | Person | height × shoulder width | 1.8 × 0.45 |
-| Car | length × width × height | 4.5 × 1.8 × 1.5 |
-| Double-decker bus | length × width × height | 11.2 × 2.55 × 4.4 |
-| Mature tree | height, canopy radius, trunk radius | 15, 5, 0.35 |
-| Young tree | height, canopy radius | 8, 2.6 |
-| Street lamp | height, arm | 6, 1.5 |
+| Floodlight mast | height | 46 |
+| Goalpost | radius | 0.06 |
+
+The ball is drawn at 0.22 m and nothing else. There used to be a 1.45
+factor applied to it on screen so it would not be a speck at stadium
+scale — a speck is found by the magnifier ring instead, and all the factor
+did was make the ball half again too large when you zoomed in on it. Its
+drawn radius is capped in PIXELS, which is a screen distance and so lives
+in `js/render/util.js` rather than in this sheet.
 
 ## The far field
 
 | Setting | Value (m) |
 | --- | --- |
-| District fades from | 1500 |
-| District fully faded by | 2100 |
+| Distance grid from | 1500 |
 | Distance grid step | 500 |
 | Distance grid out to | 4000 |
 
-Past 1.5 km the district dissolves into a labelled distance grid rather than
-ending at an edge, which is what makes `g = 0` and Moon gravity survivable:
-the ball leaves the world and there is still something to measure it against.
+Past 1.5 km the ground carries a labelled distance grid rather than ending
+at an edge, which is what makes `g = 0` and Moon gravity survivable: the
+ball leaves the world and there is still something to measure it against.
 
 ## Level of detail
 
@@ -209,27 +181,19 @@ last quarter of its range, so nothing pops.
 | --- | --- |
 | pitch | up to 30 |
 | stadium | up to 300 |
-| district | up to 2000 |
+| wide | up to 2000 |
 
 | Feature | Gone by (m) |
 | --- | --- |
 | netMesh | 260 |
-| grassBlades | 24 |
-| people | 460 |
+| flags | 460 |
 | boardPanels | 260 |
 | pitchLines | 900 |
 | seatRows | 130 |
 | seatTexture | 440 |
 | roofCables | 950 |
 | floodDetail | 760 |
-| carParkBays | 950 |
-| cars | 1900 |
-| treeDetail | 1200 |
-| treeBlob | 3400 |
-| houseDetail | 1500 |
-| houseBlock | 4200 |
 | grassStripes | 1000 |
-| roadLines | 1100 |
 
 ## The numbers the brief asks the world to honour
 

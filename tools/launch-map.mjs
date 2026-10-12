@@ -1,7 +1,7 @@
 // launch-map.mjs — a plan of the world with every scenario's launch site on it.
 //
 // Generated from the records the app renders, so it cannot drift out of step:
-// the pitch, the bowl and the district come out of dims.js and world.js, and
+// the pitch, the bowl and the podium come out of dims.js and world.js, and
 // every arrow is the real flight computed by the real engine.
 //
 //   node tools/launch-map.mjs > design/launch-map.svg
@@ -29,18 +29,10 @@ function panel({ cx, cy, px, py, pw, ph, ext, detail }) {
   put(`<g clip-path="url(#clip${px}${py})">`);
   put(`<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="#e6e2db"/>`);
 
-  for (const p of D.parks) rect(p.x[0], p.x[1], p.z[0], p.z[1], '#cfdcc0');
-  for (const t of D.terraces) rect(t.x[0], t.x[1], t.z[0], t.z[1], '#dfd6ce');
-  for (const c of D.carParks) rect(c.x[0], c.x[1], c.z[0], c.z[1], '#d6d2cb');
-  const R = D.road, FAR = 3000;
-  for (const [a, f] of [[R.forecourt, '#e4e0d9'], [R.pavementWide, '#e4e0d9'], [R.carriagewayA, '#bcb9b4'],
-                        [R.median, '#cfdcc0'], [R.carriagewayB, '#bcb9b4'], [R.pavement, '#e4e0d9']])
-    rect(-FAR, FAR, a[0], a[1], f);
-  rect(D.roadW.x[0] - D.roadW.pavement, D.roadW.x[1] + D.roadW.pavement, -FAR, FAR, '#e4e0d9');
-  rect(D.roadW.x[0], D.roadW.x[1], -FAR, FAR, '#bcb9b4');
-  rect(D.station.x[0] - 160, D.station.x[1] + 160, D.station.tracks.z[0], D.station.tracks.z[1], '#cac5be');
-  rect(D.station.x[0], D.station.x[1], D.station.z[0], D.station.z[1], '#b9c7d1');
-
+  // Nothing outside the podium. Two parks, four terraces, four car parks, a
+  // dual carriageway, a west-side street and a rail station used to be drawn
+  // here, out of the same records the app renders — and they are no longer in
+  // those records.
   const PD = D.podium, B = D.bowl;
   rect(-PD.halfL, PD.halfL, -PD.halfW, PD.halfW, '#dcd7cf');
   const ring = (pts, fill, st) =>
@@ -102,19 +94,21 @@ put(`<text class="s" x="40" y="68">One world, ${spell(COUNT)} situations. Plan, 
 const A = panel({ cx: 0, cy: -6, px: 40, py: 92, pw: 880, ph: 760, ext: 146, detail: true });
 put(`<text class="h" x="40" y="${92 - 10}">1 · The stadium</text>`);
 
-/* ── panel B: the district ──────────────────────────────────────────── */
-const Bp = panel({ cx: 0, cy: -60, px: 948, py: 92, pw: 572, ph: 420, ext: 760, detail: false });
-put(`<text class="h" x="948" y="${92 - 10}">2 · The district, out to 1.5 km</text>`);
+/* ── panel B: the same, pulled back ─────────────────────────────────────
+   This was a plan of the district, and the district has gone. What is worth
+   showing at this range instead is how little of it there is: the stadium,
+   and then the distance grid the app falls back on when there is nothing left
+   to draw. The rings are the real grid step out of dims.js. */
+const Bp = panel({ cx: 0, cy: 0, px: 948, py: 92, pw: 572, ph: 420, ext: 760, detail: false });
+put(`<text class="h" x="948" y="${92 - 10}">2 · The same, out to 1.5 km</text>`);
+for (let r = D.far.gridStep; r <= 1500; r += D.far.gridStep) {
+  put(`<circle cx="${Bp.X(0).toFixed(1)}" cy="${Bp.Z(0).toFixed(1)}" r="${(r * Bp.S).toFixed(1)}" fill="none" stroke="#c9c4bc" stroke-width="1" stroke-dasharray="4 5"/>`);
+  put(`<text class="l" x="${Bp.X(0).toFixed(1)}" y="${(Bp.Z(-r) - 5).toFixed(1)}" text-anchor="middle" fill="#8b857c">${(r / 1000).toFixed(1)} km</text>`);
+}
 // panel 1's real extent: 880 × 760 px at A.S px/m, centred on (0, −6)
 const AEX = 880 / A.S / 2, AEZ = 760 / A.S / 2, ACZ = -6;
 put(`<rect x="${Bp.X(-AEX).toFixed(1)}" y="${Bp.Z(ACZ - AEZ).toFixed(1)}" width="${(AEX * 2 * Bp.S).toFixed(1)}" height="${(AEZ * 2 * Bp.S).toFixed(1)}" fill="none" stroke="#1a1714" stroke-width="1.4" stroke-dasharray="5 4"/>`);
 put(`<text class="l" x="${Bp.X(0).toFixed(1)}" y="${(Bp.Z(ACZ + AEZ) + 15).toFixed(1)}" text-anchor="middle">panel 1</text>`);
-put(`<text class="l" x="${Bp.X(D.station.x[1] + 86).toFixed(1)}" y="${(Bp.Z((D.station.z[0] + D.station.z[1]) / 2)).toFixed(1)}" text-anchor="middle">rail station, ${D.station.distanceFromCentre} m out</text>`);
-put(`<text class="l" x="${Bp.X(-480).toFixed(1)}" y="${(Bp.Z((D.road.carriagewayA[0] + D.road.carriagewayB[1]) / 2 - 12)).toFixed(1)}" text-anchor="middle">main road</text>`);
-put(`<text class="l" x="${Bp.X(-660).toFixed(1)}" y="${(Bp.Z(0)).toFixed(1)}" text-anchor="middle">park</text>`);
-const cp = D.carParks[0];
-put(`<text class="l" x="${Bp.X((cp.x[0] + cp.x[1]) / 2).toFixed(1)}" y="${(Bp.Z(cp.z[1] + 22)).toFixed(1)}" text-anchor="middle">car parks</text>`);
-put(`<text class="l" x="${Bp.X(520).toFixed(1)}" y="${(Bp.Z(40)).toFixed(1)}" text-anchor="middle">terraces</text>`);
 
 /* labels inside panel A */
 put(`<text class="l" x="${A.X(34).toFixed(1)}" y="${(A.Z(D.pitch.halfW) + 16).toFixed(1)}" text-anchor="middle">pitch ${D.pitch.length} × ${D.pitch.width} m</text>`);

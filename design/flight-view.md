@@ -26,8 +26,11 @@ still live, because the section reads the same arrays.
 ## The idea
 
 The motion used to happen on a blank grid. It now happens in a large modern
-football stadium and the district around it, at 1 unit = 1 metre, with nothing
-exaggerated. The object is a football, 0.22 m across.
+football stadium, at 1 unit = 1 metre, with nothing exaggerated. The object is
+a football, 0.22 m across, drawn 0.22 m across.
+
+There was a district around the stadium as well — streets, traffic, a station,
+parks. It has been removed; *Nothing outside the stadium* below says why.
 
 There is **one model**, shown one way: a cross-section through it along the
 plane the flight happens in. The model is kept in three dimensions so the
@@ -75,7 +78,7 @@ arrows — a few dozen calls a frame.
 
 **New on screen:** a scale bar whose length is a round number of metres, a
 height ruler up the left edge, named landmark lines (roof 48 m, upper tier front
-25 m, back of the lower tier 10 m, crossbar 2.44 m), and the zoom band and
+25 m, back of the lower tier 10 m, crossbar 2.44 m), and the frame's width and
 launch site in words. The metre grid is now pinned to the launch point rather
 than the world origin, and is off by default — the ruler and the scale bar carry
 the measuring job, and the grid is the overlay you switch on.
@@ -150,10 +153,15 @@ A new scenery block at the bottom, in two themes. Rules it follows:
 
 New tokens: `--sky-top`, `--sky-bottom`, `--haze`, `--earth`, `--interior`,
 `--terrain`, `--grass`, `--grass-alt`, `--runoff`, `--pitchline`, `--concrete`,
-`--paving`, `--asphalt`, `--roadline`, `--ballast`, `--brick`, `--roofing`,
 `--window`, `--glass`, `--metal`, `--net`, `--seat`, `--seat-alt`, `--board`,
 `--structure`, `--structure-dark`, `--roof-top`, `--roof-under`, `--prop`,
-`--water`, `--park`, `--flood`, `--far-grid`.
+`--flood`, `--far-grid`.
+
+The brick, roofing, render, panel, asphalt, paving, kerb-line, ballast, park,
+pond, trunk and five car-paint tokens went with the district they were mixed
+for. The note about pulling brickwork out of the velocity hue is kept above
+because it is why the palette is built the way it is, not because there is
+still brickwork.
 
 ## Readability decisions worth recording
 
@@ -185,13 +193,12 @@ no longer rescales mid-flight, a faster launch visibly crosses the pitch faster.
 ## Level of detail
 
 Three bands, by visible width: **pitch** under 30 m, **stadium** 30–300 m,
-**district** 300 m–2 km — and each is a *camera*, not a crop. A segmented
-control in the stage bar moves between them: Pitch rides with the ball
-at a 27 m span, where a 1.8 m person is sixty pixels tall and the 0.22 m ball
-is a real disc; Stadium is the fit; District pulls back to 941 m, far enough
-for the road, the station and the terraces. Before this they were zoom levels,
-and the pitch band was a crop of the stadium fit — which pointed the camera at
-an arbitrary patch of wall with no ball in it. Each feature also has its own threshold, so detail
+**wide** 300 m–2 km. They used to be three *cameras* as well, offered as a
+segmented control in the stage bar — Pitch riding with the ball at a 27 m span,
+Stadium the fit, Wide pulled back to 941 m. That control is gone; see *One
+view* at the end of this file. The bands survive as what they always were
+underneath: thresholds for how much detail to draw at a given visible width,
+now reached by the wheel rather than by a button. Each feature also has its own threshold, so detail
 fades independently rather than snapping at a band edge — pitch markings survive
 to 560 m because they are still readable there, individual seat rows stop at
 130 m because they are not. Every fade runs over the last quarter of its range.
@@ -225,7 +232,7 @@ the seats are two greys in broad bands and never a club's. Scenery is held
 under about 35% saturation throughout and the trajectory carries a casing
 stroke, so none of it can out-shout the physics.
 
-**The camera travels.** Zoom and band changes are eased rather than cut:
+**The camera travels.** Zoom and refits are eased rather than cut:
 scale in log space because zoom is multiplicative, the look-at point linearly.
 Dragging stays immediate — lag in a direct manipulation reads as a fault, not
 as smoothing.
@@ -245,10 +252,10 @@ drawn as 1.8 m cards. At the size the touchline camera sees them, a figure is
 about as big as the velocity arrow and about as dark — so the one thing on
 screen a student is meant to follow had twenty-three decoys of the same size
 scattered across the ground it has to cross. They are gone: no players, no
-keepers, no referee. The scale references that remain are all outside the
-bowl, where nothing has to be read through them — the crowd in the stands, the
-cars on the road, the people on the podium. The corner flags stay, because a
-flag is 1.5 m and does not move.
+keepers, no referee. The scale reference is the crowd in the stands, where
+nothing has to be read through it. The corner flags stay, because a flag is
+1.5 m and does not move. (The cars on the road and the people on the podium
+were named here too, and they have since gone with the district.)
 
 **Every quad had a crack down its edge.** A canvas antialiases each polygon
 edge against whatever is already behind it, so two faces sharing an edge leave
@@ -399,20 +406,22 @@ holds the frame.
 
 ### Why there is still a floor, and why it is the ball
 
-Zooming into a 15 cm flight until it fills the frame puts a football two
-thirds of a metre across on the screen. A ball bigger than the motion is no
-more readable than a motion too small to see, so the floor is fourteen drawn
-ball-widths — close enough to look at, far enough that the ball is still a
-ball. It is derived from `D.prop.ball × D.prop.ballDraw` rather than written
-down, so it follows the ball if the ball changes.
+Zooming into a 15 cm flight until it fills the frame puts a football across
+most of the motion. A ball bigger than the motion is no more readable than a
+motion too small to see, so the floor is fourteen ball-widths — close enough
+to look at, far enough that the ball is still a ball. It is derived from
+`D.prop.ball` rather than written down, so it follows the ball if the ball
+changes.
 
 ### What makes leaving the band safe
 
-The scale bar and the band label were already on screen and already correct.
-They are what turns "this frame is not the last frame" from a trap into a
-reading: at 4.5 m the bar says 0.5 m and the label says *Pitch level · 1 unit
-= 1 m*, so the size of what you are looking at is never in doubt. Leaving the
-band would not be safe without them.
+The scale bar and the caption beside it were already on screen and already
+correct. They are what turns "this frame is not the last frame" from a trap
+into a reading: at 4.5 m the bar says 0.5 m and the caption says *4.5 m across
+· 1 unit = 1 m*, so the size of what you are looking at is never in doubt.
+Leaving the band would not be safe without them. (That caption used to name the
+zoom band — *Pitch level* — and now gives the width; the reason is in *One
+view*, at the end of this file.)
 
 ### And the fit travels
 
@@ -423,3 +432,133 @@ the launch fit goes the same way. Measured on a launch that needs a very
 different frame: the scale moves 6.4 doublings over 34 frames, with the
 largest single step 15% of the journey. The first fit of a session still
 lands directly, because there is nothing to travel from.
+
+## Nothing outside the stadium — 12 October 2026
+
+The district has been removed. Two parks with ponds and trees on a jittered
+grid, four terraces of houses stored as rows, four car parks full of cars, a
+dual carriageway with its street trees and traffic, a west-side street, and a
+rail station with four tracks and forty people on the platform. With it go the
+180 people and 30 young trees on the podium plaza, which stood outside the
+bowl too. The podium itself stays, because it is what the stadium stands on.
+
+### Why
+
+It was built as scale reference, and it blinked.
+
+Every one of those items is a *point instance* — a `prop` record, gathered by
+the cut inside a 9 m band and drawn one sprite at a time. The sprite pass was
+one of three per-item loops skipped while `cam.moving` was set, a saving worth
+taking when a district could put a few hundred gradients and canopy arcs in
+one frame. But at pitch level the camera *follows the ball*, so `cam.moving`
+is set for the whole of a flight: the trees and the people vanished on launch,
+came back when the view settled, and vanished again on the next drag. A scale
+reference that is absent whenever anything is happening is not a scale
+reference, and scenery that flickers reads as a fault in the physics rather
+than as a saving.
+
+The crowd was always the better ruler anyway, and the *Readability decisions*
+section above already said so: a section cuts one spectator per row, a seated
+person is 0.85 m above seats 0.80 m apart, and all of it is inside the frame
+the flight is in. It needs no 9 m band and no sprite loop.
+
+### What came out with it
+
+`A.cheap` is gone, and with it the whole idea of a cheaper frame while the
+camera moves — the two loops it was protecting against were the district's.
+`cam.moving` no longer appears in the scenery layer's cache key either: a flag
+that changes nothing in the drawing but changes the key means the moment the
+camera settles, the identical frame is repainted for nothing.
+
+Then the painters with no caller: `person`, `car`, `bus`, `tree`, `lamp`, the
+terrace branch of `blocks()` and the frontage rhythm in `windowsAlong`. Then
+twenty-one scenery tokens — brick, render, panel, two roofings, asphalt,
+paving, kerb lines, ballast, two park greens, trunk, pond and five car paints —
+from `css/tokens.css` as well as from the renderer's `KEYS` map, because a
+colour nothing can ask for is not part of a palette. Then the district entries
+in `dims.js`, the second fade in `groundMarks` for road lines and rails, and
+the panel of the launch map that was a plan of the district, which is now the
+distance grid instead.
+
+`D.prop.person` stays: the free kick's defensive wall is four of them shoulder
+to shoulder, and that is inside the pitch markings.
+
+### One thing that turned up on the way
+
+The four corner floodlight clusters were placed on `D.roof.ringA` / `ringB` —
+the semi-axes of an elliptical roof opening that stopped existing when the roof
+and the bowl were made to share one rounded-rectangle family. Both read
+`undefined`, so every cluster has been sitting at `x = NaN`. NaN fails the band
+test and the visibility test alike, which is why four floodlights went missing
+without anything ever looking wrong. They are derived from the front row inset
+by `ringInset` now, which is what the renderer already did; the same two stale
+references were fixed in the tools in an earlier pass and missed here.
+
+## The ball is 0.22 m — 12 October 2026
+
+It was drawn at 1.45 × 0.22 m, a factor that lived in `dims.js` so the
+exaggeration would at least be a stated number. The reason given was that a
+true-size ball is a speck at stadium scale — and that is true, but it is not
+what the factor fixed. At a 67 m frame the ball's true radius is 0.9 px and
+the exaggerated one is 1.3 px; what *finds* it at that size is the magnifier
+ring in `ballSprite`, which is what the ring is for. All the factor really did
+was act at the close end, where the ball is already large.
+
+So the factor is gone and the ball is 0.22 m, which means it now scales with
+the view exactly as the trajectory it sits on does.
+
+The other half is a ceiling, in `js/render/util.js` with the other pixel
+floors — a screen distance does not belong in a sheet that is metres
+everywhere. Measured on `u = 1.2 m s⁻¹` at 45°: the flight is 0.147 m long,
+the frame it gets is 3.4 m, and the path is **58 px** long on screen. The ball
+was being drawn at a radius of **63 px** — a football twice the width of the
+whole trajectory, which is the one thing on the screen it exists to show. It
+is 9 px now, which is the same order as the path's own 3.4 px stroke in its
+6.2 px casing, and still wide enough for the panels, so it is still a football.
+
+The floor in `autoFit` is unchanged in form — fourteen ball-widths — but it
+is now fourteen *real* ball-widths, 3.08 m instead of 4.47 m, so a desk-sized
+flight gets a frame a third tighter than it did.
+
+---
+
+## One view — 12 October 2026
+
+**Pitch / Stadium / Wide is gone.** One button, *Whole flight*, and the wheel.
+
+The three were cameras rather than crops, which was the right fix for what was
+wrong with them in October — but it left a control whose whole job was to ask a
+question a student standing in front of a projectile question does not have.
+They want to see the flight. Two of the three answers could only give them less
+of it:
+
+- **Pitch** fixed the span at 26 m and rode along with the ball. Any flight
+  wider than that was therefore cropped, and the crop moved while it was being
+  read. For the launches this app is mostly used for — the angled throw from a
+  height, 30 to 60 m of range — it showed about a third of the arc.
+- **Wide** fixed the span at 900 m. The district it pulled back to show was
+  taken out of the world months ago, so what it framed was eight hundred metres
+  of empty ground around a flight reduced to a scratch.
+
+Neither was labelled with what it would cost, and both sat one click from the
+fit at all times.
+
+What is left is the frame `autoFit` already worked out — the whole flight, plus
+as much of the place as the flight's own size earns, which is the subject of
+*The framing band, reconsidered* above — and a button that returns to it.
+Panning and zooming are untouched: the view is still yours to move, and the
+button lights up while the fitted frame is what you are looking at and dims the
+moment you leave it, so it reads as the way back rather than as a mode. A
+double-click on the canvas does the same thing, and always did.
+
+**One number went with it.** The corner caption used to print the band's name,
+`BAND_LABEL[zoomBand(span)]` — *Pitch level*, *Stadium*, *Wide*. A caption
+naming a camera that cannot be chosen is a label pointing at nothing, so it
+gives the frame's width in metres instead, which is the part of it a student can
+use. `zoomBand` had no other caller and is deleted; `D.lod.bands` is untouched,
+because the level-of-detail thresholds were never read through it.
+
+**And a refit re-frames honestly.** `fitView` clears `heldSpan`, the memory that
+keeps two comparable launches in the identical frame. Holding the band is right
+when a flight has just been fired and wrong when somebody has asked, in as many
+words, to see *this* flight framed.

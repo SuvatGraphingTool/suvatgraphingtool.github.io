@@ -106,8 +106,88 @@ export function ballSprite(ctx, x, y, r, { ring = null, fired = true } = {}) {
   dot(ctx, x, y, R, { stroke: P.ballLine, width: Math.max(0.9, R * 0.085) });
 }
 
-/** The ball's drawn radius in pixels — one place, so both call sites agree. */
-export const ballRadius = (scale) => (D.prop.ball / 2) * D.prop.ballDraw * scale;
+/* ── the gap the object keeps around itself ──────────────────────────────
+   THE BALL IS THE SUBJECT AND IT HAS TO WIN. It is drawn after the world and
+   so it is never behind anything, but being in front is not the same as being
+   legible: one flight crosses sky, lit grass, orange seats, dark concrete,
+   roof fascia and bare earth, and against two or three of those the ball and
+   the ring that finds it were the same tone as whatever they sat on. Measured
+   on a throw from the upper tier, the band immediately outside the ring
+   differed from the scenery beyond it by six luminance levels out of 255.
+   That is not a ball in front of a stand; that is a ball in a stand.
+
+   So it carries its own gap: a soft ring of the page's own background colour,
+   laid down before the ball and underneath it, which separates the mark from
+   whatever happens to be behind it. Where the background already IS that
+   colour — the sky, most of the time — it costs nothing and shows nothing,
+   which is why it can simply always be drawn rather than having to work out
+   what is back there.
+
+   It is the same device as the casing under the trajectory stroke, the casing
+   round an arrow and the halo behind a label, done the way those are done:
+   two passes, a wide faint one and a narrow strong one, so the edge falls off
+   instead of reading as a second ring. And it is kept TIGHT — about eight
+   pixels of spread — because it is punching a hole in a stadium somebody has
+   been asked to judge a height against.
+
+   IT IS NOT DRAWN BY ballSprite, and that is deliberate. Laid down with the
+   ball it would land on top of the path and of the velocity arrow, both of
+   which are drawn before the object and both of which MEET the object — so
+   the trail would have a pale notch in it eight pixels behind the ball and
+   the vector would appear to float off its own tail. The caller puts it down
+   before any of the flight's own annotation, so the gap carries the ball, the
+   last of its trail and the root of its vector together, which is the group
+   that has to read as being in front. */
+export function clearance(ctx, x, y, R) {
+  ctx.save();
+  ctx.strokeStyle = cssVar('--surface', '#131210');
+  ctx.lineJoin = 'round'; ctx.setLineDash([]);
+  for (const [wide, alpha] of [[Math.max(7, R * 0.85), 0.34], [Math.max(4, R * 0.45), 0.72]]) {
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = wide;
+    // The stroke starts at the mark's own rim and spreads outward, so none of
+    // it lands on the ball.
+    ctx.beginPath(); ctx.arc(x, y, R + wide / 2 - 1, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** The ball's drawn radius in pixels — one place, so both call sites agree.
+
+   TRUE SIZE, WITH A CEILING. The ball is 0.22 m and it is drawn 0.22 m, so it
+   shrinks and grows with the view exactly as the trajectory it sits on does.
+   There used to be a 1.45× exaggeration in the dimension sheet to stop it
+   being a speck, and the speck is not what it fixed: at stadium scale the
+   ball is about a pixel either way and the magnifier ring in ballSprite is
+   what finds it. What the factor DID do was at the close end, where it made
+   an already large ball half again larger.
+
+   The ceiling is the other half of the same problem. Zoom into a flight a few
+   centimetres long and a true-size ball is two hundred pixels across — a
+   football covering a trajectory four pixels long, which is the one thing on
+   the screen it exists to show. The path is a 3.4 px stroke in a 6.2 px
+   casing and it stays that whatever the scale; above BALL_MAX the ball joins
+   it and stays a mark of the same order instead of inflating past it. There
+   is still room for the panels inside it, so it is still a football.
+
+   In pixels, and so declared HERE rather than in dims.js: that sheet is
+   metres everywhere and a screen distance in it would be the first thing in
+   the file that is not a measurement of the world. */
+const BALL_MAX = 9;
+export const ballRadius = (scale) => Math.min(BALL_MAX, (D.prop.ball / 2) * scale);
+
+/**
+ * How big the object reads on screen, magnifier ring included.
+ *
+ * `ballRadius` is the BALL; this is the MARK. Below five pixels the ring is
+ * what the eye finds and the ball inside it is a speck, so anything sizing
+ * itself against the object — the gap it keeps, a hit test — has to ask about
+ * the ring instead, and ask in one place so the two cannot disagree.
+ */
+export function markRadius(scale) {
+  const r = ballRadius(scale);
+  return r < 5 ? Math.max(10, r + 7) : Math.max(2.2, r);
+}
 
 /* ── the panels ─────────────────────────────────────────────────────────
    A truncated icosahedron: twelve black pentagons on twenty white hexagons.

@@ -15,22 +15,22 @@ import { D } from '../world/dims.js';
 
 /* ── scenery colours, cached per theme ──────────────────────────────── */
 let TONE = null, TONE_KEY = '';
+// Twenty-one of these had no reader left once the district went: five car
+// paints, brick, render, panel, two roofings, asphalt, paving, kerb lines,
+// ballast, two park greens and a trunk brown, plus the pond. They are gone
+// from here and from css/tokens.css with them — a colour nothing can ask for
+// is not part of a palette, it is a note about one.
 const KEYS = {
   skyTop: '--sky-top', skyMid: '--sky-mid', skyBottom: '--sky-bottom', haze: '--haze',
   sun: '--sun', sunGlow: '--sun-glow', shadow: '--scene-shadow', skyFill: '--sky-fill',
-  render: '--render', panel: '--panel', roofingAlt: '--roofing-alt',
-  seatHi: '--seat-hi', parkAlt: '--park-alt',
-  carA: '--car-a', carB: '--car-b', carC: '--car-c', carD: '--car-d', carE: '--car-e',
   grass: '--grass', grassAlt: '--grass-alt', runoff: '--runoff',
-  pitchline: '--pitchline', concrete: '--concrete', paving: '--paving',
-  asphalt: '--asphalt', roadline: '--roadline', ballast: '--ballast',
-  brick: '--brick', roofing: '--roofing', window: '--window',
+  pitchline: '--pitchline', concrete: '--concrete',
+  window: '--window',
   glass: '--glass', metal: '--metal', net: '--net',
   seat: '--seat', seatAlt: '--seat-alt', board: '--board',
   structure: '--structure', structureDark: '--structure-dark',
   roofTop: '--roof-top', roofUnder: '--roof-under',
-  prop: '--prop', water: '--water', park: '--park', parkDeep: '--park-deep',
-  trunk: '--trunk', tyre: '--tyre',
+  prop: '--prop',
   flood: '--flood', farGrid: '--far-grid',
   earth: '--earth', interior: '--interior', terrain: '--terrain',
   ground: '--terrain', white: '--pitchline',
@@ -80,11 +80,13 @@ export function fade(span, limit) {
   if (span >= limit) return 0;
   return 1 - (span - limit * 0.72) / (limit * 0.28);
 }
-export function zoomBand(span) {
-  const b = D.lod.bands;
-  return span < b.pitch ? 'pitch' : span < b.stadium ? 'stadium' : 'district';
-}
-export const BAND_LABEL = { pitch: 'Pitch level', stadium: 'Stadium', district: 'District' };
+// There used to be a zoomBand(span) here, and a BAND_LABEL naming its three
+// answers — Pitch level, Stadium, Wide — which the scene printed in the
+// corner. It named the three zoom buttons, and those are gone: there is one
+// view now, and a caption naming a camera a student cannot choose is a label
+// pointing at nothing. The corner says how many metres wide the frame is
+// instead, which is the thing that was actually worth knowing. The LOD
+// thresholds in D.lod are untouched; they were never read through this.
 
 /* ── an offscreen layer, reused ─────────────────────────────────────── */
 const layers = new Map();
@@ -130,27 +132,34 @@ export function drawSection(A) {
   const mpp = 1 / A.scale;                      // metres per pixel
   A.vis = vis; A.mpp = mpp; A.uMin = uMin; A.uMax = uMax;
 
-  // WHILE THE CAMERA MOVES, DO LESS WORK — NOT A DIFFERENT PICTURE.
+  // A MOVING CAMERA DRAWS THE SAME PICTURE AS A STILL ONE.
   //
-  // This used to save that work by lying about the span: it floored A.span at
-  // D.lod.people + 1, i.e. 461 m, whatever you were actually looking at. A
-  // real stadium fit is 220-330 m, so one drag moved the span by two hundred
-  // metres, and every fade() in the file is a function of span.
+  // Two goes at a saving have now been taken out of here, and both of them
+  // cost more than they bought.
   //
-  // 461 is past seatTexture (440), so fade() for the stands snapped from
-  // about 0.9 to 0, which switches on an 85%-opaque flood fill of every stand
-  // silhouette in --structure-dark. That token and --interior are inverted
-  // value bands between the two themes, so the stands went near-black in dark
-  // mode and pale in light — and because cam.moving was alternating frame to
-  // frame, so did they. That is the flicker. It also took the goal mesh, the
-  // hoarding panels, the interior columns, the concourse floors and the stair
-  // core with it, and moved the far-field grid's step.
+  // The first lied about the span: it floored A.span at 461 m, whatever you
+  // were actually looking at. A real stadium fit is
+  // 220-330 m, so one drag moved the span by two hundred metres, and every
+  // fade() in this file is a function of span. 461 is past seatTexture (440),
+  // so fade() for the stands snapped from about 0.9 to 0, which switches on
+  // an 85%-opaque flood fill of every stand silhouette in --structure-dark.
+  // That token and --interior are inverted value bands between the two
+  // themes, so the stands went near-black in dark mode and pale in light —
+  // and because cam.moving was alternating frame to frame, so did they.
   //
-  // So the span is left alone and the saving is asked for directly. `cheap`
-  // skips the three genuinely expensive per-item loops — the crowd, house
-  // windows and the prop sprites — and nothing that decides a TONE or crosses
-  // a threshold. Nothing changes value when you take hold of the view.
-  A.cheap = !!A.moving;
+  // The second was honest about the span and skipped three per-item loops
+  // instead: the crowd, the terrace windows and the prop sprites. No tone
+  // changed and no threshold moved, so it was not the flicker above — but it
+  // meant the scenery was MISSING for as long as the camera was in motion,
+  // and at pitch level the camera follows the ball for the whole flight. The
+  // crowd and every tree and spectator outside the bowl blinked out on launch
+  // and came back when the view settled.
+  //
+  // The two loops it was really protecting against were the district's: a few
+  // hundred sprites, each with a gradient or four canopy arcs. There is no
+  // district now. What is left is eight props and about a hundred crowd
+  // silhouettes of eight line segments each, which is not worth a saving and
+  // is very much worth never blinking.
   sky(A);
   nightGlow(A);
   farField(A);
@@ -202,8 +211,8 @@ function sky(A) {
   }
   clouds(A, gy);
   // A section has no atmosphere in it, so the haze is a hint and no more:
-  // just enough to stop the far district cutting the sky like a blade. At
-  // pitch level there is no distance to haze, so there is none.
+  // just enough to stop the far side of the bowl cutting the sky like a
+  // blade. At pitch level there is no distance to haze, so there is none.
   if (A.span > 60 && gy > 0 && gy < h) {
     const top = Math.max(0, gy - 34);
     const band = ctx.createLinearGradient(0, top, 0, gy);
@@ -234,10 +243,10 @@ function clouds(A, gy) {
   ctx.restore();
 }
 
-/* The glow over the bowl. At district range the floodlights themselves are
-   below the level of detail, and the bowl was going dark while the houses
-   kept their lit windows — exactly backwards. This is the one night effect
-   that gets STRONGER as you pull away, because that is how it works. */
+/* The glow over the bowl. Pulled back far enough, the floodlights themselves
+   are below the level of detail and the bowl was going dark — which is the
+   one thing a lit stadium never does from a distance. This is the one night
+   effect that gets STRONGER as you pull away, because that is how it works. */
 function nightGlow(A) {
   const { ctx, sy, sx, tn, section, span } = A;
   if (TONE_KEY === 'light' || span < 110) return;
@@ -256,7 +265,12 @@ function nightGlow(A) {
   ctx.restore();
 }
 
-/* ── beyond the district: a labelled distance grid, not a hard edge ─── */
+/* ── beyond the stadium: a labelled distance grid, not a hard edge ─────
+   Past 1.5 km there is nothing modelled, and there never was anything
+   modelled past the edge of the district either. An empty frame that simply
+   stops says the world ends there; a grid of kilometre markers says the view
+   does. It is a ruler rather than scenery, which is why it stayed when the
+   scenery went. */
 function farField(A) {
   const { ctx, w, h, sx, sy, tn, span } = A;
   const F = D.far;
@@ -312,7 +326,7 @@ export function ground(A) {
   ctx.fillStyle = e; ctx.fillRect(0, top, w, h - top);
 
   // One stratum, in METRES like everything else in this world, so at pitch
-  // level it is the depth topsoil really is and at district zoom it is the
+  // level it is the depth topsoil really is and pulled right back it is the
   // pixel it should be. Two strata plus a hatch was a drawing of geology,
   // and this is not a drawing of geology.
   const skin = Math.min(h, sy(-0.35));
@@ -420,15 +434,18 @@ function groundShade(A) {
 /* ── markings on those surfaces ─────────────────────────────────────── */
 function groundMarks(A) {
   const { ctx, sx, sy, tn, span, section } = A;
-  const pf = fade(span, D.lod.pitchLines), rf = fade(span, D.lod.roadLines);
+  // Every mark left in the world is a pitch marking. There was a second fade
+  // here for the road lane lines and the rails at the station, on its own
+  // threshold because a 0.15 m lane line and a 0.12 m goal line are not read
+  // from the same distance; both of those painters have gone with the
+  // district, and a fade with nothing to fade is a branch nobody can test.
+  const pf = fade(span, D.lod.pitchLines);
   // Sets globalAlpha, then `continue`s past the line that resets it, so an
   // off-screen mark leaked its fade into whatever drew next.
   ctx.save();
   for (const m of section.marks) {
-    const isRoad = m.tone === 'roadline' || m.tone === 'metal';
-    const f = isRoad ? rf : pf;
-    if (f <= 0) continue;
-    ctx.globalAlpha = f;
+    if (pf <= 0) continue;
+    ctx.globalAlpha = pf;
     ctx.fillStyle = tn[m.tone] || tn.pitchline;
     // Drawn ABOVE the datum, not straddling it: half of every pitch line used
     // to be buried under the turf body painted downward from y = 0.
@@ -470,45 +487,18 @@ function beyond(A) {
   }
 }
 
-/* ── boxes: houses, station, hoardings, goals ───────────────────────── */
+/* ── boxes: the podium, the hoardings, the goals, the dugout ─────────── */
 function blocks(A) {
   // Same family of bug as surfaces() and groundMarks(): several paths here
   // set globalAlpha and leave by a route that does not reset it.
-  const { ctx, sx, sy, tn, span, section } = A;
+  const { ctx, sx, sy, tn, section } = A;
   const list = section.blocks.slice().sort((a, b) => Math.abs(b.u0) - Math.abs(a.u0));
-  const houseF = fade(span, D.lod.houseBlock), detF = fade(span, D.lod.houseDetail);
   ctx.save();
   for (const b of list) {
     if (!A.vis(b.u0, b.u1)) continue;
     const x0 = sx(b.u0), x1 = sx(b.u1), yT = sy(b.y1), yB = sy(b.y0);
     const wpx = Math.abs(x1 - x0), hpx = Math.abs(yB - yT);
     if (hpx < 0.6 && wpx < 0.6) continue;
-
-    if (b.tag === 'terrace') {
-      if (houseF <= 0) continue;
-      ctx.globalAlpha = houseF;
-      const eavesY = sy(b.eaves);
-      // Streets are not built from one material. Wall and roof come from the
-      // row's own position, so a district has brick, render and panel in it
-      // rather than one repeated house.
-      const hsh = Math.abs(Math.round(b.u0 * 3 + b.y0 * 11));
-      const wall = [tn.brick, tn.render, tn.brick, tn.panel][hsh % 4];
-      const roofT = hsh % 3 ? tn.roofing : tn.roofingAlt;
-      const face = SUN_U - (b.u0 + b.u1) / 2 > 0 ? 1 : -1;
-      if (b.gable) {
-        // cut across a row: the gable end, so the ridge shows as a peak
-        poly(ctx, [{ x: x0, y: yB }, { x: x0, y: eavesY }, { x: (x0 + x1) / 2, y: yT },
-                   { x: x1, y: eavesY }, { x: x1, y: yB }], sunward(tn, wall, face));
-        poly(ctx, [{ x: x0 - 1, y: eavesY }, { x: (x0 + x1) / 2, y: yT }, { x: x1 + 1, y: eavesY }],
-             mixTone(roofT, tn.sun, 0.22));
-      } else {
-        // cut along a row: a long wall under a ridge seen end-on
-        rect(ctx, x0, eavesY, x1, yB, sunward(tn, wall, face));
-        rect(ctx, x0, yT, x1, eavesY, mixTone(roofT, tn.sun, 0.22));
-        if (detF > 0 && !A.cheap) windowsAlong(A, b, eavesY, yB, detF * houseF, hsh);
-      }
-      ctx.globalAlpha = 1; continue;
-    }
 
     if (b.net) { goalNet(A, b); continue; }
     if (b.tag === 'hoarding') { hoarding(A, b); continue; }
@@ -530,26 +520,6 @@ function blocks(A) {
     if (hpx > 2.5 && wpx > 2.5) { ctx.strokeStyle = tn.structureDark; ctx.lineWidth = 1; ctx.strokeRect(Math.min(x0, x1) + .5, yT + .5, wpx - 1, hpx - 1); }
   }
   ctx.restore();
-}
-
-/** The 5.5 m frontage rhythm of a terrace row, once it is big enough to see. */
-function windowsAlong(A, b, eavesY, yB, alpha, hsh = 0) {
-  const { ctx, sx, tn } = A;
-  const n = Math.floor(Math.abs(b.u1 - b.u0) / D.house.front);
-  if (n < 1 || n > 400) return;
-  const wpx = D.house.front * A.scale;
-  if (wpx < 7) return;
-  ctx.globalAlpha = alpha;
-  const hgt = yB - eavesY;
-  for (let i = 0; i < n; i++) {
-    const X = sx(Math.min(b.u0, b.u1) + (i + 0.5) * D.house.front);
-    const lit = TONE_KEY !== 'light' && ((i * 7 + hsh) % 5 < 2);
-    ctx.fillStyle = lit ? tn.window : tn.structureDark;
-    ctx.globalAlpha = alpha * (lit ? 0.85 : 0.5);
-    ctx.fillRect(X - wpx * 0.18, eavesY + hgt * 0.18, wpx * 0.36, hgt * 0.26);
-    ctx.fillRect(X - wpx * 0.18, eavesY + hgt * 0.56, wpx * 0.36, hgt * 0.24);
-  }
-  ctx.globalAlpha = 1;
 }
 
 function hoarding(A, b) {
@@ -635,8 +605,8 @@ function decks(A) {
     poly(ctx, shell, grad, tn.structureDark, 1.8);
     // A section shows you inside a building. From nine hundred metres away
     // you cannot see inside a building, and a stand that stays pale at that
-    // distance reads as a hole in the district rather than a mass in it — so
-    // the cut convention fades out and the building closes up.
+    // distance reads as a hole in the bowl rather than a mass in it — so the
+    // cut convention fades out and the building closes up.
     // the roof keeps the back of every stand in shade
     if (TONE_KEY === 'light') {
       const topY = Math.min(...top.map((q) => q.y));
@@ -908,7 +878,7 @@ function seating(A, p) {
       ctx.lineTo(sx(u + p.s * p.rowD / 2), sy(y + SEAT_BAND)); ctx.stroke();
     }
     ctx.restore();
-    if (!A.cheap) crowd(A, p, rowF);
+    crowd(A, p, rowF);
   } else if (texF > 0 && stepPx > 1.1) {
     ctx.save(); ctx.globalAlpha = 0.65 * texF;
     ctx.strokeStyle = tn.seatAlt; ctx.lineWidth = Math.max(0.8, Math.min(2.4, stepPx * 0.45));
@@ -1028,24 +998,21 @@ function roofSection(A) {
 
 /* ── the scale references ───────────────────────────────────────────── */
 function props(A) {
-  const { ctx, span, section } = A;
-  // One sprite per prop, and a district can hold hundreds. This is the
-  // biggest of the three savings and the least tonal: a few people and cars
-  // stop being drawn, and nothing that was drawn changes colour.
-  if (A.cheap) return;
-  const peopleF = fade(span, D.lod.people), carF = fade(span, D.lod.cars);
-  const treeF = fade(span, D.lod.treeBlob), detTreeF = fade(span, D.lod.treeDetail);
+  const { span, section } = A;
+  // THIS PASS IS NO LONGER SKIPPED WHILE THE CAMERA MOVES. It used to be, and
+  // with reason: a district held hundreds of trees, cars and people, one
+  // sprite each, and that was the biggest of the three savings the flag bought.
+  // It was also the most visible thing the saving cost, because at pitch level
+  // the camera follows the ball — so the scenery went missing for exactly as
+  // long as anything was happening. The district is gone and what is left is
+  // four corner flags and four floodlight clusters, which is not a loop worth
+  // saving and is worth never blinking.
+  const flagF = fade(span, D.lod.flags);
   for (const p of section.props) {
     if (!A.vis(p.u, p.u)) continue;
     const a = 1 - p.off * 0.55;
     switch (p.type) {
-      case 'person': if (peopleF > 0) person(A, p, peopleF * a); break;
-      case 'car':    if (carF > 0) car(A, p, carF * a); break;
-      case 'bus':    if (carF > 0) bus(A, p, carF * a); break;
-      case 'tree':   if (treeF > 0) tree(A, p, treeF * a, detTreeF, D.prop.treeMature); break;
-      case 'treeYoung': if (treeF > 0) tree(A, p, treeF * a, detTreeF, D.prop.treeYoung); break;
-      case 'lamp':   if (carF > 0) lamp(A, p, carF * a); break;
-      case 'flag':   if (peopleF > 0) flag(A, p, peopleF * a); break;
+      case 'flag':   if (flagF > 0) flag(A, p, flagF * a); break;
       case 'lightCluster': lightCluster(A, p); break;
     }
   }
@@ -1063,113 +1030,6 @@ function footing(A, X, Y, wpx, alpha) {
   ctx.globalAlpha = alpha * 0.22; ctx.fillStyle = tn.earth;
   ctx.beginPath(); ctx.ellipse(X, Y, wpx * 0.75, Math.max(1, wpx * 0.22), 0, 0, 7);
   ctx.fill(); ctx.restore();
-}
-
-function person(A, p, alpha) {
-  const { ctx, sx, sy, tn } = A;
-  const P = D.prop.person, base = p.y || 0;
-  const X = sx(p.u), Y0 = sy(base), Y1 = sy(base + P.h);
-  const hpx = Y0 - Y1;
-  footing(A, X, Y0, Math.max(2.4, P.w * A.scale), alpha);
-  ctx.save(); ctx.globalAlpha = alpha;
-  ctx.fillStyle = p.role === 'referee' ? tn.structureDark : tn.prop;
-  if (hpx < 3.5) { ctx.fillRect(X - 1, Y1, 2, hpx); ctx.restore(); return; }
-  const wpx = Math.max(2.4, P.w * A.scale);
-  ctx.beginPath();                                // head
-  ctx.arc(X, Y1 + hpx * 0.1, Math.max(1, hpx * 0.085), 0, 7); ctx.fill();
-  ctx.fillRect(X - wpx / 2, Y1 + hpx * 0.18, wpx, hpx * 0.44);     // torso
-  ctx.fillRect(X - wpx * 0.42, Y1 + hpx * 0.6, wpx * 0.3, hpx * 0.4);
-  ctx.fillRect(X + wpx * 0.12, Y1 + hpx * 0.6, wpx * 0.3, hpx * 0.4);
-  ctx.restore();
-}
-
-const CAR_TONES = ['carA', 'carB', 'carC', 'carD', 'carE'];
-const carTone = (tn, v) => tn[CAR_TONES[Math.floor((v || 0) * CAR_TONES.length) % CAR_TONES.length]] || tn.prop;
-
-function car(A, p, alpha) {
-  const { ctx, sx, sy, tn } = A;
-  const C = D.prop.car, base = p.y || 0;
-  // a car seen across the section is 1.8 m wide, along it 4.5 m long
-  const L = Math.abs(Math.cos((p.rot * Math.PI) / 180)) > 0.5 ? C.w : C.l;
-  const X = sx(p.u), Y0 = sy(base), Y1 = sy(base + C.h);
-  const wpx = Math.max(2, L * A.scale), hpx = Math.max(1.5, Y0 - Y1);
-  footing(A, X, Y0, wpx, alpha);
-  ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = carTone(tn, p.v);
-  if (hpx < 3) { ctx.fillRect(X - wpx / 2, Y1, wpx, hpx); ctx.restore(); return; }
-  ctx.beginPath();
-  ctx.moveTo(X - wpx / 2, Y0); ctx.lineTo(X - wpx / 2, Y1 + hpx * 0.45);
-  ctx.lineTo(X - wpx * 0.22, Y1); ctx.lineTo(X + wpx * 0.18, Y1);
-  ctx.lineTo(X + wpx / 2, Y1 + hpx * 0.45); ctx.lineTo(X + wpx / 2, Y0);
-  ctx.closePath(); ctx.fill();
-  if (wpx > 10) {
-    // glazing, then the wheels: a car is a shape, not a lozenge
-    ctx.fillStyle = TONE_KEY === 'light' ? 'rgba(40,52,64,0.42)' : 'rgba(150,180,210,0.22)';
-    ctx.beginPath();
-    ctx.moveTo(X - wpx * 0.30, Y1 + hpx * 0.42); ctx.lineTo(X - wpx * 0.17, Y1 + hpx * 0.08);
-    ctx.lineTo(X + wpx * 0.14, Y1 + hpx * 0.08); ctx.lineTo(X + wpx * 0.30, Y1 + hpx * 0.42);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#2a2a2c';
-    for (const s of [-0.3, 0.3]) { ctx.beginPath(); ctx.arc(X + s * wpx, Y0 - hpx * 0.12, hpx * 0.17, 0, 7); ctx.fill(); }
-    if (TONE_KEY !== 'light') {
-      ctx.fillStyle = tn.window; ctx.globalAlpha = alpha * 0.9;
-      ctx.fillRect(X + wpx * 0.40, Y0 - hpx * 0.5, wpx * 0.1, hpx * 0.18);
-    }
-  }
-  ctx.restore();
-}
-
-function bus(A, p, alpha) {
-  const { ctx, sx, sy, tn } = A;
-  const B = D.prop.bus, base = p.y || 0;
-  const L = Math.abs(Math.cos((p.rot * Math.PI) / 180)) > 0.5 ? B.w : B.l;
-  const X = sx(p.u), Y0 = sy(base), Y1 = sy(base + B.h);
-  const wpx = Math.max(2.5, L * A.scale), hpx = Math.max(2, Y0 - Y1);
-  ctx.save(); ctx.globalAlpha = alpha;
-  rect(ctx, X - wpx / 2, Y1, X + wpx / 2, Y0, tn.prop);
-  if (hpx > 8 && wpx > 8) {
-    ctx.globalAlpha = alpha * 0.8;
-    rect(ctx, X - wpx * 0.44, Y1 + hpx * 0.1, X + wpx * 0.44, Y1 + hpx * 0.33, tn.window);
-    rect(ctx, X - wpx * 0.44, Y1 + hpx * 0.5, X + wpx * 0.44, Y1 + hpx * 0.72, tn.window);
-  }
-  ctx.restore();
-}
-
-function tree(A, p, alpha, detail, T) {
-  const { ctx, sx, sy, tn } = A;
-  const base = p.y || 0, v = 0.85 + (p.v || 0.5) * 0.3;
-  const hh = T.h * v, X = sx(p.u), Y0 = sy(base), Y1 = sy(base + hh);
-  const hpx = Y0 - Y1;
-  ctx.save(); ctx.globalAlpha = alpha;
-  if (hpx < 4) { ctx.fillStyle = tn.park; ctx.fillRect(X - 1.5, Y1, 3, hpx); ctx.restore(); return; }
-  footing(A, X, Y0, Math.max(3, T.canopyR * 0.7 * A.scale), alpha);
-  ctx.strokeStyle = tn.trunk; ctx.lineWidth = Math.max(1, T.trunkR * 2 * A.scale);
-  ctx.beginPath(); ctx.moveTo(X, Y0); ctx.lineTo(X, sy(base + hh * 0.42)); ctx.stroke();
-  const r = T.canopyR * v * A.scale;
-  ctx.fillStyle = (p.v || 0) > 0.72 ? tn.parkAlt : tn.park;
-  if (detail > 0 && r > 8) {
-    for (const [dx, dy, k] of [[0, 0, 1], [-0.55, 0.3, 0.68], [0.55, 0.28, 0.66], [0, -0.45, 0.6]]) {
-      ctx.beginPath(); ctx.arc(X + dx * r, sy(base + hh * 0.72) + dy * r, r * k, 0, 7); ctx.fill();
-    }
-  } else {
-    ctx.beginPath(); ctx.arc(X, sy(base + hh * 0.72), r, 0, 7); ctx.fill();
-  }
-  ctx.restore();
-}
-
-function lamp(A, p, alpha) {
-  const { ctx, sx, sy, tn } = A;
-  const hh = p.h || D.prop.lamp.h, base = p.y || 0;
-  const X = sx(p.u), Y0 = sy(base), Y1 = sy(base + hh);
-  if (Y0 - Y1 < 7) return;              // the head alone is a speck of dust
-  ctx.save(); ctx.globalAlpha = alpha;
-  ctx.strokeStyle = tn.metal; ctx.lineWidth = Math.max(1, 0.2 * A.scale);
-  ctx.beginPath(); ctx.moveTo(X, Y0); ctx.lineTo(X, Y1);
-  ctx.lineTo(X + D.prop.lamp.armL * A.scale, Y1); ctx.stroke();
-  if (TONE_KEY !== 'light') {
-    ctx.fillStyle = tn.flood; ctx.globalAlpha = alpha * 0.85;
-    ctx.beginPath(); ctx.arc(X + D.prop.lamp.armL * A.scale, Y1 + 2, Math.max(1.5, 0.3 * A.scale), 0, 7); ctx.fill();
-  }
-  ctx.restore();
 }
 
 function flag(A, p, alpha) {

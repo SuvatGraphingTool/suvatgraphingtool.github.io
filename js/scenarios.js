@@ -1,7 +1,11 @@
 // scenarios.js — the situations the playground can set up.
 //
-// Two of them happen somewhere other than the stadium and say so with
-// `backdrop`; see js/render/backdrops.js.
+// `backdrop` and `site` belong to the STROBE PLATE renderer in
+// js/render/exhibit.js, which nothing currently reaches — see the note on
+// `plate` in js/app.js's draw(). Both exhibits are drawn by the ordinary
+// side-on view now, like every other scenario, so they launch from a place in
+// js/world/world.js's SITES like every other scenario does. The two fields
+// are kept because the plate renderer is kept.
 //
 // A scenario chooses the SITUATION and nothing else. It decides which boxes
 // apply, which markers appear and what the card says it is for. Every number
@@ -71,6 +75,36 @@ export const SCENARIOS = [
     params: { u: 24, theta: 40, h: 0.9, g: 9.81 },
     markers: { heightLine: 6 }, dragLine: true },
 
+  /* ── the one the idealised model cannot do on its own ─────────────────
+     A parachute is the single situation in the syllabus where "no air
+     resistance" is not a simplification but a refusal to describe the thing,
+     so air comes in the way the exams let it in: as a stated constant for
+     each stretch of the fall, never as a drag law. Three stretches, constant
+     acceleration within each, and the five equations applied to each in
+     turn — which is the lesson. See js/core/descent.js.
+
+     `descent` here is ILLUSTRATION ONLY, for the card's sketch. Nothing on
+     this screen is pre-filled; the student types all four. */
+  { id: 'parachute', group: 'look', name: 'Parachute drop',
+    sub: 'free fall, then the canopy',
+    note: 'Three phases, and SUVAT applies to each one separately: free fall under gravity alone, a hard deceleration as the canopy opens, then a steady descent at constant speed. The equations never described the whole fall — only a stretch of it at a time, which is what this one is for.',
+    params: { u: 0, theta: -90, h: 100, g: 9.81 },
+    descent: { tOpen: 3, aChute: 25, vTerm: 6 },
+    card: 'sky',
+    ending: {
+      close: 'See the drop',
+      title: 'Three phases, and SUVAT three times over.',
+      realTitle: 'Where this stops being the real thing',
+      realLead: 'Two of the simplifications are the exam\u2019s, and they are the reason the question is answerable at all. Neither is hidden here, and neither was computed: they are what the numbers you typed were taken to mean.',
+      why: [
+        ['Free fall has no air in it at all', 'this phase is the ordinary model, so she keeps gaining speed for as long as you let her. A real skydiver levels off near 55 m s\u207b\u00b9 after about twelve seconds, because drag grows with speed until it balances weight — exactly what phase three does here, but at a hundred times the speed.'],
+        ['The canopy opens instantly', 'at the moment you chose, the acceleration changes from one constant to another with nothing in between. A real opening takes a few tenths of a second and the force rises and falls through it, peaking well above the average. The average is what a constant deceleration gives you.'],
+        ['The deceleration is a number you gave', 'it was not worked out from the size of the canopy, her mass, or the density of the air. Nothing here models any of those. It is the figure the question states, and the engine took it at its word.'],
+        ['She is a point, and the air is still', 'no wind, no drift across the ground, no swinging under the lines, and the canopy is drawn at a size you can see rather than at the size it is.'],
+      ],
+      caveat: 'What the engine did compute is on the left: each phase solved on its own with the five equations, and the three stitched together. Every number in the table came out of that. Nothing on this card accounted for air density, canopy area or mass, because the model does not contain them.',
+    } },
+
   /* ── the two that are not at the stadium ──────────────────────────── */
   { id: 'bullet', group: 'look', name: 'Dropping vs Firing a Bullet',
     sub: 'which lands first?',
@@ -78,7 +112,6 @@ export const SCENARIOS = [
     params: { u: 360, theta: 0, h: 1.5, g: 9.81 }, lockAngle: true,
     exhibit: true, backdrop: 'warehouse', site: FLAT_SITE,
     card: 'range',
-    place: 'An indoor range, lit by a strobe',
     pairLabel: 'same height',
     seed: { u: 360, h: 1.5, g: 9.81 },
     intro: {
@@ -92,7 +125,7 @@ export const SCENARIOS = [
       ],
     },
     ending: {
-      close: 'See the panes',
+      close: 'See the diagram',
       title: 'Both hit the ground at the same time.',
       realTitle: 'In the real world there is a difference. It is small.',
       realLead: 'Careful experiments with a real rifle have timed the fired round landing a few tens of milliseconds after the dropped one — a few per cent of a fall lasting about half a second. Every reason for it is something this app does not model.',
@@ -117,11 +150,10 @@ export const SCENARIOS = [
 
   { id: 'monkey', group: 'look', name: 'Monkey vs Hunter',
     sub: 'aim straight at it',
-    note: 'The hunter aims directly AT the monkey; the monkey drops the instant the shot leaves. In the time the banana takes to cover the horizontal gap, both have fallen the same ½gt² below where they would have been without gravity — so the aim that would have been right without gravity is still right with it. Drag the monkey anywhere: it only fails if the monkey reaches the sand first.',
+    note: 'The hunter aims directly AT the monkey; the monkey drops the instant the shot leaves. In the time the banana takes to cover the horizontal gap, both have fallen the same ½gt² below where they would have been without gravity — so the aim that would have been right without gravity is still right with it. Drag the monkey anywhere: it only fails if the monkey reaches the ground first.',
     params: { u: 22, theta: 0, h: 1.5, g: 9.81 },
     exhibit: true, backdrop: 'beach', site: FLAT_SITE,
     card: 'dusk',
-    place: 'A beach at dusk',
     pairLabel: 'same fall',
     caughtLabel: 'caught — every time',
     seed: { u: 22, h: 1.5, g: 9.81 },
@@ -131,16 +163,16 @@ export const SCENARIOS = [
             theta: { min: -20, max: 85, step: 0.5, label: 'angle', unit: '°' } },
     ending: {
       kind: 'monkey',
-      close: 'See the beach',
+      close: 'See the diagram',
       caught: { title: 'Caught.' },
       high:   { title: 'It passed above the monkey.' },
       low:    { title: 'It passed below the monkey.' },
-      short:  { title: 'The monkey reached the sand first.' },
+      short:  { title: 'The monkey reached the ground first.' },
       why: {
         aimed: ['Aimed straight at it, it cannot miss',
           'Not because the banana was quick, and not because the numbers were kind. In the time it takes to cover the horizontal gap, both have fallen the same amount below where they would have been without gravity — and that amount is the same for both because it does not depend on what either of them weighs or how fast either was going. So it cancels, and the aim that would have been right with no gravity is still right with it. Move the speed slider: the answer does not change.'],
         slow: ['Too slow — and this is the only real failure there is',
-          'The aim was never wrong. The banana simply ran out of flight before it covered the gap, and the monkey was on the sand by the time it arrived. Nothing here contradicts the rule; the demonstration just needs both of them to still be in the air when they meet. Throw harder, or drag the monkey closer or higher.'],
+          'The aim was never wrong. The banana simply ran out of flight before it covered the gap, and the monkey was on the ground by the time it arrived. Nothing here contradicts the rule; the demonstration just needs both of them to still be in the air when they meet. Throw harder, or drag the monkey closer or higher.'],
         fast: ['Too fast to see anything',
           'It connected, and the rule held perfectly — but the banana arrived so quickly that neither object had time to fall anything worth looking at. The whole demonstration is about a distance they share, and at this speed that distance is a few millimetres. The picture stops showing it long before the physics stops working. Slow the throw down.'],
         nog: ['No gravity, and it still hits',

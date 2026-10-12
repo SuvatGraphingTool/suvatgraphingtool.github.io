@@ -98,9 +98,15 @@ export function graphSpecs(f, t, P) {
         { label: 'horizontal', fn: () => f.horiz,       color: P.vel, dash: [6, 4] },
       ],
       shade: { index: 0, label: 'area = vertical displacement' } },
+    // THE ACCELERATION IS NOT ALWAYS A CONSTANT. For every flight with one
+    // acceleration it is −g and the line is flat, which is what it used to
+    // assume outright. A parachute descent has three, so the flight is asked
+    // what its acceleration is at each instant and the graph draws the step
+    // function that comes back — which, next to the v–t graph above, is the
+    // whole of what a v–t question is testing.
     { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,
       series: [
-        { label: 'vertical',   fn: () => -f.params.g, color: P.acc, dash: null },
+        { label: 'vertical',   fn: (tt) => (f.accel ? f.accel(tt) : -f.params.g), color: P.acc, dash: null },
         { label: 'horizontal', fn: () => 0,           color: P.acc, dash: [6, 4] },
       ],
       shade: { index: 0, label: 'area = change in vertical velocity' } },

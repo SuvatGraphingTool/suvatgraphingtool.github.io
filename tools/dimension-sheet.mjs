@@ -115,37 +115,21 @@ p('The opening is bigger than the pitch in both directions, so the whole pitch i
 p('open to the sky and every seat is under cover.');
 p();
 
-p('## Podium and district');
+p('## The podium');
 p();
-const R = D.road;
 tbl(['Object', 'Dimension', 'Value (m)'], [
   ['Podium plaza', 'plan, as a ring round the bowl', `${D.podium.halfL * 2} × ${D.podium.halfW * 2}`],
   ['Podium plaza', 'height above the datum', f(D.podium.y, 1)],
   ['Podium balustrade', 'height', f(D.podium.railH, 1)],
-  ['Forecourt / drop-off', 'z range, depth', `${R.forecourt.join(' to ')}, ${f(R.forecourt[1] - R.forecourt[0], 0)}`],
-  ['Wide pavement', 'z range, depth', `${R.pavementWide.join(' to ')}, ${f(R.pavementWide[1] - R.pavementWide[0], 0)}`],
-  ['Carriageway A', 'z range, 2 lanes', `${R.carriagewayA.join(' to ')}, 2 × ${R.laneW}`],
-  ['Planted median', 'z range', R.median.join(' to ')],
-  ['Carriageway B', 'z range, 2 lanes', `${R.carriagewayB.join(' to ')}, 2 × ${R.laneW}`],
-  ['Far pavement', 'z range, depth', `${R.pavement.join(' to ')}, ${f(R.pavement[1] - R.pavement[0], 0)}`],
-  ['Street lighting', 'height, spacing', `${R.lampH}, every ${R.lampEvery}`],
-  ['Street trees', 'spacing', `every ${R.treeEvery}`],
-  ['West street', 'x range', D.roadW.x.join(' to ')],
-  ['Station building', 'plan, roof height', `${D.station.x[1] - D.station.x[0]} × ${D.station.z[1] - D.station.z[0]}, ${D.station.roofY}`],
-  ['Platform canopy', 'z range, height', `${D.station.canopy.z.join(' to ')}, ${f(D.station.canopy.y, 1)}`],
-  ['Track bed', 'tracks, gauge, spacing', `${D.station.tracks.n}, ${D.station.tracks.gauge}, ${f(D.station.tracks.spacing, 1)}`],
-  ['Station', 'distance from the centre spot', f(D.station.distanceFromCentre, 0)],
-  ['Parking bay', 'width × length', `${D.carPark.bayW} × ${D.carPark.bayL}`],
-  ['Parking aisle', 'width', f(D.carPark.aisle, 1)],
-  ['Car park lighting', 'height', f(D.carPark.lampH, 0)],
-  ['Terraced house', 'frontage × depth', `${D.house.front} × ${D.house.depth}`],
-  ['Terraced house', 'eaves / ridge', `${D.house.eaves} / ${D.house.ridge}`],
-  ['Rear gardens', 'depth each', f(D.house.garden, 0)],
-  ['Residential street', 'width', f(D.house.street, 0)],
 ]);
-tbl(['Car park', 'x range', 'z range'], D.carParks.map((c) => [c.id, c.x.join(' to '), c.z.join(' to ')]));
-tbl(['Terrace block', 'x range', 'z range'], D.terraces.map((t, i) => [`T${i + 1}`, t.x.join(' to '), t.z.join(' to ')]));
-tbl(['Park', 'x range', 'z range', 'Pond'], D.parks.map((k) => [k.id, k.x.join(' to '), k.z.join(' to '), k.pond ? `${k.pond.x.join(' to ')} × ${k.pond.z.join(' to ')}` : '—']));
+p('The podium is the last built thing in the model. Outside it there was a');
+p('district — a dual carriageway and its traffic, a west-side street, a rail');
+p('station, four car parks, four terraces of houses and two parks — and it has');
+p('been removed. It was there as scale reference, and on a cross-section it was');
+p('a few hundred point sprites that blinked out whenever the camera moved,');
+p('which at pitch level is the whole of a flight. The crowd does that job from');
+p('inside the frame.');
+p();
 
 p('## Scale references');
 p();
@@ -156,24 +140,28 @@ const PP = D.prop;
 tbl(['Object', 'Dimension', 'Value (m)'], [
   ['Football', 'diameter', f(PP.ball, 2)],
   ['Person', 'height × shoulder width', `${PP.person.h} × ${PP.person.w}`],
-  ['Car', 'length × width × height', `${PP.car.l} × ${PP.car.w} × ${PP.car.h}`],
-  ['Double-decker bus', 'length × width × height', `${PP.bus.l} × ${PP.bus.w} × ${PP.bus.h}`],
-  ['Mature tree', 'height, canopy radius, trunk radius', `${PP.treeMature.h}, ${PP.treeMature.canopyR}, ${PP.treeMature.trunkR}`],
-  ['Young tree', 'height, canopy radius', `${PP.treeYoung.h}, ${PP.treeYoung.canopyR}`],
-  ['Street lamp', 'height, arm', `${PP.lamp.h}, ${PP.lamp.armL}`],
+  ['Parachute canopy', 'width, inflated', f(PP.canopy.w, 0)],
+  ['Floodlight mast', 'height', f(PP.floodMast.h, 0)],
+  ['Goalpost', 'radius', f(PP.goalpostR, 2)],
 ]);
+p('The ball is drawn at 0.22 m and nothing else. There used to be a 1.45');
+p('factor applied to it on screen so it would not be a speck at stadium');
+p('scale — a speck is found by the magnifier ring instead, and all the factor');
+p('did was make the ball half again too large when you zoomed in on it. Its');
+p('drawn radius is capped in PIXELS, which is a screen distance and so lives');
+p('in `js/render/util.js` rather than in this sheet.');
+p();
 
 p('## The far field');
 p();
 tbl(['Setting', 'Value (m)'], [
-  ['District fades from', f(D.far.fadeFrom, 0)],
-  ['District fully faded by', f(D.far.fadeTo, 0)],
+  ['Distance grid from', f(D.far.fadeFrom, 0)],
   ['Distance grid step', f(D.far.gridStep, 0)],
   ['Distance grid out to', f(D.far.gridTo, 0)],
 ]);
-p('Past 1.5 km the district dissolves into a labelled distance grid rather than');
-p('ending at an edge, which is what makes `g = 0` and Moon gravity survivable:');
-p('the ball leaves the world and there is still something to measure it against.');
+p('Past 1.5 km the ground carries a labelled distance grid rather than ending');
+p('at an edge, which is what makes `g = 0` and Moon gravity survivable: the');
+p('ball leaves the world and there is still something to measure it against.');
 p();
 
 p('## Level of detail');

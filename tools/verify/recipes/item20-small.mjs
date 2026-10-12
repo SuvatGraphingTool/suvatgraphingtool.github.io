@@ -18,7 +18,7 @@ export default [
   { name: 'item20-exhibit-bar', el: '.stage-bar', run: async (p, { wait }) => {
       await p.click('.pcard[data-id="bullet"]'); await wait(600);
       const v = await p.evaluate(`(() => ({
-        band: document.getElementById('band-seg').hidden,
+        view: document.getElementById('fit-btn').hidden,
         shows: document.getElementById('shows').hidden,
         bounce: document.querySelector('.ck.inline').hidden,
         place: document.getElementById('place').textContent,
@@ -32,7 +32,7 @@ export default [
       await p.click('#launch'); await wait(300);
       await p.click('#pace-go'); await wait(1200);
       const v = await p.evaluate(`(() => ({
-        band: document.getElementById('band-seg').hidden,
+        view: document.getElementById('fit-btn').hidden,
         shows: document.getElementById('shows').hidden,
         place: document.getElementById('place').textContent,
       }))()`);

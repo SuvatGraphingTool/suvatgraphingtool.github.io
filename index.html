@@ -13,6 +13,7 @@
 <link rel="modulepreload" href="./js/core/solve.js">
 <link rel="modulepreload" href="./js/core/trajectory.js">
 <link rel="modulepreload" href="./js/core/projectile.js">
+<link rel="modulepreload" href="./js/core/descent.js">
 <link rel="modulepreload" href="./js/core/intercept.js">
 <link rel="modulepreload" href="./js/core/pace.js">
 <link rel="modulepreload" href="./js/scenarios.js">
@@ -100,16 +101,28 @@
       <section class="stage">
         <div class="stage-bar">
           <button class="ghost sm" id="back-2">Change values</button>
-          <div class="seg" id="band-seg" aria-label="Zoom band">
-            <button data-band="pitch" aria-pressed="false">Pitch</button>
-            <button data-band="stadium" aria-pressed="true">Stadium</button>
-            <button data-band="district" aria-pressed="false">District</button>
-          </div>
-          <div class="seg" id="rate-seg" aria-label="Playback speed">
-            <button data-rate="1" aria-pressed="true">Real time</button>
-            <button data-rate="0.75" aria-pressed="false">0.75&times;</button>
-            <button data-rate="0.5" aria-pressed="false">0.5&times;</button>
-            <button data-rate="0.25" aria-pressed="false">0.25&times;</button>
+          <!-- One view, and the way back to it. Pitch / Stadium / District
+               were three cameras to choose between, and choosing was never the
+               question a student had: they want to see the flight. This frames
+               the whole of it, and lights up while that is what you are
+               looking at. Pan or zoom away and it dims, ready to bring you
+               back — same thing a double-click on the canvas does. -->
+          <button class="tbtn sm" id="fit-btn" aria-pressed="true"
+                  aria-label="Frame the whole flight">Whole flight</button>
+          <!-- The same control the speed card asks with, and the same one
+               setting behind both. Four buttons offered four of the hundred
+               speeds the slider already reaches, named the four as if they
+               were the choices, and could not express the one most short
+               flights actually want — a round that lands in half a second
+               needs about 0.14x, which was not on the list. The pin is the
+               speed this flight asked for. -->
+          <div class="rate-live" aria-label="Playback speed">
+            <output class="rl-val" id="bar-rate-val">1.00&times;</output>
+            <div class="pace-slot rl-slot">
+              <input type="range" id="bar-rate" min="0" max="100" step="1" value="100"
+                     aria-label="Playback speed, out of a hundred">
+              <span class="pace-pin" id="bar-rate-pin" hidden></span>
+            </div>
           </div>
           <!-- live controls for an exhibit you play with rather than set up -->
           <div class="live" id="live" hidden>
@@ -119,15 +132,10 @@
               <input type="range" id="lv-u" aria-label="Speed of the throw"></label>
             <button class="tbtn sm" id="lv-aim" aria-pressed="true">Aim at the monkey</button>
           </div>
-          <label class="ck inline"><input type="checkbox" id="bounce-ck"><span class="box-ck"></span>Bounce</label>
-          <div class="bounce-opts" id="bounce-opts" hidden>
-            <span class="mini">restitution <b id="rest-val">0.70</b></span>
-            <input type="range" id="restitution" min="0.1" max="0.95" step="0.05" value="0.7">
-          </div>
           <p class="place"><b id="place"></b><span id="place-note"></span></p>
         </div>
 
-        <div class="canvas-wrap" id="canvas-wrap" data-resolve="off">
+        <div class="canvas-wrap" id="canvas-wrap" data-resolve="off" data-ask="off">
           <canvas id="scene" aria-label="Projectile motion"></canvas>
           <!-- shown over a blurred stage before an exhibit runs -->
           <div class="intro" id="intro" hidden>
@@ -175,7 +183,14 @@
           </div>
 
           <div class="hud hud-l" id="hud-left"></div>
-          <div class="hud hud-r" id="hud-right"></div>
+          <!-- The clock, and beside it the way to ask for an instant other
+               than the one the playhead happens to be on. -->
+          <div class="hud hud-r">
+            <div class="hboxes" id="hud-right"></div>
+            <button class="askat-btn" id="ask-at" aria-haspopup="dialog">
+              Resolve at&hellip;
+            </button>
+          </div>
 
           <!-- click the object, or anywhere on the arc: one instant, resolved -->
           <div class="resolve" id="resolve" data-side="right" hidden>
@@ -187,6 +202,36 @@
               <div class="res-acts">
                 <button class="ghost sm" id="res-close">Close</button>
                 <button class="tbtn" id="res-go">Carry on</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- the same card, asked for rather than pointed at: name the
+               instant by its time, or by the speed the object is doing -->
+          <div class="resolve askat" id="askat" data-side="right" hidden>
+            <div class="res-card" role="dialog" aria-labelledby="askat-title">
+              <p class="res-eyebrow">Resolve somewhere in particular</p>
+              <h2 class="res-h" id="askat-title">Which instant?</h2>
+              <p class="askat-lead">Two ways of naming the same one. Fill in
+                either box — the other one answers.</p>
+              <div class="askat-body">
+                <div class="askat-row">
+                  <label for="at-t">At a time (s)</label>
+                  <input id="at-t" type="text" inputmode="decimal" autocomplete="off"
+                         placeholder="&mdash;" aria-describedby="at-t-hint">
+                  <p class="xhint" id="at-t-hint"></p>
+                </div>
+                <div class="askat-row">
+                  <label for="at-v">At a speed (m s&#8315;&sup1;)</label>
+                  <input id="at-v" type="text" inputmode="decimal" autocomplete="off"
+                         placeholder="&mdash;" aria-describedby="at-v-hint">
+                  <p class="xhint" id="at-v-hint"></p>
+                </div>
+                <div class="askat-picks" id="at-picks"></div>
+              </div>
+              <div class="res-acts">
+                <button class="ghost sm" id="at-cancel">Cancel</button>
+                <button class="tbtn" id="at-go">Resolve it</button>
               </div>
             </div>
           </div>
@@ -249,6 +294,22 @@
         <h2 class="otitle">Also</h2>
         <div class="checks" id="extras"></div>
         <label class="ck"><input type="checkbox" id="guard-ck" checked><span class="box-ck"></span>Stop me over-filling the five</label>
+        <!-- Bounce used to sit in the stage bar, where it took a checkbox, a
+             slider and a readout of permanent room next to the controls you
+             actually use on every flight. It is a setting, so it lives with
+             the settings; and it opens on the number a real ball has rather
+             than on a slider position somebody has to guess at. -->
+        <div id="bounce-wrap">
+          <h2 class="otitle">Bounce</h2>
+          <label class="ck"><input type="checkbox" id="bounce-ck"><span class="box-ck"></span>Let it bounce</label>
+          <div class="bounce-opts" id="bounce-opts" hidden>
+            <label class="orow"><span>Coefficient of restitution <b id="rest-val">0.80</b></span>
+              <input type="range" id="restitution" min="0.1" max="0.95" step="0.05" value="0.8"
+                     aria-label="Coefficient of restitution"></label>
+            <p class="osay" id="rest-say"></p>
+            <button class="linkish" id="rest-earth" hidden>Back to a ball on firm ground</button>
+          </div>
+        </div>
         <div id="graphs-wrap" hidden>
           <h2 class="otitle">Graphs</h2>
           <div class="graphs">
