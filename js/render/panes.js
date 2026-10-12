@@ -230,6 +230,15 @@ export function render(win, o) {
     const p = win.panes.find((x) => x.id === id);
     const e = win.el.get(id);
     const view = win.views.get(id);
+    /* A PANE THAT CHANGED SIZE HAS TO RE-FRAME, and this is the only place
+       that can notice. Maximizing a quarter-size pane quadruples its canvas,
+       and a view keeping the scale it was fitted at then holds the flight in
+       the top third of a pane four times the size — which is the one thing
+       maximize exists to not do. Untouched views refit; a view somebody has
+       panned or zoomed is left exactly where they put it, which is the same
+       rule app.js applies to the single view on a window resize. */
+    const size = `${e.canvas.clientWidth}x${e.canvas.clientHeight}`;
+    if (e.size !== size) { e.size = size; if (!view.touched) view.fit = true; }
     p.draw(e.canvas, view, o);
     // The button lights up while the whole flight IS what this pane is
     // showing, and dims the moment a pan or a zoom takes it off — so it reads

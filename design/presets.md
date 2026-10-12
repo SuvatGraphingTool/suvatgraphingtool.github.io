@@ -116,6 +116,96 @@ computed, and the card does not pretend otherwise.
 The engine is `js/core/descent.js`, which also owns its own working panel and
 resolve card, because the formulas have to quote the phase they belong to.
 
+### Four panes — 12 October 2026
+
+The drop was being watched in the side-on stadium view like every other
+scenario, and that was the wrong room for it. A parachute descent has no
+horizontal part at all, so the one thing the stadium view is for — a place at
+a scale you can judge a height against, with an arc standing in it — had
+nothing to do. What it contributed instead was a goal, a crowd, a metre grid
+and a football-shaped object, to a question about none of those. The three
+graphs, meanwhile, were three 185 px canvases in a sidebar behind an Options
+button.
+
+So this scenario now has its own window: **four equal panes**, over one play
+button, one scrub bar and one time cursor shared by all four.
+
+| Pane | What it shows |
+|---|---|
+| **The jump** | Sky. The aircraft crosses it, the door opens, she leaves, falls, the canopy inflates, and she lands. No stadium, no football, no metre grid. |
+| **Velocity–time** | Rising in free fall, dropping hard at the opening, flat under the canopy. The area under it is the height fallen. |
+| **Height–time** | A steepening curve, a knee at the opening, then a straight ramp to zero. |
+| **Acceleration–time** | The step. `g` down, the canopy up, then nothing. |
+
+**Why the fourth pane is acceleration–time.** This scenario exists to show
+that `a` is not one number, and `a–t` is the only pane where that is the whole
+picture rather than a slope to infer off another graph. It also completes the
+trio every exam question on a parachutist is built from.
+
+**The graphs are exact, not sampled.** Inside a phase the acceleration is
+constant, so `v` is linear in `t`, `s` is a parabola and `a` is a constant.
+`js/render/plot.js` takes segments rather than a function to sample: a
+polyline through the phase boundaries IS the velocity–time graph, the step IS
+the acceleration–time graph, and the height is drawn as a quadratic Bézier,
+which is not an approximation of a parabola but a parabola. Read back off the
+rendered pixels, all three agree with the engine to within the width of their
+own stroke.
+
+**Downwards is positive** on all three, which is the convention
+`js/core/descent.js` states, the one the ending card's table is in, and the one
+a student is taught to choose for a drop. Each pane's header says so.
+
+**The pre-roll is outside the clock.** The aircraft crossing, the door
+opening and the step out all happen before `t = 0`, because `t = 0` is the
+instant of release. It runs in real seconds rather than playback seconds — the
+speed control is about how fast to watch the physics, and a drop asked to run
+at a tenth of real time should not spend half a minute watching an aeroplane.
+Nothing in it is presented as physics: no numbers are drawn, no readout moves,
+and the three graph panes hold at zero with nothing on them and one line of
+text saying why. A flat line at zero would be a claim about a motion that has
+not happened.
+
+**The aircraft's speed does not count, and the card says so.** She leaves from
+rest and falls vertically; the engine stays one-dimensional. A real jumper
+carries the aircraft's speed out of the door, which bends the first second or
+two into an arc, and none of that is in any of these numbers. The aeroplane
+and the door are scenery — drawn at a size you can see rather than at the size
+they are — and the ending card's list of what is not modelled now says all of
+this out loud beside the three it already said.
+
+**What the window replaces.** In it there are no readout boxes on the diagram
+— four panes have no corner to spare, so the clock moved to the transport,
+where all four already share it — no resolve card, because the gesture on
+every pane is pan and zoom and there is nothing to point at, and none of the
+seven Show options, because every one of them is about the single diagram.
+What the resolve card was for is on screen instead: three graphs with axes to
+read the velocity, the height and the acceleration off.
+
+**Maximize, and the same map in all four.** Every pane carries a button at its
+top left that blows it up to fill the stage, collapsing the other three to a
+row of named tabs; the same button restores the layout. Every pane takes drag
+to pan and wheel to zoom, in its own units — metres of sky for the jump,
+seconds across and `m s⁻¹` or `m` or `m s⁻²` up for a graph — and each
+remembers its own view, so zooming one pane into the nine tenths of a second
+the canopy works in leaves the other three where they were. Each has its own
+**Whole flight** button, lit while that is what it is showing.
+
+**Chosen before anything moves.** The speed card gained a layout picker — all
+four, two side by side, or one — because four quarter-size panes is the right
+default for exactly the reason the scenario exists and the wrong answer on a
+small screen. It is remembered the way the theme is remembered.
+
+**Scope.** The window (`js/render/panes.js`) is general: a pane is four
+strings, a view adapter and a draw function, so the other ten scenarios could
+be moved onto it later. None of them is moved now. The 13 px floor is a floor
+and not a starting point, which is why the title, the convention, the axis
+numbers and both buttons are all there at quarter size; the only thing that
+waits for a bigger layout is the pane's own sentence of prose, and that is
+half of what maximize is for.
+
+The window is `js/render/panes.js`, the plotter `js/render/plot.js`, and this
+scenario's four panes `js/render/drop.js`.
+
 ---
 
 ## Built, then removed

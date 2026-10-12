@@ -1414,6 +1414,12 @@ function syncRate() {
    same panes, untouched views. js/render/panes.js keeps the views across a
    remount of the same four ids in any case, which covers the rest. */
 function syncPanes() {
+  // The picker is only ever offered by a scenario that has panes to pick
+  // between, and it is asked here as well as on the way into the speed card:
+  // the card is one route onto this screen and the step navigation is
+  // another, and a control left over from the last scenario is worse than one
+  // that was never offered.
+  syncLayoutPick();
   const on = windowed() && !!traj && !!solved?.ok;
   $('canvas-wrap').dataset.panes = on ? 'on' : 'off';
   $('panes').hidden = !on;
@@ -2084,7 +2090,12 @@ function renderWorking() {
 
 /* ── loop ───────────────────────────────────────────────────────────── */
 function draw() {
-  if (state.step !== 'flight' || !traj) { dirty = false; return; }
+  // syncPanes BEFORE the early return as well as after it. With no flight to
+  // draw there is nothing for a window to be a window onto, and leaving four
+  // panes of the last one mounted is the same stale-control problem the
+  // options panel has — so it is taken down on the way out, not only put up
+  // on the way in.
+  if (state.step !== 'flight' || !traj) { syncPanes(); dirty = false; return; }
   syncPanes();
   const R = state.resolve
     ? (scenario?.descent ? resolveDescent(traj, state.t) : resolveAt(traj, state.t))
@@ -2402,7 +2413,7 @@ for (const face of ['560 1em "Source Serif 4"', 'italic 560 1em "Source Serif 4"
 }
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
-                 cam, choose: chooseScenario, launch, runFlight, go,
+                 cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
                  openAskAt, closeAskAt,
                  redraw() { recompute(); draw(); } };
