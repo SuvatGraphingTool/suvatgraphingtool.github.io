@@ -170,6 +170,21 @@ function fitPlate(cam, o, rect) {
   }
   const xLo = Math.min(0, ex.x0);
 
+  // A FRAME WITH NO ROOM IN IT IS NOT A FRAME. The plate reserves 34 px either
+  // side and 84 px top and bottom for its own border and footer, so a canvas
+  // shorter than that leaves `rect` with a NEGATIVE height — and the fit that
+  // came out of it was a negative scale, which draws the beach inside out and
+  // upside down. It happens for real: the first frame before the browser has
+  // laid the page out, a pane dragged shut, a phone in landscape with the
+  // keyboard up.
+  //
+  // So refuse, and leave `cam.fit` set rather than consuming it. The next
+  // frame that has a canvas worth fitting to will fit to it. autoFit in
+  // scene.js survives the same case by flooring its scale at 0.004; this one
+  // cannot floor, because a wrong-but-positive scale on a plate is a picture
+  // of nothing.
+  if (!(rect.w > 40) || !(rect.h > 40)) return;
+
   const scale = Math.min((rect.w * 0.93) / Math.max(1e-6, xHi - xLo),
                          (rect.h * 0.92) / Math.max(1e-6, yHi * 1.1));
   const target = {
