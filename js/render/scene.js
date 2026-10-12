@@ -1021,6 +1021,28 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
       if (near(m.sx(b.x), m.sy(b.y))) return { kind: 'ball', t };
     }
     if (scenario?.dragTarget && markers?.target && near(m.sx(markers.target.x), m.sy(markers.target.y))) return { kind: 'target' };
+    // THE AIM LINE IS A HANDLE. It is the thing the scenario is about, it is
+    // already drawn across the frame, and until now the only way to move it
+    // was a slider in the bar above — so the one direct manipulation the
+    // picture was begging for was the one it did not offer. Grab it anywhere
+    // along its length and the angle follows the pointer.
+    //
+    // It is tested AFTER the target, so a line lying across the monkey still
+    // gives you the monkey: you can always pick the thing the line points at.
+    //
+    // NOT GATED ON `!fired`. An exhibit opens already launched — `state.launched`
+    // is true from the moment the scenario is chosen — so a pre-launch-only
+    // handle on this scenario is a handle that never exists. Dragging re-solves
+    // and rebuilds the flight, exactly as the angle slider does, so there is
+    // nothing to protect mid-playback either.
+    if (scenario?.aimAtTarget && traj) {
+      const o = { x: m.sx(0), y: m.sy(traj.params.h) };
+      const dx = w.sxp - o.x, dy = w.syp - o.y;
+      const a = -(traj.params.theta || 0) * Math.PI / 180;
+      const along = dx * Math.cos(a) + dy * Math.sin(a);
+      const off = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a));
+      if (along > 24 && off < 16) return { kind: 'aimLine' };
+    }
     if (markers?.obstacle && near(m.sx(markers.obstacle.x), m.sy(markers.obstacle.height))) return { kind: 'obstacle' };
     if (scenario?.dragLine && markers?.heightLine != null && Math.abs(w.syp - m.sy(markers.heightLine)) < 18) return { kind: 'heightLine' };
 
@@ -1044,7 +1066,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   // kind gets the cursor that describes what it does, and the kind is passed
   // out so the renderer can light the handle up as well.
   const CURSOR = { ball: 'pointer', path: 'pointer', heightLine: 'ns-resize',
-                   target: 'move', obstacle: 'move' };
+                   target: 'move', obstacle: 'move', aimLine: 'crosshair' };
   canvas.addEventListener('pointermove', (e) => {
     if (drag || dragging) return;
     const got = pick(e);

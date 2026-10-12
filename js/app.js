@@ -17,6 +17,7 @@ import * as exhibit from './render/exhibit.js';
 import * as panes from './render/panes.js';
 import { descentPanes, PRE } from './render/drop.js';
 import { siteFor } from './world/world.js';
+import { nearestBranch } from './render/backdrops.js';
 import { dropToneCache } from './render/world2d.js';
 import { drawGraph, graphSpecs } from './render/graphs.js';
 import { fmt, palette, clamp } from './render/util.js';
@@ -96,7 +97,14 @@ const state = {
   // the only thing running. See the pre-roll note in js/render/drop.js.
   pre: null,
   layout: 4,                     // how many panes, for a scenario that has them
-  rate: 1, rateTouched: false,
+  // 0.75x, AND IT STAYS THERE. Every fresh flight used to be handed a rate
+  // worked out from its own duration — `recommend(tMax)` — so a short flight
+  // opened at 0.16x and a long one at real time, and the number under the
+  // stage changed every time you touched a value. That is a decision being
+  // made for you, repeatedly, about something you did not ask to decide.
+  // One speed, slightly under real time so a fast throw is still readable,
+  // and the slider in the options panel for anyone who wants another.
+  rate: 0.75, rateTouched: false,
   show: { path: true, velocity: true, apex: true, range: true, grid: false, ruler: true,
           components: false, ticks: false, acceleration: false },
   extras: { graphs: false, working: false, energy: false },
@@ -663,9 +671,10 @@ function recompute() {
   // card — they arrive on the stage already set up — so until the slider lived
   // in the bar they ran at whatever state.rate happened to be, which was real
   // time, which for a round landing in half a second is a blink. The
-  // recommendation applies to every fresh flight unless the student has
-  // chosen a speed themselves, exactly as the card's own line does.
-  if (!state.rateTouched) state.rate = recommend(traj.tMax) / 100;
+  // recommendation no longer applies itself to every fresh flight: see the
+  // note on `rate` in the state above. It is still what the pin points at and
+  // what the speed card's own line offers, so the advice is still there — it
+  // just does not reach in and change the speed under you.
   syncRate();
   refreshSteps();                // and Flight is reachable now that one exists
   applyGuard();
@@ -1447,7 +1456,6 @@ function openPace() {
   // the common case is still Enter and Enter, and the common case is now also
   // the right one. Once a student has moved the slider themselves that choice
   // stands, and the pin and the note say when it has stopped making sense.
-  if (!state.rateTouched && traj) state.rate = recommend(traj.tMax) / 100;
   // SHOW IT BEFORE MEASURING IT. The pin is placed from the slider's own
   // width, and a slider inside a hidden card has none — syncing first put the
   // pin at zero and hid it for having nowhere to go.
@@ -2480,11 +2488,33 @@ scene.attachControls($('scene'), cam, () => { dirty = true; },
   (kind, world) => {
     if (kind === 'obstacle') { state.markers.obstacle.x = Math.max(0.5, world.x); state.markers.obstacle.height = Math.max(0, world.y); }
     else if (kind === 'target') {
-      state.markers.target.x = Math.max(0.5, world.x);
-      state.markers.target.y = Math.max(0, world.y);
+      // ON A BRANCH, OR NOWHERE. A monkey dropped at an arbitrary point hangs
+      // off nothing, and the scenario's whole premise is that it was holding
+      // something. Where the scenario has a tree, the drag snaps to the
+      // nearest of its branches; where it does not, the point is free.
+      if (scenario.branches) {
+        const b = nearestBranch(world.x, world.y);
+        state.markers.target.x = b.x;
+        state.markers.target.y = b.y;
+      } else {
+        state.markers.target.x = Math.max(0.5, world.x);
+        state.markers.target.y = Math.max(0, world.y);
+      }
       // Dragging the monkey moves the aim, the flight and the verdict, so it
       // has to re-solve rather than only redraw.
       recompute();
+    }
+    else if (kind === 'aimLine') {
+      // DRAGGING THE LINE IS SETTING THE ANGLE, and setting the angle is
+      // taking the aim off the monkey — the same thing the slider does, so it
+      // goes through the same two pieces of state and the slider follows it.
+      const dx = world.x, dy = world.y - (state.h ?? 0);
+      if (Math.hypot(dx, dy) > 0.2) {
+        const lim = scenario.theta || { min: -90, max: 90 };
+        state.aimed = false;
+        state.theta = clamp((Math.atan2(dy, dx) * 180) / Math.PI, lim.min, lim.max);
+        recompute();
+      }
     }
     else if (kind === 'heightLine') {
       state.markers.heightLine = scene.snapHeight(Math.max(0, world.y));

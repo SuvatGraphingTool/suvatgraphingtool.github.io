@@ -598,14 +598,16 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
    wholesale so the recommendation pin is placed by the same calc in both
    places and cannot drift between them. The padding at the top is for the
    pin's own "best" label, which hangs above the track. */
-.rate-live { display: flex; align-items: center; gap: var(--sp-3); padding-top: 13px; }
+/* In the options panel now, not the stage bar, so it is a full-width row
+   rather than something squeezed in beside the buttons. */
+.rate-live { display: flex; align-items: center; gap: var(--sp-3); padding-top: 4px; }
 .rl-val { font-size: var(--fs-sm); font-weight: var(--w-bold); font-variant-numeric: tabular-nums;
           min-width: 4.4ch; text-align: right; color: var(--ink); }
 /* The card can say why in a sentence; the bar has one number to say it with.
    Off the recommendation by more than the band and the number goes off-colour
    — the pin beside it says which way to go. */
 .rl-val[data-ok='false'] { color: var(--bad); }
-.rl-slot { width: 150px; flex: none; }
+.rl-slot { flex: 1 1 auto; min-width: 0; }
 .rl-slot input[type='range'] { height: 24px; }
 
 /* ── how many panes, asked where how-fast is asked ───────────────────────

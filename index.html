@@ -34,13 +34,13 @@
 <link rel="modulepreload" href="./js/render/panes.js">
 <link rel="modulepreload" href="./js/render/drop.js">
 <link rel="modulepreload" href="./js/world/world.js">
+<link rel="modulepreload" href="./js/render/backdrops.js">
 <link rel="modulepreload" href="./js/render/world2d.js">
 <link rel="modulepreload" href="./js/render/graphs.js">
 <link rel="modulepreload" href="./js/render/util.js">
 <link rel="modulepreload" href="./js/notation.js">
 <link rel="modulepreload" href="./js/core/suvat.js">
 <link rel="modulepreload" href="./js/world/dims.js">
-<link rel="modulepreload" href="./js/render/backdrops.js">
 <link rel="modulepreload" href="./js/render/plot.js">
 <!-- modulepreload:end -->
 <link rel="stylesheet" href="./css/tokens.css">
@@ -123,21 +123,11 @@
                back — same thing a double-click on the canvas does. -->
           <button class="tbtn sm" id="fit-btn" aria-pressed="true"
                   aria-label="Frame the whole flight">Whole flight</button>
-          <!-- The same control the speed card asks with, and the same one
-               setting behind both. Four buttons offered four of the hundred
-               speeds the slider already reaches, named the four as if they
-               were the choices, and could not express the one most short
-               flights actually want — a round that lands in half a second
-               needs about 0.14x, which was not on the list. The pin is the
-               speed this flight asked for. -->
-          <div class="rate-live" aria-label="Playback speed">
-            <output class="rl-val" id="bar-rate-val">1.00&times;</output>
-            <div class="pace-slot rl-slot">
-              <input type="range" id="bar-rate" min="0" max="100" step="1" value="100"
-                     aria-label="Playback speed, out of a hundred">
-              <span class="pace-pin" id="bar-rate-pin" hidden></span>
-            </div>
-          </div>
+          <!-- Playback speed used to sit here, as a readout and a slider,
+               on every flight. It is a SETTING — you pick it once and then
+               watch — and it was taking permanent room in the bar next to
+               the two controls you actually reach for while watching. It is
+               in the options panel now, with the other settings. -->
           <!-- live controls for an exhibit you play with rather than set up -->
           <div class="live" id="live" hidden>
             <label class="lv"><span>angle <b id="lv-theta-v">—</b></span>
@@ -368,6 +358,17 @@
         <div class="checks" id="shows"></div>
         <h2 class="otitle">Also</h2>
         <div class="checks" id="extras"></div>
+        <!-- The same one setting the speed card asks about, in the place
+             settings live. The pin is the speed this flight asked for. -->
+        <h2 class="otitle">Playback speed</h2>
+        <div class="orow rate-live">
+          <output class="rl-val" id="bar-rate-val">0.75&times;</output>
+          <div class="pace-slot rl-slot">
+            <input type="range" id="bar-rate" min="0" max="100" step="1" value="75"
+                   aria-label="Playback speed, out of a hundred">
+            <span class="pace-pin" id="bar-rate-pin" hidden></span>
+          </div>
+        </div>
         <label class="ck"><input type="checkbox" id="guard-ck" checked><span class="box-ck"></span>Stop me over-filling the five</label>
         <!-- Bounce used to sit in the stage bar, where it took a checkbox, a
              slider and a readout of permanent room next to the controls you
