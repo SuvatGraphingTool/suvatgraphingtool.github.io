@@ -233,7 +233,11 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .angle-dia #td-ang { font-size: 15px; }
 .angle-set { flex: 1; min-width: 0; display: grid; gap: var(--sp-2); }
 .angle-set input[type='range'] { height: 24px; }
-.angle-set input[type='text'] { height: 48px; font-size: var(--fs-xl); }
+/* The BOX was never the thing that needed to be bigger — the diagram was. It
+   got blown up to 48px tall at --fs-xl along with the picture, which left one
+   number box on the values screen set half again larger than the five beside
+   it for no reason anybody asked for. It takes .xrow's own size again, like
+   every other box on the screen. */
 @media (max-width: 680px) {
   .angle-ctl { flex-direction: column; align-items: stretch; }
   .angle-dia { width: 100%; height: 180px; }
