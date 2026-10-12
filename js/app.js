@@ -14,6 +14,8 @@ import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
 import * as scene from './render/scene.js';
 import * as exhibit from './render/exhibit.js';
+import * as panes from './render/panes.js';
+import { descentPanes, PRE } from './render/drop.js';
 import { siteFor } from './world/world.js';
 import { dropToneCache } from './render/world2d.js';
 import { drawGraph, graphSpecs } from './render/graphs.js';
@@ -90,6 +92,10 @@ const state = {
   descent: {},
   bounce: false, restitution: EARTH_E,
   t: 0, playing: false, launched: false, firedBefore: false,
+  // The staging before the clock, in real seconds, or null when the clock is
+  // the only thing running. See the pre-roll note in js/render/drop.js.
+  pre: null,
+  layout: 4,                     // how many panes, for a scenario that has them
   rate: 1, rateTouched: false,
   show: { path: true, velocity: true, apex: true, range: true, grid: false, ruler: true,
           components: false, ticks: false, acceleration: false },
@@ -103,7 +109,17 @@ const state = {
 };
 
 const cam = scene.createCamera();
+/* ── the window, for the scenarios that watch themselves in one ──────────
+   A parachute drop is four views of one motion rather than one view with the
+   graphs in a sidebar — see js/render/panes.js. The window keeps its own
+   per-pane views, so zooming into the second the canopy works in survives a
+   change of playback speed, a maximize and a restore. */
+const win = panes.createWindow(4);
+let paneSig = null;                 // the solve the panes were last built from
 let scenario = null, solved = null, traj = null, second = null, ghost = null, dirty = true;
+
+/** Does this scenario replace the single view with the pane window? */
+const windowed = () => !!scenario?.descent;
 
 /* ── step 1 · scenario ──────────────────────────────────────────────── */
 function buildScenarioScreen() {
@@ -257,6 +273,19 @@ function chooseScenario(id) {
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
   state.firedBefore = false; ghost = null;
   state.aimed = true;                  // the hunter starts pointing at it
+  // A NEW SCENARIO IS A NEW PLACE, so the view starts framed on it. Launching
+  // asks for a fit of its own, which covered every scenario that goes through
+  // the values screen — but an experiment opens straight onto the stage and
+  // never launches, so picking the beach after the stadium drew the beach at
+  // the stadium's scale: a two-metre throw across a frame 250 m wide.
+  //
+  // Twice, because the frame it is fitting to is about to change size: the
+  // live sliders appear or disappear with the scenario, the stage bar grows a
+  // row or loses one, and the canvas is told its new height only after the
+  // browser has laid the page out. The first fit frames the canvas that is
+  // there now, the second one the canvas that is there a frame later.
+  scene.fitView(cam);
+  requestAnimationFrame(() => { scene.fitView(cam); dirty = true; });
   $('chosen').textContent = scenario.name;
   buildValuesScreen();
   // An exhibit opens on the experiment itself, not on a form. The gate is
@@ -380,11 +409,13 @@ function buildValuesScreen() {
           <input id="x-theta" type="text" inputmode="decimal" autocomplete="off"
                  value="${state.theta == null ? '' : fmt(state.theta, 2)}" placeholder="—"
                  aria-label="Angle of projection in degrees">
-          <input id="theta-slider" type="range" min="-90" max="90" step="0.5"
-                 value="${state.theta ?? 0}" aria-label="Angle of projection">
+          <input id="theta-slider" type="range" min="${thetaRange().min}" max="${thetaRange().max}" step="0.5"
+                 value="${state.theta ?? clamp(0, thetaRange().min, thetaRange().max)}"
+                 aria-label="Angle of projection">
         </div>
       </div>
-      <p class="xhint" id="x-theta-hint">${OPTIONAL_HINT}</p>
+      <p class="xhint" id="x-theta-hint">${OPTIONAL_HINT}${
+        thetaRange().min < 0 ? ` ${thetaWhy()}` : ''}</p>
       <div class="angle-say" id="theta-say"></div></div>`);
   }
   rows.push(`<div class="xrow" data-x="h"><label for="x-h">Launch height h (m)</label>
@@ -902,9 +933,25 @@ function buildLive() {
   // Both exhibits are drawn by scene.js now — same camera, same drag, same
   // seven options — so there is nothing left to hide.
   const ex = !!scenario?.exhibit;
+  const wd = !!scenario?.descent;
   $('fit-btn').hidden = false;
-  $('shows').previousElementSibling.hidden = false;   // its "Show" heading
-  $('shows').hidden = false;
+  // THE SEVEN SHOW OPTIONS ARE THE DIAGRAM'S, and in the window there is no
+  // diagram for them to be about: no components to resolve on a vertical
+  // fall, no metre grid — graph axes are a graph, not the metre grid — and no
+  // range to bracket. Same reason the bounce block is hidden: a control that
+  // cannot do anything is worse than no control.
+  $('shows').previousElementSibling.hidden = wd;      // its "Show" heading
+  $('shows').hidden = wd;
+  // And two of the three extras: the sidebar's three small graphs are the
+  // window's own three panes at a worse size, and energy and momentum are
+  // readouts in a HUD the window does not have.
+  for (const k of ['graphs', 'energy']) {
+    const box = $('extras').querySelector(`input[data-k="${k}"]`);
+    if (!box) continue;
+    box.closest('.ck').hidden = wd;
+    if (wd && box.checked) { box.checked = false; state.extras[k] = false; }
+  }
+  if (wd) { $('graphs-wrap').hidden = true; }
   // A bullet does not bounce, a monkey is not a ball, and a parachutist under
   // a canopy does not bounce either — so the setting is not offered on any of
   // the three. It used to be an inline checkbox in the stage bar; it is a
@@ -988,7 +1035,42 @@ function wireLive() {
  * value on this screen, so it is written once.
  */
 const OPTIONAL_HINT = '<b>Optional — only enter it if the question gives it.</b>';
-const THETA_LIMIT = 90;
+
+/* ── WHICH ANGLES THIS SITUATION ALLOWS ─────────────────────────────────
+   ±90° was the only limit, and ±90° is the limit of the MODEL rather than of
+   any particular throw. Past 90° the launch is backwards, which nothing here
+   describes — but well inside that, most scenarios have a narrower range
+   still, and offering the rest is offering a flight that does not exist:
+
+     Simple arc          from the ground, so upwards only. A downward angle
+                         puts the ball under the floor before it has gone
+                         anywhere, and flat never leaves the ground at all.
+     Up and off a platform   the card says up. Down off the same platform is a
+                         different card, and comparing the two is the point.
+     Down and off a platform  the one place a negative angle IS the question.
+     Monkey vs Hunter    the second place, for a different reason: the aim
+                         follows the monkey, and a monkey below the muzzle has
+                         to be aimed down at.
+
+   A scenario states its own range in js/scenarios.js. The default is upwards
+   only, because a downward throw is a deliberate setup rather than something
+   to arrive at by dragging a slider past zero.
+
+   THE CAP STILL BELONGS HERE, at the boundary, and not in the engine:
+   solve.js derives θ by atan2 and by the range equation and can legitimately
+   land outside a scenario's range, and clamping there would break a correct
+   answer. js/core/ is left alone. */
+const THETA_RANGE = { min: 0, max: 90 };
+const thetaRange = () => scenario?.theta ?? THETA_RANGE;
+
+/** Why this scenario stops where it does, in one sentence a student can use. */
+function thetaWhy() {
+  const { min, max } = thetaRange();
+  if (max <= 0) return 'This one is thrown <b>below</b> the horizontal — that is the whole question, so the angle runs from 0° down to −90°.';
+  if (min > 0) return 'Launched from the ground, so it has to go <b>up</b>: flat never leaves the floor and a downward angle starts underneath it.';
+  if (min === 0) return 'Up or flat off the platform. For a throw aimed <b>downwards</b>, use <b>Down and off a platform</b> — same platform, negative angle.';
+  return 'Aimed at the monkey, so it follows wherever the monkey hangs — below the horizontal included.';
+}
 
 function wireAngle() {
   const box = $('x-theta'), sld = $('theta-slider');
@@ -1006,13 +1088,17 @@ function wireAngle() {
     const v = parseValue(e.target.value);
     const hint = $('x-theta-hint');
     if (v === undefined) { say(hint, false, OPTIONAL_HINT); set(undefined, true); return; }
-    if (!isFinite(v)) { say(hint, true, 'That is not an angle. Degrees, between −90 and 90.'); return; }
-    if (Math.abs(v) > THETA_LIMIT) {
+    const { min, max } = thetaRange();
+    if (!isFinite(v)) {
+      say(hint, true, `That is not an angle. Degrees, between ${M`${num(min, 0)}`}° and ${M`${num(max, 0)}`}°.`);
+      return;
+    }
+    if (v < min || v > max) {
       // Say what was done and why. Rewriting the box under the cursor of
       // someone who is still typing is how a control loses their trust.
-      const capped = clamp(v, -THETA_LIMIT, THETA_LIMIT);
-      say(hint, true, `Angles stop at ${M`±90`}°. Past 90° the launch is backwards, which `
-        + `this model does not describe, so ${M`${num(capped, 0)}`}° is what gets used.`);
+      const capped = clamp(v, min, max);
+      say(hint, true, `This one takes ${M`${num(min, 0)}`}° to ${M`${num(max, 0)}`}°, so `
+        + `${M`${num(capped, 0)}`}° is what gets used. ${thetaWhy()}`);
       set(capped, true);
       return;
     }
@@ -1080,7 +1166,11 @@ function drawAngle(theta) {
   const own = isFinite(theta);
   const found = !own && solved?.ok ? solved.params.theta : undefined;
   const shown = own ? theta : found;
-  const t = clamp(isFinite(shown) ? shown : 0, -THETA_LIMIT, THETA_LIMIT);
+  // The diagram draws the model's whole range, not the scenario's: when the
+  // engine has RECOVERED an angle this picture is how you see what it found,
+  // and clamping that into the control's range would draw a different throw
+  // from the one being solved.
+  const t = clamp(isFinite(shown) ? shown : 0, -90, 90);
   const a = (t * Math.PI) / 180;
   const { ox: OX, oy: OY, len: L, arc: AR, head: HL } = AD;
   const ca = Math.cos(a), sa = Math.sin(a);
@@ -1247,6 +1337,7 @@ function openPace() {
   // width, and a slider inside a hidden card has none — syncing first put the
   // pin at zero and hid it for having nowhere to go.
   $('pace').hidden = false;
+  syncLayoutPick();
   syncRate();
   // FOCUS THE SLIDER, NOT THE BUTTON. Focusing the button meant the very
   // keypress that opened this card activated it on the way back up, so Enter
@@ -1315,6 +1406,38 @@ function syncRate() {
   }
 }
 
+/* ── putting the window up, and keeping it current ───────────────────────
+   The pane list carries the engine's own exact segments, so a fresh set of
+   numbers is a fresh set of panes — but mounting throws the chrome away, and
+   a student who has zoomed one pane into the second the canopy works in has
+   not asked to be zoomed back out. So it is keyed on the solve: same numbers,
+   same panes, untouched views. js/render/panes.js keeps the views across a
+   remount of the same four ids in any case, which covers the rest. */
+function syncPanes() {
+  const on = windowed() && !!traj && !!solved?.ok;
+  $('canvas-wrap').dataset.panes = on ? 'on' : 'off';
+  $('panes').hidden = !on;
+  $('t-read').hidden = !on;
+  // One view and one button on the stage bar, or four views with a button
+  // each. Never both.
+  $('fit-btn').hidden = on;
+  if (!on) { paneSig = null; return; }
+  const sig = JSON.stringify(solved.params);
+  if (sig === paneSig) return;
+  paneSig = sig;
+  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; } });
+  panes.setLayout(win, state.layout);
+}
+
+/** Which layout the speed card is offering, and which one is chosen. */
+function syncLayoutPick() {
+  const row = $('lay-row');
+  $('lay').hidden = !windowed();
+  for (const b of row.children) {
+    b.setAttribute('aria-checked', String(parseInt(b.dataset.n, 10) === state.layout));
+  }
+}
+
 function runFlight() {
   if (!traj) return;
   closePace();
@@ -1324,6 +1447,9 @@ function runFlight() {
   state.firedBefore = true; state.launched = true;
   state.overview = false;               // every run starts from the panes
   state.t = 0; state.playing = true;
+  // THE AIRCRAFT, THE DOOR AND THE STEP OUT, none of which is inside t. See
+  // the pre-roll note in js/render/drop.js for why it is outside the clock.
+  state.pre = windowed() ? 0 : null;
   cam.fit = true;
   setPlayIcon(true);
   hideDone();
@@ -1392,7 +1518,7 @@ function refreshSteps() {
 function togglePlay() {
   if (!traj) return;
   hideDone(); closeResolve();
-  if (state.t >= traj.tMax) state.t = 0;
+  if (state.t >= traj.tMax) { state.t = 0; state.pre = windowed() ? 0 : null; }
   state.playing = !state.playing; setPlayIcon(state.playing); dirty = true;
 }
 function setPlayIcon(on) {
@@ -1411,6 +1537,12 @@ function setPlayIcon(on) {
    instant the question chose. */
 function openResolve(t) {
   if (!traj || state.step !== 'flight') return;
+  // NOT IN THE WINDOW. The card resolves the instant you pointed at on the
+  // diagram, and in the window the gesture on every pane is pan and zoom —
+  // there is nothing to point at. What it was for is on screen instead: the
+  // three graphs carry the velocity, the height and the acceleration at the
+  // cursor, with axes to read them off.
+  if (windowed()) return;
   hideDone(); closeAskAt();
   state.t = clamp(t ?? state.t, 0, traj.tMax);
   state.playing = false; setPlayIcon(false);
@@ -1479,11 +1611,17 @@ function renderResolve(R) {
    reached TWICE: once slowing on the way up and once gaining it back coming
    down. Both are offered. The engine finds them (js/core/projectile.js); this
    only picks which one was wanted. */
-const AT_T_HINT = 'Anywhere from the launch to the landing.';
-const AT_V_HINT = '<b>Or name the speed instead.</b> Most speeds happen twice.';
+// NOTHING UNTIL THERE IS SOMETHING. Both hints used to carry a standing line
+// of instruction, which meant the card opened with four lines of prose around
+// two boxes. They are empty now and fill only with a fact or a refusal — the
+// speed at the instant you typed, or the engine's reason it cannot. The rows
+// collapse when empty, so the card is the heading and the boxes until it has
+// earned another line.
+const AT_T_HINT = '';
+const AT_V_HINT = '';
 
 function openAskAt() {
-  if (!traj || state.step !== 'flight') return;
+  if (!traj || state.step !== 'flight' || windowed()) return;
   hideDone(); closeResolve();
   state.playing = false; setPlayIcon(false);
   // It opens on the instant already on screen, so Resolve it always resolves
@@ -1512,8 +1650,8 @@ function closeAskAt() {
 function atTimeSay(t) {
   if (!traj) return AT_T_HINT;
   const v = traj.vel(t), p = traj.pos(t);
-  return `Doing ${M`${fmt(Math.hypot(v.x, v.y), 2)} [m s^-1]`} there, `
-    + `${M`${fmt(p.y, 2)} [m]`} up. ${AT_T_HINT}`;
+  return `${M`${fmt(Math.hypot(v.x, v.y), 2)} [m s^-1]`}, `
+    + `${M`${fmt(p.y, 2)} [m]`} up`;
 }
 
 /** Which way it is going at an instant, for telling two answers apart. */
@@ -1607,6 +1745,15 @@ function wireAskAt() {
 /* ── readouts, on the diagram ───────────────────────────────────────── */
 function renderHud() {
   if (!traj) return;
+  // An exhibit happens somewhere else and says where in its own `place`.
+  // Falling back to siteFor meant the range and the beach were both captioned
+  // "A goal kick from the west goal line".
+  const site = siteFor(state.id);
+  $('place').textContent = scenario?.place || site.place;
+  $('place-note').textContent = scenario?.plate ? '' : (site.note || '');
+  // In the window there is no corner for a readout to sit in, and the clock
+  // is in the transport where all four panes share it.
+  if (windowed()) { $('hud-left').innerHTML = ''; $('hud-right').innerHTML = ''; return; }
   const p = traj.pos(state.t), v = traj.vel(state.t);
   const b = (k, val, unit, hue) =>
     `<div class="hbox"${hue ? ` data-hue="${hue}"` : ''}><div class="hbox-k">${k}</div>
@@ -1641,12 +1788,6 @@ function renderHud() {
   }
   $('hud-left').innerHTML = left.join('');
   $('hud-right').innerHTML = b('Time', fmt(state.t, 2), 's');
-  // An exhibit happens somewhere else and says where in its own `place`.
-  // Falling back to siteFor meant the range and the beach were both captioned
-  // "A goal kick from the west goal line".
-  const site = siteFor(state.id);
-  $('place').textContent = scenario?.place || site.place;
-  $('place-note').textContent = scenario?.plate ? '' : (site.note || '');
 }
 
 /* ── the landing card: the whole of SUVAT, once it has settled ───────── */
@@ -1944,6 +2085,7 @@ function renderWorking() {
 /* ── loop ───────────────────────────────────────────────────────────── */
 function draw() {
   if (state.step !== 'flight' || !traj) { dirty = false; return; }
+  syncPanes();
   const R = state.resolve
     ? (scenario?.descent ? resolveDescent(traj, state.t) : resolveAt(traj, state.t))
     : null;
@@ -1952,25 +2094,34 @@ function draw() {
                  hoverMark: state.hoverMark,
                  markers: state.markers || {}, scenario, secondLabel: scenario.second?.label,
                  resolve: R, hover: state.hover };
-  /* ── which renderer, and why there are still two ──────────────────────
-     Everything is drawn by the side-on view. `plate` would hand a scenario to
-     js/render/exhibit.js instead — the strobe photograph, with its own dark
-     plate, its own scale on each axis and, for the range, two panes at one
-     scale rather than one squeezed frame.
+  /* ── which renderer, and why there are two ────────────────────────────
+     `plate` hands a scenario to js/render/exhibit.js instead of to the
+     side-on view: the strobe photograph, with its own dark plate, its own
+     exposures and — for the range — two panes at one shared scale.
 
-     NO SCENARIO SETS IT. The two that did were the two experiments, and the
-     plate cost them everything the ordinary view gives: you could not drag
-     it, could not zoom it, could not resolve an instant anywhere on it, and
-     the seven Show options and the camera were inert because exhibit.js
-     recomputes its own projection every frame and never reads the camera. One
-     consistent map everywhere is worth more than a prettier one in two places.
+     ONE SCENARIO SETS IT, and the reason it is one rather than two has
+     changed. The plate used to cost a scenario everything the ordinary view
+     gives, because exhibit.js worked out its own projection every frame and
+     never read the camera: you could not drag it, could not zoom it, and the
+     view button did nothing. Both experiments were moved off it for that.
 
-     It is KEPT, not deleted, because the argument for it is a real one and is
-     written up at the top of that file: a round doing 360 m s⁻¹ falls 1.5 m
-     while it travels 180, and no single honest frame shows both at once. The
-     two-pane answer to that is built and working. Set `plate: true` on a
-     scenario to get it back. */
-  if (scenario?.plate) exhibit.render($('scene'), cam, opts);
+     The plate reads the camera now — see fitPlate in that file — so Monkey vs
+     Hunter is back on it: the beach, the palm and the exposures, WITH the
+     drag, the zoom, the view button and the graphs rather than instead of
+     them. The range stays on the side-on view, because its answer is two
+     panes at one scale and that mode is not camera-driven. */
+  /* ── or four panes, for the one motion that needs four ────────────────
+     The window is the whole flight view for a parachute drop: a sky with an
+     aircraft in it, and the velocity, the height and the acceleration against
+     time, all four sharing this one `t`. See js/render/panes.js for the
+     window and js/render/drop.js for what this scenario puts in it. */
+  if (windowed()) {
+    panes.render(win, { f: traj, t: state.t, pre: state.pre, fired: state.launched });
+    // The clock, for all four of them. Typeset, so innerHTML — CLAUDE.md
+    // rule 1 — and it reads zero for the whole of the pre-roll because the
+    // pre-roll is outside the clock and nothing in it has been measured.
+    $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
+  } else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
   else scene.render($('scene'), cam, opts);
 
   if (state.extras.graphs) {
@@ -1990,7 +2141,17 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  if (state.step === 'flight' && state.playing && traj) {
+  /* ── the staging, and then the clock ──────────────────────────────────
+     THE PRE-ROLL RUNS IN REAL SECONDS, not in playback seconds. The speed
+     control answers "how fast should the physics go", and a drop that asks
+     for a tenth of real time would otherwise spend half a minute watching an
+     aeroplane. Nothing in here is part of t: the clock starts at zero the
+     moment she is clear of the door, which is what the engine means by t = 0. */
+  if (state.step === 'flight' && state.playing && traj && state.pre != null) {
+    state.pre += dt;
+    if (state.pre >= PRE.total) { state.pre = null; state.t = 0; }
+    dirty = true;
+  } else if (state.step === 'flight' && state.playing && traj) {
     state.t += dt * state.rate;
     const tStop = Math.max(traj.tMax, scenario?.exhibit && second ? second.tMax : 0);
     if (state.t >= tStop) {
@@ -2065,7 +2226,11 @@ $('pace-use').addEventListener('click', () => {
 });
 $('intro-values').addEventListener('click', () => { closeIntro(); go('values'); });
 $('play').addEventListener('click', togglePlay);
-const replay = () => { hideDone(); closeResolve(); state.t = 0; state.playing = true; setPlayIcon(true); dirty = true; };
+const replay = () => {
+  hideDone(); closeResolve();
+  state.t = 0; state.pre = windowed() ? 0 : null;
+  state.playing = true; setPlayIcon(true); dirty = true;
+};
 $('replay').addEventListener('click', replay);
 $('done-replay').addEventListener('click', replay);
 $('done-close').addEventListener('click', hideDone);
@@ -2083,6 +2248,9 @@ $('exdone-all').addEventListener('click', () => {
 $('scrub').addEventListener('input', (e) => {
   if (!traj) return;
   hideDone();
+  // Naming an instant ends the staging: the student has asked to be at a
+  // time, and every time there is belongs to the flight.
+  state.pre = null;
   state.playing = false; setPlayIcon(false);
   state.t = parseFloat(e.target.value) * traj.tMax; dirty = true;
 });
@@ -2112,6 +2280,17 @@ $('rest-earth').addEventListener('click', () => {
   setRestitution(EARTH_E);
   $('restitution').focus();
 });
+for (const b of $('lay-row').children) {
+  b.addEventListener('click', () => {
+    state.layout = parseInt(b.dataset.n, 10);
+    try { localStorage.setItem('suvat-panes', String(state.layout)); } catch {}
+    syncLayoutPick();
+    // The choice is the layout to come BACK to as well as the one to show, so
+    // it goes through setLayout rather than being poked into the window.
+    panes.setLayout(win, state.layout);
+    dirty = true;
+  });
+}
 $('theme-btn').addEventListener('click', () =>
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 $('options-btn').addEventListener('click', () => {
@@ -2145,8 +2324,8 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-  else if (e.key === 'ArrowRight') { hideDone(); state.playing = false; setPlayIcon(false); state.t = Math.min(traj.tMax, state.t + traj.tMax / 60); dirty = true; }
-  else if (e.key === 'ArrowLeft')  { hideDone(); state.playing = false; setPlayIcon(false); state.t = Math.max(0, state.t - traj.tMax / 60); dirty = true; }
+  else if (e.key === 'ArrowRight') { hideDone(); state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.min(traj.tMax, state.t + traj.tMax / 60); dirty = true; }
+  else if (e.key === 'ArrowLeft')  { hideDone(); state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.max(0, state.t - traj.tMax / 60); dirty = true; }
 });
 
 addEventListener('resize', () => {
@@ -2190,6 +2369,10 @@ let guard = null;
 try { guard = localStorage.getItem('suvat-guard'); } catch {}
 state.guard = guard !== 'off';         // on unless it was deliberately turned off
 
+let lay = null;
+try { lay = localStorage.getItem('suvat-panes'); } catch {}
+if (lay === '1' || lay === '2' || lay === '4') state.layout = parseInt(lay, 10);
+
 let saved = null;
 try { saved = localStorage.getItem('suvat-theme'); } catch {}
 applyTheme(saved || 'light');
@@ -2200,7 +2383,7 @@ requestAnimationFrame(frame);
 
 // CANVAS TEXT IS PAINTED, NOT LAID OUT. HTML reflows the moment a webfont
 // arrives; a canvas keeps whatever pixels it already drew, so every label
-// measured and drawn before Source Sans 3 landed stays in the fallback face —
+// measured and drawn before the face landed stays in the fallback —
 // wrong metrics, wrong widths for the collision test that places them, and
 // visibly lighter than the page around it. One more frame once the fonts are
 // in costs nothing and fixes all of it.

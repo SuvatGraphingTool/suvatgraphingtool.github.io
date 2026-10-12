@@ -16,9 +16,8 @@
    fraction bars, an equation visibly fainter than the sentence it sits in, and
    it is the single biggest reason the typography read as thin.
 
-   Source Serif 4 is loaded in index.html alongside Source Sans 3 and is the
-   same family's serif, so the equation and the prose around it are relatives
-   rather than strangers. The old names are kept below it as a fallback for a
+   Source Serif 4 is loaded in index.html and is the one face this site
+   fetches for the maths. The old names are kept below it as a fallback for a
    failed font load. */
 
 :root {
@@ -42,11 +41,12 @@
   font-optical-sizing: auto;
   line-height: 1.15;
   white-space: normal;
-  /* Source Serif 4's x-height is a shade under Source Sans 3's, so an
-     equation set at the same nominal size reads slightly smaller than the
-     prose beside it. It used to be 1.05em against a Times fallback, whose
-     x-height is far smaller; against its own sans the correction is this. */
-  font-size: 1.03em;
+  /* A maths serif has a smaller x-height than Instrument Sans, so an equation
+     set at the same nominal size reads smaller than the prose beside it. The
+     correction was 1.05em when the serif was whatever the system supplied;
+     Source Serif 4 is a little larger on the body than Times, so it needs
+     slightly less. */
+  font-size: 1.04em;
 }
 
 /* ISO 80000-2: quantities italic, units and function names upright. The rule

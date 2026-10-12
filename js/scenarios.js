@@ -40,7 +40,13 @@ export const SCENARIOS = [
   { id: 'arc', group: 'ground', name: 'Simple arc',
     sub: 'at an angle',
     note: 'An angle, landing at the same level. Gives you range and greatest height.',
-    params: { u: 25, theta: 45, h: 0, g: 9.81 } },
+    params: { u: 25, theta: 45, h: 0, g: 9.81 },
+    // UPWARDS ONLY. Launched from the ground, a downward angle has nowhere to
+    // go: it puts the object under the floor before it has travelled
+    // anything, and the flight it describes does not exist. Flat is the same
+    // refusal one degree later — it never leaves the ground — so the control
+    // starts at 1°. See `theta` in js/app.js for how a range is enforced.
+    theta: { min: 1, max: 90 } },
 
   /* ── from a platform ──────────────────────────────────────────────── */
   { id: 'dropped', group: 'platform', name: 'Dropped',
@@ -56,7 +62,12 @@ export const SCENARIOS = [
   { id: 'platform-down', group: 'platform', name: 'Down and off a platform',
     sub: 'thrown down, at an angle',
     note: 'Aimed below the horizontal, so it is falling before it has gone anywhere. No upward half, no greatest height — and a negative angle, which is where the marks go.',
-    params: { u: 25, theta: -30, h: 25, g: 9.81 } },
+    params: { u: 25, theta: -30, h: 25, g: 9.81 },
+    // THE ONE SCENARIO WHERE A NEGATIVE ANGLE IS THE QUESTION. Everywhere
+    // else the control refuses them, because everywhere else they describe a
+    // throw that cannot happen or a card that already exists. Here the sign
+    // of u_y is the whole examinable point, so the range runs the other way.
+    theta: { min: -90, max: 0 } },
 
   { id: 'platform', group: 'platform', name: 'Off a platform',
     sub: 'thrown flat',
@@ -66,7 +77,12 @@ export const SCENARIOS = [
   { id: 'platform-angle', group: 'platform', name: 'Up and off a platform',
     sub: 'thrown up, at an angle',
     note: 'Thrown up, lands lower, so the two halves differ. The commonest exam setup.',
-    params: { u: 28, theta: 45, h: 25, g: 9.81 } },
+    params: { u: 28, theta: 45, h: 25, g: 9.81 },
+    // The card says UP and off a platform, so the control says the same. A
+    // downward angle from here is a different question and has its own card.
+    // Flat is allowed, because flat off a platform is a real throw — and it
+    // too has its own card, which is the point of being able to compare them.
+    theta: { min: 0, max: 90 } },
 
   /* ── interesting ones ─────────────────────────────────────────────── */
   { id: 'time-above', group: 'look', name: 'Time above a line',
@@ -100,6 +116,7 @@ export const SCENARIOS = [
         ['Free fall has no air in it at all', 'this phase is the ordinary model, so she keeps gaining speed for as long as you let her. A real skydiver levels off near 55 m s\u207b\u00b9 after about twelve seconds, because drag grows with speed until it balances weight — exactly what phase three does here, but at a hundred times the speed.'],
         ['The canopy opens instantly', 'at the moment you chose, the acceleration changes from one constant to another with nothing in between. A real opening takes a few tenths of a second and the force rises and falls through it, peaking well above the average. The average is what a constant deceleration gives you.'],
         ['The deceleration is a number you gave', 'it was not worked out from the size of the canopy, her mass, or the density of the air. Nothing here models any of those. It is the figure the question states, and the engine took it at its word.'],
+        ['The aircraft is scenery, and so is the door', 'she leaves from rest and falls vertically \u2014 the engine is one-dimensional and knows nothing about how fast the aeroplane was flying. A real jumper carries the aircraft\u2019s speed out of the door with her, which bends the first second or two of the fall into an arc; none of that is in any of these numbers. The aeroplane crossing the sky, the door sliding open and the step out all happen before the clock starts, and the graphs hold at zero until it does.'],
         ['She is a point, and the air is still', 'no wind, no drift across the ground, no swinging under the lines, and the canopy is drawn at a size you can see rather than at the size it is.'],
       ],
       caveat: 'What the engine did compute is on the left: each phase solved on its own with the five equations, and the three stitched together. Every number in the table came out of that. Nothing on this card accounted for air density, canopy area or mass, because the model does not contain them.',
@@ -152,7 +169,12 @@ export const SCENARIOS = [
     sub: 'aim straight at it',
     note: 'The hunter aims directly AT the monkey; the monkey drops the instant the shot leaves. In the time the banana takes to cover the horizontal gap, both have fallen the same ½gt² below where they would have been without gravity — so the aim that would have been right without gravity is still right with it. Drag the monkey anywhere: it only fails if the monkey reaches the ground first.',
     params: { u: 22, theta: 0, h: 1.5, g: 9.81 },
-    exhibit: true, backdrop: 'beach', site: FLAT_SITE,
+    // BACK ON THE PLATE. It was moved onto the ordinary side-on view when the
+    // plate could not be dragged or zoomed; the plate reads the camera now,
+    // so the beach comes back with the dragging, the zoom, the view button
+    // and the graphs rather than instead of them. See fitPlate in
+    // js/render/exhibit.js.
+    exhibit: true, plate: true, backdrop: 'beach', site: FLAT_SITE,
     card: 'dusk',
     pairLabel: 'same fall',
     caughtLabel: 'caught — every time',
@@ -161,6 +183,10 @@ export const SCENARIOS = [
     // Live, on the scene. Three preset buttons were a menu; this is a toy.
     live: { u: { min: 4, max: 60, step: 0.5, label: 'speed', unit: 'm s⁻¹' },
             theta: { min: -20, max: 85, step: 0.5, label: 'angle', unit: '°' } },
+    // Matched to the live slider above. This is the second place a negative
+    // angle is allowed, and for a different reason: the hunter aims AT the
+    // monkey, and a monkey dragged below the muzzle has to be aimed down at.
+    theta: { min: -20, max: 85 },
     ending: {
       kind: 'monkey',
       close: 'See the diagram',

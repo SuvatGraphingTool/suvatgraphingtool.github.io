@@ -15,6 +15,33 @@ body {
   font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
+
+/* ── the small text, and only the small text ──────────────────────────────
+   Every rule in this file that sets 13 px or 15 px and states no weight of
+   its own, which is 56 of them. At those sizes a regular weight does not
+   read as light, it reads as faint — these are the hints under the boxes,
+   the engine's own sentence about what it worked out, the note on a scenario
+   card, the units beside a readout. One step up and they hold the line.
+
+   Everything at --fs-base and above keeps the regular weight it always had,
+   and any rule with its own font-weight keeps that: this block sits directly
+   under the body rule so that later, more specific rules still win.
+
+   The list is generated from the file rather than chosen, so it is the whole
+   inventory of the two small sizes and not a sample of it. Add a 13 px rule
+   with no weight and it belongs here. */
+:is(
+  .navstep, .steps li span, .tbtn, .ghost, .ghost.sm, .tbtn.sm, .pgblurb,
+  .pc-sub, .pc-note, .s-name, .s-unit, .xhint, .notes, .xrow label,
+  .chip, .solve, .hint, .seg button, .hbox-k, .done-conv, .d-name,
+  .d-unit, .dx, .done-note, .mode-say, .angle-say, .guard,
+  .pace-pin::after, .pace-note, .pace-use, .pace-scale, .lv, .ph-head,
+  .ph-row, .ph-name em, .ph-units, .vt figcaption, .ex-lead, .ex-why li,
+  .ex-caveat, .fire.sm, .ck, .orow, .osay, .mini, .eq-f, .eq-s, .step-n,
+  .verdict, .place span, .rrow-n, .rrow-f, .rrow-note, .res-note,
+  .intro-body, .imodel .im-note
+) { font-weight: var(--w-small); }
+
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: none; padding: 0; }
 h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-height: 1.15; }
@@ -166,7 +193,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
    size the rest of the prose uses and given ink you can actually read. */
 .xhint { font-size: var(--fs-sm); color: var(--ink-muted); margin-top: var(--sp-2); line-height: 1.45; }
 .xhint[data-bad='true'] { color: var(--bad); }
-.xhint b { color: var(--ink-strong); font-weight: var(--w-semi); }
+.xhint b { color: var(--ink-strong); font-weight: 650; }
 .notes { font-size: var(--fs-sm); color: var(--ink-muted); line-height: 1.55; margin: 0 0 var(--sp-5); }
 .notes li { margin-bottom: var(--sp-1); }
 .notes:empty { display: none; }
@@ -241,6 +268,92 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .canvas-wrap { position: relative; min-height: 0; border-radius: var(--r-xl); overflow: hidden; }
 .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
+/* ── the window: four panes over one set of controls ─────────────────────
+   One scenario replaces the single view with several views of the same
+   motion. The grid, the headers, the tab row and the gestures are all
+   js/render/panes.js's; what belongs here is the shape of it.
+
+   THREE LAYOUTS, AND THE SAME PANE IN ALL THREE. `data-n` is how many are on
+   screen — the number chosen on the speed card, or 1 while a pane is
+   maximized — and it is the only thing that changes between them. A pane does
+   not know which layout it is in, which is what lets the maximize button be
+   one button: it changes a number, and the grid answers.
+
+   WHAT GOES AWAY AT QUARTER SIZE is the pane's own sentence underneath it,
+   and nothing else. The title, the convention in the corner, the maximize
+   button and the Whole flight button are all there at every size, and all of
+   them are 13 px — the floor, which is a floor and not a starting point. The
+   sentence is the one thing that needs a line of prose to be worth reading,
+   so it waits for a layout with room for one. That is half of what maximize
+   is for. */
+.panes {
+  position: absolute; inset: 0; z-index: 1;
+  display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--sp-2);
+}
+.panegrid { display: grid; gap: var(--sp-2); min-height: 0; min-width: 0; }
+.panegrid[data-n='4'] { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.panegrid[data-n='2'] { grid-template-columns: 1fr 1fr; }
+.panegrid[data-n='1'] { grid-template-columns: 1fr; }
+
+.pane {
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0; min-width: 0; overflow: hidden;
+  background: var(--card); border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg); box-shadow: var(--shadow);
+}
+.pane-bar { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); }
+.pane-t {
+  font-size: var(--fs-xs); font-weight: var(--w-bold); letter-spacing: 0.08em;
+  text-transform: uppercase; white-space: nowrap;
+}
+.pane-corner {
+  margin-left: auto; font-size: var(--fs-xs); font-weight: var(--w-small);
+  color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* The button is at the TOP LEFT of the pane, before its own name, because
+   that is where the thing it acts on begins. */
+.pane-max {
+  flex: none; width: 26px; height: 26px; display: grid; place-items: center;
+  border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--ink-muted);
+}
+.pane-max:hover { background: var(--hover); color: var(--ink); border-color: var(--accent); }
+.pane-max svg { width: 13px; height: 13px; }
+.pane-max[aria-pressed='true'] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+/* Lit while the whole flight IS what this pane is showing, dim the moment a
+   pan or a zoom takes it off — the same signal, and the same words, as the
+   single view's one button. See the note above fitView in js/render/scene.js. */
+.pane-fit {
+  flex: none; height: 26px; padding: 0 var(--sp-3); border-radius: var(--r-pill);
+  border: 1px solid var(--border); font-size: var(--fs-xs); font-weight: var(--w-small);
+  color: var(--ink-muted); white-space: nowrap;
+}
+.pane-fit:hover { background: var(--hover); color: var(--ink); }
+.pane-fit[aria-pressed='true'] { border-color: var(--border-soft); color: var(--ink-faint); }
+.pane-box { position: relative; min-height: 0; min-width: 0; }
+.pane-box canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none;
+}
+.pane-say {
+  margin: 0; padding: 0 var(--sp-3) var(--sp-2);
+  font-size: var(--fs-xs); font-weight: var(--w-small); color: var(--ink-muted); line-height: 1.4;
+}
+.panegrid[data-n='4'] .pane-say { display: none; }
+
+/* The ones that are not on screen, so you can swap without going back to the
+   grid first. They name the quantity as a quantity — see js/notation.js. */
+.panetabs { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.panetab {
+  height: 30px; padding: 0 var(--sp-4); border-radius: var(--r-pill);
+  border: 1px solid var(--border); background: var(--card);
+  font-size: var(--fs-xs); font-weight: var(--w-small); color: var(--ink-strong);
+}
+.panetab:hover { background: var(--hover); border-color: var(--accent); color: var(--accent); }
+
+/* In the window, the single view and everything pinned to it stand down. The
+   readouts have no corner to sit in and the camera button is per-pane now. */
+.canvas-wrap[data-panes='on'] #scene,
+.canvas-wrap[data-panes='on'] .hud { display: none; }
+
 /* ── readouts, on the diagram ───────────────────────────────────────── */
 .hud { position: absolute; top: var(--sp-4); display: flex; gap: var(--sp-2); pointer-events: none; z-index: 2; }
 .hud-l { left: var(--sp-4); flex-direction: column; }
@@ -252,41 +365,102 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .hbox-k { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.3; white-space: nowrap; }
 .hbox-v { font-size: var(--fs-xl); font-weight: var(--w-bold); line-height: 1.2; white-space: nowrap; letter-spacing: -0.02em; }
 .hbox-v small { font-size: var(--fs-xs); font-weight: var(--w-body); color: var(--ink-muted); margin-left: 4px; letter-spacing: 0; }
-.hud-r { align-items: flex-start; }
+/* The button and the readout are the same height whatever either of them
+   holds, which is the whole reason this stretches rather than aligning top. */
+.hud-r { align-items: stretch; }
 .hboxes { display: flex; gap: var(--sp-2); }
 .hud-r .hbox { min-width: 124px; }
 
 /* ── asking for an instant, rather than pointing at one ──────────────────
    Clicking the ball resolves the instant you can see. A question asks about
-   one you cannot: the moment it is doing 18 m s⁻¹, or t = 1.4 s exactly. The
-   button stands beside the clock because the clock is the thing it overrides,
-   and the HUD is pointer-transparent so this one element has to take its
-   events back. */
+   one you cannot: the moment it is doing 18 m s⁻¹, or t = 1.4 s exactly.
+
+   IT IS THE CLOCK'S PEER, not a button in the chrome's language. It carries
+   `.hbox` as well as this class — the same box, corner, padding, shadow and
+   height as the readout it stands next to — and the single thing that tells
+   them apart is that this one is coloured, which is also the only signal
+   needed to say it is the one you press. It sits to the LEFT of the clock
+   because it is the thing that overrides the clock, and left to right is the
+   order that says so.
+
+   THE COLOUR IS BORROWED FROM THE TWO SCENARIOS, NOT FROM THE QUANTITIES.
+   Orange and blue on this site mean velocity and displacement, and a piece of
+   chrome has no business claiming to be either — so the ramp is taken from
+   the parachute card's sky (#0369a1, #075985) and the monkey card's low sun
+   (#9a3412, #b45309) in css/tokens.css, and the white arrives as a highlight
+   along the top edge rather than as a stop in the ramp.
+
+   WHITE TEXT HOLDS ALL THE WAY ACROSS, which is why the ramp runs through a
+   dark olive rather than a pale one: a light middle would have been the
+   prettier blend and would have dropped the label to around 3.3:1. Walked in
+   one per cent steps against #fff, the worst point on the ramp is the far end:
+     #0369a1 5.93:1 · #075985 7.56:1 · #9a3412 7.31:1 · #b45309 5.02:1
+   THE HOVER DEEPENS RATHER THAN LIFTS, for the same reason. brightness(1.08)
+   was the obvious hover and it took that far end down to 4.22:1, under the
+   floor for 17px text; saturating instead reads as the same "it lit up" and
+   measures 4.87:1 at its worst. The white is a one-pixel background layer
+   along the top edge and never passes under the label. */
 .askat-btn {
   pointer-events: auto; flex: none; white-space: nowrap;
-  height: 34px; padding: 0 var(--sp-4); border-radius: var(--r-pill);
-  background: var(--card); border: 1px solid var(--border);
-  color: var(--ink-strong); font-size: var(--fs-xs); font-weight: var(--w-semi);
-  box-shadow: var(--shadow); transition: background 120ms, border-color 120ms;
+  display: grid; place-items: center; min-width: 104px;
+  border: 1px solid rgba(255,255,255,0.3);
+  /* The highlight is a BACKGROUND LAYER rather than an inset shadow, and that
+     is not a style choice. --shadow is `none` in the dark theme, so
+     `box-shadow: var(--shadow), inset …` resolved to an invalid list there,
+     the whole declaration was dropped, and the button lost the card shadow it
+     shares with the clock. As a background layer the highlight composes with
+     nothing and .hbox keeps supplying the shadow in both themes. */
+  background-image:
+    linear-gradient(to bottom, rgba(255,255,255,0.45) 0 1px, rgba(255,255,255,0) 1px),
+    linear-gradient(116deg, #0369a1 0%, #075985 38%, #9a3412 74%, #b45309 100%);
+  color: #fff; font-size: var(--fs-base); font-weight: var(--w-bold);
+  letter-spacing: -0.015em;
+  transition: filter 120ms;
 }
-.askat-btn:hover { background: var(--hover); border-color: var(--accent); color: var(--accent); }
-.askat-btn[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.askat-lead { flex: none; font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; margin: 0 0 var(--sp-3); }
-.askat-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; gap: var(--sp-3); }
-.askat-row label { display: block; font-size: var(--fs-xs); color: var(--ink-muted); margin-bottom: 4px; }
+.askat-btn:hover { filter: saturate(1.22) brightness(0.97); }
+.askat-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.askat-btn[aria-pressed='true'] { filter: saturate(1.15) brightness(0.9); }
+
+/* ── the card it opens ───────────────────────────────────────────────────
+   One word of heading, then the two boxes. It used to carry an eyebrow, a
+   question and a sentence explaining that the two boxes name the same instant
+   — all true, and all of it to be read before reaching the thing you came to
+   type. The boxes say what they take; each still answers the other in the
+   line underneath it when there is something to report.
+
+   Everything is set a weight heavier than the site's default, because the
+   card is two labels and two numbers and there is nothing in it for a light
+   weight to earn. */
+.askat-card { padding: var(--sp-5) var(--sp-4) var(--sp-4); }
+/* `.askat-card .askat-h`, not a bare `.askat-h`: the element carries .res-h
+   as well, that rule sets --fs-lg, and it is declared further down this file —
+   so a single-class selector here loses on source order and the heading stayed
+   at the resolve card's 20px. */
+.askat-card .askat-h {
+  font-size: var(--fs-xl); font-weight: var(--w-bold);
+  margin: 0 0 var(--sp-3); letter-spacing: -0.03em;
+}
+.askat-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; gap: var(--sp-4); }
+.askat-row label {
+  display: block; font-size: var(--fs-sm); font-weight: var(--w-bold);
+  color: var(--ink-strong); margin-bottom: 5px; letter-spacing: -0.01em;
+}
+.askat-row label span { font-weight: var(--w-semi); color: var(--ink-faint); }
 .askat-row input {
-  width: 100%; height: 42px; border-radius: var(--r-md); background: var(--input);
-  border: 1px solid var(--border); color: var(--ink); font-size: var(--fs-lg);
+  width: 100%; height: 48px; border-radius: var(--r-md); background: var(--input);
+  border: 1.5px solid var(--border); color: var(--ink); font-size: var(--fs-xl);
   font-weight: var(--w-bold); text-align: right; padding: 0 var(--sp-3);
 }
 .askat-row input:focus { outline: none; border-color: var(--accent); }
-.askat-row .xhint { margin: 4px 0 0; }
+.askat-row .xhint { margin: 5px 0 0; font-size: var(--fs-xs); font-weight: var(--w-semi); }
+.askat-row .xhint:empty { display: none; }
 .askat-picks { display: grid; gap: var(--sp-2); }
 .askat-picks:empty { display: none; }
 .askat-pick {
-  width: 100%; text-align: left; border: 1px solid var(--border);
+  width: 100%; text-align: left; border: 1.5px solid var(--border);
   border-radius: var(--r-lg); padding: var(--sp-2) var(--sp-3);
-  font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.4;
+  font-size: var(--fs-xs); font-weight: var(--w-semi); color: var(--ink-muted);
+  line-height: 1.4;
 }
 .askat-pick b { display: block; font-size: var(--fs-sm); color: var(--ink); font-weight: var(--w-bold); }
 .askat-pick:hover { background: var(--hover); }
@@ -356,7 +530,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
              margin: var(--sp-3) 0 0; padding-top: var(--sp-3);
              border-top: 1px solid var(--border-soft); }
 .angle-say:empty { display: none; }
-.angle-say b { color: var(--ink-strong); font-weight: var(--w-semi); }
+.angle-say b { color: var(--ink-strong); font-weight: 650; }
 .angle-say .m { color: var(--ink); }
 
 /* ── the over-filling guard ─────────────────────────────────────────────
@@ -368,7 +542,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
          margin: calc(var(--sp-4) * -1) 0 var(--sp-5); display: flex;
          flex-wrap: wrap; gap: var(--sp-2); align-items: baseline; }
 .guard:empty { display: none; }
-.linkish { font-size: inherit; color: var(--accent); font-weight: var(--w-semi);
+.linkish { font-size: inherit; color: var(--accent); font-weight: 650;
            text-decoration: underline; text-underline-offset: 2px; }
 .linkish:hover { color: var(--accent-hi); }
 .linkish:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
@@ -433,6 +607,34 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .rl-val[data-ok='false'] { color: var(--bad); }
 .rl-slot { width: 150px; flex: none; }
 .rl-slot input[type='range'] { height: 24px; }
+
+/* ── how many panes, asked where how-fast is asked ───────────────────────
+   Three choices, each drawn as the thing it produces rather than named as a
+   number: a student picking between "four" and "two" is picking between two
+   words, and a student picking between two little diagrams is picking between
+   two layouts. The fill is --ink-faint until it is the chosen one, and then it
+   is the accent — the same way a gravity chip or an angle box says it is the
+   live one. */
+.lay { margin: 0 0 var(--sp-5); }
+.lay-q { font-size: var(--fs-sm); font-weight: var(--w-small); color: var(--ink-strong);
+         text-align: center; margin: 0 0 var(--sp-3); }
+.lay-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
+.lay-opt {
+  display: grid; gap: 3px; justify-items: center; text-align: center;
+  padding: var(--sp-3) var(--sp-2) var(--sp-2);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  transition: border-color 120ms, background 120ms;
+}
+.lay-opt:hover { background: var(--hover); }
+.lay-opt svg { width: 44px; height: 30px; margin-bottom: 2px; }
+.lay-opt .ly-f { fill: var(--ink-faint); }
+.lay-opt b { font-size: var(--fs-xs); font-weight: var(--w-semi); }
+.lay-opt span { font-size: var(--fs-xs); font-weight: var(--w-small); color: var(--ink-muted); line-height: 1.3; }
+.lay-opt[aria-checked='true'] { border-color: var(--accent); background: var(--accent-soft); }
+.lay-opt[aria-checked='true'] .ly-f { fill: var(--accent); }
+.lay-opt[aria-checked='true'] b { color: var(--accent); }
+.lay-say { font-size: var(--fs-xs); font-weight: var(--w-small); color: var(--ink-muted);
+           line-height: 1.5; margin: var(--sp-3) 0 0; }
 
 .pace-scale { display: flex; justify-content: space-between; margin: 0 0 var(--sp-5);
               padding-left: calc(3.4ch + var(--sp-4)); font-size: var(--fs-xs); color: var(--ink-faint); }
@@ -517,7 +719,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .ex-why li { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; padding-left: var(--sp-4); position: relative; }
 .ex-why li::before { content: ''; position: absolute; left: 0; top: .55em; width: 5px; height: 5px;
                      border-radius: 50%; background: var(--accent); opacity: .7; }
-.ex-why li b { color: var(--ink-strong); font-weight: var(--w-semi); }
+.ex-why li b { color: var(--ink-strong); font-weight: 650; }
 #exdone .done-acts { position: sticky; bottom: 0; margin: 0; padding: var(--sp-4) 0;
                      background: var(--card); box-shadow: 0 -10px 16px -10px var(--card); }
 .ex-caveat { font-size: var(--fs-xs); color: var(--ink-strong); line-height: 1.55; margin: 0;
@@ -533,6 +735,13 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 :root[data-theme='light'] .play[data-playing='true'] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .play svg { width: 16px; height: 16px; }
 .transport input[type='range'] { flex: 1; }
+/* One clock for four panes. It carries typeset maths, so it is filled with
+   innerHTML — see CLAUDE.md rule 1 — and it is given a fixed width in figures
+   so the Replay button beside it does not shuffle as the seconds tick. */
+.t-read {
+  flex: none; min-width: 11ch; text-align: right;
+  font-size: var(--fs-base); font-weight: var(--w-semi); color: var(--ink-strong);
+}
 
 input[type='range'] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: none; cursor: pointer; display: block; margin: 0; }
 input[type='range']::-webkit-slider-runnable-track { height: 4px; background: var(--border); border-radius: 2px; }
@@ -730,7 +939,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 }
 .imodel:hover { background: var(--hover); }
 .imodel[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-soft); }
-.imodel b { font-size: var(--fs-base); font-weight: var(--w-semi); }
+.imodel b { font-size: var(--fs-base); font-weight: 650; }
 .imodel .im-note { font-size: var(--fs-xs); color: var(--ink-muted); }
 .imodel .im-u { margin-left: auto; font-size: var(--fs-lg); font-weight: var(--w-bold); white-space: nowrap; }
 .imodel[aria-pressed='true'] .im-u { color: var(--accent); }

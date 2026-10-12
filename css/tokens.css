@@ -3,26 +3,30 @@
    validated hues for the physics. See design/theme.js for the reasoning. */
 
 :root {
-  --font: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* Type. 13px floor — nothing on this site is smaller, canvas labels included. */
   --fs-xs: 13px; --fs-sm: 15px; --fs-base: 17px; --fs-lg: 20px;
   --fs-xl: 24px; --fs-2xl: 30px; --fs-3xl: 38px; --fs-hero: 44px;
 
-  /* ── weight, as three steps every rule in the app uses ────────────────
-     The body sits at 500, not 400. Regular is a weight for a page of prose
-     read at arm's length; this is a screen of short labels, 13 px readouts
-     and numbers over a drawing, and at that size and that length a regular
-     weight reads as faint rather than as light. 500 is one step up, not a
-     bold — the difference is that the text now has a stem.
+  /* ── weight ───────────────────────────────────────────────────────────
+     THE SMALL TEXT CARRIES A LITTLE MORE, AND NOTHING ELSE CHANGES. The whole
+     page was moved up a step once — body 400 to 500 — and that was more than
+     was wanted: at 17 px and above, regular is the right weight and the page
+     read heavy. So the three steps below are the ones this site always had,
+     and there is a fourth for the one size that genuinely needed it.
 
-     650 is the emphasis step. With the body at 500, a 600 "semibold" was
-     barely a change; this is far enough to register and short of the real
-     bold below it. 700 is the bold: headings, numbers, the five symbols.
+     13 px and 15 px is where a regular weight stops being light and starts
+     being faint: the hints under the boxes, the engine's sentence about what
+     it worked out, the note on a scenario card, the units beside a readout.
+     Those take --w-small. Anything that sets its own weight keeps it, and
+     anything at --fs-base or above is untouched. The list is in css/app.css,
+     right under the body rule, and it is the complete inventory of the two
+     small sizes rather than a sample.
 
-     Source Sans 3 is served as a variable face over 400–700, so 500 and 650
-     are genuine interpolations and not a browser's synthetic smear. */
-  --w-body: 500; --w-semi: 650; --w-bold: 700;
+     The maths has its own step again, in css/math.css: a serif at equal
+     nominal weight carries less ink than a sans. */
+  --w-body: 400; --w-small: 500; --w-semi: 600; --w-bold: 700;
 
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
   --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;

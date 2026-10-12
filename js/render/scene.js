@@ -13,7 +13,7 @@
 // axis label the student reads is in flight x; every piece of scenery is
 // placed in section u. Nothing is ever converted twice.
 
-import { fitCanvas, palette, stroke, arrow, dot, ballSprite, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar } from './util.js';
+import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar } from './util.js';
 import { timeAbove } from '../core/projectile.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
@@ -232,10 +232,17 @@ function autoFit(cam, flights, markers, w, h, u0, section) {
   //
   // The very first fit of a session has nothing to travel FROM — the camera
   // is still at its construction defaults — so that one lands directly.
+  //
+  // `_plate` is which renderer last fitted this camera, and crossing between
+  // the two lands the fit rather than easing it: a beach 28 m wide and a
+  // stadium 250 m wide have no journey between them worth watching. See
+  // fitPlate in js/render/exhibit.js.
   cam.want = target;
-  if (!cam.placed) { cam.scale = target.scale; cam.cx = target.cx; cam.cy = target.cy; }
-  else setMoving(cam, true);
+  if (!cam.placed || cam._plate !== false) {
+    cam.scale = target.scale; cam.cx = target.cx; cam.cy = target.cy;
+  } else setMoving(cam, true);
   cam.placed = true;
+  cam._plate = false;
 }
 
 export function render(canvas, cam, o) {
@@ -909,64 +916,6 @@ function snapName(y) {
 export function snapHeight(y) {
   for (const s of SNAPS) if (Math.abs(y - s.y) < Math.max(0.35, s.y * 0.035)) return s.y;
   return y;
-}
-
-/* ── the parachutist ────────────────────────────────────────────────────
-   A body, and a canopy once she has pulled. Both are drawn at their real
-   sizes in metres, taken from D.prop like every other object in the world —
-   a 1.8 m person and a 7 m canopy — so they shrink with everything else and
-   the canopy is honestly about four times her height across. At a frame
-   holding a hundred metres she is a few pixels tall and the canopy is a
-   couple of dozen across, which is enough to read as a person under a
-   parachute rather than as a dot.
-
-   THE INFLATION IS DRAWING, NOT PHYSICS. The canopy widens over the first
-   part of the deceleration phase instead of appearing full-size in one
-   frame. The model's acceleration still changes instantly at the instant she
-   pulls — descent.js says so and the ending card says so — and this is the
-   picture agreeing with the model's own story about WHY it changes: the
-   canopy is filling. Nothing is computed from it.
-
-   At a very wide frame she and the canopy both fall under a pixel. Rather
-   than drawing a smear, there is a floor: the canopy never goes below a few
-   pixels across, so "the canopy is open" stays visible from any distance.
-   The same decision ballSprite makes for a football, for the same reason. */
-function parachutist(ctx, x, y, scale, f, t, P) {
-  // Real metres, from the one place this codebase keeps real metres.
-  const body = Math.max(3, D.prop.person.h * scale);
-  const here = f.at(t);
-  // How far through the opening she is: 0 before she pulls, 1 once the canopy
-  // is full. The phase keys come from descent.js.
-  const open = here.key === 'free' ? 0
-    : here.key === 'canopy' ? clamp((t - here.t0) / Math.max(0.28, here.t * 0.45), 0, 1)
-    : 1;
-
-  ctx.save();
-  if (open > 0.02) {
-    const half = Math.max(3.5, (D.prop.canopy.w * scale * open) / 2);
-    const rise = half * 0.62;
-    const top = y - body * 0.5 - rise - Math.max(2, body * 0.9);
-    const hang = y - body * 0.5;
-    // the lines first, so the canopy sits over them
-    ctx.strokeStyle = P.vel; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
-    for (const k of [-1, -0.45, 0.45, 1]) {
-      ctx.beginPath(); ctx.moveTo(x + half * k, top + rise); ctx.lineTo(x, hang); ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-    ctx.beginPath();
-    ctx.moveTo(x - half, top + rise);
-    ctx.quadraticCurveTo(x, top - rise * 0.55, x + half, top + rise);
-    ctx.lineWidth = Math.max(1.8, body * 0.16);
-    ctx.strokeStyle = P.mark; ctx.stroke();
-    ctx.globalAlpha = 0.22; ctx.fillStyle = P.mark; ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-  // the body: a head and a trunk, the same two shapes the defensive wall uses
-  ctx.fillStyle = P.vel;
-  ctx.beginPath(); ctx.arc(x, y - body * 0.34, Math.max(1.2, body * 0.17), 0, 7); ctx.fill();
-  ctx.fillRect(x - Math.max(1, body * 0.13), y - body * 0.18,
-               Math.max(2, body * 0.26), Math.max(2, body * 0.6));
-  ctx.restore();
 }
 
 /** The fence is a defensive wall: four players, shoulder to shoulder. */
