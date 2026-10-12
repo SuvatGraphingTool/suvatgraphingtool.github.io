@@ -356,7 +356,12 @@ export function labels() {
       for (const it of q) {
         const o = it.o;
         const size = Math.max(MIN_SIZE, o.size ?? MIN_SIZE);
-        const weight = o.weight || 500;
+        // CANVAS TEXT IGNORES CSS, so the weight floor is enforced here the
+        // same way the size floor above it is. 600 against scenery, because a
+        // label on a canvas has no leading, no colour contrast it can rely on
+        // and a halo rather than a plate behind it — the page's 500 reads
+        // thinner over grass and seating than it does over a card.
+        const weight = o.weight || 600;
         ctx.save();
         ctx.font = `${weight} ${size}px ${cssVar('--font', 'system-ui, sans-serif')}`;
         const tw = ctx.measureText(it.text).width;
