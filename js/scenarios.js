@@ -175,6 +175,9 @@ export const SCENARIOS = [
     // and the graphs rather than instead of them. See fitPlate in
     // js/render/exhibit.js.
     exhibit: true, plate: true, backdrop: 'beach', site: FLAT_SITE,
+    // The hunter throws a banana, and says so here rather than leaving the
+    // renderer to infer it from the sand.
+    projectile: 'banana',
     card: 'dusk',
     pairLabel: 'same fall',
     caughtLabel: 'caught — every time',

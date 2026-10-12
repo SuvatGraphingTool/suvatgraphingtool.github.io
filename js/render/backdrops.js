@@ -301,13 +301,31 @@ function hunter(g, S, o, PLATE) {
   const X0 = S.X(0), gy = S.groundY, mz = S.Y(o.launchY);
   const a = -(o.theta || 0) * Math.PI / 180;
 
-  // the aim, before the shot. This dashed line IS the lesson: it points at
-  // where the monkey IS, not at where it will be, and it still connects.
-  if (o.markers?.target && !o.fired) {
-    g.save(); g.setLineDash([5, 5]); g.globalAlpha = 0.5;
-    g.strokeStyle = PLATE.ink; g.lineWidth = 1.2;
-    g.beginPath(); g.moveTo(X0, mz);
-    g.lineTo(S.X(o.markers.target.x), S.Y(o.markers.target.y)); g.stroke();
+  // THE LINE OF THE AIM, AND IT STAYS UP.
+  //
+  // It used to be drawn only while `!o.fired`, which took it off the screen
+  // at the exact moment it starts being worth looking at. This line is where
+  // the banana would go if NOTHING FELL, and the whole scenario is the
+  // distance between that line and what actually happens: the banana sags
+  // below it by ½gt², the monkey sags below the branch by the same ½gt², and
+  // they meet. With the line gone there is nothing for either of them to sag
+  // away from, and the demonstration is two objects converging for no visible
+  // reason.
+  //
+  // It is also a RAY ALONG THE AIM rather than a segment to the monkey, so it
+  // answers the angle rather than the marker: drag the angle and the line
+  // swings with it, past the monkey and off the frame, which is what tells
+  // you the aim has left the target.
+  const reach = (box2) => {
+    const far = Math.hypot(box2.w, box2.h) + Math.abs(box2.x) + Math.abs(box2.y);
+    return { x: X0 + Math.cos(a) * far, y: mz + Math.sin(a) * far };
+  };
+  {
+    const end = reach(o.box || { x: 0, y: 0, w: 4000, h: 4000 });
+    g.save(); g.setLineDash([5, 5]);
+    g.globalAlpha = o.fired ? 0.42 : 0.6;
+    g.strokeStyle = PLATE.ink; g.lineWidth = 1.3;
+    g.beginPath(); g.moveTo(X0, mz); g.lineTo(end.x, end.y); g.stroke();
     g.restore();
   }
 

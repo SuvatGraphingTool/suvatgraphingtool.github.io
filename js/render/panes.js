@@ -36,7 +36,8 @@ const ICON = {
  *           student picked on the speed card before anything moved
  */
 export function createWindow(n = 4) {
-  return { panes: [], order: [], n, want: n, views: new Map(), el: new Map(), host: null };
+  return { panes: [], order: [], n, want: n, solo: null,
+           views: new Map(), el: new Map(), host: null };
 }
 
 /**
@@ -52,7 +53,14 @@ export function createWindow(n = 4) {
 export function mount(host, win, panes, hooks = {}) {
   win.host = host;
   win.panes = panes;
-  win.order = panes.map((p) => p.id);
+  // THE ARRANGEMENT SURVIVES A REMOUNT of the same panes, for the same reason
+  // the views do: a student who has put the velocity graph top-left has not
+  // asked for it to be moved back because the numbers changed.
+  const ids = panes.map((p) => p.id);
+  const same = win.order.length === ids.length && win.order.every((id) => ids.includes(id));
+  win.order = same ? win.order : ids;
+  // A visit to a pane that no longer exists is not a visit.
+  if (win.solo && !ids.includes(win.solo)) win.solo = null;
   for (const p of panes) {
     if (!win.views.has(p.id)) win.views.set(p.id, p.nav.create());
   }
@@ -94,12 +102,23 @@ export function mount(host, win, panes, hooks = {}) {
     const e = win.el.get(p.id);
     e.max.addEventListener('click', () => {
       // MAXIMIZE AND RESTORE ARE ONE BUTTON. Pressed, this pane fills the
-      // stage and the other three become tabs; pressed again, the layout the
+      // stage and the others become tabs; pressed again, the layout the
       // student chose comes back. `want` is that choice and is never
-      // overwritten by a maximize, which is the whole of what makes the second
-      // press mean "restore" rather than "go to four".
-      if (win.n === 1 && win.order[0] === p.id) setLayout(win, win.want);
-      else { bring(win, p.id, 0); win.n = 1; }
+      // overwritten by a maximize, which is what makes the second press mean
+      // "restore" rather than "go to four".
+      //
+      // AND A MAXIMIZE MUST NOT REARRANGE ANYTHING. It used to be done by
+      // moving this pane to the front of `order` and showing one pane — so
+      // the arrangement itself was rewritten by a visit, and restoring dealt
+      // the panes out in the new order: maximize the velocity graph, come
+      // back, and the jump had been pushed out of the top-left corner into
+      // whichever slot was left. Every maximize shuffled them again.
+      //
+      // `solo` is the visit, held apart from `order`, which is the
+      // arrangement. Nothing a visit does can touch the arrangement, so there
+      // is nothing to put back.
+      if (win.solo === p.id) { win.solo = null; win.n = win.want; }
+      else { win.solo = p.id; win.n = 1; }
       layout(win);
       hooks.change?.();
     });
@@ -129,12 +148,20 @@ function bring(win, id, slot) {
  * coming back has to come back to the layout they asked for.
  */
 export function setLayout(win, n) {
-  win.n = win.want = Math.max(1, Math.min(n, win.panes.length));
+  // Clamped to the panes there ARE, except when there are none yet: the
+  // picker is on the speed card and is answered before the first run, and
+  // clamping against an empty list turned every answer into 1 and threw the
+  // student's choice away until the mount re-applied it.
+  const cap = win.panes.length || n;
+  win.n = win.want = Math.max(1, Math.min(n, cap));
+  // Choosing a layout ends any visit: it is the explicit version of the same
+  // decision the restore button makes.
+  win.solo = null;
   layout(win);
 }
 
-/** Which panes are drawn this frame. */
-export const shown = (win) => win.order.slice(0, win.n);
+/** Which panes are drawn this frame: the visit, or the top of the arrangement. */
+export const shown = (win) => (win.solo ? [win.solo] : win.order.slice(0, win.n));
 
 /**
  * Apply the layout: who is on screen, who is a tab, and what the buttons say.
@@ -143,6 +170,13 @@ export const shown = (win) => win.order.slice(0, win.n);
  * naming nothing you cannot already see is a row of controls that do nothing.
  */
 export function layout(win) {
+  // NOTHING TO LAY OUT UNTIL THERE IS A WINDOW. The layout picker sits on the
+  // speed card, which is shown before the panes are mounted, so every student
+  // who chooses a layout before the first run reached this with `host` still
+  // null — `win.host.querySelector` on null, an uncaught TypeError, and the
+  // rest of that click handler abandoned. The choice is already recorded in
+  // `n` and `want` by the time this is called; the mount applies it.
+  if (!win.host) return;
   const on = shown(win);
   win.host.querySelector('.panegrid').dataset.n = String(win.n);
   for (const p of win.panes) {
@@ -166,10 +200,16 @@ export function layout(win) {
             aria-selected="false" aria-label="${p.aria}">${p.tab}</button>`).join('');
   for (const b of tabs.querySelectorAll('.panetab')) {
     b.addEventListener('click', () => {
-      // A tab swaps itself into the LAST slot on screen. One rule, whatever
-      // the layout: with one pane up it replaces it, with two it replaces the
-      // right-hand one, and the pane it displaced becomes a tab in its place.
-      bring(win, b.dataset.id, win.n - 1);
+      // WHILE A PANE IS MAXIMIZED a tab moves the visit: you are looking at
+      // one pane and you want to look at another, and the arrangement you
+      // will come back to is none of its business.
+      //
+      // Otherwise the tab IS a rearrangement, and it swaps itself into the
+      // last slot on screen. One rule whatever the layout: with one pane up
+      // it replaces it, with two it replaces the right-hand one, and the pane
+      // it displaced becomes a tab in its place.
+      if (win.solo) win.solo = b.dataset.id;
+      else bring(win, b.dataset.id, win.n - 1);
       layout(win);
       win._onChange?.();
     });

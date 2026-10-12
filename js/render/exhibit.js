@@ -473,8 +473,16 @@ function drawPane(g, pane, o, prev) {
   const S = pane.S;
   const box = pane.box;
 
+  // WHAT IS THROWN IS THE SCENARIO'S BUSINESS, NOT THE PLACE'S. These three
+  // branches each read `scenario.backdrop === 'beach'`, which says the round
+  // is a banana because the sand is sand. Move the monkey somewhere else and
+  // the hunter goes back to firing a bullet — so the scenario names what it
+  // throws and the backdrop only says where.
+  const thrown = scenario.projectile || 'round';
   const back = scenario.backdrop === 'beach' ? beachBack : warehouseBack;
-  back(g, S, box, { t, fired, markers, PLATE,
+  // `box` goes through so the aim ray knows how far it has to run to leave
+  // the frame; it is a ray along the angle now, not a segment to the marker.
+  back(g, S, box, { t, fired, markers, PLATE, box,
                     launchY: f.params.h, theta: f.params.theta });
 
   /* ── ground line ──────────────────────────────────────────────────── */
@@ -550,7 +558,7 @@ function drawPane(g, pane, o, prev) {
     if (showA) {
       g.save(); g.globalAlpha = a;
       halo(g, px, py, Lbul * (last ? 1.7 : 1.1));
-      if (scenario.backdrop === 'beach') bananaOrMonkey(g, px, py, Lbul, ang, last, true);
+      if (thrown === 'banana') bananaOrMonkey(g, px, py, Lbul, ang, last, true);
       else bullet(g, px, py, Lbul, ang, last);
       g.restore();
     }
@@ -559,12 +567,12 @@ function drawPane(g, pane, o, prev) {
     if (second) {   // drawn second, so it sits in front of the tree behind it
       const q = second.pos(Math.min(ti, second.tMax));
       const qx = S.X(q.x), qy = S.Y(q.y);
-      const Lsec = scenario.backdrop === 'beach' ? Math.max(Lbul, 26) : Lbul;
+      const Lsec = thrown === 'banana' ? Math.max(Lbul, 26) : Lbul;
       if (wantB && (last || i % stride === 0)) {
         drewB = true;
         g.save(); g.globalAlpha = a;
         halo(g, qx, qy, Lsec * (last ? 1.7 : 1.1));
-        if (scenario.backdrop === 'beach') bananaOrMonkey(g, qx, qy, Lsec, Math.PI / 2, last, false);
+        if (thrown === 'banana') bananaOrMonkey(g, qx, qy, Lsec, Math.PI / 2, last, false);
         else bullet(g, qx, qy, Lsec, Math.PI / 2, last);
         g.restore();
       }
