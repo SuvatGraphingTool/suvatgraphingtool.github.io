@@ -206,6 +206,53 @@ half of what maximize is for.
 The window is `js/render/panes.js`, the plotter `js/render/plot.js`, and this
 scenario's four panes `js/render/drop.js`.
 
+#### The aircraft stays, and the canopy is big enough to watch
+
+Two things the first build got wrong, both of them about the jump pane rather
+than about the physics.
+
+**The aircraft used to fly off and be gone.** It crossed during the pre-roll,
+left the right-hand edge, and the top of the pane was empty for the whole of a
+fall — which made the drop look like it had come from nowhere. A real jump
+aircraft does not vanish either: it flies on, turns, and descends, because it
+has to get down and land, usually well before the jumper does. So it stays in
+the picture, drifting out to the side and losing height.
+
+Three things keep it unmistakably scenery rather than a second object with a
+motion worth reading: it goes **out**, to the far side of the pane, while she
+falls down the middle; it **sinks far less** than she falls; and it **fades**
+as it goes, so it reads as receding rather than as a subject.
+
+The sink had to be eased in, and the test is what found it. She leaves from
+rest, so for the first second of the fall she is barely moving — and an
+aeroplane losing height at a steady rate from the same instant passes *below*
+her and sits there. Her own fall is `½gt²`, so the aircraft's descent is in
+`t²` too, with a coefficient that keeps it slower than hers at every instant
+rather than merely by the end. `test/scenarios.test.mjs` checks the whole
+flight: always out to the side, never below her, never losing height faster
+than she falls, only ever further out and only ever fainter.
+
+None of that motion is computed, and the ending card's list now says so in as
+many words: the aircraft's way down was not worked out any more than its speed
+was.
+
+**The canopy was a smudge.** At her true size a 1.8 m jumper in a
+quarter-size pane holding 140 m of them is three pixels tall and her 7 m
+canopy eleven across — and since the canopy is floored at seven pixels anyway,
+the inflation that the whole middle phase is *about* grew from seven pixels to
+eleven and was invisible. The sprite now takes a scale of its own, floored
+against the pane's height rather than against a fixed number of pixels, so she
+is the same share of a quarter-size pane as of a maximized one, and it only
+ever enlarges — zoom in far enough and her true size takes over again. The
+person-to-canopy **ratio** is untouched, because that ratio is most of why the
+picture reads as a parachute at all. Measured: the canopy inflates from 7 px
+to 59 px across at quarter size and to 121 px maximized, in both themes.
+
+Her feet now stand on the position rather than straddling it. The engine
+treats her as a point, and the point a landing is about is the one that reaches
+the ground — so the trail ends at her feet and the last frame is not a person
+whose legs go through the ground.
+
 ---
 
 ## Built, then removed

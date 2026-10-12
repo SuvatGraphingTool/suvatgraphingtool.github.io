@@ -3,7 +3,7 @@
 import { SCENARIOS, GROUPS, byId } from '../js/scenarios.js';
 import { flight } from '../js/core/projectile.js';
 import { descent } from '../js/core/descent.js';
-import { descentPanes, plotSpec, PRE } from '../js/render/drop.js';
+import { descentPanes, plotSpec, planePose, PRE } from '../js/render/drop.js';
 import { valueAt } from '../js/render/plot.js';
 
 let pass = 0, fail = 0;
@@ -331,6 +331,63 @@ group('The four panes are the engine, read another way', () => {
   ok(!after.pre && after.t === 4.2, 'and once the clock starts it is the clock');
   ok(PRE.total > 0 && PRE.open0 < PRE.open1 && PRE.open1 <= PRE.exit,
      'the door finishes opening before she leaves through it');
+});
+
+/* ── the aircraft ───────────────────────────────────────────────────────
+   It drops her and then follows her down, which is what a jump aircraft does.
+   None of that is computed and none of it may be mistakable for her: the
+   three properties below are what keep a second thing moving in the same sky
+   from reading as a second object with a motion worth measuring. */
+group('The aircraft drops her, follows her down, and is never her', () => {
+  const r = descent({ h: 140, g: 9.81, tOpen: 3, aChute: 25, vTerm: 6 });
+  const h = 140, R = 300;
+
+  // It hands over from the staging to the clock without a jump in either
+  // coordinate — the one seam where the run-in and the descent could disagree.
+  const last = planePose(PRE.total, 0, r.tMax, h, R);
+  const first = planePose(null, 0, r.tMax, h, R);
+  near(first.x - last.x, 0, 1e-9, 'the descent starts where the run-in finished');
+  near(first.y - last.y, 0, 1e-9, 'and at the height she jumped from');
+
+  // The run-in: off-frame, in to the release point, door shut then open.
+  near(planePose(0, 0, r.tMax, h, R).x + R, 0, 1e-9, 'it comes in from a run away');
+  near(planePose(PRE.total * PRE.exit, 0, r.tMax, h, R).x, 0, 1e-9,
+       'and the door is over the release point when she leaves');
+  near(planePose(PRE.total * PRE.open0, 0, r.tMax, h, R).open, 0, 1e-9, 'the door starts shut');
+  near(planePose(PRE.total * PRE.open1, 0, r.tMax, h, R).open - 1, 0, 1e-9,
+       'and is fully open before she goes through it');
+  ok(planePose(PRE.total * 0.2, 0, r.tMax, h, R).y === h,
+     'it flies level the whole way in, including while the door slides');
+
+  // Through the fall: always out to the side, always far above her, always
+  // sinking a fraction of what she falls, and fading as it recedes.
+  let worstSide = Infinity, worstGap = Infinity, worstShare = 0;
+  let outwards = true, fading = true, prevX = -Infinity, prevA = 2;
+  for (let i = 0; i <= 400; i++) {
+    const t = (i / 400) * r.tMax;
+    const p = planePose(null, t, r.tMax, h, R);
+    worstSide = Math.min(worstSide, p.x);                    // she is at x = 0
+    worstGap = Math.min(worstGap, p.y - r.f.pos(t).y);       // and below it
+    if (i) worstShare = Math.max(worstShare, (h - p.y) / (h - r.f.pos(t).y));
+    if (p.x < prevX - 1e-12) outwards = false;
+    if (p.alpha > prevA + 1e-12) fading = false;
+    prevX = p.x; prevA = p.alpha;
+  }
+  ok(worstSide > 0.3 * R, `it is always out to the side (never nearer than ${worstSide.toFixed(0)} m)`);
+  // ZERO AT t = 0 AND POSITIVE EVER AFTER. She leaves at the aircraft's own
+  // height, so they share one instant and part company from there — a sink
+  // that got ahead of her fall would put the aeroplane underneath the jumper.
+  ok(worstGap >= -1e-9, `and never below her (closest ${worstGap.toFixed(3)} m)`);
+  ok(planePose(null, r.tMax * 0.02, r.tMax, h, R).y > r.f.pos(r.tMax * 0.02).y,
+     'already clear of her a fiftieth of the way in');
+  ok(worstShare < 1, `so it never loses height faster than she falls (worst share ${worstShare.toFixed(3)})`);
+  ok(outwards, 'it only ever goes further out');
+  ok(fading, 'and only ever fainter');
+  near(planePose(null, r.tMax, r.tMax, h, R).y - h * (1 - 0.58), 0, 1e-9,
+       'by the landing it has glided down a fraction of her drop');
+  ok(planePose(null, r.tMax, r.tMax, h, R).alpha < 0.5, 'and faded into the distance');
+  ok(planePose(null, 0, r.tMax, h, R).tilt > 0, 'nose down once it is descending');
+  ok(planePose(1, 0, r.tMax, h, R).tilt === 0, 'and level before it has dropped her');
 });
 
 /* The ending card lists what the model leaves out, and the aircraft is now on
