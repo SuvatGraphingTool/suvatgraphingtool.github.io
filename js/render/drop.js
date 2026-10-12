@@ -76,8 +76,24 @@ const PLANE = { len: 12, span: 16, body: 1.6, tail: 2.2 };
    from. */
 export const PRE = { total: 2.6, open0: 0.28, open1: 0.46, exit: 0.5 };
 
-/** How far off the release point the aircraft runs, in metres of sky. */
-const run = (h) => Math.max(5 * PLANE.len, 0.55 * h);
+/**
+ * How far off the release point the aircraft runs, in metres of sky.
+ *
+ * FROM THE FRAME, not from the jump. The beat asked for is the aircraft
+ * CROSSING the sky, and anything short of the frame's own half-width has it
+ * appearing in mid-air a third of the way in instead. A figure in metres
+ * cannot do it: the frame is fitted to the height of the drop, so how many
+ * metres of sky are beside her depends on how wide the pane happens to be —
+ * three hundred of them in a maximized pane, twice that in a quarter-size
+ * one. So the run is the half-width plus an aircraft's length, and she is
+ * always entered from just outside whatever is on screen.
+ *
+ * It is allowed to depend on the view because it is SCENERY. Nothing in the
+ * model knows the aircraft exists, let alone how fast it was going — the
+ * ending card says so — so there is no quantity here for a changing frame to
+ * make dishonest.
+ */
+const run = (w, scale) => Math.max(5 * PLANE.len, (w / 2) / Math.max(1e-6, scale) + PLANE.len);
 
 /* ── the view: metres of sky, panned and zoomed ─────────────────────────
    The same three numbers js/render/scene.js's camera keeps, and the same two
@@ -291,7 +307,7 @@ export function drawJump(canvas, view, o) {
 
   /* ── the pre-roll ─────────────────────────────────────────────────── */
   const s = o.pre == null ? 1 : clamp(o.pre / PRE.total, 0, 1);
-  const R = run(H);
+  const R = run(w, view.scale);
   // The door's own position: it is the point the aircraft is drawn around, so
   // that "the door passes over the release point" is one number rather than
   // an offset applied in two places.
@@ -398,10 +414,20 @@ function ground(ctx, w, hp, groundY) {
  * and an aeroplane is none of the three: it is the thing she stepped out of.
  */
 function aircraft(ctx, dx, dy, scale, opening, P) {
-  const len = Math.max(14, PLANE.len * scale);
-  const body = Math.max(3, PLANE.body * scale);
-  const span = Math.max(8, PLANE.span * scale);
-  const tail = Math.max(3, PLANE.tail * scale);
+  /* A PIXEL FLOOR, and a generous one. At its real twelve metres in a
+     quarter-size pane holding a hundred and forty of them, the aircraft is
+     twenty pixels long and its door is three — and "the door opens" is one of
+     the three beats the pre-roll exists to show. The floors below are what it
+     measures in a MAXIMIZED pane, so the aeroplane is drawn at its true size
+     wherever there is room for it and never shrinks below readable. It is the
+     same decision ballSprite makes for a football and parachutist makes for a
+     canopy, and it is honest for the same reason it is honest there: this is
+     scenery, there is no quantity in it, and the ending card says the
+     aircraft was not modelled at all. */
+  const len = Math.max(44, PLANE.len * scale);
+  const body = Math.max(8, PLANE.body * scale);
+  const span = Math.max(30, PLANE.span * scale);
+  const tail = Math.max(7, PLANE.tail * scale);
   // The door is the reference point, a third of the way back along the hull.
   const nose = dx + len * 0.68, back = dx - len * 0.32;
 

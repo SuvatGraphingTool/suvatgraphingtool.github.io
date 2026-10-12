@@ -3,6 +3,8 @@
 import { SCENARIOS, GROUPS, byId } from '../js/scenarios.js';
 import { flight } from '../js/core/projectile.js';
 import { descent } from '../js/core/descent.js';
+import { descentPanes, plotSpec, PRE } from '../js/render/drop.js';
+import { valueAt } from '../js/render/plot.js';
 
 let pass = 0, fail = 0;
 const near = (a, e, tol, label) => Math.abs(a - e) <= tol
@@ -227,6 +229,122 @@ group('And it refuses what cannot happen, instead of drawing it', () => {
   ok(r.vLanding > 6, `and she lands at ${r.vLanding.toFixed(2)} m s⁻¹ rather than 6`);
   near(r.f.pos(r.tMax).y, 0, 1e-6, 'still ending exactly on the ground');
   near(r.f.speed(r.tMax) - r.vLanding, 0, 1e-9, 'at the speed it reports');
+});
+
+/* ── the four panes ─────────────────────────────────────────────────────
+   The window draws what js/render/drop.js hands it, and what it hands it is
+   a list of exact segments rather than a function to sample — a straight line
+   per phase for the velocity, a parabola per phase for the height, a flat per
+   phase for the acceleration. See the note at the head of js/render/plot.js.
+
+   The claim that has to be tested is that those segments ARE the engine. If
+   they drift, the graph a student reads values off stops being the motion the
+   working panel is describing, and nothing else in the app would notice. So
+   this walks each series against the engine's own pos(), speed() and at()
+   everywhere, including the middles of phases where a sampled curve would be
+   right at the ends and wrong in between. */
+group('The four panes are the engine, read another way', () => {
+  const SETUPS = [
+    { h: 140, g: 9.81, tOpen: 3, aChute: 25, vTerm: 6 },
+    { h: 1000, g: 9.81, tOpen: 12, aChute: 30, vTerm: 5 },
+    { h: 400, g: 1.62, tOpen: 14, aChute: 8, vTerm: 4 },        // the Moon
+    { h: 60, g: 9.81, tOpen: 3, aChute: 3, vTerm: 6 },          // lands still slowing
+  ];
+  for (const k of SETUPS) {
+    const r = descent(k);
+    const tag = `${k.h} m, open at ${k.tOpen} s, g = ${k.g}`;
+    const panes = descentPanes(r.f);
+    ok(panes.length === 4, `${tag} · four panes`);
+    ok(panes.map((p) => p.id).join() === 'jump,vt,st,at',
+       `${tag} · the jump, and the three graphs against time`);
+
+    const seg = (id) => panes.find((p) => p.id === id).series[0].segs;
+    // Downwards positive on all three, which is the convention descent.js
+    // states and the one the ending card's table is in.
+    const truth = {
+      vt: (t) => r.f.speed(t),
+      st: (t) => r.f.pos(t).y,
+      at: (t) => r.f.at(t).a,
+    };
+    for (const id of ['vt', 'st', 'at']) {
+      let worst = 0, where = 0;
+      for (let i = 0; i <= 2000; i++) {
+        const t = (i / 2000) * r.tMax;
+        // A step function is read at the phase boundary by whichever side the
+        // engine answers for, so boundaries are skipped for a–t alone.
+        if (id === 'at' && r.phases.some((p) => Math.abs(t - (p.t0 + p.t)) < 1e-9)) continue;
+        const d = Math.abs(valueAt(seg(id), t) - truth[id](t));
+        if (d > worst) { worst = d; where = t; }
+      }
+      near(worst, 0, 1e-9, `${tag} · ${id} agrees with the engine everywhere (worst at t = ${where.toFixed(3)})`);
+    }
+
+    // One segment per phase, spanning that phase and no more.
+    for (const id of ['vt', 'st', 'at']) {
+      ok(seg(id).length === r.phases.length, `${tag} · ${id} has one segment per phase`);
+      r.phases.forEach((p, i) => {
+        near(seg(id)[i].t0 - p.t0, 0, 1e-12, `${tag} · ${id} segment ${i + 1} starts with its phase`);
+        near(seg(id)[i].t1 - (p.t0 + p.t), 0, 1e-12, `${tag} · ${id} segment ${i + 1} ends with it`);
+      });
+    }
+    // v–t and a–t are STRAIGHT, which is the whole reason they are exact;
+    // s–t is a quadratic, which is the whole reason it needs a third number.
+    ok(seg('vt').every((x) => x.kind === 'line'), `${tag} · v–t is straight lines`);
+    ok(seg('at').every((x) => x.kind === 'line'), `${tag} · a–t is flats`);
+    ok(seg('at').every((x) => Math.abs(x.y0 - x.y1) < 1e-12), `${tag} · and every flat really is flat`);
+    ok(seg('st').every((x) => x.kind === 'quad'), `${tag} · s–t is parabolas`);
+
+    // The whole flight fits in the frame each pane opens on, and zero is in
+    // the frame of all three so the axis means something.
+    for (const id of ['vt', 'st', 'at']) {
+      const p = panes.find((x) => x.id === id);
+      const vals = [];
+      for (let i = 0; i <= 400; i++) vals.push(truth[id]((i / 400) * r.tMax));
+      ok(Math.min(...vals) >= p.bounds.lo - 1e-9 && Math.max(...vals) <= p.bounds.hi + 1e-9,
+         `${tag} · ${id} opens on a frame that holds the whole flight`);
+      ok(p.bounds.lo <= 0 && p.bounds.hi >= 0, `${tag} · ${id} has zero in it`);
+      near(p.bounds.t0, 0, 1e-12, `${tag} · ${id} starts the clock at zero`);
+      near(p.bounds.t1 - r.tMax, 0, 1e-12, `${tag} · and ends it at the landing`);
+    }
+
+    // The area the v–t pane shades is the engine's own fallen distance.
+    const vt = panes.find((p) => p.id === 'vt');
+    near(vt.fallen(r.tMax) - k.h, 0, 1e-6, `${tag} · the shaded area is the whole drop`);
+    near(vt.fallen(0), 0, 1e-12, `${tag} · and nothing at the start`);
+
+    // The phase boundaries are ruled, and named by the phase they open.
+    const ruled = vt.rules.map((x) => +x.t.toFixed(9));
+    ok(ruled.join() === r.phases.slice(0, -1).map((p) => +(p.t0 + p.t).toFixed(9)).join(),
+       `${tag} · every phase boundary is ruled`);
+    ok(vt.rules.every((x, i) => x.name === r.phases[i + 1].name),
+       `${tag} · and named by the phase it opens`);
+  }
+
+  /* THE PRE-ROLL HOLDS THE GRAPHS AT ZERO AND EMPTY. t = 0 is the release, so
+     the aircraft, the door and the step out are outside the clock — and a flat
+     line at zero would be a claim about a motion that has not happened. */
+  const r = descent({ h: 140, g: 9.81, tOpen: 3, aChute: 25, vTerm: 6 });
+  const vt = descentPanes(r.f).find((p) => p.id === 'vt');
+  const during = plotSpec(vt, r.f, 4.2, 1.1);
+  const after = plotSpec(vt, r.f, 4.2, null);
+  ok(during.pre && during.t === 0, 'during the pre-roll the cursor is at zero and the pane says why');
+  ok(!after.pre && after.t === 4.2, 'and once the clock starts it is the clock');
+  ok(PRE.total > 0 && PRE.open0 < PRE.open1 && PRE.open1 <= PRE.exit,
+     'the door finishes opening before she leaves through it');
+});
+
+/* The ending card lists what the model leaves out, and the aircraft is now on
+   that list: she leaves from rest and falls vertically, so the aeroplane and
+   the door are scenery. Checked here rather than left to the eye, because the
+   whole value of that list is that it is complete. */
+group('And the card says the aircraft was never modelled', () => {
+  const e = byId('parachute').ending;
+  const said = e.why.map(([k, v]) => `${k} ${v}`).join(' ').toLowerCase();
+  ok(/aircraft is scenery/.test(e.why.map(([k]) => k).join(' ').toLowerCase()),
+     'the list names the aircraft');
+  ok(/from rest/.test(said) && /vertical/.test(said), 'and says she leaves from rest, falling vertically');
+  ok(/one-dimensional/.test(said), 'because the engine is one-dimensional');
+  ok(/before the clock starts/.test(said), 'and that the staging is outside the clock');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

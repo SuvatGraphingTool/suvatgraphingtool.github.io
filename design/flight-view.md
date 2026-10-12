@@ -562,3 +562,74 @@ because the level-of-detail thresholds were never read through it.
 keeps two comparable launches in the identical frame. Holding the band is right
 when a flight has just been fired and wrong when somebody has asked, in as many
 words, to see *this* flight framed.
+
+---
+
+## A second kind of view — 12 October 2026
+
+Everything above describes **the** flight view: one camera, one frame, the
+side-on cross-section of the stadium with the motion standing in it. That is
+still the flight view for ten of the eleven scenarios and nothing in it has
+changed.
+
+The parachute drop no longer uses it. It has a window of four panes instead —
+`js/render/panes.js`, with its own contents in `js/render/drop.js` and the
+reasoning in `design/presets.md`. What belongs in this file is the part about
+the camera, because the window had to decide what a camera means when there
+are four of them.
+
+### One gesture, four things it moves
+
+Drag to pan, wheel to zoom about the pointer, double-click to re-frame. Those
+are the three `attachControls` already gives the stadium view, and the window
+gives every pane the same three — deliberately, so that there is nothing new
+to learn when a scenario is moved onto it. What differs is not the gesture but
+what it moves:
+
+- **the jump pane** pans and zooms in metres of sky, with the same three
+  numbers the stadium camera keeps: `cx`, `cy`, `scale`
+- **a graph pane** pans and zooms in its own two units — seconds across, and
+  `m s⁻¹` or `m` or `m s⁻²` up — so you can put the window on the nine tenths
+  of a second the canopy works in and read values off the axes
+
+So a pane's view is a **window**, not a zoom factor, which is what lets a pane
+say exactly what it is showing. The window object is handed to the pane list
+as an adapter of three functions (`create`, `pan`, `zoom`), which is the whole
+of what `panes.js` knows about units.
+
+### `fit` and `touched`, kept
+
+Both flags mean here what they mean above. `fit` asks for the whole flight on
+the next frame and is answered inside the draw, because only the draw knows
+the canvas size. `touched` records that a pan or a zoom has happened, and it
+is the one thing the per-pane **Whole flight** button reads: lit while the
+whole flight IS what the pane is showing, dim the moment a gesture takes it
+off, so it reads as the way back rather than as a mode. Same words, same
+behaviour, same reason as the single view's one button.
+
+### A pane that changes size re-frames itself
+
+This is the one thing the single view never had to handle, and the first
+version got it wrong. Maximizing a quarter-size pane quadruples its canvas,
+and a view holding the scale it was fitted at then draws a hundred and forty
+metres of fall in the top third of a pane four times the size — which is the
+one thing maximize exists to not do. So the window notices a size change on
+the frame it happens and re-fits, but **only an untouched view**: a view
+somebody has panned or zoomed is left exactly where they put it. That is the
+same rule `app.js` already applies to the single camera on a window resize.
+
+### The aircraft's run is measured from the frame, not in metres
+
+The pre-roll's first beat is the aircraft **crossing** the sky, and a figure
+in metres cannot deliver it. The frame is fitted to the height of the drop, so
+how many metres of sky sit beside her depends on how wide the pane happens to
+be — about three hundred in a maximized pane and twice that in a quarter-size
+one — and any fixed run is off-frame in one of them and a third of the way in
+in the other, where the aeroplane appears to materialise in mid-air. The run
+is the frame's own half-width plus an aircraft's length, so she is always
+entered from just outside whatever is on screen.
+
+That is a camera-dependent quantity, which everywhere else in this file would
+be a mistake. It is allowed here because nothing in the model knows the
+aircraft exists, let alone how fast it was going: there is no quantity in it
+for a changing frame to make dishonest, and the ending card says as much.

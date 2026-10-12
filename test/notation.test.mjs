@@ -21,6 +21,7 @@ import { flight, derivation } from '../js/core/projectile.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { buildWorking, resolveAt, obstacleCheck } from '../js/working.js';
 import { solveDescent, descentWorking, resolveDescent } from '../js/core/descent.js';
+import { descentPanes, plotSpec, PRE_SAY } from '../js/render/drop.js';
 import { SCENARIOS, GROUPS } from '../js/scenarios.js';
 
 let pass = 0, fail = 0;
@@ -305,6 +306,7 @@ const MATH_SINKS = [
   'at-t-hint',     // the question card: which instant, and what it is doing
   'at-v-hint',
   'at-picks',
+  't-read',        // the one clock the four panes share
 ];
 
 group('Nothing that can hold an equation is filled with textContent', () => {
@@ -334,6 +336,54 @@ group('Nothing that can hold an equation is filled with textContent', () => {
   ok(gone.length === 0, 'and every one of them still exists',
      gone.length ? `found in neither index.html nor app.js: ${gone.join(', ')}` : '');
 });
+
+/* == 2b · the pane window =============================================
+   Four panes replace the single view for the parachute drop, and every string
+   in them reaches a student: the pane titles, the convention in each corner,
+   the sentence under each one, the unit the cursor's readout carries, and the
+   area the v–t pane quotes. The pane list is pure data (js/render/drop.js), so
+   it can be swept exactly as the working panel and the engine's own words are.
+
+   The corners are where this matters most. Each says what the pane is in,
+   including the sign convention — "m s⁻² · downwards positive" — and a unit
+   typed as `m s^-2` rather than set through js/notation.js would put a caret
+   in front of every student who opens this scenario. */
+group('The four panes say it as maths, or they say it in words', () => {
+  const CASES = [
+    { h: 140, g: 9.81, tOpen: 3, aChute: 25, vTerm: 6 },
+    { h: 1000, g: 9.81, tOpen: 12, aChute: 30, vTerm: 5 },
+    { h: 60, g: 9.81, tOpen: 3, aChute: 3, vTerm: 6 },        // lands still slowing
+    { h: 400, g: 1.62, tOpen: 14, aChute: 8, vTerm: 4 },      // the Moon
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of CASES) {
+    const r = solveDescent(k);
+    if (!r.ok) continue;
+    for (const p of descentPanes(r.f)) {
+      for (const key of ['title', 'tab', 'aria', 'corner', 'say', 'unit']) {
+        if (p[key] == null) continue;
+        said++;
+        check(`pane ${p.id} ${key}`, p[key], bag);
+      }
+      for (const b of p.rules || []) check(`pane ${p.id} rule`, b.name, bag);
+      if (p.kind !== 'plot') continue;
+      // the live spec, at both ends of the flight and in the middle of it,
+      // and through the pre-roll when the pane has no curve to draw yet
+      for (const [t, pre] of [[0, null], [k.tOpen, null], [r.tMax / 2, null], [r.tMax, null], [0, 0.9]]) {
+        const spec = plotSpec(p, r.f, t, pre);
+        said++;
+        check(`pane ${p.id} cursor unit`, spec.tick, bag);
+        check(`pane ${p.id} shaded area`, spec.shadeSay, bag);
+        check(`pane ${p.id} pre-roll`, spec.pre, bag);
+      }
+    }
+  }
+  check('the pre-roll line', PRE_SAY, bag);
+  ok(said > 60, `the sweep reaches every pane (${said} strings)`);
+  ok(bag.length === 0, "no programmer's maths in the window", bag.join('\n         '));
+});
+
 
 /* == 3 · the prose the scenarios carry ================================
    Every word in scenarios.js is displayed — the card note, the subtitle, the
