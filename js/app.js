@@ -387,13 +387,19 @@ function buildValuesScreen() {
                 stroke-width="1.5" stroke-dasharray="5 4"></line>
           <line x1="${AD.ox}" y1="10" x2="${AD.ox}" y2="154"
                 stroke="var(--border)" stroke-width="1.4"></line>
-          <!-- the launch velocity resolved, head to tail: colour is the
-               quantity and dash is the direction, the same rule the flight
-               view and the resolve card are read by -->
-          <line id="td-cx" stroke="var(--vel-vec)" stroke-width="2"
-                stroke-dasharray="6 4" opacity=".7"></line>
-          <line id="td-cy" stroke="var(--vel-vec)" stroke-width="2" opacity=".7"></line>
-          <path id="td-arc" fill="none" stroke="var(--accent)" stroke-width="1.6"></path>
+          <!-- THE COMPONENTS USED TO BE DRAWN HERE, head to tail: a dashed
+               line out along the axis to the foot of the vector, and a solid
+               one standing up from the foot to the tip. They were the right
+               figure in the wrong place. This control sets ONE quantity, the
+               direction, and the vertical line the vector's tip dropped onto
+               the axis was the most prominent mark in a picture of an angle —
+               a right-angled triangle competing with the thing being set, and
+               the dashed half of it lying along an axis that is already
+               dashed. The resolve card on the flight draws that figure
+               properly, against a motion, with both components labelled and
+               numbered. Here it is an angle: an axis, a vector, and the angle
+               between them. -->
+          <path id="td-arc" fill="none" stroke="var(--accent)" stroke-width="1.8"></path>
           <!-- A VECTOR, not a line. It has a head, and its LENGTH NEVER
                CHANGES: what the control alters is the direction, so the
                direction is the only thing allowed to move. The old ray was
@@ -1134,13 +1140,20 @@ function wireAngle() {
    floor, because the control covers −90° to +90° and a downward throw needs
    as much room as an upward one. `len` is then the largest arrow that still
    fits pointing straight up or straight down, with room above it for the
-   head and the label.
+   head and the label: at 76 the tip of a vertical throw lands 6 px short of
+   the frame, which is as long as the arrow can be without touching it.
+
+   `arc` is the radius the angle is drawn at, and it is deliberately more than
+   half the vector: the angle is what this control sets, so it should be the
+   thing the eye lands on rather than a token mark near the origin. The degree
+   label rides just outside it, on the bisector, so it sits inside the angle
+   it names at every value.
 
    It is declared here rather than written into the markup twice, because the
    template needs the origin and drawAngle needs all of it, and two copies of
    a coordinate is how a diagram ends up with its arrow nailed to the wrong
    point. */
-const AD = { ox: 32, oy: 82, len: 66, arc: 30, head: 12 };
+const AD = { ox: 32, oy: 82, len: 76, arc: 40, head: 13 };
 
 /**
  * The launch velocity, as a vector, at whatever the box currently holds.
@@ -1148,17 +1161,19 @@ const AD = { ox: 32, oy: 82, len: 66, arc: 30, head: 12 };
  * IT IS A VECTOR AND NOT A LINE, which is the whole of what changed. A line
  * says "this direction"; a vector with a head says "this much, this way", and
  * the quantity being set here is the direction of a velocity. So it has a
- * head, it keeps a CONSTANT LENGTH as it swings — the old ray was drawn out
- * to whichever frame edge it met first, so it was longest at 0° and shortest
- * at 45°, which draws u changing when only θ did — and it is resolved into
- * the two components underneath it, head to tail, dashed across and solid up.
- * That is the same figure the resolve card draws on the flight, which is the
+ * head, and it keeps a CONSTANT LENGTH as it swings — the old ray was drawn
+ * out to whichever frame edge it met first, so it was longest at 0° and
+ * shortest at 45°, which draws u changing when only θ did.
+ *
+ * It was resolved into its two components here as well, head to tail. It is
+ * not any more: see the note in the markup. That figure belongs on the
+ * flight, where the resolve card draws it against a motion, which is the
  * point: this is where the student meets it first.
  */
 function drawAngle(theta) {
   const ray = $('td-ray'), arc = $('td-arc'), wedge = $('td-wedge');
   if (!ray) return;
-  const head = $('td-head'), cx = $('td-cx'), cy = $('td-cy');
+  const head = $('td-head');
   const angT = $('td-ang'), uT = $('td-u');
   // WITH THE BOX BLANK, DRAW WHAT THE ENGINE FOUND. Leaving the diagram flat
   // while the panel underneath says "the engine recovered it as 20.4°" makes
@@ -1193,19 +1208,6 @@ function drawAngle(theta) {
     + `L${(ex - ca * HL + nx * bw).toFixed(2)} ${(ey + sa * HL + ny * bw).toFixed(2)} `
     + `L${(ex - ca * HL - nx * bw).toFixed(2)} ${(ey + sa * HL - ny * bw).toFixed(2)} Z`);
   head.setAttribute('fill', hue);
-
-  // The two components, head to tail: across to the foot, then up to the tip.
-  // Each disappears when it is genuinely zero rather than being drawn as a
-  // dot — a vertical launch has no horizontal part, and saying so by leaving
-  // it out is more honest than a stub.
-  const foot = { x: ex, y: OY };
-  const showX = Math.abs(ex - OX) > 3, showY = Math.abs(ey - OY) > 3;
-  cx.setAttribute('x1', OX); cx.setAttribute('y1', OY);
-  cx.setAttribute('x2', foot.x.toFixed(2)); cx.setAttribute('y2', OY);
-  cx.style.display = showX && showY ? '' : 'none';
-  cy.setAttribute('x1', foot.x.toFixed(2)); cy.setAttribute('y1', OY);
-  cy.setAttribute('x2', foot.x.toFixed(2)); cy.setAttribute('y2', ey.toFixed(2));
-  cy.style.display = showX && showY ? '' : 'none';
 
   // The arc runs from the horizontal round to the vector, either way.
   const ax = OX + AR, ay = OY;

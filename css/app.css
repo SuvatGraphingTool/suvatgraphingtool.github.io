@@ -226,7 +226,11 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
    viewBox is 1:1 with the rendered pixels at this width, so the number here
    is the number on screen. */
 .angle-dia text { font-size: 13px; font-weight: var(--w-bold); letter-spacing: -0.01em; }
+/* The two labels in the picture are the two quantities in it, so they are set
+   at the same size — the degree value used to be a step under the u beside it.
+   Both are above the 13 px floor. */
 .angle-dia #td-u { font-style: italic; font-size: 15px; }
+.angle-dia #td-ang { font-size: 15px; }
 .angle-set { flex: 1; min-width: 0; display: grid; gap: var(--sp-2); }
 .angle-set input[type='range'] { height: 24px; }
 .angle-set input[type='text'] { height: 48px; font-size: var(--fs-xl); }
@@ -383,27 +387,28 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
    because it is the thing that overrides the clock, and left to right is the
    order that says so.
 
-   THE COLOUR IS BORROWED FROM THE TWO SCENARIOS, NOT FROM THE QUANTITIES.
-   Orange and blue on this site mean velocity and displacement, and a piece of
-   chrome has no business claiming to be either — so the ramp is taken from
-   the parachute card's sky (#0369a1, #075985) and the monkey card's low sun
-   (#9a3412, #b45309) in css/tokens.css, and the white arrives as a highlight
-   along the top edge rather than as a stop in the ramp.
+   THE COLOUR IS MONKEY VS HUNTER'S, NOT THE QUANTITIES'. Orange and blue on
+   this site mean velocity and displacement, and a piece of chrome has no
+   business claiming to be either — so the ramp is that scenario's own card
+   palette, lifted from `[data-card='dusk']` in css/tokens.css: the low sun the
+   banana's path is drawn in (#b45309) running into the crimson the monkey
+   falls in (#9d174d), with the card's sand (#fbf3e8) arriving as a highlight
+   along the top edge rather than as a stop in the ramp. One scenario, one
+   warm ramp — it used to cross from the parachute's sky to the monkey's sun,
+   and two scenarios in one chip was one too many.
 
-   WHITE TEXT HOLDS ALL THE WAY ACROSS, which is why the ramp runs through a
-   dark olive rather than a pale one: a light middle would have been the
-   prettier blend and would have dropped the label to around 3.3:1. Walked in
-   one per cent steps against #fff, the worst point on the ramp is the far end:
-     #0369a1 5.93:1 · #075985 7.56:1 · #9a3412 7.31:1 · #b45309 5.02:1
-   THE HOVER DEEPENS RATHER THAN LIFTS, for the same reason. brightness(1.08)
-   was the obvious hover and it took that far end down to 4.22:1, under the
-   floor for 17px text; saturating instead reads as the same "it lit up" and
-   measures 4.87:1 at its worst. The white is a one-pixel background layer
-   along the top edge and never passes under the label. */
+   WHITE TEXT HOLDS ALL THE WAY ACROSS. Walked in one per cent steps against
+   #fff, the worst point is the start, and the ramp only gets darker from
+   there: #b45309 5.02:1 · #9d174d 7.44:1.
+   THE HOVER DEEPENS RATHER THAN LIFTS. brightness(1.08) was the obvious hover
+   and it took the light end to 4.22:1, under the floor for 17px text;
+   saturating instead reads as the same "it lit up" and measures 4.87:1 at its
+   worst. The sand is a one-pixel background layer along the top edge and
+   never passes under the label. */
 .askat-btn {
   pointer-events: auto; flex: none; white-space: nowrap;
   display: grid; place-items: center; min-width: 104px;
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(251,243,232,0.32);
   /* The highlight is a BACKGROUND LAYER rather than an inset shadow, and that
      is not a style choice. --shadow is `none` in the dark theme, so
      `box-shadow: var(--shadow), inset …` resolved to an invalid list there,
@@ -411,8 +416,8 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
      shares with the clock. As a background layer the highlight composes with
      nothing and .hbox keeps supplying the shadow in both themes. */
   background-image:
-    linear-gradient(to bottom, rgba(255,255,255,0.45) 0 1px, rgba(255,255,255,0) 1px),
-    linear-gradient(116deg, #0369a1 0%, #075985 38%, #9a3412 74%, #b45309 100%);
+    linear-gradient(to bottom, rgba(251,243,232,0.5) 0 1px, rgba(251,243,232,0) 1px),
+    linear-gradient(116deg, #b45309 0%, #a53a1a 52%, #9d174d 100%);
   color: #fff; font-size: var(--fs-base); font-weight: var(--w-bold);
   letter-spacing: -0.015em;
   transition: filter 120ms;

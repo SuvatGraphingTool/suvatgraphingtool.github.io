@@ -95,6 +95,101 @@ export const PRE = { total: 2.6, open0: 0.28, open1: 0.46, exit: 0.5 };
  */
 const run = (w, scale) => Math.max(5 * PLANE.len, (w / 2) / Math.max(1e-6, scale) + PLANE.len);
 
+/* ── and then it follows her down ───────────────────────────────────────
+   It used to fly off the right-hand edge and be gone by the time the clock
+   started, which left the top of the pane empty for the whole of a fall and
+   made the drop look like it had come from nowhere. A real jump aircraft does
+   not vanish either: it flies on, turns, and descends — it has to get down
+   and land, usually well before the jumper does.
+
+   So it stays in the picture, drifting out to the side and losing height, and
+   three things keep it unmistakably SCENERY rather than a second object with a
+   second motion worth reading:
+
+     it goes OUT, to the far side of the pane, while she falls down the middle
+     it SINKS far less than she falls, which is what a glide looks like
+     it FADES as it goes, so it reads as receding rather than as a subject
+
+   None of it is computed. The aircraft is not in the model — the engine is
+   one-dimensional and does not know an aeroplane exists, let alone how fast it
+   was flying or how fast it comes down — and the pane's own sentence and the
+   ending card's list of what is not modelled both say so. What is drawn here
+   is a fraction of the frame and a fraction of the height, never a speed. */
+const HOLD = 0.34;      // where it has got to by the time the clock starts
+/* AWAY IS SHORT OF THE EDGE ON PURPOSE. `run` is the frame's own half-width
+   plus an aircraft's length, so anything near 1 puts the aeroplane on the rim
+   with its nose already clipped — and the whole point of keeping it is that it
+   stays in the picture while she falls. This holds it inside the frame with
+   room to spare at every layout. */
+const AWAY = 0.72;      // and where it has drifted by the landing
+const SINK = 0.58;      // the share of her height it loses on the way down
+const TILT = 0.1;       // nose down through the descent, in radians
+
+/**
+ * Where the aircraft is, how far its door has slid, and how solid it looks.
+ *
+ * One function for the whole sequence, so the run-in, the drop and the descent
+ * cannot disagree at the joins: the pre-roll hands over at exactly HOLD and at
+ * exactly her jump height, which is where the fall picks it up.
+ *
+ * @param pre  seconds into the staging, or null once the clock is running
+ */
+export function planePose(pre, t, tMax, h, R) {
+  if (pre != null) {
+    const s = clamp(pre / PRE.total, 0, 1);
+    return {
+      // in to the release point, then on past it, level the whole way
+      x: s <= PRE.exit
+        ? (-1 + s / PRE.exit) * R
+        : (HOLD * (s - PRE.exit)) / (1 - PRE.exit) * R,
+      y: h,
+      open: clamp((s - PRE.open0) / (PRE.open1 - PRE.open0), 0, 1),
+      alpha: 1, tilt: 0,
+    };
+  }
+  const q = clamp(tMax > 0 ? t / tMax : 0, 0, 1);
+  // Most of the going happens early, because it is flying and she is not yet.
+  const out = 1 - (1 - q) ** 2;
+  /* THE SINK EASES IN, AND IT HAS TO. She leaves from rest, so for the first
+     second of the fall she is barely moving — and an aeroplane losing height
+     at a steady rate from the same instant passes BELOW her and sits there,
+     which is both wrong to look at and the one thing in this picture that
+     could be read as a second object outrunning the first. Squaring the
+     progress starts the descent almost flat and is also what the real thing
+     looks like: it flies on level, turns, and then comes down. Her own fall is
+     ½gt², so a sink in t² with this coefficient is slower than hers at every
+     instant rather than merely at the end — test/scenarios.test.mjs checks it
+     over the whole flight. */
+  return {
+    x: (HOLD + (AWAY - HOLD) * out) * R,
+    y: h * (1 - SINK * q * q),
+    open: 1,
+    alpha: 1 - 0.52 * q,
+    tilt: TILT,
+  };
+}
+
+/* ── how big she is drawn ───────────────────────────────────────────────
+   AT HER TRUE SIZE SHE IS A SMUDGE, and so is the canopy, which is the one
+   part of this pane that has to be watched happening. A 1.8 m person in a
+   quarter-size pane holding a hundred and forty metres is three pixels tall
+   and her 7 m canopy eleven across — and since parachutist floors the canopy
+   at seven pixels anyway, the inflation that the whole middle phase is about
+   grew from seven pixels to eleven and was invisible.
+
+   So the sprite gets a scale of its own, floored against the PANE's height
+   rather than against a fixed number of pixels, so she is the same share of a
+   quarter-size pane as of a maximized one. It only ever enlarges: zoom in far
+   enough and her true size takes over again.
+
+   The person-to-canopy RATIO is untouched, because that ratio is most of why
+   the picture reads as a parachute at all — she is still honestly about a
+   quarter of the canopy's width. The same decision ballSprite makes for a
+   football that is a pixel across, and the ending card says the canopy is
+   drawn at a size you can see rather than at the size it is. */
+const spriteScale = (scale, hp) =>
+  Math.max(scale, Math.max(10, hp * 0.05) / D.prop.person.h);
+
 /* ── the view: metres of sky, panned and zoomed ─────────────────────────
    The same three numbers js/render/scene.js's camera keeps, and the same two
    flags, so the gesture on this pane and the gesture on a graph pane are one
@@ -213,8 +308,9 @@ export function descentPanes(f) {
       draw: (canvas, view, o) => drawJump(canvas, view, o),
       title: 'The jump', tab: 'The jump', aria: 'The jump, in metres of sky',
       corner: `0–${num(h, 0)} ${U.s}`,
-      say: 'The aircraft and the door are scenery. She leaves from rest and falls '
-        + 'straight down; the model has no sideways motion in it at all.' },
+      say: 'The aircraft, the door and the aircraft\u2019s own way down after the drop '
+        + 'are all scenery. She leaves from rest and falls straight down; the model has '
+        + 'no sideways motion in it at all.' },
 
     { id: 'vt', kind: 'plot', nav: PLOT_NAV,
       title: 'Velocity – time', tab: `${M`v`}–${M`t`}`, aria: 'Velocity against time',
@@ -305,23 +401,19 @@ export function drawJump(canvas, view, o) {
   sky(ctx, w, hp, Y(0));
   ground(ctx, w, hp, Y(0));
 
-  /* ── the pre-roll ─────────────────────────────────────────────────── */
-  const s = o.pre == null ? 1 : clamp(o.pre / PRE.total, 0, 1);
+  /* ── the aircraft, before the clock and all the way through it ─────── */
+  const t = o.pre == null ? o.t : 0;
   const R = run(w, view.scale);
-  // The door's own position: it is the point the aircraft is drawn around, so
-  // that "the door passes over the release point" is one number rather than
-  // an offset applied in two places.
-  const doorX = (-1 + 2 * s) * R;
-  if (o.pre != null || s < 1) {
-    const opening = clamp((s - PRE.open0) / (PRE.open1 - PRE.open0), 0, 1);
-    aircraft(ctx, X(doorX), Y(H), view.scale, opening, P);
-  }
+  // The pose is the DOOR's, because the door is the point the aeroplane is
+  // drawn around — so "the door passes over the release point" is one number
+  // rather than an offset applied in two places.
+  const pl = planePose(o.pre, t, f.tMax, H, R);
+  aircraft(ctx, X(pl.x), Y(pl.y), view.scale, pl, P);
 
   // Before the exit she is in the doorway; after it she is where she was left,
   // which is the release point, which is where the engine says she is at t = 0.
-  const atDoor = o.pre != null && s < PRE.exit;
-  const t = o.pre == null ? o.t : 0;
-  const px = atDoor ? X(doorX) : X(0);
+  const atDoor = o.pre != null && clamp(o.pre / PRE.total, 0, 1) < PRE.exit;
+  const px = atDoor ? X(pl.x) : X(0);
   const py = atDoor ? Y(H) : Y(f.pos(t).y);
 
   /* ── the fall already flown ───────────────────────────────────────── */
@@ -350,6 +442,13 @@ export function drawJump(canvas, view, o) {
   L.add('ground', w - 12, Y(0) - 12, { color: P.muted, align: 'right', pri: 4, size: 13 });
 
   /* ── her, and what she is doing ───────────────────────────────────── */
+  // HER FEET ARE ON THE POSITION, not her middle. The engine treats her as a
+  // point, and the point a landing is about is the one that reaches the
+  // ground — so the drawn body stands on it rather than straddling it, the
+  // trail ends at her feet, and the last frame is not a person whose legs go
+  // through the ground.
+  const sS = spriteScale(view.scale, hp);
+  const stand = py - Math.max(3, D.prop.person.h * sS) * 0.4;
   if (o.pre == null) {
     const v = f.speed(t);
     if (v > 0.05) {
@@ -357,7 +456,7 @@ export function drawJump(canvas, view, o) {
       arrow(ctx, px, py, px, py + len, { color: P.velVec, width: 2.6, head: 12 });
     }
   }
-  parachutist(ctx, px, py, view.scale, f, t, P);
+  parachutist(ctx, px, stand, sS, f, t, P);
 
   if (o.pre != null) {
     // The one line of text the pre-roll is allowed, and it names itself as
@@ -366,7 +465,7 @@ export function drawJump(canvas, view, o) {
   } else {
     const here = f.at(t);
     L.add(`${here.name.toLowerCase()} · ${fmt(f.speed(t), 1)} ${U.v}`,
-          px + 18, py, { color: P.vel, pri: 10, size: 15, weight: 700, maxPush: 44 });
+          px + 18, stand, { color: P.vel, pri: 10, size: 15, weight: 700, maxPush: 44 });
   }
 
   L.draw(ctx, w, hp);
@@ -413,7 +512,7 @@ function ground(ctx, w, hp, groundY) {
  * cyan and violet mean velocity, displacement and acceleration on this site,
  * and an aeroplane is none of the three: it is the thing she stepped out of.
  */
-function aircraft(ctx, dx, dy, scale, opening, P) {
+function aircraft(ctx, dx, dy, scale, pose, P) {
   /* A PIXEL FLOOR, and a generous one. At its real twelve metres in a
      quarter-size pane holding a hundred and forty of them, the aircraft is
      twenty pixels long and its door is three — and "the door opens" is one of
@@ -432,16 +531,21 @@ function aircraft(ctx, dx, dy, scale, opening, P) {
   const nose = dx + len * 0.68, back = dx - len * 0.32;
 
   ctx.save();
+  // Fading as it goes, and nose down once it is descending. Both rotate and
+  // fade about the door, so everything below keeps its own coordinates.
+  ctx.globalAlpha = clamp(pose.alpha, 0, 1);
+  if (pose.tilt) { ctx.translate(dx, dy); ctx.rotate(pose.tilt); ctx.translate(-dx, -dy); }
   ctx.fillStyle = cssVar('--prop', '#5d564e');
   ctx.strokeStyle = cssVar('--structure-dark', '#4a4238');
   ctx.lineWidth = Math.max(1, body * 0.14);
 
   // the wing, behind the hull, seen almost edge-on from the side
-  ctx.globalAlpha = 0.85;
+  const solid = ctx.globalAlpha;
+  ctx.globalAlpha = solid * 0.85;
   ctx.beginPath();
   ctx.ellipse(dx + len * 0.1, dy - body * 0.1, span * 0.42, Math.max(1.2, body * 0.22), 0, 0, 7);
   ctx.fill();
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = solid;
 
   // the hull
   ctx.beginPath();
@@ -465,7 +569,7 @@ function aircraft(ctx, dx, dy, scale, opening, P) {
      leaving. It slides back, so it is a gap that grows rather than a panel
      that swings — and what shows through it is the unlit interior, from the
      same token the stadium's cut volumes use. */
-  const dw = Math.max(2, body * 0.95) * opening;
+  const dw = Math.max(2, body * 0.95) * pose.open;
   if (dw > 0.4) {
     ctx.fillStyle = cssVar('--roof-under', '#7b8086');
     ctx.fillRect(dx - dw / 2, dy - body * 0.44, dw, Math.max(2, body * 0.8));
