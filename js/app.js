@@ -597,19 +597,24 @@ function recompute() {
   const msg = $('solve-msg'), btn = $('launch');
 
   if (!solved.ok) {
-    // Typeset maths arrives as markup, so every sink that can receive it takes
-    // innerHTML. textContent here prints the tags at the student. See CLAUDE.md.
-    msg.dataset.ok = 'false'; msg.innerHTML = solved.reason;
-    $('notes').innerHTML = '';
+    if (!working()) {
+      // Typeset maths arrives as markup, so every sink that can receive it takes
+      // innerHTML. textContent here prints the tags at the student. See CLAUDE.md.
+      msg.dataset.ok = 'false'; msg.innerHTML = solved.reason;
+      $('notes').innerHTML = '';
+      sayAngle();
+    }
     btn.disabled = true; btn.textContent = 'Launch';
-    traj = null; refreshSteps(); applyGuard(); sayAngle(); return;
+    traj = null; refreshSteps(); applyGuard(); return;
   }
 
-  msg.dataset.ok = 'true';
-  msg.innerHTML = solved.derived.length
-    ? `Ready. The rest comes out as:  ${solved.derived.join('  ·  ')}`
-    : 'Everything needed is here.';
-  showDerived(solved);
+  if (!working()) {
+    msg.dataset.ok = 'true';
+    msg.innerHTML = solved.derived.length
+      ? `Ready. The rest comes out as:  ${solved.derived.join('  ·  ')}`
+      : 'Everything needed is here.';
+    showDerived(solved);
+  }
 
   traj = trajectory({ ...solved.params, mass: state.mass,
                       restitution: state.bounce ? state.restitution : 0,
@@ -642,9 +647,15 @@ function recompute() {
   } else { state.caught = null; state.verdict = null; }
   syncLive();
   btn.disabled = false;
-  btn.textContent = solved.params.u < 0.05
-    ? 'Release it'                      // a drop has no launch speed to quote
-    : `Launch at ${fmt(solved.params.u, 1)} m s⁻¹`;
+  // Its label quotes a speed, so it waits with the rest of the prose — but
+  // only the LABEL waits. Everything below this line still has to run on
+  // every event: the figure is drawn from the engine's answer when the box is
+  // blank, and a return here would freeze it mid-drag.
+  if (!working()) {
+    btn.textContent = solved.params.u < 0.05
+      ? 'Release it'                    // a drop has no launch speed to quote
+      : `Launch at ${fmt(solved.params.u, 1)} m s⁻¹`;
+  }
   showAbove();                   // the line's hint quotes the flight it belongs to
   sayBounce();                   // and so does the restitution slider
   // THE BAR'S SLIDER HAS TO BE RIGHT THE MOMENT THERE IS A FLIGHT, not only
@@ -658,7 +669,7 @@ function recompute() {
   syncRate();
   refreshSteps();                // and Flight is reachable now that one exists
   applyGuard();
-  sayAngle();
+  if (!working()) sayAngle();
   if (state.theta === undefined) drawAngle(undefined);   // show what it found
   dirty = true;
 }
@@ -1040,6 +1051,34 @@ function wireLive() {
  * What is left is the rule, and the rule is the same for every optional
  * value on this screen, so it is written once.
  */
+/* ── a control being dragged is not a control being read ─────────────────
+   Every event from the angle slider ran a full recompute, and a full
+   recompute rewrites four blocks of prose with numbers in them: what the
+   engine worked out, its assumptions, which kind of motion is being solved,
+   and how the angle was recovered — plus the Launch button, which quotes a
+   speed. Sixty times a second, under a thumb that is still moving, that is
+   four paragraphs reflowing and five numbers rattling, and none of it can be
+   read while it is happening. It is the single noisiest thing on the screen
+   and it is noisy exactly when somebody is trying to look at the picture.
+
+   So the SOLVE still runs on every event — Launch has to be right, and the
+   figure is drawn from the engine's own answer when the box is blank — and
+   only the SAYING of it waits for the control to be still. One sixth of a
+   second after the last movement everything catches up at once. Let go and
+   it is already there; drag, and the screen holds still around the one thing
+   you are moving. */
+const CALM = 160;
+let calmTimer = null;
+
+/** True while a control is still being worked, so prose should hold. */
+const working = () => calmTimer !== null;
+
+/** Run it once the control has been still for a moment, and only then. */
+function whenStill(fn) {
+  clearTimeout(calmTimer);
+  calmTimer = setTimeout(() => { calmTimer = null; fn(); }, CALM);
+}
+
 const OPTIONAL_HINT = '<b>Optional — only enter it if the question gives it.</b>';
 
 /* ── WHICH ANGLES THIS SITUATION ALLOWS ─────────────────────────────────
@@ -1081,10 +1120,15 @@ function thetaWhy() {
 function wireAngle() {
   const box = $('x-theta'), sld = $('theta-slider');
   if (!box) return;
+  angleShown = null;              // a fresh figure arrives at its angle, not from zero
 
   const set = (v, fromBox) => {
     state.theta = v;
-    if (!fromBox) box.value = v == null ? '' : fmt(v, 2);
+    // TRIMMED, NOT PADDED, WHEN THE APP IS THE ONE TYPING. The slider steps in
+    // halves, so two fixed places made the box read 32.50, 33.00, 33.50 — a
+    // trailing zero flickering on and off is the loudest digit on the screen
+    // and it is carrying no information at all. Blur still pads it to two.
+    if (!fromBox) box.value = v == null ? '' : num(v, 2, { trim: true });
     if (sld) sld.value = String(v ?? 0);
     drawAngle(v);
     recompute();
@@ -1127,8 +1171,18 @@ function wireAngle() {
       : OPTIONAL_HINT);
   });
 
+  // THE SLIDER IS THE ONE THAT NEEDS THE QUIET. It is the only control on the
+  // screen that fires continuously, and `whenStill` is what keeps the four
+  // blocks of prose from reflowing under a thumb that is still moving. When it
+  // stops, everything says itself at once.
   sld?.addEventListener('input', (e) => {
     say($('x-theta-hint'), false, OPTIONAL_HINT);
+    // THE QUIET IS ARMED BEFORE THE SOLVE, not after it. Armed after, the
+    // first event of every gesture still found working() false and reflowed
+    // all four blocks — so a drag was silent except for one lurch at the
+    // moment it started, which is the moment you are most likely to be
+    // looking. Armed first, nothing moves from the first pixel.
+    whenStill(() => { recompute(); });
     set(parseFloat(e.target.value), false);
   });
 
@@ -1170,7 +1224,61 @@ const AD = { ox: 32, oy: 82, len: 76, arc: 40, head: 13 };
  * flight, where the resolve card draws it against a motion, which is the
  * point: this is where the student meets it first.
  */
+/* ── the angle arrives rather than appearing ─────────────────────────────
+   DRAGGING THE SLIDER USED TO REPAINT THE FIGURE ON EVERY EVENT, straight to
+   whatever the control had just reported. At sixty events a second that is
+   not a vector turning, it is a vector flickering, and the degrees underneath
+   it were a counter being rattled rather than a number you could read. Typing
+   a value, or taking the engine's other angle, was worse again: the arrow was
+   simply somewhere else on the next frame, and the thing a diagram is FOR —
+   seeing 38° as a direction rather than reading it as a figure — never
+   happened, because nothing ever moved.
+
+   So `drawAngle` now sets a TARGET and the frame loop eases towards it, with
+   the same `1 − e^(−kt)` the camera travels on. Everything in the figure
+   rides the eased value, the degrees included, so the number counts round
+   with the arrow instead of jumping ahead of it. Nothing about what is being
+   SOLVED is eased: state.theta is exact from the first event, and the engine
+   has the real number the whole way. This is the picture catching up.
+
+   `angleShown` is null before the first paint and after the panel is rebuilt,
+   which is how a fresh screen lands on its value instead of sweeping up to it
+   from zero. */
+let angleWant = { theta: undefined }, angleShown = null;
+
 function drawAngle(theta) {
+  angleWant = { theta };
+  if (angleShown == null) easeAngle(1);    // a first paint has nothing to travel from
+}
+
+/** Where the figure is being asked to point: the box, or the engine's answer. */
+function angleTarget() {
+  const own = isFinite(angleWant.theta);
+  if (own) return angleWant.theta;
+  return solved?.ok && isFinite(solved.params.theta) ? solved.params.theta : null;
+}
+
+function easeAngle(dt) {
+  if (!$('td-ray')) { angleShown = null; return false; }
+  const want = angleTarget();
+  if (want == null) {
+    if (angleShown === null) { paintAngle(undefined); return false; }
+    angleShown = null; paintAngle(undefined); return false;
+  }
+  if (angleShown == null) { angleShown = want; paintAngle(want); return false; }
+  const d = want - angleShown;
+  // Below a twentieth of a degree there is nothing left to see, so it lands
+  // exactly rather than creeping at it for ever.
+  if (Math.abs(d) < 0.05) {
+    if (angleShown !== want) { angleShown = want; paintAngle(want); }
+    return false;
+  }
+  angleShown += d * (1 - Math.exp(-dt * 15));
+  paintAngle(angleShown);
+  return true;
+}
+
+function paintAngle(theta) {
   const ray = $('td-ray'), arc = $('td-arc'), wedge = $('td-wedge');
   if (!ray) return;
   const head = $('td-head');
@@ -1178,9 +1286,14 @@ function drawAngle(theta) {
   // WITH THE BOX BLANK, DRAW WHAT THE ENGINE FOUND. Leaving the diagram flat
   // while the panel underneath says "the engine recovered it as 20.4°" makes
   // the two disagree, and the picture is the part that gets believed.
-  const own = isFinite(theta);
+  //
+  // WHOSE ANGLE IT IS COMES FROM THE BOX, not from the value being painted:
+  // once there is anything at all to point at, the eased value is finite
+  // either way, so asking it would have drawn the engine's own answer in the
+  // colour that means "you typed this".
+  const own = isFinite(angleWant.theta);
   const found = !own && solved?.ok ? solved.params.theta : undefined;
-  const shown = own ? theta : found;
+  const shown = theta;
   // The diagram draws the model's whole range, not the scenario's: when the
   // engine has RECOVERED an angle this picture is how you see what it found,
   // and clamping that into the control's range would draw a different throw
@@ -2173,6 +2286,10 @@ function frame(now) {
     }
     dirty = true;
   }
+  // The angle figure travels too, on its own screen, and it is the only thing
+  // on that screen that moves — so it is asked every frame rather than being
+  // hung off `dirty`, which belongs to the canvas.
+  if (state.step === 'values') easeAngle(dt);
   // the camera travels rather than teleporting; while it is moving, so is
   // the frame
   if (state.step === 'flight' && scene.easeCamera(cam, dt)) dirty = true;
@@ -2417,5 +2534,5 @@ for (const face of ['560 1em "Source Serif 4"', 'italic 560 1em "Source Serif 4"
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
-                 openAskAt, closeAskAt,
+                 openAskAt, closeAskAt, easeAngle,
                  redraw() { recompute(); draw(); } };

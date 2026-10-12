@@ -391,44 +391,35 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
    because it is the thing that overrides the clock, and left to right is the
    order that says so.
 
-   THE COLOUR IS MONKEY VS HUNTER'S, NOT THE QUANTITIES'. Orange and blue on
-   this site mean velocity and displacement, and a piece of chrome has no
-   business claiming to be either — so the ramp is that scenario's own card
-   palette, lifted from `[data-card='dusk']` in css/tokens.css: the low sun the
-   banana's path is drawn in (#b45309) running into the crimson the monkey
-   falls in (#9d174d), with the card's sand (#fbf3e8) arriving as a highlight
-   along the top edge rather than as a stop in the ramp. One scenario, one
-   warm ramp — it used to cross from the parachute's sky to the monkey's sun,
-   and two scenarios in one chip was one too many.
+   IT IS THE MONKEY VS HUNTER CARD, not an orange button. The colour is not
+   taken FROM that scenario's palette, it IS that scenario's card: the same
+   sand (#fbf3e8), the same wash of the low sun over it, and the same ink
+   (#3a2a20), all declared under `[data-card='dusk']` in css/tokens.css. Set it
+   next to the chooser and it is the same chip. It was a saturated orange ramp
+   with white on it for one turn, and a dark lozenge is the one thing the card
+   it was named after is not.
 
-   WHITE TEXT HOLDS ALL THE WAY ACROSS. Walked in one per cent steps against
-   #fff, the worst point is the start, and the ramp only gets darker from
-   there: #b45309 5.02:1 · #9d174d 7.44:1.
-   THE HOVER DEEPENS RATHER THAN LIFTS. brightness(1.08) was the obvious hover
-   and it took the light end to 4.22:1, under the floor for 17px text;
-   saturating instead reads as the same "it lit up" and measures 4.87:1 at its
-   worst. The sand is a one-pixel background layer along the top edge and
-   never passes under the label. */
+   The wash is carried a little further than the card's own 0.10, because the
+   card is 290px wide and has a picture in it to do the work, and this is a
+   124px chip whose whole job is to be recognisable at a glance.
+
+   The ink holds easily at every point of the ramp: 12.5:1 on the bare sand,
+   9.1:1 under the heaviest part of the wash. It is a light chip so the hover
+   DEEPENS the wash rather than lifting it, which is the direction that keeps
+   contrast going up. */
 .askat-btn {
   pointer-events: auto; flex: none; white-space: nowrap;
   display: grid; place-items: center; min-width: 104px;
-  border: 1px solid rgba(251,243,232,0.32);
-  /* The highlight is a BACKGROUND LAYER rather than an inset shadow, and that
-     is not a style choice. --shadow is `none` in the dark theme, so
-     `box-shadow: var(--shadow), inset …` resolved to an invalid list there,
-     the whole declaration was dropped, and the button lost the card shadow it
-     shares with the clock. As a background layer the highlight composes with
-     nothing and .hbox keeps supplying the shadow in both themes. */
-  background-image:
-    linear-gradient(to bottom, rgba(251,243,232,0.5) 0 1px, rgba(251,243,232,0) 1px),
-    linear-gradient(116deg, #b45309 0%, #a53a1a 52%, #9d174d 100%);
-  color: #fff; font-size: var(--fs-base); font-weight: var(--w-bold);
+  border: 1px solid rgba(120,78,42,0.30);     /* the dusk card's own rim */
+  background-color: #fbf3e8;                  /* sand, with the sun nearly off it */
+  background-image: linear-gradient(162deg, rgba(180,83,9,0.26), rgba(180,83,9,0.03) 64%);
+  color: #3a2a20; font-size: var(--fs-base); font-weight: var(--w-bold);
   letter-spacing: -0.015em;
-  transition: filter 120ms;
+  transition: background-image 120ms;
 }
-.askat-btn:hover { filter: saturate(1.22) brightness(0.97); }
+.askat-btn:hover { background-image: linear-gradient(162deg, rgba(180,83,9,0.38), rgba(180,83,9,0.08) 64%); }
 .askat-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.askat-btn[aria-pressed='true'] { filter: saturate(1.15) brightness(0.9); }
+.askat-btn[aria-pressed='true'] { background-image: linear-gradient(162deg, rgba(180,83,9,0.48), rgba(180,83,9,0.14) 64%); }
 
 /* ── the card it opens ───────────────────────────────────────────────────
    One word of heading, then the two boxes. It used to carry an eyebrow, a
