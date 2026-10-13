@@ -10,7 +10,7 @@
 //
 // There are two answers to that and this file now uses both.
 //
-// ONE FRAME, SQUEEZED SIDEWAYS. The beach keeps this. The banana and the
+// ONE FRAME, SQUEEZED SIDEWAYS. The monkey keeps this. The banana and the
 // monkey are metres apart, not hundreds, so the squeeze is mild and the frame
 // holds the whole story at once. `kx` is how badly the sideways axis had to be
 // squeezed, it is the only number in this file allowed to lie, and the plate
@@ -44,10 +44,8 @@
 // inherited palette is how you end up with 34%-opacity white on pale sky.
 
 import { fitCanvas, palette, fmt, clamp, labels } from './util.js';
-import { warehouseBack, beachBack, jungleBack, EXTENT } from './backdrops.js';
+import { warehouseBack, plainBack, EXTENT } from './backdrops.js';
 import { MONKEY_H } from '../core/intercept.js';
-
-export const PALM_H = 12.5;      // the tree is a tree, not a function of the monkey
 
 const NIGHT = {
   ink: '#f2efe9', inkMid: 'rgba(242,239,233,0.62)', inkFaint: 'rgba(242,239,233,0.34)',
@@ -64,18 +62,21 @@ const NIGHT = {
 // The halo is a soft dark contrast ring — the job it does on the dark plate is
 // "separate the round from the background", and on a bright one that is a
 // shadow, not a flash.
+// Squared paper. `flat` says so: one background colour, no gradient and no
+// vignette, because this plate is a diagram rather than an exposure.
 const DAY = {
-  ink: '#152013', inkMid: 'rgba(21,32,19,0.70)', inkFaint: 'rgba(21,32,19,0.38)',
-  bg0: '#dfeef5', bg1: '#b9d9ea',
-  rule: 'rgba(21,32,19,0.34)', ruleFaint: 'rgba(21,32,19,0.16)',
-  brass: '#e8b920', brassHi: '#ffe885', brassLo: '#8a6207',
+  flat: true,
+  ink: '#16211b', inkMid: 'rgba(22,33,27,0.64)', inkFaint: 'rgba(22,33,27,0.34)',
+  bg0: '#f7f6f1', bg1: '#f7f6f1',
+  rule: 'rgba(22,33,27,0.30)', ruleFaint: 'rgba(22,33,27,0.14)',
+  brass: '#e0a81b', brassHi: '#ffd95e', brassLo: '#7d5806',
   lead: '#a8adb2', leadHi: '#e7ebee', leadLo: '#4a4f54',
-  glow: 'rgba(24,36,20,0.20)',
-  pill: '#fbf8f0', pillInk: '#17160f',
+  glow: 'rgba(22,33,27,0.12)',
+  pill: '#ffffff', pillInk: '#17160f',
 };
 
-const PLATES = { warehouse: NIGHT, beach: NIGHT, jungle: DAY };
-const BACKS = { warehouse: warehouseBack, beach: beachBack, jungle: jungleBack };
+const PLATES = { warehouse: NIGHT, plain: DAY };
+const BACKS = { warehouse: warehouseBack, plain: plainBack };
 
 // The plate in force for the frame being drawn. Set once at the top of
 // render(); every painter below reads it rather than a module constant.
@@ -98,7 +99,7 @@ const round = (g, x, y, w, h, r) => {
 
    FITTED (no `scale`) — work out what it takes to get the whole flight in,
    squeezing sideways if it has to and never stretching. `kx` reports the
-   squeeze and the plate prints it. This is what the beach uses.
+   squeeze and the plate prints it. This is what the monkey uses.
 
    GIVEN (`scale` supplied) — you have already decided the metres-per-pixel,
    and you say which world x sits at which fraction across the pane. The
@@ -117,21 +118,14 @@ function stage(o, rect, opts = {}) {
   let xHi = Math.max(ex.x1, isFinite(f.range) ? f.range : f.horiz * f.tMax);
   let yHi = Math.max(ex.yTop, f.apexHeight, f.params.h);
   if (second) xHi = Math.max(xHi, second.range ?? 0);
-  // the tree stands beside the monkey, so the frame has to hold it too
+  // THE FRAME HOLDS THE PHYSICS AND THE PLACE THE MONKEY HANGS FROM, and the
+  // floor comes from the backdrop's own extent rather than from the monkey:
+  // tie it to the marker and the picture rescales every time you pick a
+  // different branch, so the one thing that should stay put — the grid — is
+  // the thing that moves.
   if (markers?.target) {
-    xHi = Math.max(xHi, markers.target.x + 4.5);
-    // THE FRAME HOLDS THE PHYSICS, AND AS MUCH TREE AS IT TAKES TO READ AS A
-    // TREE. It used to hold the whole palm — PALM_H + 1.4, so 13.9 m — and
-    // the palm is taller than anything the physics touches, which put about
-    // six metres of empty sky above a demonstration happening at nine. The
-    // crown is allowed to run out of the top now.
-    //
-    // What it must NOT do is tie the frame to the monkey's height, which is
-    // what backdrops.js warns about: the tree would change height every time
-    // the monkey was dragged and the one fixed object in the picture would
-    // stop being fixed. The floor here is a constant, so the tree stands at
-    // PALM_H whatever the monkey does — it is only the CROP that moves.
-    yHi = Math.max(f.apexHeight, f.params.h, markers.target.y + 2.2, PALM_H * 0.62);
+    xHi = Math.max(xHi, markers.target.x + 2.5);
+    yHi = Math.max(ex.yTop, f.apexHeight, f.params.h, markers.target.y + 1.6);
   }
   let xLo = Math.min(0, ex.x0);
   if (opts.yHi) yHi = opts.yHi;
@@ -175,8 +169,8 @@ function stage(o, rect, opts = {}) {
    onto the ordinary side-on view and this renderer went unused.
 
    It reads the camera now, so there is nothing left to choose between: the
-   beach keeps its dark plate, its strobe exposures and its palm, and it drags
-   and zooms like every other view on the site.
+   monkey keeps its plate and its strobe exposures, and it drags and zooms
+   like every other view on the site.
 
    SQUARE PIXELS, as a consequence. The fitted plate squeezed sideways when a
    flight was too wide for the frame — `kx` was the only number in this file
@@ -200,7 +194,7 @@ function fitPlate(cam, o, rect) {
     xHi = Math.max(xHi, markers.target.x + 4.5);
     // Same floor the fitted stage uses: enough palm to read as a palm, and
     // never tied to the monkey's own height — see backdrops.js.
-    yHi = Math.max(f.apexHeight, f.params.h, markers.target.y + 2.2, PALM_H * 0.62);
+    yHi = Math.max(ex.yTop, f.apexHeight, f.params.h, markers.target.y + 1.6);
   }
   const xLo = Math.min(0, ex.x0);
 
@@ -248,13 +242,22 @@ function plate(g, w, h, pad) {
   const x = pad.l - 18, y = pad.t - 18, pw = w - x - (pad.r - 18), ph = h - y - (pad.b - 18);
   g.save();
   round(g, x, y, pw, ph, 14); g.clip();
-  const bg = g.createLinearGradient(0, y, 0, y + ph);
-  bg.addColorStop(0, PL.bg0); bg.addColorStop(1, PL.bg1);
-  g.fillStyle = bg; g.fillRect(x, y, pw, ph);
-  // a soft vignette, so the corners fall away like a real exposure
-  const v = g.createRadialGradient(x + pw * 0.42, y + ph * 0.42, 0, x + pw * 0.5, y + ph * 0.5, pw * 0.78);
-  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.42)');
-  g.fillStyle = v; g.fillRect(x, y, pw, ph);
+  // A GRADIENT AND A VIGNETTE ARE PHOTOGRAPH, NOT DIAGRAM. The range is a
+  // photograph and keeps both. The monkey is a drawing on squared paper, and
+  // a sky-blue wash with the corners falling away is exactly the atmosphere a
+  // diagram should not have — it also makes the grid fade out in the corners,
+  // which is where you most want to count squares.
+  if (PL.flat) {
+    g.fillStyle = PL.bg0; g.fillRect(x, y, pw, ph);
+  } else {
+    const bg = g.createLinearGradient(0, y, 0, y + ph);
+    bg.addColorStop(0, PL.bg0); bg.addColorStop(1, PL.bg1);
+    g.fillStyle = bg; g.fillRect(x, y, pw, ph);
+    // a soft vignette, so the corners fall away like a real exposure
+    const v = g.createRadialGradient(x + pw * 0.42, y + ph * 0.42, 0, x + pw * 0.5, y + ph * 0.5, pw * 0.78);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.42)');
+    g.fillStyle = v; g.fillRect(x, y, pw, ph);
+  }
   return { x, y, w: pw, h: ph };
 }
 
@@ -286,6 +289,11 @@ function bullet(g, x, y, L, ang, lit) {
 
 /** The flash halo. This is what makes it read as a photograph. */
 function halo(g, x, y, r) {
+  // ON THE DIAGRAM THERE IS NO FLASH TO HALO. A warm glow around every
+  // exposure is what a strobe lamp does in a dark room; on squared paper it
+  // is a smudge under the one object the page is about, and it was the thing
+  // making the monkey look like it had been rubbed out.
+  if (PL.flat) return;
   const gl = g.createRadialGradient(x, y, 0, x, y, r);
   gl.addColorStop(0, PL.glow); gl.addColorStop(0.55, 'rgba(255,238,196,0.06)');
   gl.addColorStop(1, 'rgba(0,0,0,0)');
@@ -509,9 +517,9 @@ function drawPane(g, pane, o, prev) {
   const box = pane.box;
 
   // WHAT IS THROWN IS THE SCENARIO'S BUSINESS, NOT THE PLACE'S. These three
-  // branches each read `scenario.backdrop === 'beach'`, which says the round
-  // is a banana because the sand is sand. Move the monkey somewhere else and
-  // the hunter goes back to firing a bullet — so the scenario names what it
+  // branches read `scenario.backdrop === 'beach'`, which said the round was a
+  // banana because the sand was sand. Move the monkey somewhere else and the
+  // hunter went back to firing a bullet — so the scenario names what it
   // throws and the backdrop only says where.
   const thrown = scenario.projectile || 'round';
   const back = BACKS[scenario.backdrop] || warehouseBack;
@@ -637,6 +645,17 @@ function heightLines(g, shot, o, box) {
   const grounded = second && isFinite(second.tFlight) ? second.tFlight : Infinity;
   for (const s of pair) {
     if (!s.b) continue;
+    // NOT AT t = 0. THIS IS THE SECOND LINE. Before anything is thrown the
+    // banana is at the muzzle and the monkey is on its branch, so this drew a
+    // connector from one to the other — a line from the hunter straight to
+    // the monkey, which is indistinguishable from an aim line and sat there
+    // while the real aim ray swung away with the angle. Two lines, one of
+    // which was still pointing at the target you had just stopped aiming at.
+    //
+    // It was never an aim line. It is the pair connector, and what it claims
+    // is "these two have fallen the same distance" — which at t = 0 is a
+    // claim about nothing, the same reason the "same fall" pill waits.
+    if (shots[s.i] <= 1e-9) continue;
     if (shots[s.i] > grounded + 1e-9) continue;       // it has landed; no shared fall left
     if (!s.drawn && !s.last) continue;                // no line to an exposure nobody can see
     g.globalAlpha = s.last ? 0.95 : 0.6;
