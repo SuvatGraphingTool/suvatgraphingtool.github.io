@@ -15,8 +15,27 @@
 // So there are four answers now, and the renderer displays whichever comes
 // back. It does not work any of them out itself — house rule 4.
 
+/* ── how big the monkey is ──────────────────────────────────────────────
+   AIM AT IT AND YOU HIT IT — and that only holds if "it" is the same size to
+   the physics as it is to the eye.
+ 
+   The tolerance used to be `max(0.35, target.x * 0.02)`: 35 cm at the default
+   hang, against a monkey drawn about 1.2 m tall. So two thirds of the animal
+   on the screen was not the animal as far as this file was concerned, and an
+   aim visibly through its chest came back `high` or `low`. That is the bug
+   where a student does exactly what the scenario asks and is told they
+   missed.
+ 
+   So the size is stated ONCE, here, in metres, and the renderer draws the
+   monkey at it — js/render/exhibit.js imports this constant rather than
+   picking a sprite size. The scenario's caveat already says the monkey is
+   drawn larger than life; this is that admission turned into a number both
+   halves agree on. Hit means "the line passed through the body", because the
+   body is MONKEY_H tall in both places. */
+export const MONKEY_H = 1.5;
+
 /** Tolerance in metres: close enough that a banana and a monkey touch. */
-const TOUCH = (target) => Math.max(0.35, target.x * 0.02);
+const TOUCH = () => MONKEY_H * 0.5;
 
 /**
  * @param {object} f        the thrown object's flight (js/core/projectile.js)
@@ -49,7 +68,7 @@ export function intercept(f, target, g) {
   const falling = target.y - 0.5 * g * t * t;
   const gap = thrown - falling;
   const fall = 0.5 * g * t * t;
-  const tol = TOUCH(target);
+  const tol = TOUCH();
 
   return {
     kind: Math.abs(gap) <= tol ? 'caught' : gap > 0 ? 'high' : 'low',

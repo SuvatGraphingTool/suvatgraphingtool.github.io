@@ -128,6 +128,7 @@ export const SCENARIOS = [
     note: 'Two identical rounds leave the bench at the same instant: one fired flat, one simply released. Vertically they are the same problem — neither starts with any upward speed, and both are pulled down at the same rate — because firing adds velocity sideways only, and the two components are independent. The horizontal push buys no hang time at all, at any muzzle speed.',
     params: { u: 360, theta: 0, h: 1.5, g: 9.81 }, lockAngle: true,
     exhibit: true, backdrop: 'warehouse', site: FLAT_SITE,
+    place: 'An indoor range, lit by a strobe',
     card: 'range',
     pairLabel: 'same height',
     seed: { u: 360, h: 1.5, g: 9.81 },
@@ -174,7 +175,12 @@ export const SCENARIOS = [
     // so the beach comes back with the dragging, the zoom, the view button
     // and the graphs rather than instead of them. See fitPlate in
     // js/render/exhibit.js.
-    exhibit: true, plate: true, backdrop: 'beach', site: FLAT_SITE,
+    exhibit: true, plate: true, backdrop: 'jungle', site: FLAT_SITE,
+    // WITHOUT THIS THE CAPTION READS "The west goal line, aimed down the
+    // pitch". An exhibit has no site in js/world/world.js, so siteFor() falls
+    // through to the goal kick — see renderHud, whose comment says exactly
+    // this and then had its two `place` strings removed from under it.
+    place: 'A jungle clearing, under the canopy',
     // The hunter throws a banana, and says so here rather than leaving the
     // renderer to infer it from the sand.
     projectile: 'banana',
@@ -182,7 +188,11 @@ export const SCENARIOS = [
     pairLabel: 'same fall',
     caughtLabel: 'caught — every time',
     seed: { u: 22, h: 1.5, g: 9.81 },
-    markers: { target: { x: 12, y: 9 } }, dragTarget: true, aimAtTarget: true,
+    // The monkey hangs from a BRANCH, and this is one of them — see BRANCHES
+    // in js/render/backdrops.js, which is the one list both the tree and the
+    // drag read. A marker in mid-air would be a monkey holding nothing.
+    markers: { target: { x: 10.1, y: 9.4 } }, dragTarget: true, aimAtTarget: true,
+    branches: true,
     // Live, on the scene. Three preset buttons were a menu; this is a toy.
     live: { u: { min: 4, max: 60, step: 0.5, label: 'speed', unit: 'm s⁻¹' },
             theta: { min: -20, max: 85, step: 0.5, label: 'angle', unit: '°' } },

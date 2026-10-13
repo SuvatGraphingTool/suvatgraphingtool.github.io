@@ -28,16 +28,28 @@
 // The vertical axis is never touched in either mode, the engine never knows,
 // and the numbers on screen are the numbers the engine produced.
 //
-// The stage itself is a dark plate in both themes, because this is a
-// photograph: a strobe lamp firing every 50 ms in a blacked-out room. Light
-// mode changes the page around it, not the plate.
+// THE STAGE IS A PLATE, AND THERE ARE NOW TWO OF THEM.
+//
+// The range is a strobe lamp firing every 50 ms in a blacked-out room, so its
+// plate is dark in both themes and light mode changes the page around it
+// rather than the plate. That was the only kind of plate there was, and every
+// ink, rule and halo in this file was picked against it.
+//
+// The jungle is the middle of the day. Near-white text and a white flash halo
+// over a lit canopy is the same mistake in the other direction, so the plate
+// is a PALETTE now rather than a constant: `PLATES` holds one per backdrop,
+// `render` picks the scenario's, and everything downstream reads `PL`. Only
+// the two keys that describe the light differ in kind — `ink` and `glow` —
+// but every value is stated per plate rather than inherited, because a half-
+// inherited palette is how you end up with 34%-opacity white on pale sky.
 
 import { fitCanvas, palette, fmt, clamp, labels } from './util.js';
-import { warehouseBack, beachBack, EXTENT } from './backdrops.js';
+import { warehouseBack, beachBack, jungleBack, EXTENT } from './backdrops.js';
+import { MONKEY_H } from '../core/intercept.js';
 
 export const PALM_H = 12.5;      // the tree is a tree, not a function of the monkey
 
-const PLATE = {
+const NIGHT = {
   ink: '#f2efe9', inkMid: 'rgba(242,239,233,0.62)', inkFaint: 'rgba(242,239,233,0.34)',
   bg0: '#1c1b18', bg1: '#0e0e0c',
   rule: 'rgba(242,239,233,0.26)', ruleFaint: 'rgba(242,239,233,0.13)',
@@ -46,6 +58,28 @@ const PLATE = {
   glow: 'rgba(255,238,196,0.17)',
   pill: '#f6f3ec', pillInk: '#17160f',
 };
+
+// Daylight. The ink is a very dark green-brown rather than black: it sits on
+// leaves most of the time, and pure black on foliage reads as a hole in it.
+// The halo is a soft dark contrast ring — the job it does on the dark plate is
+// "separate the round from the background", and on a bright one that is a
+// shadow, not a flash.
+const DAY = {
+  ink: '#152013', inkMid: 'rgba(21,32,19,0.70)', inkFaint: 'rgba(21,32,19,0.38)',
+  bg0: '#dfeef5', bg1: '#b9d9ea',
+  rule: 'rgba(21,32,19,0.34)', ruleFaint: 'rgba(21,32,19,0.16)',
+  brass: '#e8b920', brassHi: '#ffe885', brassLo: '#8a6207',
+  lead: '#a8adb2', leadHi: '#e7ebee', leadLo: '#4a4f54',
+  glow: 'rgba(24,36,20,0.20)',
+  pill: '#fbf8f0', pillInk: '#17160f',
+};
+
+const PLATES = { warehouse: NIGHT, beach: NIGHT, jungle: DAY };
+const BACKS = { warehouse: warehouseBack, beach: beachBack, jungle: jungleBack };
+
+// The plate in force for the frame being drawn. Set once at the top of
+// render(); every painter below reads it rather than a module constant.
+let PL = NIGHT;
 
 const round = (g, x, y, w, h, r) => {
   g.beginPath();
@@ -215,7 +249,7 @@ function plate(g, w, h, pad) {
   g.save();
   round(g, x, y, pw, ph, 14); g.clip();
   const bg = g.createLinearGradient(0, y, 0, y + ph);
-  bg.addColorStop(0, PLATE.bg0); bg.addColorStop(1, PLATE.bg1);
+  bg.addColorStop(0, PL.bg0); bg.addColorStop(1, PL.bg1);
   g.fillStyle = bg; g.fillRect(x, y, pw, ph);
   // a soft vignette, so the corners fall away like a real exposure
   const v = g.createRadialGradient(x + pw * 0.42, y + ph * 0.42, 0, x + pw * 0.5, y + ph * 0.5, pw * 0.78);
@@ -231,7 +265,7 @@ function bullet(g, x, y, L, ang, lit) {
   g.save(); g.translate(x, y); g.rotate(ang);
   const W = Math.max(2.6, L * 0.40);
   const body = g.createLinearGradient(0, -W / 2, 0, W / 2);
-  body.addColorStop(0, PLATE.brassHi); body.addColorStop(0.45, PLATE.brass); body.addColorStop(1, PLATE.brassLo);
+  body.addColorStop(0, PL.brassHi); body.addColorStop(0.45, PL.brass); body.addColorStop(1, PL.brassLo);
   g.fillStyle = body;
   g.beginPath();
   g.moveTo(L * 0.5, 0);                                 // ogive nose
@@ -242,9 +276,9 @@ function bullet(g, x, y, L, ang, lit) {
   g.quadraticCurveTo(L * 0.16, W / 2, L * 0.5, 0);
   g.closePath(); g.fill();
   if (lit) {                                            // a cannelure and a highlight
-    g.strokeStyle = PLATE.brassLo; g.lineWidth = Math.max(0.7, L * 0.045);
+    g.strokeStyle = PL.brassLo; g.lineWidth = Math.max(0.7, L * 0.045);
     g.beginPath(); g.moveTo(-L * 0.2, -W * 0.46); g.lineTo(-L * 0.2, W * 0.46); g.stroke();
-    g.strokeStyle = PLATE.brassHi; g.lineWidth = Math.max(0.6, L * 0.05); g.globalAlpha = 0.9;
+    g.strokeStyle = PL.brassHi; g.lineWidth = Math.max(0.6, L * 0.05); g.globalAlpha = 0.9;
     g.beginPath(); g.moveTo(L * 0.3, -W * 0.2); g.lineTo(-L * 0.36, -W * 0.3); g.stroke();
   }
   g.restore();
@@ -253,7 +287,7 @@ function bullet(g, x, y, L, ang, lit) {
 /** The flash halo. This is what makes it read as a photograph. */
 function halo(g, x, y, r) {
   const gl = g.createRadialGradient(x, y, 0, x, y, r);
-  gl.addColorStop(0, PLATE.glow); gl.addColorStop(0.55, 'rgba(255,238,196,0.06)');
+  gl.addColorStop(0, PL.glow); gl.addColorStop(0.55, 'rgba(255,238,196,0.06)');
   gl.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = gl; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
 }
@@ -263,13 +297,13 @@ function pill(g, x, y, text, size = 14) {
   g.font = `600 ${size}px ${getComputedStyle(document.documentElement).getPropertyValue('--font') || 'system-ui'}`;
   const tw = g.measureText(text).width, pw = tw + 22, ph = size + 15;
   round(g, x - pw / 2, y - ph / 2, pw, ph, ph / 2);
-  g.fillStyle = PLATE.pill; g.fill();
-  g.fillStyle = PLATE.pillInk; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = PL.pill; g.fill();
+  g.fillStyle = PL.pillInk; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(text, x, y + 0.5);
   g.restore();
 }
 
-function text(g, x, y, s, { col = PLATE.inkMid, size = 13, align = 'left', weight = 600 } = {}) {
+function text(g, x, y, s, { col = PL.inkMid, size = 13, align = 'left', weight = 600 } = {}) {
   g.save();
   g.font = `${weight} ${size}px ${getComputedStyle(document.documentElement).getPropertyValue('--font') || 'system-ui'}`;
   g.fillStyle = col; g.textAlign = align; g.textBaseline = 'middle';
@@ -352,7 +386,7 @@ function gutter(g, panes, box) {
     g.save();
     g.fillStyle = 'rgba(0,0,0,0.55)';
     g.fillRect(x, box.y, GUTTER, box.h);
-    g.strokeStyle = PLATE.ruleFaint; g.lineWidth = 1;
+    g.strokeStyle = PL.ruleFaint; g.lineWidth = 1;
     for (const rx of [x + 0.5, x + GUTTER - 0.5]) {
       g.beginPath(); g.moveTo(rx, box.y); g.lineTo(rx, box.y + box.h); g.stroke();
     }
@@ -373,7 +407,7 @@ function sameHeight(g, panes, o, box) {
   const S = panes[0].S;
   const Ya = S.Y(ya), Yb = S.Y(yb);
   g.save();
-  g.setLineDash([3, 5]); g.lineWidth = 1.3; g.strokeStyle = PLATE.ink;
+  g.setLineDash([3, 5]); g.lineWidth = 1.3; g.strokeStyle = PL.ink;
   g.globalAlpha = 0.85;
   g.beginPath(); g.moveTo(box.x + 6, Ya); g.lineTo(box.x + box.w - 6, Ya); g.stroke();
   if (Math.abs(Ya - Yb) > 1.5) {                        // they have come apart
@@ -385,7 +419,7 @@ function sameHeight(g, panes, o, box) {
   // but the plate says so because it checked, not because it was told to.
   if (Math.abs(Ya - Yb) <= 1.5) {
     text(g, box.x + box.w / 2, Ya - 13, 'same height',
-         { align: 'center', size: 13, col: PLATE.ink, weight: 600 });
+         { align: 'center', size: 13, col: PL.ink, weight: 600 });
   }
 }
 
@@ -393,6 +427,7 @@ function sameHeight(g, panes, o, box) {
 export function render(canvas, cam, o) {
   const { traj: f, second, t, show, scenario, fired = true, verdict = null } = o;
   if (!f) return null;
+  PL = PLATES[scenario?.backdrop] || NIGHT;
   const { ctx: g, w, h } = fitCanvas(canvas);
   const L = labels();
   const pad = { l: 34, r: 34, t: 30, b: 54 };
@@ -434,7 +469,7 @@ export function render(canvas, cam, o) {
       // scale the floor is a blur — so it says so instead.
       const line = pane.only === 'a' ? `${pane.label}  ·  ${fmt(down, 0)} m downrange` : pane.label;
       text(g, pane.box.x + pane.box.w / 2, pane.box.y + 18, line,
-           { align: 'center', size: 13, col: PLATE.ink, weight: 600 });
+           { align: 'center', size: 13, col: PL.ink, weight: 600 });
     }
   } else if (show.heightLines !== false && second) {
     heightLines(g, shot, o, box);
@@ -479,27 +514,27 @@ function drawPane(g, pane, o, prev) {
   // the hunter goes back to firing a bullet — so the scenario names what it
   // throws and the backdrop only says where.
   const thrown = scenario.projectile || 'round';
-  const back = scenario.backdrop === 'beach' ? beachBack : warehouseBack;
+  const back = BACKS[scenario.backdrop] || warehouseBack;
   // `box` goes through so the aim ray knows how far it has to run to leave
   // the frame; it is a ray along the angle now, not a segment to the marker.
-  back(g, S, box, { t, fired, markers, PLATE, box,
+  back(g, S, box, { t, fired, markers, PLATE: PL, box, scenario,
                     launchY: f.params.h, theta: f.params.theta });
 
   /* ── ground line ──────────────────────────────────────────────────── */
-  g.strokeStyle = PLATE.rule; g.lineWidth = 1.4;
+  g.strokeStyle = PL.rule; g.lineWidth = 1.4;
   g.beginPath(); g.moveTo(box.x, S.groundY + 3.5); g.lineTo(box.x + box.w, S.groundY + 3.5); g.stroke();
 
   /* ── height rule down the right ───────────────────────────────────── */
   if (pane.rule) {
     const rx = box.x + box.w - 30;
-    g.strokeStyle = PLATE.ruleFaint; g.lineWidth = 1;
+    g.strokeStyle = PL.ruleFaint; g.lineWidth = 1;
     g.beginPath(); g.moveTo(rx, S.Y(S.yHi * 1.02)); g.lineTo(rx, S.groundY); g.stroke();
     const stepY = S.yHi > 24 ? 10 : S.yHi > 9 ? 5 : S.yHi > 3.5 ? 1 : 0.5;
     for (let y = 0; y <= S.yHi * 1.02; y += stepY / 2) {
       const major = Math.abs(y / stepY - Math.round(y / stepY)) < 1e-9;
       g.beginPath(); g.moveTo(rx - (major ? 9 : 5), S.Y(y)); g.lineTo(rx, S.Y(y)); g.stroke();
       if (major && y > 0) text(g, rx - 13, S.Y(y), `${fmt(y, stepY < 1 ? 1 : 0)} m`,
-                              { align: 'right', size: 13, col: PLATE.inkMid });
+                              { align: 'right', size: 13, col: PL.inkMid });
     }
   }
 
@@ -524,7 +559,7 @@ function drawPane(g, pane, o, prev) {
   // smear instead of a sequence, and the sequence is the entire argument.
   const gapPx = Math.max(6, Math.abs(S.Y(f.pos(dt0).y) - S.Y(f.params.h)) || 0,
                          Math.abs(S.X(f.pos(dt0).x) - S.X(0)));
-  const Lbul = clamp(gapPx * 0.72, 9, scenario.backdrop === 'beach' ? 30 : 20);
+  const Lbul = clamp(gapPx * 0.72, 9, thrown === 'banana' ? 30 : 20);
   const pair = [];                                      // [firedPos, droppedPos] per flash
 
   // THINNING MUST NOT FLATTEN THE ACCELERATION.
@@ -567,12 +602,21 @@ function drawPane(g, pane, o, prev) {
     if (second) {   // drawn second, so it sits in front of the tree behind it
       const q = second.pos(Math.min(ti, second.tMax));
       const qx = S.X(q.x), qy = S.Y(q.y);
-      const Lsec = thrown === 'banana' ? Math.max(Lbul, 26) : Lbul;
+      // THE MONKEY IS MONKEY_H TALL, and the hit test in js/core/intercept.js
+      // uses the same number. A sprite sized in pixels — `max(Lbul, 26)` — is
+      // a different monkey at every zoom, and none of them the one the
+      // physics was testing against. monkeyGlyph's `s` is a scale on which
+      // the drawn figure stands about 1.21 s, so that is divided back out.
+      const Lsec = thrown === 'banana' ? Math.max(9, S.m(MONKEY_H) / 1.21) : Lbul;
       if (wantB && (last || i % stride === 0)) {
         drewB = true;
         g.save(); g.globalAlpha = a;
         halo(g, qx, qy, Lsec * (last ? 1.7 : 1.1));
-        if (thrown === 'banana') bananaOrMonkey(g, qx, qy, Lsec, Math.PI / 2, last, false);
+        // STILL HOLDING ON, until it isn't. The grip is the whole premise —
+        // the monkey drops the instant the throw leaves — so the first
+        // exposure is drawn hanging and every one after it falling.
+        const holding = !fired || ti <= 1e-9;
+        if (thrown === 'banana') bananaOrMonkey(g, qx, qy, Lsec, Math.PI / 2, last, false, holding);
         else bullet(g, qx, qy, Lsec, Math.PI / 2, last);
         g.restore();
       }
@@ -596,7 +640,7 @@ function heightLines(g, shot, o, box) {
     if (shots[s.i] > grounded + 1e-9) continue;       // it has landed; no shared fall left
     if (!s.drawn && !s.last) continue;                // no line to an exposure nobody can see
     g.globalAlpha = s.last ? 0.95 : 0.6;
-    g.strokeStyle = PLATE.ink;                       // near-white: this is the point
+    g.strokeStyle = PL.ink;                       // near-white: this is the point
     g.beginPath(); g.moveTo(s.b.x, s.b.y); g.lineTo(s.a.x, s.a.y); g.stroke();
   }
   g.restore();
@@ -617,7 +661,11 @@ function heightLines(g, shot, o, box) {
     // a miss of AIM rather than of timing.
     labelPair(g, pair, last, scenario, box);
     pill(g, box.x + box.w / 2, box.y + 56, SAID[verdict.kind], 14);
-  } else if (last?.b && gap > 90) {
+  } else if (fired && t > 1e-6 && last?.b && gap > 90) {
+    // NOT BEFORE IT HAS FALLEN. At t = 0 the banana is at the muzzle and the
+    // monkey is on its branch, the gap between them is the whole frame, and
+    // this drew "same fall" on a leader pointing into empty sky — a label
+    // naming a quantity that is still zero. It says it once there is one.
     labelPair(g, pair, last, scenario, box);
   } else if (last?.b && gap < 14 && done) {
     // they have met. Say so where it happened, not in a corner.
@@ -627,7 +675,7 @@ function heightLines(g, shot, o, box) {
     // is naming hides the only thing worth looking at
     const side = cx > box.x + box.w * 0.55 ? -1 : 1;
     const lx = clamp(cx + side * 150, box.x + 90, box.x + box.w - 90);
-    g.save(); g.globalAlpha = 0.5; g.strokeStyle = PLATE.ink; g.lineWidth = 1.1;
+    g.save(); g.globalAlpha = 0.5; g.strokeStyle = PL.ink; g.lineWidth = 1.1;
     g.setLineDash([3, 4]);
     g.beginPath(); g.moveTo(cx + side * 26, cy); g.lineTo(lx - side * 60, cy); g.stroke();
     g.restore();
@@ -649,12 +697,12 @@ function footer(g, box, panes, o, shot) {
       // worth as much as the promise that it is not squeezed.
       : `1 m is 1 m both ways · ${fmt(S.xSpan, S.xSpan < 20 ? 1 : 0)} m across · range ${fmt(real, 1)} m`;
   text(g, box.x + box.w - 14, box.y + box.h - 16, foot,
-       { align: 'right', size: 13, col: PLATE.inkMid });
+       { align: 'right', size: 13, col: PL.inkMid });
   // Only a frame that KEEPS its exposures has a flash rate worth quoting.
   if (panes.length === 1 && panes[0].ghosts && shot) {
     const every = shot.dt * shot.stride;
     text(g, box.x + box.w - 14, box.y + 18, `Flash every ${fmt(every, every < 0.1 ? 3 : 2)} s`,
-         { align: 'right', size: 13, col: PLATE.inkFaint });
+         { align: 'right', size: 13, col: PL.inkFaint });
   }
 }
 
@@ -665,13 +713,13 @@ function labelPair(g, pair, last, scenario, box) {
   if (!s?.b) return;
   const cx = (s.a.x + s.b.x) / 2, cy = s.a.y;
   const ly = clamp(cy - 46, box.y + 30, box.y + box.h - 30);
-  g.save(); g.globalAlpha = 0.55; g.strokeStyle = PLATE.ink; g.lineWidth = 1.1;
+  g.save(); g.globalAlpha = 0.55; g.strokeStyle = PL.ink; g.lineWidth = 1.1;
   g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, ly + 13); g.stroke(); g.restore();
   pill(g, cx, ly, scenario.pairLabel || 'same height');
 }
 
-/** On the beach the projectile is a banana and the second object is a monkey. */
-function bananaOrMonkey(g, x, y, L, ang, lit, isBanana) {
+/** In the jungle the projectile is a banana and the second object is a monkey. */
+function bananaOrMonkey(g, x, y, L, ang, lit, isBanana, hang = false) {
   if (isBanana) {
     g.save(); g.translate(x, y); g.rotate(ang);
     g.beginPath();
@@ -680,38 +728,115 @@ function bananaOrMonkey(g, x, y, L, ang, lit, isBanana) {
     g.quadraticCurveTo(0, -L * 0.1, -L * 0.5, L * 0.16);
     g.closePath();
     const gr = g.createLinearGradient(0, -L * 0.3, 0, L * 0.2);
-    gr.addColorStop(0, PLATE.brassHi); gr.addColorStop(1, PLATE.brass);
+    gr.addColorStop(0, PL.brassHi); gr.addColorStop(1, PL.brass);
     g.fillStyle = gr; g.fill();
-    if (lit) { g.strokeStyle = PLATE.brassLo; g.lineWidth = Math.max(0.6, L * 0.05); g.stroke(); }
+    if (lit) { g.strokeStyle = PL.brassLo; g.lineWidth = Math.max(0.6, L * 0.05); g.stroke(); }
     g.restore();
     return;
   }
-  monkeyGlyph(g, x, y, L * 0.95, lit);
+  monkeyGlyph(g, x, y, L * 0.95, lit, hang);
 }
 
-/** A monkey, at a size you can actually see. */
-export function monkeyGlyph(g, x, y, s, lit) {
-  const b = s * 0.34, hd = s * 0.26;
+/* ── the monkey ─────────────────────────────────────────────────────────
+   IT HAS TO READ AS AN ANIMAL LETTING GO OF A BRANCH. The glyph this
+   replaces was a grey body, a grey head and four grey sticks — a spider, at
+   any size, and on a lit canopy it read as a smudge. The whole scenario turns
+   on watching something DROP, and you cannot watch something drop that you
+   cannot tell from the leaves behind it.
+
+   So: brown fur against green, a pale face and belly against the fur, a dark
+   rim against everything, and limbs that change. Hanging, one arm is up and
+   gripping and the body swings under it. Falling, both arms are up and the
+   legs are out — the shape of something that has just lost its grip, which is
+   the instant the plate exists to show.
+
+   `hang` is the grip; `lit` is the last exposure, where the fur is lit and
+   the earlier ghosts are not. */
+export function monkeyGlyph(g, x, y, s, lit, hang = false) {
+  const FUR = lit ? '#7d5431' : '#5e4026';
+  const FUR_D = lit ? '#573821' : '#432b19';
+  const SKIN = lit ? '#d6a873' : '#9c7c58';
+  const SKIN_HI = lit ? '#efcf9f' : '#b09372';
+  const RIM = 'rgba(26,16,8,0.92)';
+
+  const b = s * 0.3;                                   // body half-width
+  const bodyY = y + s * 0.06;
+  const headY = bodyY - b * 1.42;
+  const hd = s * 0.25;                                 // head radius
+
   g.save();
-  // a dark edge first, so the shape survives whatever it is drawn over
-  g.strokeStyle = 'rgba(12,10,8,0.85)'; g.lineWidth = Math.max(2, s * 0.14);
   g.lineJoin = 'round'; g.lineCap = 'round';
-  g.beginPath(); g.ellipse(x, y, b * 0.82, b, 0, 0, Math.PI * 2); g.stroke();
-  g.beginPath(); g.arc(x, y - b - hd * 0.6, hd, 0, Math.PI * 2); g.stroke();
-  g.fillStyle = lit ? '#9aa7b4' : '#6f7985';
-  g.beginPath(); g.ellipse(x, y, b * 0.82, b, 0, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.arc(x, y - b - hd * 0.6, hd, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.arc(x - hd, y - b - hd * 0.75, hd * 0.44, 0, Math.PI * 2);
-  g.arc(x + hd, y - b - hd * 0.75, hd * 0.44, 0, Math.PI * 2); g.fill();
-  g.fillStyle = lit ? '#d9e2ea' : '#9aa4af';
-  g.beginPath(); g.ellipse(x, y - b - hd * 0.45, hd * 0.6, hd * 0.48, 0, 0, Math.PI * 2); g.fill();
-  g.strokeStyle = lit ? '#9aa7b4' : '#6f7985';
-  g.lineWidth = Math.max(1.4, s * 0.1); g.lineCap = 'round';
+
+  /* ── tail: a long curl, drawn first so it sits behind ─────────────── */
+  g.strokeStyle = RIM; g.lineWidth = Math.max(2.4, s * 0.115);
   g.beginPath();
-  g.moveTo(x - b * 0.6, y - b * 0.2); g.lineTo(x - b * 1.6, y - b * 1.3);
-  g.moveTo(x + b * 0.6, y - b * 0.2); g.lineTo(x + b * 1.6, y - b * 1.3);
-  g.moveTo(x - b * 0.4, y + b * 0.8); g.lineTo(x - b * 0.8, y + b * 1.8);
-  g.moveTo(x + b * 0.4, y + b * 0.8); g.lineTo(x + b * 0.8, y + b * 1.8);
+  g.moveTo(x + b * 0.5, bodyY + b * 0.5);
+  g.quadraticCurveTo(x + b * 2.3, bodyY + b * 0.9, x + b * 2.0, bodyY - b * 0.6);
   g.stroke();
+  g.strokeStyle = FUR; g.lineWidth = Math.max(1.2, s * 0.062);
+  g.beginPath();
+  g.moveTo(x + b * 0.5, bodyY + b * 0.5);
+  g.quadraticCurveTo(x + b * 2.3, bodyY + b * 0.9, x + b * 2.0, bodyY - b * 0.6);
+  g.stroke();
+
+  /* ── limbs ────────────────────────────────────────────────────────────
+     Hanging: the near arm goes straight up to the branch and the legs tuck.
+     Falling: both arms up and back, legs out — it has just let go. */
+  const limbs = hang
+    ? [[-b * 0.72, -b * 0.2, -b * 0.3, -b * 2.15],     // gripping arm, up
+       [b * 0.72, -b * 0.2, b * 1.5, -b * 0.5],        // far arm, out
+       [-b * 0.42, b * 0.85, -b * 0.7, b * 1.75],
+       [b * 0.42, b * 0.85, b * 0.78, b * 1.72]]
+    : [[-b * 0.72, -b * 0.2, -b * 1.75, -b * 1.5],     // both arms thrown up
+       [b * 0.72, -b * 0.2, b * 1.7, -b * 1.55],
+       [-b * 0.42, b * 0.85, -b * 1.35, b * 1.8],
+       [b * 0.42, b * 0.85, b * 1.4, b * 1.78]];
+  for (const pass of [0, 1]) {
+    g.strokeStyle = pass ? FUR : RIM;
+    g.lineWidth = pass ? Math.max(1.6, s * 0.085) : Math.max(3, s * 0.155);
+    for (const [ax, ay, ex, ey] of limbs) {
+      g.beginPath();
+      g.moveTo(x + ax, bodyY + ay);
+      g.quadraticCurveTo(x + (ax + ex) * 0.5 + (ex - ax) * 0.18,
+                         bodyY + (ay + ey) * 0.5, x + ex, bodyY + ey);
+      g.stroke();
+    }
+  }
+  // hands and feet
+  g.fillStyle = SKIN;
+  for (const [, , ex, ey] of limbs) {
+    g.beginPath(); g.arc(x + ex, bodyY + ey, Math.max(1.3, s * 0.062), 0, Math.PI * 2); g.fill();
+  }
+
+  /* ── body ─────────────────────────────────────────────────────────── */
+  g.strokeStyle = RIM; g.lineWidth = Math.max(2, s * 0.1);
+  g.fillStyle = FUR;
+  g.beginPath(); g.ellipse(x, bodyY, b * 0.84, b * 1.06, 0, 0, Math.PI * 2);
+  g.fill(); g.stroke();
+  g.fillStyle = SKIN;                                   // belly
+  g.beginPath(); g.ellipse(x, bodyY + b * 0.16, b * 0.5, b * 0.68, 0, 0, Math.PI * 2); g.fill();
+
+  /* ── head ─────────────────────────────────────────────────────────── */
+  g.fillStyle = FUR_D; g.strokeStyle = RIM; g.lineWidth = Math.max(2, s * 0.1);
+  for (const sx of [-1, 1]) {                           // ears
+    g.beginPath(); g.arc(x + sx * hd * 0.94, headY - hd * 0.1, hd * 0.42, 0, Math.PI * 2);
+    g.fill(); g.stroke();
+  }
+  g.fillStyle = FUR;
+  g.beginPath(); g.arc(x, headY, hd, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.fillStyle = SKIN_HI;                                // face
+  g.beginPath(); g.ellipse(x, headY + hd * 0.16, hd * 0.68, hd * 0.74, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = SKIN;                                   // muzzle
+  g.beginPath(); g.ellipse(x, headY + hd * 0.46, hd * 0.42, hd * 0.3, 0, 0, Math.PI * 2); g.fill();
+  if (s > 13) {                                         // eyes, once there is room
+    g.fillStyle = '#20140a';
+    for (const sx of [-1, 1]) {
+      g.beginPath(); g.arc(x + sx * hd * 0.3, headY - hd * 0.06, Math.max(1, hd * 0.12),
+                           0, Math.PI * 2); g.fill();
+    }
+    g.strokeStyle = '#20140a'; g.lineWidth = Math.max(0.8, hd * 0.07);
+    g.beginPath(); g.moveTo(x - hd * 0.14, headY + hd * 0.5);
+    g.quadraticCurveTo(x, headY + hd * 0.62, x + hd * 0.14, headY + hd * 0.5); g.stroke();
+  }
   g.restore();
 }
