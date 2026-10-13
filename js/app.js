@@ -1875,7 +1875,7 @@ function wireAskAt() {
 function renderHud() {
   if (!traj) return;
   // An exhibit happens somewhere else and says where in its own `place`.
-  // Falling back to siteFor meant the range and the beach were both captioned
+  // Falling back to siteFor meant the range and the monkey were both captioned
   // "A goal kick from the west goal line".
   const site = siteFor(state.id);
   $('place').textContent = scenario?.place || site.place;
@@ -2240,7 +2240,7 @@ function draw() {
      view button did nothing. Both experiments were moved off it for that.
 
      The plate reads the camera now — see fitPlate in that file — so Monkey vs
-     Hunter is back on it: the beach, the palm and the exposures, WITH the
+     Hunter is back on it: the grid, the branches and the exposures, WITH the
      drag, the zoom, the view button and the graphs rather than instead of
      them. The range stays on the side-on view, because its answer is two
      panes at one scale and that mode is not camera-driven. */

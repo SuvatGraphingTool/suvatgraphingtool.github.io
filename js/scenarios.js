@@ -172,15 +172,15 @@ export const SCENARIOS = [
     params: { u: 22, theta: 0, h: 1.5, g: 9.81 },
     // BACK ON THE PLATE. It was moved onto the ordinary side-on view when the
     // plate could not be dragged or zoomed; the plate reads the camera now,
-    // so the beach comes back with the dragging, the zoom, the view button
+    // so the place comes back with the dragging, the zoom, the view button
     // and the graphs rather than instead of them. See fitPlate in
     // js/render/exhibit.js.
-    exhibit: true, plate: true, backdrop: 'jungle', site: FLAT_SITE,
+    exhibit: true, plate: true, backdrop: 'plain', site: FLAT_SITE,
     // WITHOUT THIS THE CAPTION READS "The west goal line, aimed down the
     // pitch". An exhibit has no site in js/world/world.js, so siteFor() falls
     // through to the goal kick — see renderHud, whose comment says exactly
     // this and then had its two `place` strings removed from under it.
-    place: 'A jungle clearing, under the canopy',
+    place: 'A branch, a throw, and nothing else in the way',
     // The hunter throws a banana, and says so here rather than leaving the
     // renderer to infer it from the sand.
     projectile: 'banana',
