@@ -31,8 +31,16 @@
    picking a sprite size. The scenario's caveat already says the monkey is
    drawn larger than life; this is that admission turned into a number both
    halves agree on. Hit means "the line passed through the body", because the
-   body is MONKEY_H tall in both places. */
-export const MONKEY_H = 1.5;
+   body is MONKEY_H tall in both places.
+
+   It is 1.2 m rather than the 1.5 m it started at, and the reason is the
+   strobe rather than the arithmetic. The monkey falls about 1.7 m over the
+   whole demonstration; drawn 1.5 m tall, consecutive exposures overlapped by
+   nine tenths of a body and the one fall the plate exists to show came out as
+   two sprites on top of each other. Shrinking it costs nothing here, because
+   the guarantee is not "0.75 m" — it is "the tolerance IS the drawn body",
+   and that holds at any size. */
+export const MONKEY_H = 1.2;
 
 /** Tolerance in metres: close enough that a banana and a monkey touch. */
 const TOUCH = () => MONKEY_H * 0.5;

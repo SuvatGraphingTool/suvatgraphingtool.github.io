@@ -26,7 +26,14 @@ export const EXTENT = {
   // The plain has to hold every branch, because the monkey moves between them
   // and a frame cropped to wherever it happens to be would swing every time
   // you picked a different one.
-  plain:     { x0: -1.5, x1: 15, yTop: 14 },
+  // yTop IS A FLOOR, NOT THE ANSWER. At 14 m it was padding the frame above
+  // everything in the picture, and because the pane is two and a half times
+  // as wide as it is tall, every metre of unused height costs two and a half
+  // metres of unused width — the throw came out a third of the size it could
+  // be, which is what made the monkey's 1.7 m fall a smudge. The highest
+  // branch is 12.6 m and the fit already lifts the ceiling to the monkey
+  // plus 1.6, so this only has to hold the low ones.
+  plain:     { x0: -1.5, x1: 13, yTop: 10.5 },
 };
 
 /* ── shared marks ──────────────────────────────────────────────────────── */

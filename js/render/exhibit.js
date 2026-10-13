@@ -618,13 +618,36 @@ function drawPane(g, pane, o, prev) {
       const Lsec = thrown === 'banana' ? Math.max(9, S.m(MONKEY_H) / 1.21) : Lbul;
       if (wantB && (last || i % stride === 0)) {
         drewB = true;
-        g.save(); g.globalAlpha = a;
+        g.save();
+        // WHERE IT LET GO IS NOT A GHOST. The first exposure is the monkey
+        // still holding the branch, and it is the datum every mark below it
+        // is measured from — at the 28% the age ramp gives the oldest
+        // exposure it was a grey smudge under the wood.
+        const holding0 = !fired || ti <= 1e-9;
+        g.globalAlpha = holding0 ? Math.max(a, 0.55) : a;
         halo(g, qx, qy, Lsec * (last ? 1.7 : 1.1));
         // STILL HOLDING ON, until it isn't. The grip is the whole premise —
         // the monkey drops the instant the throw leaves — so the first
         // exposure is drawn hanging and every one after it falling.
-        const holding = !fired || ti <= 1e-9;
-        if (thrown === 'banana') bananaOrMonkey(g, qx, qy, Lsec, Math.PI / 2, last, false, holding);
+        const holding = holding0;
+        // A TRAIL OF POSITIONS, NOT A STACK OF MONKEYS.
+        //
+        // The monkey falls 1.67 m over the whole demonstration and is drawn
+        // 1.5 m tall, so consecutive exposures overlap by nine tenths of a
+        // body and the sequence came out as one dark smear with several heads
+        // in it — the ONE object whose fall the plate exists to show, and you
+        // could not see it move. No stride fixes that: the sprite is the same
+        // size as the entire journey.
+        //
+        // Its size is not negotiable either, because js/core/intercept.js
+        // tests against exactly that 1.5 m and the aim has to mean what it
+        // looks like. So the size stays and the GHOSTS shrink: every exposure
+        // but the live one is a mark at the monkey's centre, which is the
+        // point the physics tracks, the point the aim is tested against and
+        // the point the "same fall" lines are drawn between. The animal is
+        // drawn once, where it actually is.
+        if (thrown === 'banana' && !last && !holding) ghostMark(g, qx, qy, Lsec * 0.085);
+        else if (thrown === 'banana') bananaOrMonkey(g, qx, qy, Lsec, Math.PI / 2, last, false, holding);
         else bullet(g, qx, qy, Lsec, Math.PI / 2, last);
         g.restore();
       }
@@ -754,6 +777,27 @@ function bananaOrMonkey(g, x, y, L, ang, lit, isBanana, hang = false) {
     return;
   }
   monkeyGlyph(g, x, y, L * 0.95, lit, hang);
+}
+
+/** Where it WAS: a mark at the falling object's centre, for every exposure
+    but the live one. Rimmed, because a plain disc on squared paper reads as a
+    grid node rather than as a thing that was there. */
+function ghostMark(g, x, y, r) {
+  // SMALL, AND NOT FADED. The exposures are at equal TIMES, so a falling
+  // object's marks bunch at the top and spread towards the bottom — that
+  // crowding is the signature of acceleration and the whole reason the plate
+  // takes a strobe. A big mark turns the crowded end into one blob and
+  // destroys exactly the part worth seeing, and the alpha ramp that tails the
+  // old exposures off to 28% faded out the earliest marks, which are the ones
+  // nearest the branch it just let go of.
+  const R = Math.max(2.2, r);
+  g.save();
+  g.globalAlpha = Math.max(g.globalAlpha, 0.78);
+  g.fillStyle = '#7d5431';
+  g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(26,16,8,0.9)'; g.lineWidth = Math.max(0.9, R * 0.3);
+  g.stroke();
+  g.restore();
 }
 
 /* ── the monkey ─────────────────────────────────────────────────────────
