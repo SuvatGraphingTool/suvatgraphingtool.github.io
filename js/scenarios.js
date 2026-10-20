@@ -128,6 +128,9 @@ export const SCENARIOS = [
     note: 'Two identical rounds leave the bench at the same instant: one fired flat, one simply released. Vertically they are the same problem — neither starts with any upward speed, and both are pulled down at the same rate — because firing adds velocity sideways only, and the two components are independent. The horizontal push buys no hang time at all, at any muzzle speed.',
     params: { u: 360, theta: 0, h: 1.5, g: 9.81 }, lockAngle: true,
     exhibit: true, backdrop: 'warehouse', site: FLAT_SITE,
+    // Its own stage: an indoor range with a rifle, a release clamp and a
+    // strobe. See js/render/range.js.
+    stage: 'range',
     place: 'An indoor range, lit by a strobe',
     card: 'range',
     pairLabel: 'same height',
