@@ -16,6 +16,7 @@ import * as scene from './render/scene.js';
 import * as exhibit from './render/exhibit.js';
 import * as panes from './render/panes.js';
 import { descentPanes, PRE } from './render/drop.js';
+import * as range from './render/range.js';
 import { siteFor } from './world/world.js';
 import { nearestBranch } from './render/backdrops.js';
 import { dropToneCache } from './render/world2d.js';
@@ -1582,7 +1583,18 @@ function runFlight() {
   cam.fit = true;
   setPlayIcon(true);
   hideDone();
+  if (armRange()) { go('flight'); return; }
   go('flight');
+}
+
+/* THE BULLET WAITS FOR ITS STRING. Every way into a run of the range — Run
+   it, Go, Replay, the ending card's Replay — arms the rig and stops at t = 0;
+   the pull (or ▶) is what starts the clock. See js/render/stringrig.js. */
+function armRange() {
+  if (scenario?.stage !== 'range') return false;
+  state.t = 0; state.playing = false; state.pre = null; setPlayIcon(false);
+  range.rigReset(); dirty = true;
+  return true;
 }
 
 /* ── moving between the three screens ───────────────────────────────────
@@ -1647,6 +1659,12 @@ function refreshSteps() {
 function togglePlay() {
   if (!traj) return;
   hideDone(); closeResolve();
+  // THE BULLET IS STARTED BY ITS STRING. Play trips the rig the same way a
+  // pull does; play after the landing re-arms it and waits for the next pull.
+  if (scenario?.stage === 'range') {
+    if (state.t >= traj.tMax) { state.t = 0; state.playing = false; setPlayIcon(false); range.rigReset(); dirty = true; return; }
+    if (!state.playing && state.t === 0 && range.rigArmed()) range.rigTrip();
+  }
   if (state.t >= traj.tMax) { state.t = 0; state.pre = windowed() ? 0 : null; }
   state.playing = !state.playing; setPlayIcon(state.playing); dirty = true;
 }
@@ -2255,7 +2273,8 @@ function draw() {
     // rule 1 — and it reads zero for the whole of the pre-roll because the
     // pre-roll is outside the clock and nothing in it has been measured.
     $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
-  } else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
+  } else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
+  else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
   else scene.render($('scene'), cam, opts);
 
   if (state.extras.graphs) {
@@ -2301,6 +2320,14 @@ function frame(now) {
   // the camera travels rather than teleporting; while it is moving, so is
   // the frame
   if (state.step === 'flight' && scene.easeCamera(cam, dt)) dirty = true;
+  // The string release: the rope swings between frames, and the flight
+  // starts on the frame the rod trips. See js/render/stringrig.js.
+  if (state.step === 'flight' && scenario?.stage === 'range') {
+    if (range.rigStep(dt) === 'fire' && !state.playing) {
+      hideDone(); closeResolve(); state.t = 0; state.playing = true; setPlayIcon(true);
+    }
+    dirty = true;
+  }
   if (dirty) draw();
   requestAnimationFrame(frame);
 }
@@ -2366,6 +2393,7 @@ $('intro-values').addEventListener('click', () => { closeIntro(); go('values'); 
 $('play').addEventListener('click', togglePlay);
 const replay = () => {
   hideDone(); closeResolve();
+  if (armRange()) return;
   state.t = 0; state.pre = windowed() ? 0 : null;
   state.playing = true; setPlayIcon(true); dirty = true;
 };
@@ -2483,6 +2511,25 @@ const resolveHooks = {
   click(t) { openResolve(t); },
 };
 
+/* The string comes first. On the bullet stage a press on the string is the
+   string's, not a pan — so these listen in the capture phase, ahead of
+   attachControls below, and keep the event when they use it. */
+{
+  const el = $('scene');
+  const on = () => scenario?.stage === 'range' && state.step === 'flight';
+  const at = (e) => { const r = el.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  for (const [type, kind] of [['pointerdown', 'down'], ['pointermove', 'move'], ['pointerup', 'up'], ['pointercancel', 'up']]) {
+    el.addEventListener(type, (e) => {
+      if (!on()) return;
+      if (range.rigPointer(kind, ...at(e))) {
+        e.stopImmediatePropagation();
+        if (kind === 'down') el.setPointerCapture?.(e.pointerId);
+        el.style.cursor = kind === 'up' ? 'grab' : 'grabbing';
+        dirty = true;
+      } else if (kind === 'move' && range.rigHover()) el.style.cursor = 'grab';
+    }, { capture: true });
+  }
+}
 scene.attachControls($('scene'), cam, () => { dirty = true; },
   pickScene,
   (kind, world) => {
