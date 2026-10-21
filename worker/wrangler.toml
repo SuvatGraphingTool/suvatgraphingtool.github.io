@@ -6,10 +6,12 @@ compatibility_date = "2026-09-01"
 # Lock the Worker to your site. Comma separated, no trailing slash.
 # Leave empty ONLY while testing locally.
 ALLOWED_ORIGINS = "https://suvat-ai.suvatgraphingtool.workers.dev,https://suvatgraphingtool.github.io,http://localhost:4173,http://localhost:4199"
-# Which Gemini models read the questions, first choice first. A busy one hands on to the next,
+# Which models read the questions, first choice first. Gemma on Cloudflare ("@cf/") goes
+# first: about 2–3 s, a few hundred a day free, and no Google queue — but it reads no PDFs,
+# which go straight on to Gemini. Then the Gemini models. A busy one hands on to the next,
 # and so does one that has used its day: on the free tier each model has its own 20 a day.
 # A ":low" after a name sets how hard it thinks; the default is "minimal", which 3.8 Flash refuses.
-MODELS = "gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash"
+MODELS = "@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash"
 
 # Per-IP rate limiting. Optional — without it the Worker still works and simply
 # leans on Gemini's own 429. To enable:
@@ -21,3 +23,8 @@ MODELS = "gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemin
 
 # The API key is NOT in this file and must never be. Set it as a secret:
 #   npx wrangler secret put GEMINI_API_KEY
+
+# Cloudflare's own models, run beside this Worker: no key, no Google queue.
+# A model in MODELS whose name starts "@cf/" is asked through this.
+[ai]
+binding = "AI"
