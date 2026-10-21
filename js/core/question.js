@@ -213,7 +213,11 @@ export function toApp(x) {
   if (x.understood === false) {
     return { ok: false, error: x.note || 'That did not read as a projectile or falling-object question.' };
   }
-  const id = x.scenario;
+  let id = x.scenario;
+  // A vertical throw with a line to stay above is Time above a line at 90°,
+  // whichever card the reader reached for: only that one draws the line.
+  const upLine = id === 'up' && isNum(x.heightLine);
+  if (upLine) id = 'time-above';
   if (!APP_SCENARIOS.includes(id)) {
     return { ok: false, error: 'That is a motion question, but not one of the situations this playground can set up yet. Pick the closest scenario and type the numbers in.' };
   }
@@ -265,6 +269,7 @@ export function toApp(x) {
   let theta;
   if (id === 'dropped' || id === 'parachute') theta = undefined;
   else if (id in LOCKED_THETA) theta = LOCKED_THETA[id];
+  else if (upLine) { theta = 90; put('theta', 90, 'given', { vertical: true }); }
   else if (x.angle) {
     const a = resolveAngle(x.angle);
     if (!a.ok) return { ok: false, error: a.error };
@@ -273,7 +278,7 @@ export function toApp(x) {
     // restored by the scenario it chose.
     if (id === 'platform-down') theta = -Math.abs(theta);
     if (x.angle.ratio) put('theta', theta, 'worked', { ratio: { ...x.angle.ratio } });
-    else put('theta', theta, 'given');
+    else put('theta', theta, 'given', theta === 90 && id === 'time-above' ? { vertical: true } : {});
   }
 
   // The five.
@@ -303,7 +308,10 @@ export function toApp(x) {
 
   // What only some scenarios carry.
   const markers = {};
-  if (id === 'time-above' && isNum(x.heightLine)) markers.heightLine = x.heightLine;
+  if (id === 'time-above' && isNum(x.heightLine)) {
+    markers.heightLine = x.heightLine;
+    put('line', x.heightLine, 'given');
+  }
   if (id === 'monkey' && x.target && isNum(x.target.x) && isNum(x.target.y)) {
     markers.target = { x: x.target.x, y: x.target.y };
   }

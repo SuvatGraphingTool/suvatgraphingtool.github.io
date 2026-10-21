@@ -89,9 +89,11 @@ export const SCENARIOS = [
   /* ── interesting ones ─────────────────────────────────────────────── */
   { id: 'time-above', group: 'look', name: 'Time above a line',
     sub: 'how long is it up there?',
-    note: 'It crosses the line twice. The gap between those times is the answer. Drag the line.',
+    note: 'It crosses the line twice. The gap between those times is the answer. Drag the line. Thrown straight up works too — the same two crossings, one above the other.',
     params: { u: 24, theta: 40, h: 0.9, g: 9.81 },
-    markers: { heightLine: 6 }, dragLine: true },
+    // `straightUp` offers a one-press 90° beside the angle: the question is
+    // asked of vertical throws as often as of arcs.
+    markers: { heightLine: 6 }, dragLine: true, straightUp: true },
 
   /* ── the one the idealised model cannot do on its own ─────────────────
      A parachute is the single situation in the syllabus where "no air

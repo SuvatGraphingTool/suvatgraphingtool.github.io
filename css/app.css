@@ -1068,3 +1068,6 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   .ai-top { font-size: 0; gap: 0; padding: 0 8px; }
   .ai-top .ai-orb { font-size: var(--fs-xs); }
 }
+
+/* the one-press vertical throw, under the angle slider on Time above a line */
+.theta-up { justify-self: start; margin-top: var(--sp-2); }

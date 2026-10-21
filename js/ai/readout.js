@@ -31,6 +31,7 @@ function valueHTML(it) {
     case 'mark': return it.mid ? 'times it at the mid-point' : `times it at ${M`${num(x, 2, { trim: true })} [m]`} from the start`;
     case 'h': return M`h = ${num(x, 2, { trim: true })} [m]`;
     case 'theta': return M`theta = ${num(x, 1, { trim: true })}°`;
+    case 'line': return `a line ${M`${num(x, 2, { trim: true })} [m]`} up`;
     case 'tOpen': return `free fall for ${M`${num(x, 2, { trim: true })} [s]`}`;
     case 'aChute': return `slows at ${M`${num(x, 2, { trim: true })} [m s^-2]`} once open`;
     case 'vTerm': return `then falls steadily at ${M`${num(x, 2, { trim: true })} [m s^-1]`}`;
@@ -47,6 +48,8 @@ function fromHTML(it) {
     return M`tan theta = ${n}/${d}`;
   }
   if (it.rise != null) return `from a greatest height of ${M`${num(it.rise, 2, { trim: true })} [m]`} above the launch`;
+  if (it.vertical) return 'thrown straight up';
+  if (it.k === 'line') return 'how long it spends above it';
   if (it.how === 'assumed' && it.k === 'g') return 'the question does not say';
   if (it.how === 'assumed' && it.k === 'h') return 'it starts on the ground';
   return '';
@@ -56,8 +59,9 @@ function fromHTML(it) {
  * @param reading  the result of toApp() in js/core/question.js
  * @param o.name   the scenario's name, from js/scenarios.js
  * @param o.solved the engine's answer for those values, or null
+ * @param o.above  the engine's timeAbove() for a line, with `line`, or null
  */
-export function readoutHTML(reading, { name, solved } = {}) {
+export function readoutHTML(reading, { name, solved, above } = {}) {
   const rows = reading.items.map((it) => {
     const from = fromHTML(it);
     return `<li class="ro-row" data-how="${it.how}">
@@ -75,7 +79,17 @@ export function readoutHTML(reading, { name, solved } = {}) {
   if (solved?.ok) {
     const rest = Array.isArray(solved.derived) && solved.derived.length
       ? solved.derived.join('  ·  ') : 'nothing else was needed.';
-    engine = `<div class="ro-engine" data-ok="true"><b>The engine works out the rest:</b> ${rest}</div>`;
+    let line = '';
+    if (above) {
+      const L = M`${num(above.line, 2, { trim: true })} [m]`;
+      line = above.above > 1e-9 && above.crosses === 2
+        ? `<br><b>Above ${L}</b> from ${M`t = ${num(above.t1, 2, { trim: true })} [s]`} to ${
+            M`t = ${num(above.t2, 2, { trim: true })} [s]`}, so for ${M`${num(above.above, 2, { trim: true })} [s]`}.`
+        : above.above > 1e-9
+          ? `<br><b>Above ${L}</b> for ${M`${num(above.above, 2, { trim: true })} [s]`}.`
+          : `<br><b>It never gets ${L} up.</b>`;
+    }
+    engine = `<div class="ro-engine" data-ok="true"><b>The engine works out the rest:</b> ${rest}${line}</div>`;
   } else if (solved) {
     engine = `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved.reason || ''}</div>`;
   }
