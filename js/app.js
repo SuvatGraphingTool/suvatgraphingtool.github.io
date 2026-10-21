@@ -8,6 +8,7 @@ import { solveLaunch } from './core/solve.js';
 import { trajectory } from './core/trajectory.js';
 import { flight, timeAbove, heightForTime, timeAtSpeed } from './core/projectile.js';
 import { descent, solveDescent, descentWorking, resolveDescent } from './core/descent.js';
+import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
@@ -17,6 +18,7 @@ import * as exhibit from './render/exhibit.js';
 import * as panes from './render/panes.js';
 import { descentPanes, PRE } from './render/drop.js';
 import * as range from './render/range.js';
+import * as roadStage from './render/road.js';
 import { siteFor } from './world/world.js';
 import { nearestBranch } from './render/backdrops.js';
 import { dropToneCache } from './render/world2d.js';
@@ -164,6 +166,7 @@ function buildScenarioScreen() {
  */
 function thumb(s) {
   if (s.descent) return descentThumb(s);
+  if (s.road) return roadThumb(s);
   const g = s.params.g || 9.81;
   const theta = s.noAngle ? -90 : (s.aimAtTarget ? aimFor(s) : s.params.theta);
   const f = flight({ u: s.params.u || 0.001, theta, h: s.params.h, g });
@@ -233,6 +236,29 @@ function thumb(s) {
  * Drawn from the scenario's own illustrative numbers, like every other card.
  * Nothing here is pre-filled into the boxes.
  */
+/* A road card: the road, A and B, and where the vehicle is at equal steps of
+   time — the gaps widen because it is speeding up, which is the scenario. */
+function roadThumb(s) {
+  const r = solveRoad(s.params);
+  if (!r.ok) return '<svg viewBox="0 0 120 60" aria-hidden="true"></svg>';
+  const f = r.f, X = (x) => 14 + (x / s.params.s) * 92;
+  const dots = [];
+  for (let i = 0; i <= 10; i++) {
+    dots.push(`<circle cx="${X(f.pos((i / 10) * f.tMax).x).toFixed(1)}" cy="40" r="2.3" fill="var(--vel)"/>`);
+  }
+  const postAt = (x, l) => `<line x1="${X(x).toFixed(1)}" y1="44" x2="${X(x).toFixed(1)}" y2="20"
+      stroke="var(--ink-faint)" stroke-width="1.4"/>
+    <rect x="${(X(x) - 5).toFixed(1)}" y="12" width="10" height="9" rx="2" fill="var(--ink-faint)"/>`;
+  return `<svg viewBox="0 0 120 60" aria-hidden="true">
+    <rect x="2" y="42" width="116" height="6" fill="var(--border-soft)"/>
+    <line x1="2" y1="42" x2="118" y2="42" stroke="var(--border)" stroke-width="1"/>
+    <line x1="4" y1="45" x2="116" y2="45" stroke="var(--border)" stroke-width="0.8" stroke-dasharray="5 4"/>
+    ${postAt(0)}${postAt(s.params.s)}
+    <line x1="${X(s.params.s / 2).toFixed(1)}" y1="44" x2="${X(s.params.s / 2).toFixed(1)}" y2="24"
+      stroke="var(--mark)" stroke-width="1.4" stroke-dasharray="3 2.5"/>
+    ${dots.join('')}
+  </svg>`;
+}
 function descentThumb(s) {
   const r = descent({ h: s.params.h, g: s.params.g || 9.81, ...s.descent });
   if (!r.ok) return '<svg viewBox="0 0 120 60" aria-hidden="true"></svg>';
@@ -282,7 +308,9 @@ function chooseScenario(id) {
   state.theta = undefined;
   state.h = undefined;
   state.descent = {};
+  state.mark = undefined;            // the point a road question times it at
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
+  $('ask-at').hidden = !!scenario.road;
   state.firedBefore = false; ghost = null;
   state.aimed = true;                  // the hunter starts pointing at it
   // A NEW SCENARIO IS A NEW PLACE, so the view starts framed on it. Launching
@@ -363,7 +391,7 @@ function closeIntro() { $('intro').hidden = true; }
 function buildValuesScreen() {
   if (scenario?.descent) return buildDescentScreen();
   $('suvat').hidden = false;
-  valuesVoice(false);
+  valuesVoice(scenario.road ? 'road' : false);
   $('suvat').innerHTML = SUVAT.map((f) => {
     const locked = (f.k === 'u' && scenario.noAngle);
     return `<div class="sbox" data-k="${f.k}" data-locked="${locked}">
@@ -387,6 +415,7 @@ function buildValuesScreen() {
     });
   }
 
+  if (scenario.road) return buildRoadExtras();
   // Only what this situation genuinely cannot do without.
   const rows = [];
   if (!scenario.noAngle && !scenario.lockAngle) {
@@ -489,6 +518,11 @@ function valuesVoice(descentMode) {
     VOICE.was = { h: VOICE.el.h.innerHTML, sub: VOICE.el.sub.innerHTML };
   }
   VOICE.el.h.innerHTML = descentMode ? 'How is the jump set up?' : VOICE.was.h;
+  if (descentMode === 'road') {
+    VOICE.el.sub.innerHTML = 'Any three of the five give you the other two. Here <b>a</b> is the '
+      + 'vehicle\u2019s own acceleration, not g — and braking is a negative one.';
+    return;
+  }
   VOICE.el.sub.innerHTML = descentMode
     ? 'Four numbers, and none of them is one of the five. The fall is in three '
       + 'phases and the five equations are applied to <b>each phase in turn</b> — '
@@ -569,6 +603,34 @@ function buildDescentScreen() {
   recompute();
 }
 
+/* ── the road's one extra: a point to time it at ────────────────────────
+   No angle, no height, no field. What a road question asks next is "how long
+   to reach the mid-point of AB?" — so that is the one thing offered beside
+   the five, and the engine answers it (js/core/road.js, timeToReach). */
+function buildRoadExtras() {
+  $('mode-say').innerHTML = '';
+  const mid = state.mark === 'mid';
+  $('extra').innerHTML = `<div class="xrow" data-x="mark"><label for="x-mark">A point to time it at, from A (m)</label>
+    <input id="x-mark" type="text" inputmode="decimal" autocomplete="off"
+           value="${mid || state.mark == null ? '' : fmt(state.mark, 2)}" placeholder="—">
+    <div class="chips"><button class="chip" id="x-mid" aria-pressed="${mid}">The mid-point of AB</button></div>
+    <p class="xhint">${OPTIONAL_HINT} The engine works out when it gets there.</p></div>`;
+  $('x-mark').addEventListener('input', (e) => {
+    const v = parseValue(e.target.value);
+    state.mark = v !== undefined && isFinite(v) ? v : undefined;
+    $('x-mid').setAttribute('aria-pressed', 'false');
+    recompute();
+  });
+  $('x-mid').addEventListener('click', () => {
+    const on = state.mark !== 'mid';
+    state.mark = on ? 'mid' : undefined;
+    $('x-mid').setAttribute('aria-pressed', String(on));
+    $('x-mark').value = '';
+    recompute();
+  });
+  recompute();
+}
+
 /* ── solve ──────────────────────────────────────────────────────────── */
 /** The angle that points the launch straight at the draggable target. */
 function aimAngle() {
@@ -592,6 +654,7 @@ function showDerived(r) {
 
 function recompute() {
   if (scenario?.descent) return recomputeDescent();
+  if (scenario?.road) return recomputeRoad();
   const k = { ...state.given, theta: state.theta, h: state.h };
   if (scenario.noAngle) { k.u = 0; delete k.theta; }
   if (scenario.lockAngle) k.theta = scenario.params.theta;
@@ -685,6 +748,36 @@ function recompute() {
   if (!working()) sayAngle();
   if (state.theta === undefined) drawAngle(undefined);   // show what it found
   dirty = true;
+}
+
+/**
+ * The road, solved — js/core/road.js, the five with nothing added. It answers
+ * in the same shape as solveLaunch, so the message, the guard, the HUD, the
+ * transport and the done card carry on without knowing which engine replied.
+ */
+function recomputeRoad() {
+  const g = state.given;
+  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark });
+  const msg = $('solve-msg'), btn = $('launch');
+  if (!solved.ok) {
+    if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
+    btn.disabled = true; btn.textContent = 'Drive';
+    traj = null; second = null; state.verdict = null; state.markers = {};
+    refreshSteps(); applyGuard(); dirty = true; return;
+  }
+  if (!working()) {
+    msg.dataset.ok = 'true';
+    msg.innerHTML = `Ready. The rest comes out as:  ${solved.derived.join('  ·  ')}`;
+    showDerived(solved);
+  }
+  traj = solved.f;
+  traj.mass = state.mass;
+  second = null; state.verdict = null; state.caught = null;
+  // What the stage marks: the point, and the time the engine found for it.
+  state.markers = solved.moment ? { mark: { s: solved.moment.s, t: solved.moment.t, mid: solved.moment.mid } } : {};
+  btn.disabled = false;
+  btn.textContent = 'Drive';
+  syncRate(); refreshSteps(); applyGuard(); dirty = true;
 }
 
 /**
@@ -986,7 +1079,13 @@ function buildLive() {
   // a canopy does not bounce either — so the setting is not offered on any of
   // the three. It used to be an inline checkbox in the stage bar; it is a
   // block in the options panel now, and the same reason applies to it there.
-  $('bounce-wrap').hidden = ex || !!scenario?.descent;
+  $('bounce-wrap').hidden = ex || !!scenario?.descent || !!scenario?.road;
+  // A level road has no height, no greatest height and no components to
+  // resolve, so those three of the seven are not offered there.
+  for (const k of ['components', 'apex', 'ruler', 'range']) {
+    const box = $('shows').querySelector(`input[data-k="${k}"]`);
+    if (box) box.closest('.ck').hidden = !!scenario?.road;
+  }
   if (!spec) return;
   for (const [k, o] of Object.entries(spec)) {
     const el = $(`lv-${k}`);
@@ -1693,6 +1792,9 @@ function openResolve(t) {
   // three graphs carry the velocity, the height and the acceleration at the
   // cursor, with axes to read them off.
   if (windowed()) return;
+  // NOR ON THE ROAD. The card resolves a velocity into its two components,
+  // and a vehicle on a level road has only one.
+  if (scenario?.road) return;
   hideDone(); closeAskAt();
   state.t = clamp(t ?? state.t, 0, traj.tMax);
   state.playing = false; setPlayIcon(false);
@@ -1771,7 +1873,7 @@ const AT_T_HINT = '';
 const AT_V_HINT = '';
 
 function openAskAt() {
-  if (!traj || state.step !== 'flight' || windowed()) return;
+  if (!traj || state.step !== 'flight' || windowed() || scenario?.road) return;
   hideDone(); closeResolve();
   state.playing = false; setPlayIcon(false);
   // It opens on the instant already on screen, so Resolve it always resolves
@@ -1910,6 +2012,17 @@ function renderHud() {
      <div class="hbox-v">${val}<small>${unit}</small></div></div>`;
   // In a straight line the horizontal distance is always zero, so show the
   // signed displacement along the line instead — that is the s being solved.
+  if (scenario?.road) {
+    $('hud-left').innerHTML = [
+      b('Displacement from A', fmt(p.x, 1), 'm', 'disp'),
+      b('Velocity', fmt(v.x, 1), 'm s⁻¹', 'vel'),
+      b('Acceleration', fmt(traj.params.a, 2), 'm s⁻²', 'acc'),
+      ...(state.extras.energy ? [b('Kinetic energy', fmt(traj.kineticEnergy(state.t), 0), 'J'),
+                                 b('Momentum', fmt(traj.momentum(state.t), 1), 'kg m s⁻¹')] : []),
+    ].join('');
+    $('hud-right').innerHTML = b('Time', fmt(state.t, 2), 's');
+    return;
+  }
   const line = solved?.mode === '1d';
   const h0 = solved?.params.h ?? 0;
   const toAxis = (y) => (solved?.axis === 'down' ? -y : y);
@@ -1949,6 +2062,7 @@ function showDone() {
 
   $('done-eyebrow').textContent = traj.bounces > 0
     ? `First flight, then ${traj.bounces} ${traj.bounces === 1 ? 'bounce' : 'bounces'}`
+    : r.mode === 'road' ? `From A to B in ${fmt(r.five.t.value, 2)} s`
     : `Flight complete in ${fmt(r.five.t.value, 2)} s`;
   $('done-title').textContent = title(r);
   $('done-conv').textContent = r.convention || '';
@@ -1977,6 +2091,7 @@ function showDone() {
 }
 
 function title(r) {
+  if (r.mode === 'road') return r.params.a < 0 ? 'It braked from A to B' : 'It reached B';
   if (traj?.bounces > 0) return 'It finished bouncing';
   if (r.mode === '1d' && Math.abs(r.params.u) < 1e-9) return 'It hit the ground';
   if (r.mode === '1d' && r.params.h <= 1e-9) return 'It came back down';
@@ -2224,7 +2339,8 @@ function renderWorking() {
   // A descent's working is its three phases, each one solved on its own, and
   // it comes from the engine that solved them. See descentWorking().
   for (const s of (scenario?.descent ? descentWorking(traj, state.t)
-                                     : buildWorking(traj, state.t))) {
+                   : scenario?.road ? roadWorking(solved)
+                   : buildWorking(traj, state.t))) {
     parts.push(`<div class="step"><div class="step-h">${s.title}</div>` +
       s.rows.map((r) => `<div class="eq"><div class="eq-f">${r.f}</div><div class="eq-s">${r.s}</div>${r.r ? `<div class="eq-r">${r.r}</div>` : ''}</div>`).join('') +
       (s.note ? `<div class="step-n">${s.note}</div>` : '') + '</div>');
@@ -2277,6 +2393,7 @@ function draw() {
     // pre-roll is outside the clock and nothing in it has been measured.
     $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
   } else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
+  else if (scenario?.stage === 'road') roadStage.render($('scene'), cam, opts);
   else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
   else scene.render($('scene'), cam, opts);
 
@@ -2631,6 +2748,7 @@ function applyReading(x) {
   if (r.markers.heightLine != null && state.markers) state.markers.heightLine = r.markers.heightLine;
   if (r.markers.target && state.markers) state.markers.target = r.markers.target;
   if (scenario.descent) state.descent = { ...r.descent };
+  if (scenario.road) state.mark = r.mark;
   buildValuesScreen();              // which recomputes
   // The answer is shown where the question was asked; the flight waits for
   // the student to ask for it.

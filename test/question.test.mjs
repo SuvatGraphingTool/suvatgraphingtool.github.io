@@ -4,6 +4,7 @@
 import { toEngine, toApp, APP_SCENARIOS, resolveAngle, speedFromRange, speedFromApex } from '../js/core/question.js';
 import { SCENARIO_IDS } from '../worker/src/schema.js';
 import { solveLaunch } from '../js/core/solve.js';
+import { solveRoad } from '../js/core/road.js';
 import { flight } from '../js/core/projectile.js';
 import { GRAVITY, SCENARIOS } from '../js/scenarios.js';
 import { GRAVITY as GRAV } from '../js/core/projectile.js';
@@ -214,6 +215,25 @@ group('Ask Suvat — refusing, not guessing', () => {
   ok(!toApp({ understood: true, scenario: 'arc', summary: '', angle: { ratio: { fn: 'sin', num: 5, den: 3 } } }).ok,
      'an impossible ratio');
   ok(!toApp(null).ok, 'nothing at all');
+});
+
+group('Ask Suvat — the lorry question, read and then SOLVED BY THE ENGINE', () => {
+  // the reading the Worker's own example teaches the model to give
+  const r = toApp({ understood: true, confidence: 'high', scenario: 'road', summary: '',
+                    v: 34, t: 10, s: 240, atMidpoint: true,
+                    asks: ['the value of u', 'time from A to the mid-point of AB'] });
+  ok(r.ok && r.id === 'road', 'picks Along a straight road');
+  ok(r.given.u === undefined && r.given.g === undefined, 'u and a are left for the engine');
+  ok(r.mark === 'mid', 'and the mid-point is the point to time it at');
+  ok(!r.items.some((i) => i.how === 'assumed'), 'nothing is assumed — no g on a road');
+  const f = solveRoad({ s: r.given.s, u: r.given.u, v: r.given.v, a: r.given.g, t: r.given.t, mark: r.mark });
+  near(f.params.u, 14, 1e-9, '(a) u');
+  near(f.params.a, 2, 1e-9, 'a');
+  near(f.moment.t, 6, 1e-9, '(b) to the mid-point');
+  const stop = toApp({ understood: true, scenario: 'road', summary: '', u: 20, v: 0, s: 50 });
+  ok(stop.given.v === 0, 'on a road, coming to rest is a real zero');
+  const brake = toApp({ understood: true, scenario: 'road', summary: '', u: 20, a: -4, t: 3, atDisplacement: 30 });
+  ok(brake.given.g === -4 && brake.mark === 30, 'a braking acceleration keeps its sign, and a named point is kept');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
