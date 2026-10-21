@@ -26,6 +26,7 @@ import { drawGraph, graphSpecs } from './render/graphs.js';
 import { fmt, palette, clamp } from './render/util.js';
 import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
+import { createAsk } from './ai/ask.js';
 import { readoutHTML } from './ai/readout.js';
 
 const $ = (id) => document.getElementById(id);
@@ -2765,6 +2766,12 @@ function applyReading(x) {
     ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
   return { ok: true, runnable: !!traj, html: readoutHTML(r, { name: scenario.name, solved, above }) };
 }
+const ask = createAsk({
+  apply: applyReading,
+  run: () => { if (!traj) return; if (scenario.exhibit) runFlight(); else launch(); },
+  edit: () => go('values'),
+});
+$('ask-top').addEventListener('click', () => { go('scenario'); requestAnimationFrame(ask.focus); });
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, win, choose: chooseScenario, launch, runFlight, go,
