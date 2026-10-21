@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import { mathHTML, mathText, num, signed } from '../js/notation.js';
 import { EQUATIONS, solve } from '../js/core/suvat.js';
-import { flight, derivation } from '../js/core/projectile.js';
+import { flight, derivation, timeAbove } from '../js/core/projectile.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { buildWorking, resolveAt, obstacleCheck } from '../js/working.js';
 import { solveDescent, descentWorking, resolveDescent } from '../js/core/descent.js';
@@ -243,6 +243,8 @@ group('What Ask Suvat says it read, and what the engine made of it', () => {
     { scenario: 'dropped', h: 45, t: 3.03 },
     { scenario: 'parachute', h: 100, tOpen: 3, aChute: 25, vTerm: 6 },
     { scenario: 'arc', angle: { degrees: 30 } },                         // not enough
+    { scenario: 'time-above', h: 0, u: 19.6, g: 9.8, angleDegrees: 90, heightLine: 14.7 },
+    { scenario: 'up', h: 0, u: 10, heightLine: 50 },                     // never that high
     { scenario: 'road', v: 34, t: 10, s: 240, atMidpoint: true },
     { scenario: 'road', u: 20, a: -4, t: 3, atDisplacement: 30 },
     { scenario: 'road', s: 240 },                                         // not enough
@@ -259,7 +261,11 @@ group('What Ask Suvat says it read, and what the engine made of it', () => {
       : sc.road ? solveRoad({ s: r.given.s, u: r.given.u, v: r.given.v, a: r.given.g, t: r.given.t, mark: r.mark })
       : solveLaunch(k, { noAngle: sc.noAngle, lockAngle: sc.lockAngle });
     said++;
-    check('readout', readoutHTML(r, { name: sc.name, solved }), bag);
+    let above = null;
+    if (solved?.ok && r.markers.heightLine != null) {
+      above = { line: r.markers.heightLine, ...timeAbove(flight(solved.params), r.markers.heightLine) };
+    }
+    check('readout', readoutHTML(r, { name: sc.name, solved, above }), bag);
   }
   ok(said === READINGS.length, `the sweep reaches every kind of reading (${said})`);
   ok(bag.length === 0, 'nothing on the card is written as code', bag.join('\n         '));

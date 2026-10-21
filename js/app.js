@@ -458,7 +458,9 @@ function buildValuesScreen() {
                  aria-label="Angle of projection in degrees">
           <input id="theta-slider" type="range" min="${thetaRange().min}" max="${thetaRange().max}" step="0.5"
                  value="${state.theta ?? clamp(0, thetaRange().min, thetaRange().max)}"
-                 aria-label="Angle of projection">
+                 aria-label="Angle of projection">${scenario.straightUp ? `
+          <button type="button" class="chip theta-up" id="theta-up"
+                  aria-pressed="${state.theta === 90}">Straight up · 90°</button>` : ''}
         </div>
       </div>
       <p class="xhint" id="x-theta-hint">${OPTIONAL_HINT}${
@@ -1242,9 +1244,14 @@ function wireAngle() {
     // and it is carrying no information at all. Blur still pads it to two.
     if (!fromBox) box.value = v == null ? '' : num(v, 2, { trim: true });
     if (sld) sld.value = String(v ?? 0);
+    $('theta-up')?.setAttribute('aria-pressed', String(v === 90));
     drawAngle(v);
     recompute();
   };
+  // THROWN STRAIGHT UP IS AN ANGLE TOO. "How long is it more than 14.7 m
+  // above O?" is asked of a vertical throw at least as often as of an arc,
+  // and a slider is a poor way to land on exactly 90°.
+  $('theta-up')?.addEventListener('click', () => set(90, false));
 
   box.addEventListener('input', (e) => {
     const v = parseValue(e.target.value);
@@ -2753,7 +2760,11 @@ function applyReading(x) {
   // The answer is shown where the question was asked; the flight waits for
   // the student to ask for it.
   go('scenario');
-  return { ok: true, runnable: !!traj, html: readoutHTML(r, { name: scenario.name, solved }) };
+  // A line to stay above is a question about it, and the engine answers it
+  // here the same way it does under the line's own box (showAbove).
+  const above = traj && scenario.dragLine && state.markers?.heightLine != null
+    ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
+  return { ok: true, runnable: !!traj, html: readoutHTML(r, { name: scenario.name, solved, above }) };
 }
 const ask = createAsk({
   apply: applyReading,

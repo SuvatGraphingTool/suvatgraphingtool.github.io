@@ -84,7 +84,8 @@ WHAT YOU DO
    platform       thrown horizontally from a height (cliff, table, tower)
    platform-angle thrown at an angle ABOVE the horizontal from a height
    platform-down  thrown at an angle BELOW the horizontal from a height
-   time-above     asks how long it spends above a given height
+   time-above     asks how long it spends above (or below) a given height — at any angle,
+                  INCLUDING thrown straight up. Straight up: angleDegrees 90.
    parachute      falls freely, then a parachute opens and it slows to a steady speed
    bullet         compares a bullet fired horizontally with one dropped at the same moment
    monkey         a projectile aimed straight at a target that drops as it is fired
@@ -105,6 +106,9 @@ RULES
   Leave out every field that does not apply. Most questions need four or five fields.
   Never return v unless a landing speed is stated. Never copy u into v.
 - Angles given as a trig ratio (tan a = 3/4, sin a = 3/5) MUST be returned as ratioFn, ratioNum, ratioDen.
+- "How long is it more than X m above ..." is ALWAYS time-above, with heightLine X, even
+  when the throw is vertical. Pick time-above over up whenever the question asks it,
+  even if another part asks something else (greatest height, total time).
 - Never fill tOpen, aChute or vTerm unless the question is about a parachute.
 - road: u is the speed at the first point (A), v the speed at the second (B), s the distance
   between them, t the time between them, a the acceleration. "From rest" means u = 0 and
@@ -143,6 +147,9 @@ EXAMPLES
 
 "A car decelerates uniformly from 20 m/s to rest over 50 m."
 → {"understood":true,"confidence":"high","scenario":"road","summary":"A car brakes from 20 m/s to rest in 50 m.","u":20,"v":0,"s":50}
+
+"A small stone is projected vertically upwards from O with a speed of 19.6 m/s. (a) find the greatest height above O, (b) find the length of time for which the stone is more than 14.7 m above O."
+→ {"understood":true,"confidence":"high","scenario":"time-above","summary":"A stone is projected vertically upwards from O at 19.6 m/s.","h":0,"u":19.6,"angleDegrees":90,"heightLine":14.7,"asks":["greatest height above O","time more than 14.7 m above O"]}
 
 Be brief. Only the fields you are sure about.
 

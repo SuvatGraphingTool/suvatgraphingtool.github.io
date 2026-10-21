@@ -5,7 +5,7 @@ import { toEngine, toApp, APP_SCENARIOS, resolveAngle, speedFromRange, speedFrom
 import { SCENARIO_IDS } from '../worker/src/schema.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { solveRoad } from '../js/core/road.js';
-import { flight } from '../js/core/projectile.js';
+import { flight, timeAbove } from '../js/core/projectile.js';
 import { GRAVITY, SCENARIOS } from '../js/scenarios.js';
 import { GRAVITY as GRAV } from '../js/core/projectile.js';
 
@@ -234,6 +234,28 @@ group('Ask Suvat — the lorry question, read and then SOLVED BY THE ENGINE', ()
   ok(stop.given.v === 0, 'on a road, coming to rest is a real zero');
   const brake = toApp({ understood: true, scenario: 'road', summary: '', u: 20, a: -4, t: 3, atDisplacement: 30 });
   ok(brake.given.g === -4 && brake.mark === 30, 'a braking acceleration keeps its sign, and a named point is kept');
+});
+
+group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', () => {
+  const asked = { understood: true, confidence: 'high', summary: '', h: 0, u: 19.6, g: 9.8,
+                  asks: ['greatest height above O', 'time more than 14.7 m above O'] };
+  // what the reader is now taught to say, and what it used to say
+  const good = toApp({ ...asked, scenario: 'time-above', angleDegrees: 90, heightLine: 14.7 });
+  const old = toApp({ ...asked, scenario: 'up', heightLine: 14.7 });
+  for (const [r, label] of [[good, 'read as Time above a line'], [old, 'read as Thrown straight up']]) {
+    ok(r.ok && r.id === 'time-above', `${label} → lands on Time above a line`);
+    ok(r.theta === 90 && r.markers.heightLine === 14.7, `${label} → at 90°, with the line at 14.7 m`);
+    const f = run(r);
+    ok(f.ok, `${label} → the engine runs it`);
+    const fl = flight(f.params);
+    const a = timeAbove(fl, r.markers.heightLine);
+    near(a.above, 2, 1e-9, `${label} → above the line for the paper's 2 s`);
+    near(fl.uy * fl.uy / (2 * 9.8), 19.6, 1e-9, `${label} → and the greatest height is 19.6 m`);
+  }
+  ok(good.items.find((i) => i.k === 'theta').vertical, 'the card says it was thrown straight up');
+  ok(good.items.some((i) => i.k === 'line'), 'and shows where the line is');
+  const plain = toApp({ ...asked, scenario: 'up' });
+  ok(plain.id === 'up', 'straight up with no line stays Thrown straight up');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
