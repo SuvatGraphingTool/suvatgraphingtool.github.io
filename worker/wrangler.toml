@@ -5,7 +5,7 @@ compatibility_date = "2026-09-01"
 [vars]
 # Lock the Worker to your site. Comma separated, no trailing slash.
 # Leave empty ONLY while testing locally.
-ALLOWED_ORIGINS = "https://suvatgraphingtool.github.io,http://localhost:4173"
+ALLOWED_ORIGINS = "https://suvat-ai.suvatgraphingtool.workers.dev,https://suvatgraphingtool.github.io,http://localhost:4173,http://localhost:4199"
 # Which Gemini models read the questions, first choice first. A busy one hands on to the next,
 # and so does one that has used its day: on the free tier each model has its own 20 a day.
 # A ":low" after a name sets how hard it thinks; the default is "minimal", which 3.8 Flash refuses.
