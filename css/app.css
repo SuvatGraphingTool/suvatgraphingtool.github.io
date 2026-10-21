@@ -1024,8 +1024,13 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-att-x:hover { background: var(--hover); color: var(--ink); }
 .ask-fine { font-size: var(--fs-xs); color: var(--ink-faint); margin: var(--sp-2) 0 0 var(--sp-4); }
 
-/* the conversation: your question, and Suvat's answer under it */
-.ask-thread { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+/* the conversation: every message, oldest at the top. It scrolls inside
+   itself, so a long chat does not push the scenario cards off the page. */
+.ask-thread { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4);
+              max-height: min(62vh, 640px); overflow-y: auto; overscroll-behavior: contain;
+              padding-right: var(--sp-1); }
+.ask-shot { display: block; max-width: min(240px, 100%); max-height: 200px; border-radius: var(--r-md);
+            margin-bottom: var(--sp-2); object-fit: contain; background: var(--card); }
 .ask-msg { display: flex; gap: var(--sp-3); align-items: flex-start; }
 .ask-mine { justify-content: flex-end; }
 .ask-bubble { min-width: 0; max-width: min(640px, 100%); border-radius: var(--r-xl); padding: var(--sp-3) var(--sp-4);

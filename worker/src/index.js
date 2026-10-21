@@ -14,6 +14,7 @@ const MODELS_DEFAULT = '@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemi
 const MAX_IMAGE_BYTES = 1_500_000;      // the client resizes to ~150 KB; this is the backstop
 const MAX_PDF_BYTES = 4_000_000;        // a few pages of a paper
 const MAX_TEXT_CHARS = 2_000;           // a long exam question is ~600
+const MAX_TURNS = 8;                    // the chat the reader is shown: four questions and answers
 const PER_IP_PER_DAY = 40;              // generous for one student, useless for a scraper
 const PER_IP_PER_MINUTE = 6;
 const HEDGE_MS = 4_500;                 // Gemma usually answers in 2–3.5 s; past this, ask another too
@@ -58,7 +59,7 @@ export default {
     // Words — typed, or spoken and turned into text by the browser — and at
     // most one attachment: a photo of the question, or the paper as a PDF.
     // Either may come alone.
-    const { imageBase64, mimeType = 'image/jpeg', hint, text } = body || {};
+    const { imageBase64, mimeType = 'image/jpeg', hint, text, history } = body || {};
     const words = typeof text === 'string' ? text.trim() : '';
     const file = typeof imageBase64 === 'string' && imageBase64.length ? imageBase64 : '';
     if (!words && !file) return json({ error: 'Send text, a file, or both.' }, 400, cors);
@@ -87,11 +88,23 @@ export default {
     const parts = [];
     if (file) parts.push({ inline_data: { mime_type: mimeType, data: file } });
     const say = words || (typeof hint === 'string' ? hint.trim().slice(0, 400) : '');
-    if (say) parts.push({ text: `The student ${file ? 'adds' : 'describes the question'}:\n${say}` });
+    const sent = mimeType === 'application/pdf' ? 'the question paper as a PDF' : 'a photo of the question';
+    parts.push({ text: file
+      ? `The student sends ${sent}${say ? ` and says:\n${say}` : '.'}`
+      : `The student says:\n${say}` });
+
+    // The chat so far: what the student said, and the JSON each answer was.
+    // Text only — a photo is sent once, and what was read from it lives on in
+    // the answer that followed. The last few turns, user and model in pairs.
+    const earlier = (Array.isArray(history) ? history : [])
+      .filter((h) => h && (h.role === 'user' || h.role === 'model') && typeof h.text === 'string' && h.text.trim())
+      .slice(-MAX_TURNS)
+      .map((h) => ({ role: h.role, parts: [{ text: h.text.slice(0, MAX_TEXT_CHARS) }] }));
+    while (earlier.length && earlier[0].role !== 'user') earlier.shift();
 
     const payload = {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents: [{ role: 'user', parts }],
+      contents: [...earlier, { role: 'user', parts }],
       generationConfig: {
         temperature: 0,                         // extraction, not writing
         maxOutputTokens: 1200,
@@ -273,20 +286,25 @@ async function ask(env, model, payload, ms, cancel) {
  */
 async function askCloudflare(env, model, payload, ms, cancel) {
   if (!env.AI) return { ok: false, kind: 'error', status: 403, detail: 'no AI binding' };
-  const content = [];
-  for (const p of payload.contents[0].parts) {
-    if (p.inline_data?.mime_type === 'application/pdf') {
-      return { ok: false, kind: 'error', status: 415, detail: 'reads no PDFs' };
+  const turns = [];
+  for (const c of payload.contents) {
+    const content = [];
+    for (const p of c.parts) {
+      if (p.inline_data?.mime_type === 'application/pdf') {
+        return { ok: false, kind: 'error', status: 415, detail: 'reads no PDFs' };
+      }
+      if (p.inline_data) {
+        content.push({ type: 'image_url', image_url: { url: `data:${p.inline_data.mime_type};base64,${p.inline_data.data}` } });
+      }
+      if (p.text) content.push({ type: 'text', text: p.text });
     }
-    if (p.inline_data) {
-      content.push({ type: 'image_url', image_url: { url: `data:${p.inline_data.mime_type};base64,${p.inline_data.data}` } });
-    }
-    if (p.text) content.push({ type: 'text', text: p.text });
+    turns.push({ role: c.role === 'model' ? 'assistant' : 'user',
+                 content: content.length === 1 && content[0].type === 'text' ? content[0].text : content });
   }
   const run = env.AI.run(model, {
     messages: [
       { role: 'system', content: payload.system_instruction.parts[0].text },
-      { role: 'user', content },
+      ...turns,
     ],
     temperature: payload.generationConfig.temperature,
     max_completion_tokens: payload.generationConfig.maxOutputTokens,

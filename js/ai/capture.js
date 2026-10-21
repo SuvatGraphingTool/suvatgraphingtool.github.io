@@ -46,13 +46,13 @@ export const READER = 'https://suvat-reader.suvatgraphingtool.workers.dev/extrac
  * never throws, because every failure path here has a sensible fallback:
  * the student types the numbers in.
  */
-export function readQuestion(endpoint, prepared, { hint, signal } = {}) {
-  return post(endpoint, { imageBase64: prepared.base64, mimeType: prepared.mimeType, hint }, signal);
+export function readQuestion(endpoint, prepared, { hint, history, signal } = {}) {
+  return post(endpoint, { imageBase64: prepared.base64, mimeType: prepared.mimeType, hint, history }, signal);
 }
 
 /** The same, for a question typed in or spoken aloud. */
-export function readText(endpoint, text, { signal } = {}) {
-  return post(endpoint, { text }, signal);
+export function readText(endpoint, text, { history, signal } = {}) {
+  return post(endpoint, { text, history }, signal);
 }
 
 async function post(endpoint, body, signal) {

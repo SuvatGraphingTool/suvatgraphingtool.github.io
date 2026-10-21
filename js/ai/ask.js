@@ -26,6 +26,12 @@ export function createAsk({ apply, run, edit }) {
   const form = $('ask-form'), text = $('ask-text'), send = $('ask-send');
   const thread = $('ask-thread');
   let att = null, busy = null;     // att: { kind: 'image'|'pdf', file }
+  // The chat so far, as the reader is shown it: what the student said and the
+  // JSON each answer was. A photo is not sent twice — what was read from it
+  // is in the answer that followed.
+  const history = [];
+  const HISTORY_MAX = 8;
+  let current = null;              // this turn's reply, while it is being written
 
   /* ── the box ────────────────────────────────────────────────────────── */
   function sync() {
@@ -75,23 +81,37 @@ export function createAsk({ apply, run, edit }) {
     sync();
   }
 
-  /* ── the conversation: the last question, and Suvat's answer to it ──── */
+  /* ── the conversation: every message, oldest at the top ───────────────── */
   function reply(html, { busy: thinking = false, acts = null } = {}) {
     thread.hidden = false;
-    let r = thread.querySelector('.ask-reply');
+    let r = current;
     if (!r) { r = document.createElement('div'); r.className = 'ask-msg ask-reply'; thread.append(r); }
+    if (thinking) current = r; else current = null;
     r.dataset.busy = String(thinking);
     r.innerHTML = `<span class="ai-orb sm" aria-hidden="true">${SPARK}</span><div class="ask-bubble">${html}${acts || ''}</div>`;
+    thread.scrollTop = thread.scrollHeight;
     return r;
   }
   function echo(words, a) {
-    thread.innerHTML = '';
     thread.hidden = false;
+    // Only the newest answer's buttons act: an older one would run whatever
+    // question is set up now, not the one it was written for.
+    for (const old of thread.querySelectorAll('.ask-acts')) old.remove();
+    current = null;
     const q = document.createElement('div');
     q.className = 'ask-msg ask-mine';
-    const what = a ? `<span class="ask-chip">${a.kind === 'pdf' ? 'PDF' : 'Photo'} · ${esc(a.file.name || '')}</span>` : '';
+    // A photo stays in the thread as a picture, so the chat reads back.
+    const what = !a ? ''
+      : a.kind === 'image' ? `<img class="ask-shot" src="${URL.createObjectURL(a.file)}" alt="The photo sent">`
+      : `<span class="ask-chip">PDF · ${esc(a.file.name || '')}</span>`;
     q.innerHTML = `<div class="ask-bubble">${what}${words ? `<p>${esc(words)}</p>` : ''}</div>`;
     thread.append(q);
+    thread.scrollTop = thread.scrollHeight;
+  }
+  function remember(words, a, extraction) {
+    const said = a ? `[sent ${a.kind === 'pdf' ? 'the question paper as a PDF' : 'a photo of the question'}]${words ? ` ${words}` : ''}` : words;
+    history.push({ role: 'user', text: said }, { role: 'model', text: JSON.stringify(extraction) });
+    while (history.length > HISTORY_MAX) history.shift();
   }
 
   async function submit(e) {
@@ -114,12 +134,12 @@ export function createAsk({ apply, run, edit }) {
     try {
       if (a?.kind === 'image') {
         const prepared = await prepareImage(a.file);
-        res = await readQuestion(READER, prepared, { hint: words, signal: busy.signal });
+        res = await readQuestion(READER, prepared, { hint: words, history, signal: busy.signal });
       } else if (a?.kind === 'pdf') {
         const base64 = await fileBase64(a.file);
-        res = await readQuestion(READER, { base64, mimeType: 'application/pdf' }, { hint: words, signal: busy.signal });
+        res = await readQuestion(READER, { base64, mimeType: 'application/pdf' }, { hint: words, history, signal: busy.signal });
       } else {
-        res = await readText(READER, words, { signal: busy.signal });
+        res = await readText(READER, words, { history: [...history], signal: busy.signal });
       }
     } catch {
       res = { ok: false, message: 'That file could not be opened. Try a JPEG, PNG or PDF.' };
@@ -128,6 +148,7 @@ export function createAsk({ apply, run, edit }) {
     busy = null; sync();
 
     if (!res?.ok) { reply(`<p class="ro-bad">${esc(res?.message || 'Could not read that.')}</p>`); return; }
+    remember(words, a, res.extraction);
     const r = apply(res.extraction);
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
 
