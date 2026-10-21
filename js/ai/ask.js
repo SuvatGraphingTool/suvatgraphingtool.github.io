@@ -101,13 +101,6 @@ export function createAsk({ apply, run, edit }) {
     const words = text.value.trim(), a = att;
     echo(words, a);
     text.value = ''; detach();
-    // "hello", "help", "hi there": a few words and no numbers is not a
-    // question yet. Answer it here, and keep the day's readings for questions.
-    if (!a && !/\d/.test(words) && words.split(/\s+/).length <= 3) {
-      reply(`<p>${GREETING}</p>`);
-      text.focus();
-      return;
-    }
     busy = new AbortController(); sync();
     const dots = '<p class="ask-dots" aria-label="Suvat is reading"><span></span><span></span><span></span></p>';
     reply(dots, { busy: true });
@@ -224,7 +217,6 @@ function fileBase64(file) {
   });
 }
 
-const GREETING = 'Hi! I read projectile and motion questions. Type one in, say it, or add a photo or the PDF of the paper — something like “a ball is thrown horizontally off a 20 metre cliff at 15 metres a second” — and I will set it up and show you the flight.';
 
 /** The sparkle: one four-pointed star and a small one beside it. */
 export const SPARK = `<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true">
