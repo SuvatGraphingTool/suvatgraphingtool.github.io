@@ -98,9 +98,12 @@ find it; and no `36.87`, because a ratio is returned as a ratio.
 | Origin not in `ALLOWED_ORIGINS` | 403 |
 | Image over ~1.5 MB | 413, "resize to about 1024 px" |
 | Too many requests from one IP | 429 with a friendly message |
-| Gemini's daily quota gone | 429 `quota_exhausted` — "type the numbers in instead" |
-| Gemini down or slow | 502 after 25 s |
-| Response not valid JSON | 502, asks for a clearer photo |
+| A model busy (503) or out of allowance (429) | the next model in `MODELS` gets the question |
+| Every model at its per-minute limit | 429 `busy` — "wait a few seconds" |
+| Every model at its daily limit | 429 `quota_exhausted` — "type the numbers in instead" |
+| Gemini down or slow | 502, within about 50 s in all |
+| Response not valid JSON | one retry, then 502 |
+| Not a motion question | 200, `understood: false` — the app says so |
 
 Every failure resolves to the same fallback: the student types the numbers in.
 Nothing about this feature is load-bearing.
@@ -112,12 +115,18 @@ Nothing about this feature is load-bearing.
 | | Free allowance | Reality |
 |---|---|---|
 | Workers | 100,000 req/day | never the constraint |
-| Gemini Flash-Lite | ~1,500 req/day | the real ceiling |
+| Gemini 3.5 Flash-Lite / Flash | **20 req/day each** (October 2026) | the real ceiling |
 | KV writes | 1,000/day | why rate limiting is optional |
 
-Google no longer publishes the rate-limit table publicly, so treat ~1,500 as
-the right order of magnitude rather than a guarantee. Check your live limits at
-[AI Studio](https://aistudio.google.com/rate-limit).
+Twenty a day is enough to try the feature, not to run a class on it. Turning on
+billing for the key in AI Studio lifts the limit, at a fraction of a penny per
+question (and stops Google using what students send to train its models).
+Check the live limits at [AI Studio](https://aistudio.google.com/rate-limit).
+
+The models are set in `wrangler.toml` as `MODELS`, first choice first. Google
+retires model names — `gemini-2.5-flash-lite` stopped working for new keys in
+2026 — and when it does, its error names the replacement: change `MODELS` and
+`npx wrangler deploy`.
 
 ---
 

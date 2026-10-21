@@ -176,3 +176,132 @@ function normaliseMarkers(m) {
   if (typeof m.heightLine === 'number') out.heightLine = m.heightLine;
   return out;
 }
+
+/* ── Extraction → the app's own screens ─────────────────────────────────
+   toEngine above answers "what flight is this?" in one go. toApp answers a
+   different question: "what would a student have picked, and what would they
+   have typed?" — the scenario by its id in js/scenarios.js, and the values
+   that go in its boxes. Nothing here finishes the motion. Whatever the
+   question leaves out is left out, and js/core/solve.js finds it from what
+   is there, exactly as it does for a student typing; that is CLAUDE.md rule 4.
+
+   Every value comes back tagged with where it came from:
+     given    in the question
+     worked   worked out here, from something that was (a ratio, a rise)
+     assumed  the question said nothing, and this is what nothing means      */
+
+// Where each scenario starts, and what it fixes. Kept beside the ids the
+// Worker's schema offers (worker/src/schema.js) — the test checks they agree
+// with js/scenarios.js.
+const GROUNDED = new Set(['up', 'arc', 'time-above']);
+const LOCKED_THETA = { up: 90, down: -90, platform: 0, bullet: 0 };
+const ONE_D = new Set(['up', 'down', 'dropped', 'parachute']);
+export const APP_SCENARIOS = ['up', 'arc', 'dropped', 'down', 'platform-down', 'platform',
+  'platform-angle', 'time-above', 'parachute', 'bullet', 'monkey'];
+
+const isNum = (x) => typeof x === 'number' && isFinite(x);
+
+/**
+ * @param {Object} x  the extraction (see worker/src/schema.js)
+ * @returns {{ok:true, id, given, theta, h, markers, descent, items, asks, summary, confidence, notes}
+ *          |{ok:false, error}}
+ *   given   the five boxes, keyed as js/app.js keys them: s u v g t
+ *   items   [{ k, value, how: 'given'|'worked'|'assumed', ratio? }] for the readout
+ */
+export function toApp(x) {
+  if (!x || typeof x !== 'object') return { ok: false, error: 'Nothing came back from the reader.' };
+  if (x.understood === false) {
+    return { ok: false, error: x.note || 'That did not read as a projectile or falling-object question.' };
+  }
+  const id = x.scenario;
+  if (!APP_SCENARIOS.includes(id)) {
+    return { ok: false, error: 'That is a motion question, but not one of the situations this playground can set up yet. Pick the closest scenario and type the numbers in.' };
+  }
+
+  // The Worker sends the angle and the target flat (see worker/src/schema.js
+  // for why); the older nested shape is still accepted.
+  if (!x.angle && (isNum(x.angleDegrees) || x.ratioFn)) {
+    x = { ...x, angle: x.ratioFn && isNum(x.ratioNum) && isNum(x.ratioDen)
+      ? { ratio: { fn: x.ratioFn, num: x.ratioNum, den: x.ratioDen }, belowHorizontal: !!x.belowHorizontal }
+      : { degrees: x.angleDegrees, belowHorizontal: !!x.belowHorizontal } };
+  }
+  if (!x.target && isNum(x.targetX) && isNum(x.targetY)) x = { ...x, target: { x: x.targetX, y: x.targetY } };
+
+  const items = [];
+  const notes = [];
+  const given = {};
+  const put = (k, value, how, extra) => items.push({ k, value, how, ...extra });
+
+  // g — stated, or the 9.81 every scenario seeds.
+  if (isNum(x.g) && x.g > 0) { given.g = x.g; put('g', x.g, 'given'); }
+  else { given.g = DEFAULT_G; put('g', DEFAULT_G, 'assumed'); }
+
+  // h — measured from the ground. The ground scenarios start on it.
+  let h;
+  if (isNum(x.h)) { h = x.h; put('h', h, 'given'); }
+  else if (GROUNDED.has(id)) { h = 0; put('h', 0, 'assumed'); }
+
+  // θ — fixed by the scenario, given, or worked from a ratio.
+  let theta;
+  if (id === 'dropped' || id === 'parachute') theta = undefined;
+  else if (id in LOCKED_THETA) theta = LOCKED_THETA[id];
+  else if (x.angle) {
+    const a = resolveAngle(x.angle);
+    if (!a.ok) return { ok: false, error: a.error };
+    theta = a.degrees;
+    // The card says which way it is aimed, so a sign the reader lost is
+    // restored by the scenario it chose.
+    if (id === 'platform-down') theta = -Math.abs(theta);
+    if (x.angle.ratio) put('theta', theta, 'worked', { ratio: { ...x.angle.ratio } });
+    else put('theta', theta, 'given');
+  }
+
+  // The five.
+  // A launch speed of nothing is a drop, and a drop has its own card. On any
+  // other card a zero is the reader filling a gap, not reading a number.
+  if (id === 'dropped') given.u = 0;
+  else if (isNum(x.u) && x.u > 0) { given.u = x.u; put('u', x.u, 'given'); }
+  // A landing speed the reader could not have read: nothing lands at rest,
+  // and nothing launched from above the ground lands at the speed it left.
+  // Readers invent both, so both are dropped rather than handed to the engine.
+  const vOk = isNum(x.v) && Math.abs(x.v) >= 0.5 && !(x.v === x.u && (h ?? 0) > 0);
+  if (vOk && id !== 'parachute') { given.v = Math.abs(x.v); put('v', given.v, 'given'); }
+  if (isNum(x.t) && x.t > 0 && id !== 'parachute') { given.t = x.t; put('t', x.t, 'given'); }
+  // s is the horizontal distance to the landing. In a straight line there
+  // is none, and a height the reader put there is already in h.
+  if (isNum(x.s) && !ONE_D.has(id)) { given.s = x.s; put('s', x.s, 'given'); }
+
+  // A speed worked back from a greatest height, when the speed is not given.
+  if (given.u === undefined && isNum(x.apexAboveLaunch)) {
+    const th = theta ?? 90;
+    const r = speedFromApex(x.apexAboveLaunch, th, given.g);
+    if (r.ok) {
+      given.u = r.u;
+      put('u', r.u, 'worked', { rise: x.apexAboveLaunch });
+    } else notes.push(r.error);
+  }
+
+  // What only some scenarios carry.
+  const markers = {};
+  if (id === 'time-above' && isNum(x.heightLine)) markers.heightLine = x.heightLine;
+  if (id === 'monkey' && x.target && isNum(x.target.x) && isNum(x.target.y)) {
+    markers.target = { x: x.target.x, y: x.target.y };
+  }
+  const descent = {};
+  if (id === 'parachute') {
+    // A reader that missed the descent fields usually put the free-fall time
+    // in t and the steady speed in v, which is what they are.
+    const d = { tOpen: x.t, vTerm: x.v, ...(x.descent || {}) };
+    for (const k of ['tOpen', 'aChute', 'vTerm']) if (isNum(x[k])) d[k] = x[k];
+    for (const k of ['tOpen', 'aChute', 'vTerm']) {
+      if (isNum(d[k]) && d[k] !== 0) { descent[k] = Math.abs(d[k]); put(k, descent[k], 'given'); }
+    }
+  }
+
+  return {
+    ok: true, id, given, theta, h, markers, descent, items, notes,
+    asks: Array.isArray(x.asks) ? x.asks.filter((a) => typeof a === 'string').slice(0, 6) : [],
+    summary: typeof x.summary === 'string' ? x.summary : '',
+    confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium',
+  };
+}

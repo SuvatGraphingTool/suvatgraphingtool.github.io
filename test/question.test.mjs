@@ -1,7 +1,9 @@
 // question.test.mjs — the extraction→engine layer, checked against real questions.
 // Run: node test/question.test.mjs
 
-import { toEngine, resolveAngle, speedFromRange, speedFromApex } from '../js/core/question.js';
+import { toEngine, toApp, APP_SCENARIOS, resolveAngle, speedFromRange, speedFromApex } from '../js/core/question.js';
+import { SCENARIO_IDS } from '../worker/src/schema.js';
+import { solveLaunch } from '../js/core/solve.js';
 import { flight } from '../js/core/projectile.js';
 import { GRAVITY, SCENARIOS } from '../js/scenarios.js';
 import { GRAVITY as GRAV } from '../js/core/projectile.js';
@@ -143,6 +145,75 @@ group('Every part of the app means the same thing by g', () => {
   const seeded = SCENARIOS.map((x) => x.params.g).filter((g) => g > 1);
   ok(seeded.length > 0 && seeded.every((g) => g === 9.81),
      `every scenario on Earth is seeded at 9.81 (${seeded.length} of them)`);
+});
+
+
+/* ── Ask Suvat: the reading, dropped into the app's own screens ─────────── */
+group('Ask Suvat — every scenario the reader can choose is one the app has', () => {
+  const ids = SCENARIOS.map((x) => x.id);
+  ok(APP_SCENARIOS.every((id) => ids.includes(id)), 'toApp only names real scenarios');
+  ok(ids.every((id) => APP_SCENARIOS.includes(id)), 'and every scenario can be chosen');
+  ok(SCENARIO_IDS.filter((x) => x !== 'other').join() === APP_SCENARIOS.join(),
+     "the Worker's schema offers exactly the same list");
+});
+
+// What the student would have typed, through the same solver Launch uses.
+const run = (r) => {
+  const sc = SCENARIOS.find((x) => x.id === r.id);
+  const k = { ...r.given, theta: r.theta, h: r.h };
+  if (sc.noAngle) { k.u = 0; delete k.theta; }
+  if (sc.lockAngle) k.theta = sc.params.theta;
+  return solveLaunch(k, { noAngle: sc.noAngle, lockAngle: sc.lockAngle });
+};
+
+group('Ask Suvat — the cliff question, read and then SOLVED BY THE ENGINE', () => {
+  // exactly what Gemini returned for "25 m cliff, 45°, lands 100 m away, g = 9.8"
+  const r = toApp({ understood: true, confidence: 'high', scenario: 'platform-angle', summary: '',
+                    angle: { belowHorizontal: false, degrees: 45 }, asks: ['speed of projection'],
+                    g: 9.8, h: 25, s: 100 });
+  ok(r.ok && r.id === 'platform-angle', 'picks Up and off a platform');
+  ok(r.given.u === undefined, 'the speed it was asked to find is left for the engine');
+  const f = run(r);
+  ok(f.ok, 'the engine can run it from what was given');
+  near(f.params.u, 28, 1e-6, 'and finds the paper\'s own U = 28');
+});
+
+group('Ask Suvat — what the reader must not be trusted with', () => {
+  const flat = toApp({ understood: true, scenario: 'platform', summary: '', h: 20, u: 15, v: 0 });
+  ok(flat.given.v === undefined, 'a landing speed of 0 is dropped, not believed');
+  ok(flat.theta === 0, 'thrown flat is 0°, whatever the reader said');
+  near(run(flat).params.u, 15, 1e-9, 'and it still runs');
+  const same = toApp({ understood: true, scenario: 'platform', summary: '', h: 20, u: 15, v: 15 });
+  ok(same.given.v === undefined, 'nothing off a cliff lands at the speed it left');
+  const ratio = toApp({ understood: true, scenario: 'arc', summary: '', u: 35,
+                        angle: { ratio: { fn: 'tan', num: 3, den: 4 } } });
+  near(ratio.theta, 36.8699, 1e-3, 'tan α = 3/4 is resolved here, not by the model');
+  ok(ratio.items.find((i) => i.k === 'theta').how === 'worked', 'and says it was worked out');
+  ok(ratio.h === 0 && ratio.items.find((i) => i.k === 'h').how === 'assumed', 'from the ground, said as assumed');
+  ok(ratio.given.g === 9.81 && ratio.items.find((i) => i.k === 'g').how === 'assumed', 'g assumed when unstated');
+  ok(run(ratio).ok, 'and the engine runs it');
+  const down = toApp({ understood: true, scenario: 'platform-down', summary: '', h: 25, u: 25, angle: { degrees: 30 } });
+  ok(down.theta === -30, 'a down-and-off throw keeps its sign even when the reader drops it');
+  const up = toApp({ understood: true, scenario: 'up', summary: '', u: 14, v: 0 });
+  ok(up.theta === 90 && up.h === 0 && run(up).ok, 'thrown straight up from the ground runs from u alone');
+  const apex = toApp({ understood: true, scenario: 'up', summary: '', apexAboveLaunch: 10 });
+  near(apex.given.u, Math.sqrt(2 * 9.81 * 10), 1e-9, 'u from a greatest height, worked here');
+});
+
+group('Ask Suvat — the parachute, however the reader filed it', () => {
+  const a = toApp({ understood: true, scenario: 'parachute', summary: '', h: 100, t: 3, v: 6 });
+  ok(a.descent.tOpen === 3 && a.descent.vTerm === 6, 'free-fall time and steady speed from t and v');
+  ok(a.given.t === undefined && a.given.v === undefined, 'and not left in the five as well');
+  const b = toApp({ understood: true, scenario: 'parachute', summary: '', h: 100, tOpen: 3, aChute: 25, vTerm: 6 });
+  ok(b.descent.aChute === 25 && b.descent.tOpen === 3, 'or from its own fields');
+});
+
+group('Ask Suvat — refusing, not guessing', () => {
+  ok(!toApp({ understood: false, scenario: 'other', summary: '', note: 'Not a motion question.' }).ok, 'not a motion question');
+  ok(!toApp({ understood: true, scenario: 'other', summary: '' }).ok, 'a motion this app cannot set up');
+  ok(!toApp({ understood: true, scenario: 'arc', summary: '', angle: { ratio: { fn: 'sin', num: 5, den: 3 } } }).ok,
+     'an impossible ratio');
+  ok(!toApp(null).ok, 'nothing at all');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
