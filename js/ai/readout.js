@@ -27,6 +27,8 @@ function valueHTML(it) {
     case 'v': return M`v = ${num(x, 2, { trim: true })} [m s^-1]`;
     case 't': return M`t = ${num(x, 2, { trim: true })} [s]`;
     case 'g': return M`a = ${num(x, 2, { trim: true })} [m s^-2]`;
+    case 'a': return M`a = ${num(x, 2, { trim: true })} [m s^-2]`;
+    case 'mark': return it.mid ? 'times it at the mid-point' : `times it at ${M`${num(x, 2, { trim: true })} [m]`} from the start`;
     case 'h': return M`h = ${num(x, 2, { trim: true })} [m]`;
     case 'theta': return M`theta = ${num(x, 1, { trim: true })}°`;
     case 'tOpen': return `free fall for ${M`${num(x, 2, { trim: true })} [s]`}`;

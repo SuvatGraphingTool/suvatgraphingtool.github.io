@@ -197,7 +197,7 @@ const GROUNDED = new Set(['up', 'arc', 'time-above']);
 const LOCKED_THETA = { up: 90, down: -90, platform: 0, bullet: 0 };
 const ONE_D = new Set(['up', 'down', 'dropped', 'parachute']);
 export const APP_SCENARIOS = ['up', 'arc', 'dropped', 'down', 'platform-down', 'platform',
-  'platform-angle', 'time-above', 'parachute', 'bullet', 'monkey'];
+  'platform-angle', 'time-above', 'parachute', 'bullet', 'monkey', 'road'];
 
 const isNum = (x) => typeof x === 'number' && isFinite(x);
 
@@ -231,6 +231,26 @@ export function toApp(x) {
   const notes = [];
   const given = {};
   const put = (k, value, how, extra) => items.push({ k, value, how, ...extra });
+
+  // ALONG A ROAD there is no gravity, no height and no angle: the five are
+  // the five, a is the vehicle's own (negative is braking), and "from rest"
+  // and "comes to rest" are real zeros. The a box is keyed g in js/app.js,
+  // as it is for every scenario.
+  if (id === 'road') {
+    for (const k of ['s', 'u', 'v', 't']) {
+      if (isNum(x[k]) && !(k === 't' && x[k] <= 0)) { given[k] = x[k]; put(k, x[k], 'given'); }
+    }
+    if (isNum(x.a)) { given.g = x.a; put('a', x.a, 'given'); }
+    let mark;
+    if (x.atMidpoint === true) { mark = 'mid'; put('mark', null, 'given', { mid: true }); }
+    else if (isNum(x.atDisplacement)) { mark = x.atDisplacement; put('mark', mark, 'given'); }
+    return {
+      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, items, notes,
+      asks: Array.isArray(x.asks) ? x.asks.filter((q) => typeof q === 'string').slice(0, 6) : [],
+      summary: typeof x.summary === 'string' ? x.summary : '',
+      confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium',
+    };
+  }
 
   // g — stated, or the 9.81 every scenario seeds.
   if (isNum(x.g) && x.g > 0) { given.g = x.g; put('g', x.g, 'given'); }

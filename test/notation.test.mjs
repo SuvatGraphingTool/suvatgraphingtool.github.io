@@ -25,6 +25,7 @@ import { descentPanes, plotSpec, PRE_SAY } from '../js/render/drop.js';
 import { SCENARIOS, GROUPS } from '../js/scenarios.js';
 import { toApp } from '../js/core/question.js';
 import { readoutHTML } from '../js/ai/readout.js';
+import { solveRoad, roadWorking } from '../js/core/road.js';
 
 let pass = 0, fail = 0;
 
@@ -242,6 +243,9 @@ group('What Ask Suvat says it read, and what the engine made of it', () => {
     { scenario: 'dropped', h: 45, t: 3.03 },
     { scenario: 'parachute', h: 100, tOpen: 3, aChute: 25, vTerm: 6 },
     { scenario: 'arc', angle: { degrees: 30 } },                         // not enough
+    { scenario: 'road', v: 34, t: 10, s: 240, atMidpoint: true },
+    { scenario: 'road', u: 20, a: -4, t: 3, atDisplacement: 30 },
+    { scenario: 'road', s: 240 },                                         // not enough
   ];
   const bag = [];
   let said = 0;
@@ -251,12 +255,38 @@ group('What Ask Suvat says it read, and what the engine made of it', () => {
     const k = { ...r.given, theta: r.theta, h: r.h };
     if (sc.noAngle) { k.u = 0; delete k.theta; }
     if (sc.lockAngle) k.theta = sc.params.theta;
-    const solved = sc.descent ? null : solveLaunch(k, { noAngle: sc.noAngle, lockAngle: sc.lockAngle });
+    const solved = sc.descent ? null
+      : sc.road ? solveRoad({ s: r.given.s, u: r.given.u, v: r.given.v, a: r.given.g, t: r.given.t, mark: r.mark })
+      : solveLaunch(k, { noAngle: sc.noAngle, lockAngle: sc.lockAngle });
     said++;
     check('readout', readoutHTML(r, { name: sc.name, solved }), bag);
   }
   ok(said === READINGS.length, `the sweep reaches every kind of reading (${said})`);
   ok(bag.length === 0, 'nothing on the card is written as code', bag.join('\n         '));
+});
+
+group('Along a straight road: everything the engine says, and the working', () => {
+  const INPUTS = [
+    { s: 240, v: 34, t: 10, mark: 'mid' }, { u: 20, v: 0, s: 50 }, { u: 12, a: 0, t: 5, mark: 30 },
+    { u: 5, a: -2, t: 8 }, { s: 240, v: 34, t: 10, u: 15 }, { s: 240, v: 34, t: 10, u: 14 },
+    { s: 240, v: 34 }, { u: 20, a: -4, s: 60 }, { u: 10, a: -2, t: -1 },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveRoad(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.moment) { said++; check('moment', r.moment.text, bag); }
+    for (const st of roadWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+  }
+  ok(said > 25, `the sweep reaches the road's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing on the road is written as code', bag.join('\n         '));
 });
 
 group('The parachute, which is the one motion with three accelerations', () => {

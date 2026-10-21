@@ -86,6 +86,22 @@ export function drawGraph(canvas, spec) {
 
 export function graphSpecs(f, t, P) {
   const tMax = f.tMax;
+  // ALONG A ROAD every quantity is horizontal, so every line is dashed and
+  // there is one per graph. The velocity–time graph is the one a road
+  // question is about: a straight line whose gradient is a, and the area
+  // under it — a trapezium — is the distance from A.
+  if (f.kind === 'line') {
+    return [
+      { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax, t,
+        series: [{ label: 'from A', fn: (tt) => f.pos(tt).x, color: P.disp, dash: [6, 4] }] },
+      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax, t,
+        series: [{ label: 'velocity', fn: (tt) => f.vel(tt).x, color: P.vel, dash: [6, 4] }],
+        shade: { index: 0, label: 'area = displacement from A' } },
+      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,
+        series: [{ label: 'acceleration', fn: () => f.params.a, color: P.acc, dash: [6, 4] }],
+        shade: { index: 0, label: 'area = change in velocity' } },
+    ];
+  }
   return [
     { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax, t,
       series: [

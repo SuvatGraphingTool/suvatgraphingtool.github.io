@@ -5,6 +5,8 @@ import { flight } from '../js/core/projectile.js';
 import { descent } from '../js/core/descent.js';
 import { descentPanes, plotSpec, planePose, PRE } from '../js/render/drop.js';
 import { valueAt } from '../js/render/plot.js';
+import { solveRoad, timeToReach, roadWorking } from '../js/core/road.js';
+import { graphSpecs } from '../js/render/graphs.js';
 
 let pass = 0, fail = 0;
 const near = (a, e, tol, label) => Math.abs(a - e) <= tol
@@ -74,8 +76,9 @@ group('Both sit under Interesting ones, with everything a card needs', () => {
   // nine when "Throw at a target" and "Two that collide" went — both built so
   // they could not fail, and a demonstration that cannot fail demonstrates
   // nothing (see design/presets.md) — ten when the missing downward
-  // angle was added, and eleven when the parachute arrived.
-  ok(SCENARIOS.length === 11, 'eleven scenarios in all');
+  // angle was added, eleven when the parachute arrived, and twelve with the
+  // road — the first with no gravity in it.
+  ok(SCENARIOS.length === 12, 'twelve scenarios in all');
   ok(new Set(SCENARIOS.map((x) => x.id)).size === SCENARIOS.length, 'and every id is its own');
   ok(SCENARIOS.every((x) => GROUPS.some((grp) => grp.id === x.group)), 'every one in a declared group');
 });
@@ -402,6 +405,57 @@ group('And the card says the aircraft was never modelled', () => {
   ok(/from rest/.test(said) && /vertical/.test(said), 'and says she leaves from rest, falling vertically');
   ok(/one-dimensional/.test(said), 'because the engine is one-dimensional');
   ok(/before the clock starts/.test(said), 'and that the staging is outside the clock');
+});
+
+
+group('Along a straight road: the lorry question, answered by the engine', () => {
+  // "passes A at u m/s, 10 s later passes B at 34 m/s, AB = 240 m.
+  //  Find (a) u, (b) the time from A to the mid-point of AB."
+  const r = solveRoad({ s: 240, v: 34, t: 10, mark: 'mid' });
+  ok(r.ok, 'three of the five are enough');
+  near(r.params.u, 14, 1e-9, '(a) u');
+  near(r.params.a, 2, 1e-9, 'and a');
+  near(r.moment.t, 6, 1e-9, '(b) the time to the mid-point');
+  near(r.moment.v, 26, 1e-9, 'and the speed there');
+  near(r.f.pos(r.moment.t).x, 120, 1e-9, 'the motion is at the mid-point then');
+  near(r.f.pos(10).x, 240, 1e-9, 'and at B after 10 s');
+  near(r.f.vel(10).x, 34, 1e-9, 'doing 34');
+  ok(r.five.u.given === false && r.five.s.given === true, 'the done card knows what was given');
+  const W = roadWorking(r);
+  ok(W.length === 4, 'working: the three, two unknowns, and the mid-point');
+});
+
+group('Along a straight road: braking, and what cannot happen', () => {
+  const b = solveRoad({ u: 20, v: 0, s: 50 });
+  near(b.params.a, -4, 1e-9, 'braking from 20 to rest in 50 m is a = −4');
+  near(b.params.t, 5, 1e-9, 'and takes 5 s');
+  ok(b.notes.some((n) => /braking/.test(n)), 'and says it is braking');
+  ok(!solveRoad({ u: 20, a: -4, s: 60 }).ok, 'it never reaches 60 m braking at 4 from 20');
+  ok(!solveRoad({ s: 240, v: 34 }).ok, 'two of the five are refused');
+  const clash = solveRoad({ s: 240, v: 34, t: 10, u: 15 });
+  ok(!clash.ok && /do not agree/.test(clash.reason), 'four that disagree are refused, and it says so');
+  const spare = solveRoad({ s: 240, v: 34, t: 10, u: 14 });
+  ok(spare.ok && spare.notes.some((n) => /more than enough/.test(n)), 'four that agree run, with a note');
+  const steady = solveRoad({ u: 12, a: 0, t: 5, mark: 30 });
+  near(steady.moment.t, 2.5, 1e-9, 'no acceleration: 30 m at 12 m/s takes 2.5 s');
+  ok(!timeToReach(solveRoad({ s: 240, v: 34, t: 10 }).f, 500).ok, 'a point past B is not reached while watched');
+});
+
+group('Along a straight road: the scenario and its graphs', () => {
+  const s = byId('road');
+  ok(s.group === 'line' && GROUPS.some((g) => g.id === 'line'), 'it has a group of its own');
+  ok(s.road && s.stage === 'road', 'its own engine and its own stage');
+  ok((s.note || '').length > 80 && !!s.sub, 'it says what it is for');
+  ok(solveRoad(s.params).ok, 'the card sketch is a motion the engine accepts');
+  const r = solveRoad({ s: 240, v: 34, t: 10 });
+  const P = { disp: 'd', vel: 'v', acc: 'a' };
+  const specs = graphSpecs(r.f, 4, P);
+  ok(specs.every((g) => g.series.length === 1 && g.series[0].dash), 'one line per graph, dashed: it is all horizontal');
+  const vt = specs.find((g) => g.canvas === 'g-v').series[0].fn;
+  // the trapezium: the area under v–t from 0 to 10 is AB
+  let area = 0; const n = 1000;
+  for (let i = 0; i < n; i++) area += vt((i + 0.5) * (10 / n)) * (10 / n);
+  near(area, 240, 1e-6, 'area under the velocity–time line');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

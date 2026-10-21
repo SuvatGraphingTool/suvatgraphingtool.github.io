@@ -27,6 +27,8 @@ export const GROUPS = [
     blurb: 'Five ways off one platform. All land lower, so none is symmetrical.' },
   { id: 'look',     label: 'Interesting ones',
     blurb: 'Questions about a moment mid-flight, not the end of it.' },
+  { id: 'line',     label: 'Along a straight road',
+    blurb: 'No gravity in it at all. The acceleration is the vehicle\u2019s own, and it is one of the five.' },
 ];
 
 export const SCENARIOS = [
@@ -231,6 +233,20 @@ export const SCENARIOS = [
         return { u: 0, theta: -90, h: t.y, x0: t.x };
       },
     } },
+
+  /* ── along a straight road ────────────────────────────────────────────
+     The one scenario with no gravity in it. A lorry passing two points on a
+     level road is the five equations with nothing added — the acceleration
+     is its own, given or found like any other of the five, and braking is a
+     negative one. Solved by js/core/road.js, drawn by js/render/road.js.
+     `params` is for the card's sketch only; nothing on the screen is
+     pre-filled. */
+  { id: 'road', group: 'line', name: 'Along a straight road',
+    sub: 'speeding up, or braking',
+    note: 'A vehicle passes A, and some time later passes B. Its acceleration is its own, so a is one of the five like the rest — and the area under the velocity\u2013time line is the distance AB.',
+    params: { u: 14, theta: 0, h: 0, g: 0, a: 2, s: 240, v: 34, t: 10 },
+    road: true, stage: 'road',
+    place: 'A straight, level road from A to B' },
 ];
 
 export const byId = (id) => SCENARIOS.find((s) => s.id === id);

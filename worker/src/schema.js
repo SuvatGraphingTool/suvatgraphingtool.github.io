@@ -15,7 +15,7 @@
 
 export const SCENARIO_IDS = [
   'up', 'arc', 'dropped', 'down', 'platform-down', 'platform', 'platform-angle',
-  'time-above', 'parachute', 'bullet', 'monkey', 'other',
+  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'other',
 ];
 
 export const EXTRACTION_SCHEMA = {
@@ -30,8 +30,8 @@ export const EXTRACTION_SCHEMA = {
     summary: { type: 'string', description: 'One short sentence describing the situation, in plain English.' },
 
     // ── the five, as given ──────────────────────────────────────────────
-    u: { type: 'number', description: 'Launch speed in m/s. Omit if the question asks you to find it.' },
-    v: { type: 'number', description: 'Speed at the moment it LANDS, in m/s — only if the question states that number. Never 0 for a landing, never a copy of u.' },
+    u: { type: 'number', description: 'Launch speed (road: speed at the first point) in m/s. Omit if the question asks you to find it.' },
+    v: { type: 'number', description: 'Speed at the moment it LANDS (road: at the second point), in m/s — only if the question states that number. Never 0 for a landing, never a copy of u.' },
     t: { type: 'number', description: 'Total time of flight in s, only if GIVEN.' },
     s: { type: 'number', description: 'Horizontal distance to where it lands (the range) in m, only if GIVEN.' },
     // The angle, flat. Nested objects are where the smaller models lose
@@ -43,6 +43,10 @@ export const EXTRACTION_SCHEMA = {
     belowHorizontal: { type: 'boolean', description: 'true if projected BELOW the horizontal' },
     h: { type: 'number', description: 'Launch height above the ground in metres. 0 if launched from the ground.' },
     g: { type: 'number', description: 'Only if the question states it — many say 10 rather than 9.8. Omit otherwise.' },
+    // road only — a vehicle along a straight road, with its own acceleration
+    a: { type: 'number', description: 'road only: the acceleration in m/s². NEGATIVE when it is slowing down (braking, decelerating, retarding). Only if given.' },
+    atMidpoint: { type: 'boolean', description: 'road only: true if a part asks about the mid-point between the two points.' },
+    atDisplacement: { type: 'number', description: 'road only: a distance from the first point that a part asks about (not the mid-point).' },
     apexAboveLaunch: { type: 'number', description: 'Greatest height ABOVE THE LAUNCH POINT, if GIVEN.' },
 
     // ── what only some scenarios need ───────────────────────────────────
@@ -84,6 +88,8 @@ WHAT YOU DO
    parachute      falls freely, then a parachute opens and it slows to a steady speed
    bullet         compares a bullet fired horizontally with one dropped at the same moment
    monkey         a projectile aimed straight at a target that drops as it is fired
+   road           a car, lorry, train, cyclist or particle moving along a straight HORIZONTAL
+                  road or line with constant acceleration — no gravity in the question
    other          anything else about motion that none of these fit
 2. Return the values that are GIVEN.
 
@@ -100,6 +106,10 @@ RULES
   Never return v unless a landing speed is stated. Never copy u into v.
 - Angles given as a trig ratio (tan a = 3/4, sin a = 3/5) MUST be returned as ratioFn, ratioNum, ratioDen.
 - Never fill tOpen, aChute or vTerm unless the question is about a parachute.
+- road: u is the speed at the first point (A), v the speed at the second (B), s the distance
+  between them, t the time between them, a the acceleration. "From rest" means u = 0 and
+  "comes to rest" means v = 0 — on a road those zeros ARE given. A speed written as a letter
+  (u m/s) is unknown: omit it.
 - Diagrams often carry values the text does not. Read them.
 - Heights are measured from the ground. If a ball is thrown from a 25 m cliff, h = 25.
   Launched from the ground means h = 0.
@@ -127,6 +137,12 @@ EXAMPLES
 
 "A stone is dropped from a tower 45 m high."
 → {"understood":true,"confidence":"high","scenario":"dropped","summary":"A stone is dropped from a 45 m tower.","h":45}
+
+"A lorry is moving along a straight horizontal road with constant acceleration. The lorry passes a point A with speed u m/s, and 10 seconds later passes a point B with speed 34 m/s. Given that AB = 240 m, find (a) the value of u, (b) the time taken for the lorry to move from A to the mid-point of AB."
+→ {"understood":true,"confidence":"high","scenario":"road","summary":"A lorry passes A, then B 10 s later at 34 m/s; AB = 240 m.","v":34,"t":10,"s":240,"atMidpoint":true,"asks":["the value of u","time from A to the mid-point of AB"]}
+
+"A car decelerates uniformly from 20 m/s to rest over 50 m."
+→ {"understood":true,"confidence":"high","scenario":"road","summary":"A car brakes from 20 m/s to rest in 50 m.","u":20,"v":0,"s":50}
 
 Be brief. Only the fields you are sure about.
 
