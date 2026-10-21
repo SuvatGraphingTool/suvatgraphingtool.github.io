@@ -23,6 +23,8 @@ import { buildWorking, resolveAt, obstacleCheck } from '../js/working.js';
 import { solveDescent, descentWorking, resolveDescent } from '../js/core/descent.js';
 import { descentPanes, plotSpec, PRE_SAY } from '../js/render/drop.js';
 import { SCENARIOS, GROUPS } from '../js/scenarios.js';
+import { toApp } from '../js/core/question.js';
+import { readoutHTML } from '../js/ai/readout.js';
 
 let pass = 0, fail = 0;
 
@@ -228,6 +230,34 @@ group('Whatever the engine says back on screen two', () => {
   ok(bag.length === 0, 'nothing the engine says is written as code', bag.join('\n         '));
 });
 
+
+group('What Ask Suvat says it read, and what the engine made of it', () => {
+  const READINGS = [
+    { scenario: 'platform-angle', h: 25, s: 100, g: 9.8, angle: { degrees: 45 }, asks: ['speed of projection'] },
+    { scenario: 'arc', u: 35, angle: { ratio: { fn: 'tan', num: 3, den: 4 } }, asks: ['greatest height'] },
+    { scenario: 'arc', u: 20, angle: { ratio: { fn: 'sin', num: 3, den: 5 } } },
+    { scenario: 'arc', u: 20, angle: { ratio: { fn: 'cos', num: 4, den: 5 } } },
+    { scenario: 'platform-down', h: 25, u: 25, angle: { degrees: 30, belowHorizontal: true } },
+    { scenario: 'up', apexAboveLaunch: 10 },
+    { scenario: 'dropped', h: 45, t: 3.03 },
+    { scenario: 'parachute', h: 100, tOpen: 3, aChute: 25, vTerm: 6 },
+    { scenario: 'arc', angle: { degrees: 30 } },                         // not enough
+  ];
+  const bag = [];
+  let said = 0;
+  for (const x of READINGS) {
+    const r = toApp({ understood: true, confidence: 'low', summary: 'A ball.', ...x });
+    const sc = SCENARIOS.find((s) => s.id === r.id);
+    const k = { ...r.given, theta: r.theta, h: r.h };
+    if (sc.noAngle) { k.u = 0; delete k.theta; }
+    if (sc.lockAngle) k.theta = sc.params.theta;
+    const solved = sc.descent ? null : solveLaunch(k, { noAngle: sc.noAngle, lockAngle: sc.lockAngle });
+    said++;
+    check('readout', readoutHTML(r, { name: sc.name, solved }), bag);
+  }
+  ok(said === READINGS.length, `the sweep reaches every kind of reading (${said})`);
+  ok(bag.length === 0, 'nothing on the card is written as code', bag.join('\n         '));
+});
 
 group('The parachute, which is the one motion with three accelerations', () => {
   // Every phase's working, every phase's resolve card, and the engine's own

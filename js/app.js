@@ -23,6 +23,9 @@ import { dropToneCache } from './render/world2d.js';
 import { drawGraph, graphSpecs } from './render/graphs.js';
 import { fmt, palette, clamp } from './render/util.js';
 import { M, T, num } from './notation.js';
+import { toApp } from './core/question.js';
+import { createAsk } from './ai/ask.js';
+import { readoutHTML } from './ai/readout.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -2608,8 +2611,41 @@ for (const face of ['560 1em "Source Serif 4"', 'italic 560 1em "Source Serif 4"
   document.fonts?.load(face, 'vuat 0123456789 θ −').catch(() => {});
 }
 
+/* ── Ask Suvat ───────────────────────────────────────────────────────────
+   The chat box on the first screen. What comes back from the reader is the
+   SCENARIO and the values the question GIVES — js/core/question.js turns it
+   into the boxes a student would have filled in, and from here on it is
+   exactly the route a typed question takes: chooseScenario, the five, and
+   recompute, where solveLaunch works out the rest or says what is missing.
+   Nothing on this route calculates a flight that the engine did not. */
+function applyReading(x) {
+  const r = toApp(x);
+  if (!r.ok) return r;
+  chooseScenario(r.id);
+  closeIntro();
+  Object.assign(state.given, r.given);
+  if (r.theta !== undefined && !scenario.lockAngle && !scenario.noAngle && !scenario.aimAtTarget) {
+    state.theta = r.theta;
+  }
+  if (r.h !== undefined) state.h = r.h;
+  if (r.markers.heightLine != null && state.markers) state.markers.heightLine = r.markers.heightLine;
+  if (r.markers.target && state.markers) state.markers.target = r.markers.target;
+  if (scenario.descent) state.descent = { ...r.descent };
+  buildValuesScreen();              // which recomputes
+  // The answer is shown where the question was asked; the flight waits for
+  // the student to ask for it.
+  go('scenario');
+  return { ok: true, runnable: !!traj, html: readoutHTML(r, { name: scenario.name, solved }) };
+}
+const ask = createAsk({
+  apply: applyReading,
+  run: () => { if (!traj) return; if (scenario.exhibit) runFlight(); else launch(); },
+  edit: () => go('values'),
+});
+$('ask-top').addEventListener('click', () => { go('scenario'); requestAnimationFrame(ask.focus); });
+
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
-                 openAskAt, closeAskAt, easeAngle,
+                 openAskAt, closeAskAt, easeAngle, applyReading,
                  redraw() { recompute(); draw(); } };

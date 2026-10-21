@@ -949,3 +949,122 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .intro-acts { display: flex; gap: var(--sp-3); }
 .intro-acts .ghost { flex: none; }
 @media (max-width: 860px) { .intro-card { padding: var(--sp-4); } }
+
+/* ── Ask Suvat ───────────────────────────────────────────────────────────
+   The AI's mark is an orange glass orb with a sparkle in it. Orange is the
+   site's accent already; the glass is a radial body, a highlight across the
+   top and a slow sheen, so it reads as the one thing on the page that is
+   not a control you already know. The chat box is the first thing on the
+   first screen, above the cards it can choose between. */
+.ai-orb {
+  position: relative; flex: none; display: grid; place-items: center;
+  width: 40px; height: 40px; border-radius: 50%; overflow: hidden; color: #fff;
+  background: radial-gradient(120% 120% at 30% 18%, #fed7aa 0%, #fb923c 30%, #ea580c 60%, #9a3412 100%);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -6px 12px rgba(124,45,18,.5),
+              0 4px 14px rgba(234,88,12,.42);
+}
+.ai-orb::before {                         /* the glass: a highlight across the top */
+  content: ''; position: absolute; top: 4%; left: 15%; width: 70%; height: 44%; border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,0));
+}
+.ai-orb::after {                          /* and a sheen that goes round it, slowly */
+  content: ''; position: absolute; inset: -30%;
+  background: conic-gradient(from 0deg, transparent 0 70%, rgba(255,255,255,.35) 80%, transparent 90%);
+  animation: ai-sheen 5s linear infinite;
+}
+.ai-orb svg { position: relative; z-index: 1; width: 58%; height: 58%;
+              filter: drop-shadow(0 1px 1.5px rgba(124,45,18,.55)); }
+.ai-orb.sm { width: 32px; height: 32px; }
+.ai-orb.xs { width: 22px; height: 22px; box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -3px 6px rgba(124,45,18,.5); }
+@keyframes ai-sheen { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ai-orb::after { animation: none; opacity: 0; } }
+
+.ai-top { display: inline-flex; align-items: center; gap: var(--sp-2); }
+
+.ask { margin: 0 0 var(--sp-10); }
+.ask-box {
+  display: flex; align-items: flex-end; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-3);
+  background: var(--card); border: 1px solid var(--border); border-radius: 26px;
+  box-shadow: var(--shadow);
+  transition: border-color 160ms, box-shadow 160ms;
+}
+.ask-box:focus-within, .ask-box[data-drop='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow);
+}
+.ask-box[data-listening='true'] { border-color: var(--accent); animation: ask-listen 1.4s ease-in-out infinite; }
+@keyframes ask-listen { 50% { box-shadow: 0 0 0 7px var(--accent-soft); } }
+.ask-field { flex: 1; min-width: 0; display: grid; gap: var(--sp-2); align-self: center; }
+.ask-field textarea {
+  width: 100%; resize: none; border: none; outline: none; background: none; color: var(--ink);
+  font: inherit; font-size: var(--fs-base); line-height: 1.45; padding: 8px 0; max-height: 180px;
+}
+.ask-field textarea::placeholder { color: var(--ink-faint); }
+.ask-tools { display: flex; align-items: center; gap: var(--sp-1); }
+.ask-tool, .ask-send {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-muted);
+}
+.ask-tool:hover { background: var(--hover); color: var(--ink); }
+.ask-tool svg, .ask-send svg { width: 22px; height: 22px; }
+.ask-tool:focus-visible, .ask-send:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ask-mic[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); }
+.ask-send { background: var(--accent); color: var(--on-accent); margin-left: var(--sp-1); }
+.ask-send:hover { background: var(--accent-hi); }
+.ask-send:disabled { background: var(--border-soft); color: var(--ink-faint); cursor: not-allowed; }
+.ask-att {
+  display: inline-flex; align-items: center; gap: var(--sp-2); justify-self: start; max-width: 100%;
+  padding: 4px 6px 4px 4px; border: 1px solid var(--border); border-radius: var(--r-md);
+  font-size: var(--fs-xs); color: var(--ink-strong);
+}
+.ask-att img { width: 44px; height: 44px; object-fit: cover; border-radius: var(--r-sm); }
+.ask-att-doc { width: 28px; height: 28px; color: var(--accent); margin: 0 4px; }
+.ask-att span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ask-att-x { width: 26px; height: 26px; border-radius: 50%; font-size: var(--fs-base); color: var(--ink-muted); }
+.ask-att-x:hover { background: var(--hover); color: var(--ink); }
+.ask-fine { font-size: var(--fs-xs); color: var(--ink-faint); margin: var(--sp-2) 0 0 var(--sp-4); }
+
+/* the conversation: your question, and Suvat's answer under it */
+.ask-thread { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.ask-msg { display: flex; gap: var(--sp-3); align-items: flex-start; }
+.ask-mine { justify-content: flex-end; }
+.ask-bubble { min-width: 0; max-width: min(640px, 100%); border-radius: var(--r-xl); padding: var(--sp-3) var(--sp-4);
+              font-size: var(--fs-sm); line-height: 1.55; }
+.ask-bubble p { margin: 0; }
+.ask-mine .ask-bubble { background: var(--accent-soft); color: var(--ink); border-bottom-right-radius: var(--r-sm); }
+.ask-mine .ask-bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ask-chip { display: inline-block; font-size: var(--fs-xs); color: var(--accent); font-weight: var(--w-semi); margin-bottom: 2px; }
+.ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border-soft); border-top-left-radius: var(--r-sm); }
+.ask-reply[data-busy='true'] .ai-orb::after { animation-duration: 1.2s; }
+.ask-dots { display: inline-flex; gap: 5px; padding: 6px 0; }
+.ask-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: ask-dot 1s ease-in-out infinite; }
+.ask-dots span:nth-child(2) { animation-delay: .15s; }
+.ask-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes ask-dot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+.ask-acts { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); flex-wrap: wrap; }
+.ask-acts .ghost.sm { height: 40px; }
+
+/* what Suvat read — js/ai/readout.js */
+.ro-eyebrow { font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: var(--w-bold); }
+.ro-name { font-size: var(--fs-lg); margin: 2px 0 var(--sp-1); font-weight: var(--w-semi); }
+.ro-sum { color: var(--ink-muted); }
+.ro-list { list-style: none; padding: 0; margin: var(--sp-3) 0 0; display: grid; gap: var(--sp-1); }
+.ro-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--sp-3);
+          padding: 6px 0; border-top: 1px solid var(--border-soft); }
+.ro-val { font-size: var(--fs-base); color: var(--ink); min-width: 9ch; }
+.ro-how { font-size: var(--fs-xs); color: var(--ink-muted); }
+.ro-row[data-how='worked'] .ro-how { color: var(--accent); }
+.ro-asks { margin-top: var(--sp-3) !important; color: var(--ink-strong); }
+.ro-warn { margin-top: var(--sp-2) !important; color: var(--accent); font-weight: var(--w-semi); }
+.ro-bad { color: var(--bad); }
+.ro-engine { margin-top: var(--sp-3); padding: var(--sp-3); border-radius: var(--r-md); background: var(--accent-soft); line-height: 1.6; }
+.ro-engine[data-ok='false'] { background: var(--bad-fill); color: var(--ink); }
+
+@media (max-width: 560px) {
+  .ask-box { flex-wrap: wrap; border-radius: 22px; }
+  .ask-box > .ai-orb { display: none; }
+  .ask-field { flex-basis: 100%; }
+  .ask-tools { margin-left: auto; }
+  .ai-top { font-size: 0; gap: 0; padding: 0 8px; }
+  .ai-top .ai-orb { font-size: var(--fs-xs); }
+}

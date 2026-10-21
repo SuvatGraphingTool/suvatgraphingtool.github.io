@@ -37,23 +37,35 @@ function blobToBase64(blob) {
   });
 }
 
+/** The Worker that holds the key — see worker/README.md. Public on purpose. */
+export const READER = 'https://suvat-reader.suvatgraphingtool.workers.dev/extract';
+
 /**
  * Send a prepared image to the reader.
  * Resolves to { ok:true, extraction } or { ok:false, error, message } — it
  * never throws, because every failure path here has a sensible fallback:
  * the student types the numbers in.
  */
-export async function readQuestion(endpoint, prepared, { hint, signal } = {}) {
+export function readQuestion(endpoint, prepared, { hint, signal } = {}) {
+  return post(endpoint, { imageBase64: prepared.base64, mimeType: prepared.mimeType, hint }, signal);
+}
+
+/** The same, for a question typed in or spoken aloud. */
+export function readText(endpoint, text, { signal } = {}) {
+  return post(endpoint, { text }, signal);
+}
+
+async function post(endpoint, body, signal) {
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: prepared.base64, mimeType: prepared.mimeType, hint }),
+      body: JSON.stringify(body),
       signal: signal || AbortSignal.timeout(30_000),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { ok: false, error: data.error || 'failed', message: data.message || 'Could not read that image.' };
+      return { ok: false, error: data.error || 'failed', message: data.message || 'Could not read that.' };
     }
     return data;
   } catch (e) {
