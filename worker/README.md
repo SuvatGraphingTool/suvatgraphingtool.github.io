@@ -98,7 +98,7 @@ find it; and no `36.87`, because a ratio is returned as a ratio.
 | Origin not in `ALLOWED_ORIGINS` | 403 |
 | Image over ~1.5 MB | 413, "resize to about 1024 px" |
 | Too many requests from one IP | 429 with a friendly message |
-| A model busy (503) or out of allowance (429) | the next model in `MODELS` gets the question |
+| A model slow (3 s), busy (503) or out of allowance (429) | the next model in `MODELS` is asked too; the first answer wins |
 | Every model at its per-minute limit | 429 `busy` — "wait a few seconds" |
 | Every model at its daily limit | 429 `quota_exhausted` — "type the numbers in instead" |
 | Gemini down or slow | 502, within about 50 s in all |
@@ -115,7 +115,7 @@ Nothing about this feature is load-bearing.
 | | Free allowance | Reality |
 |---|---|---|
 | Workers | 100,000 req/day | never the constraint |
-| Gemini 3.5 Flash-Lite / Flash | **20 req/day each** (October 2026) | the real ceiling |
+| Each Gemini model in `MODELS` | **20 req/day each** (October 2026) — four models, about 80 | the real ceiling |
 | KV writes | 1,000/day | why rate limiting is optional |
 
 Twenty a day is enough to try the feature, not to run a class on it. Turning on
@@ -123,7 +123,8 @@ billing for the key in AI Studio lifts the limit, at a fraction of a penny per
 question (and stops Google using what students send to train its models).
 Check the live limits at [AI Studio](https://aistudio.google.com/rate-limit).
 
-The models are set in `wrangler.toml` as `MODELS`, first choice first. Google
+The models are set in `wrangler.toml` as `MODELS`, first choice first; a
+`:low` after a name sets its thinking level (3.8 Flash refuses `minimal`). Google
 retires model names — `gemini-2.5-flash-lite` stopped working for new keys in
 2026 — and when it does, its error names the replacement: change `MODELS` and
 `npx wrangler deploy`.

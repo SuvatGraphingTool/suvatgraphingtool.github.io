@@ -211,7 +211,11 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
 export function toApp(x) {
   if (!x || typeof x !== 'object') return { ok: false, error: 'Nothing came back from the reader.' };
   if (x.understood === false) {
-    return { ok: false, error: x.note || 'That did not read as a projectile or falling-object question.' };
+    // Not a question — often just "hello". The reader's note is its answer,
+    // said to the student, so it is a reply rather than an error.
+    return x.note
+      ? { ok: false, error: x.note, chat: true }
+      : { ok: false, error: 'That did not read as a projectile or falling-object question.' };
   }
   let id = x.scenario;
   // A vertical throw with a line to stay above is Time above a line at 90°,

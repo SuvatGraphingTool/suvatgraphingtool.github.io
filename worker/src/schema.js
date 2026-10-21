@@ -126,6 +126,9 @@ RULES
   flat" is platform, h = 20, u = 15. Units may be missing; assume metres and seconds.
 - If the input is not a motion question, or you cannot read it, set understood: false
   and say why in note. Do not invent a question.
+- A greeting, thanks, or a question about what you can do is not a motion question either:
+  set understood: false and write a short, friendly reply to the student in note, in the
+  second person, ending by asking for the question. No numbers, no working.
 - Set confidence to low if values are unclear, handwritten, or partly cut off.
 
 EXAMPLES

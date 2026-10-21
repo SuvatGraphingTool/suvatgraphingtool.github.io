@@ -10,12 +10,22 @@
 
 import { SYSTEM_PROMPT } from './schema.js';
 
-const MODELS_DEFAULT = 'gemini-3.5-flash-lite,gemini-3.5-flash';
+const MODELS_DEFAULT = 'gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
 const MAX_IMAGE_BYTES = 1_500_000;      // the client resizes to ~150 KB; this is the backstop
 const MAX_PDF_BYTES = 4_000_000;        // a few pages of a paper
 const MAX_TEXT_CHARS = 2_000;           // a long exam question is ~600
 const PER_IP_PER_DAY = 40;              // generous for one student, useless for a scraper
 const PER_IP_PER_MINUTE = 6;
+const HEDGE_MS = 3_000;                 // Flash-Lite usually answers in 2–4 s; past this, ask another too
+const COOL_MS = 120_000;                // how long a model that stalled goes to the back of the queue
+
+// Which models stalled lately, and until when to ask them last. It lives as
+// long as this Worker instance does — minutes, usually — which is about as
+// long as a spell of "high demand" lasts. Best effort: losing it costs only
+// one slow answer.
+const cooling = new Map();
+const DEADLINE_MS = 25_000;             // the whole relay; the page itself gives up at 30 s
+const MAX_IN_FLIGHT = 3;
 
 export default {
   async fetch(request, env, ctx) {
@@ -97,49 +107,44 @@ export default {
       },
     };
 
-    // THE FAST READER FIRST, AND A SECOND ONE BEHIND IT. Flash-Lite answers
-    // in a few seconds and, given the fields as a list rather than a schema,
-    // reads these questions correctly. Flash is the backup: on the free tier
-    // it is often "experiencing high demand" — a 503, or no answer at all —
-    // and a busy model is not a reason to fail a student. Either one can
-    // occasionally talk itself into a loop and run out of tokens; that is
-    // worth one more try, a little less deterministic, before giving up.
-    const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim()).filter(Boolean);
-    const tries = [...models.map((m) => [m, 0]), [models[models.length - 1], 0.4]];
-    const started = Date.now();
-    let last = null;
-    const capped = new Set();       // each model has its own allowance
-    for (const [i, [model, temperature]] of tries.entries()) {
-      if (capped.has(model)) continue;
-      const left = 50_000 - (Date.now() - started);
-      if (left < 4_000) break;
-      const final = i === tries.length - 1;
-      const r = await ask(env, model, { ...payload, generationConfig: { ...payload.generationConfig, temperature } },
-                          Math.min(left, final ? 25_000 : 15_000));
-      if (r.ok) return json({ ok: true, extraction: r.extraction, model }, 200, cors);
-      last = r;
-      if (r.status === 429) capped.add(model);   // its allowance, not its answer
-      console.error('reader attempt failed', model, temperature, r.status || r.kind);
-    }
+    // THE FAST READERS FIRST, AND A RELAY BEHIND THEM — RUN AS A RACE.
+    // Flash-Lite answers in a few seconds and, given the fields as a list
+    // rather than a schema, reads these questions correctly. But on the free
+    // tier any one model can be "experiencing high demand" — a 503, or worse,
+    // no answer at all until the clock runs out — and each has its own 20 a
+    // day. Waiting for one to give up before asking the next is what made a
+    // student wait half a minute. So: ask the first; if it fails, ask the
+    // next at once; if it is merely slow, ask the next ALONGSIDE it after
+    // HEDGE_MS, and take whichever answers first. A second model is only ever
+    // asked when the first is already late, so the quota cost is small.
+    const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim()).filter(Boolean)
+      .map((m) => { const [name, level] = m.split(':'); return { name, level: level || env.THINKING || 'minimal' }; });
+    const outcome = await race(env, models, payload);
+    if (outcome.ok) return json({ ok: true, extraction: outcome.extraction, model: outcome.model }, 200, cors);
+    const { last, lastCap, capped, gone } = outcome;
 
-    if (last?.status === 429) {
+    if (lastCap && models.every((m) => capped.has(m.name) || gone.has(m.name))) {
       // Every model has hit its allowance. Usually that is the per-minute
       // one and passes in a moment; occasionally it is the day's. Either way
       // it is expected, not broken.
       // Google says which: "Please retry in 16h59m" is the day's, seconds are the minute's.
-      const daily = /per.?day|daily|retry in \d+h/i.test(last.detail || '');
+      const detail = lastCap.detail || '';
+      const hours = Number(/retry in (\d+)h/i.exec(detail)?.[1]);
+      const daily = /per.?day|daily|retry in \d+h/i.test(detail);
+      const back = hours >= 1 ? `It will be back in about ${hours + 1} hours. ` : 'It will be back tomorrow. ';
       return json({
         error: daily ? 'quota_exhausted' : 'busy',
         message: daily
-          ? "Suvat has answered all the questions it can for today. Pick the scenario below and type the numbers in — everything else still works."
+          ? `Suvat has answered all the questions it can for today. ${back}Until then, pick the scenario below and type the numbers in — everything else still works.`
           : 'Suvat is busy for a moment. Wait a few seconds and send it again.',
-        upstream: { status: 429, detail: last.detail },
+        upstream: { status: 429, detail },
       }, 429, cors);
     }
-    if (!last || last.kind === 'unreachable') {
+    if (!last || last.kind === 'unreachable' || last.status === 503 || last.status === 429) {
       return json({
         error: 'upstream_unreachable',
-        message: 'Could not reach the reader. Type the numbers in instead.',
+        // Almost always Google's free tier being swamped, not anything broken.
+        message: 'Suvat is very busy right now. Try again in a minute, or pick the scenario below and type the numbers in.',
       }, 502, cors);
     }
     if (last.kind === 'unreadable') {
@@ -158,18 +163,86 @@ export default {
   },
 };
 
+/**
+ * Ask the models in turn, overlapping a slow one with the next, and settle on
+ * the first readable answer. Every request still running is then cancelled.
+ * A model that cannot think at the level asked is asked once more at "low".
+ */
+function race(env, models, payload) {
+  const now = Date.now();
+  const warm = (m) => (cooling.get(m.name) || 0) <= now;
+  const queue = [...models.filter(warm), ...models.filter((m) => !warm(m))]
+    .map((m) => ({ ...m, temperature: 0 }));
+  const running = new Set();
+  const capped = new Set(), gone = new Set();
+  const done = new AbortController();
+  const started = Date.now();
+  let last = null, lastCap = null, inFlight = 0, retried = false, settled = false;
+  const rebusy = new Set();     // a 503 is often gone a second later: one more go each
+
+  return new Promise((resolve) => {
+    const finish = (r) => {
+      if (settled) return;
+      settled = true; clearTimeout(hedge); clearTimeout(deadline);
+      // Whatever was still thinking when another answered was the slow one.
+      for (const name of running) cooling.set(name, Date.now() + COOL_MS);
+      done.abort();
+      resolve(r);
+    };
+    const fail = () => finish({ ok: false, last, lastCap, capped, gone });
+    let hedge = null;
+    const deadline = setTimeout(fail, DEADLINE_MS);
+
+    function next() {
+      clearTimeout(hedge);
+      if (settled) return;
+      const m = queue.shift();
+      if (!m) { if (!inFlight) fail(); return; }
+      if (capped.has(m.name) || gone.has(m.name)) return next();
+      const left = DEADLINE_MS - (Date.now() - started);
+      if (left < 3_000) { if (!inFlight) fail(); return; }
+      inFlight++; running.add(m.name);
+      const generationConfig = { ...payload.generationConfig, temperature: m.temperature,
+                                 thinkingConfig: { thinkingLevel: m.level } };
+      ask(env, m.name, { ...payload, generationConfig }, left, done.signal).then((r) => {
+        inFlight--; running.delete(m.name);
+        if (settled) return;
+        if (r.status === 503 || r.kind === 'unreachable') cooling.set(m.name, Date.now() + COOL_MS);
+        if (r.ok) return finish({ ok: true, extraction: r.extraction, model: m.name });
+        last = r;
+        console.error('reader attempt failed', m.name, m.level, m.temperature, r.status || r.kind, r.detail || '');
+        if (r.status === 429) { capped.add(m.name); lastCap = r; }   // its allowance, not its answer
+        else if (r.status === 404 || r.status === 403) gone.add(m.name);
+        else if (r.status === 400 && /thinking level/i.test(r.detail || '') && m.level !== 'low') {
+          queue.unshift({ ...m, level: 'low' });
+        } else if (r.status === 503 && !rebusy.has(m.name)) {
+          rebusy.add(m.name); queue.push({ ...m });
+        } else if (r.kind === 'unreadable' && !retried) {
+          // Talked itself into a loop and ran out of tokens: worth one more
+          // try, a little less deterministic, at the back of the queue.
+          retried = true; queue.push({ ...m, temperature: 0.4 });
+        }
+        next();
+      });
+      // Still waiting after HEDGE_MS? Ask the next one as well.
+      if (inFlight < MAX_IN_FLIGHT) hedge = setTimeout(next, HEDGE_MS);
+    }
+    next();
+  });
+}
+
 /** One question to one model: { ok, extraction } or { ok:false, kind, status?, detail? }. */
-async function ask(env, model, payload, ms) {
+async function ask(env, model, payload, ms, cancel) {
   let res;
   try {
     res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(ms),
+      signal: AbortSignal.any([AbortSignal.timeout(ms), cancel]),
     });
-  } catch {
-    return { ok: false, kind: 'unreachable' };
+  } catch (e) {
+    return { ok: false, kind: 'unreachable', detail: `${e?.name || 'Error'} after ${ms} ms allowed` };
   }
   if (!res.ok) {
     const detail = await res.text().catch(() => '');

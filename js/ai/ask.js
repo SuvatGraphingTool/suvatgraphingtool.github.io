@@ -101,8 +101,21 @@ export function createAsk({ apply, run, edit }) {
     const words = text.value.trim(), a = att;
     echo(words, a);
     text.value = ''; detach();
+    // "hello", "help", "hi there": a few words and no numbers is not a
+    // question yet. Answer it here, and keep the day's readings for questions.
+    if (!a && !/\d/.test(words) && words.split(/\s+/).length <= 3) {
+      reply(`<p>${GREETING}</p>`);
+      text.focus();
+      return;
+    }
     busy = new AbortController(); sync();
-    reply('<p class="ask-dots" aria-label="Suvat is reading"><span></span><span></span><span></span></p>', { busy: true });
+    const dots = '<p class="ask-dots" aria-label="Suvat is reading"><span></span><span></span><span></span></p>';
+    reply(dots, { busy: true });
+    // Google's free models are sometimes slow to answer. Say so, rather than
+    // leave the dots looking stuck.
+    const slow = setTimeout(() => {
+      if (busy) reply(`${dots}<p class="ask-wait">Still reading — Google is busy, so this one is taking longer.</p>`, { busy: true });
+    }, 6_000);
 
     let res;
     try {
@@ -118,11 +131,12 @@ export function createAsk({ apply, run, edit }) {
     } catch {
       res = { ok: false, message: 'That file could not be opened. Try a JPEG, PNG or PDF.' };
     }
+    clearTimeout(slow);
     busy = null; sync();
 
     if (!res?.ok) { reply(`<p class="ro-bad">${esc(res?.message || 'Could not read that.')}</p>`); return; }
     const r = apply(res.extraction);
-    if (!r.ok) { reply(`<p class="ro-bad">${esc(r.error)}</p>`); return; }
+    if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
 
     // Typeset maths arrives as markup, so it goes in with innerHTML (rule 1).
     const node = reply(r.html, { acts: `<div class="ask-acts">
@@ -209,6 +223,8 @@ function fileBase64(file) {
     fr.readAsDataURL(file);
   });
 }
+
+const GREETING = 'Hi! I read projectile and motion questions. Type one in, say it, or add a photo or the PDF of the paper — something like “a ball is thrown horizontally off a 20 metre cliff at 15 metres a second” — and I will set it up and show you the flight.';
 
 /** The sparkle: one four-pointed star and a small one beside it. */
 export const SPARK = `<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true">
