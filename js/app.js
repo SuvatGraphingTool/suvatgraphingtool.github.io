@@ -112,7 +112,9 @@ const state = {
   // and the slider in the options panel for anyone who wants another.
   rate: 0.75, rateTouched: false,
   show: { path: true, velocity: true, apex: true, range: true, grid: false, ruler: true,
-          components: false, ticks: false, acceleration: false },
+          // Equal time steps ON: the theme draws a flight as a curve with its
+          // markers on it, and the spacing is the physics.
+          components: false, ticks: true, acceleration: false },
   extras: { graphs: false, working: false, energy: false },
   options: false,
   resolve: false, hover: null, hoverMark: null,

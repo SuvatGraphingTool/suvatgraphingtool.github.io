@@ -113,6 +113,9 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
   transition: background 120ms;
 }
 .tbtn:hover, .ghost:hover { background: var(--hover); }
+/* The theme's secondary button: filled tan, no outline, dark text. */
+.ghost { background: var(--secondary); border-color: transparent; color: var(--on-secondary); font-weight: var(--w-semi); }
+.ghost:hover { background: var(--secondary-hi); }
 .tbtn[aria-pressed='true'] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 /* The stage bar is a row of 34 px controls, and .tbtn is 40 — so the two
    buttons that live in it take the small size too. */
@@ -136,8 +139,8 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .pgblurb { font-size: var(--fs-sm); color: var(--ink-muted); margin: 0 0 var(--sp-4); max-width: 62ch; line-height: 1.5; }
 .pgrid-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: var(--sp-3); }
 .pcard {
-  text-align: left; background: var(--card); border: 1px solid var(--border-soft);
-  border-radius: var(--r-xl); padding: var(--sp-4); box-shadow: var(--shadow);
+  text-align: left; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: var(--sp-5); box-shadow: var(--shadow);
   transition: border-color 120ms, transform 120ms;
   display: flex; flex-direction: column;
 }
@@ -365,7 +368,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .hud-l { left: var(--sp-4); flex-direction: column; }
 .hud-r { right: var(--sp-4); }
 .hbox {
-  background: var(--card); border: 1px solid var(--border-soft); border-radius: var(--r-lg);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
   padding: var(--sp-2) var(--sp-4); box-shadow: var(--shadow); min-width: 140px;
 }
 .hbox-k { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.3; white-space: nowrap; }
@@ -772,7 +775,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .otitle:first-child { margin-top: 0; }
 .checks { display: flex; flex-direction: column; gap: var(--sp-1); }
 .graphs { display: grid; gap: var(--sp-3); }
-.gcell { position: relative; height: 185px; background: var(--card); border: 1px solid var(--border-soft); border-radius: var(--r-lg); overflow: hidden; }
+.gcell { position: relative; height: 185px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); overflow: hidden; box-shadow: var(--shadow); }
 .gcell canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .step { margin-bottom: var(--sp-5); }
 .step-h { font-size: var(--fs-sm); font-weight: var(--w-semi); margin-bottom: var(--sp-2); }
@@ -922,7 +925,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 @keyframes intro-in { from { opacity: 0; } to { opacity: 1; } }
 .intro-card {
   width: min(560px, 100%); background: var(--card);
-  border: 1px solid var(--border-soft); border-radius: var(--r-xl);
+  border: 1px solid var(--border); border-radius: var(--r-xl);
   box-shadow: 0 24px 60px rgba(0,0,0,.34); padding: var(--sp-6);
   animation: intro-rise 280ms cubic-bezier(.2,.8,.25,1) both;
 }
@@ -1037,7 +1040,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-mine .ask-bubble { background: var(--accent-soft); color: var(--ink); border-bottom-right-radius: var(--r-sm); }
 .ask-mine .ask-bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ask-chip { display: inline-block; font-size: var(--fs-xs); color: var(--accent-hi); font-weight: var(--w-semi); margin-bottom: 2px; }
-.ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border-soft); border-top-left-radius: var(--r-sm); }
+.ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-top-left-radius: var(--r-sm); }
 .ask-reply[data-busy='true'] .ai-orb::after { animation-duration: 1.2s; }
 .ask-dots { display: inline-flex; gap: 5px; padding: 6px 0; }
 .ask-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: ask-dot 1s ease-in-out infinite; }

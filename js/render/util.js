@@ -317,6 +317,25 @@ function panels(ctx, x, y, R, P) {
 
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
+/** A token colour at some opacity — '#B45309' → 'rgba(180,83,9,0.3)'. */
+export function withAlpha(c, a) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(c).trim());
+  if (!m) return c;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+/* THE THEME'S AREA FILL: the series' own hue, strongest under the line and
+   fading to almost nothing at the axis — the soft wash under the charts in
+   the theme. Used for the area a graph is ABOUT (displacement under v–t),
+   so it still means something; it is not decoration. */
+export function fade(ctx, color, yTop, yBottom, top = 0.30, bottom = 0.03) {
+  const g = ctx.createLinearGradient(0, yTop, 0, yBottom);
+  g.addColorStop(0, withAlpha(color, top));
+  g.addColorStop(1, withAlpha(color, bottom));
+  return g;
+}
+
 // Every number on a canvas goes through here, and through js/notation.js from
 // there — so a negative value on an axis is −3, with a minus sign, and a huge
 // one is 1.2 × 10⁵ rather than a programmer's 1.2e+5.

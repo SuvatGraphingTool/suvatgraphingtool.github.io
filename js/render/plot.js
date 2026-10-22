@@ -29,7 +29,7 @@
 // worked out by an engine in js/core/, and every number printed on an axis is
 // one of those. See CLAUDE.md rule 4.
 
-import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels } from './util.js';
+import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels, fade } from './util.js';
 
 /* The gutters. `l` has to hold a four-character axis number at 13 px with its
    own breathing room; `b` holds one line of the same. They are the same at
@@ -194,7 +194,7 @@ export function drawPlot(canvas, view, spec) {
   const stepY = niceStep(spanY, 4), stepT = niceStep(spanT, 4);
   const dpY = stepY < 1 ? (stepY < 0.1 ? 2 : 1) : 0;
   const dpT = stepT < 1 ? (stepT < 0.1 ? 2 : 1) : 0;
-  ctx.save(); ctx.strokeStyle = P.grid; ctx.lineWidth = 1; ctx.beginPath();
+  ctx.save(); ctx.strokeStyle = P.grid; ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.beginPath();
   for (let y = Math.ceil(view.lo / stepY) * stepY; y <= view.hi; y += stepY) {
     const py = Math.round(Y(y)) + 0.5;
     ctx.moveTo(r.x, py); ctx.lineTo(r.x + r.w, py);
@@ -255,7 +255,7 @@ export function drawPlot(canvas, view, spec) {
     trace(ctx, main.segs, X, Y, spec.t);
     ctx.lineTo(X(Math.min(spec.t, main.segs[main.segs.length - 1].t1)), Y(0));
     ctx.closePath();
-    ctx.globalAlpha = 0.16; ctx.fillStyle = P[main.hue]; ctx.fill();
+    ctx.fillStyle = fade(ctx, P[main.hue], r.y, r.y + r.h); ctx.fill();
     ctx.restore();
   }
 

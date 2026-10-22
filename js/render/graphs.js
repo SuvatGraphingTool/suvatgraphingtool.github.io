@@ -5,7 +5,7 @@
 // solid is vertical, dashed is horizontal. That keeps the rule consistent with
 // the main scene — colour is the quantity, dash is the direction.
 
-import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels } from './util.js';
+import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels, fade, withAlpha } from './util.js';
 
 const PAD = { l: 52, r: 16, t: 28, b: 34 };
 
@@ -15,6 +15,8 @@ export function drawGraph(canvas, spec) {
   const P = palette();
   const L = labels();
   const { series, tMax, t, title, unit, shade } = spec;
+  // A graph sits on its card, as the theme's charts do, not on the page.
+  ctx.fillStyle = P.card; ctx.fillRect(0, 0, w, h);
   const gw = w - PAD.l - PAD.r, gh = h - PAD.t - PAD.b;
 
   let lo = Infinity, hi = -Infinity;
@@ -32,11 +34,15 @@ export function drawGraph(canvas, spec) {
   const X = (tt) => PAD.l + (tt / (tMax || 1)) * gw;
   const Y = (yy) => PAD.t + gh - ((yy - lo) / (hi - lo)) * gh;
 
-  // gridlines
+  // gridlines — dotted, both ways, in the theme's chart style
   const stepY = niceStep(hi - lo, 3);
-  ctx.save(); ctx.strokeStyle = P.grid; ctx.lineWidth = 1; ctx.beginPath();
+  const stepT0 = niceStep(tMax, 4);
+  ctx.save(); ctx.strokeStyle = P.grid; ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.beginPath();
   for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) {
     const py = Math.round(Y(y)) + 0.5; ctx.moveTo(PAD.l, py); ctx.lineTo(PAD.l + gw, py);
+  }
+  for (let tt = stepT0; tt <= tMax + 1e-9; tt += stepT0) {
+    const px = Math.round(X(tt)) + 0.5; ctx.moveTo(px, PAD.t); ctx.lineTo(px, PAD.t + gh);
   }
   ctx.stroke(); ctx.restore();
   for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) {
@@ -58,7 +64,7 @@ export function drawGraph(canvas, spec) {
     ctx.save(); ctx.beginPath(); ctx.moveTo(X(0), Y(0));
     for (let i = 0; i <= 90; i++) ctx.lineTo(X((i / 90) * t), Y(s.fn((i / 90) * t)));
     ctx.lineTo(X(t), Y(0)); ctx.closePath();
-    ctx.globalAlpha = 0.16; ctx.fillStyle = s.color; ctx.fill(); ctx.restore();
+    ctx.fillStyle = fade(ctx, s.color, PAD.t, PAD.t + gh); ctx.fill(); ctx.restore();
   }
 
   for (const s of series) {
@@ -67,7 +73,14 @@ export function drawGraph(canvas, spec) {
       const tt = (i / 160) * tMax, y = s.fn(tt);
       if (isFinite(y)) pts.push({ x: X(tt), y: Y(y) });
     }
-    stroke(ctx, pts, { color: s.color, width: 2.9, dash: s.dash });
+    stroke(ctx, pts, { color: s.color, width: 2.6, dash: s.dash });
+    // round markers at equal steps of time, as the theme's charts carry —
+    // lighter on a dashed (horizontal) series, so solid still reads first
+    for (let i = 0; i <= 6; i++) {
+      const tt = (i / 6) * tMax, y = s.fn(tt);
+      if (!isFinite(y)) continue;
+      dot(ctx, X(tt), Y(y), 3.4, { fill: s.dash ? withAlpha(s.color, 0.7) : s.color, stroke: P.card, width: 1.6 });
+    }
   }
 
   // time cursor

@@ -86,6 +86,7 @@
   --accent-hi: #fb923c;
   --accent-soft: rgba(249,115,22,0.16);
   --on-accent: #1C1917;
+  --secondary: #57534E; --secondary-hi: #625d58; --on-secondary: #E7E5E4;
 
   /* ── the physics palette ────────────────────────────────────────────
      Five hues across the spectrum, assigned in this fixed order. Validated
@@ -106,12 +107,20 @@
      with more contrast against this theme's background, so it reads as the
      live quantity sitting on top of its own history. Same hue, so the colour
      still says "velocity"; different value, so the two never merge. */
-  --vel:    #ea580c;     /* velocity, and the path it has flown — orange */
-  --vel-vec: #fb923c;    /* the vector now — lighter, for a night sky */
-  --disp:   #0891b2;     /* displacement      — cyan    */
-  --acc:    #7c3aed;     /* acceleration      — violet  */
-  --second: #db2777;     /* a second object   — magenta */
-  --mark:   #16a34a;     /* targets, fences, lines — green */
+  /* THE THEME'S HUES, 22 October 2026, chosen by search rather than by eye:
+     every muted teal, plum and green on a shortlist was simulated under
+     protanopia, deuteranopia and tritanopia (Machado 2009, severity 1.0,
+     CIEDE2000) and the set with the best worst case was kept.
+       worst quantity pair   cyan <-> violet   dE 20.3   (old set 12.9)
+       worst any pair        second <-> mark   dE  8.1   (rarely neighbours)
+     The second object is stone, the theme's neutral, because plum is now
+     acceleration and a magenta beside it would collapse. */
+  --vel:    #F97316;     /* velocity, and the path it has flown — the theme's orange */
+  --vel-vec: #fdba74;    /* the vector now — lighter, for a night sky */
+  --disp:   #22D3EE;     /* displacement      — cyan   */
+  --acc:    #A855F7;     /* acceleration      — violet */
+  --second: #A8A29E;     /* a second object   — stone  */
+  --mark:   #10B981;     /* targets, fences, lines — green */
 
   --good: #34d399; --good-fill: rgba(52,211,153,0.15);
   --bad:  #f87171; --bad-fill:  rgba(220,38,38,0.16); --bad-line: #DC2626;
@@ -146,14 +155,20 @@
   --accent-hi: #92400e;
   --accent-soft: #f2daba;
   --on-accent: #FFFFFF;
+  --secondary: #E4C090; --secondary-hi: #dbb37d; --on-secondary: #4A3B33;
 
-  --vel:    #c2410c;   /* orange. Legibility comes from the path's casing stroke,
-                          not from darkening the hue until it stops being orange. */
-  --vel-vec: #7c2708;  /* the vector now — deeper, for a daylight sky */
-  --disp:   #0891b2;
-  --acc:    #6d28d9;
-  --second: #be185d;
-  --mark:   #15803d;
+  /* By day: the theme's amber, a teal, a deep plum, stone and emerald.
+       worst quantity pair   teal <-> plum   dE 20.9   (old set 16.2)
+       amber <-> emerald                     dE 13.5   (old 10.4)
+     A deeper teal (#0E7490) reads better on its own, 5.2:1 against 3.6:1,
+     but drops teal <-> plum to 11.3 — separation wins, as it did before. */
+  --vel:    #B45309;   /* the theme's amber. Legibility comes from the path's
+                          casing stroke, not from darkening the hue. */
+  --vel-vec: #7c2d12;  /* the vector now — deeper, for a daylight sky */
+  --disp:   #0891B2;
+  --acc:    #701A75;
+  --second: #57534E;
+  --mark:   #047857;
   --good: #047857; --good-fill: rgba(52,211,153,0.18);
   --bad:  #991B1B; --bad-fill:  rgba(153,27,27,0.10); --bad-line: #991B1B;
 
@@ -288,18 +303,21 @@
    left is the bowl, the turf and the sky. */
 :root {
   /* night */
-  --sky-top: #05070e; --sky-mid: #0a1020; --sky-bottom: #182440; --haze: #182440;
-  --sun: #ffe9b8; --sun-glow: rgba(255,228,170,0.40);
-  --scene-shadow: rgba(0,0,0,0.42); --sky-fill: #2a3a58;
-  --earth: #1c1c23; --interior: #1a1a23; --terrain: #1f2622;
-  --grass: #3f7a4a; --grass-alt: #2f6239; --runoff: #28472f;
-  --pitchline: rgba(255,255,255,0.80);
-  --concrete: #2e3139; --window: #ffd98a;
-  --glass: rgba(132,163,188,0.26); --metal: #5a616b; --net: rgba(255,255,255,0.30);
-  --seat: #3f4652; --seat-alt: #363d47; --board: #4f5560;
-  --structure: #6d7684; --structure-dark: #5c6572;
-  --roof-top: #3e444e; --roof-under: #1c1f26;
-  --prop: #70757d;
+  /* THE THEME BY NIGHT: warm stone instead of blue-black, the turf a muted
+     olive, the stands in the theme's greys. The three value bands keep their
+     order (lit cut lightest, seats, unlit interior darkest). */
+  --sky-top: #100e0d; --sky-mid: #1C1917; --sky-bottom: #2e2722; --haze: #2e2722;
+  --sun: #fde8c8; --sun-glow: rgba(253,214,160,0.34);
+  --scene-shadow: rgba(0,0,0,0.42); --sky-fill: #3b332d;
+  --earth: #1f1b18; --interior: #191614; --terrain: #24221d;
+  --grass: #55603a; --grass-alt: #47512f; --runoff: #3a4128;
+  --pitchline: rgba(245,245,244,0.78);
+  --concrete: #36312d; --window: #fcd9a0;
+  --glass: rgba(168,162,158,0.22); --metal: #57534E; --net: rgba(245,245,244,0.30);
+  --seat: #44403C; --seat-alt: #3c3835; --board: #57534E;
+  --structure: #8a8580; --structure-dark: #78716C;
+  --roof-top: #403b37; --roof-under: #1f1c1a;
+  --prop: #78716C;
 
   /* The object is a BALL, so it is drawn as one: lit from above-left, with a
      seam and a rim. It is not a quantity and so does not take a quantity's
@@ -307,25 +325,28 @@
      read as a single colour. Floodlit at night, daylight by day, but leather
      either way, so the four tones barely move between the themes. */
   --ball-hi: #fffdf6; --ball: #e9e1cf; --ball-low: #8d8370; --ball-line: #241e17;
-  --flood: #ffeec2; --far-grid: rgba(255,255,255,0.14);
+  --flood: #ffeec2; --far-grid: rgba(245,245,244,0.14);
   --night: 1;
 }
 
 :root[data-theme='light'] {
   /* late afternoon */
-  --sky-top: #4a86bd; --sky-mid: #a6c8e2; --sky-bottom: #f0cfa8; --haze: #e7dcc8;
-  --sun: #ffeacb; --sun-glow: rgba(255,206,138,0.50);
-  --scene-shadow: rgba(54,42,30,0.26); --sky-fill: #b9d2e8;
-  --earth: #6e675d; --interior: #b6ad9a; --terrain: #9fae86;
-  --grass: #76a660; --grass-alt: #5e8b4d; --runoff: #567e46;
-  --pitchline: rgba(255,255,255,0.95);
-  --concrete: #b6b0a4; --window: #ffe6ad;
-  --glass: rgba(176,205,224,0.55); --metal: #9ca4ab; --net: rgba(255,255,255,0.78);
-  --seat: #65707f; --seat-alt: #5f6975; --board: #8e887c;
-  --structure: #cbc2b2; --structure-dark: #4a4238;
-  --roof-top: #b4bac1; --roof-under: #7b8086;
-  --prop: #5d564e;
+  /* THE THEME BY DAY: a parchment sky warming to sand at the horizon, the
+     stands in stone, the turf a muted olive. Poché darkest, seats, interior
+     lightest — the same three bands, in the theme's own browns. */
+  --sky-top: #E9DCC4; --sky-mid: #F4ECDE; --sky-bottom: #F2E1C4; --haze: #EFE5D3;
+  --sun: #fff4e0; --sun-glow: rgba(242,218,186,0.65);
+  --scene-shadow: rgba(74,59,51,0.22); --sky-fill: #EADFCB;
+  --earth: #8a7d6d; --interior: #D9CFBE; --terrain: #C7C29E;
+  --grass: #A4A86E; --grass-alt: #93985F; --runoff: #878C57;
+  --pitchline: rgba(253,251,247,0.95);
+  --concrete: #CFC6B5; --window: #fbe3b8;
+  --glass: rgba(228,217,188,0.55); --metal: #A8A29E; --net: rgba(253,251,247,0.80);
+  --seat: #8f877e; --seat-alt: #857d74; --board: #A39A8C;
+  --structure: #D6CDBC; --structure-dark: #57534E;
+  --roof-top: #C9C0B0; --roof-under: #8E867B;
+  --prop: #6b625a;
   --ball-hi: #ffffff; --ball: #ece5d6; --ball-low: #a2957f; --ball-line: #3d352b;
-  --flood: #fff6df; --far-grid: rgba(26,23,20,0.16);
+  --flood: #fff6df; --far-grid: rgba(74,59,51,0.16);
   --night: 0;
 }

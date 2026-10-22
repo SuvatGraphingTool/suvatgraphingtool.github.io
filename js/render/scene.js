@@ -479,9 +479,11 @@ export function render(canvas, cam, o) {
   // No scenario has ever set it, so only the ten-equal branch was reachable.
   if (fired && show.ticks) {
     const marks = f.ticks(10);
+    // Filled, in the path's own hue, ringed in the ground colour — the
+    // theme's chart markers. They sit ON the flight, so they are velocity's.
     for (const k of marks) {
       const p = M(k);
-      dot(ctx, p.x, p.y, 3.5, { fill: P.surface, stroke: P.strong, width: 1.8 });
+      dot(ctx, p.x, p.y, 4.6, { fill: P.vel, stroke: P.surface, width: 2 });
     }
     if (marks.length > 2) {
       const p = M(marks[1]);
