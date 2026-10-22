@@ -2725,13 +2725,13 @@ document.fonts?.ready.then(() => { dirty = true; });
 
 // ASK FOR THE MATHS FACE BEFORE AN EQUATION NEEDS IT. A webfont is fetched
 // when something that uses it is first painted, and the first thing on this
-// site to use Source Serif 4 upright is a formula — so without this, the first
+// site to use Merriweather upright is a formula — so without this, the first
 // equation a student sees appears in the system serif and swaps a moment
 // later. The five box symbols are italic and were pulling the italic subset in
 // on their own; the upright one had nothing to trigger it until the solve
 // message appeared. The sample string names the subsets wanted: latin for the
 // letters, digits and the real minus sign, greek for theta.
-for (const face of ['560 1em "Source Serif 4"', 'italic 560 1em "Source Serif 4"']) {
+for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) {
   document.fonts?.load(face, 'vuat 0123456789 θ −').catch(() => {});
 }
 

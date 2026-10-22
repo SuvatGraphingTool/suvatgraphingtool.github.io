@@ -122,7 +122,7 @@ function win(g, x, y, w, h) {
   poly(g, [[x, y + h], [x + w, y + h], [x - 60, 612], [x - 300, 612]]); g.fill(); g.restore();
 }
 
-const font = (w, s) => `${w} ${s}px 'Instrument Sans', system-ui, sans-serif`;
+const font = (w, s) => `${w} ${s}px 'Oxanium', system-ui, sans-serif`;
 
 /* ── live, per flight ──────────────────────────────────────────────────── */
 function pole(g, m) {

@@ -62,10 +62,8 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .brand {
   font-size: var(--fs-lg); font-weight: var(--w-bold); letter-spacing: 0.09em;
   color: var(--accent); justify-self: start;
-  /* Instrument Sans stops at 700, so the extra weight comes from the
-     glyph edge rather than another cut of the face. */
-  -webkit-text-stroke: 0.7px currentColor;
-  paint-order: stroke fill;
+  /* Oxanium has an 800, so the weight comes from the face itself now. */
+  font-weight: 800;
 }
 
 .steps { display: flex; gap: var(--sp-2); list-style: none; margin: 0; padding: 0;
@@ -245,7 +243,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .chips { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .chip { height: 36px; padding: 0 var(--sp-3); border-radius: var(--r-pill); border: 1px solid var(--border); font-size: var(--fs-xs); color: var(--ink-strong); }
 .chip:hover { background: var(--hover); }
-.chip[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: var(--w-semi); }
+.chip[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hi); font-weight: var(--w-semi); }
 
 .solve { font-size: var(--fs-sm); line-height: 1.5; margin-bottom: var(--sp-5); }
 .solve[data-ok='false'] { color: var(--bad); }
@@ -562,7 +560,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 
    Both selectors are needed: `.intro` carries the heavier treatment and is
    declared after this block, so a bare `.pace` would lose on source order. */
-.intro.pace { background: color-mix(in srgb, #0e0e0c 34%, transparent);
+.intro.pace { background: color-mix(in srgb, #1C1917 34%, transparent);
               backdrop-filter: blur(4px) saturate(.95); }
 .pace-card { width: min(420px, 100%); }
 .pace-row { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-1); }
@@ -917,7 +915,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .intro {
   position: absolute; inset: 0; z-index: 6; display: grid; place-items: center;
   padding: var(--sp-4); overflow-y: auto;
-  background: color-mix(in srgb, #0e0e0c 52%, transparent);
+  background: color-mix(in srgb, #1C1917 52%, transparent);
   backdrop-filter: blur(9px) saturate(.85);
   animation: intro-in 200ms ease-out both;
 }
@@ -985,7 +983,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-box {
   display: flex; align-items: flex-end; gap: var(--sp-3);
   padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-3);
-  background: var(--card); border: 1px solid var(--border); border-radius: 26px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
   box-shadow: var(--shadow);
   transition: border-color 160ms, box-shadow 160ms;
 }
@@ -1003,7 +1001,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-field textarea::placeholder { color: var(--ink-faint); }
 .ask-tools { display: flex; align-items: center; gap: var(--sp-1); }
 .ask-tool, .ask-send {
-  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-muted);
+  width: 40px; height: 40px; border-radius: var(--r-md); display: grid; place-items: center; color: var(--ink-muted);
 }
 .ask-tool:hover { background: var(--hover); color: var(--ink); }
 .ask-tool svg, .ask-send svg { width: 22px; height: 22px; }
@@ -1038,7 +1036,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-bubble p { margin: 0; }
 .ask-mine .ask-bubble { background: var(--accent-soft); color: var(--ink); border-bottom-right-radius: var(--r-sm); }
 .ask-mine .ask-bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
-.ask-chip { display: inline-block; font-size: var(--fs-xs); color: var(--accent); font-weight: var(--w-semi); margin-bottom: 2px; }
+.ask-chip { display: inline-block; font-size: var(--fs-xs); color: var(--accent-hi); font-weight: var(--w-semi); margin-bottom: 2px; }
 .ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border-soft); border-top-left-radius: var(--r-sm); }
 .ask-reply[data-busy='true'] .ai-orb::after { animation-duration: 1.2s; }
 .ask-dots { display: inline-flex; gap: 5px; padding: 6px 0; }
@@ -1067,7 +1065,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ro-engine[data-ok='false'] { background: var(--bad-fill); color: var(--ink); }
 
 @media (max-width: 560px) {
-  .ask-box { flex-wrap: wrap; border-radius: 22px; }
+  .ask-box { flex-wrap: wrap; }
   .ask-box > .ai-orb { display: none; }
   .ask-field { flex-basis: 100%; }
   .ask-tools { margin-left: auto; }

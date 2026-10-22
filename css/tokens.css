@@ -1,9 +1,21 @@
 /* tokens.css — the design system. Roles only; components never use raw hex.
-   Signal palette: warm near-black, one orange accent for chrome, and three
-   validated hues for the physics. See design/theme.js for the reasoning. */
+   THE THEME (22 October 2026, the AI version): warm parchment by day and warm
+   stone by night, Oxanium for the interface, Merriweather for the maths, a
+   0.3rem radius and a soft brown shadow. The chrome takes the theme's values;
+   the physics palette below it does NOT — those hues carry meaning and were
+   validated together, and the theme does not define them. Their contrast on
+   the new grounds was recomputed: light is equal or better everywhere, dark
+   is ~6% lower on the lighter card and no pair changed order.
+   Two of the theme's values were adjusted, both for legibility:
+     · dark --on-accent is the theme's own background, not white —
+       white on #F97316 is 2.8:1; #1C1917 on it is 6.2:1
+     · dark --bad text is #f87171, not #DC2626 — that is 3.6:1 on the ground,
+       too faint for 13 px error text; #DC2626 is kept for --bad-line */
 
 :root {
-  --font: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font: 'Oxanium', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Merriweather', Georgia, serif;
+  --font-mono: 'Fira Code', ui-monospace, monospace;
 
   /* Type. 13px floor — nothing on this site is smaller, canvas labels included. */
   --fs-xs: 13px; --fs-sm: 15px; --fs-base: 17px; --fs-lg: 20px;
@@ -31,19 +43,24 @@
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
   --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
 
-  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-pill: 9999px;
+  /* The theme's radius is 0.3rem, and it is the button radius: --r-pill is
+     what every button, chip and toggle on this site asks for, so it is that
+     now, and the name is kept so nothing has to be re-pointed. Circles that
+     are circles say 50% and are unaffected. */
+  --radius: 0.3rem;
+  --r-sm: 3px; --r-md: var(--radius); --r-lg: 6px; --r-xl: 8px; --r-pill: var(--radius);
 
   /* dark (default) */
-  --surface: #131210;
-  --card: #1c1a17;
-  --card-hover: #26231f;
-  --input: rgba(255,255,255,0.05);
-  --border: rgba(255,255,255,0.20);
-  --border-soft: rgba(255,255,255,0.10);
-  --hover: rgba(255,255,255,0.06);
+  --surface: #1C1917;
+  --card: #292524;
+  --card-hover: #312c2a;
+  --input: rgba(245,245,244,0.04);
+  --border: #44403C;
+  --border-soft: #36322F;
+  --hover: rgba(245,245,244,0.06);
 
-  --ink: #ffffff;
-  --ink-strong: rgba(255,255,255,0.80);
+  --ink: #F5F5F4;
+  --ink-strong: #E7E5E4;
   /* Raised with the weights, and for the same reason. White at 60% on a near
      black ground is a legibility choice at paragraph size and a thinning
      agent at 13 px — the strokes are already about a pixel wide, and taking
@@ -62,13 +79,13 @@
      3.83:1 is below the 4.5:1 AA wants for text this size, and --ink-faint is
      on the box units, the landing card's provenance line and the slider's
      scale. All four clear it now. */
-  --ink-muted: rgba(255,255,255,0.68);
-  --ink-faint: rgba(255,255,255,0.50);
+  --ink-muted: #A8A29E;
+  --ink-faint: rgba(245,245,244,0.52);
 
-  --accent: #ea580c;
-  --accent-hi: #f97316;
-  --accent-soft: rgba(234,88,12,0.14);
-  --on-accent: #131210;
+  --accent: #F97316;
+  --accent-hi: #fb923c;
+  --accent-soft: rgba(249,115,22,0.16);
+  --on-accent: #1C1917;
 
   /* ── the physics palette ────────────────────────────────────────────
      Five hues across the spectrum, assigned in this fixed order. Validated
@@ -97,38 +114,38 @@
   --mark:   #16a34a;     /* targets, fences, lines — green */
 
   --good: #34d399; --good-fill: rgba(52,211,153,0.15);
-  --bad:  #fb7185; --bad-fill:  rgba(251,113,133,0.15);
+  --bad:  #f87171; --bad-fill:  rgba(220,38,38,0.16); --bad-line: #DC2626;
 
   /* The grid is meant to be READ, not merely sensed. 7% was invisible. */
-  --grid:       rgba(255,255,255,0.13);
-  --grid-major: rgba(255,255,255,0.26);
-  --axis:       rgba(255,255,255,0.45);
+  --grid:       rgba(245,245,244,0.13);
+  --grid-major: rgba(245,245,244,0.26);
+  --axis:       rgba(245,245,244,0.45);
   /* A BOX-SHADOW, for the chrome. The scenery's shadow COLOUR is
      --scene-shadow: they were both called --shadow, declared in that order,
      so the colour won and every `box-shadow: var(--shadow)` in app.css
      resolved to a bare colour — an invalid box-shadow, and therefore no
      shadow at all on six kinds of card. */
-  --shadow: none;
+  --shadow: 0 2px 3px 0 hsl(0 0% 5% / 0.18);
 }
 
 :root[data-theme='light'] {
-  --surface: #f1efea;   /* warm off-white — easier to look at than near-white */
-  --card: #ffffff;
-  --card-hover: #f7f5f1;
-  --input: rgba(26,23,20,0.035);
-  --border: rgba(26,23,20,0.14);
-  --border-soft: rgba(26,23,20,0.07);
-  --hover: rgba(26,23,20,0.045);
+  --surface: #FDFBF7;   /* the theme's parchment */
+  --card: #F8F4EE;
+  --card-hover: #F1E9DA;
+  --input: rgba(228,217,188,0.28);
+  --border: #E4D9BC;
+  --border-soft: #EDE5D1;
+  --hover: #F1E9DA;
 
-  --ink: #1a1714;
-  --ink-strong: rgba(26,23,20,0.75);
-  --ink-muted: rgba(26,23,20,0.62);   /* raised from 0.60 to clear AA on paper */
-  --ink-faint: rgba(26,23,20,0.50);   /* raised from 0.40, which failed at 2.4:1 */
+  --ink: #4A3B33;
+  --ink-strong: #57534E;
+  --ink-muted: #57534E;   /* 7.5:1 on the card */
+  --ink-faint: #6f6863;   /* the theme's #78716C a shade darker: 4.4:1 on the card failed AA */
 
-  --accent: #c2410c;
-  --accent-hi: #9a3412;
-  --accent-soft: rgba(194,65,12,0.10);
-  --on-accent: #ffffff;
+  --accent: #B45309;
+  --accent-hi: #92400e;
+  --accent-soft: #f2daba;
+  --on-accent: #FFFFFF;
 
   --vel:    #c2410c;   /* orange. Legibility comes from the path's casing stroke,
                           not from darkening the hue until it stops being orange. */
@@ -138,12 +155,12 @@
   --second: #be185d;
   --mark:   #15803d;
   --good: #047857; --good-fill: rgba(52,211,153,0.18);
-  --bad:  #be123c; --bad-fill:  rgba(251,113,133,0.18);
+  --bad:  #991B1B; --bad-fill:  rgba(153,27,27,0.10); --bad-line: #991B1B;
 
-  --grid:       rgba(26,23,20,0.11);
-  --grid-major: rgba(26,23,20,0.22);
-  --axis:       rgba(26,23,20,0.45);
-  --shadow: 0 1px 2px rgba(26,23,20,0.045);
+  --grid:       rgba(74,59,51,0.11);
+  --grid-major: rgba(74,59,51,0.22);
+  --axis:       rgba(74,59,51,0.45);
+  --shadow: 0 2px 3px 0 hsl(28 18% 25% / 0.18);
 }
 
 /* ── two cards that are windows, not diagrams ─────────────────────────
