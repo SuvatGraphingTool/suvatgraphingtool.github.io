@@ -2,7 +2,17 @@
 
 An interactive projectile-motion playground for A-level physics and maths.
 
-**Live:** https://suvatgraphingtool.github.io/
+## Two sites
+
+| | Address | What's on it | Built from |
+|---|---|---|---|
+| **AI version** | https://suvat-ai.suvatgraphingtool.workers.dev | Everything, plus **Ask Suvat** — type, photograph, attach or say a question and it picks the scenario and fills in the values | the `ai` branch, via `scripts/deploy-ai.sh` |
+| **Original** | https://suvatgraphingtool.github.io/ | The playground without Ask Suvat | `main`, via GitHub Pages |
+
+**From now on every change goes to the AI version only** — the `ai` branch,
+deployed with `scripts/deploy-ai.sh`. The original site is changed only when
+that is asked for explicitly; when something on the AI version is ready for it,
+`ai` is merged into `main`.
 
 We use the SUVAT equations constantly but rarely *see* the thing they describe.
 This is the projectile, the elapsed time, the acceleration and the velocity, all
@@ -38,6 +48,12 @@ time cursor with the animation. The area under each curve is shaded live, so
 **Solver** — enter any three of s, u, v, a, t. It picks the equation that omits
 what you don't know, rearranges it, substitutes, and shows every step. Where a
 ± root or a quadratic gives two answers, it says so instead of quietly choosing.
+
+**Ask Suvat** (AI version only) — a chat box on the first screen. The AI only
+*reads* the question: it picks the scenario and the values given, and the
+engine works out everything else, the same way it does for a typed question.
+The model runs behind a Cloudflare Worker in [`worker/`](worker/), which holds
+the key.
 
 **Reference** — the five equations, when each applies, and the projectile
 results derived from them.
