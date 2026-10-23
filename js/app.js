@@ -155,7 +155,30 @@ function buildScenarioScreen() {
   for (const b of $('pgrid').querySelectorAll('.pcard')) {
     b.addEventListener('click', () => chooseScenario(b.dataset.id));
   }
+  wireSpotlight();
 }
+
+/* The spotlight on the cards: the pointer, in each card's own pixels, so
+   the light lands where the pointer is on every card at once — the card
+   under it washes, its neighbours catch it on their nearest edge. See
+   .pcard::before/::after in css/app.css. */
+function wireSpotlight() {
+  const grid = $('pgrid');
+  if (grid.dataset.spot) return;           // the grid can be rebuilt; wire it once
+  grid.dataset.spot = '1';
+  const cards = () => grid.querySelectorAll('.pcard');
+  grid.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    for (const c of cards()) {
+      const r = c.getBoundingClientRect();
+      c.style.setProperty('--gx', `${(e.clientX - r.left).toFixed(1)}px`);
+      c.style.setProperty('--gy', `${(e.clientY - r.top).toFixed(1)}px`);
+      c.style.setProperty('--gon', '1');
+    }
+  });
+  grid.addEventListener('pointerleave', () => { for (const c of cards()) c.style.setProperty('--gon', '0'); });
+}
+
 
 /**
  * A small sketch of the situation, drawn from its own numbers.

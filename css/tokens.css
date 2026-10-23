@@ -86,6 +86,7 @@
   --accent-hi: #fb923c;
   --accent-soft: rgba(249,115,22,0.16);
   --on-accent: #1C1917;
+  --glow: #F97316;       /* the card spotlight: the site's orange, never a card's own accent */
   --secondary: #57534E; --secondary-hi: #625d58; --on-secondary: #E7E5E4;
 
   /* ── the physics palette ────────────────────────────────────────────
@@ -155,6 +156,7 @@
   --accent-hi: #92400e;
   --accent-soft: #f2daba;
   --on-accent: #FFFFFF;
+  --glow: #B45309;
   --secondary: #E4C090; --secondary-hi: #dbb37d; --on-secondary: #4A3B33;
 
   /* By day: the theme's amber, a teal, a deep plum, stone and emerald.

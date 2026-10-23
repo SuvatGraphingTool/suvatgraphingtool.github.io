@@ -145,6 +145,37 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
   display: flex; flex-direction: column;
 }
 .pcard:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+/* ── the spotlight ──────────────────────────────────────────────────────
+   Every card on the first screen catches a light that follows the pointer:
+   a soft wash across the card and a brighter arc along the border nearest
+   the pointer, so the cards beside the one you are on glow at their near
+   edges too. One colour — the site's orange, --glow, which the scenario
+   palettes do not redefine — never a shifting hue. --gx/--gy are the
+   pointer in each card's own pixels, set in js/app.js; --gon fades it in
+   while the pointer is over the grid.
+
+   `isolation` makes a stacking context, so the wash (z-index −1) paints
+   above the card's background and below its text and picture. */
+.pcard { position: relative; isolation: isolate; --gx: -999px; --gy: -999px; --gon: 0; }
+.pcard::before, .pcard::after {
+  content: ''; position: absolute; pointer-events: none; border-radius: inherit;
+  opacity: var(--gon); transition: opacity 240ms ease;
+}
+.pcard::after {                       /* the wash */
+  inset: 0; z-index: -1;
+  background: radial-gradient(240px circle at var(--gx) var(--gy),
+              color-mix(in srgb, var(--glow) 13%, transparent), transparent 70%);
+}
+.pcard::before {                      /* the arc on the border */
+  inset: -1px; padding: 2px;
+  background: radial-gradient(170px circle at calc(var(--gx) + 1px) calc(var(--gy) + 1px),
+              var(--glow), color-mix(in srgb, var(--glow) 35%, transparent) 45%, transparent 75%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+@media (hover: none) { .pcard::before, .pcard::after { display: none; } }
 .pcard svg { display: block; width: 100%; height: auto; margin-bottom: var(--sp-3); }
 .pcard b { display: block; font-size: var(--fs-base); font-weight: var(--w-semi); }
 .pc-sub { display: block; font-size: var(--fs-xs); color: var(--accent); margin-top: 2px; }
