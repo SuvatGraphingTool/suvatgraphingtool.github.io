@@ -1160,30 +1160,3 @@ export function heightRuler(A, L, contentTop = Infinity) {
   ctx.stroke(); ctx.restore();
 }
 
-/** Heights worth naming, each anchored to the thing in THIS cut that has it.
-    A label for a crossbar the cutting plane never touches is a label pointing
-    at nothing, so nothing comes back unless the object is actually here. */
-export function landmarksIn(section, uMin, uMax) {
-  const out = [];
-  const vis = (u) => u > uMin && u < uMax;
-  const R = section.roof;
-  for (const wing of R.wings) {
-    if (vis(wing.outerU)) { out.push({ y: R.fasciaTop, u: wing.outerU, name: `roof rim ${R.fasciaTop} m` }); break; }
-  }
-  for (const wing of R.wings) {
-    if (wing.open && vis(wing.inner)) { out.push({ y: R.ringTop, u: wing.inner, name: `roof over the pitch ${R.ringTop} m` }); break; }
-  }
-  for (const deck of section.decks) {
-    for (const el of deckProfile(deck)) {
-      if (el.t !== 'tier') continue;
-      if (/upper tier/.test(el.name) && vis(el.u0)) out.push({ y: el.y0, u: el.u0, name: `upper tier front ${fmt(el.y0, 0)} m` });
-      if (/^lower tier$|^tier 1$/.test(el.name) && vis(el.u1)) out.push({ y: el.y1, u: el.u1, name: `back of the lower tier ${fmt(el.y1, 0)} m` });
-    }
-  }
-  for (const b of section.blocks) {
-    if (b.tag === 'crossbar' && vis(b.u0)) { out.push({ y: b.y1, u: Math.max(b.u0, b.u1), name: `crossbar ${fmt(b.y1, 2)} m` }); break; }
-  }
-  const byY = new Map();
-  for (const m of out) if (!byY.has(m.y)) byY.set(m.y, m);
-  return [...byY.values()];
-}

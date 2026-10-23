@@ -112,9 +112,7 @@ const state = {
   // and the slider in the options panel for anyone who wants another.
   rate: 0.75, rateTouched: false,
   show: { path: true, velocity: true, apex: true, range: true, grid: false, ruler: true,
-          // Equal time steps ON: the theme draws a flight as a curve with its
-          // markers on it, and the spacing is the physics.
-          components: false, ticks: true, acceleration: false },
+          components: false, ticks: false, acceleration: false },
   extras: { graphs: false, working: false, energy: false },
   options: false,
   resolve: false, hover: null, hoverMark: null,
@@ -2033,8 +2031,10 @@ function renderHud() {
   // Falling back to siteFor meant the range and the monkey were both captioned
   // "A goal kick from the west goal line".
   const site = siteFor(state.id);
-  $('place').textContent = scenario?.place || site.place;
-  $('place-note').textContent = scenario?.plate ? '' : (site.note || '');
+  // The stadium's own caption ("The centre spot" and its note) is gone: the
+  // picture says where it is. A scenario that happens elsewhere still names it.
+  $('place').textContent = scenario?.place || '';
+  $('place-note').textContent = '';
   // In the window there is no corner for a readout to sit in, and the clock
   // is in the transport where all four panes share it.
   if (windowed()) { $('hud-left').innerHTML = ''; $('hud-right').innerHTML = ''; return; }

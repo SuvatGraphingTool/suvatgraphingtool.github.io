@@ -314,7 +314,6 @@ export function render(canvas, cam, o) {
   if (show.grid) metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 });
   if (show.ruler !== false) W2.heightRuler({ ctx, w, h, sy, py, scale: cam.scale, tn }, L,
     Math.max(f.apexHeight, f.params.h, D.roof.fasciaTop, markers.heightLine ?? 0));
-  landmarkLabels({ ctx, w, h, sy, su, L, tn, span, P, section, uMin: pu(0), uMax: pu(w) });
 
   /* ── height line, fence, target ───────────────────────────────────── */
   if (markers.heightLine != null) {
@@ -485,11 +484,6 @@ export function render(canvas, cam, o) {
       const p = M(k);
       dot(ctx, p.x, p.y, 4.6, { fill: P.vel, stroke: P.surface, width: 2 });
     }
-    if (marks.length > 2) {
-      const p = M(marks[1]);
-      L.add('equal time steps', p.x, p.y - 20,
-            { color: P.muted, align: 'center', pri: 2, size: 16 });
-    }
   }
 
   /* ── greatest height and range ────────────────────────────────────── */
@@ -645,12 +639,7 @@ export function render(canvas, cam, o) {
 
   /* ── launch point ─────────────────────────────────────────────────── */
   const lp = M({ x: 0, y: f.params.h });
-  if (f.params.h > 0) {
-    stroke(ctx, [{ x: lp.x, y: lp.y }, { x: lp.x, y: groundY }], { color: P.mark, width: 2.4, dash: [7, 5], alpha: 0.9 });
-    L.add(`${fmt(f.params.h, 1)} m`, lp.x - 10, (lp.y + groundY) / 2, { color: P.mark, align: 'right', pri: 6, size: 16 });
-  }
   dot(ctx, lp.x, lp.y, 3.5, { fill: P.strong });
-  if (!fired) L.add(site.place, lp.x, lp.y - 30, { color: P.muted, align: 'center', pri: 4, size: 15 });
 
   /* ── scale bar and where we are ───────────────────────────────────── */
   // Bottom RIGHT: the range bracket owns the centre of the earth band, and
@@ -661,8 +650,7 @@ export function render(canvas, cam, o) {
   // How wide the frame is, in metres. It used to name the zoom band — Pitch
   // level, Stadium, Wide — which was the name of a button that no longer
   // exists; the width is the part of it that a student can use.
-  L.add(`${fmt(span, span < 20 ? 1 : 0)} m across · 1 unit = 1 m`, w - 12, h - 50,
-        { color: P.strong, align: 'right', pri: 11, size: 13 });
+  L.add('1:1', w - 12, h - 50, { color: P.strong, align: 'right', pri: 11, size: 13 });
 
   L.draw(ctx, w, h);
   cam._map = { sx, sy, px, py, su, pu, u0, ball: { x: p.x, y: p.y } };
@@ -735,9 +723,7 @@ function sayForces(ctx, L, x, y, R, f, t, P) {
     // STILL SPEEDING UP, and the honest reason it will go on doing so. Held
     // back until it is genuinely quick, so a half-metre drop off a bench does
     // not get a lecture.
-    text = sp > 22
-      ? `still speeding up · no air in this model, so it never levels off`
-      : `speeding up by ${fmt(-a, 2)} m s⁻¹ every second`;
+    text = `speeding up by ${fmt(-a, 2)} m s⁻¹ every second`;
     weight = 650; size = 17;
   } else if (phase?.key === 'canopy') {
     // The one case the app can slow a fall down in, and the phase that is
@@ -886,26 +872,6 @@ function metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 }) {
     L.add(fmt(x, stepX < 1 ? 1 : 0), X, Math.min(h - 56, sy(0) + 18),
           { color: P.muted, align: 'center', pri: -1, bg: false, size: 13 });
   }
-}
-
-/** Heights worth naming — the whole point of putting the flight in a place.
-    "14 m s⁻¹ reaches 10 m" means nothing until 10 m is the back of a stand.
-    But a landmark whose object is not in the cut is a label pointing at
-    nothing, so each one has to find its own geometry on screen first. */
-function landmarkLabels({ ctx, w, h, sy, su, L, tn, span, P, section, uMin, uMax }) {
-  if (span > 620) return;
-  const marks = W2.landmarksIn(section, uMin, uMax);
-  ctx.save();
-  ctx.setLineDash([3, 6]); ctx.lineWidth = 1;
-  ctx.strokeStyle = cssVar('--border', tn.prop);
-  for (const m of marks) {
-    const Y = Math.round(sy(m.y)) + 0.5;
-    if (Y < 24 || Y > h - 86) continue;
-    const anchor = clamp(su(m.u), 96, w - 14);
-    ctx.beginPath(); ctx.moveTo(Math.min(anchor, 70), Y); ctx.lineTo(anchor, Y); ctx.stroke();
-    L.add(m.name, anchor + 6, Y, { color: P.muted, align: 'left', pri: -2, size: 13, maxPush: 0 });
-  }
-  ctx.restore();
 }
 
 const SNAPS = [{ y: D.goal.height, name: 'the crossbar' }, { y: D.roof.fasciaTop, name: 'the roof' },
