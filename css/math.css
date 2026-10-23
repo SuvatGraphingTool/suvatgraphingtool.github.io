@@ -42,7 +42,7 @@
   line-height: 1.15;
   white-space: normal;
   /* Merriweather is a big serif — a tall x-height and wide letters — so beside
-     Oxanium it is set a touch SMALLER than the prose, where Source Serif 4
+     Montserrat it is set a touch SMALLER than the prose, where Source Serif 4
      needed 1.04em to keep up. */
   font-size: 0.95em;
 }

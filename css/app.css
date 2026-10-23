@@ -62,8 +62,16 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .brand {
   font-size: var(--fs-lg); font-weight: var(--w-bold); letter-spacing: 0.09em;
   color: var(--accent); justify-self: start;
-  /* Oxanium has an 800, so the weight comes from the face itself now. */
+  /* Montserrat has an 800, so the weight comes from the face itself. */
   font-weight: 800;
+}
+/* The wordmark is the one place the sunset is painted as a gradient: coral
+   into peach, the theme's two warm notes. Light needs the deeper end of it —
+   peach on cream is 1.6:1 — so by day it runs from the deep coral to the
+   coral, and the solid --accent above is the fallback either way. */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .brand { background: var(--sunset); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  :root[data-theme='light'] .brand { background-image: linear-gradient(100deg, var(--accent-hi), var(--accent-fill)); }
 }
 
 .steps { display: flex; gap: var(--sp-2); list-style: none; margin: 0; padding: 0;
@@ -111,6 +119,9 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
   height: 40px; padding: 0 var(--sp-4); border-radius: var(--r-pill);
   border: 1px solid var(--border); font-size: var(--fs-sm); color: var(--ink-strong);
   transition: background 120ms;
+  /* A button label is one line. Montserrat sets wider than the faces before
+     it, and in a crowded header "Ask Suvat" broke onto two. */
+  white-space: nowrap;
 }
 .tbtn:hover, .ghost:hover { background: var(--hover); }
 /* The theme's secondary button: filled tan, no outline, dark text. */
@@ -126,6 +137,12 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .app[data-step='scenario'] #screen-scenario,
 .app[data-step='values']   #screen-values { display: block; }
 .app[data-step='flight']   #screen-flight { display: block; overflow: hidden; }
+/* The horizon: a low sun's warmth along the top of the two reading screens,
+   and only those — the flight screen is canvas, which paints its own ground,
+   and a gradient behind it would show at the edges. */
+#screen-scenario, #screen-values {
+  background: radial-gradient(130% 55% at 50% -8%, color-mix(in srgb, var(--accent-fill) 11%, transparent), transparent 72%);
+}
 
 .centre { max-width: 980px; margin: 0 auto; padding: var(--sp-10) var(--sp-6) var(--sp-12); }
 .centre.narrow { max-width: 620px; }
@@ -287,9 +304,12 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .actions { display: flex; gap: var(--sp-3); }
 .fire {
   flex: 1; height: 56px; border-radius: var(--r-pill);
-  background: var(--accent); color: var(--on-accent);
+  background: var(--accent-fill); color: var(--on-accent);
   font-size: var(--fs-lg); font-weight: var(--w-bold);
 }
+/* The one big button is the sun itself: coral into peach. The ink on it is
+   4.8:1 at the coral end and 6.9:1 at the peach. */
+.fire:not(.sm):not(:disabled) { background: var(--sunset); box-shadow: var(--shadow); }
 .fire:hover { opacity: .92; }
 .fire:disabled { background: var(--border-soft); color: var(--ink-faint); cursor: not-allowed; }
 .hint { font-size: var(--fs-xs); color: var(--ink-muted); margin: var(--sp-3) 0 0; text-align: center; }
@@ -516,7 +536,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .done-card {
   width: min(760px, 100%); background: var(--card);
   border: 1px solid var(--border-soft); border-radius: var(--r-xl);
-  box-shadow: 0 18px 48px rgba(0,0,0,.18); padding: var(--sp-6);
+  box-shadow: var(--shadow-lg); padding: var(--sp-6);
   animation: done-rise 300ms cubic-bezier(.2,.8,.25,1) both;
 }
 @keyframes done-rise { from { transform: translateY(14px) scale(.985); } to { transform: none; } }
@@ -594,7 +614,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 
    Both selectors are needed: `.intro` carries the heavier treatment and is
    declared after this block, so a bare `.pace` would lose on source order. */
-.intro.pace { background: color-mix(in srgb, #1C1917 34%, transparent);
+.intro.pace { background: color-mix(in srgb, var(--scrim) 34%, transparent);
               backdrop-filter: blur(4px) saturate(.95); }
 .pace-card { width: min(420px, 100%); }
 .pace-row { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-1); }
@@ -752,7 +772,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 @media (min-width: 620px) { .ex-why { grid-template-columns: 1fr 1fr; } }
 .ex-why li { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; padding-left: var(--sp-4); position: relative; }
 .ex-why li::before { content: ''; position: absolute; left: 0; top: .55em; width: 5px; height: 5px;
-                     border-radius: 50%; background: var(--accent); opacity: .7; }
+                     border-radius: 50%; background: var(--accent-fill); }
 .ex-why li b { color: var(--ink-strong); font-weight: 650; }
 #exdone .done-acts { position: sticky; bottom: 0; margin: 0; padding: var(--sp-4) 0;
                      background: var(--card); box-shadow: 0 -10px 16px -10px var(--card); }
@@ -766,7 +786,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .transport { display: flex; align-items: center; gap: var(--sp-4); padding-top: var(--sp-3); }
 .play { width: 48px; height: 48px; flex: none; border-radius: var(--r-pill); background: var(--card); border: 1px solid var(--border); color: var(--ink); display: grid; place-items: center; box-shadow: var(--shadow); }
 .play[data-playing='true'] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
-:root[data-theme='light'] .play[data-playing='true'] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+:root[data-theme='light'] .play[data-playing='true'] { background: var(--accent-fill); color: var(--on-accent); border-color: var(--accent-fill); }
 .play svg { width: 16px; height: 16px; }
 .transport input[type='range'] { flex: 1; }
 /* One clock for four panes. It carries typeset maths, so it is filled with
@@ -779,16 +799,16 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 
 input[type='range'] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: none; cursor: pointer; display: block; margin: 0; }
 input[type='range']::-webkit-slider-runnable-track { height: 4px; background: var(--border); border-radius: 2px; }
-input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin-top: -10px; background: var(--accent); border-radius: 50%; border: none; }
+input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin-top: -10px; background: var(--accent-fill); border-radius: 50%; border: none; }
 input[type='range']::-moz-range-track { height: 4px; background: var(--border); border-radius: 2px; }
-input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: var(--accent); border-radius: 50%; border: none; }
+input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: var(--accent-fill); border-radius: 50%; border: none; }
 
 .ck { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--ink-strong); cursor: pointer; padding: var(--sp-2) 0; }
 .ck.inline { padding: 0; }
 .ck input { position: absolute; opacity: 0; pointer-events: none; }
 .ck .box-ck { width: 20px; height: 20px; flex: none; border: 1.5px solid var(--ink-faint); border-radius: 5px; display: grid; place-items: center; }
 .ck .box-ck::after { content: ''; width: 9px; height: 5px; border-left: 2px solid var(--on-accent); border-bottom: 2px solid var(--on-accent); transform: rotate(-45deg) translateY(-1px) scale(0); transition: transform 120ms; }
-.ck input:checked + .box-ck { background: var(--accent); border-color: var(--accent); }
+.ck input:checked + .box-ck { background: var(--accent-fill); border-color: var(--accent-fill); }
 .ck input:checked + .box-ck::after { transform: rotate(-45deg) translateY(-1px) scale(1); }
 /* In the options panel there is a column to work with rather than a strip of
    the stage bar, so the slider gets its own row and a line underneath saying
@@ -824,6 +844,18 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   .main[data-options='on'] { grid-template-columns: minmax(0, 1fr); }
   .main[data-options='on'] .opts { display: block; position: fixed; top: 64px; right: 0; bottom: 0; width: 340px; background: var(--surface); z-index: 10; box-shadow: -8px 0 24px rgba(0,0,0,.14); }
 }
+/* CENTRING IS A WIDE-SCREEN LUXURY. The three-column header centres the
+   steps by giving the sides equal width, but an `auto` middle column will
+   not shrink — once the sides are narrower than the buttons in them, the
+   steps run straight over the wordmark and the buttons. Back to the row,
+   which has room for all three and simply lets the steps give way.
+   It was 860px in Oxanium; Montserrat is wider, and on the flight screen
+   (three buttons on the right) the overlap began at about 1060px. */
+@media (max-width: 1100px) {
+  .top { display: flex; }
+  .brand, .steps, .top-right { justify-self: auto; }
+  .steps { margin: 0 auto; }
+}
 @media (max-width: 860px) {
   body { overflow: auto; }
   .done-card { padding: var(--sp-4); }
@@ -834,14 +866,6 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   /* `.navstep span` loses to `.steps li span` on specificity, so the numerals
      never hid and the three chips stayed full width on a phone. Matched here. */
   .steps li span { display: none; }
-  /* CENTRING IS A WIDE-SCREEN LUXURY. The three-column header centres the
-     steps by giving the sides equal width, but an `auto` middle column will
-     not shrink — below about 860px the sides collapse to nothing and the
-     steps run straight over the wordmark and the buttons. Back to the row,
-     which has room for all three and simply lets the steps give way. */
-  .top { display: flex; }
-  .brand, .steps, .top-right { justify-self: auto; }
-  .top-right { margin-left: auto; }
   .suvat { grid-template-columns: repeat(2, 1fr); }
   .main { height: auto; }
   .stage { grid-template-rows: auto 56vh auto; padding: 0 var(--sp-4) var(--sp-4); }
@@ -876,7 +900,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .res-card {
   display: flex; flex-direction: column; min-height: 0; max-height: 100%;
   background: var(--card); border: 1px solid var(--border-soft);
-  border-radius: var(--r-xl); box-shadow: 0 14px 36px rgba(0,0,0,.16);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-lg);
   padding: var(--sp-4);
 }
 .res-eyebrow { flex: none; font-size: var(--fs-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-weight: var(--w-bold); margin: 0 0 1px; }
@@ -949,7 +973,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .intro {
   position: absolute; inset: 0; z-index: 6; display: grid; place-items: center;
   padding: var(--sp-4); overflow-y: auto;
-  background: color-mix(in srgb, #1C1917 52%, transparent);
+  background: color-mix(in srgb, var(--scrim) 52%, transparent);
   backdrop-filter: blur(9px) saturate(.85);
   animation: intro-in 200ms ease-out both;
 }
@@ -957,7 +981,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .intro-card {
   width: min(560px, 100%); background: var(--card);
   border: 1px solid var(--border); border-radius: var(--r-xl);
-  box-shadow: 0 24px 60px rgba(0,0,0,.34); padding: var(--sp-6);
+  box-shadow: var(--shadow-lg); padding: var(--sp-6);
   animation: intro-rise 280ms cubic-bezier(.2,.8,.25,1) both;
 }
 @keyframes intro-rise { from { transform: translateY(12px) scale(.985); } to { transform: none; } }
@@ -983,17 +1007,17 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 @media (max-width: 860px) { .intro-card { padding: var(--sp-4); } }
 
 /* ── Ask Suvat ───────────────────────────────────────────────────────────
-   The AI's mark is an orange glass orb with a sparkle in it. Orange is the
-   site's accent already; the glass is a radial body, a highlight across the
+   The AI's mark is a glass sun with a sparkle in it, coral deepening to the
+   theme's deep coral at the rim. Coral is the site's accent already; the glass is a radial body, a highlight across the
    top and a slow sheen, so it reads as the one thing on the page that is
    not a control you already know. The chat box is the first thing on the
    first screen, above the cards it can choose between. */
 .ai-orb {
   position: relative; flex: none; display: grid; place-items: center;
   width: 40px; height: 40px; border-radius: 50%; overflow: hidden; color: #fff;
-  background: radial-gradient(120% 120% at 30% 18%, #fed7aa 0%, #fb923c 30%, #ea580c 60%, #9a3412 100%);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -6px 12px rgba(124,45,18,.5),
-              0 4px 14px rgba(234,88,12,.42);
+  background: radial-gradient(120% 120% at 30% 18%, #FFE0C4 0%, #FEB47B 28%, #FF7E5F 58%, #B35340 100%);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -6px 12px rgba(138,58,43,.5),
+              0 4px 14px rgba(255,126,95,.42);
 }
 .ai-orb::before {                         /* the glass: a highlight across the top */
   content: ''; position: absolute; top: 4%; left: 15%; width: 70%; height: 44%; border-radius: 50%;
@@ -1005,9 +1029,9 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   animation: ai-sheen 5s linear infinite;
 }
 .ai-orb svg { position: relative; z-index: 1; width: 58%; height: 58%;
-              filter: drop-shadow(0 1px 1.5px rgba(124,45,18,.55)); }
+              filter: drop-shadow(0 1px 1.5px rgba(138,58,43,.55)); }
 .ai-orb.sm { width: 32px; height: 32px; }
-.ai-orb.xs { width: 22px; height: 22px; box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -3px 6px rgba(124,45,18,.5); }
+.ai-orb.xs { width: 22px; height: 22px; box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -3px 6px rgba(138,58,43,.5); }
 @keyframes ai-sheen { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ai-orb::after { animation: none; opacity: 0; } }
 
@@ -1040,8 +1064,8 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-tool:hover { background: var(--hover); color: var(--ink); }
 .ask-tool svg, .ask-send svg { width: 22px; height: 22px; }
 .ask-tool:focus-visible, .ask-send:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.ask-mic[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); }
-.ask-send { background: var(--accent); color: var(--on-accent); margin-left: var(--sp-1); }
+.ask-mic[aria-pressed='true'] { background: var(--accent-fill); color: var(--on-accent); }
+.ask-send { background: var(--accent-fill); color: var(--on-accent); margin-left: var(--sp-1); }
 .ask-send:hover { background: var(--accent-hi); }
 .ask-send:disabled { background: var(--border-soft); color: var(--ink-faint); cursor: not-allowed; }
 .ask-att {
@@ -1074,7 +1098,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-top-left-radius: var(--r-sm); }
 .ask-reply[data-busy='true'] .ai-orb::after { animation-duration: 1.2s; }
 .ask-dots { display: inline-flex; gap: 5px; padding: 6px 0; }
-.ask-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: ask-dot 1s ease-in-out infinite; }
+.ask-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-fill); animation: ask-dot 1s ease-in-out infinite; }
 .ask-dots span:nth-child(2) { animation-delay: .15s; }
 .ask-dots span:nth-child(3) { animation-delay: .3s; }
 .ask-wait { margin: 2px 0 0; color: var(--ink-muted); font-size: 14px; }
