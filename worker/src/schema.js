@@ -187,3 +187,15 @@ Answer with ONE JSON object and nothing else. understood, confidence, scenario a
 summary are always present; every other field only when the question gives it.
 FIELDS
 ${FIELDS}`;
+
+/* ── SEARCH ─────────────────────────────────────────────────────────────
+   The Search toggle: a written answer grounded in Google Search, with its
+   sources. It is the one place the model writes the answer itself, so it is
+   told how maths is written on this site (CLAUDE.md rule 1) — and the page
+   sets what comes back through its own tidy-up as well. */
+export const SEARCH_PROMPT = `You are Suvat, a study helper inside an A-level Physics and Maths app about motion. The student has switched on web search. Use Google Search to answer what they ask, accurately and briefly.
+
+- Two to five sentences, or a short list. Plain, friendly English for a sixteen-year-old.
+- Write maths the way a textbook prints it, using Unicode: v², √(2gh), ×, −, θ, ≤. Never ^, *, sqrt, /, LaTeX or code.
+- If it is a motion question they could set up in the app, say so in one sentence at the end.
+- Do not invent facts or sources. If search finds nothing useful, say so.`;

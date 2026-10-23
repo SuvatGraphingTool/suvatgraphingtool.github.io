@@ -24,7 +24,8 @@ import { solveDescent, descentWorking, resolveDescent } from '../js/core/descent
 import { descentPanes, plotSpec, PRE_SAY } from '../js/render/drop.js';
 import { SCENARIOS, GROUPS } from '../js/scenarios.js';
 import { toApp } from '../js/core/question.js';
-import { readoutHTML } from '../js/ai/readout.js';
+import { readoutHTML, solutionHTML, proseHTML } from '../js/ai/readout.js';
+import { trajectory } from '../js/core/trajectory.js';
 import { solveRoad, roadWorking } from '../js/core/road.js';
 
 let pass = 0, fail = 0;
@@ -293,6 +294,30 @@ group('Along a straight road: everything the engine says, and the working', () =
   }
   ok(said > 25, `the sweep reaches the road's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing on the road is written as code', bag.join('\n         '));
+});
+
+group('What Ask Suvat\'s Solve switch shows: the engine\'s working, laid out', () => {
+  const bag = [];
+  let rows = 0;
+  const add = (steps, moment) => {
+    const h = solutionHTML(steps, { moment });
+    rows += (h.match(/ro-step-row/g) || []).length;
+    check('solution', h, bag);
+  };
+  for (const [k, o] of [[{ u: 25, theta: 45, g: 9.81 }, {}], [{ u: 28, theta: 45, h: 25, g: 9.8 }, {}],
+                        [{ g: 9.81, h: 80 }, { noAngle: true }], [{ u: 14, g: 9.81, h: 0 }, { lockAngle: true, theta: 90 }]]) {
+    const r = solveLaunch(o.lockAngle ? { ...k, theta: o.theta } : k, o);
+    if (r.ok) add(buildWorking(trajectory(r.params), trajectory(r.params).tMax), r.moment);
+  }
+  const road = solveRoad({ s: 240, v: 34, t: 10, mark: 'mid' });
+  add(roadWorking(road), road.moment);
+  const chute = solveDescent({ h: 100, g: 9.81, tOpen: 3, aChute: 25, vTerm: 6 });
+  if (chute.ok) add(descentWorking(chute.f, chute.f.tMax), null);
+  ok(rows > 15, `the sweep reaches every row of the worked solutions (${rows})`);
+  ok(bag.length === 0, 'nothing in a worked solution is written as code', bag.join('\n         '));
+  // and the model's own prose, from Search, comes out set as maths
+  const said = proseHTML('So v^2 = u^2 + 2as, and t = sqrt(2h / g) * 1 when h <= 5 and a = -9.81.');
+  ok(!/\^|sqrt|\*|<=| \/ | -9/.test(said.replace(/<[^>]+>/g, '')), 'a search answer has its code-maths set properly');
 });
 
 group('The parachute, which is the one motion with three accelerations', () => {

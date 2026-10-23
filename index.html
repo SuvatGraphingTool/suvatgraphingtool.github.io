@@ -49,6 +49,7 @@
 <link rel="stylesheet" href="./css/tokens.css">
 <link rel="stylesheet" href="./css/app.css">
 <link rel="stylesheet" href="./css/math.css">
+<link rel="stylesheet" href="./css/ask.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path d='M3 26 Q15 -8 27 26' fill='none' stroke='%23c2410c' stroke-width='3' stroke-linecap='round'/></svg>">
 </head>
 <body>
@@ -72,18 +73,21 @@
   <!-- ── 1 · scenario ─────────────────────────────────────────────── -->
   <main class="screen" id="screen-scenario">
     <div class="centre">
-      <h1 class="h-big">What is the object doing?</h1>
-      <p class="h-sub">All of them are the same five equations. Pick the one your question describes — or ask Suvat, and it will pick it for you.</p>
-
-      <!-- ASK SUVAT. A chat box: type the question, add a picture of it or the
-           paper as a file, or say it. The AI only READS the question — it
-           picks the scenario and the values given — and the engine works out
-           everything else, exactly as it does for a student typing. See
-           js/ai/ask.js, js/core/question.js and worker/. -->
-      <section class="ask" id="ask" aria-label="Ask Suvat">
+      <!-- ASK SUVAT, FIRST. On the AI site the chat box is the first thing on
+           the page: type the question, add a picture of it or the paper as a
+           file, or say it. Three switches decide what comes back —
+             Search  a written answer from a web search, with its sources
+             Solve   the engine's full worked solution, step by step
+             Graph   (on by default) the scenario set up and drawn: the flight
+                     and its graphs, in the reply and one click from the stage
+           With Graph off it answers like any chat assistant, in words. The AI
+           only READS the question; the engine works everything out (rule 4).
+           See js/ai/ask.js, js/core/question.js and worker/. -->
+      <section class="ask ask-hero" id="ask" aria-labelledby="ask-h">
+        <h1 class="h-big ask-h" id="ask-h"><span class="ai-orb lg" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2.5c.55 4.6 2.9 6.95 7.5 7.5-4.6.55-6.95 2.9-7.5 7.5-.55-4.6-2.9-6.95-7.5-7.5 4.6-.55 6.95-2.9 7.5-7.5Z" fill="currentColor"/><path d="M18.5 13.5c.25 2.05 1.25 3.05 3.3 3.3-2.05.25-3.05 1.25-3.3 3.3-.25-2.05-1.25-3.05-3.3-3.3 2.05-.25 3.05-1.25 3.3-3.3Z" fill="currentColor" opacity=".85"/></svg></span><span>Ask Suvat</span></h1>
+        <p class="h-sub ask-sub">Type the question, add a photo or the paper, or just say it. Suvat sets it up, works it out and draws it.</p>
         <div class="ask-thread" id="ask-thread" aria-live="polite" hidden></div>
         <form class="ask-box" id="ask-form" data-listening="false" data-drop="false">
-          <span class="ai-orb" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2.5c.55 4.6 2.9 6.95 7.5 7.5-4.6.55-6.95 2.9-7.5 7.5-.55-4.6-2.9-6.95-7.5-7.5 4.6-.55 6.95-2.9 7.5-7.5Z" fill="currentColor"/><path d="M18.5 13.5c.25 2.05 1.25 3.05 3.3 3.3-2.05.25-3.05 1.25-3.3 3.3-.25-2.05-1.25-3.05-3.3-3.3 2.05-.25 3.05-1.25 3.3-3.3Z" fill="currentColor" opacity=".85"/></svg></span>
           <div class="ask-field">
             <div class="ask-att" id="ask-att" hidden>
               <img id="ask-att-img" alt="" hidden>
@@ -91,15 +95,29 @@
               <span id="ask-att-name"></span>
               <button type="button" class="ask-att-x" id="ask-att-x" aria-label="Remove the attachment">×</button>
             </div>
-            <textarea id="ask-text" rows="1" placeholder="Ask Suvat" aria-label="Ask Suvat — type, paste or describe the question"></textarea>
+            <textarea id="ask-text" rows="2" placeholder="Ask Suvat" aria-label="Ask Suvat — type, paste or describe the question"></textarea>
           </div>
-          <div class="ask-tools">
+          <div class="ask-bar">
             <button type="button" class="ask-tool" id="ask-pic" aria-label="Add a picture of the question" title="Add a picture">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="1.8" fill="currentColor"/><path d="m4 17 5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
             </button>
             <button type="button" class="ask-tool" id="ask-doc" aria-label="Add a file — a PDF or text file" title="Add a file">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5 12.4 19a5 5 0 0 1-7.1-7.1l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
+            <span class="ask-sep" aria-hidden="true"></span>
+            <button type="button" class="ask-mode" id="ask-search" data-mode="search" aria-pressed="false" title="Answer from a web search, with sources">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              <span>Search</span>
+            </button>
+            <button type="button" class="ask-mode" id="ask-solve" data-mode="solve" aria-pressed="false" title="Show the full worked solution">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Solve</span>
+            </button>
+            <button type="button" class="ask-mode" id="ask-graph" data-mode="graph" aria-pressed="true" title="Set it up and draw the flight and its graphs">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m7 15 4-5 3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Graph</span>
+            </button>
+            <span class="ask-gap"></span>
             <button type="button" class="ask-tool ask-mic" id="ask-mic" aria-pressed="false" aria-label="Speak the question" title="Speak">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
@@ -112,6 +130,9 @@
         </form>
         <p class="ask-fine">Suvat reads the question with Gemma on Cloudflare or with Google Gemini, which may keep what you send. Send the question, not your name.</p>
       </section>
+
+      <h2 class="h-big pick-h">Or pick what the object is doing</h2>
+      <p class="h-sub">All of them are the same five equations. Pick the one your question describes.</p>
 
       <div class="pgrid" id="pgrid"></div>
     </div>

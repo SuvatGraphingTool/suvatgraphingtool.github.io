@@ -8,7 +8,7 @@
 // to make sure ONE person cannot drink the day's model quota, and to fail in a
 // way the interface can explain.
 
-import { SYSTEM_PROMPT } from './schema.js';
+import { SYSTEM_PROMPT, SEARCH_PROMPT } from './schema.js';
 
 const MODELS_DEFAULT = '@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
 const MAX_IMAGE_BYTES = 1_500_000;      // the client resizes to ~150 KB; this is the backstop
@@ -59,7 +59,7 @@ export default {
     // Words — typed, or spoken and turned into text by the browser — and at
     // most one attachment: a photo of the question, or the paper as a PDF.
     // Either may come alone.
-    const { imageBase64, mimeType = 'image/jpeg', hint, text, history } = body || {};
+    const { imageBase64, mimeType = 'image/jpeg', hint, text, history, mode } = body || {};
     const words = typeof text === 'string' ? text.trim() : '';
     const file = typeof imageBase64 === 'string' && imageBase64.length ? imageBase64 : '';
     if (!words && !file) return json({ error: 'Send text, a file, or both.' }, 400, cors);
@@ -101,6 +101,10 @@ export default {
       .slice(-MAX_TURNS)
       .map((h) => ({ role: h.role, parts: [{ text: h.text.slice(0, MAX_TEXT_CHARS) }] }));
     while (earlier.length && earlier[0].role !== 'user') earlier.shift();
+
+    // SEARCH: a written answer from Gemini with Google Search switched on —
+    // see searchAnswer below. Everything else on this route is the reader.
+    if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors);
 
     const payload = {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
@@ -242,6 +246,65 @@ function race(env, models, payload) {
     }
     next();
   });
+}
+
+/**
+ * The Search toggle. Gemini with its google_search tool, so the answer is
+ * grounded in what Google finds, and the pages it used come back as sources.
+ * Only Gemini can do this — Gemma on Cloudflare has no search — so the Gemini
+ * models are tried in turn, and the reply is prose, not the reader's JSON.
+ */
+async function searchAnswer(env, contents, cors) {
+  const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim().split(':')[0])
+    .filter((m) => m && !m.startsWith('@cf/'));
+  if (!env.GEMINI_API_KEY || !models.length) {
+    return json({ error: 'search_unavailable', message: 'Search is not available right now. Switch it off and ask again.' }, 503, cors);
+  }
+  const started = Date.now();
+  let last = null;
+  for (const model of models) {
+    const left = DEADLINE_MS - (Date.now() - started);
+    if (left < 3_000) break;
+    let res;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SEARCH_PROMPT }] },
+          contents,
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 900 },
+        }),
+        signal: AbortSignal.timeout(Math.min(left, 15_000)),
+      });
+    } catch (e) { last = { status: 0, detail: e?.name || 'timeout' }; continue; }
+    if (!res.ok) {
+      last = { status: res.status, detail: googleMessage(await res.text().catch(() => '')) };
+      console.error('search attempt failed', model, res.status, last.detail);
+      continue;
+    }
+    const data = await res.json().catch(() => null);
+    const c = data?.candidates?.[0];
+    const answer = (c?.content?.parts || []).filter((p) => typeof p.text === 'string' && !p.thought)
+      .map((p) => p.text).join('').trim();
+    if (!answer) { last = { status: 200, detail: c?.finishReason || 'empty' }; continue; }
+    const seen = new Set();
+    const sources = (c?.groundingMetadata?.groundingChunks || [])
+      .map((g) => g.web).filter((w) => w?.uri && !seen.has(w.uri) && seen.add(w.uri))
+      .slice(0, 6).map((w) => ({ title: String(w.title || w.uri).slice(0, 120), uri: w.uri }));
+    const queries = (c?.groundingMetadata?.webSearchQueries || []).slice(0, 4);
+    return json({ ok: true, answer: answer.slice(0, 4_000), sources, queries, model }, 200, cors);
+  }
+  const busy = last?.status === 429 || last?.status === 503 || last?.status === 0;
+  return json({
+    error: busy ? 'busy' : 'search_failed',
+    message: last?.status === 429
+      ? 'Search has used up Google\u2019s free allowance for now. Try again later, or switch Search off and Suvat will still read the question.'
+      : busy ? 'Search is busy right now. Try again in a minute, or switch Search off.'
+                  : 'Search did not come back with an answer. Try again, or switch Search off.',
+    upstream: last,
+  }, busy ? 429 : 502, cors);
 }
 
 /** One question to one model: { ok, extraction } or { ok:false, kind, status?, detail? }. */

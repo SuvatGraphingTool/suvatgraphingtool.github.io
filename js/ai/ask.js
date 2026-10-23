@@ -11,7 +11,7 @@
 // has none (Firefox), the microphone is simply not offered.
 
 import { prepareImage, readQuestion, readText, READER } from './capture.js';
-import { esc } from './readout.js';
+import { esc, proseHTML, sourcesHTML } from './readout.js';
 
 const $ = (id) => document.getElementById(id);
 const PDF_MAX = 4_000_000;          // the Worker's own limit, checked here first
@@ -32,6 +32,26 @@ export function createAsk({ apply, run, edit }) {
   const history = [];
   const HISTORY_MAX = 8;
   let current = null;              // this turn's reply, while it is being written
+
+  /* ── the three switches ─────────────────────────────────────────────────
+     Search  a written answer from a web search, with its sources
+     Solve   the engine's worked solution, step by step
+     Graph   the scenario set up and drawn — on unless switched off
+     Remembered between visits, in this browser only. */
+  const MODES_KEY = 'suvat-ask-modes';
+  const modes = { search: false, solve: false, graph: true };
+  try { Object.assign(modes, JSON.parse(localStorage.getItem(MODES_KEY) || '{}')); } catch {}
+  for (const b of document.querySelectorAll('.ask-mode')) {
+    const k = b.dataset.mode;
+    b.setAttribute('aria-pressed', String(!!modes[k]));
+    b.addEventListener('click', () => {
+      modes[k] = !modes[k];
+      b.setAttribute('aria-pressed', String(modes[k]));
+      try { localStorage.setItem(MODES_KEY, JSON.stringify(modes)); } catch {}
+      text.placeholder = modes.search ? 'Search with Suvat' : PLACEHOLDER;
+      text.focus();
+    });
+  }
 
   /* ── the box ────────────────────────────────────────────────────────── */
   function sync() {
@@ -122,24 +142,26 @@ export function createAsk({ apply, run, edit }) {
     echo(words, a);
     text.value = ''; detach();
     busy = new AbortController(); sync();
-    const dots = '<p class="ask-dots" aria-label="Suvat is reading"><span></span><span></span><span></span></p>';
+    const searching = modes.search;
+    const dots = `<p class="ask-dots" aria-label="Suvat is ${searching ? 'searching' : 'reading'}"><span></span><span></span><span></span></p>`;
     reply(dots, { busy: true });
     // Google's free models are sometimes slow to answer. Say so, rather than
     // leave the dots looking stuck.
     const slow = setTimeout(() => {
-      if (busy) reply(`${dots}<p class="ask-wait">Still reading — Google is busy, so this one is taking longer.</p>`, { busy: true });
+      if (busy) reply(`${dots}<p class="ask-wait">Still ${searching ? 'searching' : 'reading'} — Google is busy, so this one is taking longer.</p>`, { busy: true });
     }, 6_000);
 
     let res;
     try {
+      const mode = searching ? 'search' : undefined;
       if (a?.kind === 'image') {
         const prepared = await prepareImage(a.file);
-        res = await readQuestion(READER, prepared, { hint: words, history, signal: busy.signal });
+        res = await readQuestion(READER, prepared, { hint: words, history, mode, signal: busy.signal });
       } else if (a?.kind === 'pdf') {
         const base64 = await fileBase64(a.file);
-        res = await readQuestion(READER, { base64, mimeType: 'application/pdf' }, { hint: words, history, signal: busy.signal });
+        res = await readQuestion(READER, { base64, mimeType: 'application/pdf' }, { hint: words, history, mode, signal: busy.signal });
       } else {
-        res = await readText(READER, words, { history: [...history], signal: busy.signal });
+        res = await readText(READER, words, { history: [...history], mode, signal: busy.signal });
       }
     } catch {
       res = { ok: false, message: 'That file could not be opened. Try a JPEG, PNG or PDF.' };
@@ -148,18 +170,33 @@ export function createAsk({ apply, run, edit }) {
     busy = null; sync();
 
     if (!res?.ok) { reply(`<p class="ro-bad">${esc(res?.message || 'Could not read that.')}</p>`); return; }
+
+    // SEARCH: the model's own answer, grounded in the web, with its sources.
+    if (searching) {
+      const said = a ? `[sent ${a.kind === 'pdf' ? 'a PDF' : 'a photo'}]${words ? ` ${words}` : ''}` : words;
+      history.push({ role: 'user', text: said }, { role: 'model', text: String(res.answer || '') });
+      while (history.length > HISTORY_MAX) history.shift();
+      reply(`<div class="ro-prose">${proseHTML(res.answer)}</div>${sourcesHTML(res.sources)}`);
+      return;
+    }
+
     remember(words, a, res.extraction);
-    const r = apply(res.extraction);
+    const r = apply(res.extraction, { graph: modes.graph, solve: modes.solve });
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
 
     // Typeset maths arrives as markup, so it goes in with innerHTML (rule 1).
-    const node = reply(r.html, { acts: `<div class="ask-acts">
+    // With Graph off it is a conversation, so there is nothing to open.
+    const acts = modes.graph
+      ? `<div class="ask-acts">
         <button type="button" class="fire sm ask-run"${r.runnable ? '' : ' disabled'}>Show me the flight</button>
         <button type="button" class="ghost sm ask-edit">${r.runnable ? 'Check the values' : 'Add the missing values'}</button>
-      </div>` });
-    node.querySelector('.ask-run').addEventListener('click', run);
-    node.querySelector('.ask-edit').addEventListener('click', edit);
-    (r.runnable ? node.querySelector('.ask-run') : node.querySelector('.ask-edit')).focus();
+      </div>`
+      : '';
+    const node = reply(r.html, { acts });
+    r.draw?.(node);
+    node.querySelector('.ask-run')?.addEventListener('click', run);
+    node.querySelector('.ask-edit')?.addEventListener('click', edit);
+    (r.runnable ? node.querySelector('.ask-run') : node.querySelector('.ask-edit'))?.focus();
   }
 
   /* ── voice ──────────────────────────────────────────────────────────── */
@@ -203,6 +240,7 @@ export function createAsk({ apply, run, edit }) {
 
   /* ── wiring ─────────────────────────────────────────────────────────── */
   const PLACEHOLDER = text.placeholder;
+  if (modes.search) text.placeholder = 'Search with Suvat';
   form.addEventListener('submit', submit);
   text.addEventListener('input', sync);
   text.addEventListener('keydown', (e) => {

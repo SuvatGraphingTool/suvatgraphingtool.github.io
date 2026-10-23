@@ -181,13 +181,14 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 }
 .pcard::after {                       /* the wash */
   inset: 0; z-index: -1;
-  background: radial-gradient(240px circle at var(--gx) var(--gy),
-              color-mix(in srgb, var(--glow) 13%, transparent), transparent 70%);
+  /* weaker, by request: a hint of warmth, not a lamp */
+  background: radial-gradient(220px circle at var(--gx) var(--gy),
+              color-mix(in srgb, var(--glow) 6%, transparent), transparent 70%);
 }
 .pcard::before {                      /* the arc on the border */
-  inset: -1px; padding: 2px;
-  background: radial-gradient(170px circle at calc(var(--gx) + 1px) calc(var(--gy) + 1px),
-              var(--glow), color-mix(in srgb, var(--glow) 35%, transparent) 45%, transparent 75%);
+  inset: -1px; padding: 1.5px;
+  background: radial-gradient(150px circle at calc(var(--gx) + 1px) calc(var(--gy) + 1px),
+              color-mix(in srgb, var(--glow) 55%, transparent), color-mix(in srgb, var(--glow) 18%, transparent) 45%, transparent 75%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);

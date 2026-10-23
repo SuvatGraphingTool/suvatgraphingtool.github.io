@@ -27,7 +27,7 @@ import { fmt, palette, clamp } from './render/util.js';
 import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
-import { readoutHTML } from './ai/readout.js';
+import { readoutHTML, solutionHTML, vizHTML } from './ai/readout.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -2767,7 +2767,7 @@ for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) 
    exactly the route a typed question takes: chooseScenario, the five, and
    recompute, where solveLaunch works out the rest or says what is missing.
    Nothing on this route calculates a flight that the engine did not. */
-function applyReading(x) {
+function applyReading(x, { graph = true, solve = false } = {}) {
   const r = toApp(x);
   if (!r.ok) return r;
   chooseScenario(r.id);
@@ -2789,11 +2789,39 @@ function applyReading(x) {
   // here the same way it does under the line's own box (showAbove).
   const above = traj && scenario.dragLine && state.markers?.heightLine != null
     ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
-  return { ok: true, runnable: !!traj, html: readoutHTML(r, { name: scenario.name, solved, above }) };
+  let html = readoutHTML(r, { name: scenario.name, solved, above });
+  // SOLVE: the engine's own working, the same steps the working panel shows.
+  if (solve && traj && solved?.ok) {
+    const steps = scenario.road ? roadWorking(solved)
+      : scenario.descent ? descentWorking(traj, traj.tMax)
+      : buildWorking(traj, traj.tMax);
+    html += solutionHTML(steps, { moment: solved.moment });
+  }
+  // GRAPH: the flight and its three graphs, drawn in the reply from the same
+  // motion the stage will play. Off, the reply is words only, like any chat.
+  const f = graph && traj ? traj : null;
+  if (f) html += vizHTML(f);
+  const draw = f ? (node) => {
+    const P = palette();
+    for (const spec of graphSpecs(f, f.tMax, P)) {
+      const c = node.querySelector(`canvas[data-graph="${spec.canvas}"]`);
+      if (c) drawGraph(c, spec);
+    }
+  } : null;
+  return { ok: true, runnable: !!traj && graph, html, draw };
 }
 const ask = createAsk({
   apply: applyReading,
-  run: () => { if (!traj) return; if (scenario.exhibit) runFlight(); else launch(); },
+  run: () => {
+    if (!traj) return;
+    // Graph was on: the stage opens with its graphs showing, as the reply did.
+    state.extras.graphs = true;
+    const box = $('extras').querySelector('input[data-k="graphs"]');
+    if (box) box.checked = true;
+    $('graphs-wrap').hidden = false;
+    if (!state.options && !windowed()) $('options-btn').click();   // where the graphs live
+    if (scenario.exhibit) runFlight(); else launch();
+  },
   edit: () => go('values'),
 });
 $('ask-top').addEventListener('click', () => { go('scenario'); requestAnimationFrame(ask.focus); });

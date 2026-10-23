@@ -100,3 +100,79 @@ export function readoutHTML(reading, { name, solved, above } = {}) {
     <ul class="ro-list">${rows}</ul>
     ${asks}${unsure}${notes}${engine}`;
 }
+
+/* ── Solve: the engine's own working, as a numbered solution ─────────────
+   Every title, formula, substitution and result here comes from js/core/ or
+   js/working.js — the same steps the working panel shows — so the chat
+   claims nothing the engine did not compute (rule 4), and every piece of it
+   is already typeset (rule 1). This only lays them out. */
+export function solutionHTML(steps, { moment } = {}) {
+  const shown = (steps || []).filter((st) => !st.skip && st.rows?.length);
+  if (!shown.length) return '';
+  const items = shown.map((st) => `<li><div class="ro-step-h">${st.title}</div>${
+    st.rows.map((r) => `<div class="ro-step-row"><div>${r.f}</div><div>${r.s}</div>${
+      r.r ? `<div class="ro-step-r">${r.r}</div>` : ''}</div>`).join('')}${
+    st.note ? `<div class="ro-step-n">${st.note}</div>` : ''}</li>`).join('');
+  return `<p class="ro-answer-h">Worked solution</p><ol class="ro-steps">${items}</ol>${
+    moment?.text ? `<p class="ro-sum">${moment.text}</p>` : ''}`;
+}
+
+/* ── Graph: the flight, drawn in the reply ───────────────────────────────
+   The path the engine computed, with a dot at each of ten equal steps of
+   time, over a ground line — and three empty frames the page fills with the
+   same graphs the stage draws (js/render/graphs.js). No text in the sketch,
+   so nothing here can fall under the 13px floor. */
+export function flightSVG(f) {
+  const pts = f.path(120), marks = f.ticks(10);
+  const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+  let lo = Math.min(0, ...xs), hi = Math.max(...xs);
+  const top = Math.max(1, ...ys), bottom = Math.min(0, ...ys);
+  const pad = Math.max((hi - lo) * 0.06, (top - bottom) * 0.3, 1);
+  lo -= pad; hi += pad;
+  const W = 600, H = 170, m = 16;
+  const sx = Math.min((W - 2 * m) / (hi - lo), (H - 2 * m) / ((top - bottom) || 1));
+  const ox = (W - (hi - lo) * sx) / 2;
+  const X = (x) => (ox + (x - lo) * sx).toFixed(1);
+  const Y = (y) => (H - m - (y - bottom) * sx).toFixed(1);
+  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.x)} ${Y(p.y)}`).join(' ');
+  const dots = marks.map((k) => `<circle cx="${X(k.x)}" cy="${Y(k.y)}" r="4" fill="var(--vel)" stroke="var(--surface)" stroke-width="1.6"/>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <line x1="0" y1="${Y(0)}" x2="${W}" y2="${Y(0)}" stroke="var(--border)" stroke-width="1.5"/>
+    <path d="${d}" fill="none" stroke="var(--vel)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}</svg>`;
+}
+export function vizHTML(f) {
+  return `<div class="ro-viz">
+    <figure class="ro-path" aria-label="The flight, with a dot at each equal step of time">${flightSVG(f)}</figure>
+    <figure><canvas data-graph="g-s" aria-label="Displacement against time"></canvas></figure>
+    <figure><canvas data-graph="g-v" aria-label="Velocity against time"></canvas></figure>
+    <figure><canvas data-graph="g-a" aria-label="Acceleration against time"></canvas></figure>
+  </div>`;
+}
+
+/* ── Search: the model's own prose, made safe and set properly ───────────
+   The one reply the model writes itself. Escaped first — it is somebody
+   else's text going into innerHTML — then the habits rule 1 forbids are
+   turned into what this site prints (v^2 → v², sqrt → √, * → ×, a hyphen
+   before a number → a minus sign), and the lightest markdown is honoured:
+   paragraphs, bullets and bold. */
+export function proseHTML(text) {
+  const tidy = (s) => esc(s)
+    .replace(/\^\(?-1\)?/g, '⁻¹').replace(/\^\(?-2\)?/g, '⁻²').replace(/\^2\b/g, '²').replace(/\^3\b/g, '³')
+    .replace(/\bsqrt\s*\(/g, '√(').replace(/ \* /g, ' × ').replace(/ \/ /g, ' ÷ ').replace(/&lt;=/g, '≤').replace(/&gt;=/g, '≥')
+    .replace(/(^|[\s(=])-(\d)/g, '$1−$2')
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  const blocks = String(text || '').trim().split(/\n\s*\n/);
+  return blocks.map((b) => {
+    const lines = b.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length && lines.every((l) => /^[-*•]\s+/.test(l))) {
+      return `<ul>${lines.map((l) => `<li>${tidy(l.replace(/^[-*•]\s+/, ''))}</li>`).join('')}</ul>`;
+    }
+    return `<p>${tidy(lines.join(' '))}</p>`;
+  }).join('');
+}
+export function sourcesHTML(sources) {
+  const ok = (sources || []).filter((s) => /^https?:\/\//.test(s.uri));
+  if (!ok.length) return '';
+  return `<ul class="ro-src">${ok.map((s) => `<li><a href="${esc(s.uri)}" target="_blank" rel="noopener noreferrer">${esc(s.title || s.uri)}</a></li>`).join('')}</ul>`;
+}
