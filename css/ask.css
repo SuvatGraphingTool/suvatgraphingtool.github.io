@@ -5,40 +5,135 @@
    graphs (Graph), the engine's worked solution (Solve), and a written answer
    with sources (Search). Tokens only, as everywhere. */
 
-/* ── the headline ─────────────────────────────────────────────────────── */
-.ask-hero { margin: 0 0 var(--sp-12); }
-.ask-h { display: flex; align-items: center; gap: var(--sp-3); }
-.ai-orb.lg { width: 48px; height: 48px; }
-.ask-sub { margin-bottom: var(--sp-6); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+           clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ── the first view: a sunset, and the box in it ─────────────────────────
+   The prompt box's own demo backdrop, which is already the theme: a sun of
+   orange low in the frame, through peach and rose to a pale sky. The same
+   picture in both themes, as the scenario cards are pictures — at night it
+   is held a little lower, so it does not glare. */
+.ask-hero {
+  --pb-bg: #1F2023; --pb-line: #444444; --pb-ink: #F3F4F6; --pb-mute: #9CA3AF; --pb-hover: #D1D5DB;
+  --pb-search: #1EAEDB; --pb-solve: #8B5CF6; --pb-graph: #FF7E5F;   /* graph: the site's coral */
+  position: relative; min-height: calc(100dvh - 64px); margin: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: var(--sp-10) var(--sp-4);
+  background: radial-gradient(125% 125% at 50% 101%, rgba(245,87,2,1) 10.5%, rgba(245,120,2,1) 16%,
+              rgba(245,140,2,1) 17.5%, rgba(245,170,100,1) 25%, rgba(238,174,202,1) 40%,
+              rgba(202,179,214,1) 65%, rgba(148,201,233,1) 100%);
+}
+:root:not([data-theme='light']) .ask-hero::before {
+  content: ''; position: absolute; inset: 0; background: rgba(20,14,16,0.28); pointer-events: none;
+}
+.ask-col { position: relative; width: min(640px, 100%); display: flex; flex-direction: column; gap: var(--sp-3); }
+.ask-hero .ask-thread { max-height: 62vh; overflow-y: auto; margin: 0; padding: 2px; }
+.ask-hero .ask-fine { color: rgba(31,32,35,0.78); text-align: center; margin: var(--sp-1) 0 0; font-weight: var(--w-small); }
 .pick-h { font-size: var(--fs-2xl); margin-bottom: var(--sp-2); }
 
-/* ── the box: the field, then the bar ─────────────────────────────────── */
-.ask-hero .ask-box {
-  flex-direction: column; align-items: stretch; gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-3) var(--sp-2) var(--sp-4);
+/* ── the box ─────────────────────────────────────────────────────────── */
+.pbox {
+  border-radius: 24px; border: 1px solid var(--pb-line); background: var(--pb-bg);
+  padding: var(--sp-2); box-shadow: 0 8px 30px rgba(0,0,0,0.24);
+  transition: border-color 300ms, box-shadow 300ms;
+  color: var(--pb-ink);
 }
-.ask-hero .ask-field { align-self: stretch; }
-.ask-hero .ask-field textarea { min-height: 58px; font-size: var(--fs-lg); }
+.pbox[data-drop='true'] { border-color: var(--pb-graph); }
+.pbox[data-busy='true'], .pbox[data-listening='true'] { border-color: rgba(239,68,68,0.7); }
+.pbox textarea {
+  display: block; width: 100%; min-height: 44px; max-height: 240px; resize: none; border: none; outline: none;
+  background: transparent; color: var(--pb-ink); font: inherit; font-size: var(--fs-base); line-height: 1.5;
+  padding: 10px 12px;
+}
+.pbox textarea::placeholder { color: var(--pb-mute); }
+.pbox textarea::-webkit-scrollbar { width: 6px; }
+.pbox textarea::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 
-.ask-bar { display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; }
-.ask-sep { width: 1px; height: 22px; background: var(--border); margin: 0 var(--sp-1); }
-.ask-gap { flex: 1; }
+.pbox-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding-top: var(--sp-2); }
+.pbox-left { display: flex; align-items: center; gap: var(--sp-1); min-width: 0; }
+.pbox-ic {
+  width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--pb-mute);
+  transition: background 150ms, color 150ms;
+}
+.pbox-ic:hover { background: rgba(75,85,99,0.3); color: var(--pb-hover); }
+.pbox-ic svg { width: 20px; height: 20px; }
 
-/* The switches. Off, they are quiet icons with their names; on, they take
-   the accent, so what will come back is readable at a glance. */
+/* The divider: a thin line that glows in the middle, as the original's. */
+.pbox-div { width: 1.5px; height: 24px; margin: 0 4px; border-radius: 99px;
+            background: linear-gradient(to top, transparent, color-mix(in srgb, var(--pb-graph) 70%, transparent), transparent); }
+
+/* The switches: an icon until they are on, then a pill in their own hue
+   with the name sliding out beside it, and the icon turning once. */
 .ask-mode {
-  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 var(--sp-3);
-  border-radius: var(--r-pill); border: 1px solid transparent;
-  font-size: var(--fs-sm); font-weight: var(--w-semi); color: var(--ink-muted);
-  transition: background 120ms, color 120ms, border-color 120ms;
+  --c: var(--pb-mute);
+  display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 4px 8px;
+  border-radius: 999px; border: 1px solid transparent; color: var(--pb-mute);
+  transition: background 200ms, border-color 200ms, color 200ms;
 }
-.ask-mode svg { width: 18px; height: 18px; flex: none; }
-.ask-mode:hover { background: var(--hover); color: var(--ink); }
+.ask-mode:hover { color: var(--pb-hover); }
+.ask-mode .m-ic { width: 20px; height: 20px; display: grid; place-items: center; flex: none;
+                  transition: transform 500ms cubic-bezier(.34,1.56,.64,1); }
+.ask-mode .m-ic svg { width: 16px; height: 16px; }
+.ask-mode:hover .m-ic { transform: rotate(15deg) scale(1.1); }
+.ask-mode .m-lb { max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; font-size: var(--fs-xs);
+                  transition: max-width 200ms ease, opacity 200ms ease; }
+#ask-search { --c: var(--pb-search); } #ask-solve { --c: var(--pb-solve); } #ask-graph { --c: var(--pb-graph); }
 .ask-mode[aria-pressed='true'] {
-  background: var(--accent-soft); color: var(--accent-hi);
-  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--c); border-color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent);
 }
-.ask-mode:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ask-mode[aria-pressed='true'] .m-ic { transform: rotate(360deg) scale(1.1); }
+.ask-mode[aria-pressed='true'] .m-lb { max-width: 80px; opacity: 1; }
+.ask-mode:focus-visible, .pbox-ic:focus-visible, .pbox-go:focus-visible { outline: 2px solid var(--pb-graph); outline-offset: 1px; }
+
+/* The one round button: microphone, send, stop, or the end of a recording. */
+.pbox-go {
+  width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: #FFFFFF; color: var(--pb-bg); transition: background 200ms, color 200ms;
+}
+.pbox-go:hover { background: rgba(255,255,255,0.8); }
+.pbox-go > span { display: none; }
+.pbox-go svg { width: 18px; height: 18px; }
+.pbox-go[data-state='mic'] .go-mic, .pbox-go[data-state='send'] .go-send,
+.pbox-go[data-state='busy'] .go-busy, .pbox-go[data-state='rec'] .go-stop { display: grid; }
+.pbox-go[data-state='busy'] .go-busy svg { width: 14px; height: 14px; animation: go-pulse 1.2s ease-in-out infinite; }
+.pbox-go[data-state='rec'] { background: transparent; color: #EF4444; }
+.pbox-go[data-state='rec']:hover { background: rgba(75,85,99,0.3); }
+.pbox-go[data-state='rec'] svg { width: 20px; height: 20px; }
+.pbox-go:disabled { opacity: .5; cursor: not-allowed; }
+@keyframes go-pulse { 50% { opacity: .45; } }
+
+/* Listening: a red dot and a clock, and bars that move while it does. */
+.pbox-rec { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-2) 0 0; }
+.rec-time { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-mono, monospace);
+            font-size: var(--fs-xs); color: rgba(255,255,255,0.8); }
+.rec-time i { width: 8px; height: 8px; border-radius: 50%; background: #EF4444; animation: go-pulse 1s ease-in-out infinite; }
+.rec-bars { display: flex; align-items: center; justify-content: center; gap: 2px; height: 32px; width: 100%; }
+.rec-bars i { width: 2px; height: 30%; border-radius: 2px; background: rgba(255,255,255,0.5);
+              animation: rec-bar .7s ease-in-out infinite alternate; }
+.rec-bars i:nth-child(3n)   { animation-duration: .55s; animation-delay: -.2s; }
+.rec-bars i:nth-child(3n+1) { animation-duration: .85s; animation-delay: -.4s; }
+.rec-bars i:nth-child(4n)   { animation-duration: .65s; animation-delay: -.1s; }
+@keyframes rec-bar { from { height: 15%; } to { height: 100%; } }
+
+/* The attachment: a rounded thumbnail with its cross in the corner. */
+.pbox .ask-att { display: flex; align-items: center; gap: var(--sp-2); padding: 4px 4px 2px; border: none;
+                 color: var(--pb-mute); font-size: var(--fs-xs); }
+.pbox .ask-att[hidden] { display: none; }
+.ask-thumb { position: relative; width: 64px; height: 64px; border-radius: 12px; overflow: hidden; flex: none;
+             background: #2E3033; display: grid; place-items: center; cursor: zoom-in; }
+.ask-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ask-thumb .ask-att-doc { width: 28px; height: 28px; color: var(--pb-graph); }
+.pbox .ask-att-x { width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.7); color: #fff;
+                   font-size: var(--fs-sm); line-height: 1; }
+.ask-view { border: 1px solid #333; background: #1F2023; padding: 0; border-radius: 16px; max-width: min(90vw, 800px); }
+.ask-view::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+.ask-view img { display: block; max-width: 100%; max-height: 80vh; object-fit: contain; }
+.ask-view-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%;
+              background: rgba(46,48,51,0.8); color: #E5E7EB; font-size: var(--fs-lg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-mode .m-ic, .rec-bars i, .rec-time i { transition: none; animation: none; }
+}
 
 /* ── a reply drawn: the flight, and its three graphs ─────────────────── */
 .ro-viz { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -79,7 +174,6 @@
 .ro-src a:hover { border-color: var(--accent); color: var(--accent-hi); }
 
 @media (max-width: 560px) {
-  .ask-mode { padding: 0 var(--sp-2); }
-  .ask-mode[aria-pressed='false'] span { display: none; }   /* off: the icon is enough */
-  .ask-sep { display: none; }
+  .ask-hero { min-height: calc(100dvh - 64px); padding: var(--sp-6) var(--sp-3); justify-content: flex-end; }
+  .pbox-left { gap: 0; }
 }

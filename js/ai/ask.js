@@ -26,6 +26,8 @@ export function createAsk({ apply, run, edit }) {
   const form = $('ask-form'), text = $('ask-text'), send = $('ask-send');
   const thread = $('ask-thread');
   let att = null, busy = null;     // att: { kind: 'image'|'pdf', file }
+  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, before = '';     // the browser's own speech recognition, while it listens
   // The chat so far, as the reader is shown it: what the student said and the
   // JSON each answer was. A photo is not sent twice — what was read from it
   // is in the answer that followed.
@@ -46,16 +48,35 @@ export function createAsk({ apply, run, edit }) {
     b.setAttribute('aria-pressed', String(!!modes[k]));
     b.addEventListener('click', () => {
       modes[k] = !modes[k];
-      b.setAttribute('aria-pressed', String(modes[k]));
+      // Search and Solve answer in different ways, so — as in the prompt box
+      // this is adapted from — turning one on turns the other off.
+      if (modes[k] && k === 'search') modes.solve = false;
+      if (modes[k] && k === 'solve') modes.search = false;
+      showModes();
       try { localStorage.setItem(MODES_KEY, JSON.stringify(modes)); } catch {}
-      text.placeholder = modes.search ? 'Search with Suvat' : PLACEHOLDER;
       text.focus();
     });
   }
+  if (modes.search && modes.solve) modes.solve = false;
+  function showModes() {
+    for (const m of document.querySelectorAll('.ask-mode')) m.setAttribute('aria-pressed', String(!!modes[m.dataset.mode]));
+    if (!rec) text.placeholder = modes.search ? 'Search the web…'
+      : modes.solve ? 'Solve it step by step…'
+      : modes.graph ? 'Ask Suvat — it will draw it…' : 'Ask Suvat';
+  }
 
   /* ── the box ────────────────────────────────────────────────────────── */
+  /* The one round button, as in the prompt box: the microphone when the box
+     is empty, send when it is not, stop while Suvat answers, and the end of
+     a recording while it listens. */
   function sync() {
-    send.disabled = !!busy || (!text.value.trim() && !att);
+    const has = !!text.value.trim() || !!att;
+    const state = busy ? 'busy' : rec ? 'rec' : has ? 'send' : Rec ? 'mic' : 'send';
+    send.dataset.state = state;
+    send.disabled = state === 'send' && !has;
+    const say = { busy: 'Stop', rec: 'Stop listening', send: 'Send to Suvat', mic: 'Speak the question' }[state];
+    send.setAttribute('aria-label', say); send.title = say;
+    form.dataset.busy = String(!!busy);
     // The box grows with what is in it, up to a point.
     text.style.height = 'auto';
     text.style.height = `${Math.min(text.scrollHeight, 180)}px`;
@@ -97,7 +118,7 @@ export function createAsk({ apply, run, edit }) {
     const pv = $('ask-att');
     if (pv.dataset.url) { URL.revokeObjectURL(pv.dataset.url); delete pv.dataset.url; }
     att = null; pv.hidden = true;
-    $('ask-pic-in').value = ''; $('ask-doc-in').value = '';
+    $('ask-doc-in').value = '';
     sync();
   }
 
@@ -136,7 +157,7 @@ export function createAsk({ apply, run, edit }) {
 
   async function submit(e) {
     e?.preventDefault();
-    if (send.disabled) return;
+    if (busy || (!text.value.trim() && !att)) return;
     stopMic();
     const words = text.value.trim(), a = att;
     echo(words, a);
@@ -167,7 +188,9 @@ export function createAsk({ apply, run, edit }) {
       res = { ok: false, message: 'That file could not be opened. Try a JPEG, PNG or PDF.' };
     }
     clearTimeout(slow);
+    const stopped = busy?.signal.aborted;
     busy = null; sync();
+    if (stopped) { reply('<p class="ro-sum">Stopped.</p>'); return; }
 
     if (!res?.ok) { reply(`<p class="ro-bad">${esc(res?.message || 'Could not read that.')}</p>`); return; }
 
@@ -200,10 +223,7 @@ export function createAsk({ apply, run, edit }) {
   }
 
   /* ── voice ──────────────────────────────────────────────────────────── */
-  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const mic = $('ask-mic');
-  let rec = null, before = '';
-  if (!Rec) mic.hidden = true;
+  let clock = null;
   function stopMic() { rec?.stop(); }
   function startMic() {
     rec = new Rec();
@@ -224,33 +244,49 @@ export function createAsk({ apply, run, edit }) {
     };
     rec.onend = () => {
       rec = null;
-      mic.setAttribute('aria-pressed', 'false');
-      mic.setAttribute('aria-label', 'Speak the question');
+      clearInterval(clock); $('ask-rec').hidden = true;
       form.dataset.listening = 'false';
-      text.placeholder = PLACEHOLDER;
+      showModes(); sync();
       text.focus();
     };
     rec.start();
-    mic.setAttribute('aria-pressed', 'true');
-    mic.setAttribute('aria-label', 'Stop listening');
     form.dataset.listening = 'true';
     text.placeholder = 'Listening… say what is thrown, from where, and the numbers';
+    const t0 = Date.now(), out = $('ask-rec-t');
+    out.textContent = '00:00'; $('ask-rec').hidden = false;
+    clock = setInterval(() => {
+      const sec = Math.floor((Date.now() - t0) / 1000);
+      out.textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    }, 1000);
+    sync();
   }
-  mic.addEventListener('click', () => (rec ? stopMic() : startMic()));
+  send.addEventListener('click', () => {
+    const state = send.dataset.state;
+    if (state === 'busy') busy?.abort();
+    else if (state === 'rec') stopMic();
+    else if (state === 'mic') startMic();
+    else submit();
+  });
 
   /* ── wiring ─────────────────────────────────────────────────────────── */
-  const PLACEHOLDER = text.placeholder;
-  if (modes.search) text.placeholder = 'Search with Suvat';
+  showModes();
   form.addEventListener('submit', submit);
   text.addEventListener('input', sync);
   text.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
   });
-  $('ask-pic').addEventListener('click', () => $('ask-pic-in').click());
   $('ask-doc').addEventListener('click', () => $('ask-doc-in').click());
-  $('ask-pic-in').addEventListener('change', (e) => attach(e.target.files?.[0]));
   $('ask-doc-in').addEventListener('change', (e) => attach(e.target.files?.[0]));
   $('ask-att-x').addEventListener('click', detach);
+  // The thumbnail opens the photo full size, as the prompt box does.
+  $('ask-att-view').addEventListener('click', () => {
+    const img = $('ask-att-img');
+    if (img.hidden || !img.src) return;
+    $('ask-view-img').src = img.src;
+    $('ask-view').showModal?.();
+  });
+  $('ask-view-x').addEventListener('click', () => $('ask-view').close());
+  $('ask-view').addEventListener('click', (e) => { if (e.target === $('ask-view')) $('ask-view').close(); });
   // A picture pasted or dropped on the box is a picture added.
   text.addEventListener('paste', (e) => {
     const f = [...(e.clipboardData?.files || [])][0];
