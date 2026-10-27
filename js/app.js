@@ -27,6 +27,7 @@ import { fmt, palette, clamp } from './render/util.js';
 import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
+import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML, vizHTML } from './ai/readout.js';
 
 const $ = (id) => document.getElementById(id);
@@ -123,6 +124,7 @@ const state = {
 };
 
 const cam = scene.createCamera();
+let board = null;                // the whiteboard, made once the page is up — see the end of this file
 /* ── the window, for the scenarios that watch themselves in one ──────────
    A parachute drop is four views of one motion rather than one view with the
    graphs in a sidebar — see js/render/panes.js. The window keeps its own
@@ -1752,6 +1754,9 @@ function go(step) {
   if (step !== 'flight') { hideDone(); closeAskAt(); }
   state.step = step;
   $('app').dataset.step = step;
+  // The whiteboard draws only while it is on screen.
+  $('board-top').setAttribute('aria-pressed', String(step === 'board'));
+  if (step === 'board') board?.show(); else board?.hide();
   $('options-btn').hidden = step !== 'flight';
   refreshSteps();
   dirty = true;
@@ -2508,6 +2513,7 @@ function applyTheme(mode) {
   $('theme-btn').textContent = mode === 'dark' ? 'Light' : 'Dark';
   try { localStorage.setItem('suvat-theme', mode); } catch {}
   dropToneCache();
+  board?.redraw();
   dirty = true;
 }
 
@@ -2810,24 +2816,37 @@ function applyReading(x, { graph = true, solve = false } = {}) {
   } : null;
   return { ok: true, runnable: !!traj && graph, html, draw };
 }
+/** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
+function showFlight() {
+  if (!traj) return;
+  // Graph was on: the stage opens with its graphs showing, as the reply did.
+  state.extras.graphs = true;
+  const box = $('extras').querySelector('input[data-k="graphs"]');
+  if (box) box.checked = true;
+  $('graphs-wrap').hidden = false;
+  if (!state.options && !windowed()) $('options-btn').click();   // where the graphs live
+  if (scenario.exhibit) runFlight(); else launch();
+}
 const ask = createAsk({
   apply: applyReading,
-  run: () => {
-    if (!traj) return;
-    // Graph was on: the stage opens with its graphs showing, as the reply did.
-    state.extras.graphs = true;
-    const box = $('extras').querySelector('input[data-k="graphs"]');
-    if (box) box.checked = true;
-    $('graphs-wrap').hidden = false;
-    if (!state.options && !windowed()) $('options-btn').click();   // where the graphs live
-    if (scenario.exhibit) runFlight(); else launch();
-  },
+  run: showFlight,
   edit: () => go('values'),
 });
+/* ── the whiteboard ──────────────────────────────────────────────────────
+   Its own screen, built from the same pieces — see js/board/board.js. A
+   frame's "Open on the stage" goes the route a chat answer goes: the reading
+   through applyReading, then the flight. */
+board = createBoard({
+  open(x) {
+    const r = applyReading(x, { graph: true });
+    if (r.ok && traj) showFlight(); else go('values');
+  },
+});
+$('board-top').addEventListener('click', () => go(state.step === 'board' ? 'scenario' : 'board'));
 $('ask-top').addEventListener('click', () => { go('scenario'); requestAnimationFrame(ask.focus); });
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
-                 openAskAt, closeAskAt, easeAngle, applyReading,
+                 openAskAt, closeAskAt, easeAngle, applyReading, get board() { return board; },
                  redraw() { recompute(); draw(); } };

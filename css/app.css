@@ -137,6 +137,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .app[data-step='scenario'] #screen-scenario,
 .app[data-step='values']   #screen-values { display: block; }
 .app[data-step='flight']   #screen-flight { display: block; overflow: hidden; }
+.app[data-step='board']    #screen-board  { display: block; overflow: hidden; }
 /* The horizon: a low sun's warmth along the top of the two reading screens,
    and only those — the flight screen is canvas, which paints its own ground,
    and a gradient behind it would show at the edges. */

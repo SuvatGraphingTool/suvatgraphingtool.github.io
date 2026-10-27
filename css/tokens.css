@@ -83,6 +83,8 @@
   --accent-hi: #FFA088;
   --accent-fill: #FF7E5F;  /* what a filled control is painted in */
   --accent-soft: rgba(255,126,95,0.16);
+  /* The whiteboard's sticky notes: the peach, deepened for night. */
+  --sticky: #4A3830; --sticky-edge: #6B4E3F;
   --on-accent: #2A2024;
   --glow: #FF7E5F;         /* the card spotlight: the site's coral, never a card's own accent */
   --sunset: linear-gradient(100deg, #FF7E5F, #FEB47B);   /* coral into peach, the theme's two warm notes */
@@ -162,6 +164,7 @@
   --accent-hi: #8A3A2B;   /* 6.5:1 on --accent-soft, for text on the tint */
   --accent-fill: #FF7E5F; /* the theme's coral, with the dark ink on it */
   --accent-soft: #FFE6DD;
+  --sticky: #FFE9C7; --sticky-edge: #F5CF9A;
   --on-accent: #3D3436;
   --glow: #FF7E5F;
   --secondary: #FFEDEA; --secondary-hi: #FFE0D6; --on-secondary: #A2493A;

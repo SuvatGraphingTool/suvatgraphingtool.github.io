@@ -8,7 +8,7 @@
 // to make sure ONE person cannot drink the day's model quota, and to fail in a
 // way the interface can explain.
 
-import { SYSTEM_PROMPT, SEARCH_PROMPT } from './schema.js';
+import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT } from './schema.js';
 
 const MODELS_DEFAULT = '@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
 const MAX_IMAGE_BYTES = 1_500_000;      // the client resizes to ~150 KB; this is the backstop
@@ -107,11 +107,12 @@ export default {
     if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors);
 
     const payload = {
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      // BOARD: the same reading, and the layout of a whiteboard built from it.
+      system_instruction: { parts: [{ text: mode === 'board' ? BOARD_PROMPT : SYSTEM_PROMPT }] },
       contents: [...earlier, { role: 'user', parts }],
       generationConfig: {
         temperature: 0,                         // extraction, not writing
-        maxOutputTokens: 1200,
+        maxOutputTokens: mode === 'board' ? 1800 : 1200,
         // JSON, but NOT a responseSchema. Handed the schema, Flash-Lite answered
         // every question with the same four fields and wrote angles into u;
         // given the same fields as a list in the prompt, with examples, it read

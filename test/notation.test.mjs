@@ -27,6 +27,8 @@ import { toApp } from '../js/core/question.js';
 import { readoutHTML, solutionHTML, proseHTML } from '../js/ai/readout.js';
 import { trajectory } from '../js/core/trajectory.js';
 import { solveRoad, roadWorking } from '../js/core/road.js';
+import { readBlueprint, solveBoard } from '../js/board/blueprint.js';
+import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
 
 let pass = 0, fail = 0;
 
@@ -502,6 +504,47 @@ group('The scenarios say it in words, or they say it properly', () => {
   for (const g of GROUPS) look(`group ${g.id}`, g);
   ok(bag.length === 0, 'no programmer\'s maths anywhere in the scenario prose',
      bag.join('\n         '));
+});
+
+group('The whiteboard: every frame it builds, for every kind of board', () => {
+  // The frames are HTML strings (js/board/frames.js), so the sweep reads
+  // them exactly as the board puts them up — given, answered and worked,
+  // for each scenario the reader can name, and with values missing.
+  const bag = [];
+  let frames = 0;
+  const BOARDS = [
+    { scenario: 'arc', u: 20, angleDegrees: 35, h: 0 },
+    { scenario: 'arc', u: 35, ratioFn: 'tan', ratioNum: 3, ratioDen: 4, h: 0,
+      others: [{ label: 'B', scenario: 'arc', u: 35, angleDegrees: 53.13 }] },
+    { scenario: 'platform', h: 30, u: 12 },
+    { scenario: 'platform-angle', h: 25, angleDegrees: 45, s: 100, g: 9.8 },
+    { scenario: 'platform-down', h: 25, u: 10, angleDegrees: 30, belowHorizontal: true },
+    { scenario: 'dropped', h: 45 },
+    { scenario: 'up', u: 14 },
+    { scenario: 'down', h: 45, u: 5 },
+    { scenario: 'time-above', u: 19.6, angleDegrees: 90, heightLine: 14.7 },
+    { scenario: 'parachute', h: 1200, tOpen: 4, aChute: 20, vTerm: 5 },
+    { scenario: 'bullet', u: 300, h: 1.5 },
+    { scenario: 'monkey', u: 22, h: 1.5, targetX: 10, targetY: 9 },
+    { scenario: 'monkey', u: 4, h: 1.5, targetX: 30, targetY: 9 },
+    { scenario: 'road', u: 25, v: 0, s: 40 },
+    { scenario: 'road', v: 34, t: 10, s: 240, atMidpoint: true },
+    { scenario: 'arc', u: 20 },                       // not enough: it says what is missing
+    { scenario: 'road', u: 20 },
+  ];
+  for (const b of BOARDS) {
+    const bp = readBlueprint({ understood: true, confidence: 'high', summary: 'A test.', title: 'Test',
+                               notes: ['Ignore air resistance. Use v^2 = u^2 + 2as and take a = -9.81.'], ...b });
+    const board = solveBoard(bp);
+    board.objects.forEach((o, i) => {
+      for (const [name, h] of [['given', givenHTML(o, i, new Set(['u']))], ['answers', answersHTML(o)], ['working', workingHTML(o)]]) {
+        frames++; check(`board ${b.scenario} ${name}`, h, bag);
+      }
+    });
+    for (const n of bp.notes) { frames++; check(`board ${b.scenario} note`, noteHTML(n), bag); }
+  }
+  ok(frames > 60, `the sweep reaches every frame the board builds (${frames})`);
+  ok(bag.length === 0, 'nothing on the whiteboard is written as code', bag.join('\n         '));
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

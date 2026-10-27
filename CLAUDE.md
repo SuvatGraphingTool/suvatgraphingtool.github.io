@@ -69,6 +69,7 @@ js/core/projectile.js   the idealised projectile model
 js/core/descent.js      a parachute drop: three phases, each one of them SUVAT
 js/core/road.js         a vehicle along a straight road: the five, with no gravity in them
 js/core/question.js     exam question -> engine parameters
+js/board/               the whiteboard: describe a motion, get a board of the app's own pieces
 js/render/              the scene, the graphs, canvas helpers
 js/world/               the stadium — and nothing outside it
 worker/                 Cloudflare Worker for reading a photo of a question
@@ -85,4 +86,5 @@ node test/pace.test.mjs         # how fast a flight should be played back
 node test/scenarios.test.mjs    # the scenarios, as data
 node test/preload.test.mjs      # the modulepreload hints match the real graph
 node test/notation.test.mjs     # that no computer maths reaches a student
+node test/blueprint.test.mjs    # the whiteboard: the model lays out, the engine calculates
 ```
