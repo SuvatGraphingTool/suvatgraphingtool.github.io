@@ -37,6 +37,13 @@ const RATE = 0.75;                       // the stage's own playback speed
 const GAP = 24, PAD = 28, HEAD = 64;     // between frames, inside a cluster, its title
 const Z_MIN = 0.2, Z_MAX = 2.5;
 const HISTORY_MAX = 6;
+/* KEPT IN THIS BROWSER, AND NOWHERE ELSE. What is saved is what the board
+   was built FROM — each cluster's blueprint, the values changed on it, and
+   where its frames were dragged — never anything the engine worked out. A
+   reload solves every cluster again, so a saved board can never disagree
+   with the engine that draws it (rule 4). */
+const STORE = 'suvat-board-v1';
+const KEEP = 24;                         // the newest clusters, and no more
 const SHOW = { path: true, velocity: true, apex: true, range: true, grid: false, ruler: true,
                components: true, ticks: false, acceleration: false };
 
@@ -163,6 +170,7 @@ export function createBoard({ open } = {}) {
     touches.delete(e.pointerId);
     if (touches.size < 2) pinch = null;
     if (drag?.el) drag.el.dataset.drag = 'false';
+    if (drag) save();
     drag = null; vp.dataset.pan = 'false';
   };
   vp.addEventListener('pointerup', end);
@@ -175,18 +183,21 @@ export function createBoard({ open } = {}) {
     const r = vp.getBoundingClientRect();
     if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
     else { cam.x -= e.deltaX; cam.y -= e.deltaY; fly = null; place(); }
+    save();
   }, { passive: false });
 
   $('bd-in').addEventListener('click', () => { const r = vp.getBoundingClientRect(); zoomAt(1.2, r.width / 2, r.height / 2); });
   $('bd-out').addEventListener('click', () => { const r = vp.getBoundingClientRect(); zoomAt(1 / 1.2, r.width / 2, r.height / 2); });
   $('bd-zoom').addEventListener('click', () => { const r = vp.getBoundingClientRect(); zoomAt(1 / cam.z, r.width / 2, r.height / 2); });
-  $('bd-fit').addEventListener('click', fitAll);
+  $('bd-fit').addEventListener('click', () => { fitAll(); save(); });
+  for (const id of ['bd-in', 'bd-out', 'bd-zoom']) $(id).addEventListener('click', save);
   $('bd-clear').addEventListener('click', () => {
     if (!clusters.length) return;
     for (const c of clusters) c.el.remove();
     clusters.length = 0; history.length = 0;
     $('bd-empty').hidden = false;
     Object.assign(cam, { x: 0, y: 0, z: 1 }); place();
+    save();
   });
 
   let top = 10;
@@ -202,8 +213,7 @@ export function createBoard({ open } = {}) {
   }
 
   /** A cluster with nothing in it yet: the title, and frames still arriving. */
-  function sketch(words) {
-    const at = nextSpot();
+  function sketch(words, at = nextSpot()) {
     const el = document.createElement('section');
     el.className = 'bd-cluster';
     el.dataset.state = 'building';
@@ -217,7 +227,7 @@ export function createBoard({ open } = {}) {
     el.style.width = `${c.w}px`; el.style.height = `${c.h}px`;
     clusters.push(c);
     $('bd-empty').hidden = true;
-    frameOn(c);
+    if (!sketch.quiet) frameOn(c);
     return c;
   }
 
@@ -235,9 +245,9 @@ export function createBoard({ open } = {}) {
   }
 
   /** The model's blueprint, solved and laid out as frames. */
-  function build(c, bp) {
+  function build(c, bp, kept = null) {
     c.bp = bp;
-    c.edits = bp.objects.map(() => ({ given: {}, descent: {} }));
+    c.edits = kept?.edits || bp.objects.map(() => ({ given: {}, descent: {} }));
     c.board = solveBoard(bp, c.edits);
     c.el.dataset.state = 'built';
     c.el.querySelector('.bd-ghosts')?.remove();
@@ -265,12 +275,27 @@ export function createBoard({ open } = {}) {
     for (const f of list) c.el.append(f.el);
     fill(c);
     layout(c);
+    if (kept) {
+      // Back where they were left, and still: a board coming back from a
+      // reload is not being built, so nothing pops in and nothing plays.
+      kept.frames?.forEach((k, j) => {
+        const f = list[j];
+        if (!f || f.kind !== k.kind) return;
+        f.x = k.x; f.y = k.y;
+        f.el.style.left = `${f.x}px`; f.el.style.top = `${f.y}px`;
+        if (k.h && (f.kind === 'scene' || f.kind.startsWith('graph'))) { f.h = k.h; f.el.style.height = `${f.h}px`; }
+      });
+      if (kept.w) { c.w = kept.w; c.h = kept.h; c.el.style.width = `${c.w}px`; c.el.style.height = `${c.h}px`; }
+      c.t = 0; c.playing = false;
+      return;
+    }
     // The frames arrive one after another, which is what makes it read as
     // being built rather than as a page that loaded.
     list.forEach((f, j) => { f.el.style.animationDelay = `${j * 55}ms`; f.el.dataset.in = 'true'; });
     c.playing = objs.some((o) => o.ok);
     c.t = 0;
     frameOn(c);
+    save();
   }
   const isLaunch = (o) => o.ok && o.scenario && !o.scenario.road && !o.scenario.descent;
 
@@ -438,6 +463,7 @@ export function createBoard({ open } = {}) {
       }
     }
     wake();
+    save();
   }
 
   /** The reading this object started as, with the board's edits put back in. */
@@ -576,6 +602,45 @@ export function createBoard({ open } = {}) {
     while (history.length > HISTORY_MAX) history.shift();
     build(c, bp);
   }
+
+  /* ── keeping it ──────────────────────────────────────────────────────── */
+  let saving = 0;
+  function save() {
+    clearTimeout(saving);
+    saving = setTimeout(() => {
+      const built = clusters.filter((c) => c.bp).slice(-KEEP);
+      const data = {
+        cam: { x: cam.x, y: cam.y, z: cam.z }, history,
+        clusters: built.map((c) => ({
+          x: c.x, y: c.y, w: c.w, h: c.h, bp: c.bp, edits: c.edits,
+          frames: c.frames.map((f) => ({ kind: f.kind, x: f.x, y: f.y, h: f.h || 0 })),
+        })),
+      };
+      try { localStorage.setItem(STORE, JSON.stringify(data)); } catch {}
+    }, 300);
+  }
+  /** What was left on the board last time, solved again by the engine. */
+  function restore() {
+    let data = null;
+    try { data = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
+    if (!data || !Array.isArray(data.clusters)) return;
+    sketch.quiet = true;
+    for (const k of data.clusters) {
+      // One saved cluster that no longer builds — an older shape, a hand
+      // edit — is left behind rather than taking the rest of the board with it.
+      try {
+        if (!k?.bp?.ok || !Array.isArray(k.bp.objects)) continue;
+        const c = sketch('', { x: Number(k.x) || 0, y: Number(k.y) || 0 });
+        try { build(c, k.bp, k); } catch { c.el.remove(); clusters.splice(clusters.indexOf(c), 1); }
+      } catch {}
+    }
+    sketch.quiet = false;
+    if (Array.isArray(data.history)) history.push(...data.history.filter((h) => typeof h?.text === 'string').slice(-HISTORY_MAX));
+    if (data.cam && [data.cam.x, data.cam.y, data.cam.z].every(Number.isFinite)) {
+      Object.assign(cam, { x: data.cam.x, y: data.cam.y, z: clamp(data.cam.z, Z_MIN, Z_MAX) });
+    }
+    if (!clusters.length) $('bd-empty').hidden = false;
+  }
   function sync() {
     send.dataset.state = busy ? 'busy' : 'send';
     send.disabled = !busy && !text.value.trim();
@@ -592,6 +657,7 @@ export function createBoard({ open } = {}) {
     b.addEventListener('click', () => { text.value = b.textContent.trim(); sync(); submit(); });
   }
   addEventListener('resize', () => { for (const c of clusters) c.dirty = true; wake(); });
+  restore();
   sync(); place();
 
   return {
