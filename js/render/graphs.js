@@ -80,12 +80,19 @@ export function drawGraph(canvas, spec) {
   }
 
   for (const s of series) {
-    const pts = [];
-    for (let i = 0; i <= 160; i++) {
-      const tt = (i / 160) * tMax, y = s.fn(tt);
-      if (isFinite(y)) pts.push({ x: X(tt), y: Y(y) });
+    // A series with `breaks` jumps there — an acceleration that changes from
+    // one constant to the next — so it is drawn as separate pieces, with no
+    // line joining the levels: a step graph has no vertical lines in it.
+    const cuts = [0, ...(s.breaks || []).filter((b) => b > 1e-9 && b < tMax - 1e-9), tMax];
+    for (let k = 0; k < cuts.length - 1; k++) {
+      const a = cuts[k], b = cuts[k + 1], e = (b - a) * 1e-6, pts = [];
+      const n = Math.max(2, Math.ceil(160 * (b - a) / (tMax || 1)));
+      for (let i = 0; i <= n; i++) {
+        const tt = Math.min(b - e, Math.max(a + e, a + (i / n) * (b - a))), y = s.fn(tt);
+        if (isFinite(y)) pts.push({ x: X(tt), y: Y(y) });
+      }
+      stroke(ctx, pts, { color: s.color, width: 2.6, dash: s.dash });
     }
-    stroke(ctx, pts, { color: s.color, width: 2.6, dash: s.dash });
     // round markers at equal steps of time, as the theme's charts carry —
     // lighter on a dashed (horizontal) series, so solid still reads first
     for (let i = 0; i <= 6; i++) {

@@ -3,7 +3,7 @@
 // js/render/journey.js; this file says which boxes to show, reads them, and
 // lays out what the engine answered (rule 4). See design/components.md.
 
-import { solveJourney, journeyWorking, RELATIONS } from '../core/journey.js';
+import { solveJourney, journeyWorking } from '../core/journey.js';
 import * as stage from '../render/journey.js';
 import { M, num } from '../notation.js';
 
@@ -12,14 +12,14 @@ const KEYS = ['V', 't1', 't2', 't3', 'a1', 'a3', 'T', 'D'];
 
 /** The eight, grouped the way the graph is: one column per stage, then the whole. */
 const FIELDS = [
-  { key: 'a1', col: 'up', label: `Acceleration ${M`a_1`} (m s⁻²)` },
-  { key: 't1', col: 'up', label: `Time ${M`t_1`} (s)` },
-  { key: 'V', col: 'steady', label: `Top speed ${M`V`} (m s⁻¹)` },
-  { key: 't2', col: 'steady', label: `Time ${M`t_2`} (s)` },
+  { key: 'a1', col: 'up', label: `Acceleration ${M`a_1`} (m s⁻²)`, hint: 'From rest, so the rate it gains speed.' },
+  { key: 't1', col: 'up', label: `Time ${M`t_1`} (s)`, hint: 'How long it takes to reach its top speed.' },
+  { key: 'V', col: 'steady', label: `Top speed ${M`V`} (m s⁻¹)`, hint: 'Its greatest speed, held for the middle stage.' },
+  { key: 't2', col: 'steady', label: `Time ${M`t_2`} (s)`, hint: 'How long it holds it. 0 if it never does.' },
   { key: 'a3', col: 'down', label: `Deceleration ${M`a_3`} (m s⁻²)`, hint: 'Its size: 0.25, not −0.25.' },
-  { key: 't3', col: 'down', label: `Time ${M`t_3`} (s)` },
-  { key: 'T', col: 'whole', label: `Whole time ${M`T`} (s)`, hint: '5 minutes is 300.' },
-  { key: 'D', col: 'whole', label: `Whole distance ${M`D`} (m)`, hint: '6.3 km is 6300.' },
+  { key: 't3', col: 'down', label: `Time ${M`t_3`} (s)`, hint: 'How long it takes to stop.' },
+  { key: 'T', col: 'whole', label: `Whole time ${M`T`} (s)`, hint: 'A to B. 5 minutes is 300. A paper that calls one stage “T” means that stage.' },
+  { key: 'D', col: 'whole', label: `Whole distance ${M`D`} (m)`, hint: 'A to B. 6.3 km is 6300.' },
 ];
 
 export const journey = {
@@ -37,9 +37,13 @@ export const journey = {
     { title: 'A relation between two stages, if the paper gives one',
       fields: [
         { key: 'rel.kind', type: 'choice', label: 'Which one',
-          options: Object.entries(RELATIONS).map(([v, r]) => ({ v, label: r.say })) },
-        { key: 'rel.k', label: `The number ${M`k`}`, placeholder: '—',
-          hint: `“Four times as long” is 4; “a third of” is ${M`1/3`}, and the box takes a fraction typed that way.` },
+          options: [
+            { v: 't3=k*t1', label: `braking time = ${M`k`} × accelerating time` },
+            { v: 'a3=k*a1', label: `deceleration = ${M`k`} × acceleration` },
+            { v: 't1=k*t2', label: `accelerating time = ${M`k`} × steady time` },
+          ] },
+        { key: 'rel.k', label: `The number ${M`k`}`, placeholder: '—', narrow: true,
+          hint: '“Four times as long” is 4. A third: type it with a slash.' },
       ] },
     { title: 'Ask about a moment, if the paper does',
       fields: [
@@ -50,9 +54,21 @@ export const journey = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range'], extras: ['energy'], bounce: true },
 
+  /* A TIME-LAPSE. A train between stations takes minutes, and five minutes
+     of a dot crossing a track is not a demonstration. So the clock runs at a
+     whole multiple of real time chosen to fit the journey into about fifteen
+     seconds, and the stage says so beside the clock. Nothing in the physics
+     changes: t is still the journey's own time. */
+  lapse(f) {
+    const want = f.tMax / 15;
+    if (!(want > 1)) return 1;
+    const mag = 10 ** Math.floor(Math.log10(want)), n = want / mag;
+    return (n >= 5 ? 5 : n >= 2 ? 2 : 1) * mag;
+  },
+
   read(vals) {
     const k = Object.fromEntries(KEYS.map((q) => [q, vals[q]]));
-    k.rel = vals['rel.kind'] ? { kind: vals['rel.kind'], k: vals['rel.k'] } : null;
+    k.rel = vals['rel.kind'] || vals['rel.k'] != null ? { kind: vals['rel.kind'], k: vals['rel.k'] } : null;
     k.at = { t: vals['at.t'], s: vals['at.s'], v: vals['at.v'] };
     return k;
   },
@@ -61,15 +77,17 @@ export const journey = {
   render: stage.render,
 
   hud(f, t) {
-    const st = f.stageAt(t);
+    const st = f.stageAt(t), done = t >= f.tMax - 1e-9;
     return {
       left: [
         { k: 'Distance from A', v: num(f.pos(t).x, 1), unit: 'm', hue: 'disp' },
         { k: 'Speed', v: num(f.vel(t).x, 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: st.kind === 'braking' ? 'Decelerating' : st.kind === 'steady' ? 'Steady' : 'Accelerating',
-          v: num(Math.abs(f.accel(t)), 3), unit: 'm s⁻²', hue: 'acc' },
+        done ? { k: 'At rest at B', v: '0', unit: 'm s⁻²', hue: 'acc' }
+          : { k: st.kind === 'braking' ? 'Decelerating' : st.kind === 'steady' ? 'Steady' : 'Accelerating',
+              v: num(Math.abs(f.accel(t)), 3), unit: 'm s⁻²', hue: 'acc' },
       ],
-      right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
+      right: [{ k: 'Time', v: num(t, 2), unit: 's' },
+              ...(journey.lapse(f) > 1 ? [{ k: 'Played at', v: `${num(journey.lapse(f), 0)}×`, unit: 'real time' }] : [])],
     };
   },
 
@@ -88,7 +106,8 @@ export const journey = {
         series: [{ label: 'velocity', fn: (tt) => f.vel(tt).x, color: P.vel, dash: [6, 4] }],
         shade: { index: 0, label: 'area = distance from A' } },
       { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,
-        series: [{ label: 'acceleration', fn: (tt) => f.accel(tt), color: P.acc, dash: [6, 4] }] },
+        series: [{ label: 'acceleration', fn: (tt) => f.accel(tt), color: P.acc, dash: [6, 4],
+                   breaks: [f.J.t1, f.J.t1 + f.J.t2] }] },
     ];
   },
 
@@ -130,7 +149,7 @@ export const journey = {
           <span role="columnheader">${M`t`}</span>
         </div>
         ${rows.map(([key, name, sub, u, v, a, s, t]) => `
-          <div class="ph-row" role="row" data-key="${key === 'up' ? 'free' : key === 'down' ? 'canopy' : 'steady'}">
+          <div class="ph-row" role="row" data-key="stage">
             <span class="ph-name" role="cell"><b>${name}</b><em>${sub}</em></span>
             <span role="cell">${cell(u)}</span><span role="cell">${cell(v)}</span>
             <span role="cell">${cell(a)}</span><span role="cell">${cell(s)}</span>
@@ -145,7 +164,7 @@ export const journey = {
           ${M`[m s^-1]`}, ${M`a`} in ${M`[m s^-2]`}, ${M`s`} in ${M`[m]`}, ${M`t`} in ${M`[s]`}, each stage timed from its own start.</p>
       </div>`;
     const found = unknown ? `<p>The one unknown was ${M`${unknown === 'V' ? 'V' : `${unknown[0]}_${unknown[1]}`}`}: every stage
-      was written in terms of it, and the area under the speed–time graph — the distance — fixed it at
+      was written in terms of it, and ${solved.fixedBy} fixed it at
       <b>${M`${tr(solved.x)} ${unknown === 'V' ? '[m s^-1]' : '[s]'}`}</b>.</p>` : '';
     const asked = answers.filter((a) => a.ok).map((a) => `<p>${a.text}</p>`).join('');
     return {

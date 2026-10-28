@@ -1170,3 +1170,8 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 @media (max-width: 760px) { .kcols { grid-template-columns: repeat(min(var(--kc, 2), 2), minmax(0, 1fr)); } }
 @media (max-width: 560px) { .kcols { grid-template-columns: minmax(0, 1fr); } }
 .ph-row[data-key='first'] { border-left: 3px solid var(--ink-strong); }
+.ph-row[data-key='stage'] { border-left: 3px solid var(--border); }
+/* a narrow box beside a group of chips, rather than a card of its own */
+.krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr) 200px; }
+.krow-in > .xrow.wide.choice { grid-column: auto; }
+@media (max-width: 560px) { .krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr); } }

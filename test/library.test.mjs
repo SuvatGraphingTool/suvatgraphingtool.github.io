@@ -239,6 +239,36 @@ group('A journey: the working is the mark scheme’s', () => {
   const end = K.ending(e30());
   ok(/6300/.test(end.title) && /ph-tab/.test(end.body) && (end.body.match(/ph-row/g) || []).length >= 4, 'the ending: a row of five per stage, and the total');
 });
+group('A journey: what critic round 1 found, kept found', () => {
+  const J = (k) => solveJourney(k);
+  const W = (k) => journeyWorking(J(k)).map((st) => ({ title: strip(st.title), rows: st.rows.map((r) => [strip(r.f), strip(r.s), strip(r.r)]), note: strip(st.note) }));
+  const as22 = W({ V: 25, T: 700, D: 15000, rel: { kind: 't3=k*t1', k: 4 }, at: { t: 572 } });
+  const at = as22.find((x) => /572/.test(x.title));
+  ok(at && at.rows[0][1] === '25×128160' && at.rows[0][2] === 'v=20m s−1', 'the speed at 572 s from exact numbers: 25 × 128⁄160 = 20, no rounded rate');
+  const ial = W({ t1: 60, t3: 30, T: 270, D: 4500, at: { v: 5 } }).find((x) => /doing/.test(x.title));
+  ok(ial.rows[0][1] === '5×6020' && ial.rows[1][1] === '270−5×3020', 'the times at a speed from V, t₁, t₃ and T, exactly');
+  const j12 = W({ V: 15, a3: 2.5, D: 885, rel: { kind: 't1=k*t2', k: 1 / 3 } });
+  ok(j12[0].rows.some((r) => r[2] === 't1=⅓t2') && /4t23/.test(j12[1].rows[0][1]), 'a third is ⅓ and four thirds a fraction, never 0.3333');
+  const e = W({ a1: 0.5, a3: 0.25, T: 300, D: 6300 });
+  ok(e[1].rows.some((r) => r[0] === '(V−30)(V−70)=0'), 'a quadratic that factorises is factorised, as the mark scheme does');
+  const tri = W({ a1: 0.3, a3: 0.7, T: 20, D: 42 });
+  ok(tri[1].rows.some((r) => /4×\(5021\)×42/.test(r[1])) && /triangle/.test(tri[1].note), 'the formula with its numbers in, and a triangle said to be one');
+  const tied = J({ a1: 0.1, a3: 0.3, T: 93.3, D: 327 });
+  ok(tied.ok && near(tied.J.t2, 0) && /rounded/.test(strip(tied.notes.join(' '))), 'rounded figures for a triangle: taken as the triangle, and said so');
+  ok(!J({ V: 30, a1: 0.5, a3: 0.25, T: 300, D: 6330 }).ok, 'D = 6330 against 6300 (0.5 %) is refused, not quietly replaced');
+  const near6310 = J({ V: 30, a1: 0.5, a3: 0.25, T: 300, D: 6310 });
+  ok(near6310.ok && /You gave D=6310m; the rest fix it at 6300m/.test(strip(near6310.notes.join(' '))), 'within rounding, accepted — and the note says which figure is used');
+  ok(/Pick which relation k belongs to/.test(strip(J({ V: 25, T: 700, D: 15000, rel: { kind: null, k: 4 } }).reason)), 'a k with no relation chosen is named as the problem');
+  ok(/t2=2DV−T=75s/.test(strip(J({ V: 22, T: 120, D: 2145 }).reason)), 'V, T and D alone: not enough, but t₂ = 75 s is said');
+  const byT = J({ V: 25, t2: 500, T: 700, rel: { kind: 't3=k*t1', k: 4 } });
+  ok(byT.ok && /whole time/.test(byT.fixedBy) && !/area/.test(KITS.journey.ending(byT).body), 'when the whole time fixes the unknown, the ending says so — not the area');
+  const G = KITS.journey.graphs(e30().f, 100, { disp: 'd', vel: 'v', acc: 'a', mark: 'm' });
+  ok(G[2].series[0].breaks.length === 2, 'the acceleration graph is broken at each change: no vertical lines');
+  ok(KITS.journey.lapse(e30().f) === 20 && KITS.journey.lapse({ tMax: 8 }) === 1, 'five minutes plays as a 20× time-lapse; a short one in real time');
+  const hud = KITS.journey.hud(e30().f, 300);
+  ok(/rest/.test(hud.left[2].k) && hud.right.some((b) => b.v === '20×'), 'at B it says at rest, and the clock says it is a time-lapse');
+});
+
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 
 function K_never() {

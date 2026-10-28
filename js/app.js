@@ -747,12 +747,12 @@ function buildKitScreen() {
   const box = (f) => {
     const id = `k-${f.key.replace('.', '-')}`;
     if (f.type === 'choice') {
-      return `<div class="xrow wide" data-x="${f.key}"><label>${f.label}</label>
+      return `<div class="xrow wide choice" data-x="${f.key}"><label>${f.label}</label>
         <div class="chips" data-choice="${f.key}">${f.options.map((o) =>
           `<button class="chip" data-v="${o.v}" aria-pressed="${val(f.key) === o.v}">${o.label}</button>`).join('')}</div>
         ${f.hint ? `<p class="xhint">${f.hint}</p>` : ''}</div>`;
     }
-    return `<div class="xrow" data-x="${f.key}"><label for="${id}">${f.label}</label>
+    return `<div class="xrow${f.narrow ? ' narrow' : ''}" data-x="${f.key}"><label for="${id}">${f.label}</label>
       <input id="${id}" type="text" inputmode="decimal" autocomplete="off" data-k="${f.key}"
              value="${val(f.key) ?? ''}" placeholder="${f.placeholder ?? (f.optional ? '0' : '—')}">
       ${f.hint ? `<p class="xhint" data-say="${f.say || ''}">${f.hint}</p>` : ''}</div>`;
@@ -1826,7 +1826,8 @@ function syncRate() {
   if (document.activeElement !== bar) bar.value = String(value);
   $('bar-rate-val').textContent = shown;
 
-  const tMax = traj?.tMax;
+  // what the student watches, which a time-lapse kit shortens
+  const tMax = traj?.tMax / (kit()?.lapse?.(traj) ?? 1);
   const note = $('pace-note'), use = $('pace-use');
   const pins = [$('pace-pin'), $('bar-rate-pin')];
   if (!(tMax > 0)) {
@@ -2695,7 +2696,9 @@ function frame(now) {
     if (state.pre >= PRE.total) { state.pre = null; state.t = 0; }
     dirty = true;
   } else if (state.step === 'flight' && state.playing && traj) {
-    state.t += dt * state.rate;
+    // A kit whose motion lasts minutes plays it as a time-lapse, said on the
+    // stage (js/kits/journey.js); every other scenario plays at state.rate.
+    state.t += dt * state.rate * (kit()?.lapse?.(traj) ?? 1);
     const tStop = Math.max(traj.tMax, scenario?.exhibit && second ? second.tMax : 0);
     if (state.t >= tStop) {
       state.t = tStop; state.playing = false; setPlayIcon(false);

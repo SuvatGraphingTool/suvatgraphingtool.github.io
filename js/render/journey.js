@@ -96,6 +96,8 @@ export function render(canvas, cam, o) {
   // each stage's area, named once the clock has passed it
   const areaLabel = (t0, t1, s, name) => {
     if (t1 - t0 < 1e-9 || t < t1 - 1e-9) return;
+    // too thin a piece to hold its name: the track's bracket below names it
+    if (X(t1) - X(t0) < 150) return;
     // a rectangle's name in its middle; a triangle's low down, towards its
     // tall side, where there is room for it
     const tri = !(Math.abs(t0 - tA) < 1e-9 && Math.abs(t1 - tB) < 1e-9);
@@ -158,8 +160,12 @@ export function render(canvas, cam, o) {
   if (show.velocity !== false && v > 1e-6) {
     const len = (v / J.V) * clamp(w * 0.12, 60, 150);
     const vy = ty - trainPx * 0.3 - 26;
-    arrow(g, xs - trainPx / 2, vy, xs - trainPx / 2 + len, vy, { color: P.velVec, width: 3, head: 12 });
-    L.add(T`v = ${fmt(v, 2)} [m s^-1]`, xs - trainPx / 2 + len + 10, vy, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700 });
+    // from the back of the train forwards; its label after the head, unless
+    // that would run past B, when it goes behind the arrow instead
+    const x0 = xs - trainPx, x1 = x0 + len;
+    arrow(g, x0, vy, x1, vy, { color: P.velVec, width: 3, head: 12 });
+    const ahead = x1 + 150 < S(J.D) - 20;
+    L.add(T`v = ${fmt(v, 2)} [m s^-1]`, ahead ? x1 + 10 : x0 - 10, vy, { color: P.vel, align: ahead ? 'left' : 'right', pri: 7, size: 15, weight: 700 });
   }
   if (show.acceleration) {
     const a = f.accel(t);

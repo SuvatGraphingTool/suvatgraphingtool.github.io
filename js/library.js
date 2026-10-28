@@ -65,6 +65,6 @@ export const LIBRARY = [
         ['Each stage is truly constant', 'the acceleration does not fade as the train gets faster, and the brakes do not bite harder as it slows. Real ones do both.'],
         ['The train is a point', 'it is drawn at a size you can see, but A to B is measured from one point to another, not from the front of the train to the back.'],
       ],
-      caveat: 'What the engine did compute is on the left: every stage from the four things given, the unknown from the area, and the answers to the questions asked about a moment.',
+      caveat: 'What the engine did compute is above: every stage from what was given, the one unknown from the equation left over, and the answers to the questions asked about a moment.',
     } },
 ];
