@@ -7,6 +7,7 @@ import { descentPanes, plotSpec, planePose, PRE } from '../js/render/drop.js';
 import { valueAt } from '../js/render/plot.js';
 import { solveRoad, timeToReach, roadWorking } from '../js/core/road.js';
 import { graphSpecs } from '../js/render/graphs.js';
+import * as FIG from '../js/render/figures.js';
 
 let pass = 0, fail = 0;
 const near = (a, e, tol, label) => Math.abs(a - e) <= tol
@@ -457,6 +458,52 @@ group('Along a straight road: the scenario and its graphs', () => {
   for (let i = 0; i < n; i++) area += vt((i + 0.5) * (10 / n)) * (10 / n);
   near(area, 240, 1e-6, 'area under the velocity–time line');
 });
+
+group('The figures: every traveller draws, with no NaN, either way round, at any phase', () => {
+  // A canvas that draws nothing and fails on any coordinate that is not a
+  // finite number: a figure with a NaN in it is a figure that silently vanishes.
+  let bad = 0, calls = 0;
+  const ctx = new Proxy({}, {
+    get(t, k) {
+      if (k in t) return t[k];
+      return (...args) => { calls++; if (args.some((a) => typeof a === 'number' && !isFinite(a))) bad++; return { addColorStop() {} }; };
+    },
+    set(t, k, v) { t[k] = v; return true; },
+  });
+  const P = new Proxy({}, { get: () => '#888' });
+  const labels = { add() {} };
+  for (const [kind, f] of Object.entries(FIG.FIGURES)) {
+    ok(typeof f.draw === 'function' && f.label && f.noun && f.verb && f.size > 0, `${kind}: drawn, named, and sized`);
+    ok(['road', 'rail', 'track'].includes(f.ground), `${kind}: stands on a road, rails or a track`);
+    bad = 0; calls = 0;
+    for (const dir of [1, -1]) for (const phase of [0, 0.25, 0.5, 0.99]) {
+      for (const L of [20, 90, 160]) f.draw(ctx, 300, 200, L, P, { dir, phase, ring: '#f0f' });
+    }
+    ok(bad === 0 && calls > 20, `${kind}: ${calls} canvas calls, every coordinate finite`);
+  }
+  bad = 0;
+  FIG.runner(ctx, 100, 100, 70, P, { still: true });
+  FIG.train(ctx, 100, 100, 140, P, { cars: 3 });
+  FIG.particle(ctx, 100, 100, 10, P);   // the ball is ballSprite, which reads the page's CSS
+  for (const lit of ['red', 'amber', 'green', null]) FIG.trafficLights(ctx, 100, 100, 90, P, { lit });
+  FIG.post(ctx, labels, 100, 100, 'X', '#0f0', P, { dashed: true, height: 60 });
+  for (const gr of ['road', 'rail', 'track']) FIG.surface(ctx, gr, 0, 800, 100, P);
+  ok(bad === 0, 'the still runner, a three-car train, a particle, lights, a post and the three surfaces: all finite');
+  // the phase: wraps into [0, 1), rolls without slipping, and goes backwards
+  for (const kind of Object.keys(FIG.FIGURES)) {
+    const p = [0, 37, 1e4, -55].map((px) => FIG.phaseFor(kind, 80, px));
+    ok(p.every((x) => x >= 0 && x < 1), `${kind}: phase stays in [0, 1)`);
+  }
+  near(FIG.phaseFor('car', 100, 2 * Math.PI * 10), 0, 1e-9, 'a car wheel of radius 10 px turns once in 2π·10 px');
+  near(FIG.phaseFor('car', 100, Math.PI * 10), 0.5, 1e-9, 'and half a turn in half that');
+  ok(FIGURES_ROAD_SAY(), 'the road says the traveller in its notes: a cyclist braking does not turn round');
+});
+
+function FIGURES_ROAD_SAY() {
+  const r = solveRoad({ u: 10, a: -2, t: 8, who: 'cyclist' });
+  const lorry = solveRoad({ u: 10, a: -2, t: 8 });
+  return r.notes.some((n) => /a cyclist braking does not/.test(n)) && lorry.notes.some((n) => /a lorry braking does not/.test(n));
+}
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

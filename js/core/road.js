@@ -153,7 +153,7 @@ export function solveRoad(k = {}) {
   const tStop = Math.abs(V.a) > EPS ? -V.u / V.a : NaN;
   if (tStop > EPS && tStop < V.t - 1e-6) {
     notes.push(`It comes to rest after ${M`t = ${d(tStop)} [s]`} and then moves back the way it came. `
-      + 'The equations allow it; a lorry braking does not.');
+      + `The equations allow it; a ${k.who || 'lorry'} braking does not.`);
   }
 
   // The point the question asked about.

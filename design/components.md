@@ -196,6 +196,49 @@ the acceleration when asked, each answer ringed with its time.
 
 Used by: `vectors-ij`.
 
+### Figures — `js/render/figures.js`
+
+Everything that moves or stands in a straight-line question, drawn one way so
+any stage can use any of them:
+
+```js
+import { car, lorry, train, cyclist, motorcycle, runner, ball, particle,
+         trafficLights, post, roadway, rails, runningTrack, surface,
+         FIGURES, drawFigure, phaseFor } from './figures.js';
+car(g, X, Y, L, P, { dir, phase, ring });
+```
+
+- **(X, Y)** is the figure's FRONT, standing on y = Y (the road surface, the
+  rail head, the track). It faces right; `dir: -1` mirrors it about X to face
+  left, front still at X.
+- **L** is its drawn length in px — for `runner`, her height; for `ball` and
+  `particle`, the diameter. **P** is `palette()`.
+- **`phase`** ∈ [0, 1) turns wheels and moves legs (a wheel turn, a turn of the
+  cranks, a running stride). `phaseFor(kind, L, px, { cars })` gives it from
+  the px travelled, so wheels roll without slipping and stop when it stops.
+- **`ring`** — an outline colour to tell B from A (`P.second`).
+- `train(…, { cars })` — 1 to n carriages in the length L, the front one with a
+  cab; bogies under each. `runner(…, { still: true })` stands upright.
+- In the page's ink (card fill, strong outline, faint glass), never a
+  quantity's hue (rule 2), and they draw no text, so a mirrored one never
+  reads backwards.
+
+| piece | what it is |
+|---|---|
+| `lorry`, `car`, `cyclist`, `motorcycle`, `train`, `runner` | the six travellers, in `FIGURES` with `label`, `noun`, `verb`, `size` (drawn length beside a lorry of 1), `top`/`mid` (where the acceleration and velocity arrows go), `ground` |
+| `ball`, `particle` | the stadium's ball (`ballSprite`), and a plain bead for "particle P" (centred on X, Y) |
+| `drawFigure(g, kind, X, Y, L, P, opts)` | any of them by name |
+| `post(g, labels, X, Y, letter, color, P, { dashed, height })` | a roadside or trackside post with its letter on a plate — A, B, X, Y, the mid-point M; `labels` is the stage's `labels()` queue |
+| `trafficLights(g, x, Y, H, P, { lit })` | a post H tall with three lamps; `lit` is `'red'`, `'amber'`, `'green'` or null, in its real colour (`LAMPS`) |
+| `roadway`, `rails`, `runningTrack` `(g, x0, x1, Y, P)` | the three surfaces, side on, their top at Y. Two parallel tracks are two `rails` calls. `surface(g, ground, …)` picks by `FIGURES[kind].ground` |
+
+Not to scale with one another — a real cyclist is a seventh of a lorry and
+would vanish — so `FIGURES[kind].size` keeps one stage's traveller the same
+visual weight whichever it is.
+
+Used by: `road` (Along a straight road: the six, chosen on its values screen;
+the lorry is pixel-identical to the drawing it replaced).
+
 ### Two lanes under two speed–time graphs — `js/render/lanes.js`
 
 `render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'overtake'`.

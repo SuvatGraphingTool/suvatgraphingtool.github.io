@@ -21,6 +21,7 @@ import * as panes from './render/panes.js';
 import { descentPanes, PRE } from './render/drop.js';
 import * as range from './render/range.js';
 import * as roadStage from './render/road.js';
+import { FIGURES } from './render/figures.js';
 import { siteFor } from './world/world.js';
 import { nearestBranch } from './render/backdrops.js';
 import { dropToneCache } from './render/world2d.js';
@@ -408,6 +409,7 @@ function chooseScenario(id) {
   state.h = undefined;
   state.descent = {};
   state.mark = undefined;            // the point a road question times it at
+  state.who = 'lorry';               // and what it is that moves along the road
   state.kit = {};                    // a library scenario's own boxes
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
   $('ask-at').hidden = !!scenario.road || !!scenario.kit;
@@ -622,7 +624,7 @@ function valuesVoice(descentMode) {
     };
     VOICE.was = { h: VOICE.el.h.innerHTML, sub: VOICE.el.sub.innerHTML };
   }
-  VOICE.el.h.innerHTML = descentMode ? 'How is the jump set up?' : VOICE.was.h;
+  VOICE.el.h.innerHTML = descentMode === true ? 'How is the jump set up?' : VOICE.was.h;
   if (descentMode === 'road') {
     VOICE.el.sub.innerHTML = 'Any three of the five give you the other two. Here <b>a</b> is the '
       + 'vehicle\u2019s own acceleration, not g — and braking is a negative one.';
@@ -715,11 +717,22 @@ function buildDescentScreen() {
 function buildRoadExtras() {
   $('mode-say').innerHTML = '';
   const mid = state.mark === 'mid';
-  $('extra').innerHTML = `<div class="xrow" data-x="mark"><label for="x-mark">A point to time it at, from A (m)</label>
+  $('extra').innerHTML = `<div class="xrow wide choice" data-x="who"><span class="xlabel" id="x-who-l">What is moving</span>
+    <div class="chips" role="group" aria-labelledby="x-who-l">${Object.entries(FIGURES).map(([k, f]) =>
+      `<button class="chip" data-who="${k}" aria-pressed="${(state.who || 'lorry') === k}">${f.label}</button>`).join('')}</div>
+    <p class="xhint">Whatever the question names. The physics is the same for all of them; the stage draws that one.</p></div>
+    <div class="xrow" data-x="mark"><label for="x-mark">A point to time it at, from A (m)</label>
     <input id="x-mark" type="text" inputmode="decimal" autocomplete="off"
            value="${mid || state.mark == null ? '' : fmt(state.mark, 2)}" placeholder="—">
     <div class="chips"><button class="chip" id="x-mid" aria-pressed="${mid}">The mid-point of AB</button></div>
     <p class="xhint">${OPTIONAL_HINT} The engine works out when it gets there.</p></div>`;
+  for (const b of $('extra').querySelectorAll('[data-who]')) {
+    b.addEventListener('click', () => {
+      state.who = b.dataset.who;
+      for (const x of $('extra').querySelectorAll('[data-who]')) x.setAttribute('aria-pressed', String(x === b));
+      recompute();
+    });
+  }
   $('x-mark').addEventListener('input', (e) => {
     const v = parseValue(e.target.value);
     state.mark = v !== undefined && isFinite(v) ? v : undefined;
@@ -1010,11 +1023,12 @@ function recompute() {
  */
 function recomputeRoad() {
   const g = state.given;
-  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark });
+  const fig = FIGURES[state.who] || FIGURES.lorry;
+  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, who: fig.noun });
   const msg = $('solve-msg'), btn = $('launch');
   if (!solved.ok) {
     if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
-    btn.disabled = true; btn.textContent = 'Drive';
+    btn.disabled = true; btn.textContent = fig.verb;
     traj = null; second = null; state.verdict = null; state.markers = {};
     refreshSteps(); applyGuard(); dirty = true; return;
   }
@@ -1029,7 +1043,7 @@ function recomputeRoad() {
   // What the stage marks: the point, and the time the engine found for it.
   state.markers = solved.moment ? { mark: { s: solved.moment.s, t: solved.moment.t, mid: solved.moment.mid } } : {};
   btn.disabled = false;
-  btn.textContent = 'Drive';
+  btn.textContent = fig.verb;
   syncRate(); refreshSteps(); applyGuard(); dirty = true;
 }
 
@@ -2691,6 +2705,7 @@ function draw() {
                  verdict: state.verdict, overview: state.overview,
                  hoverMark: state.hoverMark,
                  markers: state.markers || {}, scenario, secondLabel: scenario.second?.label,
+                 who: state.who,
                  resolve: R, hover: state.hover };
   /* ── which renderer, and why there are two ────────────────────────────
      `plate` hands a scenario to js/render/exhibit.js instead of to the
