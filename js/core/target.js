@@ -173,7 +173,7 @@ function atRows(F, P, K) {
     { f: M`t = d/u_x`, s: M`${d(P.d)}/${d(F.ux)}`, r: M`t = ${d(a.t)} [s]` },
     { f: M`y = h_0 + u_y t - ½gt^2`, s: M`${heightSrc(F.h0, F.uy, F.g, d(a.t))}`, r: M`y = ${d(a.y)} [m]` },
   ];
-  if (a.clear != null && K.hits !== true) rows.push({ f: M`y - H`, s: M`${d(a.y)} - ${d(P.H)}`, r: M`${d(a.clear)} [m]` });
+  if (a.clear != null && K.hits !== true) rows.push({ f: M`y - H`, s: M`${d(a.y)} - ${d(P.H)}`, r: M`y - H = ${d(a.clear)} [m]` });
   return rows;
 }
 
@@ -210,7 +210,7 @@ export function solveTarget(k = {}) {
     if (!have(P.d) || !have(P.H)) return `To find ${FINDS[find]}, give the point: how far out it is, and its height above the ground.`;
     if (!(P.d > 0)) return 'The point is ahead of the launch: give its distance as a positive number.';
     if (P.H < 0) return 'The point is at or above the ground: give its height as 0 or more.';
-    if (K.solid && !K.hits && !(P.H > 0)) return `A ${K.word} stands up from the ground: give its height as more than 0, or choose “A target point”.`;
+    if (K.solid && !(P.H > 0)) return `A ${K.word} stands up from the ground: give its height as more than 0, or choose “A target point”.`;
     return null;
   };
 
@@ -242,7 +242,7 @@ export function solveTarget(k = {}) {
     if (have(P.d) && !(P.d > 0)) return fail('The point is ahead of the launch: give its distance as a positive number.');
     if (have(P.H) && P.H < 0) return fail('The point is at or above the ground: give its height as 0 or more.');
     if (have(P.H) && !have(P.d) && (!K.solid || K.hits)) return fail(`Give how far out ${K.the} is, or the time it is above it.`);
-    if (have(P.H) && K.solid && !K.hits && !(P.H > 0)) return fail(`A ${K.word} stands up from the ground: give its height as more than 0.`);
+    if (have(P.H) && K.solid && !(P.H > 0)) return fail(`A ${K.word} stands up from the ground: give its height as more than 0.`);
     // a wall it hits, at a height the launch disagrees with, is not quietly ignored
     // (a launch that never leaves the ground is refused below, as that)
     if (kind === 'face' && have(P.H) && have(P.d) && (h0 > EPS || uy > EPS)) {
@@ -336,8 +336,15 @@ export function solveTarget(k = {}) {
       if (P.H > k.top + 1e-9) return fail(`The point, ${M`${d(P.H)} [m]`} up, is higher than its greatest height of ${M`${d(k.top)} [m]`}: it never gets there.`);
       const uy = snap(Math.sqrt(2 * g * (k.top - h0)));
       // the times it is at the point's height: on the way up and on the way down
-      const ts = quadRoots(0.5 * g, -uy, rise).map(snap).filter((t) => t > 1e-9).sort((p, q) => p - q);
-      if (!ts.length) return fail('It is never at the point’s height after it is launched.');
+      let ts = quadRoots(0.5 * g, -uy, rise).map(snap).filter((t) => t > 1e-9).sort((p, q) => p - q);
+      // a wall it hits on the way up stops it before its greatest height, so
+      // that root is not a launch with that greatest height
+      const tTop = uy / g;
+      if (K.hits) {
+        for (const t of ts.filter((x) => x < tTop - 1e-9)) rejected.push({ text: `${M`t = ${d(t)} [s]`} would have it hit the wall on its way up, before it reaches its greatest height, so it is rejected.` });
+        ts = ts.filter((x) => x >= tTop - 1e-9);
+      }
+      if (!ts.length) return fail(K.hits ? 'Every launch with that greatest height would hit the wall on its way up, before reaching it.' : 'It is never at the point’s height after it is launched.');
       findTitle = 'The speed and angle, from its greatest height';
       findRows = [
         { f: M`v_y^2 = u_y^2 - 2gs`, s: M`0 = u_y^2 - 2 * ${d(g)} * ${paren2(k.top, h0)}`, r: M`u_y = ${d(uy)} [m s^-1]` },
@@ -480,7 +487,7 @@ export function targetWorking(solved) {
       { f: M`0 = h_0 + u_y t - ½gt^2`, s: M`0 = ${heightSrc(S.h0, S.uy, S.g)}`, r: M`t = ${d(S.tGround)} [s]` },
       { f: M`x = u_x t`, s: M`${d(S.ux)} * ${d(S.tGround)}`, r: M`x = ${d(S.R)} [m]` },
       { f: M`v_y = u_y - gt`, s: M`${d(S.uy)} - ${d(S.g)} * ${d(S.tGround)}`, r: M`v_y = ${d(S.vLand.y)} [m s^-1]` },
-      { f: M`v = sqrt(u_x^2 + v_y^2)`, s: M`sqrt(${d(S.ux)}^2 + ${sgn(S.vLand.y)}^2)`, r: M`${d(S.landSpeed)} [m s^-1]` },
+      { f: M`v = sqrt(u_x^2 + v_y^2)`, s: M`sqrt(${d(S.ux)}^2 + ${sgn(S.vLand.y)}^2)`, r: M`v = ${d(S.landSpeed)} [m s^-1]` },
     ] });
   }
   if (solved.flag != null && solved.flagGap != null) {

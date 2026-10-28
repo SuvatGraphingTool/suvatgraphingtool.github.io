@@ -578,6 +578,17 @@ group('Over the wall: the critic’s round 3', () => {
   ok(aqa.some((x) => /top of its path/.test(x.title)) && /top of its path/.test(strip(a13.notes.join(' '))), 'AQA: the top it reaches before the wall is worked, not only drawn');
 });
 
+group('Over the wall: the critic’s round 4', () => {
+  for (const k of [{ g: 9.8, d: 20, H: 2, top: 5, kind: 'face', find: 'apex', pick: 'flat' }, { g: 9.8, h0: 2, d: 20, H: 2.5, top: 3, kind: 'face', find: 'apex', pick: 'flat' }]) {
+    const r = solveTarget(k);
+    ok(r.ok && r.flights.every((f) => near(f.topBefore, k.top)) && r.rejected.some((x) => /on its way up/.test(strip(x.text))), `a wall it hits, from its greatest height: no launch that hits on the way up (${JSON.stringify(k)})`);
+  }
+  ok(/more than 0/.test(strip(solveTarget({ g: 9.8, u: 20, theta: 30, d: 20, H: 0, kind: 'face' }).reason)), 'a wall it hits 0 m up is refused');
+  const w = targetWorking(solveTarget({ g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.4, H: 0.9, kind: 'net' })).flatMap((x) => x.rows).map((r) => strip(r.r));
+  ok(w.includes('y−H=0.156m') && w.includes('v=30.806m s−1'), 'every result row says what it is');
+  ok(/below the horizontal/.test(KITS.target.ending(solveTarget({ g: 9.8, d: 10, H: 0, h0: 20, T: 0.5, find: 'time', kind: 'point' })).title), 'a downward launch is headlined without a minus');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

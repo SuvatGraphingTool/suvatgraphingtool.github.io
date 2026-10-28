@@ -125,7 +125,7 @@ export const target = {
     const { flights, shown: S, find, K, kind, P } = solved;
     const a = S.at;
     const title = find === 'theta' ? (flights.length > 1 ? `θ = ${deg(flights[1].theta)}° or ${deg(flights[0].theta)}°.` : `θ = ${deg(S.theta)}°.`)
-      : find ? `${tr(S.u)} m s⁻¹ at ${deg(S.theta)}°.`
+      : find ? `${tr(S.u)} m s⁻¹ ${Math.abs(S.theta) < 1e-9 ? 'horizontally' : S.theta < 0 ? `at ${deg(-S.theta)}° below the horizontal` : `at ${deg(S.theta)}°`}.`
         : !a && P?.H != null && K.solid ? (S.span ? `A ${tr(P.H)} m ${K.word} is cleared ${S.span.from < 1e-9 ? `up to ${tr(S.span.to)} m out` : `from ${tr(S.span.from)} to ${tr(S.span.to)} m out`}.` : `Never above ${tr(P.H)} m.`)
         : !a ? `Lands ${tr(S.R)} m out.`
           : !a.reached ? `Lands before ${K.the}.`
@@ -138,7 +138,7 @@ export const target = {
     const row = (fl, i) => `<div class="ph-row" role="row" data-key="${i === solved.pick ? 'first' : 'second'}">
         <span class="ph-name" role="cell"><b>${M`theta = ${deg(fl.theta)}°`}</b><em>${i === solved.pick ? 'flown' : 'the other answer'}</em></span>
         <span role="cell">${cell(fl.u)}</span><span role="cell">${cell(fl.at?.reached ? fl.at.t : null)}</span>
-        <span role="cell">${cell(fl.at?.reached ? fl.at.y : null)}</span><span role="cell">${cell(fl.hits ? Math.max(fl.h0, fl.apex && fl.apex.t < fl.end ? fl.apex.y : fl.at.y) : fl.top)}</span>
+        <span role="cell">${cell(fl.at?.reached ? fl.at.y : null)}</span><span role="cell">${cell(fl.hits ? fl.topBefore : fl.top)}</span>
         <span role="cell">${cell(fl.hits ? null : fl.R)}</span></div>`;
     const table = P && P.d != null ? `
       <div class="ph-tab" role="table" aria-label="Each launch, and where it is at the point">
