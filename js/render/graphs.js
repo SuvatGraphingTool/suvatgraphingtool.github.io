@@ -5,9 +5,10 @@
 // solid is vertical, dashed is horizontal. That keeps the rule consistent with
 // the main scene — colour is the quantity, dash is the direction.
 
-import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels, fade, withAlpha } from './util.js';
+import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels, fade, withAlpha, cssVar } from './util.js';
 
 const PAD = { l: 52, r: 16, t: 28, b: 34 };
+const TAG_MARGIN = 30;            // room right of the plot for each line's letter
 
 /**
  * The vertical range a graph shows, and its tick step: every series sampled
@@ -36,32 +37,28 @@ export function yScale(series, tMax) {
 }
 
 /**
- * Where each object's letter goes: ON its own line, haloed, at the first of a
- * few instants where no other line and no letter already placed is within a
- * label's height, clear of the title row (yTop) and the axis labels (yBot);
- * where nowhere is clear, at the instant with the most room. Every tagged
- * series gets a spot. Pure, so a test can ask for every library graph.
+ * Where each object's letter goes: just past the right-hand end of its own
+ * line, in a margin of its own, as a chart labels its lines directly. Where
+ * two lines end close together (or on top of each other) the letters are
+ * spread apart, at least `gap` px, keeping their order, and each one that
+ * had to move is joined to its line's end by a short leader. Pure, so a test
+ * can check every library graph.
+ * @returns [{ tag, color, y0 (the line's end), y (the letter), leader }]
  */
-export function tagSpots(series, tMax, X, Y, yTop, yBot) {
-  const out = [];
-  const QS = [0.08, 0.18, 0.3, 0.45, 0.6, 0.75, 0.9];
-  const inside = (py) => py >= yTop && py <= yBot;
-  const room = (s, tt) => {
-    const y = s.fn(tt);
-    if (!isFinite(y)) return -1;
-    const py = Y(y);
-    if (!inside(py)) return -1;
-    const ds = [...series.filter((o) => o !== s).map((o) => o.fn(tt)).filter(isFinite).map((v) => Math.abs(Y(v) - py)),
-                ...out.filter((q) => Math.abs(q.x - X(tt)) < 30).map((q) => Math.abs(q.y - py) * 24 / 26)];
-    return ds.length ? Math.min(...ds) : 99;
-  };
-  for (const s of series.filter((x) => x.tag)) {
-    let tt = QS.map((q) => q * tMax).find((c) => room(s, c) >= 24);
-    if (tt == null) tt = QS.map((q) => q * tMax).reduce((b, c) => (room(s, c) > room(s, b) ? c : b));
-    const y = s.fn(tt);
-    out.push({ tag: s.tag, color: s.color, x: X(tt), y: Math.min(Math.max(Y(isFinite(y) ? y : 0), yTop), yBot) });
+export function endTags(series, tMax, Y, yTop, yBot, gap = 18) {
+  const tags = series.filter((s) => s.tag).map((s) => {
+    const v = s.fn(tMax - tMax * 1e-6);
+    const y0 = Math.min(Math.max(Y(isFinite(v) ? v : 0), yTop), yBot);
+    return { tag: s.tag, color: s.color, y0, y: y0 };
+  }).sort((a, b) => a.y0 - b.y0);
+  // spread: push down from the top, then back up from the bottom
+  for (let i = 1; i < tags.length; i++) tags[i].y = Math.max(tags[i].y, tags[i - 1].y + gap);
+  if (tags.length && tags[tags.length - 1].y > yBot) {
+    tags[tags.length - 1].y = yBot;
+    for (let i = tags.length - 2; i >= 0; i--) tags[i].y = Math.min(tags[i].y, tags[i + 1].y - gap);
   }
-  return out;
+  for (const t of tags) { t.y = Math.max(t.y, yTop); t.leader = Math.abs(t.y - t.y0) > 3; }
+  return tags;
 }
 
 export function drawGraph(canvas, spec) {
@@ -72,7 +69,9 @@ export function drawGraph(canvas, spec) {
   const { series, tMax, t, title, unit, shade } = spec;
   // A graph sits on its card, as the theme's charts do, not on the page.
   ctx.fillStyle = P.card; ctx.fillRect(0, 0, w, h);
-  const gw = w - PAD.l - PAD.r, gh = h - PAD.t - PAD.b;
+  // a graph whose lines carry letters keeps a margin on the right for them
+  const lettered = series.some((s) => s.tag);
+  const gw = w - PAD.l - PAD.r - (lettered ? TAG_MARGIN : 0), gh = h - PAD.t - PAD.b;
 
   const { lo, hi, stepY } = yScale(series, tMax);
 
@@ -138,11 +137,20 @@ export function drawGraph(canvas, spec) {
     }
   }
 
-  // A LINE PER OBJECT, when there is more than one, carries its letter.
-  for (const sp of tagSpots(series, tMax, X, Y, PAD.t + 16, PAD.t + gh - 10)) {
-    // never dropped: a letter that cannot sit where it should is drawn
-    // further off with a leader to its line, never left out
-    L.add(sp.tag, sp.x, sp.y, { color: sp.color, align: 'center', pri: 8, size: 15, weight: 800 });
+  // A LINE PER OBJECT, when there is more than one, carries its letter at
+  // its own end, drawn here rather than queued, so nothing can move it off.
+  if (lettered) {
+    const xe = PAD.l + gw;
+    for (const tg of endTags(series, tMax, Y, PAD.t + 6, PAD.t + gh)) {
+      if (tg.leader) stroke(ctx, [{ x: xe + 2, y: tg.y0 }, { x: xe + 9, y: tg.y }], { color: tg.color, width: 1.2 });
+      ctx.save();
+      ctx.font = `800 15px ${cssVar('--font', 'system-ui, sans-serif')}`;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.strokeStyle = P.card; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+      ctx.strokeText(tg.tag, xe + 11, tg.y);
+      ctx.fillStyle = tg.color; ctx.fillText(tg.tag, xe + 11, tg.y);
+      ctx.restore();
+    }
   }
   if (spec.note) L.add(spec.note, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: 4, size: 14 });
   // EVENTS the engine found — where two lines cross, say — as a ring on the

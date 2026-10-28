@@ -8,7 +8,7 @@ import { SCENARIOS, byId } from '../js/scenarios.js';
 import { KITS } from '../js/kits/index.js';
 import { staged, meetings, quadRoots } from '../js/core/stages.js';
 import { solvePair, pairWorking, poly, ratio } from '../js/core/pair.js';
-import { yScale, tagSpots } from '../js/render/graphs.js';
+import { yScale, endTags } from '../js/render/graphs.js';
 import { snap, rat } from '../js/core/numeric.js';
 import { timeLapse, lapseNote } from '../js/core/pace.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
@@ -445,9 +445,15 @@ group('Every lettered line on every library graph gets its letter', () => {
       // the app's graph size: 294 × 183
       const { lo, hi } = yScale(sp.series, sp.tMax);
       const X = (t) => 52 + (t / sp.tMax) * (294 - 68), Y = (v) => 28 + 121 - ((v - lo) / (hi - lo)) * 121;
-      const spots = tagSpots(sp.series, sp.tMax, X, Y, 44, 139);
-      const want = sp.series.filter((x) => x.tag).length;
-      ok(spots.length === want && spots.every((q) => isFinite(q.x) && isFinite(q.y)), `${name}, ${sp.title}: ${want} letters, every one placed`);
+      const tags = endTags(sp.series, sp.tMax, Y, 34, 149);
+      const n = sp.series.filter((x) => x.tag).length;
+      // every letter, in its own place, in the order its lines end, each
+      // either level with its line's end or joined to it by a leader
+      const apart = tags.every((q, k) => k === 0 || q.y - tags[k - 1].y >= 17.9);
+      const ordered = tags.every((q, k) => k === 0 || q.y0 >= tags[k - 1].y0);
+      const tied = tags.every((q) => q.leader || Math.abs(q.y - q.y0) <= 3);
+      const inPlot = tags.every((q) => q.y >= 34 && q.y <= 149);
+      ok(tags.length === n && apart && ordered && tied && inPlot, `${name}, ${sp.title}: ${n} letters at their lines\u2019 ends, apart, in order, each tied to its line`);
     }
   }
 });

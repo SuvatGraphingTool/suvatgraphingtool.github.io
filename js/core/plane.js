@@ -30,7 +30,8 @@ import { M, T, num } from '../notation.js';
 const EPS = 1e-9;
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
-const sgn = (x) => (x < 0 ? `(${d(x)})` : d(x));
+// bracketed when it prints negative — a −0 that prints 0 is not
+const sgn = (x) => (x < 0 && d(x) !== '0' ? `(${d(x)})` : d(x));
 const tiny = (x, scale = 1) => Math.abs(x) <= 1e-9 * Math.max(1, Math.abs(scale));
 
 /** The eight compass points, as unit-free directions in i (east) and j (north). */
@@ -95,6 +96,8 @@ function vecSum(cx, cy) {
   if (!parts.length) return '0';
   return parts.map((q, i) => (i === 0 ? `${q.neg ? '-' : ''}${q.body}` : `${q.neg ? '-' : '+'} ${q.body}`)).join(' ');
 }
+/** A bracket only round two or more terms: (1 + t), but 2t and t bare. */
+const br = (src) => (/[+−-]/.test(src.slice(1)) ? `(${src})` : src);
 /** k·x, written as a student writes it: x, −x, 2x. */
 const times = (k, x) => (Math.abs(k - 1) < EPS ? x : Math.abs(k + 1) < EPS ? `-${x}` : `${d(k)}${x}`);
 
@@ -148,7 +151,7 @@ function moving(P, D, key) {
   const vx = poly([P.u.x, P.a.x, 0]), vy = poly([P.u.y, P.a.y, 0]);
   // −2vₓ = −v_y is 2vₓ = v_y: both sides' signs taken off together
   const [py, px] = D.x < 0 && D.y < 0 ? [-D.y, -D.x] : [D.y, D.x];
-  const rel = D.src && D.x !== 0 && D.y !== 0 ? { f: M`${times(py, 'v_x')} = ${times(px, 'v_y')}`, s: M`${times(py, `(${vx})`)} = ${times(px, `(${vy})`)}`, why: `${word}, its two components are in the same ratio as that vector\u2019s` }
+  const rel = D.src && D.x !== 0 && D.y !== 0 ? { f: M`${times(py, 'v_x')} = ${times(px, 'v_y')}`, s: M`${times(py, br(vx))} = ${times(px, br(vy))}`, why: `${word}, its two components are in the same ratio as that vector\u2019s` }
     : D.x === 0 ? { f: M`v_x = 0`, s: M`${vx} = 0`, why: D.src ? `${word}, it has no ${M`vec i`} component` : `due ${word}, it has no ${M`vec i`} component` }
     : D.y === 0 ? { f: M`v_y = 0`, s: M`${vy} = 0`, why: D.src ? `${word}, it has no ${M`vec j`} component` : `due ${word}, it has no ${M`vec j`} component` }
     : D.x === D.y ? { f: M`v_x = v_y`, s: M`${vx} = ${vy}`, why: `${word}, its two components are equal` }
@@ -207,7 +210,7 @@ function dueOf(P, D, key) {
   const word = D.word, base = { kind: 'due', key, D };
   const inDir = (t) => { const r = P.pos(t); return r.x * D.x + r.y * D.y > EPS; };
   const rx = poly([P.r0.x, P.u.x, P.a.x / 2]), ry = poly([P.r0.y, P.u.y, P.a.y / 2]);
-  const rel = D.src ? { f: M`${times(D.y, 'x')} = ${times(D.x, 'y')}`, s: M`${times(D.y, `(${rx})`)} = ${times(D.x, `(${ry})`)}` }
+  const rel = D.src ? { f: M`${times(D.y, 'x')} = ${times(D.x, 'y')}`, s: M`${times(D.y, br(rx))} = ${times(D.x, br(ry))}` }
     : D.x === 0 ? { f: M`x = 0`, s: M`${rx} = 0` } : D.y === 0 ? { f: M`y = 0`, s: M`${ry} = 0` }
     : D.x === D.y ? { f: M`x = y`, s: M`${rx} = ${ry}` } : { f: M`x = -y`, s: M`${rx} = -(${ry})` };
   const head = { f: M`vec r = ${vecSum([P.r0.x, P.u.x, P.a.x / 2], [P.r0.y, P.u.y, P.a.y / 2])}`, s: '', r: '' };
