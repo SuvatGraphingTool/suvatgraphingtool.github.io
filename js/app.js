@@ -1842,9 +1842,18 @@ function syncRate() {
 
   const best = recommend(tMax);
   const r = paceNote(value, tMax);
+  // A time-lapse is not a flight that "really lasts" what is watched, so it
+  // says its own two numbers rather than borrowing the flights' sentence.
   note.textContent = lapse > 1
-    ? `A time-lapse: this journey takes ${num(traj.tMax, 0)} s, so it is shown ${num(lapse, 0)} times faster than real time, and the slider slows that down. ${r.text}`
+    ? `A time-lapse: this journey takes ${num(traj.tMax, 0)} s, so it is shown ${num(lapse, 0)} times faster than real time. `
+      + `At this setting it lasts about ${num(tMax * 100 / Math.max(1, value), 0)} s on screen.`
     : r.text;
+  // and the ends of the scale say what they are on this one
+  const scale = $('pace').querySelectorAll('.pace-scale span');
+  if (scale.length === 3) {
+    scale[1].textContent = lapse > 1 ? `${num(lapse / 2, 1, { trim: true })}×` : '0.5×';
+    scale[2].textContent = lapse > 1 ? `${num(lapse, 0)}× real time` : 'real time';
+  }
   note.dataset.ok = String(r.ok);
   use.hidden = r.ok;
   // The bar has no room for the sentence, so it says the same verdict the
