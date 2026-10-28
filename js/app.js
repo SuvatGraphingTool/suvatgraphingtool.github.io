@@ -30,6 +30,7 @@ import { splitParts, carryInto, partName } from './core/parts.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML } from './ai/readout.js';
+import { mountShelf, sourceTag, questionHTML } from './library/shelf.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -360,6 +361,7 @@ function chooseScenario(id, { stay = false } = {}) {
   scene.fitView(cam);
   requestAnimationFrame(() => { scene.fitView(cam); dirty = true; });
   $('chosen').textContent = scenario.name;
+  $('lib-from').hidden = true;      // the library's question, until it says otherwise
   buildValuesScreen();
   // An exhibit opens on the experiment itself, not on a form. The gate is
   // `exhibit` rather than `intro`, because Monkey vs Hunter no longer has an
@@ -553,7 +555,9 @@ function valuesVoice(descentMode) {
     };
     VOICE.was = { h: VOICE.el.h.innerHTML, sub: VOICE.el.sub.innerHTML };
   }
-  VOICE.el.h.innerHTML = descentMode ? 'How is the jump set up?' : VOICE.was.h;
+  // `descentMode` is true for the parachute and 'road' for the road, and only
+  // the parachute is a jump: the road asks the ordinary question.
+  VOICE.el.h.innerHTML = descentMode === true ? 'How is the jump set up?' : VOICE.was.h;
   if (descentMode === 'road') {
     VOICE.el.sub.innerHTML = 'Any three of the five give you the other two. Here <b>a</b> is the '
       + 'vehicle\u2019s own acceleration, not g — and braking is a negative one.';
@@ -925,7 +929,10 @@ function sayAngle() {
 
   if (band) {
     band.dataset.mode = solved.mode;
-    band.innerHTML = solved.mode === '1d'
+    band.innerHTML = solved.mode === '1d' && gaveTheta
+      ? `<b>Straight-line motion.</b> At ${M`${fmt(solved.params.theta, 0)}`}° it stays on one
+         vertical line, so the engine solves the five along that line.`
+      : solved.mode === '1d'
       ? `<b>Straight-line motion.</b> No angle was given and none can be worked out from
          these values — so the engine is solving the five along one line, which is the
          correct answer to a question that never mentioned a direction. Nothing is
@@ -3004,6 +3011,59 @@ board = createBoard({
   },
 });
 $('board-top').addEventListener('click', () => go(state.step === 'board' ? 'scenario' : 'board'));
+
+/* ── the past-paper library ──────────────────────────────────────────────
+   A question pressed on the shelf opens its scenario with the paper's
+   numbers in the boxes: what a student would have typed from it, and
+   nothing the engine should be left to work out. It does not go through
+   applyReading, because that route is for a READER's answer and rightly
+   second-guesses it (a zero speed, a landing speed equal to the launch
+   speed) — these entries were checked against the paper by hand. The
+   eyebrow says which paper it was, the card under the heading says what it
+   asks and what this app does not answer, and the card notices when the
+   paper's numbers have been changed. See js/library/. */
+function openQuestion(q) {
+  chooseScenario(q.opens);
+  closeIntro();
+  const f = q.fill || {};
+  Object.assign(state.given, f.given);
+  if (f.theta !== undefined && !scenario.lockAngle && !scenario.noAngle) state.theta = f.theta;
+  if (f.h !== undefined) state.h = f.h;
+  if (f.line != null && state.markers) state.markers.heightLine = f.line;
+  if (f.descent) state.descent = { ...f.descent };
+  if (f.mark !== undefined) state.mark = f.mark;
+  buildValuesScreen();              // which recomputes
+  $('chosen').textContent = `${scenario.name} \u00b7 ${sourceTag(q.source)}`;
+  // The screen's usual line says the angle is not needed, which is beside
+  // the point under a question that has just filled it in.
+  if (!scenario.road && !scenario.descent) {
+    document.querySelector('#screen-values .h-sub').textContent =
+      'The paper\u2019s numbers are in the boxes. Launch it, or change any of them and see what changes.';
+  }
+  $('lib-from').innerHTML = questionHTML(q);
+  $('lib-from').hidden = false;
+  $('screen-values').scrollTop = 0;
+  $('values-h').focus({ preventScroll: true });
+}
+// Any edit on the values screen after a library question opened it is no
+// longer the paper's own numbers, and the card says so.
+const markEdited = (e) => {
+  if ($('lib-from').hidden || !e.target.closest('input, .chip')) return;
+  const note = $('lib-from').querySelector('.lib-from-edit');
+  if (note) note.hidden = false;
+};
+$('screen-values').addEventListener('input', markEdited);
+$('screen-values').addEventListener('click', markEdited);
+mountShelf({ host: $('lib-shelf'), search: $('lib-q'), count: $('lib-count'), sub: $('lib-sub'),
+             open: openQuestion, nameOf: (id) => byId(id)?.name || '' });
+// The link to the library above the cards moves the student there and puts
+// them in the search box, without leaving a #library in the address bar.
+document.querySelector('a[href="#library"]')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  $('library').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('lib-q').focus({ preventScroll: true });
+});
+
 $('ask-top').addEventListener('click', () => ask.open());
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },

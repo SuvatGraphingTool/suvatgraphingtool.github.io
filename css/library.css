@@ -1,0 +1,86 @@
+/* library.css — the past-paper library, under the scenario cards on screen one.
+   Tokens only, and the cards' own language: the same group labels and blurbs
+   as the twelve above it, and each topic's questions as one card with a row
+   per question. A row reads left to right the way a student looks for it —
+   which paper, what happens in it, and which scenario it opens.
+
+   Small text states its own weight, as the list at the top of css/app.css
+   asks: at 13 and 15 px a regular weight reads as faint. */
+
+.lib { margin-top: var(--sp-12); padding-top: var(--sp-10); border-top: 1px solid var(--border-soft); scroll-margin-top: var(--sp-4); }
+.lib .h-sub { margin-bottom: var(--sp-5); max-width: 62ch; }
+.pick-sub .linkish { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* ── the search box ─────────────────────────────────────────────────── */
+.lib-search { position: relative; display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-8); }
+.lib-search svg { position: absolute; left: 14px; width: 18px; height: 18px; color: var(--ink-faint); pointer-events: none; }
+.lib-search input {
+  flex: 1; min-width: 0; height: 48px; border-radius: var(--r-pill);
+  background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow);
+  color: var(--ink); font-size: var(--fs-base); padding: 0 var(--sp-4) 0 42px;
+}
+.lib-search input::placeholder { color: var(--ink-faint); }
+.lib-search input:focus { outline: none; border-color: var(--accent); }
+.lib-search input::-webkit-search-cancel-button { cursor: pointer; }
+.lib-count { flex: none; font-size: var(--fs-xs); font-weight: var(--w-small); color: var(--ink-muted); min-width: 9ch; text-align: right; }
+
+/* ── a topic's questions: one card, a row each ──────────────────────── */
+.lib-list {
+  list-style: none; margin: 0; padding: 0; background: var(--card);
+  border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow); overflow: hidden;
+}
+.lib-q { position: relative; display: flex; align-items: stretch; transition: background 120ms; }
+.lib-q + .lib-q { border-top: 1px solid var(--border-soft); }
+/* The row is the target, the paper link a second one inside it: the wash and
+   the focus ring cover the whole row, and a hairline sets the link apart. */
+.lib-q:hover { background: var(--hover); }
+.lib-q:has(.lib-open:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lib-open {
+  flex: 1; min-width: 0; text-align: left; display: grid; align-items: center;
+  grid-template-columns: 11rem minmax(0, 1fr) 10.5rem; gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+}
+.lib-open:focus-visible { outline: none; }
+.lib-src b { display: block; font-size: var(--fs-sm); font-weight: var(--w-semi); color: var(--ink); line-height: 1.3; text-wrap: balance; }
+.lib-src span { display: block; font-size: var(--fs-xs); font-weight: var(--w-small); color: var(--ink-muted); margin-top: 2px; }
+.lib-says { font-size: var(--fs-sm); font-weight: var(--w-small); color: var(--ink-strong); line-height: 1.45; }
+.lib-asks { display: block; font-size: var(--fs-xs); color: var(--ink-muted); margin-top: var(--sp-1); }
+.lib-to { justify-self: end; text-align: right; }
+.lib-to span { display: block; font-size: var(--fs-xs); font-weight: var(--w-small); color: var(--ink-faint); }
+.lib-to b { display: block; font-size: var(--fs-xs); font-weight: var(--w-semi); color: var(--accent); line-height: 1.35; }
+.lib-paper {
+  flex: none; display: flex; align-items: center; min-width: 72px; justify-content: center;
+  border-left: 1px solid var(--border-soft);
+  font-size: var(--fs-xs); font-weight: var(--w-semi); color: var(--ink-muted); text-decoration: none;
+}
+.lib-paper::after { content: '\2197'; margin-left: 3px; }
+.lib-paper:hover { color: var(--accent); background: var(--hover); }
+.lib-paper:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lib-more { margin-top: var(--sp-3); font-size: var(--fs-sm); }
+.lib-none { font-size: var(--fs-sm); font-weight: var(--w-small); color: var(--ink-muted); margin: 0; overflow-wrap: anywhere; }
+
+/* ── the question, on the values screen ───────────────────────────────
+   A plain card, the values screen's own: no stripe, because a coloured bar
+   down the side is how this site marks a quantity, and this is not one. */
+.lib-from {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
+  box-shadow: var(--shadow); padding: var(--sp-3) var(--sp-4); margin: calc(-1 * var(--sp-3)) 0 var(--sp-6);
+}
+.lib-from p { margin: 0; font-size: var(--fs-sm); font-weight: var(--w-small); line-height: 1.5; color: var(--ink-strong); }
+.lib-from p + p { margin-top: var(--sp-1); }
+.lib-from .lib-from-beyond, .lib-from .lib-from-edit { color: var(--ink-muted); }
+.lib-from b { font-weight: var(--w-semi); color: var(--ink); }
+#values-h:focus { outline: none; }
+
+/* ── narrower: which paper and where it goes, then what happens, then a
+   full-width link to the paper that is a real target for a thumb ─────── */
+@media (max-width: 760px) {
+  .lib-q { flex-direction: column; }
+  .lib-open { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'src to' 'says says'; gap: var(--sp-2) var(--sp-3); padding: var(--sp-4) var(--sp-4) var(--sp-2); }
+  .lib-src { grid-area: src; }
+  .lib-says { grid-area: says; }
+  .lib-to { grid-area: to; }
+  .lib-paper { min-height: 44px; justify-content: flex-start; border-left: none; border-top: 1px solid var(--border-soft); margin: 0 var(--sp-4); }
+  .lib-count { min-width: 0; }
+  .lib-search input { font-size: var(--fs-sm); }
+}

@@ -40,6 +40,7 @@
 <link rel="modulepreload" href="./js/ai/ask.js">
 <link rel="modulepreload" href="./js/board/board.js">
 <link rel="modulepreload" href="./js/ai/readout.js">
+<link rel="modulepreload" href="./js/library/shelf.js">
 <link rel="modulepreload" href="./js/core/suvat.js">
 <link rel="modulepreload" href="./js/world/dims.js">
 <link rel="modulepreload" href="./js/render/plot.js">
@@ -50,6 +51,7 @@
 <link rel="modulepreload" href="./js/ai/typewriter.js">
 <link rel="modulepreload" href="./js/board/blueprint.js">
 <link rel="modulepreload" href="./js/board/frames.js">
+<link rel="modulepreload" href="./js/library/questions.js">
 <link rel="modulepreload" href="./js/render/warehouse.js">
 <!-- modulepreload:end -->
 <link rel="stylesheet" href="./css/tokens.css">
@@ -58,6 +60,7 @@
 <link rel="stylesheet" href="./css/ask.css">
 <link rel="stylesheet" href="./css/board.css">
 <link rel="stylesheet" href="./css/parts.css">
+<link rel="stylesheet" href="./css/library.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path d='M3 26 Q15 -8 27 26' fill='none' stroke='%23c2410c' stroke-width='3' stroke-linecap='round'/></svg>">
 </head>
 <body>
@@ -153,9 +156,29 @@
 
     <div class="centre">
       <h2 class="h-big pick-h">Or pick what the object is doing</h2>
-      <p class="h-sub">All of them are the same five equations. Pick the one your question describes.</p>
+      <p class="h-sub pick-sub">All of them are the same five equations. Pick the one your question describes, or
+        <a class="linkish" href="#library">find it in the past-paper library</a>.</p>
 
       <div class="pgrid" id="pgrid"></div>
+
+      <!-- THE PAST-PAPER LIBRARY. Real questions from every board's papers,
+           as references and a paraphrase in this site's own words — never the
+           paper's text. Each opens the scenario that answers it, with the
+           paper's numbers in the boxes; the engine does the rest. Built by
+           js/library/shelf.js from js/library/questions.js. -->
+      <section class="lib" id="library" aria-labelledby="lib-h">
+        <h2 class="h-big pick-h" id="lib-h">Past-paper library</h2>
+        <!-- which boards are on the shelf is said by js/library/shelf.js, from the data -->
+        <p class="h-sub" id="lib-sub">Real questions from A-level papers, described in our own words. Press one and
+          its scenario opens with the paper&rsquo;s numbers already in the boxes.</p>
+        <div class="lib-search" role="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="lib-q" autocomplete="off" spellcheck="false"
+                 aria-label="Search the past-paper library" aria-controls="lib-shelf">
+          <output class="lib-count" id="lib-count" for="lib-q" aria-live="polite"></output>
+        </div>
+        <div id="lib-shelf"></div>
+      </section>
     </div>
   </main>
 
@@ -168,8 +191,12 @@
            five quantities — and the boxes below already show every one of
            them at 30px, so the heading was repeating itself. A question, in
            the same voice as step one's. -->
-      <h1 class="h-big">What do you already know?</h1>
+      <h1 class="h-big" id="values-h" tabindex="-1">What do you already know?</h1>
       <p class="h-sub">Any three of the five give you the other two. Leave the rest blank — you do <b>not</b> need the angle.</p>
+      <!-- A past-paper question, in this site's words: what happens, what it
+           asks, and what this app does not answer. Only shown when the library
+           opened this screen. -->
+      <div class="lib-from" id="lib-from" hidden></div>
 
       <div class="suvat" id="suvat"></div>
 
