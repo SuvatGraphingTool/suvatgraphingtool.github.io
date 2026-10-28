@@ -72,8 +72,11 @@ const STOP = new Set(['a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'from', 'w
 
 /** What was typed, as the words to look for. "question 6" is q6; units go. */
 export function queryWords(query) {
-  const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1');
-  return words(raw).filter((w) => !STOP.has(w));
+  const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1')
+    // a fraction is a value, not two words: 3 4/7 and 5/13 are not searched for
+    .replace(/(?:\b\d+\s+)?\b\d+\s*\/\s*\d+\b/g, ' ');
+  // a lone letter (an i, a j, the A of "at A") matches the start of everything
+  return words(raw).filter((w) => !STOP.has(w) && (w.length > 1 || /\d/.test(w)));
 }
 
 /** The question's own words: its paper, session, what happens, what it asks, its key words. */
@@ -99,34 +102,64 @@ export function haystack(q, nameOf = () => '') {
 
 const hit = (list, w) => (whole(w) ? list.includes(w) : list.some((h) => h.startsWith(w)));
 
-/** How many of the typed words a question has, and how strongly: its own words count 2, its shelf's 1. */
-export function score(q, query, nameOf = () => '') {
-  const want = queryWords(query);
-  const own = ownWords(q, nameOf), topic = topicWords(q);
-  let words = 0, weight = 0;
-  for (const w of want) {
-    if (hit(own, w)) { words++; weight += 2; } else if (hit(topic, w)) { words++; weight += 1; }
-  }
-  return { words, weight };
+/* A word that names WHERE a question was set — a board, a year, a month,
+   a question number — is a filter, and it has to hold: "Edexcel 2019" with
+   no Edexcel 2019 question on the shelves finds nothing, and says so, rather
+   than quietly showing Edexcel 2023 and OCR 2019. Everything else is a word
+   about what happens, and those rank. */
+const BOARD_WORDS = new Set(BOARDS.flatMap((b) => [b.id, ...b.alias.split(' ')]).concat(['ial']));
+const MONTHS = new Set(['january', 'february', 'march', 'may', 'june', 'october', 'november', 'winter', 'summer']);
+const isFilter = (w) => BOARD_WORDS.has(w) || MONTHS.has(w) || /^(19|20)\d\d$/.test(w) || /^q\d+(\.\d+)?$/.test(w);
+
+/** A question's own words in order, for telling "time above" from "above … time". */
+const ownSeq = (q, nameOf) => words(`${q.says} ${q.asks || ''} ${q.terms || ''} ${nameOf(q.opens)}`);
+
+/**
+ * How a question meets the free words typed: how many it has, and how
+ * strongly — its own words count 2, its shelf's 1, the name of the scenario
+ * it opens 2 more, and two typed words side by side in its text 1 more.
+ */
+export function score(q, free, nameOf = () => '') {
+  const own = ownWords(q, nameOf), topic = topicWords(q), name = words(nameOf(q.opens));
+  const seq = ownSeq(q, nameOf);
+  let count = 0, weight = 0;
+  free.forEach((w, i) => {
+    if (hit(own, w)) { count++; weight += 2; } else if (hit(topic, w)) { count++; weight += 1; } else return;
+    if (hit(name, w)) weight += 2;
+    const next = free[i + 1];
+    if (next && seq.some((x, j) => x.startsWith(w) && seq[j + 1]?.startsWith(next))) weight += 1;
+  });
+  return { count, weight };
 }
 
 /**
- * The questions what was typed finds, best first: those matching the most
- * of its words, then by how strongly. Nothing typed finds everything.
+ * The questions what was typed finds, best first. Every filter word must
+ * hold; of what is left, the questions meeting the most of the other words
+ * show, strongest first. Nothing typed finds everything.
  */
 export function found(query, nameOf = () => '') {
-  if (!queryWords(query).length) return QUESTIONS.map((q, i) => ({ q, i, weight: 0 }));
-  const all = QUESTIONS.map((q, i) => ({ q, i, ...score(q, query, nameOf) }));
-  const most = Math.max(0, ...all.map((x) => x.words));
-  return most ? all.filter((x) => x.words === most).sort((a, b) => b.weight - a.weight || a.i - b.i) : [];
+  const want = queryWords(query);
+  const all = QUESTIONS.map((q, i) => ({ q, i }));
+  if (!want.length) return all;
+  const filters = want.filter(isFilter), free = want.filter((w) => !isFilter(w));
+  const kept = all.filter(({ q }) => { const own = ownWords(q, nameOf); return filters.every((w) => hit(own, w)); });
+  if (!free.length) return kept;
+  const scored = kept.map((x) => ({ ...x, ...score(x.q, free, nameOf) }));
+  const most = Math.max(0, ...scored.map((x) => x.count));
+  // free words that meet nothing are no evidence either way
+  if (!most) return filters.length ? kept : [];
+  return scored.filter((x) => x.count === most).sort((a, b) => b.weight - a.weight || a.i - b.i);
 }
 export const matches = (q, query, nameOf) => found(query, nameOf).some((x) => x.q === q);
 
-/** The topics with at least one question left in them, best matches first. */
+/** The topics with at least one question left in them, best matches first, best shelf first. */
 export function shelve(query, nameOf) {
   const hits = found(query, nameOf);
+  const at = (t) => hits.findIndex((x) => x.q.topic === t.id);
+  // in course order normally; while searching, the shelf with the best match first
   return TOPICS.map((t) => ({ ...t, items: hits.filter((x) => x.q.topic === t.id).map((x) => x.q) }))
-    .filter((t) => t.items.length);
+    .filter((t) => t.items.length)
+    .sort((a, b) => (queryWords(query).length ? at(a) - at(b) : 0));
 }
 
 /**
@@ -179,7 +212,7 @@ export function mountShelf({ host, search, count, sub, open, nameOf }) {
             aria-expanded="${all}">${all ? 'Show fewer' : `Show all ${t.items.length}`}</button>` : ''}
       </div>`;
     }).join('')
-      : `<p class="lib-none">Nothing on the shelves matches “${esc(said)}”. Try a board, a year, or what moves in the question.</p>`;
+      : `<p class="lib-none">No question on the shelves matches “${esc(said)}” yet. Try fewer words: a board, a year, or what moves in the question.</p>`;
   };
   host.addEventListener('click', (e) => {
     const more = e.target.closest('.lib-more');

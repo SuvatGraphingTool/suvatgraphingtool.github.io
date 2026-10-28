@@ -16,8 +16,9 @@
 //   h       the launch height, when it starts above the ground
 //   line    a height line to stay above (Time above a line)
 //   mark    a point to time it at on the road, in metres from A, or 'mid'
-// `terms` are the paper's own key words, one at a time and never its sentences,
-// so a student searching with the paper in front of them finds it.
+// `terms` are search words: the paper's own key words and their close
+// synonyms (elevation for above the horizontal), one at a time and never its
+// sentences, so a student with the paper in front of them finds it.
 // `answers` are the published mark scheme's own figures, and nothing else:
 // test/library.test.mjs solves the entry from `fill` and checks each one.
 // The engine works out everything else, as it does for anything typed.

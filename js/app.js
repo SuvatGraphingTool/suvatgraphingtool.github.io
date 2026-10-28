@@ -3049,6 +3049,7 @@ function openQuestion(q) {
   }
   $('lib-from').innerHTML = questionHTML(q);
   $('lib-from').hidden = false;
+  paperH0 = f.h === 0;
   paperSaid = boxesNow();
   shelfReturn = q.id;
   $('screen-values').scrollTop = 0;
@@ -3058,13 +3059,14 @@ function openQuestion(q) {
 // the boxes no longer hold them — and stop saying so when they do again.
 // The line in Time above a line is left out: moving it is one of the things
 // these questions ask for, not a change to what the paper gave.
-let paperSaid = null;
+let paperSaid = null, paperH0 = false;
 // Sorted, so a value cleared and typed again in a different order is the same
 // value, and rounded to far below anything a box shows.
 const boxesNow = () => JSON.stringify({
   given: Object.keys(state.given).sort().map((k) => [k, +(+state.given[k]).toPrecision(12)]),
-  // a blank height IS ground level, so it is the same as the paper's 0
-  theta: state.theta ?? null, h: state.h ?? 0, mark: state.mark ?? null });
+  // a blank height is ground level, the same as a paper's 0 — but only where
+  // the paper gave 0; where the height is the unknown, typing 0 is a change
+  theta: state.theta ?? null, h: state.h ?? (paperH0 ? 0 : null), mark: state.mark ?? null });
 function sayIfEdited() {
   if (paperSaid == null || $('lib-from').hidden) return;
   const changed = boxesNow() !== paperSaid;

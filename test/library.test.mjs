@@ -145,6 +145,15 @@ group('Search', () => {
     ok(ids.includes(id) && ids.length < QUESTIONS.length, `"${w}" finds ${id}, and not everything`, `found ${ids.length}: ${ids.slice(0, 4).join(', ')}`);
   }
   ok(count('cliff zzqq') === 1, 'a word nothing uses does not empty the shelf');
+  // Where a question was set is a filter that must hold, never a hint.
+  for (const w of ['edexcel 2019', 'cambridge 2020', 'edexcel q9', 'june 2016']) {
+    ok(count(w) === 0, `"${w}" is not on the shelves, so it finds nothing rather than something else`);
+  }
+  const e23 = QUESTIONS.filter((q) => matches(q, 'Edexcel 2023', nameOf));
+  ok(e23.length > 0 && e23.every((q) => q.source.boardId === 'edexcel' && /2023/.test(q.source.session)), 'Edexcel 2023 is only Edexcel, only 2023');
+  ok(count('edexcel zzqq') === QUESTIONS.filter((q) => q.source.boardId === 'edexcel').length, 'a stray word beside a board leaves the board');
+  ok(shelve('time above', nameOf)[0].items[0].opens === 'time-above', 'time above puts a Time above a line question first, shelf and all');
+  ok(['i j', '3 4/7', '5/13'].every((w) => queryWords(w).length === 0), 'single letters and fractions are not search words');
   // Every question, found first by its own paper's key words.
   for (const q of QUESTIONS) {
     ok(top(q.terms, 1)[0] === q.id, `${q.id} comes first for its own key words`, top(q.terms, 4).join(', '));

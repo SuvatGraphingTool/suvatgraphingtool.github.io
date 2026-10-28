@@ -72,17 +72,17 @@
 .lib-from b { font-weight: var(--w-semi); color: var(--ink); }
 #values-h:focus { outline: none; }
 
-/* ── narrower: which paper, where it goes, what happens in three lines, and
+/* ── narrower: the paper, its session, the scenario it opens on a line of
+   its own, what happens in three lines, and
    the paper link a 60 × 48 target in the corner — a row a phone can scroll
    past, with the whole of the question on the values screen's card ──── */
 @media (max-width: 760px) {
-  .lib-open { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'paper paper' 'when to' 'says says';
+  .lib-open { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'paper' 'when' 'to' 'says';
               gap: 2px var(--sp-2); padding: var(--sp-3) 60px var(--sp-3) var(--sp-4); }
   .lib-src { display: contents; }
   .lib-src b { grid-area: paper; }
   .lib-src span { grid-area: when; margin: 0; white-space: nowrap; }
-  .lib-to { grid-area: to; justify-self: stretch; text-align: left; min-width: 0; overflow: hidden;
-            white-space: nowrap; text-overflow: ellipsis; }
+  .lib-to { grid-area: to; justify-self: start; text-align: left; min-width: 0; }
   .lib-to span { display: none; }
   .lib-to b { display: inline; }
   .lib-to b::before { content: '\2192\00a0'; color: var(--ink-faint); font-weight: var(--w-small); }
