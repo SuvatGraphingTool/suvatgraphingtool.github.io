@@ -25,7 +25,7 @@
 import { quadRoots } from './stages.js';
 import { snap } from './numeric.js';
 import { poly } from './pair.js';
-import { M, num } from '../notation.js';
+import { M, T, num } from '../notation.js';
 
 const EPS = 1e-9;
 const have = (x) => typeof x === 'number' && isFinite(x);
@@ -51,8 +51,10 @@ export function vsrc({ x, y }, dp) {
   return `${x < 0 ? '-' : ''}${a} ${y < 0 ? '-' : '+'} ${b}`;
 }
 const V = (x, y) => ({ x: snap(x), y: snap(y) });
+/** A vector with its unit: (28i + 36j) m, 2j m, 0 m — a bracket only round two terms. */
+const vunit = (v, unit) => { const src = vsrc(v); return M`${/ /.test(src) ? `(${src})` : src} [${unit}]`; };
 /** Where it is, said: "at the origin", or "at (28i + 36j) m". */
-const where = (r) => (Math.hypot(r.x, r.y) < EPS ? 'at the origin' : `at ${M`(${vsrc(r)}) [m]`}`);
+const where = (r) => (Math.hypot(r.x, r.y) < EPS ? 'at the origin' : `at ${vunit(r, 'm')}`);
 
 /** The motion: r(t), v(t), and the questions a flight is asked. */
 export function planeMotion({ r0, u, a }, tMax) {
@@ -101,8 +103,9 @@ function direction(key, par) {
   if (key && COMPASS[key]) return { ...COMPASS[key], src: null };
   if (par && (have(par.x) || have(par.y))) {
     const x = have(par.x) ? par.x : 0, y = have(par.y) ? par.y : 0;
-    if (Math.hypot(x, y) < EPS) return null;
-    return { x, y, word: `parallel to ${M`(${vsrc({ x, y })})`}`, src: vsrc({ x, y }) };
+    if (Math.hypot(x, y) < EPS) return { zero: true };
+    const src = vsrc({ x, y }), shown = / /.test(src) ? `(${src})` : src;
+    return { x, y, word: `parallel to ${M`${shown}`}`, plain: `parallel to ${T`${shown}`}`, src, either: true };
   }
   return null;
 }
@@ -129,7 +132,7 @@ function atTime(P, t) {
       { f: M`abs(vec v) = sqrt(v_x^2 + v_y^2)`, s: M`sqrt(${sgn(v.x)}^2 + ${sgn(v.y)}^2)`, r: M`${d(s)} [m s^-1]` },
     ],
     short: `${M`vec v = ${vsrc(v)}`}, ${M`${d(s)} [m s^-1]`}, at ${M`t = ${d(t)} [s]`}`,
-    text: `At ${M`t = ${d(t)} [s]`} its velocity is ${M`(${vsrc(v)}) [m s^-1]`}, its speed ${M`${d(s)} [m s^-1]`}, and it is ${where(r)}.`,
+    text: `At ${M`t = ${d(t)} [s]`} its velocity is ${Math.hypot(v.x, v.y) < EPS ? 'zero — it is at rest' : vunit(v, 'm s^-1')}, its speed ${M`${d(s)} [m s^-1]`}, and it is ${where(r)}.`,
   };
 }
 
@@ -140,27 +143,34 @@ function moving(P, D, key) {
   const dot = positiveFrom(P.u.x * D.x + P.u.y * D.y, P.a.x * D.x + P.a.y * D.y);
   const word = D.word, base = { kind: 'moving', key, D };
   const vx = poly([P.u.x, P.a.x, 0]), vy = poly([P.u.y, P.a.y, 0]);
-  const rel = D.src ? { f: M`${times(D.y, 'v_x')} = ${times(D.x, 'v_y')}`, s: M`${times(D.y, `(${vx})`)} = ${times(D.x, `(${vy})`)}`, why: `${word}, its two components are in the same ratio as that vector\u2019s` }
-    : D.x === 0 ? { f: M`v_x = 0`, s: M`${vx} = 0`, why: `due ${word}, it has no ${M`vec i`} component` }
-    : D.y === 0 ? { f: M`v_y = 0`, s: M`${vy} = 0`, why: `due ${word}, it has no ${M`vec j`} component` }
+  const rel = D.src && D.x !== 0 && D.y !== 0 ? { f: M`${times(D.y, 'v_x')} = ${times(D.x, 'v_y')}`, s: M`${times(D.y, `(${vx})`)} = ${times(D.x, `(${vy})`)}`, why: `${word}, its two components are in the same ratio as that vector\u2019s` }
+    : D.x === 0 ? { f: M`v_x = 0`, s: M`${vx} = 0`, why: D.src ? `${word}, it has no ${M`vec i`} component` : `due ${word}, it has no ${M`vec i`} component` }
+    : D.y === 0 ? { f: M`v_y = 0`, s: M`${vy} = 0`, why: D.src ? `${word}, it has no ${M`vec j`} component` : `due ${word}, it has no ${M`vec j`} component` }
     : D.x === D.y ? { f: M`v_x = v_y`, s: M`${vx} = ${vy}`, why: `${word}, its two components are equal` }
     : { f: M`v_x = -v_y`, s: M`${vx} = -(${vy})`, why: `${word}, its two components are equal and opposite` };
   const head = { f: M`vec v = ${vecSum([P.u.x, P.a.x], [P.u.y, P.a.y])}`, s: '', r: '' };
-  // ALWAYS parallel: from rest, or with u along a — the relation is an identity
+  // ALWAYS parallel: from rest, or with u along the line of a — the relation
+  // is an identity, and what is left is which way along the line it goes
   if (tiny(c1) && tiny(c0)) {
-    if (!dot || dot.until <= dot.from + EPS) return { ...base, ok: false, note: `It never moves ${word}: its velocity always points the other way.` };
-    const t = snap(dot.from), v = P.vel(t + (t === 0 && Math.hypot(P.u.x, P.u.y) < EPS ? 1 : 0));
-    const always = t < EPS && !isFinite(dot.until);
-    const text = always ? `It is moving ${word} the whole time: its velocity never changes direction.`
-      : isFinite(dot.until) ? `It is moving ${word} from the start until ${M`t = ${d(dot.until)} [s]`}, when it stops and turns back.`
+    const sense = D.either ? { from: 0, until: Infinity } : dot;
+    if (!sense || sense.until <= sense.from + EPS) return { ...base, ok: false, note: `It never moves ${word}: it moves along that line the other way.` };
+    const t = snap(sense.from), until = isFinite(sense.until) ? snap(sense.until) : null;
+    const always = t < EPS && until == null;
+    // where it turns: v = 0, from the component that changes
+    const c = Math.abs(P.a.x) > Math.abs(P.a.y) ? 'x' : 'y';
+    const turn = !always && !D.either ? { f: M`v_${c} = 0`, s: M`${c === 'x' ? vx : vy} = 0`, r: M`t = ${d(t || until)} [s]` } : null;
+    const text = always ? `It is moving ${word} the whole time: its velocity stays along that line.`
+      : until != null ? `It is moving ${word} from the start until ${M`t = ${d(until)} [s]`}, when it stops and turns back.`
       : `It is moving ${word} from ${M`t = ${d(t)} [s]`} on: before that it is moving the opposite way.`;
-    return { ...base, ok: true, always: true, t, v, r: P.pos(t), speed: snap(P.speed(t)),
-      rows: [head, { f: rel.f, s: rel.s, r: M`"true for every" t` }],
-      why: `The relation holds for every ${M`t`}: ${Math.hypot(P.u.x, P.u.y) < EPS ? 'it starts from rest, so it moves along its acceleration' : 'its velocity starts along its acceleration and stays that way'}.`,
-      short: always ? `moving ${word} always` : `moving ${word} from ${M`t = ${d(t)} [s]`}`, text };
+    const tt = until != null ? until / 2 : t + 1;
+    return { ...base, ok: true, always: true, t, until, v: P.vel(tt), r: P.pos(tt), speed: snap(P.speed(tt)),
+      rows: [head, { f: rel.f, s: rel.s, r: M`"true for every" t` }, ...(turn ? [turn] : [])],
+      why: `The relation holds for every ${M`t`}: ${Math.hypot(P.u.x, P.u.y) < EPS ? 'it starts from rest, so it moves along its acceleration' : 'its velocity is always along the line of its acceleration'}${turn ? ', and it turns round when its velocity is zero' : ''}.`,
+      short: always ? `moving ${word} always` : until != null ? `moving ${word} until ${M`t = ${d(until)} [s]`}` : `moving ${word} from ${M`t = ${d(t)} [s]`}`, text };
   }
   const cands = tiny(c1) ? [] : [-c0 / c1];
-  const ts = after0(cands, false).filter((t) => { const v = P.vel(t); return v.x * D.x + v.y * D.y > EPS; });
+  // a compass point has a sense; "parallel to a vector" has either
+  const ts = after0(cands, false).filter((t) => { const v = P.vel(t); return D.either ? Math.hypot(v.x, v.y) > EPS : v.x * D.x + v.y * D.y > EPS; });
   if (!ts.length) {
     const tr = after0(cands, false)[0];
     return { ...base, ok: false, note: tr != null
@@ -176,7 +186,7 @@ function moving(P, D, key) {
       { f: M`vec v = ${vsrc(v)}`, s: M`abs(vec v) = sqrt(${sgn(v.x)}^2 + ${sgn(v.y)}^2)`, r: M`${d(sp)} [m s^-1]` },
       { f: M`vec r = ${vsrc(r)}`, s: M`abs(vec r) = sqrt(${sgn(r.x)}^2 + ${sgn(r.y)}^2)`, r: M`${d(dist)} [m]` },
     ],
-    why: `Moving ${rel.why}, with its velocity pointing that way and not the opposite way.`,
+    why: D.either ? `Moving ${rel.why} — either way along it.` : `Moving ${rel.why}, with its velocity pointing that way and not the opposite way.`,
     short: `moving ${word} at ${M`t = ${d(t)} [s]`}, ${M`${d(sp)} [m s^-1]`}, ${M`${d(dist)} [m]`} from O`,
     text: `It is moving ${word} at ${M`t = ${d(t)} [s]`}, at ${M`${d(sp)} [m s^-1]`}, ${where(r)} — ${M`${d(dist)} [m]`} from O.`,
   };
@@ -239,13 +249,17 @@ function passes(P, c, X) {
   const sym = c === 'x' ? 'x' : 'y', o = c === 'x' ? 'y' : 'x', base = { kind: 'passes', c, X };
   if (tiny(a) && tiny(u)) {
     return Math.abs(r0 - X) < EPS
-      ? { ...base, ok: true, always: true, t: 0, r: P.pos(0), rows: [], short: `${M`${sym} = ${d(X)}`} always`, text: `Its ${M`${sym}`}-coordinate is ${M`${d(X)}`} the whole time: it does not move that way.` }
+      ? { ...base, ok: true, always: true, t: 0, r: P.pos(0), rows: [{ f: M`u_${sym} = a_${sym} = 0`, s: '', r: M`${sym} = ${d(X)} "for every" t` }], short: `${M`${sym} = ${d(X)}`} always`, text: `Its ${M`${sym}`}-coordinate is ${M`${d(X)}`} the whole time: it does not move that way.` }
       : { ...base, ok: false, note: `Its ${M`${sym}`}-coordinate is ${M`${d(r0)}`} the whole time, never ${M`${d(X)}`}.` };
   }
   const roots = !tiny(a) ? quadRoots(0.5 * a, u, r0 - X) : [(X - r0) / u];
   // the moment it starts on that line is not it passing through it
   const ts = after0(roots, Math.abs(r0 - X) < EPS);
-  if (!ts.length) return { ...base, ok: false, note: `Its ${M`${sym}`}-coordinate never reaches ${M`${d(X)}`}.` };
+  if (!ts.length) {
+    return { ...base, ok: false, note: Math.abs(r0 - X) < EPS
+      ? `Its ${M`${sym}`}-coordinate is ${M`${d(X)}`} only at the start, ${M`t = 0`}: it leaves that line and does not come back.`
+      : `Its ${M`${sym}`}-coordinate never reaches ${M`${d(X)}`}.` };
+  }
   const t = ts[0], r = P.pos(t);
   return {
     ...base, ok: true, t, r, times: ts,
@@ -267,7 +281,7 @@ function speedIs(P, S) {
   const base = { kind: 'speed', S };
   if (tiny(A2)) {
     return tiny(C0, S * S)
-      ? { ...base, ok: true, always: true, t: 0, rows: [], short: `${M`${d(S)} [m s^-1]`} always`, text: `Its speed is ${M`${d(S)} [m s^-1]`} the whole time: with no acceleration, its velocity never changes.` }
+      ? { ...base, ok: true, always: true, t: 0, rows: [{ f: M`vec a = vec 0`, s: M`abs(vec u) = sqrt(${sgn(P.u.x)}^2 + ${sgn(P.u.y)}^2)`, r: M`${d(S)} [m s^-1] "for every" t` }], short: `${M`${d(S)} [m s^-1]`} always`, text: `Its speed is ${M`${d(S)} [m s^-1]`} the whole time: with no acceleration, its velocity never changes.` }
       : { ...base, ok: false, note: `With no acceleration its speed is ${M`${d(Math.hypot(P.u.x, P.u.y))} [m s^-1]`} the whole time, never ${M`${d(S)} [m s^-1]`}.` };
   }
   const ts = after0(quadRoots(A2, B1, C0), false);
@@ -318,7 +332,8 @@ export function solvePlane(k = {}) {
   if (have(at.t)) answers.push(at.t >= 0 ? atTime(P, at.t) : { kind: 't', ok: false, note: 'A time cannot be negative.' });
   const dirM = direction(at.moving, null), dirP = direction(null, at.par);
   if (dirM) answers.push(moving(P, dirM, at.moving));
-  if (dirP) answers.push(moving(P, dirP, 'par'));
+  if (dirP?.zero) answers.push({ kind: 'moving', ok: false, note: 'The zero vector has no direction, so nothing is parallel to it.' });
+  else if (dirP) answers.push(moving(P, dirP, 'par'));
   const dirD = direction(at.due, null);
   if (dirD) answers.push(dueOf(P, dirD, at.due));
   if (have(at.x)) answers.push(passes(P, 'x', at.x));

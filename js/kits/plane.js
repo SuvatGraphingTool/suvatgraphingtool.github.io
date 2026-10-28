@@ -88,7 +88,8 @@ export const plane = {
      solid — east is across the page, north up it, as on the stage (rule 2). */
   graphs(f, t, P) {
     const tMax = f.tMax;
-    const rings = (f.answers || []).filter((a) => a.ok).flatMap((a) => a.times || [a.t]).map((ta) => ta);
+    // a ring marks a moment; an answer that holds the whole time has none
+    const rings = (f.answers || []).filter((a) => a.ok && !a.always).flatMap((a) => a.times || [a.t]);
     const pair = (fx, fy, c) => [
       { label: 'i part', tag: T`vec(i)`, fn: fx, color: c, dash: [6, 4] },
       { label: 'j part', tag: T`vec(j)`, fn: fy, color: c, dash: null },
@@ -129,9 +130,15 @@ export const plane = {
   ending(solved) {
     const ok = solved.answers.filter((a) => a.ok), asked = solved.answers.length;
     const head = (a) => {
-      const w = a.D && !a.D.src ? a.D.word : 'that way';
-      if (a.always) return a.kind === 'moving' ? `Moving ${w}, ${a.t > 0 ? `from ${tr(a.t)} s on` : 'the whole time'}.` : a.kind === 'due' ? `Due ${w} of O.` : 'The same the whole time.';
-      if (a.kind === 'moving') return `Moving ${w} at ${tr(a.t)} s, at ${tr(a.speed)} m s⁻¹, ${tr(a.dist)} m from O.`;
+      // plain text: a compass word, or the vector in Unicode bold italic
+      const w = a.D ? (a.D.src ? a.D.plain : a.D.word) : '';
+      if (a.always) {
+        if (a.kind === 'moving') return `Moving ${w} ${a.until != null ? `until ${tr(a.until)} s` : a.t > 0 ? `from ${tr(a.t)} s on` : 'the whole time'}.`;
+        if (a.kind === 'due') return `${a.D.src ? 'In that direction from' : `Due ${w} of`} O${a.short && /until/.test(a.short) ? ', until it comes back' : ''}.`;
+        if (a.kind === 'passes') return `${a.c} = ${tr(a.X)} the whole time.`;
+        if (a.kind === 'speed') return `${tr(a.S)} m s⁻¹ the whole time.`;
+      }
+      if (a.kind === 'moving') return `${a.D.src ? `${w.replace(/^./, (c) => c.toUpperCase())}` : `Moving ${w}`} at ${tr(a.t)} s, at ${tr(a.speed)} m s⁻¹, ${tr(a.dist)} m from O.`;
       if (a.kind === 'due') return `Due ${w} of O at ${tr(a.t)} s, ${tr(a.dist)} m away.`;
       if (a.kind === 'passes') return `${a.c} = ${tr(a.X)} at ${tr(a.t)} s.`;
       if (a.kind === 'speed') return `${tr(a.S)} m s⁻¹ at ${tr(a.t)} s.`;

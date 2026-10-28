@@ -25,7 +25,7 @@ export function render(canvas, cam, o) {
   const P = palette();
   const L = labels();
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  const answers = (f.answers || []).filter((a) => a.ok);
+  const answers = (f.answers || []).filter((a) => a.ok && !a.always);
 
   // ── the frame: the whole path, the origin and every answer, one scale both ways
   const pts = f.path(160);
@@ -99,10 +99,14 @@ export function render(canvas, cam, o) {
       { color: P.disp, align: 'center', pri: 6, size: 14, weight: 700 });
   }
   const sp = f.speed(t), vMax = Math.max(...pts.map((p) => f.speed(p.t)), 1e-6);
-  let vl = clamp(w * 0.11, 60, 130) / vMax;
-  // the arrow stays on the canvas: shortened, never cut off
+  // One scale for the whole flight, so an arrow's length always says its
+  // speed — chosen so that no arrow along the path leaves the canvas.
   const room = (c, dv, lo, hi) => (dv > 0 ? (hi - c) / dv : dv < 0 ? (lo - c) / dv : Infinity);
-  vl = Math.min(vl, room(px, v.x, 12, w - 12) * 0.85, room(py, -v.y, 12, h - 12) * 0.85);
+  let vl = clamp(w * 0.11, 60, 130) / vMax;
+  for (const q of pts) {
+    const vq = f.vel(q.t);
+    vl = Math.min(vl, room(X(q.x), vq.x, 12, w - 12) * 0.9, room(Y(q.y), -vq.y, 12, h - 12) * 0.9);
+  }
   if (show.velocity !== false && sp > 1e-6) {
     if (show.components) {
       arrow(g, px, py, px + v.x * vl, py, { color: P.velVec, width: 2, head: 9, dash: [5, 4] });

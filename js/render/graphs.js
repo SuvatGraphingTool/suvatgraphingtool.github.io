@@ -114,19 +114,40 @@ export function drawGraph(canvas, spec) {
   // letter is plainly on its own line and never in the axis labels.
   const tagged = series.filter((s) => s.tag);
   if (tagged.length) {
-    // early on, at whichever of a few instants the lines are furthest apart,
-    // so a letter is never set beside the wrong line
-    const gap = (tt) => { const ys = series.map((x) => x.fn(tt)).filter(isFinite); return ys.length > 1 ? Math.max(...ys) - Math.min(...ys) : 1; };
-    const tt = [0.06, 0.15, 0.3, 0.5].map((q) => q * tMax).reduce((b, c) => (gap(c) > gap(b) * 1.5 ? c : b));
+    // A letter sits ON its own line, haloed, at an instant early in the run
+    // where no other line comes within reach — so it cannot be read as naming
+    // a neighbour, whichever side of it the neighbour is.
+    // a label is about 25 px tall: no other line, and no letter already
+    // placed, within that of this one
+    const placedTags = [];
+    const near = (s, tt, py) => series.some((o) => o !== s && isFinite(o.fn(tt)) && Math.abs(Y(o.fn(tt)) - py) < 24)
+      || placedTags.some((q) => Math.abs(q.x - X(tt)) < 30 && Math.abs(q.y - py) < 26);
+    // clear of the title's row above and the axis labels below, so the
+    // label placer never has to push a letter off its line
+    const inside = (py) => py >= PAD.t + 16 && py <= PAD.t + gh - 10;
     for (const s of tagged) {
-      const y = s.fn(tt);
-      if (!isFinite(y)) continue;
-      const others = series.filter((o) => o !== s).map((o) => o.fn(tt)).filter(isFinite);
-      let above = !others.length || y >= Math.max(...others) - 1e-9;
-      // ...unless that side is off the plot, into the title or the axis labels
-      const inside = (py) => py >= PAD.t + 10 && py <= PAD.t + gh - 10;
-      if (!inside(Y(y) + (above ? -17 : 17))) above = !above;
-      L.add(s.tag, X(tt) + 4, Y(y) + (above ? -17 : 17), { color: s.color, align: 'left', pri: 7, size: 15, weight: 700, push: above ? 'up' : 'down', maxPush: 20 });
+      let spot = null;
+      const QS = [0.08, 0.18, 0.3, 0.45, 0.6, 0.75, 0.9];
+      for (const q of QS) {
+        const tt = q * tMax, y = s.fn(tt);
+        if (!isFinite(y)) continue;
+        const py = Y(y);
+        if (inside(py) && !near(s, tt, py)) { spot = { tt, py }; break; }
+      }
+      // nowhere fully clear: the instant where it is furthest from everything else
+      if (!spot) {
+        const room = (tt) => {
+          const py = Y(s.fn(tt));
+          if (!inside(py)) return -1;
+          const ds = [...series.filter((o) => o !== s).map((o) => Math.abs(Y(o.fn(tt)) - py)),
+                      ...placedTags.filter((q) => Math.abs(q.x - X(tt)) < 30).map((q) => Math.abs(q.y - py))].filter(isFinite);
+          return ds.length ? Math.min(...ds) : 99;
+        };
+        const tt = QS.map((q) => q * tMax).reduce((b, c) => (room(c) > room(b) ? c : b));
+        spot = { tt, py: clamp(Y(s.fn(tt)), PAD.t + 16, PAD.t + gh - 10) };
+      }
+      placedTags.push({ x: X(spot.tt), y: spot.py });
+      L.add(s.tag, X(spot.tt), spot.py, { color: s.color, align: 'center', pri: 7, size: 15, weight: 800, maxPush: 20 });
     }
   }
   if (spec.note) L.add(spec.note, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: 4, size: 14 });

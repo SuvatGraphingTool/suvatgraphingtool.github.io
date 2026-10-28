@@ -1330,9 +1330,10 @@ function buildLive() {
   // A level road has no height, no greatest height and no components to
   // resolve, so those three of the seven are not offered there. A kit names
   // the ones its own stage has nothing to say about.
-  for (const k of ['components', 'apex', 'ruler', 'range']) {
+  for (const { key: k } of SHOWS) {
     const box = $('shows').querySelector(`input[data-k="${k}"]`);
-    if (box) box.closest('.ck').hidden = !!scenario?.road || !!K?.hides.shows.includes(k);
+    const road = ['components', 'apex', 'ruler', 'range'].includes(k) && !!scenario?.road;
+    if (box) box.closest('.ck').hidden = road || !!K?.hides.shows.includes(k);
   }
   if (!wd) {
     const box = $('extras').querySelector('input[data-k="energy"]');
