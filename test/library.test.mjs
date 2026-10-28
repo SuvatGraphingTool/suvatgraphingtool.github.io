@@ -364,6 +364,13 @@ group('Two on one road: what cannot happen, and the edges', () => {
   ok(/same motion twice/.test(O({ A: { u: 10 }, B: { u: 10 } }).reason), 'the same motion twice is refused, once, in one voice');
   const twoLate = O({ A: { t0: 3, u: 10 }, B: { t0: 5, u: 15 } });
   ok(!twoLate.events.some((e) => e.kind !== 'start' && e.t < 5), 'two waiting at the start are not “level” as one sets off');
+  const e23 = KITS.lanes.ending(O({ A: { V: 4, tau: 5 }, B: { a: 1 }, find: 'B.V', at: 27.5 }));
+  ok(/B’s final speed is 3\.915/.test(e23.title) && /Level at 27\.5/.test(e23.eyebrow) && /ph-tab/.test(e23.body), 'AS23 as the paper gives it: the ending says level at 27.5 s, and B’s final speed');
+  const eAt = KITS.lanes.ending(O({ A: { u: 10 }, B: { a: 1 }, at: 20 }));
+  ok(/They are level/.test(eAt.title) && /Level at 20/.test(eAt.eyebrow), 'level at a given time: the ending says so');
+  const eLater = KITS.lanes.ending(O({ A: { u: 20, V: 8, tau: 30 }, B: { u: 12 }, line: 300 }));
+  ok(/Not level before the line/.test(eLater.title) && /later, at 45/.test(eLater.eyebrow), 'level only after the line: the ending says not before it, and when');
+  ok(/B draws ahead/.test(strip(O({ A: { V: 4, tau: 5 }, B: { a: 1 }, find: 'B.V', at: 27.5 }).notes.join(' '))), 'from the same start, the one that draws ahead is named');
   const K = KITS.lanes;
   const G = K.graphs(O({ A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } }).f, 10, { disp: 'd', vel: 'v', acc: 'a', second: 's', mark: 'm' });
   ok(G.every((sp) => sp.series.every((x) => x.dash && x.tag && Array.isArray(x.breaks))), 'every line dashed, lettered and broken at its changes');

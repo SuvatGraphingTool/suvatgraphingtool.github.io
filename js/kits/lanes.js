@@ -3,7 +3,7 @@
 // boxes to show, reads them, and lays out what the engine answered (rule 4).
 // See design/components.md.
 
-import { solveOvertake, overtakeWorking, FINDABLE } from '../core/overtake.js';
+import { solveOvertake, overtakeWorking, named } from '../core/overtake.js';
 import * as stage from '../render/lanes.js';
 import { timeLapse } from '../core/pace.js';
 import { M, num } from '../notation.js';
@@ -119,15 +119,18 @@ export const lanes = {
   ending(solved) {
     const { found, events, extras } = solved;
     const ex = (key) => extras.find((x) => x.key === key)?.value;
-    const main = events.find((e) => e.kind === 'overtake' || e.kind === 'line') || events.find((e) => e.kind === 'level');
+    const main = events.find((e) => ['overtake', 'line', 'time'].includes(e.kind)) || events.find((e) => e.kind === 'level');
+    const later = solved.later;
+    const unit = { a: 'm s⁻²', V: 'm s⁻¹', tau: 's' };
     const title = found
-      ? `${found.who}’s ${FINDABLE[found.what]} is ${tr(found.value)} ${found.what === 'a' ? 'm s⁻²' : found.what === 'V' ? 'm s⁻¹' : 's'}.`
+      ? `${named(found.who, found.what)} is ${tr(found.value)} ${unit[found.what]}.`
       : main ? (main.kind === 'overtake' ? `${main.ahead} overtakes ${main.ahead === 'A' ? 'B' : 'A'}.` : 'They are level.')
-        : 'They are never level after the start.';
+        : later ? `Not level ${solved.before === 'then' ? 'by then' : 'before the line'}.`
+          : 'They are never level after the start.';
     const at = main ? solved.f.at(main.t) : null;
     const cell = (x, p) => `<b>${tr(x, p)}</b>`;
     // each one's own time, from the engine where it has it
-    const ownT = (p) => ex(`own${p.name}`) ?? (main.t - p.t0);
+    const ownT = (p) => main.own[p.name];
     const row = (p, s) => {
       const moving = Math.max(0, ownT(p));
       return `<div class="ph-row" role="row" data-key="${p.name === 'A' ? 'first' : 'second'}">
@@ -150,7 +153,8 @@ export const lanes = {
       </div>` : '';
     const dv = ex('dv');
     return {
-      eyebrow: main ? `Level at ${tr(main.t, 3)} <span class="u">s</span>, ${tr(main.x)} <span class="u">m</span> from the start` : 'Never level after the start',
+      eyebrow: main ? `Level at ${tr(main.t, 3)} <span class="u">s</span>, ${tr(main.x)} <span class="u">m</span> from the start`
+        : later ? `Level only later, at ${tr(later.t, 3)} <span class="u">s</span>` : 'Never level after the start',
       title,
       // the found number is the title, so it is not said again under it
       body: `${solved.notes.slice(found ? 1 : 0).map((n) => `<p>${n}</p>`).join('')}${dv != null ? `<p>Their speeds at the line differ by <b>${tr(dv)} m s⁻¹</b>.</p>` : ''}${table}`,

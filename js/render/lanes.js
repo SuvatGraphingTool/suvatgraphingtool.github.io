@@ -71,7 +71,8 @@ export function render(canvas, cam, o) {
   const tstep = niceStep(f.tMax, 6);
   for (let tt = tstep; tt <= f.tMax + 1e-9; tt += tstep) {
     stroke(g, [{ x: X(tt), y: gy1 }, { x: X(tt), y: gy1 + 5 }], { color: P.faint, width: 1.4 });
-    L.add(fmt(tt, tstep < 1 ? 1 : 0), X(tt), gy1 + 14, { color: P.faint, align: 'center', pri: 1, size: 13, bg: false });
+    // fixed under the axis: a tick that would be pushed is dropped instead
+    L.add(fmt(tt, tstep < 1 ? 1 : 0), X(tt), gy1 + 14, { color: P.muted, align: 'center', pri: 1, size: 13, bg: false, maxPush: 0 });
   }
   const line = (p, t0, t1) => {
     const out = [];
@@ -92,7 +93,7 @@ export function render(canvas, cam, o) {
   for (const e of passed) {
     stroke(g, [{ x: X(e.t), y: gy1 + 8 }, { x: X(e.t), y: gy0 - 4 }], { color: P.mark, width: 1.6, dash: [4, 4] });
     // under the axis, clear of the readouts in the top corners
-    L.add(`level at ${T`t = ${tr(e.t, 3)} [s]`}`, X(e.t), gy1 + 32, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700 });
+    L.add(`level at ${T`t = ${tr(e.t, 3)} [s]`}`, X(e.t), gy1 + 36, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700, push: 'down', maxPush: 20 });
   }
   stroke(g, [{ x: X(t), y: gy1 }, { x: X(t), y: gy0 - 8 }], { color: P.muted, width: 1.6, dash: [5, 5] });
   dot(g, X(t), Y(A.vel(t)), 4.5, { fill: P.surface, stroke: P.vel, width: 2.2 });
@@ -110,10 +111,10 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: 0, y: yB + 6 }, { x: w, y: yB + 6 }], { color: P.axis, width: 1.6 });
   // the start, and the line the question names
   stroke(g, [{ x: S(0), y: yA - 26 }, { x: S(0), y: yB + 14 }], { color: P.ink, width: 2 });
-  L.add('start', S(0), yA - 40, { color: P.muted, align: 'center', pri: 5, size: 14, bg: false });
+  L.add('start', S(0), yA - 58, { color: P.muted, align: 'center', pri: 5, size: 14, bg: false });
   if (f.line != null) {
     stroke(g, [{ x: S(f.line), y: yA - 30 }, { x: S(f.line), y: yB + 14 }], { color: P.mark, width: 2.4 });
-    L.add(T`${tr(f.line)} [m]`, S(f.line), yA - 40, { color: P.mark, align: 'center', pri: 7, size: 14, weight: 700, bg: false });
+    L.add(T`${tr(f.line)} [m]`, S(f.line), yA - 58, { color: P.mark, align: 'center', pri: 7, size: 14, weight: 700, bg: false });
   }
   // each meeting, across both lanes
   for (const e of passed) {
