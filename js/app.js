@@ -3045,7 +3045,7 @@ function openQuestion(q) {
   // the point under a question that has just filled it in.
   if (!scenario.road && !scenario.descent) {
     document.querySelector('#screen-values .h-sub').textContent =
-      'The paper\u2019s numbers are in the boxes. Launch it, or change any of them and see what changes.';
+      'Opened with the paper\u2019s own numbers in the boxes. Launch it, or change any of them and see what changes.';
   }
   $('lib-from').innerHTML = questionHTML(q);
   $('lib-from').hidden = false;
@@ -3059,18 +3059,16 @@ function openQuestion(q) {
 // The line in Time above a line is left out: moving it is one of the things
 // these questions ask for, not a change to what the paper gave.
 let paperSaid = null;
-const boxesNow = () => JSON.stringify({ given: state.given, theta: state.theta ?? null,
-                                        h: state.h ?? null, mark: state.mark ?? null });
+// Sorted, so a value cleared and typed again in a different order is the same
+// value, and rounded to far below anything a box shows.
+const boxesNow = () => JSON.stringify({
+  given: Object.keys(state.given).sort().map((k) => [k, +(+state.given[k]).toPrecision(12)]),
+  theta: state.theta ?? null, h: state.h ?? null, mark: state.mark ?? null });
 function sayIfEdited() {
   if (paperSaid == null || $('lib-from').hidden) return;
   const changed = boxesNow() !== paperSaid;
   const note = $('lib-from').querySelector('.lib-from-edit');
   if (note) note.hidden = !changed;
-  if (!scenario.road && !scenario.descent) {
-    document.querySelector('#screen-values .h-sub').textContent = changed
-      ? 'Started from the paper\u2019s numbers, and some of them are changed now.'
-      : 'The paper\u2019s numbers are in the boxes. Launch it, or change any of them and see what changes.';
-  }
 }
 // After the screen's own handlers have run, which is what the next tick is.
 for (const ev of ['input', 'change', 'click']) {

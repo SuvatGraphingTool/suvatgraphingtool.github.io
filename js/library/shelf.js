@@ -67,6 +67,8 @@ function ownWords(q, nameOf) {
     q.source.board, ALIAS[q.source.boardId] || '', q.source.paper, q.source.code || '', q.source.subject || '',
     q.source.session, `q${n}`, `q${n.split('.')[0]}`, p ? `${p} q${p}` : '',
     q.says, q.asks || '', q.beyond || '', nameOf(q.opens),
+    // the value of g the paper uses, which students type as a way of finding it
+    q.fill?.given?.g != null ? `g ${q.fill.given.g}` : '',
   ].join(' '));
 }
 const topicWords = (q) => {
@@ -79,10 +81,15 @@ export function haystack(q, nameOf = () => '') {
   return [...ownWords(q, nameOf), ...topicWords(q)];
 }
 
+/* Words that carry no meaning in a search: "show that", "released from rest",
+   "hits the ground" are found by their other words. */
+const STOP = new Set(['a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'from', 'with', 'and', 'that', 'is', 'it',
+  'its', 'for', 'by', 'find', 'calculate', 'work', 'out', 'what', 'how', 'when', 'where']);
+
 /** What was typed, as the words to look for. "question 6" is q6; units go. */
 export function queryWords(query) {
   const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1');
-  return words(raw);
+  return words(raw).filter((w) => !STOP.has(w));
 }
 
 const hit = (list, w) => (whole(w) ? list.includes(w) : list.some((h) => h.startsWith(w)));

@@ -128,6 +128,15 @@ group('Search', () => {
   const q1 = QUESTIONS.filter((q) => matches(q, 'q1', nameOf));
   ok(q1.every((q) => String(q.source.q).split('.')[0] === '1'), 'q1 is Q1, not Q12 or Q13');
   ok(queryWords('6').length === 1 && count('6') < QUESTIONS.length, 'a bare number matches whole numbers only');
+  // The words the papers themselves use, which is what a student types with
+  // the paper in front of them. Each has to find the questions it names.
+  const EXAM = [['projected', 4], ['projection', 4], ['velocity', 10], ['maximum height', 4], ['max height', 4],
+    ['greatest height', 5], ['released', 5], ['released from rest', 5], ['hits the ground', 5],
+    ['mid point', 2], ['show that', 1], ['9.8', 5], ['vertically upwards', 5]];
+  for (const [w, least] of EXAM) {
+    const n = count(w);
+    ok(n >= least && n < QUESTIONS.length + 1, `"${w}" finds at least ${least}`, `found ${n}`);
+  }
 });
 
 group('The twelve stay as they are', () => {
