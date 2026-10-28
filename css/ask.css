@@ -42,6 +42,7 @@
 .ask-resume:focus-visible { outline: 2px solid #FF7E5F; outline-offset: 2px; }
 .ask-resume[hidden] { display: none; }
 .ask-hero .ask-fine { color: rgba(31,32,35,0.78); text-align: center; margin: var(--sp-1) 0 0; font-weight: var(--w-small); }
+.ask-hero .ask-modes + .ask-fine { margin-top: var(--sp-4); }
 .pick-h { font-size: var(--fs-2xl); margin-bottom: var(--sp-2); }
 
 /* ── the box ─────────────────────────────────────────────────────────── */
