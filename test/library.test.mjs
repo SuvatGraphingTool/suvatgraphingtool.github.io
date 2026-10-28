@@ -474,7 +474,7 @@ group('Over the wall: each paper against its mark scheme', () => {
   ok(near(w22.flagGap, 5) && near(w22.other.R, 250 * 1.5 / 3.25), 'W J22 Q10(b)(ii): 5 m short at tan θ = 1; the other lands 115.4 m out');
   ok(targetWorking(w22).flatMap((x) => x.rows).some((r) => strip(r.r) === 'y=x−0.008x2'), 'W J22 Q10: at tan θ = 1 its path is y = x − x²/125');
   // AQA MM1B Jan 2013 Q8: horizontal component 16, V ≈ 20.6, α ≈ 39.1°
-  const a13 = solveTarget({ g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'T', T: 2.4 });
+  const a13 = solveTarget({ g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'time', T: 2.4 });
   ok(a13.ok && near(a13.shown.ux, 16) && near(a13.shown.u, 20.6, 0.05) && near(a13.shown.theta, 39.1, 0.05), 'AQA J13 Q8: 16 m s⁻¹, V = 20.6, α = 39.1°');
   ok(a13.shown.hits && near(a13.f.tMax, 2.4), 'AQA J13 Q8: it hits the wall, and the flight ends there');
   // Edexcel 9MA0/03 Jun 2018 Q10: α = 14.0°, 1.13 s
@@ -499,7 +499,7 @@ group('Over the wall: what cannot be, refused with its reason', () => {
   ok(/above that line/.test(r({ g: 9.8, theta: 30, d: 40, H: 30, find: 'u' })), 'a point above the line at θ: no speed');
   ok(/higher than its greatest height/.test(r({ g: 9.8, d: 20, H: 4, find: 'apex', top: 3 })), 'a point above the greatest height');
   ok(/not both/.test(r({ g: 9.8, u: 10, theta: 45, ux: 3 })), 'a speed and an angle and components: refused');
-  ok(/leave the launch/.test(r({ g: 9.8, d: 10, H: 5, find: 'T', T: 1, u: 3 })), 'finding both with the launch typed: refused');
+  ok(/leave the launch/.test(r({ g: 9.8, d: 10, H: 5, find: 'time', T: 1, u: 3 })), 'finding both with the launch typed: refused');
   ok(/never leaves/.test(r({ g: 9.8, u: 10, theta: -10 })), 'thrown down from the ground: never leaves it');
   ok(/Choose the value of g/.test(r({ u: 10, theta: 45 })), 'g is asked for');
   const hit = solveTarget({ g: 9.8, u: 20, theta: 30, d: 30, H: 6, kind: 'net' });
@@ -527,7 +527,7 @@ group('Over the wall: the critic’s round 1', () => {
     const all = [...r.notes, ...targetWorking(r).flatMap((x) => x.rows.flatMap((y) => [y.s, y.r]))].map(strip).join(' ');
     ok(r.ok && r.flights.every((f) => f.at.clear === 0) && !/×\s*10[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(all), `no rounding noise reaches the screen: ${JSON.stringify(k)}`);
   }
-  const below = strip(solveTarget({ g: 9.8, d: 10, H: 0, h0: 20, T: 0.5, find: 'T', kind: 'point' }).notes.join(' '));
+  const below = strip(solveTarget({ g: 9.8, d: 10, H: 0, h0: 20, T: 0.5, find: 'time', kind: 'point' }).notes.join(' '));
   ok(/61\.96° below/.test(below) && !/−61/.test(below), 'below the horizontal is said without a minus', below);
   ok(/horizontally/.test(strip(solveTarget({ g: 9.8, h0: 5, d: 14, H: 0, find: 'u', theta: 0, kind: 'point' }).notes.join(' '))), 'a horizontal launch is said as one');
   ok(/already landed/.test(strip(solveTarget({ g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.8, H: 0.9, kind: 'net' }).reason)), 'a time above the net after it has landed: refused');
@@ -548,12 +548,34 @@ group('Over the wall: the critic’s round 1', () => {
   const mei = solveTarget({ g: 9.8, h0: 5, ux: 14, uy: 0, H: 2, kind: 'wall' });
   ok(mei.ok && near(mei.shown.span.to, Math.sqrt(120)) && /up to 10\.954/.test(strip(mei.derived[0])) && !mei.shown.at, 'MEI J18 Q9(iii) from the paper’s own data: a 2 m fence, no distance, cleared up to 10.954 m');
   ok(/lands 35\.348 m out.*never hits it/.test(strip(solveTarget({ g: 9.8, u: 20, theta: 30, d: 50, H: 3, kind: 'face' }).reason).replace(/(\d)m\b/g, '$1 m')), 'a wall it hits that it never reaches: says where it lands, not a height under the ground');
-  for (const k of [{ g: 9.8, d: 20, H: 2, find: 'apex', top: 5, T: 3 }, { g: 9.8, d: 20, H: 2, find: 'T', T: 2, top: 5 }, { g: 9.8, u: 28, d: 40, H: 20, find: 'theta', T: 3 }]) ok(/clear that box/.test(strip(solveTarget(k).reason)), `a box typed for another question is said: ${JSON.stringify(k)}`);
+  for (const k of [{ g: 9.8, d: 20, H: 2, find: 'apex', top: 5, T: 3 }, { g: 9.8, d: 20, H: 2, find: 'time', T: 2, top: 5 }, { g: 9.8, u: 28, d: 40, H: 20, find: 'theta', T: 3 }]) ok(/clear that box/.test(strip(solveTarget(k).reason)), `a box typed for another question is said: ${JSON.stringify(k)}`);
   ok(/never reaches the mark/.test(strip(solveTarget({ g: 9.8, u: 20, theta: 30, d: 30, H: 6, kind: 'net', flag: 50 }).notes.join(' '))), 'a mark it never reaches, because it hits the net, is said');
   const close = strip(solveTarget({ g: 9.8, u: 20, d: 30, H: 9.3833, find: 'theta' }).reason);
   ok(/9\.3832 ?m.*9\.3833 ?m/.test(close), 'just out of reach: enough figures to tell the two heights apart', close);
   ok(targetWorking(solveTarget({ g: 9.8, theta: 30, d: 40, H: 20, find: 'u' })).flatMap((x) => x.rows).some((r) => /^u2=gd2/.test(strip(r.f))), 'finding u: the rearranged formula is a row');
   ok(!targetWorking(e23F0()).flatMap((x) => x.rows).some((r) => /tan−1\(tanθ\)/.test(strip(r.f))), 'no θ = tan⁻¹(tan θ) row');
+});
+
+group('Over the wall: the critic’s round 3', () => {
+  // a find value never names a box, or choosing it would empty and lock that box
+  const keys = [...KITS.target.fields, ...KITS.target.rows.flatMap((r) => r.fields)].map((f) => f.key);
+  const finds = KITS.target.rows.flatMap((r) => r.fields).find((f) => f.key === 'find').options.map((o) => o.v);
+  ok(finds.filter((v) => keys.includes(v)).every((v) => v === 'theta' || v === 'u'), 'only the angle and the speed chips lock a box: the time box stays the student’s');
+  const read = KITS.target.read({ g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'time', T: 2.4 });
+  const a13 = solveTarget(read);
+  ok(a13.ok && near(a13.shown.u, 20.622, 0.001) && near(a13.shown.theta, 39.12, 0.01), 'AQA J13 Q8 through the values screen’s own reading: 20.622 m s⁻¹ at 39.12°');
+  // the table's greatest height is one it reaches
+  const tab = (k) => strip(KITS.target.ending(solveTarget(k)).body);
+  ok(!/8\.49/.test(tab({ g: 9.8, d: 10, H: 8, T: 1, find: 'time', kind: 'face' })), 'hits the wall still rising: no greatest height it never reaches');
+  ok(!/11\.48/.test(tab({ g: 9.8, ux: 10, uy: 15, d: 10, kind: 'face' })), 'hits the wall still rising, launch given: the same');
+  ok(/never leaves/.test(strip(solveTarget({ g: 9.8, u: 10, theta: -20, d: 30, H: 3, kind: 'face' }).reason)), 'thrown down from the ground at a wall: refused as never leaving the ground');
+  ok(/more than 0/.test(strip(solveTarget({ g: 9.8, u: 20, d: 20, H: 0, find: 'theta' }).reason)), 'finding the angle over a wall 0 m high: refused, as when it is all given');
+  ok(solveTarget({ g: 9.8, u: 20, d: 20, H: 0, find: 'theta', kind: 'point' }).ok, '… while a target point on the ground is fine');
+  ok(!/6\.000/.test(strip(solveTarget({ g: 9.8, u: 32.6, d: 102.6, H: 6, find: 'theta' }).reason)), 'out of reach: the student’s number is not padded');
+  const e = solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' });
+  ok(/dividingby10/.test(strip(e.findRows[1].s).replace(/\s/g, '')), 'the quadratic’s rescaling says what it divided by');
+  const aqa = targetWorking(a13);
+  ok(aqa.some((x) => /top of its path/.test(x.title)) && /top of its path/.test(strip(a13.notes.join(' '))), 'AQA: the top it reaches before the wall is worked, not only drawn');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

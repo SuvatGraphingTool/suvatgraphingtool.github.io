@@ -37,7 +37,7 @@ export const KINDS = {
   face:  { word: 'wall',  the: 'the wall',  top: 'the point it hits',   solid: true, hits: true },
   point: { word: 'point', the: 'the point', top: 'the point',           solid: false },
 };
-export const FINDS = { theta: 'the angle', u: 'the speed', T: 'the speed and angle, from the time', apex: 'the speed and angle, from its greatest height' };
+export const FINDS = { theta: 'the angle', u: 'the speed', time: 'the speed and angle, from the time', apex: 'the speed and angle, from its greatest height' };
 
 /* ── one flight ─────────────────────────────────────────────────────────── */
 /**
@@ -184,7 +184,7 @@ function atRows(F, P, K) {
  *            of the wall, the net, the tree; the target; where it hits)
  *   tAt    — or: the time it is above the point, with the launch known
  *   find   — null (it is all given: where is it at the point?), 'theta' (u
- *            given), 'u' (θ given), 'T' (the time to reach the point given),
+ *            given), 'u' (θ given), 'time' (the time to reach the point, T, given),
  *            'apex' (its greatest height above the ground, `top`, given)
  *   flag   — a mark on the ground: how far short of it, or beyond, it lands
  *   pick   — of two answers, 'steep' (the default) or 'flat' is flown
@@ -203,13 +203,14 @@ export function solveTarget(k = {}) {
   // a box typed for a different question is said, not quietly ignored
   if (!find && (have(k.T) || have(k.top))) return fail(`You gave ${have(k.T) ? 'a time to reach the point' : 'its greatest height'}: choose what to find from it, or clear that box.`);
   if (find && have(k.tAt)) return fail('With a number to find, give how far out the point is, not a time it is above it.');
-  if (find && find !== 'T' && have(k.T)) return fail('You gave a time to reach the point: choose “both, from the time to it”, or clear that box.');
+  if (find && find !== 'time' && have(k.T)) return fail('You gave a time to reach the point: choose “both, from the time to it”, or clear that box.');
   if (find && find !== 'apex' && have(k.top)) return fail('You gave its greatest height: choose “both, from its greatest height”, or clear that box.');
   const P = { d: k.d, H: k.H };
   const needP = () => {
     if (!have(P.d) || !have(P.H)) return `To find ${FINDS[find]}, give the point: how far out it is, and its height above the ground.`;
     if (!(P.d > 0)) return 'The point is ahead of the launch: give its distance as a positive number.';
     if (P.H < 0) return 'The point is at or above the ground: give its height as 0 or more.';
+    if (K.solid && !K.hits && !(P.H > 0)) return `A ${K.word} stands up from the ground: give its height as more than 0, or choose “A target point”.`;
     return null;
   };
 
@@ -236,14 +237,15 @@ export function solveTarget(k = {}) {
       if (have(P.d)) return fail('Give the point’s distance, or the time it is above it — not both: the time fixes the distance.');
       P.d = snap(ux * k.tAt); P.fromT = k.tAt;
       const tDown = (uy + Math.sqrt(uy * uy + 2 * g * h0)) / g;
-      if (k.tAt > tDown + 1e-9) return fail(`By ${M`t = ${d(k.tAt)} [s]`} it has already landed, at ${M`t = ${d(snap(tDown))} [s]`}: it is never above ${K.the} then.`);
+      if (k.tAt > tDown + 1e-9) return fail(`By ${M`t = ${d(k.tAt)} [s]`} it has already landed, at ${M`t = ${d(snap(tDown))} [s]`}: it ${K.hits ? 'never reaches' : 'is never above'} ${K.the} then.`);
     }
     if (have(P.d) && !(P.d > 0)) return fail('The point is ahead of the launch: give its distance as a positive number.');
     if (have(P.H) && P.H < 0) return fail('The point is at or above the ground: give its height as 0 or more.');
     if (have(P.H) && !have(P.d) && (!K.solid || K.hits)) return fail(`Give how far out ${K.the} is, or the time it is above it.`);
     if (have(P.H) && K.solid && !K.hits && !(P.H > 0)) return fail(`A ${K.word} stands up from the ground: give its height as more than 0.`);
     // a wall it hits, at a height the launch disagrees with, is not quietly ignored
-    if (kind === 'face' && have(P.H) && have(P.d)) {
+    // (a launch that never leaves the ground is refused below, as that)
+    if (kind === 'face' && have(P.H) && have(P.d) && (h0 > EPS || uy > EPS)) {
       const tP = P.d / ux, yP = h0 + uy * tP - 0.5 * g * tP * tP;
       const tDown = (uy + Math.sqrt(uy * uy + 2 * g * h0)) / g;
       if (tP > tDown + 1e-9) return fail(`With that launch it lands ${M`${d(snap(ux * tDown))} [m]`} out, at ${M`t = ${d(snap(tDown))} [s]`}, before it reaches the wall at ${M`${d(P.d)} [m]`}: it never hits it.`);
@@ -255,8 +257,8 @@ export function solveTarget(k = {}) {
   } else {
     const bad = needP();
     if (bad) return fail(bad);
-    if ((find === 'T' || find === 'apex') && (byAngle || byParts)) {
-      return fail(`To find the speed and the angle from ${find === 'T' ? 'the time' : 'its greatest height'}, leave the launch speed, angle and components blank: the engine finds them.`);
+    if ((find === 'time' || find === 'apex') && (byAngle || byParts)) {
+      return fail(`To find the speed and the angle from ${find === 'time' ? 'the time' : 'its greatest height'}, leave the launch speed, angle and components blank: the engine finds them.`);
     }
     if (byParts) return fail('With a number to find, give the launch as a speed or an angle, not as components.');
     const rise = P.H - h0;
@@ -275,16 +277,17 @@ export function solveTarget(k = {}) {
         { f: M`y = h_0 + x tan theta - (gx^2)/(2u^2)(1 + tan^2 theta)`,
           s: M`${d(P.H)} = ${h0Term(h0)}${d(P.d)} tan theta - (${d(g)} * ${d(P.d)}^2)/(2 * ${d(k.u)}^2)(1 + tan^2 theta)`,
           r: M`${tanQuad(a2, a1, a0)} = 0` },
-        { f: '', s: w ? '' : M`"dividing by" ${d(a2)}`, r: M`${tanQuad(b2, b1, b0)} = 0` },
-      ];
+        { f: '', s: M`"dividing by" ${d(a2 / b2)}`, r: M`${tanQuad(b2, b1, b0)} = 0` },
+      ].filter((row, i) => i === 0 || Math.abs(a2 / b2 - 1) > 1e-9);
       if (!roots.length) {
         // the highest it can be at that distance, at the best angle
         const best = h0 + P.d * P.d / (4 * kk) - kk;
         if (best < 0) return fail(`At ${M`${d(k.u)} [m s^-1]`} it cannot even get ${M`${d(P.d)} [m]`} out: at every angle it lands before then.`);
         // as many places as it takes to tell the two apart
         let dp = 3;
-        while (dp < 8 && num(best, dp) === num(P.H, dp)) dp++;
-        return fail(`At ${M`${d(k.u)} [m s^-1]`} no angle takes it through that point: the highest it can be ${M`${d(P.d)} [m]`} out is ${M`${num(best, dp)} [m]`}, at an angle of ${M`${ang(Math.atan(P.d / (2 * kk)) / DEG)}°`}, below the ${M`${num(P.H, dp)} [m]`} it needs.`);
+        const fig = (x, p) => num(x, p, { trim: true });
+        while (dp < 8 && fig(best, dp) === fig(P.H, dp)) dp++;
+        return fail(`At ${M`${d(k.u)} [m s^-1]`} no angle takes it through that point: the highest it can be ${M`${d(P.d)} [m]`} out is ${M`${fig(best, dp)} [m]`}, at an angle of ${M`${ang(Math.atan(P.d / (2 * kk)) / DEG)}°`}, below the ${M`${fig(P.H, dp)} [m]`} it needs.`);
       }
       findRows.push({ f: M`tan theta = (-b +- sqrt(b^2 - 4ac))/(2a)`, s: M`(${d(-b1)} +- sqrt(${sgn(b1)}^2 - 4 * ${d(b2)} * ${sgn(b0)}))/(2 * ${d(b2)})`,
         r: roots.length > 1 ? M`tan theta = ${d(roots[1])} "or" ${d(roots[0])}` : M`tan theta = ${d(roots[0])}` });
@@ -314,7 +317,7 @@ export function solveTarget(k = {}) {
       ];
       flights.push({ ux: snap(u * cos), uy: snap(u * Math.sin(k.theta * DEG)), given: 'found' });
       found = { what: 'u', values: [snap(u)] };
-    } else if (find === 'T') {
+    } else if (find === 'time') {
       if (!have(k.T)) return fail('To find the speed and angle from the time, give the time it takes to reach the point.');
       if (!(k.T > 0)) return fail('The time to reach the point is after the launch: give it as a positive number.');
       const ux = snap(P.d / k.T), uy = snap((rise + 0.5 * g * k.T * k.T) / k.T);
@@ -326,7 +329,7 @@ export function solveTarget(k = {}) {
         { f: M`theta = tan^-1 (u_y/u_x)`, s: M`tan^-1 (${sgn(uy)}/${d(ux)})`, r: M`theta = ${ang(Math.atan2(uy, ux) / DEG)}°` },
       ];
       flights.push({ ux, uy, given: 'found' });
-      found = { what: 'T', values: [] };
+      found = { what: 'time', values: [] };
     } else if (find === 'apex') {
       if (!have(k.top)) return fail('To find the speed and angle from its greatest height, give that height above the ground.');
       if (k.top < h0 - 1e-9) return fail(`Its greatest height is at least the ${M`${d(h0)} [m]`} it leaves from.`);
@@ -404,7 +407,7 @@ export function solveTarget(k = {}) {
     notes.push(`Its greatest height on the way to the point is ${M`${d(S.topBefore)} [m]`}${S.apexAt === 'before' ? ', at the top of its path, before it gets there'
       : S.apexAt === 'at' ? ', at the point itself, which is the top of its path' : ', at the point itself: it is still rising'}.`);
   }
-  if (S.apex && !S.hits) notes.push(`At the top of its path it is ${M`${d(S.apex.y)} [m]`} up, ${M`${d(S.apex.x)} [m]`} out, at ${M`t = ${d(S.apex.t)} [s]`}.`);
+  if (S.apex && (!S.hits || S.apex.t < S.end - 1e-9)) notes.push(`At the top of its path it is ${M`${d(S.apex.y)} [m]`} up, ${M`${d(S.apex.x)} [m]`} out, at ${M`t = ${d(S.apex.t)} [s]`}.`);
   if (!S.hits) {
     notes.push(`It lands ${M`${d(S.R)} [m]`} from the launch at ${M`t = ${d(S.tGround)} [s]`}, at ${M`${d(S.landSpeed)} [m s^-1]`}.`);
     derived.push(`lands at ${M`${d(S.R)} [m]`}, ${M`t = ${d(S.tGround)} [s]`}`);
@@ -454,11 +457,11 @@ export function targetWorking(solved) {
   if (find) out.push({ title: findTitle, rows: findRows,
     note: find === 'theta' ? `Its path, ${M`y = h_0 + x tan theta - (gx^2)/(2u^2 cos^2 theta)`}, written with ${M`1/(cos^2 theta) = 1 + tan^2 theta`}, is a quadratic in ${M`tan theta`}: two angles, a flatter and a steeper, can pass through the same point.`
       : find === 'apex' ? `At the top of its path the vertical velocity is zero; the time to the point comes from the vertical motion, and the horizontal speed from that time.`
-        : find === 'T' ? 'The horizontal motion has no acceleration, so the distance over the time is the horizontal velocity; the vertical motion gives the other component.' : '' });
-  const parts = S.given !== 'parts' && find !== 'T' && find !== 'apex';
+        : find === 'time' ? 'The horizontal motion has no acceleration, so the distance over the time is the horizontal velocity; the vertical motion gives the other component.' : '' });
+  const parts = S.given !== 'parts' && find !== 'time' && find !== 'apex';
   out.push({ title: `${find && flights.length > 1 ? 'The flight shown' : parts ? 'The launch' : 'Its path'}${parts ? ', in components' : ''}`,
     // found from the point, its components are worked too, so u_x below has a source
-    rows: [...(S.given !== 'parts' && find !== 'T' && find !== 'apex' ? componentRows(S) : []), pathRow(S)],
+    rows: [...(S.given !== 'parts' && find !== 'time' && find !== 'apex' ? componentRows(S) : []), pathRow(S)],
     note: `Horizontally there is no acceleration; vertically it is ${M`-g`}. Taking ${M`t = x/u_x`} into the height gives the path as an equation in ${M`x`}.` });
   if (P && S.at) {
     const rows = S.at.reached ? atRows(S, P, K) : [];
@@ -466,7 +469,7 @@ export function targetWorking(solved) {
     if (P.fromT) rows.splice(0, 1, { f: M`x = u_x t`, s: M`${d(S.ux)} * ${d(P.fromT)}`, r: M`x = ${d(P.d)} [m]` });
     if (rows.length) out.push({ title: kind === 'point' ? 'At the point' : K.hits ? 'Where it hits the wall' : `At ${K.the}`, rows });
   }
-  if (S.apex && !S.hits) {
+  if (S.apex && (!S.hits || S.apex.t < S.end - 1e-9)) {
     out.push({ title: 'The top of its path', rows: [
       { f: M`t = u_y/g`, s: M`${d(S.uy)}/${d(S.g)}`, r: M`t = ${d(S.apex.t)} [s]` },
       { f: M`H_max = h_0 + (u_y^2)/(2g)`, s: M`${h0Term(S.h0)}(${d(S.uy)}^2)/(2 * ${d(S.g)})`, r: M`H_max = ${d(S.apex.y)} [m]` },

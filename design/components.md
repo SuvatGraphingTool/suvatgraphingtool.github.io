@@ -186,7 +186,7 @@ cleared. `KINDS` — wall, net, tree, face (a wall it hits), point.
 `solveTarget({ g, h0, u, theta, ux, uy, d, H, tAt, kind, find, T, top, flag, pick })`
 — given the launch, what happens at the point; or, with `find`, the angle
 (`theta`: a quadratic in tan θ, two roots), the speed (`u`), or both from the
-time to the point (`T`) or from the greatest height (`apex`). `flights` holds
+time to the point (`time`, with `T`) or from the greatest height (`apex`). `flights` holds
 every answer, steepest first; `pick` chooses the one flown. `targetWorking` —
 the find, the path as an equation in x, the point, the top, the landing, the
 mark, and where a wall that high is cleared.

@@ -247,7 +247,7 @@ group('The Past-paper library: over the wall, everything it says', () => {
   const INPUTS = [
     { g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' },
     { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' },
-    { g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'T', T: 2.4 },
+    { g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'time', T: 2.4 },
     { g: 9.8, h0: 2, d: 20, H: 0.75, kind: 'point', find: 'apex', top: 3 },
     { g: 9.8, d: 20, H: 2, kind: 'point', find: 'apex', top: 5 },
     { g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.4, H: 0.9, kind: 'net' },

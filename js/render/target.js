@@ -79,7 +79,7 @@ export function render(canvas, cam, o) {
     stroke(g, [{ x: a, y: hy }, { x: b, y: hy }], { color: P.mark, width: 1.4, alpha: 0.8 });
     stroke(g, [{ x: a, y: oy + 8 }, { x: b, y: oy + 8 }], { color: P.mark, width: 2 });
     for (const xx of [a, b]) stroke(g, [{ x: xx, y: oy + 4 }, { x: xx, y: oy + 12 }], { color: P.mark, width: 2 });
-    L.add(T`"a" ${tr(Pt.H)} [m] "wall is cleared here"`, (a + b) / 2, oy + 24, { color: P.mark, align: 'center', pri: 7, size: 13, weight: 700 });
+    L.add(`a ${T`${tr(Pt.H)} [m]`} ${{ wall: 'wall', net: 'net', tree: 'tree' }[kind] || 'wall'} is cleared here`, (a + b) / 2, oy + 24, { color: P.mark, align: 'center', pri: 7, size: 13, weight: 700, maxPush: 20 });
     L.add(T`${tr(F.span.to)} [m]`, b, hy - 14, { color: P.mark, align: 'center', pri: 8, size: 14, weight: 700 });
     if (F.span.from > 1e-9) L.add(T`${tr(F.span.from)} [m]`, a, hy - 14, { color: P.mark, align: 'center', pri: 8, size: 14, weight: 700 });
     L.add(T`${tr(Pt.H)} [m]`, a + 8, (hy + oy) / 2, { color: P.mark, align: 'left', pri: 6, size: 14 });

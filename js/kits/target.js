@@ -42,7 +42,7 @@ export const target = {
       { key: 'find', type: 'choice', label: 'Find', names: true,
         hint: 'Its box above is then left to the engine. From the time or the greatest height, leave the speed and the angle blank.',
         options: [{ v: 'theta', label: `the angle ${M`theta`}` }, { v: 'u', label: `the speed ${M`u`}` },
-                  { v: 'T', label: 'both, from the time to it' }, { v: 'apex', label: 'both, from its greatest height' }] },
+                  { v: 'time', label: 'both, from the time to it' }, { v: 'apex', label: 'both, from its greatest height' }] },
       { key: 'T', label: 'Time to reach it (s)', aria: 'Find from: the time to reach the point (s)', placeholder: '—', hint: 'How long it takes to get there.' },
       { key: 'top', label: 'Its greatest height (m)', aria: 'Find from: its greatest height above the ground (m)', placeholder: '—', hint: 'Above the ground.' },
       { key: 'pick', type: 'choice', label: 'Of two answers, fly', default: 'steep', hint: 'Both are worked; the other is drawn faintly.',
@@ -138,7 +138,7 @@ export const target = {
     const row = (fl, i) => `<div class="ph-row" role="row" data-key="${i === solved.pick ? 'first' : 'second'}">
         <span class="ph-name" role="cell"><b>${M`theta = ${deg(fl.theta)}°`}</b><em>${i === solved.pick ? 'flown' : 'the other answer'}</em></span>
         <span role="cell">${cell(fl.u)}</span><span role="cell">${cell(fl.at?.reached ? fl.at.t : null)}</span>
-        <span role="cell">${cell(fl.at?.reached ? fl.at.y : null)}</span><span role="cell">${cell(fl.top)}</span>
+        <span role="cell">${cell(fl.at?.reached ? fl.at.y : null)}</span><span role="cell">${cell(fl.hits ? Math.max(fl.h0, fl.apex && fl.apex.t < fl.end ? fl.apex.y : fl.at.y) : fl.top)}</span>
         <span role="cell">${cell(fl.hits ? null : fl.R)}</span></div>`;
     const table = P && P.d != null ? `
       <div class="ph-tab" role="table" aria-label="Each launch, and where it is at the point">
