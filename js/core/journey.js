@@ -26,6 +26,7 @@
 // THE ENGINE CALCULATES (CLAUDE.md rule 4).
 
 import { staged, quadRoots } from './stages.js';
+import { snap, rat } from './numeric.js';
 import { M, num } from '../notation.js';
 
 const EPS = 1e-9;
@@ -33,7 +34,6 @@ const have = (x) => typeof x === 'number' && isFinite(x);
 // three places, or four for a rate under 1: 0.15625 is 0.1563, not 0.156
 const d = (x, p) => num(x, p ?? (Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const signed = (x) => (x < 0 ? `(${d(x)})` : d(x));
-const snap = (x) => { const r = Math.round(x * 1e9) / 1e9; return Math.abs(x - r) < 1e-9 ? r : x; };
 
 /** The eight, in the order a paper usually gives them, with how each is said. */
 export const QUANTITIES = {
@@ -63,14 +63,7 @@ const mul = (f, k) => F(f.c0 * k, f.c1 * k);
 const isConst = (f) => Math.abs(f.c1) < EPS;
 const val = (f, x) => f.c0 + f.c1 * x;
 
-/** c as p/q when it is one, with q small: 1/0.3 is 10/3, 4/3 is 4/3. */
-export function rat(c) {
-  for (let q = 1; q <= 30; q++) {
-    const p = c * q;
-    if (Math.abs(p - Math.round(p)) < 1e-9 * Math.max(1, Math.abs(p))) return { p: Math.round(p), q };
-  }
-  return null;
-}
+export { rat };
 const VULGAR = { '1/2': '½', '1/3': '⅓', '2/3': '⅔', '1/4': '¼', '3/4': '¾', '1/5': '⅕', '2/5': '⅖',
                  '3/5': '⅗', '4/5': '⅘', '1/6': '⅙', '1/8': '⅛' };
 
@@ -142,6 +135,7 @@ export function solveJourney(k = {}) {
   const steps = [];                 // { title, rows } for the working
   const rows = [];                  // the rows of the "in terms of" step
   const used = new Set();
+  const how = new Set();            // which of the givens fixed the times, for the working's note
   const V0 = have(k.V) ? k.V : null;
   let V = V0 != null ? F(V0) : null;
   const t = { t1: have(k.t1) ? F(k.t1) : null, t2: have(k.t2) ? F(k.t2) : null, t3: have(k.t3) ? F(k.t3) : null };
@@ -151,7 +145,7 @@ export function solveJourney(k = {}) {
   if (!V) {
     for (const [tk, ak] of [['t1', 'a1'], ['t3', 'a3']]) {
       if (!V && t[tk] && have(k[ak])) {
-        V = F(k[ak] * t[tk].c0); used.add(ak);
+        V = F(k[ak] * t[tk].c0); used.add(ak); how.add('V');
         rows.push({ f: M`V = ${QUANTITIES[ak].src}${QUANTITIES[tk].src}`, s: M`${d(k[ak])} * ${d(t[tk].c0)}`, r: M`V = ${d(V.c0)} [m s^-1]` });
       }
     }
@@ -169,17 +163,17 @@ export function solveJourney(k = {}) {
       changed = false;
       for (const [tk, ak] of [['t1', 'a1'], ['t3', 'a3']]) {
         if (!t[tk] && have(k[ak]) && !used.has(ak) && (isConst(V) || unknown === 'V')) {
-          t[tk] = mul(V, 1 / k[ak]); used.add(ak); changed = true;
+          t[tk] = mul(V, 1 / k[ak]); used.add(ak); changed = true; how.add('rate');
           say(tk, t[tk], { f: M`${symOf(tk)} = V/${symOf(ak)}`, s: isConst(V) ? M`${d(V.c0)}/${d(k[ak])}` : M`V/${d(k[ak])}` });
         }
       }
       if (rel && !used.has('rel')) {
         if (t[rel.y] && !t[rel.x]) {
-          t[rel.x] = mul(t[rel.y], relK); used.add('rel'); changed = true;
+          t[rel.x] = mul(t[rel.y], relK); used.add('rel'); changed = true; how.add('rel');
           say(rel.x, t[rel.x], { f: rel.kind === 'a3=k*a1' ? M`a_3 = ${term(relK, 'a_1')} -> t_1 = ${term(relK, 't_3')}` : M`${symOf(rel.x)} = ${term(relK, symOf(rel.y))}`,
                                  s: M`${term(relK, '')} * ${br(t[rel.y], sym())}` });
         } else if (t[rel.x] && !t[rel.y]) {
-          t[rel.y] = mul(t[rel.x], 1 / relK); used.add('rel'); changed = true;
+          t[rel.y] = mul(t[rel.x], 1 / relK); used.add('rel'); changed = true; how.add('rel');
           say(rel.y, t[rel.y], { f: rel.kind === 'a3=k*a1' ? M`a_3 = ${term(relK, 'a_1')} -> ${symOf(rel.y)} = ${symOf(rel.x)}/${term(relK, '')}` : M`${symOf(rel.y)} = ${symOf(rel.x)}/${term(relK, '')}`,
                                  s: M`${br(t[rel.x], sym())}/${term(relK, '')}` });
         }
@@ -187,7 +181,7 @@ export function solveJourney(k = {}) {
       const missing = ['t1', 't2', 't3'].filter((q) => !t[q]);
       if (have(k.T) && !used.has('T') && missing.length === 1) {
         const q = missing[0], others = ['t1', 't2', 't3'].filter((x) => x !== q);
-        t[q] = add(F(k.T), mul(t[others[0]], -1), mul(t[others[1]], -1)); used.add('T'); changed = true;
+        t[q] = add(F(k.T), mul(t[others[0]], -1), mul(t[others[1]], -1)); used.add('T'); changed = true; how.add('T');
         say(q, t[q], { f: M`${symOf(q)} = T - ${symOf(others[0])} - ${symOf(others[1])}`,
                        s: M`${d(k.T)} - ${br(t[others[0]], sym())} - ${br(t[others[1]], sym())}` });
       }
@@ -247,7 +241,7 @@ export function solveJourney(k = {}) {
     if (!roots.length && Math.abs(p) > EPS && q * q - 4 * p * r > -2e-3 * q * q) { roots = [-q / (2 * p)]; touch = true; }
     const ok = (xx) => {
       const vv = val(V, xx), tt = ['t1', 't2', 't3'].map((qq) => val(t[qq], xx));
-      if (!(vv > EPS)) return `makes ${M`V = ${d(vv)}`}, and the top speed has to be positive`;
+      if (!(vv > EPS)) return unknown === 'V' ? 'is negative, and a top speed cannot be' : `makes ${M`V = ${d(vv)}`}, and the top speed has to be positive`;
       for (const [i, qq] of ['t1', 't2', 't3'].entries()) {
         if (tt[i] < -1e-7 || (qq !== 't2' && !(tt[i] > EPS))) return `makes ${M`${symOf(qq)} = ${d(tt[i])} [s]`}, and no stage takes ${tt[i] < 0 ? 'negative' : 'no'} time`;
       }
@@ -308,7 +302,8 @@ export function solveJourney(k = {}) {
     ok: true, mode: 'journey', axis: 'along', J, given, unknown, x, rejected, rows, steps, rel, f, answers,
     lin: { V, T: Tf, t1: t.t1, t2: t.t2, t3: t.t3 },
     // whether any stage's time had to be written in terms of the unknown
-    dependsOn: ['t1', 't2', 't3'].some((q) => !isConst(t[q])),
+    dependsOn: ['t1', 't2', 't3'].filter((q) => q !== unknown).some((q) => !isConst(t[q])),
+    how: [...how],
     // what fixed the unknown, said in words, for the ending
     fixedBy: steps[0] ? { D: 'the area under the speed–time graph, which is the whole distance,', T: 'the whole time',
                           rel: 'the relation between the two stages', a1: 'the acceleration', a3: 'the deceleration' }[steps[0].solver.key] : null,
@@ -329,9 +324,10 @@ export function journeyMotion(J) {
     kind: 'journey', J, tMax: J.T, tFlight: J.T, range: J.D,
     params: { u: 0, a: J.a1, s: J.D, v: 0, t: J.T, g: 0, h: 0, theta: 0, V: J.V },
     stages: m.stages,
-    pos: (tt) => ({ x: m.pos(clampT(tt)), y: 0 }),
-    vel: (tt) => ({ x: m.vel(clampT(tt)), y: 0 }),
-    speed: (tt) => Math.abs(m.vel(clampT(tt))),
+    // at B it is at rest at B: exactly, not a rounding error from it
+    pos: (tt) => ({ x: tt >= J.T - 1e-12 ? J.D : m.pos(clampT(tt)), y: 0 }),
+    vel: (tt) => ({ x: tt >= J.T - 1e-12 || tt <= 0 ? 0 : m.vel(clampT(tt)), y: 0 }),
+    speed: (tt) => (tt >= J.T - 1e-12 || tt <= 0 ? 0 : Math.abs(m.vel(clampT(tt)))),
     accel: (tt) => m.acc(clampT(tt)),
     stageAt: (tt) => m.stageAt(clampT(tt)) || m.stages[m.stages.length - 1],
     bounces: 0, segments: [], horiz: null, uy: 0, ux: 0,
@@ -360,6 +356,11 @@ export function askAt(f, J, at = {}) {
     if (tt < 0 || tt > J.T + 1e-9) out.push({ kind: 't', ok: false, note: `${M`t = ${d(tt)} [s]`} is outside the journey, which takes ${M`${d(J.T)} [s]`}.` });
     else {
       const st = f.stageAt(tt), v = snap(f.vel(tt).x), s = snap(f.pos(tt).x);
+      if (tt >= J.T - 1e-9 || tt <= 1e-12) {
+        const end = tt > 0;
+        out.push({ kind: 't', ok: true, t: tt, v: 0, s, stage: end ? 'rest' : 'start', rows: [{ f: M`v = 0`, s: '', r: M`v = 0 [m s^-1]` }],
+          text: end ? `At ${M`t = ${d(tt)} [s]`} it is at rest at B, ${M`${d(J.D)} [m]`} from A.` : `At ${M`t = 0`} it is at rest at A.` });
+      } else {
       const rows = st.kind === 'accelerating'
         ? [{ f: M`v = (Vt)/t_1`, s: M`(${d(J.V)} * ${d(tt)})/${d(J.t1)}`, r: M`v = ${d(v)} [m s^-1]` }]
         : st.kind === 'steady'
@@ -369,6 +370,7 @@ export function askAt(f, J, at = {}) {
         note: st.kind === 'braking' ? `Braking, the speed falls in a straight line to zero at ${M`T`}, so it is ${M`V`} times the fraction of ${M`t_3`} still to go.`
           : st.kind === 'accelerating' ? `Speeding up, the speed rises in a straight line from zero, so it is ${M`V`} times the fraction of ${M`t_1`} gone.` : '',
         text: `At ${M`t = ${d(tt)} [s]`} it is ${STAGE_WORD[st.kind]}, doing ${M`${d(v)} [m s^-1]`}, ${M`${d(s)} [m]`} from A.` });
+      }
     }
   }
   if (have(at.s)) {
@@ -422,12 +424,16 @@ export function journeyWorking(solved) {
   const S = (key) => QUANTITIES[key].src;
   if (rows.length) {
     out.push({
-      title: unknown ? `Each stage in terms of ${unknown === 'V' ? 'V' : 'the unknown'}` : 'Each stage from what is given',
+      title: solved.dependsOn ? `Each stage in terms of ${unknown === 'V' ? 'V' : 'the unknown'}` : 'Each stage from what is given',
       rows,
-      note: unknown && solved.dependsOn
-        ? `${M`${S(unknown)}`} is the one quantity not given, so every time that depends on it is written in terms of it, and one equation is left to find it.`
-        : unknown ? `Every time follows from what is given; ${M`${S(unknown)}`} is what is left to find.`
-        : 'A time from each rate: the time to reach the top speed is the speed divided by the rate.',
+      note: [
+        solved.dependsOn ? `${M`${S(unknown)}`} is the one quantity not given, so every time that depends on it is written in terms of it, and one equation is left to find it.`
+          : unknown ? `Every other time follows from what is given; ${M`${S(unknown)}`} is what is left to find.` : '',
+        solved.how.includes('V') ? 'The top speed comes from a stage whose rate and time are both given.' : '',
+        solved.how.includes('rate') ? 'A stage from rest, or to rest, takes the top speed divided by its rate.' : '',
+        solved.how.includes('rel') ? 'The relation gives one time from another.' : '',
+        solved.how.includes('T') ? 'The last time is what is left of the whole time.' : '',
+      ].filter(Boolean).join(' '),
     });
   }
   if (steps.length) {

@@ -58,6 +58,7 @@
 <link rel="modulepreload" href="./js/render/journey.js">
 <link rel="modulepreload" href="./js/render/warehouse.js">
 <link rel="modulepreload" href="./js/core/stages.js">
+<link rel="modulepreload" href="./js/core/numeric.js">
 <!-- modulepreload:end -->
 <link rel="stylesheet" href="./css/tokens.css">
 <link rel="stylesheet" href="./css/app.css">
@@ -193,7 +194,7 @@
           <input type="search" id="lib-q" placeholder="Search — a board, a paper, a session, or what happens: collide, meet…" aria-label="Search the past-paper library" autocomplete="off">
         </label>
         <div class="pgrid-row" id="lib-grid"></div>
-        <p class="lib-none" id="lib-none" hidden>Nothing in the library matches that yet.</p>
+        <p class="lib-none" id="lib-none" role="status" aria-live="polite" hidden>Nothing in the library matches that yet.</p>
       </section>
     </div>
   </main>

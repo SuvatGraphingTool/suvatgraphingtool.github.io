@@ -54,6 +54,8 @@ A kit is an object with:
 | field `type: 'choice'` | chips, one of `options: [{ v, label }]` or none; read as a string |
 | field `placeholder` | what an empty box shows; optional ones default to 0 |
 | `g` | may be left out: a kit with no gravity in it has no g row |
+| `hud(f, t, { rate })` | the playback rate is passed in, for a time-lapse to say what actually plays |
+| `lapse(f)` | optional: play the motion as a labelled time-lapse (`timeLapse` in js/core/pace.js) |
 
 | kit | used by |
 |---|---|
@@ -61,6 +63,18 @@ A kit is an object with:
 | `journey` — `js/kits/journey.js` | `journey-3` |
 
 ## Engine models — `js/core/`
+
+### Numbers — `js/core/numeric.js`
+
+`snap(x)` — floating-point dust off a number and nothing else: 8.749999999999993
+is 8.75, 2⁄3 stays 2⁄3. `rat(c, maxQ)` — c as p⁄q in lowest terms when it is one
+with a small q. Every engine uses these two; there are no private copies.
+
+### Pace — `js/core/pace.js`
+
+`timeLapse(tMax)` — the multiple of real time (1, 2, 5, 10, 20…) that plays a
+motion lasting minutes inside about fifteen seconds; `lapseNote(value, tMax,
+lapse)` — the pace card's sentence for it. A kit opts in with `lapse(f)`.
 
 ### Motion in stages — `js/core/stages.js`
 
@@ -157,6 +171,13 @@ scenario:
   colour, for graphs with one line per object.
 - **spec `points`** — `[{ t, y, color, label? }]`: an event the engine found
   (where two lines cross), drawn as a ring once the time cursor reaches it.
+- **series `breaks`** — times where the series jumps (an acceleration changing
+  from one constant to the next, a particle let go): drawn as separate pieces,
+  with no vertical line joining them.
+- **shade `color`** — the colour of what the area IS (displacement under a
+  velocity line), when it is not the line's own.
+- **`yScale(series, tMax)`** — the pure range and ticks every graph uses: the
+  step from the data, room below and more above so a top line clears the title.
 
 Used by: `pair-vertical` (tags, points), `journey-3` (points: the instants asked about).
 

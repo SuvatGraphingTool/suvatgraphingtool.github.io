@@ -35,7 +35,7 @@ export const LIBRARY = [
         ['No air', 'each falls with g and nothing else, at every speed. Air resistance would slow the faster one more, and move the meeting a little.'],
         ['The collision ends the question', 'what happens after they hit depends on their masses and on how they bounce or stick — momentum, which is another chapter. The run stops at the instant they meet.'],
       ],
-      caveat: 'What the engine did compute is on the left: each particle’s height as a function of time, the instant the two are equal, and both velocities then. Every figure on this card came out of that.',
+      caveat: 'What the engine did compute is above: each particle’s height as a function of time, the instant the two are equal, and both velocities then. Every figure on this card came out of that.',
     } },
 
   { id: 'journey-3', group: 'library', kit: 'journey',

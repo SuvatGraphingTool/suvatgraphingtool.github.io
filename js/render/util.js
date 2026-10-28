@@ -479,7 +479,10 @@ export function labels() {
         // back to what they name; only low-priority chrome is still dropped.
         let leader = null;
         if (y === null) {
-          if (it.pri < 6) continue;
+          // A label that capped how far it may move is not sent further than
+          // that by the fallback either: it is dropped, not flung across the
+          // canvas on a leader.
+          if (it.pri < 6 || o.maxPush != null) continue;
           for (const step of [100, 130, 160, 190]) {
             const cy = it.y + bias * step;
             const box = { x: left(ax), y: cy - bh / 2, w: tw + 10, h: bh };

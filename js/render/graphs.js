@@ -24,9 +24,12 @@ export function yScale(series, tMax) {
   }
   if (!isFinite(lo)) { lo = -1; hi = 1; }
   if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
-  const pad = (hi - lo) * 0.14;
-  lo = Math.min(0, lo - pad); hi = Math.max(0, hi + pad);
-  const stepY = niceStep(hi - lo, 3);
+  // The step is chosen from the data, before any padding, so padding never
+  // coarsens the scale. Then a little room below, and more above, where the
+  // title is: a line along the top of the data stays clear of it.
+  const span = Math.max(hi, 0) - Math.min(lo, 0);      // what is shown always includes zero
+  const stepY = niceStep(span, 3);
+  lo = Math.min(0, lo - span * 0.14); hi = Math.max(0, hi + span * 0.24);
   const ticks = [];
   for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) ticks.push(y);
   return { lo, hi, stepY, ticks };
@@ -58,7 +61,9 @@ export function drawGraph(canvas, spec) {
   }
   ctx.stroke(); ctx.restore();
   for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) {
-    L.add(fmt(y, stepY < 1 ? 1 : 0), PAD.l - 7, Y(y), { color: P.faint, align: 'right', pri: 1, bg: false, size: 15 });
+    // clear of the title's box, which starts at the axis: a top tick level
+    // with the title must not lose to it
+    L.add(fmt(y, stepY < 1 ? 1 : 0), PAD.l - 11, Y(y), { color: P.faint, align: 'right', pri: 1, bg: false, size: 15 });
   }
 
   const stepT = niceStep(tMax, 4);
@@ -76,7 +81,9 @@ export function drawGraph(canvas, spec) {
     ctx.save(); ctx.beginPath(); ctx.moveTo(X(0), Y(0));
     for (let i = 0; i <= 90; i++) ctx.lineTo(X((i / 90) * t), Y(s.fn((i / 90) * t)));
     ctx.lineTo(X(t), Y(0)); ctx.closePath();
-    ctx.fillStyle = fade(ctx, s.color, PAD.t, PAD.t + gh); ctx.fill(); ctx.restore();
+    // in the colour of what the area IS, when the graph says (a displacement
+    // under a velocity line), else the line's own
+    ctx.fillStyle = fade(ctx, shade.color || s.color, PAD.t, PAD.t + gh); ctx.fill(); ctx.restore();
   }
 
   for (const s of series) {

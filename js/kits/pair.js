@@ -74,9 +74,12 @@ export const pair = {
      says so. The meeting is a ring where the height lines cross. */
   graphs(f, t, P) {
     const { A, B, meet } = f, tMax = f.tMax;
+    // each line breaks where its particle is let go or lands: the velocity
+    // and the acceleration jump there, and a jump is not a vertical line
+    const cuts = (p) => [p.t0, p.tLand].filter(isFinite);
     const both = (fnA, fnB, cA) => [
-      { label: 'B', tag: 'B', fn: fnB, color: P.second, dash: null },
-      { label: 'A', tag: 'A', fn: fnA, color: cA, dash: null },
+      { label: 'B', tag: 'B', fn: fnB, color: P.second, dash: null, breaks: cuts(B) },
+      { label: 'A', tag: 'A', fn: fnA, color: cA, dash: null, breaks: cuts(A) },
     ];
     return [
       { canvas: 'g-s', title: 'Height–time', unit: 'm', tMax, t,
@@ -160,9 +163,9 @@ export const pair = {
       </div>`;
     const ex = (key) => solved.extras.find((x) => x.key === key)?.value;
     const tr = (x, dp = 2) => num(x, dp, { trim: true });
-    const own = solved.moment.own.map((r) => `${tr(r.t, 3)} s after ${r.name} sets off`).join(', ');
+    const own = solved.moment.own.map((r) => `${tr(r.t, 3)} <span class="u">s</span> after ${r.name} sets off`).join(', ');
     return {
-      eyebrow: `Stopped at the collision, ${tr(meet.t, 3)} s in${own ? ` · ${own}` : ''}`,
+      eyebrow: `Stopped at the collision, ${tr(meet.t, 3)} <span class="u">s</span> in${own ? ` · ${own}` : ''}`,
       title: `They meet ${tr(meet.x)} m above the ground.`,
       body: `<p>Each one is SUVAT on its own, with ${M`a = -g`}; the meeting is the one instant both
           give the same height. Their speeds then differ by <b>${tr(ex('dSpeed'))} m s⁻¹</b>,

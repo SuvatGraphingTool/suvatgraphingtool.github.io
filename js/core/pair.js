@@ -27,20 +27,17 @@
 
 import { staged, meetings, quadRoots } from './stages.js';
 import { flight } from './projectile.js';
+import { snap, rat } from './numeric.js';
 import { M, num, signed } from '../notation.js';
 
 const EPS = 1e-9;
 const have = (x) => typeof x === 'number' && isFinite(x);
-const d = (x, p = 2) => num(x, p, { trim: true });
+// two places, or enough significant figures for a small one: 0.004 m is not 0 m
+const d = (x, p = 2) => num(x, x !== 0 && Math.abs(x) < 0.1 ? Math.max(p, 2 - Math.floor(Math.log10(Math.abs(x)))) : p, { trim: true });
 const sb = (x, p = 2) => signed(x, p, { trim: true });
 const NAMES = ['A', 'B'];
 const LOOK = 10;            // s shown after the later start, when nothing ever comes down
 
-/** Floating-point dust off an answer: 8.749999999999993 is 8.75. */
-const snap = (x) => {
-  const r = Math.round(x * 1e9) / 1e9;
-  return Math.abs(x - r) < 1e-9 ? r : x;
-};
 
 /* ── one particle ───────────────────────────────────────────────────────
    held at h until t0, then free with a = −g, then on the ground. The time in
@@ -82,26 +79,12 @@ export function poly([c0, c1, c2], dp = 3, { desc = false } = {}) {
   return terms.map((x, i) => (i === 0 ? (x.neg ? `-${x.body}` : x.body) : `${x.neg ? '-' : '+'} ${x.body}`)).join(' ');
 }
 
-/**
- * p/q in lowest terms when both are whole numbers — or become whole numbers
- * after shifting a few decimal places — so 35/10 is written 7/2. Null when
- * the fraction is not a short exact one.
- */
+/** p⁄q in lowest terms when it is a fraction a student would write — 7⁄2,
+    1⁄7, 15⁄7, never 451⁄202 — or null. The one fraction rule (js/core/numeric.js). */
 export function ratio(p, q) {
-  for (let k = 0; k <= 3; k++) {
-    const s = 10 ** k, P = p * s, Q = q * s;
-    if (Math.abs(P - Math.round(P)) < 1e-7 && Math.abs(Q - Math.round(Q)) < 1e-7) {
-      let a = Math.round(P), b = Math.round(Q);
-      if (b === 0) return null;
-      if (b < 0) { a = -a; b = -b; }
-      const gcd = (x, y) => (y ? gcd(y, x % y) : Math.abs(x));
-      const c = gcd(a, b) || 1;
-      a /= c; b /= c;
-      // a fraction a student would write: 7/2, 1/7 — not 451/202
-      return b > 1 && b <= 20 && Math.abs(a) <= 400 ? { p: a, q: b } : null;
-    }
-  }
-  return null;
+  if (!(Math.abs(q) > 1e-12)) return null;
+  const r = rat(p / q, 20);
+  return r && r.q > 1 && Math.abs(r.p) <= 400 ? r : null;
 }
 
 /** Each particle's height as written by hand, with the numbers in. Zero terms
@@ -150,7 +133,7 @@ export function solvePair(k = {}) {
   const A = particle({ ...k.A, t0: have(k.A.t0) ? k.A.t0 : 0, g }, 'A');
   const B = particle({ ...k.B, t0: have(k.B.t0) ? k.B.t0 : 0, g }, 'B');
   for (const p of [A, B]) {
-    if (p.tLand - p.t0 < EPS) {
+    if (p.tLand - p.t0 < EPS || (p.h < EPS && p.u < EPS)) {
       return fail(`${p.name} starts on the ground with no upward velocity, so it never leaves it.`);
     }
   }
@@ -170,9 +153,15 @@ export function solvePair(k = {}) {
       + 'They move as one particle and never meet.');
   }
   const free = (p, t) => p.stageAt(t)?.kind === 'free';
+  // Two that are level and still together (both held at one height, or
+  // sharing a start) part at the end of that stretch; the parting is not a
+  // meeting, and neither is a root a hair after it.
+  const parting = all.filter((m) => m.together).map((m) => m.until);
   const air = (m) => m.x > 1e-6 && m.t > 1e-7 && m.t < tEndLook + 1e-9
     && (free(A, m.t) || free(B, m.t))
-    && !(Math.abs(m.t - Math.max(A.t0, B.t0)) < 1e-9 && Math.abs(A.h - B.h) < 1e-9 && Math.abs(m.x - A.h) < 1e-9);
+    && !m.together && !parting.some((u) => Math.abs(m.t - u) < 1e-6)
+    && !(Math.abs(m.t - Math.max(A.t0, B.t0)) < 1e-9 && Math.abs(A.h - B.h) < 1e-9 && Math.abs(m.x - A.h) < 1e-9)
+    && !(Math.abs(A.h - B.h) < 1e-9 && Math.abs(m.x - A.h) < 1e-9 && Math.abs(m.t - Math.min(A.t0, B.t0)) < 1e-6);
   const hit = all.find(air);
   const meet = hit ? { ...hit, t: snap(hit.t), x: snap(hit.x), vA: snap(hit.vA), vB: snap(hit.vB) } : null;
 
@@ -352,9 +341,10 @@ export function pairWorking(solved) {
   const span = [A, B].map((p) => p.stageAt(meet.t)).filter(Boolean);
   const lo = Math.max(0, ...span.map((st) => st.t0)), hi = Math.min(...span.map((st) => st.t1));
   const why = (t) => (t < -EPS ? 'is before the clock starts'
+    : t < meet.t - 1e-7 && Math.abs(t - Math.min(A.t0, B.t0)) < 1e-7 && Math.abs(A.h - B.h) < 1e-9 ? 'is the instant they start, level with each other — not a meeting'
     : t < lo - 1e-7 ? (heldA || heldB ? 'is before both are moving' : `is before ${A.t0 > B.t0 ? 'A' : 'B'} sets off`)
     : t > hi + 1e-7 ? (heldA || heldB ? `is after ${heldA ? 'A' : 'B'} is let go, when its height is no longer fixed` : 'is after one of them has landed')
-    : 'is a later crossing; the first one is the collision');
+    : t < meet.t ? 'is earlier, before the meeting the run stops at' : 'is a later crossing; the first one is the collision');
   let rejected = [];
   if (linear) {
     const fr = ratio(-dc[0], dc[1]);

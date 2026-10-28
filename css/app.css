@@ -32,7 +32,7 @@ body {
    with no weight and it belongs here. */
 :is(
   .navstep, .steps li span, .tbtn, .ghost, .ghost.sm, .tbtn.sm, .pgblurb,
-  .pc-sub, .pc-note, .s-name, .s-unit, .xhint, .notes, .xrow label,
+  .pc-sub, .pc-note, .s-name, .s-unit, .xhint, .notes, .xrow label, .xrow .xlabel,
   .chip, .solve, .hint, .seg button, .hbox-k, .done-conv, .d-name,
   .d-unit, .dx, .done-note, .mode-say, .angle-say, .guard,
   .pace-pin::after, .pace-note, .pace-use, .pace-scale, .lv, .ph-head,
@@ -251,7 +251,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 
 .extra { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-5); }
 .xrow { background: var(--card); border: 1px solid var(--border-soft); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); box-shadow: var(--shadow); }
-.xrow label { display: block; font-size: var(--fs-xs); color: var(--ink-muted); margin-bottom: var(--sp-2); }
+.xrow label, .xrow .xlabel { display: block; font-size: var(--fs-xs); color: var(--ink-muted); margin-bottom: var(--sp-2); }
 .xrow input[type='number'], .xrow input[type='text'] {
   width: 100%; height: 40px; border-radius: var(--r-md); background: var(--input);
   border: 1px solid var(--border); color: var(--ink); font-size: var(--fs-base);
@@ -1175,3 +1175,8 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr) 200px; }
 .krow-in > .xrow.wide.choice { grid-column: auto; }
 @media (max-width: 560px) { .krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr); } }
+
+/* The second row of boxes in a kit's columns starts level: every hint keeps
+   the room of two lines, so a short one does not pull its column up. */
+.kcol .xhint { min-height: calc(2 * 1.45em); }
+.done-eyebrow .u { text-transform: none; }

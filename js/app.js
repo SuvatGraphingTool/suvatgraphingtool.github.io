@@ -10,7 +10,7 @@ import { flight, timeAbove, heightForTime, timeAtSpeed } from './core/projectile
 import { descent, solveDescent, descentWorking, resolveDescent } from './core/descent.js';
 import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
-import { recommend, paceNote } from './core/pace.js';
+import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
@@ -217,7 +217,7 @@ function filterLibrary(q) {
     const s = LIBRARY.find((x) => x.id === b.dataset.id);
     const hay = [s.name, s.sub, s.note, ...s.sources.map(paperWords), ...(s.tags || [])]
       .join(' ').split(/\s+/).map(stem).filter(Boolean);
-    const hit = words.every((w) => hay.some((h) => h.startsWith(w) || (w.length > 3 && w.startsWith(h) && h.length > 3)));
+    const hit = words.every((w) => hay.some((h) => h.startsWith(w)));
     b.hidden = !hit;
     if (hit) shown++;
   }
@@ -420,6 +420,8 @@ function chooseScenario(id) {
   scene.fitView(cam);
   requestAnimationFrame(() => { scene.fitView(cam); dirty = true; });
   $('chosen').textContent = scenario.name;
+  // the canvas says what it shows: a train, two particles, a projectile
+  $('scene').setAttribute('aria-label', scenario.kit ? `${scenario.name}: ${scenario.place}` : 'Projectile motion');
   buildValuesScreen();
   // An exhibit opens on the experiment itself, not on a form. The gate is
   // `exhibit` rather than `intro`, because Monkey vs Hunter no longer has an
@@ -747,13 +749,17 @@ function buildKitScreen() {
   const box = (f) => {
     const id = `k-${f.key.replace('.', '-')}`;
     if (f.type === 'choice') {
-      return `<div class="xrow wide choice" data-x="${f.key}"><label>${f.label}</label>
-        <div class="chips" data-choice="${f.key}">${f.options.map((o) =>
+      return `<div class="xrow wide choice" data-x="${f.key}"><span class="xlabel" id="${id}-l">${f.label}</span>
+        <div class="chips" role="group" aria-labelledby="${id}-l" data-choice="${f.key}">${f.options.map((o) =>
           `<button class="chip" data-v="${o.v}" aria-pressed="${val(f.key) === o.v}">${o.label}</button>`).join('')}</div>
         ${f.hint ? `<p class="xhint">${f.hint}</p>` : ''}</div>`;
     }
+    // the column's name is part of the box's name: two boxes both called
+    // "Height it starts from" are told apart by whose they are
+    const whose = f.col && K.cols?.[f.col] ? `${K.cols[f.col]}: ` : '';
     return `<div class="xrow${f.narrow ? ' narrow' : ''}" data-x="${f.key}"><label for="${id}">${f.label}</label>
       <input id="${id}" type="text" inputmode="decimal" autocomplete="off" data-k="${f.key}"
+             aria-label="${whose}${f.label.replace(/<[^>]+>/g, '')}"
              value="${val(f.key) ?? ''}" placeholder="${f.placeholder ?? (f.optional ? '0' : '—')}">
       ${f.hint ? `<p class="xhint" data-say="${f.say || ''}">${f.hint}</p>` : ''}</div>`;
   };
@@ -770,14 +776,14 @@ function buildKitScreen() {
   $('extra').innerHTML = `<div class="kcols" style="--kc: ${colNames.length}">${cols}</div>${rows}`
     + (K.g ? `<div class="xrow wide" data-x="g"><label for="k-g">Acceleration due to gravity, g (m s⁻²)</label>
       <input id="k-g" type="text" inputmode="decimal" autocomplete="off" data-k="g" value="${g ?? ''}" placeholder="—">
-      <div class="chips" id="k-g-chips">${K.g.map((x) =>
+      <div class="chips" id="k-g-chips" role="group" aria-label="The value papers use">${K.g.map((x) =>
         `<button class="chip" data-g="${x}" aria-pressed="${g === x}">${x}</button>`).join('')}</div>
       <p class="xhint">Use the value the paper gives: answers depend on it.</p></div>` : '');
 
   const fieldOf = (key) => [...K.fields, ...(K.rows || []).flatMap((r) => r.fields)].find((x) => x.key === key);
   const sayDir = (inp) => {
     const hint = inp.parentElement.querySelector('.xhint');
-    if (!hint || hint.dataset.say !== 'dir') return;
+    if (!hint || hint.dataset.say !== 'dir' || hint.dataset.bad === 'true') return;
     const f = fieldOf(inp.dataset.k);
     const v = state.kit[inp.dataset.k];
     hint.innerHTML = v === undefined ? f.hint : `<b>${K.dir(v)}</b> — ${f.hint}`;
@@ -787,6 +793,16 @@ function buildKitScreen() {
       const v = parseValue(e.target.value);
       if (v !== undefined && isFinite(v)) state.kit[e.target.dataset.k] = v;
       else delete state.kit[e.target.dataset.k];
+      // A box it cannot read says so, rather than being taken as blank:
+      // "5 min" and "6.3 km" are what the hints invite people to convert.
+      const hint = e.target.parentElement.querySelector('.xhint');
+      if (hint) {
+        if (!hint.dataset.was) hint.dataset.was = hint.innerHTML;
+        const bad = Number.isNaN(v);
+        hint.dataset.bad = String(bad);
+        if (bad) hint.innerHTML = 'That is not a number it can read. Type the number alone, in metres and seconds — 300, not 5 min.';
+        else if (hint.dataset.say !== 'dir') hint.innerHTML = hint.dataset.was;
+      }
       if (e.target.dataset.k === 'g' && $('k-g-chips')) {
         for (const c of $('k-g-chips').children) c.setAttribute('aria-pressed', String(parseFloat(c.dataset.g) === state.kit.g));
       }
@@ -1306,7 +1322,10 @@ function buildLive() {
     const off = !!K?.hides.extras.includes('energy');
     if (box) {
       box.closest('.ck').hidden = off;
-      if (off && box.checked) { box.checked = false; state.extras.energy = false; }
+      // switched off for a kit that has nothing to say about energy, and back
+      // on again for the next scenario that does, if it was on before
+      if (off && box.checked) { box.checked = false; state.extras.energy = false; state.energyWas = true; }
+      if (!off && state.energyWas) { box.checked = true; state.extras.energy = true; state.energyWas = false; }
     }
   }
   if (!spec) return;
@@ -1827,7 +1846,8 @@ function syncRate() {
   // a drag turns jumpy. Same guard syncLive already uses.
   const bar = $('bar-rate');
   if (document.activeElement !== bar) bar.value = String(value);
-  $('bar-rate-val').textContent = shown;
+  // the bar has room for the number only; the card says what it is a multiple of
+  $('bar-rate-val').textContent = lapse > 1 ? `${num(state.rate * lapse, 1, { trim: true })}×` : shown;
 
   // what the student watches, which a time-lapse kit shortens
   const tMax = traj?.tMax / lapse;
@@ -1844,18 +1864,16 @@ function syncRate() {
   const r = paceNote(value, tMax);
   // A time-lapse is not a flight that "really lasts" what is watched, so it
   // says its own two numbers rather than borrowing the flights' sentence.
-  note.textContent = lapse > 1
-    ? `A time-lapse: this journey takes ${num(traj.tMax, 0)} s, so it is shown ${num(lapse, 0)} times faster than real time. `
-      + `At this setting it lasts about ${num(tMax * 100 / Math.max(1, value), 0)} s on screen.`
-    : r.text;
+  const rr = lapse > 1 ? lapseNote(value, traj.tMax, lapse) : r;
+  note.textContent = rr.text;
   // and the ends of the scale say what they are on this one
   const scale = $('pace').querySelectorAll('.pace-scale span');
   if (scale.length === 3) {
     scale[1].textContent = lapse > 1 ? `${num(lapse / 2, 1, { trim: true })}×` : '0.5×';
     scale[2].textContent = lapse > 1 ? `${num(lapse, 0)}× real time` : 'real time';
   }
-  note.dataset.ok = String(r.ok);
-  use.hidden = r.ok;
+  note.dataset.ok = String(rr.ok);
+  use.hidden = rr.ok;
   // The bar has no room for the sentence, so it says the same verdict the
   // only way a bar can: the pin is where the flight asked for, and the
   // readout goes off-colour when the setting is nowhere near it.
@@ -2261,7 +2279,7 @@ function renderHud() {
      <div class="hbox-v">${val}<small>${unit}</small></div></div>`;
   // A kit says what its stage reads out.
   if (kit()) {
-    const r = kit().hud(traj, state.t);
+    const r = kit().hud(traj, state.t, { rate: state.rate });
     $('hud-left').innerHTML = r.left.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
     $('hud-right').innerHTML = r.right.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
     return;
@@ -2384,7 +2402,8 @@ function showKitDone() {
   // What the model leaves out belongs to a run that met. A run that did not
   // has nothing in it the collision caveats are about, so they are not shown.
   $('exdone-real-h').closest('.ex-real').hidden = r.real === false;
-  $('exdone-eyebrow').textContent = r.eyebrow;
+  // innerHTML: a unit is wrapped so the eyebrow's capitals leave it alone
+  $('exdone-eyebrow').innerHTML = r.eyebrow;
   $('exdone-title').textContent = r.title;
   $('exdone-body').innerHTML = r.body;
   $('exdone-real-h').textContent = e.realTitle || '';

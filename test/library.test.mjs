@@ -9,6 +9,8 @@ import { KITS } from '../js/kits/index.js';
 import { staged, meetings, quadRoots } from '../js/core/stages.js';
 import { solvePair, pairWorking, poly, ratio } from '../js/core/pair.js';
 import { yScale } from '../js/render/graphs.js';
+import { snap, rat } from '../js/core/numeric.js';
+import { timeLapse, lapseNote } from '../js/core/pace.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
 
 let pass = 0, fail = 0;
@@ -268,10 +270,43 @@ group('A journey: what critic round 1 found, kept found', () => {
   ok(KITS.journey.lapse({ tMax: 700 }) === 50 && KITS.journey.lapse({ tMax: 270 }) === 20, 'every journey inside about fifteen seconds of watching');
   const known = J({ t1: 60, t3: 30, T: 270, D: 4500 });
   ok(!known.dependsOn && /Every time followed from what was given/.test(strip(KITS.journey.ending(known).body))
-     && /Every time follows from what is given/.test(strip(journeyWorking(known)[0].note)), 'when no time depends on the unknown, neither the working nor the ending says it did');
+     && /Every other time follows from what is given/.test(strip(journeyWorking(known)[0].note)), 'when no time depends on the unknown, neither the working nor the ending says it did');
   ok(/which is the whole distance, fixed it/.test(strip(KITS.journey.ending(e30()).body)), 'the ending\u2019s sentence about the area is whole');
   const hud = KITS.journey.hud(e30().f, 300);
   ok(/rest/.test(hud.left[2].k) && hud.right.some((b) => b.v === '20×'), 'at B it says at rest, and the clock says it is a time-lapse');
+});
+
+group('The audit after two scenarios: what it found, kept found', () => {
+  ok(snap(8.749999999999993) === 8.75 && snap(2 / 3) === 2 / 3 && snap(0.15625) === 0.15625 && snap(1 / 7) === 1 / 7,
+     'snap removes floating-point dust and nothing else: 2⁄3 stays 2⁄3');
+  ok(rat(3.5).p === 7 && rat(3.5).q === 2 && rat(1 / 0.3).q === 3 && rat(Math.SQRT2) === null, 'one fraction finder for every engine');
+  let bad = 0;
+  for (let i = 0; i < 400; i++) {
+    const V = 1 + (i * 7.3) % 40, t1 = 1 + (i * 3.1) % 90, t2 = (i * 11.7) % 200, t3 = 1 + (i * 5.9) % 90;
+    const q = solveJourney({ V, t1, t2, t3 });
+    if (!q.ok || q.f.vel(q.J.T).x !== 0 || q.f.pos(q.J.T).x !== q.J.D) bad++;
+  }
+  ok(bad === 0, 'every journey is exactly at rest, exactly at B, at the end');
+  const atB = solveJourney({ V: 20, t1: 10, t2: 60, t3: 30, at: { t: 100 } });
+  ok(/at rest at B, 1600m from A/.test(strip(atB.notes.join(' '))), 'asked about t = T, it says at rest at B — not braking at −10⁻⁸');
+  ok(!solvePair({ A: { h: 10, u: 0, t0: 1 }, B: { h: 10, u: 0, t0: 2 }, g: 9.8 }).meet, 'two held level, let go one after the other: their parting is not a meeting');
+  const early = pairWorking(solvePair({ A: { h: 10, u: 5 }, B: { h: 10, u: 0, t0: 2 }, g: 9.81 }));
+  ok(/t=0s is the instant they start, level/.test(strip(early[1].note)) && !/later crossing/.test(strip(early[1].note)), 'a root at the start is the start, not a later crossing');
+  ok(!solvePair({ A: { h: 0, u: 0 }, B: { h: 5, u: 1 }, g: 0 }).ok, 'with no gravity, a particle on the ground and not thrown up never leaves it');
+  ok(/0\.00373m above the ground/.test(strip(solvePair({ A: { h: 0, u: 0.3 }, B: { h: 0.004, u: 0, t0: 0.01 }, g: 9.81 }).say)), 'a meeting 4 mm up is not 0 m up');
+  const neg = journeyWorking(solveJourney({ a1: 1, a3: 0.5, D: 2000, rel: { kind: 't1=k*t2', k: 0.25 } }))[1].note;
+  ok(/is negative, and a top speed cannot be/.test(strip(neg)), 'a negative root for V is called negative, not circularly');
+  const PP = { disp: 'd', vel: 'v', acc: 'a', second: 's', mark: 'm' };
+  const pg = KITS.pair.graphs(solvePair({ A: { h: 0, u: 20 }, B: { h: 40, u: 0, t0: 1 }, g: 10 }).f, 1, PP);
+  ok(pg.every((sp) => sp.series.every((x) => Array.isArray(x.breaks) && x.breaks.length)), 'the pair’s lines break at release and landing: no vertical lines');
+  const jg = KITS.journey.graphs(e30().f, 1, PP);
+  ok(jg[1].shade.color === 'd' && /displacement/.test(jg[1].shade.label), 'the area under velocity–time is shaded as what it is: displacement');
+  const y = yScale([{ fn: () => 40 }], 10);
+  ok(y.hi >= 40 * 1.2 && y.ticks.includes(40), 'a line along the top of a graph has room above it, and its value is labelled');
+  ok(timeLapse(300) === 20 && timeLapse(700) === 50 && timeLapse(8) === 1, 'the time-lapse lives with the rest of the pace logic');
+  ok(/takes 300 s, so it is shown 20 times faster/.test(lapseNote(75, 300, 20).text) && !/really lasts/.test(lapseNote(75, 300, 20).text), 'its sentence never says a train really lasts 15 s');
+  const hud = KITS.journey.hud(e30().f, 100, { rate: 0.75 });
+  ok(hud.right[1].v === '15×' && hud.left[0].k === 'Displacement from A' && hud.left[1].k === 'Velocity', 'the HUD says what actually plays, in the road’s words');
 });
 
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }

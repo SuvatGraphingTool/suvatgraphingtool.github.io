@@ -148,7 +148,7 @@ export function render(canvas, cam, o) {
   zone(J.s1, J.s1 + J.s2, T`s_2 = ${tr(J.s2)} [m]`);
   zone(J.s1 + J.s2, J.D, T`s_3 = ${tr(J.s3)} [m]`);
   // equal-time marks behind the train
-  const dt = J.T / 12;
+  const dt = niceStep(J.T, 12);         // round times: 25 s, 50 s, not 8.3 s
   for (let i = 0; i * dt <= t + 1e-9; i++) {
     const x = S(f.pos(i * dt).x);
     dot(g, x, ty - 2, 4, { fill: P.vel, stroke: P.surface, width: 1.4 });

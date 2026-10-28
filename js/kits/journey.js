@@ -5,6 +5,7 @@
 
 import { solveJourney, journeyWorking } from '../core/journey.js';
 import * as stage from '../render/journey.js';
+import { timeLapse } from '../core/pace.js';
 import { M, num } from '../notation.js';
 
 const tr = (x, p) => num(x, p ?? (Math.abs(x) < 1 ? 4 : 2), { trim: true });
@@ -59,13 +60,7 @@ export const journey = {
      whole multiple of real time chosen to fit the journey into about fifteen
      seconds, and the stage says so beside the clock. Nothing in the physics
      changes: t is still the journey's own time. */
-  lapse(f) {
-    // the smallest of 1, 2, 5, 10, 20… that gets it inside fifteen seconds
-    const want = f.tMax / 15;
-    if (!(want > 1)) return 1;
-    const mag = 10 ** Math.floor(Math.log10(want)), n = want / mag;
-    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
-  },
+  lapse: (f) => timeLapse(f.tMax),
 
   read(vals) {
     const k = Object.fromEntries(KEYS.map((q) => [q, vals[q]]));
@@ -77,20 +72,21 @@ export const journey = {
   working: (solved) => journeyWorking(solved),
   render: stage.render,
 
-  hud(f, t) {
-    const st = f.stageAt(t), done = t >= f.tMax - 1e-9;
+  /** The readouts, named as the road names them: displacement from A,
+      velocity, acceleration — braking is a negative one. */
+  hud(f, t, { rate = 1 } = {}) {
+    const done = t >= f.tMax - 1e-9, lapse = timeLapse(f.tMax);
     return {
       left: [
-        { k: 'Distance from A', v: num(f.pos(t).x, 1), unit: 'm', hue: 'disp' },
-        { k: 'Speed', v: num(f.vel(t).x, 2), unit: 'm s⁻¹', hue: 'vel' },
-        done ? { k: 'At rest at B', v: '0', unit: 'm s⁻²', hue: 'acc' }
-          : { k: st.kind === 'braking' ? 'Decelerating' : st.kind === 'steady' ? 'Steady' : 'Accelerating',
-              v: num(Math.abs(f.accel(t)), 3), unit: 'm s⁻²', hue: 'acc' },
+        { k: 'Displacement from A', v: num(f.pos(t).x, 1), unit: 'm', hue: 'disp' },
+        { k: 'Velocity', v: num(f.vel(t).x, 2), unit: 'm s⁻¹', hue: 'vel' },
+        { k: done ? 'Acceleration, at rest at B' : 'Acceleration', v: done ? '0' : tr(f.accel(t)), unit: 'm s⁻²', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' },
-              ...(journey.lapse(f) > 1 ? [{ k: 'Played at', v: `${num(journey.lapse(f), 0)}×`, unit: 'real time' }] : [])],
+              ...(lapse > 1 ? [{ k: 'Time-lapse', v: `${num(rate * lapse, 1, { trim: true })}×`, unit: 'real time' }] : [])],
     };
   },
+
 
   /* Along a track every quantity is horizontal, so every line is dashed, as
      on the road. The speed–time graph is the one the question is about: its
@@ -105,7 +101,7 @@ export const journey = {
         series: [{ label: 'from A', fn: (tt) => f.pos(tt).x, color: P.disp, dash: [6, 4] }] },
       { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax, t, points: rings,
         series: [{ label: 'velocity', fn: (tt) => f.vel(tt).x, color: P.vel, dash: [6, 4] }],
-        shade: { index: 0, label: 'area = distance from A' } },
+        shade: { index: 0, label: 'area = displacement from A', color: P.disp } },
       { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,
         series: [{ label: 'acceleration', fn: (tt) => f.accel(tt), color: P.acc, dash: [6, 4],
                    breaks: [f.J.t1, f.J.t1 + f.J.t2] }] },
@@ -169,7 +165,7 @@ export const journey = {
       <b>${M`${tr(solved.x)} ${unknown === 'V' ? '[m s^-1]' : '[s]'}`}</b>.</p>` : '';
     const asked = answers.filter((a) => a.ok).map((a) => `<p>${a.text}</p>`).join('');
     return {
-      eyebrow: `From A to B in ${tr(J.T)} seconds`,
+      eyebrow: `From A to B in ${tr(J.T)} <span class="u">s</span>`,
       title: `${tr(J.D)} m, at up to ${tr(J.V)} m s⁻¹.`,
       body: `${found}${asked}${table}`,
       real: true,
