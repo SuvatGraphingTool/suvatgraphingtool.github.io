@@ -472,7 +472,7 @@ group('Over the wall: each paper against its mark scheme', () => {
   const w22 = solveTarget({ g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' });
   ok(w22.ok && near(Math.tan(w22.flights[0].theta * Math.PI / 180), 1.5) && near(Math.tan(w22.flights[1].theta * Math.PI / 180), 1), 'W J22 Q10(b)(i): tan θ = 1 or 1.5');
   ok(near(w22.flagGap, 5) && near(w22.other.R, 250 * 1.5 / 3.25), 'W J22 Q10(b)(ii): 5 m short at tan θ = 1; the other lands 115.4 m out');
-  ok(strip(targetWorking(w22).find((x) => /path/.test(x.title)).rows[0].r) === 'y=x−0.008x2', 'W J22 Q10(a): the path, y = x − x²/125 at tan θ = 1');
+  ok(targetWorking(w22).flatMap((x) => x.rows).some((r) => strip(r.r) === 'y=x−0.008x2'), 'W J22 Q10: at tan θ = 1 its path is y = x − x²/125');
   // AQA MM1B Jan 2013 Q8: horizontal component 16, V ≈ 20.6, α ≈ 39.1°
   const a13 = solveTarget({ g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'T', T: 2.4 });
   ok(a13.ok && near(a13.shown.ux, 16) && near(a13.shown.u, 20.6, 0.05) && near(a13.shown.theta, 39.1, 0.05), 'AQA J13 Q8: 16 m s⁻¹, V = 20.6, α = 39.1°');
@@ -517,6 +517,33 @@ group('Over the wall: what cannot be, refused with its reason', () => {
     ok(g.length === 3 && g.every((x) => x.series.length === 2 && x.series[0].dash && !x.series[1].dash), 'three graphs, across dashed and up solid');
   }
 });
+group('Over the wall: the critic’s round 1', () => {
+  const face = solveTarget({ g: 9.8, u: 20, theta: 30, d: 20, kind: 'face' });
+  ok(face.ok && face.shown.hits && near(face.f.tMax, face.shown.at.t) && face.shown.R == null && !targetWorking(face).some((x) => /lands/.test(x.title)), 'a wall it hits, no height given: the flight ends at the wall');
+  ok(/not the 2 m given/.test(strip(solveTarget({ g: 9.8, u: 20, theta: 30, d: 20, H: 2, kind: 'face' }).reason).replace(/(\d)m\b/g, '$1 m')), 'a wall it hits at a height the launch disagrees with: refused, with both heights');
+  for (const k of [{ g: 9.8, theta: -20, h0: 10, d: 10, H: 1, find: 'u', kind: 'point' }, { g: 10, d: 26, H: 2.3, kind: 'point', find: 'apex', top: 33.6 },
+    { g: 9.81, h0: 14.6, d: 53.2, H: 1.8, kind: 'tree', find: 'theta', u: 38.2 }, { g: 10, d: 63.7, H: 14.5, kind: 'point', find: 'theta', u: 49.1 }]) {
+    const r = solveTarget(k);
+    const all = [...r.notes, ...targetWorking(r).flatMap((x) => x.rows.flatMap((y) => [y.s, y.r]))].map(strip).join(' ');
+    ok(r.ok && r.flights.every((f) => f.at.clear === 0) && !/×\s*10[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(all), `no rounding noise reaches the screen: ${JSON.stringify(k)}`);
+  }
+  const below = strip(solveTarget({ g: 9.8, d: 10, H: 0, h0: 20, T: 0.5, find: 'T', kind: 'point' }).notes.join(' '));
+  ok(/61\.96° below/.test(below) && !/−61/.test(below), 'below the horizontal is said without a minus', below);
+  ok(/horizontally/.test(strip(solveTarget({ g: 9.8, h0: 5, d: 14, H: 0, find: 'u', theta: 0, kind: 'point' }).notes.join(' '))), 'a horizontal launch is said as one');
+  ok(/already landed/.test(strip(solveTarget({ g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.8, H: 0.9, kind: 'net' }).reason)), 'a time above the net after it has landed: refused');
+  ok(/more than 0/.test(strip(solveTarget({ g: 9.8, u: 10, theta: 30, d: 5, H: 0, kind: 'wall' }).reason)), 'a wall 0 m high: refused');
+  ok(/choose what to find/.test(strip(solveTarget({ g: 9.8, u: 10, theta: 30, d: 5, H: 1, top: 3 }).reason)), 'a greatest height typed with nothing to find: said, not ignored');
+  const w19 = targetWorking(solveTarget({ g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.4, H: 0.9, kind: 'net' }));
+  const net = w19.find((x) => /net/.test(x.title)).rows.map((r) => strip(r.f));
+  ok(net[0] === 'x=uxt' && !net.includes('t=dux'), 'the time given: the distance is worked from it, not back again');
+  ok(w19.some((x) => x.rows.some((r) => strip(r.s) === '2.4−(1.430)x−9.8x22×302')), 'the path is written with a minus, never “+ −”');
+  const e23 = targetWorking(solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }));
+  ok(e23.flatMap((x) => x.rows).some((r) => strip(r.f) === 'ux=ucosθ' && /28cos71\.57°/.test(strip(r.s))), 'found angle: its components are worked before u_x is used');
+  ok(e23.flatMap((x) => x.rows).some((r) => strip(r.f) === 'vy=uy−gt'), 'the landing velocity’s vertical part is its own row');
+  ok(KITS.target.rows.flatMap((r) => r.fields).filter((f) => f.type === 'choice' && f.key !== 'find').every((f) => f.default), 'a choice the engine defaults shows its default');
+  ok(byId('over-the-wall').params.pick === 'flat' && near(solveTarget(byId('over-the-wall').params).flagGap, 5), 'the card opens on the WJEC answer: 5 m short of the flag');
+});
+
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
 

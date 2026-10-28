@@ -769,10 +769,11 @@ function buildKitScreen() {
   const box = (f) => {
     const id = `k-${f.key.replace('.', '-')}`;
     if (f.type === 'choice') {
+      // a choice with a default shows it pressed: what the engine assumes is on screen
       return `<div class="xrow wide choice" data-x="${f.key}"><span class="xlabel" id="${id}-l">${f.label}</span>
-        <div class="chips" role="group" aria-labelledby="${id}-l" data-choice="${f.key}">${f.options.map((o) =>
-          `<button class="chip" data-v="${o.v}" aria-pressed="${val(f.key) === o.v}">${o.label}</button>`).join('')}</div>
-        ${f.hint ? `<p class="xhint">${f.hint}</p>` : ''}</div>`;
+        <div class="chips" role="group" aria-labelledby="${id}-l"${f.hint ? ` aria-describedby="${id}-h"` : ''} data-choice="${f.key}">${f.options.map((o) =>
+          `<button class="chip" data-v="${o.v}" aria-pressed="${(val(f.key) ?? f.default) === o.v}">${o.label}</button>`).join('')}</div>
+        ${f.hint ? `<p class="xhint" id="${id}-h">${f.hint}</p>` : ''}</div>`;
     }
     // the column's name is part of the box's name: two boxes both called
     // "Height it starts from" are told apart by whose they are; a box in a
@@ -853,7 +854,8 @@ function buildKitScreen() {
         const key = group.dataset.choice;
         const on = state.kit[key] !== c.dataset.v;
         if (on) state.kit[key] = c.dataset.v; else delete state.kit[key];
-        for (const x of group.children) x.setAttribute('aria-pressed', String(on && x === c));
+        const cur = state.kit[key] ?? fieldOf(key)?.default;
+        for (const x of group.children) x.setAttribute('aria-pressed', String(x.dataset.v === cur));
         markFound(key);
         recompute();
       });

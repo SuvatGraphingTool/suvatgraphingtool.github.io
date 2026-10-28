@@ -16,7 +16,7 @@ const FIELDS = [
   { key: 'theta', col: 'launch', label: `Angle ${M`theta`} (°)`, placeholder: '—', hint: 'Above the horizontal; negative is below it.' },
   { key: 'd', col: 'point', label: 'How far out it is (m)', placeholder: '—', hint: 'Across from the launch.' },
   { key: 'H', col: 'point', label: 'Height of its top (m)', placeholder: '—', hint: 'Above the ground: the top of the wall, net or tree, or the point.' },
-  { key: 'tAt', col: 'point', label: 'or above it at time (s)', placeholder: '—', hint: '“After 2⁄5 s it is above the net” is 0.4.' },
+  { key: 'tAt', col: 'point', label: 'or above it at time (s)', placeholder: '—', hint: 'When the paper says how long it takes to be above it.' },
 ];
 
 export const target = {
@@ -35,7 +35,7 @@ export const target = {
       { key: 'uy', label: 'Up (m s⁻¹)', aria: 'Launch velocity: up (m s⁻¹)', placeholder: '—', hint: '… and −1.4 here. Thrown horizontally is 0.' },
     ] },
     { title: 'What is at the point', fields: [
-      { key: 'kind', type: 'choice', label: 'It is', hint: 'A wall, net or tree it does not clear, it hits. A wall it hits stops it there.',
+      { key: 'kind', type: 'choice', label: 'It is', default: 'wall', hint: 'A wall, net or tree it does not clear, it hits. A wall it hits stops it there.',
         options: [{ v: 'wall', label: 'A wall' }, { v: 'net', label: 'A net' }, { v: 'tree', label: 'A tree' }, { v: 'face', label: 'A wall it hits' }, { v: 'point', label: 'A target point' }] },
     ] },
     { title: 'Find from the point, if the paper asks', fields: [
@@ -43,9 +43,9 @@ export const target = {
         hint: 'Its box above is then left to the engine. From the time or the greatest height, leave the speed and the angle blank.',
         options: [{ v: 'theta', label: `the angle ${M`theta`}` }, { v: 'u', label: `the speed ${M`u`}` },
                   { v: 'T', label: 'both, from the time to it' }, { v: 'apex', label: 'both, from its greatest height' }] },
-      { key: 'T', label: 'Time to reach it (s)', aria: 'Find from: the time to reach the point (s)', placeholder: '—', hint: '“After 2.4 s it hits the wall”.' },
+      { key: 'T', label: 'Time to reach it (s)', aria: 'Find from: the time to reach the point (s)', placeholder: '—', hint: 'How long it takes to get there.' },
       { key: 'top', label: 'Its greatest height (m)', aria: 'Find from: its greatest height above the ground (m)', placeholder: '—', hint: 'Above the ground.' },
-      { key: 'pick', type: 'choice', label: 'Of two answers, fly', hint: 'Both are worked; the other is drawn faintly.',
+      { key: 'pick', type: 'choice', label: 'Of two answers, fly', default: 'steep', hint: 'Both are worked; the other is drawn faintly.',
         options: [{ v: 'steep', label: 'the steeper' }, { v: 'flat', label: 'the flatter' }] },
     ] },
     { title: 'A mark on the ground, if the paper has one', fields: [

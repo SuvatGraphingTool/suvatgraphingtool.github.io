@@ -17,7 +17,8 @@ import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep, w
 import { T, num } from '../notation.js';
 
 const tr = (x, p = 3) => num(x, p, { trim: true });
-const HUD = 250;              // the readouts' column, top left
+const HUD = 250;              // the readouts' column, top left …
+const HUD_H = 290;            // … and how far down it reaches
 
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
@@ -31,12 +32,24 @@ export function render(canvas, cam, o) {
   // ── the frame: both paths, the point, the mark; one scale both ways
   const paths = [f.path(160), ...(O ? [f.path(160, O.end, O)] : [])];
   const xs = [0, ...paths.flat().map((p) => p.x)], ys = [0, F.h0, ...paths.flat().map((p) => p.y)];
-  if (Pt) { xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H * (kind === 'face' ? 1.5 : 1)); }
+  // a wall it hits stands above where it hits, whether or not its height was given
+  const faceTop = kind === 'face' && Pt ? (Pt.H ?? F.at?.y ?? 0) : null;
+  if (Pt) { xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H); if (faceTop != null) ys.push(faceTop * 1.5); }
   if (f.flag != null) xs.push(f.flag);
   const xMax = Math.max(...xs) * 1.06 || 1, yMax = Math.max(...ys, xMax * 0.05) * 1.12;
-  // room on the right for the velocity arrow where it lands
-  const left = HUD + 40, right = w - 100, top = 64, bottom = h - 64;
-  const k = Math.min((right - left) / xMax, (bottom - top) / yMax);
+  // The scene goes beside the readouts or below them, whichever draws it
+  // larger; on a narrow screen it takes the whole width. Room on the right
+  // for the velocity arrow where it lands, and below for the distances.
+  const bottom = h - 64;
+  const frames = w < 520 ? [{ left: 20, right: w - 40, top: 64 }]
+    : [{ left: HUD + 40, right: w - 100, top: 64 }, { left: 40, right: w - 100, top: Math.min(HUD_H, bottom - 120) }];
+  let best = null;
+  for (const fr of frames) {
+    const kk = Math.min((fr.right - fr.left) / xMax, (bottom - fr.top) / yMax);
+    if (kk > 0 && (!best || kk > best.k)) best = { ...fr, k: kk };
+  }
+  if (!best) return null;
+  const { left, k } = best;
   const ox = left, oy = bottom;
   const X = (x) => ox + x * k, Y = (y) => oy - y * k;
 
@@ -64,8 +77,8 @@ export function render(canvas, cam, o) {
     if (kind === 'wall' && H != null) {
       g.save(); g.fillStyle = withAlpha(P.strong, 0.22); g.strokeStyle = P.strong; g.lineWidth = 1.6;
       g.fillRect(px - 5, top, 10, oy - top); g.strokeRect(px - 5, top, 10, oy - top); g.restore();
-    } else if (kind === 'face' && H != null) {
-      const ft = Y(Math.min(yMax * 0.92, H * 1.5));
+    } else if (kind === 'face') {
+      const ft = Y(Math.min(yMax * 0.92, faceTop * 1.5));
       g.save(); g.fillStyle = withAlpha(P.strong, 0.22); g.strokeStyle = P.strong; g.lineWidth = 1.6;
       g.fillRect(px, ft, 12, oy - ft); g.strokeRect(px, ft, 12, oy - ft); g.restore();
     } else if (kind === 'net' && H != null) {
@@ -108,8 +121,14 @@ export function render(canvas, cam, o) {
   if (O) {
     const op = paths[1].map((p) => ({ x: X(p.x), y: Y(p.y) }));
     stroke(g, op, { color: P.vel, width: 1.6, alpha: 0.28 });
-    const top = O.apex && !O.hits ? O.apex : { x: O.x(O.end / 2), y: O.y(O.end / 2) };
-    L.add(T`theta = ${num(O.theta, 2, { trim: true })}°`, X(top.x), Y(top.y) - 14, { color: P.muted, align: 'center', pri: 4, size: 13 });
+    // its angle where it is furthest from the path flown, so it names this one
+    const mine = paths[0].map((p) => ({ x: X(p.x), y: Y(p.y) }));
+    let at = op[Math.floor(op.length / 2)], far = -1;
+    for (const q of op.slice(8, -8)) {
+      const dmin = Math.min(...mine.map((m) => Math.hypot(m.x - q.x, m.y - q.y)));
+      if (dmin > far) { far = dmin; at = q; }
+    }
+    L.add(T`theta = ${num(O.theta, 2, { trim: true })}°`, at.x, at.y + 14, { color: P.muted, align: 'center', pri: 4, size: 13 });
   }
   // ── the path flown: all of it faintly, the part flown strongly
   stroke(g, paths[0].map((p) => ({ x: X(p.x), y: Y(p.y) })), { color: P.vel, width: 1.6, alpha: 0.3 });
@@ -163,6 +182,13 @@ export function render(canvas, cam, o) {
   // ── where it lands, once it has
   if (!F.hits && t >= F.tGround - 1e-9) {
     L.add(T`${tr(F.R)} [m]`, X(F.R), oy - 14, { color: P.vel, align: 'center', pri: 7, size: 14, weight: 700 });
+    // how far short of the mark, or past it, as a bracket along the ground
+    if (f.flag != null && Math.abs(f.flagGap) > 1e-6) {
+      const a = X(Math.min(F.R, f.flag)), b = X(Math.max(F.R, f.flag)), yy = oy + 8;
+      stroke(g, [{ x: a, y: yy }, { x: b, y: yy }], { color: P.mark, width: 2 });
+      for (const xx of [a, b]) stroke(g, [{ x: xx, y: yy - 4 }, { x: xx, y: yy + 4 }], { color: P.mark, width: 2 });
+      L.add(T`${tr(Math.abs(f.flagGap))} [m] ${f.flagGap > 0 ? '"short"' : '"past"'}`, (a + b) / 2, oy + 22, { color: P.mark, align: 'center', pri: 7, size: 13, weight: 700 });
+    }
   }
 
   // ── the ball, its velocity and its acceleration

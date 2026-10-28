@@ -57,13 +57,15 @@ export function flight({ ux, uy, h0, g }, P, kind = 'point') {
     const tP = snap(P.d / ux);
     const reached = tP <= tGround + 1e-9;
     const yP = snap(y(tP)), vyP = snap(vy(tP));
-    const clear = have(P.H) ? snap(yP - P.H) : null;
+    // a clearance within rounding of nothing is nothing: "just clears", never 10⁻¹² m
+    const raw = have(P.H) ? yP - P.H : null;
+    const clear = raw == null ? null : Math.abs(raw) < 1e-6 * Math.max(1, Math.abs(P.H), Math.abs(yP)) ? 0 : snap(raw);
     fl.at = { t: tP, x: P.d, y: yP, vx: ux, vy: vyP, speed: snap(Math.hypot(ux, vyP)), clear, reached, rising: vyP > EPS };
     // the greatest height on the way to it: the top, if the top comes first
     fl.topBefore = apex && apex.t < tP + 1e-9 ? apex.y : Math.max(h0, yP);
     fl.apexAt = apex ? (Math.abs(apex.t - tP) < 1e-6 ? 'at' : apex.t < tP ? 'before' : 'after') : null;
     // a wall it does not clear, it hits; a wall it is aimed at, it hits
-    if (reached && K.solid && clear != null && (K.hits || clear < -1e-9)) { fl.end = tP; fl.hits = true; }
+    if (reached && K.solid && (K.hits || (clear != null && clear < 0))) { fl.end = tP; fl.hits = true; }
   }
   if (!fl.hits) {
     fl.R = snap(ux * tGround);
@@ -153,7 +155,11 @@ function pathRow(F) {
   const r = M`y = ${poly([F.h0, snap(tan), -snap(k)], 4, { sym: 'x' })}`;
   // given as components, it is written with them: t = x/uₓ in the height
   if (F.given === 'parts') {
-    const lead = [Math.abs(F.h0) > EPS ? d(F.h0) : '', Math.abs(F.uy) > EPS ? `(${d(F.uy)}/${d(F.ux)})x` : ''].filter(Boolean).join(' + ');
+    let lead = Math.abs(F.h0) > EPS ? d(F.h0) : '';
+    if (Math.abs(F.uy) > EPS) {
+      const term = `(${d(Math.abs(F.uy))}/${d(F.ux)})x`;
+      lead = lead ? `${lead} ${F.uy < 0 ? '-' : '+'} ${term}` : `${F.uy < 0 ? '-' : ''}${term}`;
+    }
     const grav = `(${d(F.g)}x^2)/(2 * ${d(F.ux)}^2)`;
     return { f: M`y = h_0 + (u_y/u_x)x - (gx^2)/(2u_x^2)`, s: M`${lead ? `${lead} - ${grav}` : `-${grav}`}`, r };
   }
@@ -194,6 +200,9 @@ export function solveTarget(k = {}) {
   const byAngle = have(k.u) || have(k.theta), byParts = have(k.ux) || have(k.uy);
   if (byAngle && byParts) return fail('Give the launch as a speed and an angle, or as its two components — not both.');
 
+  // a box typed for a different question is said, not quietly ignored
+  if (!find && (have(k.T) || have(k.top))) return fail(`You gave ${have(k.T) ? 'a time to reach the point' : 'its greatest height'}: choose what to find from it, or clear that box.`);
+  if (find && have(k.tAt)) return fail('With a number to find, give how far out the point is, not a time it is above it.');
   const P = { d: k.d, H: k.H };
   const needP = () => {
     if (!have(P.d) || !have(P.H)) return `To find ${FINDS[find]}, give the point: how far out it is, and its height above the ground.`;
@@ -224,11 +233,20 @@ export function solveTarget(k = {}) {
       if (!(k.tAt > 0)) return fail('The time it is above the point is after the launch: give it as a positive number.');
       if (have(P.d)) return fail('Give the point’s distance, or the time it is above it — not both: the time fixes the distance.');
       P.d = snap(ux * k.tAt); P.fromT = k.tAt;
+      const tDown = (uy + Math.sqrt(uy * uy + 2 * g * h0)) / g;
+      if (k.tAt > tDown + 1e-9) return fail(`By ${M`t = ${d(k.tAt)} [s]`} it has already landed, at ${M`t = ${d(snap(tDown))} [s]`}: it is never above ${K.the} then.`);
     }
     if (have(P.d) && !(P.d > 0)) return fail('The point is ahead of the launch: give its distance as a positive number.');
     if (have(P.H) && P.H < 0) return fail('The point is at or above the ground: give its height as 0 or more.');
     if (have(P.H) && !have(P.d)) return fail(`Give how far out ${K.the} is, or the time it is above it.`);
-    if (kind === 'face' && !have(P.H)) P.H = undefined;
+    if (have(P.H) && K.solid && !K.hits && !(P.H > 0)) return fail(`A ${K.word} stands up from the ground: give its height as more than 0.`);
+    // a wall it hits, at a height the launch disagrees with, is not quietly ignored
+    if (kind === 'face' && have(P.H) && have(P.d)) {
+      const tP = P.d / ux, yP = h0 + uy * tP - 0.5 * g * tP * tP;
+      if (Math.abs(yP - P.H) > 1e-6 * Math.max(1, Math.abs(P.H))) {
+        return fail(`With that launch it is ${M`${d(snap(yP))} [m]`} up when it is ${M`${d(P.d)} [m]`} out, not the ${M`${d(P.H)} [m]`} given. Leave the height blank to see where it hits the wall, or choose “A wall” to see whether it goes over one that high.`);
+      }
+    }
     flights.push({ ux, uy, given: byParts ? 'parts' : 'angle' });
   } else {
     const bad = needP();
@@ -264,7 +282,7 @@ export function solveTarget(k = {}) {
       findRows.push({ f: M`tan theta = (-b +- sqrt(b^2 - 4ac))/(2a)`, s: M`(${d(-b1)} +- sqrt(${sgn(b1)}^2 - 4 * ${d(b2)} * ${sgn(b0)}))/(2 * ${d(b2)})`,
         r: roots.length > 1 ? M`tan theta = ${d(roots[1])} "or" ${d(roots[0])}` : M`tan theta = ${d(roots[0])}` });
       const th = roots.map((r) => snap(Math.atan(r) / DEG));
-      findRows.push({ f: M`theta = tan^-1 (tan theta)`, s: '', r: th.length > 1 ? M`theta = ${ang(th[1])}° "or" ${ang(th[0])}°` : M`theta = ${ang(th[0])}°` });
+      findRows.push({ f: M`theta = tan^-1 (tan theta)`, s: M`${roots.slice().reverse().map((r) => `tan^-1 ${sgn(r)}`).join(', ')}`, r: th.length > 1 ? M`theta = ${ang(th[1])}° "or" ${ang(th[0])}°` : M`theta = ${ang(th[0])}°` });
       for (const r of roots) {
         const c = 1 / Math.sqrt(1 + r * r);
         flights.push({ ux: snap(k.u * c), uy: snap(k.u * r * c), given: 'found' });
@@ -312,7 +330,7 @@ export function solveTarget(k = {}) {
       findRows = [
         { f: M`v_y^2 = u_y^2 - 2gs`, s: M`0 = u_y^2 - 2 * ${d(g)} * ${paren2(k.top, h0)}`, r: M`u_y = ${d(uy)} [m s^-1]` },
         { f: M`H - h_0 = u_y t - ½gt^2`, s: M`${d(P.H)}${Math.abs(h0) > EPS ? ` - ${d(h0)}` : ''} = ${heightSrc(0, uy, g)}`,
-          r: ts.length > 1 ? M`t = ${d(ts[0])} "or" ${d(ts[1])} [s]` : M`t = ${d(ts[0])} [s]` },
+          r: M`t = ${quadRoots(0.5 * g, -uy, rise).map(snap).sort((p, q) => p - q).map((t) => d(t)).join(' "or" ')} [s]` },
       ];
       // a root at or before the launch is the start, not a moment on the way
       const all = quadRoots(0.5 * g, -uy, rise).map(snap).sort((p, q) => p - q);
@@ -320,7 +338,8 @@ export function solveTarget(k = {}) {
       for (const t of ts) {
         const ux = snap(P.d / t);
         findRows.push({ f: M`u_x = d/t`, s: M`${d(P.d)}/${d(t)}`, r: M`u_x = ${d(ux)} [m s^-1]` });
-        findRows.push({ f: M`theta = tan^-1 (u_y/u_x)`, s: M`tan^-1 (${d(uy)}/${d(ux)})`, r: M`theta = ${ang(Math.atan2(uy, ux) / DEG)}°, u = ${d(snap(Math.hypot(ux, uy)))} [m s^-1]` });
+        findRows.push({ f: M`theta = tan^-1 (u_y/u_x)`, s: M`tan^-1 (${d(uy)}/${d(ux)})`, r: M`theta = ${ang(Math.atan2(uy, ux) / DEG)}°` });
+        findRows.push({ f: M`u = sqrt(u_x^2 + u_y^2)`, s: M`sqrt(${d(ux)}^2 + ${d(uy)}^2)`, r: M`u = ${d(snap(Math.hypot(ux, uy)))} [m s^-1]` });
         flights.push({ ux, uy, given: 'found', tP: t });
       }
       found = { what: 'apex', values: [] };
@@ -350,7 +369,7 @@ export function solveTarget(k = {}) {
   } else if (find) {
     // the steeper is slower across, so it is later at the point: past its top
     if (F.length > 1) notes.push(`Two launches fit: at ${M`theta = ${ang(F[0].theta)}°`} it passes the point on the way down, and at ${M`theta = ${ang(F[1].theta)}°`} on the way up. The ${pick ? 'flatter' : 'steeper'} one is flown; the other is drawn faintly.`);
-    notes.push(`It is launched at ${M`${d(S.u)} [m s^-1]`}, ${M`${ang(S.theta)}°`} ${S.theta < 0 ? 'below' : 'above'} the horizontal.`);
+    notes.push(`It is launched at ${M`${d(S.u)} [m s^-1]`}, ${Math.abs(S.theta) < 1e-9 ? 'horizontally' : `${M`${ang(Math.abs(S.theta))}°`} ${S.theta < 0 ? 'below' : 'above'} the horizontal`}.`);
     derived.push(`${M`u = ${d(S.u)} [m s^-1]`}`, `${M`theta = ${ang(S.theta)}°`}`);
   }
   for (const r of rejected) notes.push(r.text);
@@ -417,12 +436,15 @@ export function targetWorking(solved) {
     note: find === 'theta' ? `Its path, ${M`y = h_0 + x tan theta - (gx^2)/(2u^2 cos^2 theta)`}, written with ${M`1/(cos^2 theta) = 1 + tan^2 theta`}, is a quadratic in ${M`tan theta`}: two angles, a flatter and a steeper, can pass through the same point.`
       : find === 'apex' ? `At the top of its path the vertical velocity is zero; the time to the point comes from the vertical motion, and the horizontal speed from that time.`
         : find === 'T' ? 'The horizontal motion has no acceleration, so the distance over the time is the horizontal velocity; the vertical motion gives the other component.' : '' });
-  out.push({ title: find ? (flights.length > 1 ? 'The flight shown, as a path' : 'Its path') : S.given === 'parts' ? 'Its path' : 'The launch, in components',
-    rows: [...(!find && S.given !== 'parts' ? componentRows(S) : []), pathRow(S)],
+  const parts = S.given !== 'parts' && find !== 'T' && find !== 'apex';
+  out.push({ title: `${find && flights.length > 1 ? 'The flight shown' : parts ? 'The launch' : 'Its path'}${parts ? ', in components' : ''}`,
+    // found from the point, its components are worked too, so u_x below has a source
+    rows: [...(S.given !== 'parts' && find !== 'T' && find !== 'apex' ? componentRows(S) : []), pathRow(S)],
     note: `Horizontally there is no acceleration; vertically it is ${M`-g`}. Taking ${M`t = x/u_x`} into the height gives the path as an equation in ${M`x`}.` });
   if (P && S.at) {
     const rows = S.at.reached ? atRows(S, P, K) : [];
-    if (P.fromT) rows.unshift({ f: M`x = u_x t`, s: M`${d(S.ux)} * ${d(P.fromT)}`, r: M`x = ${d(P.d)} [m]` });
+    // with the time given, the distance comes from it, not the time from the distance
+    if (P.fromT) rows.splice(0, 1, { f: M`x = u_x t`, s: M`${d(S.ux)} * ${d(P.fromT)}`, r: M`x = ${d(P.d)} [m]` });
     if (rows.length) out.push({ title: kind === 'point' ? 'At the point' : K.hits ? 'Where it hits the wall' : `At ${K.the}`, rows });
   }
   if (S.apex && !S.hits) {
@@ -435,7 +457,8 @@ export function targetWorking(solved) {
     out.push({ title: 'Where it lands', rows: [
       { f: M`0 = h_0 + u_y t - ½gt^2`, s: M`0 = ${heightSrc(S.h0, S.uy, S.g)}`, r: M`t = ${d(S.tGround)} [s]` },
       { f: M`x = u_x t`, s: M`${d(S.ux)} * ${d(S.tGround)}`, r: M`x = ${d(S.R)} [m]` },
-      { f: M`v = sqrt(u_x^2 + (u_y - gt)^2)`, s: M`sqrt(${d(S.ux)}^2 + ${sgn(S.vLand.y)}^2)`, r: M`${d(S.landSpeed)} [m s^-1]` },
+      { f: M`v_y = u_y - gt`, s: M`${d(S.uy)} - ${d(S.g)} * ${d(S.tGround)}`, r: M`v_y = ${d(S.vLand.y)} [m s^-1]` },
+      { f: M`v = sqrt(u_x^2 + v_y^2)`, s: M`sqrt(${d(S.ux)}^2 + ${sgn(S.vLand.y)}^2)`, r: M`${d(S.landSpeed)} [m s^-1]` },
     ] });
   }
   if (solved.flag != null && solved.flagGap != null) {

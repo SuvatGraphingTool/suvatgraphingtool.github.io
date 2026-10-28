@@ -127,7 +127,7 @@ export const LIBRARY = [
     name: 'Over the wall, through the point',
     sub: 'a projectile that must pass one point — which two angles clear the tree?',
     note: 'A projectile with one point it has to pass: the top of a wall, a net or a tree, a wall it hits, or a target. Given the launch, the engine says whether it clears and by how much, and where a wall that high could stand. Leave one number out and it is found from the point: the two angles that pass through it, the speed, or both from the time to reach it or from its greatest height.',
-    params: { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130 },
+    params: { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' },
     place: 'Side on: the launch, the point, and the ground',
     sources: [
       { board: 'Edexcel', paper: '9MA0/32', session: 'Jun 2023', q: '5' },
