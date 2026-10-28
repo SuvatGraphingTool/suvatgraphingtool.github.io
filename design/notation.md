@@ -54,7 +54,7 @@ and let the module set it.
 | `°` | degrees, tight against the number |
 | `[m s^-2]` | a unit — upright, never italic |
 | `"at the top"` | prose inside an equation — upright |
-| `vec(i)` `vec r` | a vector, in bold — 𝐢, 𝐫 on a canvas |
+| `vec(i)` `vec r` | a vector, in bold italic — 𝒊, 𝒓 on a canvas |
 
 Interpolate **numbers**, not prose: `M\`t = ${num(x)} [s]\``. The source is
 parsed, so an interpolated number is read as a number and typeset as one.

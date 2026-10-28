@@ -13,6 +13,7 @@
 
 import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep } from './util.js';
 import { T, num } from '../notation.js';
+import { vsrc } from '../core/plane.js';
 
 const tr = (x, p = 2) => num(x, p, { trim: true });
 const HUD = 250;              // the readouts' column, top left
@@ -69,8 +70,22 @@ export function render(canvas, cam, o) {
       const r = f.r(ta);
       dot(g, X(r.x), Y(r.y), 7.5, { stroke: P.mark, width: 2.4 });
       L.add(T`t = ${tr(ta, 3)} [s]`, X(r.x) + 12, Y(r.y) - 14, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 });
-      if (a.kind === 'due') stroke(g, [{ x: X(0), y: Y(0) }, { x: X(r.x), y: Y(r.y) }], { color: P.mark, width: 1.6, dash: [5, 4] });
+      // a marker, not a component: solid, thin, in the marker colour
+      if (a.kind === 'due') stroke(g, [{ x: X(0), y: Y(0) }, { x: X(r.x), y: Y(r.y) }], { color: P.mark, width: 1.4, alpha: 0.8 });
     }
+  }
+
+  // ── where it started, when that is not O
+  if (Math.hypot(f.r0.x, f.r0.y) > 1e-9) {
+    dot(g, X(f.r0.x), Y(f.r0.y), 4.5, { fill: P.card, stroke: P.vel, width: 2 });
+    L.add('start', X(f.r0.x), Y(f.r0.y) + 16, { color: P.muted, align: 'center', pri: 4, size: 13, bg: false });
+  }
+  // ── equal steps of time along the path, labelled when asked
+  const dt = niceStep(f.tMax, 10);
+  for (let i = 1; i * dt <= t + 1e-9; i++) {
+    const q = f.r(i * dt);
+    dot(g, X(q.x), Y(q.y), 3.4, { fill: P.vel, stroke: P.surface, width: 1.2 });
+    if (show.ticks) L.add(T`${num(i * dt, dt < 1 ? 1 : 0)} [s]`, X(q.x) + 8, Y(q.y) + 12, { color: P.vel, align: 'left', pri: 2, size: 13, bg: false, maxPush: 0 });
   }
 
   // ── where it is now: position from O, velocity, acceleration
@@ -78,11 +93,16 @@ export function render(canvas, cam, o) {
   const px = X(r.x), py = Y(r.y);
   if (Math.hypot(r.x, r.y) * k > 12) {
     arrow(g, X(0), Y(0), px, py, { color: P.disp, width: 2.4, head: 11 });
-    L.add(T`vec r = ${tr(r.x)}vec(i) ${r.y < 0 ? '-' : '+'} ${tr(Math.abs(r.y))}vec(j)`, (X(0) + px) / 2, (Y(0) + py) / 2 - 14,
+    // beside its arrow, on the side away from it, never across it
+    const nx = -(py - Y(0)), ny = px - X(0), nl = Math.hypot(nx, ny) || 1;
+    L.add(T`vec r = ${vsrc(r, 2)}`, (X(0) + px) / 2 + (nx / nl) * 18, (Y(0) + py) / 2 + (ny / nl) * 18,
       { color: P.disp, align: 'center', pri: 6, size: 14, weight: 700 });
   }
-  const sp = Math.hypot(v.x, v.y), vMax = Math.max(...pts.map((p) => Math.hypot(f.vel(p.t).x, f.vel(p.t).y)), 1e-6);
-  const vl = clamp(w * 0.11, 60, 130) / vMax;
+  const sp = f.speed(t), vMax = Math.max(...pts.map((p) => f.speed(p.t)), 1e-6);
+  let vl = clamp(w * 0.11, 60, 130) / vMax;
+  // the arrow stays on the canvas: shortened, never cut off
+  const room = (c, dv, lo, hi) => (dv > 0 ? (hi - c) / dv : dv < 0 ? (lo - c) / dv : Infinity);
+  vl = Math.min(vl, room(px, v.x, 12, w - 12) * 0.85, room(py, -v.y, 12, h - 12) * 0.85);
   if (show.velocity !== false && sp > 1e-6) {
     if (show.components) {
       arrow(g, px, py, px + v.x * vl, py, { color: P.velVec, width: 2, head: 9, dash: [5, 4] });

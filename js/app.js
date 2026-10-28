@@ -211,13 +211,15 @@ function paperWords(x) {
 const stem = (w) => w.toLowerCase().replace(/[^a-z0-9/]/g, '')
   .replace(/sions?$/, 'de').replace(/(ions|ion|ings|ing|ed|es|s)$/, '').replace(/e$/, '');
 function filterLibrary(q) {
-  const words = q.split(/\s+/).map(stem).filter(Boolean);
+  // a single letter (the i and j of vectors) has to be a whole word, not the
+  // start of every word with an i in front; 'and' says nothing at all
+  const words = q.split(/\s+/).map(stem).filter((w) => w && w !== 'and');
   let shown = 0;
   for (const b of $('lib-grid').querySelectorAll('.pcard')) {
     const s = LIBRARY.find((x) => x.id === b.dataset.id);
     const hay = [s.name, s.sub, s.note, ...s.sources.map(paperWords), ...(s.tags || [])]
       .join(' ').split(/\s+/).map(stem).filter(Boolean);
-    const hit = words.every((w) => hay.some((h) => h.startsWith(w)));
+    const hit = words.every((w) => hay.some((h) => (w.length === 1 ? h === w : h.startsWith(w))));
     b.hidden = !hit;
     if (hit) shown++;
   }

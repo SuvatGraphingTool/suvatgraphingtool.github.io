@@ -403,7 +403,7 @@ group('Moving in a plane, in i and j: four papers, each against its mark scheme'
 
 group('Moving in a plane: edges, and the notation for vectors', () => {
   const Pl = (k) => solvePlane(k);
-  ok(mathText('vec(i) + vec r') === '𝐢 + 𝐫' && /<b class="m-vec"><i class="m-var">i<\/i><\/b>/.test(mathHTML('vec(i)')), 'vectors are bold, in HTML and on a canvas');
+  ok(mathText('vec(i) + vec r') === '𝒊 + 𝒓' && /<b class="m-vec"><i class="m-var">i<\/i><\/b>/.test(mathHTML('vec(i)')), 'vectors are bold, in HTML and on a canvas');
   ok(!Pl({ u: { x: 1, y: 1 } }).ok && !Pl({ a: { x: 1, y: 0 } }).ok, 'no acceleration, or no velocity: what is missing is said');
   ok(!Pl({ u: { x: 1, y: 0 }, vT: { x: 2, y: 0 }, T: 1, a: { x: 1, y: 0 } }).ok, 'an initial velocity and a later one: refused, one fixes the other');
   const never = Pl({ u: { x: 1, y: 0 }, a: { x: 0, y: 1 }, at: { moving: 'W', due: 'S' } });
@@ -412,6 +412,15 @@ group('Moving in a plane: edges, and the notation for vectors', () => {
   ok(opp.answers[0].ok && near(opp.answers[0].t, 0), 'moving east from the start is at t = 0');
   const twice = Pl({ u: { x: 0, y: 10 }, a: { x: 0, y: -2 }, at: { y: 16, speed: 4 } });
   ok(near(twice.answers[0].times[0], 2) && near(twice.answers[0].times[1], 8) && near(twice.answers[1].times[0], 3) && near(twice.answers[1].times[1], 7), 'a coordinate and a speed met twice: both times');
+  const fromRest = Pl({ u: { x: 0, y: 0 }, a: { x: 3, y: -3 }, at: { moving: 'SE' } });
+  ok(fromRest.answers[0].ok && fromRest.answers[0].always && /the whole time/.test(strip(fromRest.notes.join(' '))), 'from rest it moves along its acceleration the whole time — not “never”');
+  const later = Pl({ u: { x: 2, y: -2 }, a: { x: -1, y: 1 }, at: { moving: 'NW', due: 'SE' } });
+  ok(/north-west from t=2s on/.test(strip(later.notes.join(' '))) && /south-east of O from the start until t=4s/.test(strip(later.notes.join(' '))), 'along one line, turning back: north-west from 2 s on, south-east of O until 4 s');
+  ok(/whole time/.test(strip(Pl({ u: { x: 3, y: 4 }, a: { x: 0, y: 0 }, at: { speed: 5 } }).notes.join(' '))), 'no acceleration: its speed is 5 the whole time');
+  ok(/x=0 at t=4s/.test(strip(Pl({ u: { x: 2, y: 1 }, a: { x: -1, y: 0 }, at: { x: 0 } }).notes.join(' '))), 'starting on x = 0 is not passing it: the answer is t = 4 s');
+  const par = Pl({ u: { x: 1, y: 2 }, a: { x: 1, y: 0 }, at: { par: { x: 1, y: 2 } } });
+  ok(par.answers[0].ok && near(Pl({ u: { x: -1, y: 2 }, a: { x: 1, y: 0 }, at: { par: { x: 1, y: 1 } } }).answers[0].t, 3), 'moving parallel to a vector: v ∥ i + j at t = 3 s');
+  ok(/Initially 10 m s⁻¹/.test(KITS.plane.ending(ocrE()).title) && /10m s−1/.test(strip(ocrE().derived.join(' '))), 'OCR: the speed 10 is in the Ready line and the ending');
   const K = KITS.plane;
   const G = K.graphs(solvePlane({ u: { x: -1, y: 3 }, a: { x: 0.1, y: -0.2 }, at: { due: 'E' } }).f, 5, { disp: 'd', vel: 'v', acc: 'a', mark: 'm' });
   ok(G.every((sp) => sp.series[0].dash && !sp.series[1].dash), 'i parts dashed, j parts solid, on every graph');
@@ -420,6 +429,7 @@ group('Moving in a plane: edges, and the notation for vectors', () => {
   ok(/north-west at 12/.test(e.title), 'the ending names what it found');
 });
 
+function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 
 function K_never() {

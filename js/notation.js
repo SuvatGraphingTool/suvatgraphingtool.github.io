@@ -34,7 +34,7 @@
 //   [m s^-2]             a unit — upright, never italic
 //   "at the top"         prose inside an equation — upright
 //   °                    degrees, set tight against the number
-//   vec(i)  vec r        a vector, in bold: 𝐢, 𝐫
+//   vec(i)  vec r        a vector, in bold italic: 𝒊, 𝒓
 //
 //   Interpolate NUMBERS into the templates, not prose: the source is parsed,
 //   so `${num(x)}` is read as a number and typeset like one.
@@ -114,12 +114,13 @@ function standardForm(x, sig) {
 }
 
 const toSuper = (s) => [...s].map((c) => SUPERS[c] ?? c).join('');
-// Unicode's mathematical bold letters, for a vector where there is no HTML:
-// 𝐢, 𝐣, 𝐫. Anything else is left as it is.
+// Unicode's mathematical bold italic letters, for a vector where there is no
+// HTML: 𝒊, 𝒋, 𝒓 — bold and italic, as the HTML sets a vector. Anything else is
+// left as it is.
 const toBold = (s) => [...s].map((c) => {
   const n = c.charCodeAt(0);
-  if (n >= 97 && n <= 122) return String.fromCodePoint(0x1D41A + n - 97);
-  if (n >= 65 && n <= 90) return String.fromCodePoint(0x1D400 + n - 65);
+  if (n >= 97 && n <= 122) return String.fromCodePoint(0x1D482 + n - 97);
+  if (n >= 65 && n <= 90) return String.fromCodePoint(0x1D468 + n - 65);
   return c;
 }).join('');
 const toSub = (s) => [...s].map((c) => SUBS[c] ?? c).join('');

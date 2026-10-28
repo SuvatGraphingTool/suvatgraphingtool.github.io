@@ -169,7 +169,7 @@ Used by: `vectors-ij`.
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
-Unicode mathematical bold 𝐢). Added for `vectors-ij`; any vector anywhere.
+Unicode mathematical bold italic 𝒊). Added for `vectors-ij`; any vector anywhere.
 
 ## Stages — `js/render/`
 

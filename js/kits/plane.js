@@ -12,9 +12,9 @@ const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: t
 const part = (key, col, c, unit, hint) => ({ key, col, label: `${c === 'x' ? `${M`vec i`} part` : `${M`vec j`} part`} (${unit})`, placeholder: '—', hint });
 
 const FIELDS = [
-  part('r0.x', 'r0', 'x', 'm', 'Blank is 0: it starts at O.'), part('r0.y', 'r0', 'y', 'm', 'East is i, north is j.'),
-  part('u.x', 'u', 'x', 'm s⁻¹', 'For −i + 3j, type −1 here …'), part('u.y', 'u', 'y', 'm s⁻¹', '… and 3 here.'),
-  part('a.x', 'a', 'x', 'm s⁻²', 'For 0.1i − 0.2j, 0.1 here …'), part('a.y', 'a', 'y', 'm s⁻²', '… and −0.2 here. 0 if it has none.'),
+  part('r0.x', 'r0', 'x', 'm', 'Blank is 0: it starts at O.'), part('r0.y', 'r0', 'y', 'm', `East is ${M`vec i`}, north is ${M`vec j`}.`),
+  part('u.x', 'u', 'x', 'm s⁻¹', `For ${M`-vec(i) + 3vec(j)`}, type −1 here …`), part('u.y', 'u', 'y', 'm s⁻¹', '… and 3 here.'),
+  part('a.x', 'a', 'x', 'm s⁻²', `For ${M`0.1vec(i) - 0.2vec(j)`}, 0.1 here …`), part('a.y', 'a', 'y', 'm s⁻²', '… and −0.2 here. 0 if it has none.'),
 ];
 
 const compass = (key, label, hint) => ({
@@ -26,7 +26,7 @@ export const plane = {
   id: 'plane',
   verb: 'Set it moving',
   voice: {
-    h: 'What does the paper give, in i and j?',
+    h: 'What does the paper give, as vectors?',
     sub: `A particle moving in a plane: ${M`vec i`} is east and ${M`vec j`} is north. Give where it starts, `
       + `its velocity and its acceleration as their two parts — then what the paper asks: a time, a direction, `
       + 'a coordinate or a speed.',
@@ -51,14 +51,20 @@ export const plane = {
       compass('at.moving', 'When it is moving', 'Its velocity points that way.'),
       compass('at.due', 'When it is due … of O', 'It is in that direction from the origin.'),
     ] },
+    { title: 'Or moving parallel to a vector', fields: [
+      { key: 'par.x', label: `${M`vec i`} part`, placeholder: '—', hint: `For “parallel to ${M`vec(i) + 2vec(j)`}”, 1 here …` },
+      { key: 'par.y', label: `${M`vec j`} part`, placeholder: '—', hint: '… and 2 here.' },
+    ] },
   ],
-  hides: { shows: ['apex', 'ruler', 'range'], extras: ['energy'], bounce: true },
+  // the grid is the map's own, always drawn: a switch for it would do nothing
+  hides: { shows: ['apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
   lapse: (f) => timeLapse(f.tMax),
 
   read(vals) {
     const v = (n) => ({ x: vals[`${n}.x`], y: vals[`${n}.y`] });
     return { r0: v('r0'), u: v('u'), a: v('a'), vT: v('vT'), T: vals.T,
-             at: { t: vals['at.t'], x: vals['at.x'], y: vals['at.y'], speed: vals['at.speed'], moving: vals['at.moving'], due: vals['at.due'] } };
+             at: { t: vals['at.t'], x: vals['at.x'], y: vals['at.y'], speed: vals['at.speed'], moving: vals['at.moving'], due: vals['at.due'],
+                   par: { x: vals['par.x'], y: vals['par.y'] } } };
   },
   solve: solvePlane,
   working: (solved) => planeWorking(solved),
@@ -69,7 +75,7 @@ export const plane = {
     return {
       left: [
         { k: 'Position', v: T`${vsrc(r, 2)}`, unit: 'm', hue: 'disp' },
-        { k: 'Distance from O', v: num(Math.hypot(r.x, r.y), 2), unit: 'm', hue: 'disp' },
+        { k: 'Distance from O', v: num(f.dist(t), 2), unit: 'm', hue: 'disp' },
         { k: 'Velocity', v: T`${vsrc(v, 2)}`, unit: 'm s⁻¹', hue: 'vel' },
         { k: 'Speed', v: num(f.speed(t), 2), unit: 'm s⁻¹', hue: 'vel' },
       ],
@@ -118,17 +124,25 @@ export const plane = {
     </svg>`;
   },
 
+  /* The title is plain text, so it says the headline in words and numbers;
+     the eyebrow and the body carry the maths. */
   ending(solved) {
-    const ok = solved.answers.filter((a) => a.ok);
-    const last = ok[ok.length - 1];
+    const ok = solved.answers.filter((a) => a.ok), asked = solved.answers.length;
+    const head = (a) => {
+      const w = a.D && !a.D.src ? a.D.word : 'that way';
+      if (a.always) return a.kind === 'moving' ? `Moving ${w}, ${a.t > 0 ? `from ${tr(a.t)} s on` : 'the whole time'}.` : a.kind === 'due' ? `Due ${w} of O.` : 'The same the whole time.';
+      if (a.kind === 'moving') return `Moving ${w} at ${tr(a.t)} s, at ${tr(a.speed)} m s⁻¹, ${tr(a.dist)} m from O.`;
+      if (a.kind === 'due') return `Due ${w} of O at ${tr(a.t)} s, ${tr(a.dist)} m away.`;
+      if (a.kind === 'passes') return `${a.c} = ${tr(a.X)} at ${tr(a.t)} s.`;
+      if (a.kind === 'speed') return `${tr(a.S)} m s⁻¹ at ${tr(a.t)} s.`;
+      return `At ${tr(a.t)} s: ${tr(a.speed)} m s⁻¹, ${tr(a.dist)} m from O.`;
+    };
+    const u = solved.u;
+    const title = solved.pre.length && !ok.length ? `Initially ${tr(Math.hypot(u.x, u.y))} m s⁻¹.`
+      : ok.length ? head(ok[ok.length - 1]) : asked ? 'None of those happens.' : 'Its path, from O.';
     return {
-      eyebrow: `${ok.length} ${ok.length === 1 ? 'question' : 'questions'} answered`,
-      title: !last ? 'Its path, from O.'
-        : last.kind === 'moving' ? `Moving ${COMPASS[last.key].word} at ${tr(last.t)} s.`
-        : last.kind === 'due' ? `Due ${COMPASS[last.key].word} of O at ${tr(last.t)} s.`
-        : last.kind === 'passes' ? `Passing ${last.c} = ${tr(last.X)} at ${tr(last.t)} s.`
-        : last.kind === 'speed' ? `Doing ${tr(last.S)} m s⁻¹ at ${tr(last.t)} s.`
-        : `At ${tr(last.t)} s: ${tr(last.speed)} m s⁻¹.`,
+      eyebrow: asked ? `${asked} ${asked === 1 ? 'question' : 'questions'} asked · ${ok.length} answered` : 'Its path, from O',
+      title,
       body: `<p>Each answer is two SUVAT equations — one for the ${M`vec i`} parts, one for the ${M`vec j`} parts —
           or one relation between them, solved for ${M`t`}.</p>${solved.notes.map((n) => `<p>${n}</p>`).join('')}`,
       real: true,

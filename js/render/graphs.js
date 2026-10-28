@@ -114,7 +114,10 @@ export function drawGraph(canvas, spec) {
   // letter is plainly on its own line and never in the axis labels.
   const tagged = series.filter((s) => s.tag);
   if (tagged.length) {
-    const tt = tMax * 0.06;
+    // early on, at whichever of a few instants the lines are furthest apart,
+    // so a letter is never set beside the wrong line
+    const gap = (tt) => { const ys = series.map((x) => x.fn(tt)).filter(isFinite); return ys.length > 1 ? Math.max(...ys) - Math.min(...ys) : 1; };
+    const tt = [0.06, 0.15, 0.3, 0.5].map((q) => q * tMax).reduce((b, c) => (gap(c) > gap(b) * 1.5 ? c : b));
     for (const s of tagged) {
       const y = s.fn(tt);
       if (!isFinite(y)) continue;

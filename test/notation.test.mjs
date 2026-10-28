@@ -447,6 +447,11 @@ group('The Past-paper library: moving in a plane, everything it says', () => {
     { vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 }, at: { t: 0 } },
     { u: { x: 1, y: 0 }, a: { x: 0, y: 1 }, at: { moving: 'W', due: 'S', speed: 0.5 } },
     { u: { x: 1, y: 1 } }, { a: { x: 1, y: 0 } },
+    { u: { x: 0, y: 0 }, a: { x: 3, y: -3 }, at: { moving: 'SE', due: 'NW' } },
+    { u: { x: 2, y: -2 }, a: { x: -1, y: 1 }, at: { moving: 'NW', due: 'SE' } },
+    { u: { x: 3, y: 4 }, a: { x: 0, y: 0 }, at: { speed: 5, x: 0 } },
+    { u: { x: -1, y: 2 }, a: { x: 1, y: 0 }, at: { par: { x: 1, y: 1 } } },
+    { r0: { x: 5, y: 0 }, u: { x: 1, y: 0 }, a: { x: 0, y: 0 }, at: { due: 'E', speed: 2 } },
   ];
   const bag = [];
   let said = 0;
