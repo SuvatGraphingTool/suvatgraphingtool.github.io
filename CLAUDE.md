@@ -73,6 +73,7 @@ js/core/pair.js         two particles in one vertical line, set off at different
 js/core/journey.js      a journey in three stages, rest to rest: the trapezium and its area
 js/core/overtake.js     two on one road: when they are level, or the one number that makes them
 js/core/plane.js        a particle in a plane with a constant acceleration vector, in i and j
+js/core/target.js       a projectile that has to pass one point: over a wall, a net, a tree, or through a target
 js/core/numeric.js      snap and fractions, shared by every engine
 js/library.js           the Past-paper library: new scenarios, each naming its papers
 js/kits/                a library scenario's pieces wired for the app — see design/components.md

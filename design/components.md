@@ -63,6 +63,7 @@ A kit is an object with:
 | `journey` — `js/kits/journey.js` | `journey-3` |
 | `lanes` — `js/kits/lanes.js` | `two-on-a-road` |
 | `plane` — `js/kits/plane.js` | `vectors-ij` |
+| `target` — `js/kits/target.js` | `over-the-wall` |
 
 ## Engine models — `js/core/`
 
@@ -174,6 +175,24 @@ writes a vector as notation source (`-2vec(i) + 2vec(j)`).
 
 Used by: `vectors-ij`.
 
+### A projectile past one point — `js/core/target.js`
+
+`flight({ ux, uy, h0, g }, P, kind)` — one projectile read at the point
+P = { d, H }: the time and height there, the clearance, whether it is still
+rising, the greatest height before it, where it lands (or that it hits a solid
+`kind` it does not clear), and `span`, where a wall of height H would be
+cleared. `KINDS` — wall, net, tree, face (a wall it hits), point.
+
+`solveTarget({ g, h0, u, theta, ux, uy, d, H, tAt, kind, find, T, top, flag, pick })`
+— given the launch, what happens at the point; or, with `find`, the angle
+(`theta`: a quadratic in tan θ, two roots), the speed (`u`), or both from the
+time to the point (`T`) or from the greatest height (`apex`). `flights` holds
+every answer, steepest first; `pick` chooses the one flown. `targetWorking` —
+the find, the path as an equation in x, the point, the top, the landing, the
+mark, and where a wall that high is cleared.
+
+Used by: `over-the-wall`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -186,6 +205,14 @@ its top level, so it can go into a product or after a minus as it stands
 built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
+
+### Side on, past one point — `js/render/target.js`
+
+`render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'target'`.
+One scale both ways; the thing at the point drawn by its kind with its height
+and distance as dimension lines; a second answer's path faint; at the point,
+the clearance or the hit. Used by: `over-the-wall`.
+
 
 ### A map in i and j — `js/render/vectors.js`
 

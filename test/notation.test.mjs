@@ -32,6 +32,7 @@ import { solvePair, pairWorking } from '../js/core/pair.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
 import { solveOvertake, overtakeWorking } from '../js/core/overtake.js';
 import { solvePlane, planeWorking } from '../js/core/plane.js';
+import { solveTarget, targetWorking } from '../js/core/target.js';
 import { KITS } from '../js/kits/index.js';
 import { LIBRARY } from '../js/library.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
@@ -240,6 +241,51 @@ group('Whatever the engine says back on screen two', () => {
   ok(bag.length === 0, 'nothing the engine says is written as code', bag.join('\n         '));
 });
 
+
+group('The Past-paper library: over the wall, everything it says', () => {
+  const K = KITS.target;
+  const INPUTS = [
+    { g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' },
+    { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' },
+    { g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'T', T: 2.4 },
+    { g: 9.8, h0: 2, d: 20, H: 0.75, kind: 'point', find: 'apex', top: 3 },
+    { g: 9.8, d: 20, H: 2, kind: 'point', find: 'apex', top: 5 },
+    { g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.4, H: 0.9, kind: 'net' },
+    { g: 9.8, h0: 5, ux: 14, uy: 0, H: 2, d: 5, kind: 'wall' },
+    { g: 9.8, theta: 30, d: 40, H: 20, find: 'u', kind: 'wall' },
+    { g: 9.8, theta: -20, u: 12, h0: 10, d: 5, H: 4, kind: 'tree' },
+    { g: 10, u: 20, theta: 30, d: 30, H: 6, kind: 'net' },
+    { g: 9.81, u: 10, theta: 30, d: 30, H: 6, kind: 'point', flag: 5 },
+    { g: 9.8, u: 10, theta: 45 },
+    { g: 9.8, u: 10, d: 40, H: 20, find: 'theta' }, { g: 9.8, theta: 30, d: 40, H: 30, find: 'u' },
+    { g: 9.8, u: 5, d: 40, H: 2, find: 'theta' }, {}, { g: 9.8, u: 10, theta: 45, ux: 3 },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveTarget(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    for (const st of targetWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
 
 group('What Ask Suvat says it read, and what the engine made of it', () => {
   const READINGS = [

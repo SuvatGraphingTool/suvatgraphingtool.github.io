@@ -42,7 +42,7 @@ this library: *covered* names the one of the twelve that does it.
 | 6 | AQA | MM1B | Jun 2012 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | 22.4 m/s launch, apex after 2 s; angle, max height, range, time above 5 m, min speed | 9.8 | **covered**: time-above, once θ is worked from the 2 s to the top (sin θ = 0.875); no box takes a time to the top |
 | 7 | AQA | MM1B | Jan 2013 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Decelerate 20→12 m/s over 640 m, then accelerate 1820 m in 70 s; times, a, final speed, average speed | – | **candidate**: several stages along a line, one after another |
 | 8 | AQA | MM1B | Jan 2013 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Starts at 13.6i, u = 6i+2.4j, a = −0.8i+0.1j; distance from O when moving north-west | – | **built**: `vectors-ij` (north-west at 12 s, 45.6 m from O) |
-| 9 | AQA | MM1B | Jan 2013 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Golf ball hits a wall 38.4 m away at 3 m height after 2.4 s; find V and angle | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 9 | AQA | MM1B | Jan 2013 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Golf ball hits a wall 38.4 m away at 3 m height after 2.4 s; find V and angle | 9.8 | **built**: `over-the-wall` (uₓ = 16, V = 20.6, α = 39.1°) |
 | 10 | AQA | 7357/2 | Jun 2018 | 16 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202018%20QP.pdf) | 35° launch lands 10 m below start; 1.5 s to apex; find u and flight time | 9.81 | **covered**: up and off a platform, but the paper gives the time to the top, which no box takes |
 | 11 | AQA | 7357/2 | Jun 2019 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202019%20QP.pdf) | Dropped from h; show v = √(2gh); h = 18 m but measured v = 20, so is the sensor faulty? | 9.8 | **covered** by `dropped` |
 | 12 | AQA | 7357/2 | Jun 2022 | 12 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202022%20QP.pdf) | MCQ: speed u becomes 4u in 5 s; a in terms of u | – | **covered**: multiple choice in terms of u, no numbers to type |
@@ -59,13 +59,13 @@ this library: *covered* names the one of the twelve that does it.
 | 23 | Edexcel | 6677/01 M1 | Jun 2017 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Cyclist passes A, 5 s later B at 10 m/s, AB = 40 m; find a, time to midpoint | – | **covered** by `road` |
 | 24 | Edexcel | 6677/01 M1 | Jun 2017 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Two ships at constant velocity; bearing; times when 10 km apart | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 25 | Edexcel | 9MA0/03 | Jun 2018 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Constant a found from two positions; at A the acceleration switches; time until moving north-east | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
-| 26 | Edexcel | 9MA0/03 | Jun 2018 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Ball thrown from 2 m, apex 3 m, hits target 20 m away at 0.75 m; find angle, time | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 26 | Edexcel | 9MA0/03 | Jun 2018 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Ball thrown from 2 m, apex 3 m, hits target 20 m away at 0.75 m; find angle, time | 9.8 | **built**: `over-the-wall` (α = 14.0°, 1.13 s to T) |
 | 27 | Edexcel | 9MA0/32 | Oct 2020 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | a = 4i−5j, u = −2i+2j from O; velocity at t = 2; when it passes (λ, −4.5) | – | **built**: `vectors-ij` (v = 6i − 8j; λ = 2.88) |
 | 28 | Edexcel | 9MA0/32 | Oct 2020 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | From a 25 m cliff at 45°, lands 100 m out; show U = 28; greatest height | 9.8 | **covered** by `platform-angle` |
 | 29 | Edexcel | 9MA0/32 | Jun 2022 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202022%20QP%20(Mech).pdf) | Golf ball range 120 m, max height 10 m; show U² sin α cos α = 588 and U² = 1960 | 9.8 | **covered**: arc, but range and greatest height are given and neither is a box |
 | 30 | Edexcel | 9MA0/32 | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | From rest at 3.2 m/s² for 5 s; speed and distance | – | **covered** by `road` |
 | 31 | Edexcel | 9MA0/32 | Jun 2023 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | a = 2.4i+j, passes A then B 5 s later; when it reaches C(4, c) | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
-| 32 | Edexcel | 9MA0/32 | Jun 2023 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | 28 m/s from ground through a point 40 m across and 20 m up; two angles; greatest possible height | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 32 | Edexcel | 9MA0/32 | Jun 2023 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | 28 m/s from ground through a point 40 m across and 20 m up; two angles; greatest possible height | 9.8 | **built**: `over-the-wall` (tan α = 1 or 3; greatest height 36 m) |
 | 33 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Ball leaves hand 2 m up at 9 m/s upward; time to hit ground | 10 | **covered** by `up` |
 | 34 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Train: 0.3 m/s² for 80 s, steady, −0.5 m/s²; total 4800 m; total time | – | **built**: `journey-3` (264 s) |
 | 35 | Edexcel | 8MA0/22 (AS) | Jun 2019 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202019%20QP%20(Mech).pdf) | Parachutist: free fall 3 s, then −12 m/s² for 2 s, then steady to ground; 550 m; find T | 10 | **candidate**: several stages; descent.js takes a steady speed, but this paper gives a braking time instead |
@@ -90,12 +90,12 @@ this library: *covered* names the one of the twelve that does it.
 | 54 | OCR | 4728 M1 (legacy) | Jun 2011 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202011%20QP%20-%20M1%20OCR.pdf) | Driver's v-t graph: car trip, then walks back to a shop, later jogs to the car; time in shop | – | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
 | 55 | OCR | 4728 M1 | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | Thrown down at 3.5 from 5 m; rebounds and passes start 0.87 s later; rebound speed | 9.8 | **candidate**: a bounce mid-question (rebound speed found from a later time); trajectory has restitution but not a found rebound |
 | 56 | OCR | 4728 M1 | Jun 2014 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | x-t graph with speed 4 or rest; show T = 1.75; velocities; distance in 10 s | – | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
-| 57 | OCR MEI | H640/01 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | Thrown horizontally at 14 m/s from a 5 m window over a 2 m fence; trajectory; range of d | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 57 | OCR MEI | H640/01 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | Thrown horizontally at 14 m/s from a 5 m window over a 2 m fence; trajectory; range of d | 9.8 | **built**: `over-the-wall` (1.01 s; y = 5 − 0.025x²; clears for d up to 10.95 m) |
 | 58 | OCR MEI | H640/01 | Jun 2018 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | 5 to 11.4 m/s in 4 s, uniform, then steady at 17.8; displacement in 20 s | – | **candidate**: several stages along a line, one after another |
 | 59 | OCR MEI | H640/01 | Jun 2019 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202019%20QP.pdf) | Cannonball 100 m/s at 25°; greatest height; range | 9.8 | **covered** by `arc` |
 | 60 | OCR MEI | H640/01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202022%20QP.pdf) | Thrown from 5 m above origin with velocity (14, 7); position vector; landing distance | 9.8 | **covered**: up and off a platform, but given as velocity components (14, 7), not a speed and an angle |
-| 61 | WJEC | 1300U40-1 Unit 4 | Jun 2019 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202019%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Tennis serve (30i − 1.4j) from 2.4 m over a 0.9 m net; landing speed; clearance | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
-| 62 | WJEC | 1300U40-1 Unit 4 | Jun 2022 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202022%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | 35 m/s golf shot just clears a treetop (100, 20); two values of tan θ; distance short of the flag at 130 | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 61 | WJEC | 1300U40-1 Unit 4 | Jun 2019 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202019%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Tennis serve (30i − 1.4j) from 2.4 m over a 0.9 m net; landing speed; clearance | 9.8 | **built**: `over-the-wall` (30.8 m s⁻¹; net 12 m out, cleared by 0.156 m) |
+| 62 | WJEC | 1300U40-1 Unit 4 | Jun 2022 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202022%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | 35 m/s golf shot just clears a treetop (100, 20); two values of tan θ; distance short of the flag at 130 | 9.8 | **built**: `over-the-wall` (tan θ = 1 or 1.5; 5 m short of the flag) |
 | 63 | CIE | 9709/41 | May/Jun 2019 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s19_qp_41.pdf) | Up at 25 m/s from 3 m; time to top; time above 23 m; h if above h for exactly 1 s | 10 | **covered** by `time-above` |
 | 64 | CIE | 9709/42 | Oct/Nov 2019 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | Tractor v-t graph, 4 segments, starts at U; find V, then U from 375 m | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
 | 65 | CIE | 9709/42 | Oct/Nov 2019 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | A up at 20 m/s from ground; B dropped from 40 m 1 s later; collision height; speed difference | 10 | **built**: `pair-vertical` |
@@ -307,3 +307,59 @@ or y coordinate, a speed, a direction of motion, a direction from O.
 acceleration. Not yet: two particles in i and j (ships, birds — Edexcel M1
 Jan 2012 Q7, Jun 2017 Q7, IAL Jan 2019 Q2), a bearing in degrees, or a
 direction given as a vector rather than a compass point.
+
+### `over-the-wall` — Over the wall, through the point
+
+**Papers.** Edexcel 9MA0/32 Jun 2023 Q5 (28 m s⁻¹ from the ground through a
+point 40 m across and 20 m up: tan²α − 4 tan α + 3 = 0, so tan α = 1 or 3;
+the greatest possible height on the way is 36 m). WJEC Unit 4 Jun 2022 Q10
+(35 m s⁻¹ just over a treetop at (100, 20): tan θ = 1 or 1.5; landing short
+of the flag at 130 m, at best by 5 m). AQA MM1B Jan 2013 Q8 (hits a wall
+38.4 m away, 3 m up, after 2.4 s: horizontal velocity 16 m s⁻¹, V = 20.6 m s⁻¹,
+α = 39.1°). Edexcel 9MA0/03 Jun 2018 Q10 (from 2 m, greatest height 3 m,
+target 20 m out at 0.75 m: α = 14.0°, 1.13 s to the target). WJEC Unit 4 Jun
+2019 Q10 (served at 30i − 1.4j from 2.4 m: lands at 30.8 m s⁻¹; above the
+0.9 m net at 0.4 s, 12 m out, clearing it by 0.156 m). OCR MEI H640/01 Jun
+2018 Q9 (thrown horizontally at 14 m s⁻¹ from 5 m: down in 1.01 s; path
+y = 5 − 0.025x²; a 2 m fence is cleared anywhere up to 10.95 m out).
+
+**Why the twelve cannot.** The twelve launch a projectile and report where it
+lands and how high it goes. None has a point the flight must pass, so none can
+say whether it clears a wall or by how much, none solves for the angle or the
+speed from a point (a quadratic in tan θ with two roots), none takes a launch
+from the time to a point or from the greatest height, and none writes the
+path as an equation in x.
+
+**How it is solved.** x = uₓt and y = h₀ + u_y t − ½gt², read at the point.
+Given the launch: t = d/uₓ, then y, then y − H. Finding the angle: the path
+y = h₀ + x tan θ − gx²(1 + tan²θ)/(2u²) at (d, H) is a quadratic in tan θ,
+put in whole numbers when it has them; no real root says the highest it can be
+there. Finding the speed: u² = gd²/(2cos²θ (h₀ + d tan θ − H)), refused when
+the point is on or above the straight line at θ. From the time T: uₓ = d/T and
+u_y from the vertical equation. From the greatest height: u_y² = 2g(H_max − h₀),
+the times at the point's height (a root at or before launch rejected, and
+said), and uₓ = d/t. A wall, net or tree that is not cleared is hit, and the
+flight stops there. Where a wall of that height could stand comes from the
+times the path is at that height.
+
+**The stage.** Side on at one scale both ways, so angles are true: the ground
+with distances, a stand for a raised launch, the angle at the launch, the wall
+(or net, tree, wall it hits, target ring) with its height and distance as
+dimension lines, a flag when the paper has one. The path flown in the path
+colour; a second answer faint beside it, with its angle. At the point, a
+marker says how much it clears by, or where it hits. Velocity with components
+(across dashed, up solid), acceleration, greatest height when asked.
+
+**Graphs.** Displacement, velocity and acceleration against time, each as its
+across part (dashed) and up part (solid), the moment at the point ringed.
+
+**What the student varies.** Launch height, speed and angle or the two
+components; the point's distance (or the time it is above it) and height, and
+what stands there; which number to find (angle, speed, or both from a time or
+a greatest height); which of two answers to fly; a mark on the ground.
+
+**What makes it general.** Every one-point projectile question on level
+ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
+2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
+by two points rather than one point and one number.
+

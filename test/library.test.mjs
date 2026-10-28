@@ -14,6 +14,7 @@ import { timeLapse, lapseNote } from '../js/core/pace.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
 import { solveOvertake, overtakeWorking, mover, timeAt } from '../js/core/overtake.js';
 import { solvePlane, planeWorking } from '../js/core/plane.js';
+import { solveTarget, targetWorking, flight } from '../js/core/target.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
 
 let pass = 0, fail = 0;
@@ -457,6 +458,67 @@ group('Every lettered line on every library graph gets its letter', () => {
     }
   }
 });
+
+/* ── over the wall, through the point ─────────────────────────────── */
+group('Over the wall: each paper against its mark scheme', () => {
+  const deg = (x) => (Math.atan(x) * 180) / Math.PI;
+  // Edexcel 9MA0/32 Jun 2023 Q5: tan²α − 4tanα + 3 = 0, tan α = 1 or 3; greatest height 36 m
+  const e23 = solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' });
+  ok(e23.ok && e23.flights.length === 2 && near(e23.flights[0].theta, deg(3)) && near(e23.flights[1].theta, deg(1)), 'E J23 Q5(b): tan α = 3 or 1');
+  ok(strip(e23.findRows[1].r) === 'tan2θ−4tanθ+3=0', 'E J23 Q5(b): the quadratic as the mark scheme writes it', strip(e23.findRows[1].r));
+  ok(near(e23.flights[0].at.t, 10 / (7 * Math.cos(Math.atan(3)))), 'E J23 Q5(a): T = 10/(7 cos α)');
+  ok(near(Math.max(...e23.flights.map((f) => f.topBefore)), 36), 'E J23 Q5(c): the greatest possible height on the way is 36 m');
+  // WJEC Unit 4 Jun 2022 Q10: tan θ = 1 or 1.5; lands short of the flag, at least 5 m
+  const w22 = solveTarget({ g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' });
+  ok(w22.ok && near(Math.tan(w22.flights[0].theta * Math.PI / 180), 1.5) && near(Math.tan(w22.flights[1].theta * Math.PI / 180), 1), 'W J22 Q10(b)(i): tan θ = 1 or 1.5');
+  ok(near(w22.flagGap, 5) && near(w22.other.R, 250 * 1.5 / 3.25), 'W J22 Q10(b)(ii): 5 m short at tan θ = 1; the other lands 115.4 m out');
+  ok(strip(targetWorking(w22).find((x) => /path/.test(x.title)).rows[0].r) === 'y=x−0.008x2', 'W J22 Q10(a): the path, y = x − x²/125 at tan θ = 1');
+  // AQA MM1B Jan 2013 Q8: horizontal component 16, V ≈ 20.6, α ≈ 39.1°
+  const a13 = solveTarget({ g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'T', T: 2.4 });
+  ok(a13.ok && near(a13.shown.ux, 16) && near(a13.shown.u, 20.6, 0.05) && near(a13.shown.theta, 39.1, 0.05), 'AQA J13 Q8: 16 m s⁻¹, V = 20.6, α = 39.1°');
+  ok(a13.shown.hits && near(a13.f.tMax, 2.4), 'AQA J13 Q8: it hits the wall, and the flight ends there');
+  // Edexcel 9MA0/03 Jun 2018 Q10: α = 14.0°, 1.13 s
+  const e18 = solveTarget({ g: 9.8, h0: 2, d: 20, H: 0.75, kind: 'point', find: 'apex', top: 3 });
+  ok(e18.ok && e18.flights.length === 1 && near(e18.shown.theta, 14.04, 0.01) && near(e18.shown.at.t, 1.13, 0.005), 'E J18 Q10(b, d): α = 14.0°, 1.13 s to the target');
+  ok(e18.rejected.some((x) => /before it is launched/.test(strip(x.text))), 'E J18 Q10: the negative time is rejected, and says why');
+  // WJEC Unit 4 Jun 2019 Q10: 30.8 m s⁻¹; 12 m; clears by about 16 cm
+  const w19 = solveTarget({ g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.4, H: 0.9, kind: 'net' });
+  ok(w19.ok && near(w19.shown.landSpeed, 30.8, 0.01) && near(w19.shown.tGround, 4 / 7), 'W J19 Q10(a): lands after 4⁄7 s at 30.8 m s⁻¹');
+  ok(near(w19.P.d, 12) && near(w19.shown.at.y, 1.056) && near(w19.shown.at.clear, 0.156), 'W J19 Q10(b): 12i + 1.056j, over the net by 0.156 m');
+  // OCR MEI H640/01 Jun 2018 Q9: 1.01 s; y = 5 − x²/40; 0 < d < 10.95
+  const m18 = solveTarget({ g: 9.8, h0: 5, ux: 14, uy: 0, H: 2, d: 5, kind: 'wall' });
+  ok(m18.ok && near(m18.shown.tGround, Math.sqrt(10 / 9.8)), 'MEI J18 Q9(i): down in 1.01 s');
+  ok(strip(targetWorking(m18).find((x) => /path/i.test(x.title)).rows[0].r) === 'y=5−0.025x2', 'MEI J18 Q9(ii): y = 5 − 0.025x²');
+  ok(m18.shown.span.from === 0 && near(m18.shown.span.to, Math.sqrt(120)), 'MEI J18 Q9(iii): a 2 m fence is cleared anywhere up to √120 = 10.95 m');
+});
+
+group('Over the wall: what cannot be, refused with its reason', () => {
+  const r = (k) => strip(solveTarget(k).reason);
+  ok(/cannot even get/.test(r({ g: 9.8, u: 10, d: 40, H: 20, find: 'theta' })), 'too slow to get that far at any angle');
+  ok(/highest it can be/.test(r({ g: 9.8, u: 25, d: 40, H: 30, find: 'theta' })), 'gets that far, never that high: says the highest it can be');
+  ok(/above that line/.test(r({ g: 9.8, theta: 30, d: 40, H: 30, find: 'u' })), 'a point above the line at θ: no speed');
+  ok(/higher than its greatest height/.test(r({ g: 9.8, d: 20, H: 4, find: 'apex', top: 3 })), 'a point above the greatest height');
+  ok(/not both/.test(r({ g: 9.8, u: 10, theta: 45, ux: 3 })), 'a speed and an angle and components: refused');
+  ok(/leave the launch/.test(r({ g: 9.8, d: 10, H: 5, find: 'T', T: 1, u: 3 })), 'finding both with the launch typed: refused');
+  ok(/never leaves/.test(r({ g: 9.8, u: 10, theta: -10 })), 'thrown down from the ground: never leaves it');
+  ok(/Choose the value of g/.test(r({ u: 10, theta: 45 })), 'g is asked for');
+  const hit = solveTarget({ g: 9.8, u: 20, theta: 30, d: 30, H: 6, kind: 'net' });
+  ok(hit.ok && hit.shown.hits && near(hit.f.tMax, hit.shown.at.t) && hit.shown.R == null, 'a net it does not clear, it hits: the flight ends there');
+  const short = solveTarget({ g: 9.8, u: 10, theta: 30, d: 30, H: 6, kind: 'wall' });
+  ok(short.ok && /before it reaches/.test(short.notes.map(strip).join(' ')), 'landing before the wall is said');
+  const two = solveTarget({ g: 9.8, d: 20, H: 2, find: 'apex', top: 5, kind: 'point' });
+  ok(two.flights.length === 2 && !two.shown.at.rising && two.flights[1].at.rising, 'from a greatest height, two launches: the steeper passes on the way down');
+  // the engine and an independent sum agree everywhere it is read
+  for (const fl of [e23F(), w19F()]) {
+    for (const t of [0, 0.3, fl.end / 2, fl.end]) ok(near(fl.y(t), fl.h0 + fl.uy * t - 0.5 * fl.g * t * t) && near(fl.x(t), fl.ux * t), `x and y at t = ${t.toFixed(3)} agree`);
+  }
+  for (const k of [{ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }, { g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.4, H: 0.9, kind: 'net' }]) {
+    const g = KITS.target.graphs(solveTarget(k).f, 0, new Proxy({}, { get: () => '#000' }));
+    ok(g.length === 3 && g.every((x) => x.series.length === 2 && x.series[0].dash && !x.series[1].dash), 'three graphs, across dashed and up solid');
+  }
+});
+function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
+function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
 
 /* ── deep audit 2: what it found, and the fixes ─────────────────────── */
 group('Audit 2: the road, finding a hidden number', () => {
