@@ -22,6 +22,8 @@
 <link rel="modulepreload" href="./js/core/intercept.js">
 <link rel="modulepreload" href="./js/core/pace.js">
 <link rel="modulepreload" href="./js/scenarios.js">
+<link rel="modulepreload" href="./js/library.js">
+<link rel="modulepreload" href="./js/kits/index.js">
 <link rel="modulepreload" href="./js/working.js">
 <link rel="modulepreload" href="./js/render/scene.js">
 <link rel="modulepreload" href="./js/render/exhibit.js">
@@ -40,6 +42,7 @@
 <link rel="modulepreload" href="./js/board/board.js">
 <link rel="modulepreload" href="./js/ai/readout.js">
 <link rel="modulepreload" href="./js/core/suvat.js">
+<link rel="modulepreload" href="./js/kits/pair.js">
 <link rel="modulepreload" href="./js/world/dims.js">
 <link rel="modulepreload" href="./js/render/plot.js">
 <link rel="modulepreload" href="./js/render/workshop.js">
@@ -48,7 +51,10 @@
 <link rel="modulepreload" href="./js/ai/typewriter.js">
 <link rel="modulepreload" href="./js/board/blueprint.js">
 <link rel="modulepreload" href="./js/board/frames.js">
+<link rel="modulepreload" href="./js/core/pair.js">
+<link rel="modulepreload" href="./js/render/column.js">
 <link rel="modulepreload" href="./js/render/warehouse.js">
+<link rel="modulepreload" href="./js/core/stages.js">
 <!-- modulepreload:end -->
 <link rel="stylesheet" href="./css/tokens.css">
 <link rel="stylesheet" href="./css/app.css">
@@ -165,6 +171,27 @@
       <p class="h-sub">All of them are the same five equations. Pick the one your question describes.</p>
 
       <div class="pgrid" id="pgrid"></div>
+
+      <!-- THE PAST-PAPER LIBRARY. Scenarios built, one at a time, for exam
+           questions the twelve above cannot set up: each is a new situation
+           with its own engine, stage and working, and names the papers it
+           came from. The search searches these. See js/library.js. -->
+      <section class="library" id="library" aria-labelledby="lib-h">
+        <div class="lib-head">
+          <div>
+            <h2 class="pglabel" id="lib-h">Past-paper library</h2>
+            <p class="pgblurb">Built for exam questions the scenarios above cannot set up.
+              Each one names the papers it comes from.</p>
+          </div>
+          <span class="lib-count" id="lib-count"></span>
+        </div>
+        <label class="lib-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="lib-q" placeholder="Search — a board, a paper, or what happens: collide, overtake…" aria-label="Search the past-paper library" autocomplete="off">
+        </label>
+        <div class="pgrid-row" id="lib-grid"></div>
+        <p class="lib-none" id="lib-none" hidden>Nothing in the library matches that yet.</p>
+      </section>
     </div>
   </main>
 

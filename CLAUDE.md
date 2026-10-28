@@ -68,12 +68,17 @@ js/core/solve.js        what the student knows -> the motion, or a reason why no
 js/core/projectile.js   the idealised projectile model
 js/core/descent.js      a parachute drop: three phases, each one of them SUVAT
 js/core/road.js         a vehicle along a straight road: the five, with no gravity in them
+js/core/stages.js       a motion in stages along one line, and when two such motions meet
+js/core/pair.js         two particles in one vertical line, set off at different times
+js/library.js           the Past-paper library: new scenarios, each naming its papers
+js/kits/                a library scenario's pieces wired for the app — see design/components.md
 js/core/question.js     exam question -> engine parameters
 js/board/               the whiteboard: describe a motion, get a board of the app's own pieces
 js/render/              the scene, the graphs, canvas helpers
 js/world/               the stadium — and nothing outside it
 worker/                 Cloudflare Worker for reading a photo of a question
-design/                 tokens, notation, scenario research, preset list
+design/                 tokens, notation, scenario research, preset list,
+                        components.md (the library's reusable pieces), library/catalogue.md
 ```
 
 ## Tests
@@ -87,4 +92,5 @@ node test/scenarios.test.mjs    # the scenarios, as data
 node test/preload.test.mjs      # the modulepreload hints match the real graph
 node test/notation.test.mjs     # that no computer maths reaches a student
 node test/blueprint.test.mjs    # the whiteboard: the model lays out, the engine calculates
+node test/library.test.mjs      # the Past-paper library: each scenario against its mark schemes
 ```

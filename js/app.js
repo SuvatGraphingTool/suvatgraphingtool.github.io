@@ -12,6 +12,8 @@ import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
+import { LIBRARY } from './library.js';
+import { KITS } from './kits/index.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
 import * as scene from './render/scene.js';
 import * as exhibit from './render/exhibit.js';
@@ -136,6 +138,9 @@ let scenario = null, solved = null, traj = null, second = null, ghost = null, di
 
 /** Does this scenario replace the single view with the pane window? */
 const windowed = () => !!scenario?.descent;
+/** A library scenario's kit — its engine, stage, graphs and working, wired
+    once (js/kits/, design/components.md) — or null for the original twelve. */
+const kit = () => (scenario?.kit ? KITS[scenario.kit] : null);
 
 /* ── step 1 · scenario ──────────────────────────────────────────────── */
 function buildScenarioScreen() {
@@ -156,6 +161,47 @@ function buildScenarioScreen() {
     b.addEventListener('click', () => chooseScenario(b.dataset.id));
   }
   wireSpotlight();
+  buildLibrary();
+}
+
+/* ── the Past-paper library ──────────────────────────────────────────────
+   Scenarios built for exam questions the twelve above could not set up —
+   each its own situation, with its own engine and stage, and each naming the
+   papers it came from. The search box searches these and nothing else: the
+   name, what it is for, the boards and papers, and the words a question in
+   that family tends to use. See js/library.js. */
+const sourceLine = (s) => s.sources.map((x) => `${x.board} ${x.paper} ${x.session} Q${x.q}`).join(' · ');
+function buildLibrary() {
+  const grid = $('lib-grid');
+  if (!grid) return;
+  grid.innerHTML = LIBRARY.map((s) => `
+    <button class="pcard" data-id="${s.id}">
+      ${thumb(s)}
+      <b>${s.name}</b>
+      ${s.sub ? `<span class="pc-sub">${s.sub}</span>` : ''}
+      <p class="pc-note">${s.note}</p>
+      <p class="pc-src">${s.sources.map((x) => `<span>${x.board} ${x.paper} · ${x.session} · Q${x.q}${x.part ? `, ${x.part}` : ''}</span>`).join('')}</p>
+    </button>`).join('');
+  for (const b of grid.querySelectorAll('.pcard')) {
+    b.addEventListener('click', () => chooseScenario(b.dataset.id));
+  }
+  $('lib-count').textContent = `${LIBRARY.length} ${LIBRARY.length === 1 ? 'scenario' : 'scenarios'}`;
+  const box = $('lib-q');
+  if (box.dataset.wired) return;
+  box.dataset.wired = '1';
+  box.addEventListener('input', () => filterLibrary(box.value));
+}
+function filterLibrary(q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  let shown = 0;
+  for (const b of $('lib-grid').querySelectorAll('.pcard')) {
+    const s = LIBRARY.find((x) => x.id === b.dataset.id);
+    const hay = [s.name, s.sub, s.note, sourceLine(s), ...(s.tags || [])].join(' ').toLowerCase();
+    const hit = words.every((w) => hay.includes(w));
+    b.hidden = !hit;
+    if (hit) shown++;
+  }
+  $('lib-none').hidden = shown > 0;
 }
 
 /* The spotlight on the cards: the pointer, in each card's own pixels, so
@@ -190,6 +236,7 @@ function wireSpotlight() {
  * what you are choosing between.
  */
 function thumb(s) {
+  if (s.kit) return KITS[s.kit].thumb(s);
   if (s.descent) return descentThumb(s);
   if (s.road) return roadThumb(s);
   const g = s.params.g || 9.81;
@@ -334,8 +381,9 @@ function chooseScenario(id) {
   state.h = undefined;
   state.descent = {};
   state.mark = undefined;            // the point a road question times it at
+  state.kit = {};                    // a library scenario's own boxes
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
-  $('ask-at').hidden = !!scenario.road;
+  $('ask-at').hidden = !!scenario.road || !!scenario.kit;
   state.firedBefore = false; ghost = null;
   state.aimed = true;                  // the hunter starts pointing at it
   // A NEW SCENARIO IS A NEW PLACE, so the view starts framed on it. Launching
@@ -414,6 +462,7 @@ function closeIntro() { $('intro').hidden = true; }
    Or, for the parachute, four numbers that are not three of the five — see
    buildDescentScreen below for why it gets a screen of its own. */
 function buildValuesScreen() {
+  if (kit()) return buildKitScreen();
   if (scenario?.descent) return buildDescentScreen();
   $('suvat').hidden = false;
   valuesVoice(scenario.road ? 'road' : false);
@@ -658,6 +707,97 @@ function buildRoadExtras() {
   recompute();
 }
 
+/* ── a library scenario's own boxes ──────────────────────────────────────
+   Its kit says which numbers the situation needs (js/kits/), grouped into
+   columns when there are two objects. Like every other screen, nothing is
+   pre-filled: a box marked optional says in its hint what blank means. g is
+   a box of its own with the three values papers use one press away, because
+   the answer depends on which one the paper said. */
+function buildKitScreen() {
+  const K = kit();
+  $('suvat').innerHTML = '';
+  $('suvat').hidden = true;
+  $('guard').hidden = true;
+  $('mode-say').innerHTML = '';
+  valuesVoice(false);
+  VOICE.el.h.innerHTML = K.voice.h;
+  VOICE.el.sub.innerHTML = K.voice.sub;
+
+  const val = (k) => state.kit[k];
+  const box = (f) => {
+    const id = `k-${f.key.replace('.', '-')}`;
+    return `<div class="xrow" data-x="${f.key}"><label for="${id}">${f.label}</label>
+      <input id="${id}" type="text" inputmode="decimal" autocomplete="off" data-k="${f.key}"
+             value="${val(f.key) ?? ''}" placeholder="${f.optional ? '0' : '—'}">
+      <p class="xhint" data-say="${f.say || ''}">${f.hint}</p></div>`;
+  };
+  const cols = Object.entries(K.cols).map(([c, name]) => `
+    <fieldset class="kcol" data-col="${c}"><legend>${name}</legend>
+      ${K.fields.filter((f) => f.col === c).map(box).join('')}</fieldset>`).join('');
+  const g = state.kit.g;
+  $('extra').innerHTML = `<div class="kcols">${cols}</div>
+    <div class="xrow wide" data-x="g"><label for="k-g">Acceleration due to gravity, g (m s⁻²)</label>
+      <input id="k-g" type="text" inputmode="decimal" autocomplete="off" data-k="g" value="${g ?? ''}" placeholder="—">
+      <div class="chips" id="k-g-chips">${K.g.map((x) =>
+        `<button class="chip" data-g="${x}" aria-pressed="${g === x}">${x}</button>`).join('')}</div>
+      <p class="xhint">Use the value the paper gives: answers depend on it.</p></div>`;
+
+  const sayDir = (inp) => {
+    const hint = inp.parentElement.querySelector('.xhint');
+    if (hint.dataset.say !== 'dir') return;
+    const f = K.fields.find((x) => x.key === inp.dataset.k);
+    const v = state.kit[inp.dataset.k];
+    hint.innerHTML = v === undefined ? f.hint : `<b>${K.dir(v)}</b> — ${f.hint}`;
+  };
+  for (const inp of $('extra').querySelectorAll('input[data-k]')) {
+    inp.addEventListener('input', (e) => {
+      const v = parseValue(e.target.value);
+      if (v !== undefined && isFinite(v)) state.kit[e.target.dataset.k] = v;
+      else delete state.kit[e.target.dataset.k];
+      if (e.target.dataset.k === 'g') {
+        for (const c of $('k-g-chips').children) c.setAttribute('aria-pressed', String(parseFloat(c.dataset.g) === state.kit.g));
+      }
+      sayDir(e.target);
+      recompute();
+    });
+    sayDir(inp);
+  }
+  for (const c of $('k-g-chips').children) {
+    c.addEventListener('click', () => {
+      state.kit.g = parseFloat(c.dataset.g);
+      $('k-g').value = c.dataset.g;
+      for (const x of $('k-g-chips').children) x.setAttribute('aria-pressed', String(x === c));
+      recompute();
+    });
+  }
+  recompute();
+}
+
+/** A library scenario, solved by its own engine through its kit. It answers
+    in the shape solveLaunch does, so the message, the transport and the HUD
+    carry on without knowing which engine replied. */
+function recomputeKit() {
+  const K = kit();
+  solved = K.solve(K.read(state.kit));
+  const msg = $('solve-msg'), btn = $('launch');
+  if (!solved.ok) {
+    if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
+    btn.disabled = true; btn.textContent = K.verb;
+    traj = null; second = null; state.verdict = null; state.markers = {};
+    refreshSteps(); dirty = true; return;
+  }
+  if (!working()) {
+    msg.dataset.ok = 'true';
+    msg.innerHTML = `Ready. The rest comes out as:  ${solved.derived.join('  ·  ')}`;
+    showDerived(solved);
+  }
+  traj = solved.f;
+  second = null; state.verdict = null; state.caught = null; state.markers = {};
+  btn.disabled = false;
+  btn.textContent = K.verb;
+  syncRate(); refreshSteps(); dirty = true;
+}
+
 /* ── solve ──────────────────────────────────────────────────────────── */
 /** The angle that points the launch straight at the draggable target. */
 function aimAngle() {
@@ -680,6 +820,7 @@ function showDerived(r) {
 }
 
 function recompute() {
+  if (kit()) return recomputeKit();
   if (scenario?.descent) return recomputeDescent();
   if (scenario?.road) return recomputeRoad();
   const k = { ...state.given, theta: state.theta, h: state.h };
@@ -1106,12 +1247,22 @@ function buildLive() {
   // a canopy does not bounce either — so the setting is not offered on any of
   // the three. It used to be an inline checkbox in the stage bar; it is a
   // block in the options panel now, and the same reason applies to it there.
-  $('bounce-wrap').hidden = ex || !!scenario?.descent || !!scenario?.road;
+  const K = kit();
+  $('bounce-wrap').hidden = ex || !!scenario?.descent || !!scenario?.road || !!K?.hides.bounce;
   // A level road has no height, no greatest height and no components to
-  // resolve, so those three of the seven are not offered there.
+  // resolve, so those three of the seven are not offered there. A kit names
+  // the ones its own stage has nothing to say about.
   for (const k of ['components', 'apex', 'ruler', 'range']) {
     const box = $('shows').querySelector(`input[data-k="${k}"]`);
-    if (box) box.closest('.ck').hidden = !!scenario?.road;
+    if (box) box.closest('.ck').hidden = !!scenario?.road || !!K?.hides.shows.includes(k);
+  }
+  if (!wd) {
+    const box = $('extras').querySelector('input[data-k="energy"]');
+    const off = !!K?.hides.extras.includes('energy');
+    if (box) {
+      box.closest('.ck').hidden = off;
+      if (off && box.checked) { box.checked = false; state.extras.energy = false; }
+    }
   }
   if (!spec) return;
   for (const [k, o] of Object.entries(spec)) {
@@ -1828,8 +1979,9 @@ function openResolve(t) {
   // cursor, with axes to read them off.
   if (windowed()) return;
   // NOR ON THE ROAD. The card resolves a velocity into its two components,
-  // and a vehicle on a level road has only one.
-  if (scenario?.road) return;
+  // and a vehicle on a level road has only one. Nor on a kit's stage, which
+  // is not a single flight to resolve.
+  if (scenario?.road || kit()) return;
   hideDone(); closeAskAt();
   state.t = clamp(t ?? state.t, 0, traj.tMax);
   state.playing = false; setPlayIcon(false);
@@ -1908,7 +2060,7 @@ const AT_T_HINT = '';
 const AT_V_HINT = '';
 
 function openAskAt() {
-  if (!traj || state.step !== 'flight' || windowed() || scenario?.road) return;
+  if (!traj || state.step !== 'flight' || windowed() || scenario?.road || kit()) return;
   hideDone(); closeResolve();
   state.playing = false; setPlayIcon(false);
   // It opens on the instant already on screen, so Resolve it always resolves
@@ -2047,6 +2199,13 @@ function renderHud() {
   const b = (k, val, unit, hue) =>
     `<div class="hbox"${hue ? ` data-hue="${hue}"` : ''}><div class="hbox-k">${k}</div>
      <div class="hbox-v">${val}<small>${unit}</small></div></div>`;
+  // A kit says what its stage reads out.
+  if (kit()) {
+    const r = kit().hud(traj, state.t);
+    $('hud-left').innerHTML = r.left.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
+    $('hud-right').innerHTML = r.right.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
+    return;
+  }
   // In a straight line the horizontal distance is always zero, so show the
   // signed displacement along the line instead — that is the s being solved.
   if (scenario?.road) {
@@ -2149,9 +2308,29 @@ function showEnding() {
   // three rows of five, so it brings its own card. It is gated on the solve
   // rather than on `second`.
   if (scenario?.descent && solved?.ok && state.step === 'flight') return showDescentDone();
+  if (kit() && solved?.ok && state.step === 'flight') return showKitDone();
   if (!(scenario?.ending && second && solved?.ok && state.step === 'flight')) return showDone();
   if (scenario.ending.kind === 'monkey') return showMonkeyDone();
   return showRangeDone();
+}
+
+/**
+ * A library scenario's ending: what its kit makes of the engine's answer,
+ * and the scenario's own account of what the model leaves out.
+ */
+function showKitDone() {
+  const e = scenario.ending || {};
+  const r = kit().ending(solved, e);
+  $('exdone-eyebrow').textContent = r.eyebrow;
+  $('exdone-title').textContent = r.title;
+  $('exdone-body').innerHTML = r.body;
+  $('exdone-real-h').textContent = e.realTitle || '';
+  $('exdone-real-lead').textContent = e.realLead || '';
+  $('exdone-why').innerHTML = (e.why || []).map(([k, v]) => `<li><b>${k}</b> — ${v}</li>`).join('');
+  $('exdone-caveat').textContent = e.caveat || '';
+  $('exdone-close').textContent = e.close || 'See the diagram';
+  $('exdone-all').hidden = true;
+  $('exdone').hidden = false;
 }
 
 /**
@@ -2375,7 +2554,8 @@ function renderWorking() {
   }
   // A descent's working is its three phases, each one solved on its own, and
   // it comes from the engine that solved them. See descentWorking().
-  for (const s of (scenario?.descent ? descentWorking(traj, state.t)
+  for (const s of (kit() ? kit().working(solved, state.t)
+                   : scenario?.descent ? descentWorking(traj, state.t)
                    : scenario?.road ? roadWorking(solved)
                    : buildWorking(traj, state.t))) {
     parts.push(`<div class="step"><div class="step-h">${s.title}</div>` +
@@ -2429,14 +2609,16 @@ function draw() {
     // rule 1 — and it reads zero for the whole of the pre-roll because the
     // pre-roll is outside the clock and nothing in it has been measured.
     $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
-  } else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
+  } else if (kit()) kit().render($('scene'), cam, opts);
+  else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
   else if (scenario?.stage === 'road') roadStage.render($('scene'), cam, opts);
   else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
   else scene.render($('scene'), cam, opts);
 
   if (state.extras.graphs) {
     const P = palette();
-    for (const spec of graphSpecs(traj, state.t, P)) drawGraph($(spec.canvas), spec);
+    const specs = kit() ? kit().graphs(traj, state.t, P) : graphSpecs(traj, state.t, P);
+    for (const spec of specs) drawGraph($(spec.canvas), spec);
   }
   renderHud(); renderWorking(); renderResolve(R);
   $('scrub').value = traj.tMax ? state.t / traj.tMax : 0;

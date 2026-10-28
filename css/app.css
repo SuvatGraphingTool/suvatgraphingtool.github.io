@@ -1135,3 +1135,33 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 
 /* the one-press vertical throw, under the angle slider on Time above a line */
 .theta-up { justify-self: start; margin-top: var(--sp-2); }
+
+/* ── the Past-paper library ──────────────────────────────────────────────
+   Below the twelve, in the same card grid, with a search box of its own and
+   the papers each one was built from under its note. */
+.library { margin-top: var(--sp-12); padding-top: var(--sp-8); border-top: 1px solid var(--border-soft); }
+.lib-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
+.lib-count { font-size: var(--fs-xs); color: var(--ink-muted); white-space: nowrap; padding-top: 2px; }
+.lib-search {
+  display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-5);
+  height: 44px; padding: 0 var(--sp-4); border-radius: var(--r-pill);
+  background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.lib-search:focus-within { border-color: var(--accent); }
+.lib-search svg { width: 18px; height: 18px; flex: none; color: var(--ink-muted); }
+.lib-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--ink); font-size: var(--fs-sm); }
+.lib-search input:focus { outline: none; }
+.lib-none { font-size: var(--fs-sm); color: var(--ink-muted); }
+.pc-src { font-size: var(--fs-xs); color: var(--ink-strong); line-height: 1.45; margin: var(--sp-3) 0 0; padding-top: var(--sp-2); border-top: 1px solid var(--border-soft); font-variant-numeric: tabular-nums; }
+.pc-src span { display: block; }
+.pcard[hidden] { display: none; }
+
+/* A library scenario's boxes, one column per object. */
+.kcols { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.kcol { margin: 0; padding: 0; border: 0; display: grid; gap: var(--sp-3); align-content: start; min-width: 0; }
+.kcol legend { font-size: var(--fs-xs); letter-spacing: 0.09em; text-transform: uppercase; font-weight: var(--w-bold); color: var(--ink-strong); margin-bottom: var(--sp-2); padding: 0; }
+.kcol[data-col='B'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--second); vertical-align: -1px; }
+.kcol[data-col='A'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--vel); vertical-align: -1px; }
+.ph-row[data-key='second'] { border-left: 3px solid var(--second); }
+@media (max-width: 560px) { .kcols { grid-template-columns: minmax(0, 1fr); } }
+.ph-row[data-key='first'] { border-left: 3px solid var(--vel); }

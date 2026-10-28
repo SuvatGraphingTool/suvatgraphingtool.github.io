@@ -83,6 +83,23 @@ export function drawGraph(canvas, spec) {
     }
   }
 
+  // A LINE PER OBJECT, when there is more than one, carries its letter at
+  // its far end, so two lines in two hues are named where they are read.
+  // At its START, where two objects are usually furthest apart — the end is
+  // often where they meet.
+  for (const s of series) {
+    if (!s.tag) continue;
+    const y = s.fn(0);
+    if (isFinite(y)) L.add(s.tag, X(0) + 8, Y(y) + 13, { color: s.color, align: 'left', pri: 7, size: 15, weight: 700, push: 'down', maxPush: 40 });
+  }
+  // EVENTS the engine found — where two lines cross, say — as a ring on the
+  // line at that instant, drawn once the cursor has reached it.
+  for (const p of spec.points || []) {
+    if (!(t >= p.t - 1e-9) || !isFinite(p.y)) continue;
+    dot(ctx, X(p.t), Y(p.y), 6.5, { stroke: p.color, width: 2.4 });
+    if (p.label) L.add(p.label, X(p.t) - 12, Y(p.y) + 16, { color: p.color, align: 'right', pri: 6, size: 14, weight: 700, maxPush: 20 });
+  }
+
   // time cursor
   const cx = X(clamp(t, 0, tMax));
   stroke(ctx, [{ x: cx, y: PAD.t }, { x: cx, y: PAD.t + gh }], { color: P.muted, width: 1.8, dash: [5, 5] });

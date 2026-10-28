@@ -17,6 +17,8 @@
 // `card` names a palette for the scenario's picture on the chooser, defined in
 // css/tokens.css. It is a NAME, not a colour — no hex belongs in this file.
 
+import { LIBRARY } from './library.js';
+
 /** A scenario away from the stadium stands at the world origin. */
 export const FLAT_SITE = { axis: 'x', at: 0, dir: 1, origin: { x: 0, z: 0 }, place: '', view: '' };
 
@@ -251,7 +253,8 @@ export const SCENARIOS = [
     place: 'A straight, level road from A to B' },
 ];
 
-export const byId = (id) => SCENARIOS.find((s) => s.id === id);
+// The library's scenarios are looked up by the same door as the twelve.
+export const byId = (id) => SCENARIOS.find((s) => s.id === id) || LIBRARY.find((s) => s.id === id);
 export const DEFAULT_SCENARIO = 'platform-angle';
 
 /** Only three fields, as asked: Earth, the Moon, and none at all. */

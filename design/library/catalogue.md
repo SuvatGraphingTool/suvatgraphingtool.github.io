@@ -1,0 +1,174 @@
+# The past-paper catalogue
+
+The working record behind the **Past-paper library** on the home screen. Every
+A-level SUVAT question looked at is here: where it was set, what it asks in our
+own words, and what became of it. **No question text is stored here or anywhere
+in the repo.** Papers are copyrighted, so an entry is a reference, a link, a
+paraphrase written for this file and the numbers the paper gives.
+
+The library holds **new scenarios only**. A question one of the original twelve
+can already do is marked *covered* here and never appears on screen. A question
+that needs a new object, motion or set-up becomes an iteration: a scenario of its
+own, with its own engine, stage, graphs and working, built from reusable pieces
+(see [`../components.md`](../components.md)).
+
+## Status
+
+| status | meaning |
+|---|---|
+| **built** | a library scenario was made for it; its section below says how and why |
+| **covered** | one of the original twelve can already do it. Catalogue only — never on screen |
+| **candidate** | found by the 28 October sweep as something the twelve cannot do. Re-checked before it is built |
+| **out** | it needs a topic outside constant-acceleration SUVAT. The reason is given |
+
+Scope: anything constant-acceleration SUVAT can solve — projectiles, vertical
+motion, straight-line motion, vectors in **i** and **j**, travel graphs, and two
+objects meeting or overtaking. Forces and F = ma, friction, connected particles,
+momentum, variable acceleration and energy are out.
+
+## Questions
+
+The first 84 rows come from the 28 October sweep, read in their own PDFs with
+answers from the published mark schemes. Their statuses were re-assessed for
+this library: *covered* names the one of the twelve that does it.
+
+| # | board | paper | session | Q | link | paraphrase (our words, the paper's numbers) | g | status |
+|---|---|---|---|---|---|---|---|---|
+| 1 | AQA | MM1B (legacy M1) | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202014%20QP%20-%20M1%20AQA.PDF) | Car at 14 m/s accelerates 0.8 m/s² for 12 s; find final speed, distance (then a force part) | 9.8 | **covered** by `road` |
+| 2 | AQA | MM1B | Jun 2014 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202014%20QP%20-%20M1%20AQA.PDF) | Bullet fired 2° above horizontal at target 420 m away, hits after 1.8 s; find V and drop below centre | 9.8 | **covered**: arc, but the target is reached at a stated time, not on landing: needs a "where is it at t" readout |
+| 3 | AQA | MM1B | Jun 2014 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202014%20QP%20-%20M1%20AQA.PDF) | Two particles with different constant accelerations start apart; show they collide, find where | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 4 | AQA | MM1B | Jun 2012 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | Car braking from 20 m/s, at 10 m/s after 75 m; find a, stopping time (then force parts) | 9.8 | **covered** by `road` |
+| 5 | AQA | MM1B | Jun 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | a = 0.1i−0.2j from origin with u = −i+3j; when due east; speed when heading south-east | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 6 | AQA | MM1B | Jun 2012 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | 22.4 m/s launch, apex after 2 s; angle, max height, range, time above 5 m, min speed | 9.8 | **covered**: time-above, once θ is worked from the 2 s to the top (sin θ = 0.875); no box takes a time to the top |
+| 7 | AQA | MM1B | Jan 2013 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Decelerate 20→12 m/s over 640 m, then accelerate 1820 m in 70 s; times, a, final speed, average speed | – | **candidate**: several stages along a line, one after another |
+| 8 | AQA | MM1B | Jan 2013 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Starts at 13.6i, u = 6i+2.4j, a = −0.8i+0.1j; distance from O when moving north-west | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 9 | AQA | MM1B | Jan 2013 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Golf ball hits a wall 38.4 m away at 3 m height after 2.4 s; find V and angle | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 10 | AQA | 7357/2 | Jun 2018 | 16 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202018%20QP.pdf) | 35° launch lands 10 m below start; 1.5 s to apex; find u and flight time | 9.81 | **covered**: up and off a platform, but the paper gives the time to the top, which no box takes |
+| 11 | AQA | 7357/2 | Jun 2019 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202019%20QP.pdf) | Dropped from h; show v = √(2gh); h = 18 m but measured v = 20, so is the sensor faulty? | 9.8 | **covered** by `dropped` |
+| 12 | AQA | 7357/2 | Jun 2022 | 12 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202022%20QP.pdf) | MCQ: speed u becomes 4u in 5 s; a in terms of u | – | **covered**: multiple choice in terms of u, no numbers to type |
+| 13 | AQA | 7357/2 | Jun 2022 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202022%20QP.pdf) | 7 m/s at θ; show h = 2.5 sin²θ; max h for θ ≤ 60° | 9.8 | **covered**: symbolic in θ; arc shows any one θ |
+| 14 | AQA | 7357/2 | Jun 2023 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202023%20QP.pdf) | Falling ball passes M at u and N at 3u; time M to N; bound on height of M | g | **covered**: symbolic (M at u, N at 3u); dropped shows any one case |
+| 15 | AQA | 7357/2 | Jun 2023 | 20 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202023%20QP.pdf) | Ball thrown from 1.8 m at 14 m/s, 60°; dog starts 0.2 s later from rest, catches it at 0.3 m; find dog's acceleration | 9.8 | **candidate**: two objects meeting: a projectile caught by a dog that starts 0.2 s later |
+| 16 | Edexcel | 6677/01 M1 | Jan 2012 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Stone up and back in 3 4/7 s; find u, max height, time at least 6.6 m above A | 9.8 | **covered** by `time-above` |
+| 17 | Edexcel | 6677/01 M1 | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | 885 m trip: accelerate over T/3 s to 15 m/s, steady T s, brake at 2.5 m/s²; find T, a | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 18 | Edexcel | 6677/01 M1 | Jan 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Two boats at constant velocity; when is P due west of Q, and how far apart then | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 19 | Edexcel | 6677/01 M1 | Jun 2013 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Passes A at u, B 10 s later at 34 m/s, AB = 240 m; find u, time to midpoint | – | **covered** by `road` |
+| 20 | Edexcel | 6677/01 M1 | Jun 2013 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Car between lights 2145 m, 120 s; motorbike leaves 10 s later, passes car at 990 m | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
+| 21 | Edexcel | 6677/01 M1 | Jun 2015 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Stone up at 19.6 m/s; max height; time above 14.7 m | 9.8 | **covered** by `time-above` |
+| 22 | Edexcel | 6677/01 M1 | Jun 2015 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Train: accelerate 0.5, steady V, decelerate 0.25; 5 min, 6.3 km; find V (V < 50) | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 23 | Edexcel | 6677/01 M1 | Jun 2017 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Cyclist passes A, 5 s later B at 10 m/s, AB = 40 m; find a, time to midpoint | – | **covered** by `road` |
+| 24 | Edexcel | 6677/01 M1 | Jun 2017 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Two ships at constant velocity; bearing; times when 10 km apart | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 25 | Edexcel | 9MA0/03 | Jun 2018 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Constant a found from two positions; at A the acceleration switches; time until moving north-east | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 26 | Edexcel | 9MA0/03 | Jun 2018 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Ball thrown from 2 m, apex 3 m, hits target 20 m away at 0.75 m; find angle, time | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 27 | Edexcel | 9MA0/32 | Oct 2020 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | a = 4i−5j, u = −2i+2j from O; velocity at t = 2; when it passes (λ, −4.5) | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 28 | Edexcel | 9MA0/32 | Oct 2020 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | From a 25 m cliff at 45°, lands 100 m out; show U = 28; greatest height | 9.8 | **covered** by `platform-angle` |
+| 29 | Edexcel | 9MA0/32 | Jun 2022 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202022%20QP%20(Mech).pdf) | Golf ball range 120 m, max height 10 m; show U² sin α cos α = 588 and U² = 1960 | 9.8 | **covered**: arc, but range and greatest height are given and neither is a box |
+| 30 | Edexcel | 9MA0/32 | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | From rest at 3.2 m/s² for 5 s; speed and distance | – | **covered** by `road` |
+| 31 | Edexcel | 9MA0/32 | Jun 2023 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | a = 2.4i+j, passes A then B 5 s later; when it reaches C(4, c) | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 32 | Edexcel | 9MA0/32 | Jun 2023 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | 28 m/s from ground through a point 40 m across and 20 m up; two angles; greatest possible height | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 33 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Ball leaves hand 2 m up at 9 m/s upward; time to hit ground | 10 | **covered** by `up` |
+| 34 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Train: 0.3 m/s² for 80 s, steady, −0.5 m/s²; total 4800 m; total time | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 35 | Edexcel | 8MA0/22 (AS) | Jun 2019 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202019%20QP%20(Mech).pdf) | Parachutist: free fall 3 s, then −12 m/s² for 2 s, then steady to ground; 550 m; find T | 10 | **candidate**: several stages; descent.js takes a steady speed, but this paper gives a braking time instead |
+| 36 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Thrown up from 1.8 m, lands at 10 m/s; find U and T | 10 | **covered** by `up` |
+| 37 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Train max 25 m/s, braking time 4× accelerating time, 700 s, 15 km; speed at t = 572 | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 38 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Two children race and finish together at 27.5 s; race length; Sam's top speed X | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
+| 39 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Up at 39.2 m/s, hits ground 10 s later; height of O; time with speed ≤ 24.5 | 9.8 | **covered** by `up` |
+| 40 | Edexcel | IAL WME01 | Jan 2019 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Two birds leave nests; B is south-west of A at t = 4; find B's speed | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 41 | Edexcel | IAL WME01 | Jan 2019 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Train 270 s, 4.5 km, accelerates 60 s, brakes 30 s; V; halfway time; times at V/4 | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 42 | Edexcel | IAL WME01 | Oct 2021 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Car at 25 m/s, sign 48 m ahead; three braking models, one with a 0.2 s reaction delay | – | **candidate**: several stages along a line, one after another |
+| 43 | Edexcel | IAL WME01 | Oct 2021 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ball up from A above ground; v-t graph zero at 2.5 s; lands at 7 s; speed and height | 9.8 | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
+| 44 | Edexcel | IAL WME01 | Oct 2021 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ship leaves port at 7:00; lighthouse due east at 8:48, north-east at 9:00; find it | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 45 | Edexcel | IAL WME01 | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Passes P, Q 10 s later at 28 m/s, PQ = 220; a; distance in the 5th second | – | **covered** by `road` |
+| 46 | Edexcel | IAL WME01 | Jun 2022 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Velocity known at t = 1 and t = 4; speed at t = 3.5 | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 47 | Edexcel | IAL WME01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | 100 m race, finish together; Ajaz's time; Beth's T; difference in finishing speed | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
+| 48 | OCR A | H240/03 | Jun 2019 | 7 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Cyclist from rest at 1.5 m/s² for 4 s, then steady; distance in 10 s | – | **candidate**: several stages along a line, one after another |
+| 49 | OCR A | H240/03 | Jun 2019 | 8 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Flight 2.4 s, horizontal velocity 5d/3, just clears a wall at d; speed 16 over the wall | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 50 | OCR A | H240/03 | Jun 2022 | 9 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | A overtakes B (12 m/s) at 20 m/s, slows to 8 m/s over 30 s; when B re-overtakes | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
+| 51 | OCR A | H240/03 | Jun 2022 | 13 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | Just clears a wall of height a/2 at x = a, lands at 4a; angle; a given 54.6 m/s; max height | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 52 | OCR A | H240/03 | Jun 2023 | 8 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | a = 3i−2j, v = 6i at t = 4; speed at t = 0 | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 53 | OCR A | H240/03 | Jun 2023 | 12 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | 39 m/s from 20 m up, sin θ = 5/13; max height; time to land (part (d) out of scope) | 10 | **covered** by `platform-angle` |
+| 54 | OCR | 4728 M1 (legacy) | Jun 2011 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202011%20QP%20-%20M1%20OCR.pdf) | Driver's v-t graph: car trip, then walks back to a shop, later jogs to the car; time in shop | – | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
+| 55 | OCR | 4728 M1 | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | Thrown down at 3.5 from 5 m; rebounds and passes start 0.87 s later; rebound speed | 9.8 | **candidate**: a bounce mid-question (rebound speed found from a later time); trajectory has restitution but not a found rebound |
+| 56 | OCR | 4728 M1 | Jun 2014 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | x-t graph with speed 4 or rest; show T = 1.75; velocities; distance in 10 s | – | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
+| 57 | OCR MEI | H640/01 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | Thrown horizontally at 14 m/s from a 5 m window over a 2 m fence; trajectory; range of d | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 58 | OCR MEI | H640/01 | Jun 2018 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | 5 to 11.4 m/s in 4 s, uniform, then steady at 17.8; displacement in 20 s | – | **candidate**: several stages along a line, one after another |
+| 59 | OCR MEI | H640/01 | Jun 2019 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202019%20QP.pdf) | Cannonball 100 m/s at 25°; greatest height; range | 9.8 | **covered** by `arc` |
+| 60 | OCR MEI | H640/01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202022%20QP.pdf) | Thrown from 5 m above origin with velocity (14, 7); position vector; landing distance | 9.8 | **covered**: up and off a platform, but given as velocity components (14, 7), not a speed and an angle |
+| 61 | WJEC | 1300U40-1 Unit 4 | Jun 2019 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202019%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Tennis serve (30i − 1.4j) from 2.4 m over a 0.9 m net; landing speed; clearance | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 62 | WJEC | 1300U40-1 Unit 4 | Jun 2022 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202022%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | 35 m/s golf shot just clears a treetop (100, 20); two values of tan θ; distance short of the flag at 130 | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
+| 63 | CIE | 9709/41 | May/Jun 2019 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s19_qp_41.pdf) | Up at 25 m/s from 3 m; time to top; time above 23 m; h if above h for exactly 1 s | 10 | **covered** by `time-above` |
+| 64 | CIE | 9709/42 | Oct/Nov 2019 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | Tractor v-t graph, 4 segments, starts at U; find V, then U from 375 m | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 65 | CIE | 9709/42 | Oct/Nov 2019 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | A up at 20 m/s from ground; B dropped from 40 m 1 s later; collision height; speed difference | 10 | **built**: `pair-vertical` |
+| 66 | CIE | 9709/42 | May/Jun 2021 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s21_qp_42.pdf) | A up at 30 m/s; B dropped from 15 m above at the same instant; they coalesce; two landing times | 10 | **built**: `pair-vertical`, the collision (0.5 s, 13.75 m). What C does after coalescing is momentum: out |
+| 67 | CIE | 9709/43 | May/Jun 2017 | 3 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s17_qp_43.pdf) | Train to 25 m/s in T s, braking at twice that rate, 180 s, 3300 m; braking distance | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 68 | CIE | 9709/43 | May/Jun 2017 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s17_qp_43.pdf) | Up at 12 m/s; a second particle from the same point 2 s later at 20 m/s; when and where they collide | 10 | **built**: `pair-vertical` |
+| 69 | AQA Physics | 7408/1 | Jun 2019 | 04.3 | [paper](https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2019/june/AQA-74081-QP-JUN19.PDF) | Catapult releases a rock horizontally at 18 m/s from 7.5 m; range | 9.81 | **covered** by `platform` |
+| 70 | OCR A Physics | H556/01 | Jun 2019 | 19(a) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/OCR-A/Paper-1/QP/June%202019%20QP.pdf) | 18 m/s, 0.50 s reaction, stops in 38 m; deceleration | – | **candidate**: several stages along a line, one after another |
+| 71 | CIE Physics | 9702/22 | Oct/Nov 2018 | 1 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Physics%20(9702)/9702_w18_qp_22.pdf) | Golf ball 6.0 m/s with vertical component 4.8, apex at 0.49 s; component-time sketches; max height | 9.81 | **candidate**: component–time sketches of a projectile; the graphs show them, but the question gives a component, not a speed |
+| 72 | Edexcel Physics | 9PH0/01 | Jun 2018 | 18(b) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/Edexcel/Paper-1/QP/June%202018%20QP.pdf) | Ball bearing rolls off a bench through two foil strips 0.50 m apart, 0.14 s; speed; is a strip 8 cm lower hit at its centre? | 9.81 | **candidate**: timing between two strips, then a projectile off a bench: two stages of different kinds |
+| 73 | Edexcel | 6677/01 M1 | Jun 2015 | 8 | [paper](see) | 4 kg on a rough incline with a pulley to a hanging 0.5 kg | 9.8 | **out**: connected particles, friction on an incline |
+| 74 | Edexcel | 6677/01 M1 | Jun 2013 | 8 | — | 2m on a smooth table, 3m hanging over a pulley | 9.8 | **out**: connected particles over a pulley |
+| 75 | Edexcel | 6677/01 M1 | Jan 2012 | 8 | — | 4 kg pushed up a rough 30° slope at 16 m/s; R, μ; distance after the force is removed | 9.8 | **out**: forces on a rough slope |
+| 76 | Edexcel | 8MA0/22 (AS) | Jun 2019 | 2 | — | Pulley: 0.8 kg on a table, 0.6 kg hanging 0.4 m above the floor; a = 4.2; time to reach the pulley | 9.8 | **out**: connected particles over a pulley |
+| 77 | OCR MEI | H640/01 | Jun 2019 | 16 | — | 2 kg down a 20° slope at 1.4 m/s; smooth model vs rough model | 9.8 | **out**: forces on a slope |
+| 78 | OCR | 4728 M1 | Jun 2014 | 7 | — | Two tied particles projected down a 30° slope at 0.6 m/s, a = 0.9 | 9.8 | **out**: forces on a slope; only part (i) is SUVAT |
+| 79 | OCR | 4728 M1 | Jun 2011 | 2 | — | Pulley, 0.45 kg and m kg, 0.36 m above a surface, a = 0.98 | 9.8 | **out**: connected particles over a pulley |
+| 80 | CIE | 9709/41 | May/Jun 2019 | 6 | — | Connected particles on a smooth slope, pulley, energy method | 10 | **out**: connected particles, energy |
+| 81 | CIE | 9709/42 | May/Jun 2021 | 7 | — | Piecewise acceleration a(t), no jumps in velocity | – | **out**: variable acceleration a(t), calculus |
+| 82 | OCR A | H240/03 | Jun 2018 | 11 | — | v = kt + 0.03t² for 20 s, then constant 1.3 m/s² up to 25 m/s | – | **out**: variable acceleration, calculus |
+| 83 | Edexcel | 9MA0/32 | Jun 2023 | 3 | — | v = (t² − 3t + 7)i + (2t² − 3)j | – | **out**: variable acceleration in i and j, calculus |
+| 84 | OCR A Physics | H556/01 | Jun 2019 | 17 | — | Hollow ball falling with drag, v-t curve tangent | 9.81 | **out**: air resistance and a v–t curve |
+
+## Built, and why it is built the way it is
+
+### `pair-vertical` — Two in one vertical line
+
+**Papers.** CIE 9709/42 Oct/Nov 2019 Q5 (A up at 20 from the ground, B dropped
+from 40 m one second later: collision 8.75 m up, speeds differ by 10). CIE
+9709/43 May/Jun 2017 Q5 (two projected up from O, at 12 and then 20 two seconds
+later: t = 1/7 s after the second, 2.76 m up). CIE 9709/42 May/Jun 2021 Q6, its
+collision only (up at 30, one let go 15 m above at the same instant: 0.5 s,
+13.75 m); the rest of that question is momentum.
+
+**Why the twelve cannot.** Every one of them is one object, or a second object
+derived from the first at the same instant (the released round, the monkey).
+None has two independent motions with two start times, and none asks when two
+heights are equal.
+
+**How it is solved.** Up positive, heights from the ground, one clock. Each
+particle is SUVAT with a = −g from the moment it sets off:
+y = h + u(t − t₀) − ½g(t − t₀)². Set the two equal. When both are free the t²
+terms cancel — both fall with the same g, so relative to each other neither
+accelerates — and the meeting is one linear equation. The height and both
+velocities follow.
+
+**What moves, in which phases.** Each particle is held where it starts until
+its own start time, then free, then at rest on the ground. That is a motion in
+stages (`js/core/stages.js`), and the meeting is the first root of the
+difference of two piecewise quadratics while both are above the ground. Held
+counts: a particle can be reached before it is let go.
+
+**The stage.** One vertical line, tall rather than wide. A height scale, the
+ground, a tower with a ledge for any particle that starts above the ground. A
+and B on the line; each one's equal-time marks on its own side so the two
+strobe pictures read against each other; velocity arrows in the velocity hue,
+solid because vertical; the gap between them as a solid teal bracket; a burst
+and a line across at the meeting height once it has happened.
+
+**Graphs.** Height–time (two parabolas that cross at the meeting),
+velocity–time (two parallel lines once both are free: the reason the t² terms
+cancel), acceleration–time (B is 0 while held, then −g).
+
+**Working.** Each height multiplied out, the two set equal, the cancelling,
+t, the height, both velocities with signs, then the speed difference and the
+closing speed.
+
+**What the student varies.** Each particle's start height, signed initial
+velocity and start time, and g (9.81, 9.8 or 10 one press away).
+
+**What makes it general.** Any two vertical motions on one line: up then
+dropped, up then up, dropped then thrown down, both at once, one released late,
+on any g including none. It can fail — one lands first, they are never in the
+air together, one stays above the other — and says which, because the meeting is
+found, never constructed (the old "Two that collide" card was removed for being
+built so it could not miss; see `design/presets.md`).

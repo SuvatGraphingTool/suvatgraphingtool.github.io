@@ -28,6 +28,9 @@ import { readoutHTML, solutionHTML, proseHTML } from '../js/ai/readout.js';
 import { trajectory } from '../js/core/trajectory.js';
 import { solveRoad, roadWorking } from '../js/core/road.js';
 import { readBlueprint, solveBoard } from '../js/board/blueprint.js';
+import { solvePair, pairWorking } from '../js/core/pair.js';
+import { KITS } from '../js/kits/index.js';
+import { LIBRARY } from '../js/library.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
 
 let pass = 0, fail = 0;
@@ -296,6 +299,49 @@ group('Along a straight road: everything the engine says, and the working', () =
   }
   ok(said > 25, `the sweep reaches the road's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing on the road is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two in one vertical line, everything it says', () => {
+  const K = KITS.pair;
+  const INPUTS = [
+    { A: { h: 0, u: 20 }, B: { h: 40, u: 0, t0: 1 }, g: 10 },
+    { A: { h: 0, u: 12 }, B: { h: 0, u: 20, t0: 2 }, g: 10 },
+    { A: { h: 0, u: 30 }, B: { h: 15, u: 0 }, g: 10 },
+    { A: { h: 0, u: 20 }, B: { h: 3, u: 0, t0: 5 }, g: 9.8 },       // reached while held
+    { A: { h: 0, u: 5 }, B: { h: 40, u: 0, t0: 3 }, g: 10 },        // never together
+    { A: { h: 0, u: 5 }, B: { h: 2, u: 30 }, g: 9.81 },             // never meet
+    { A: { h: 0, u: 5 }, B: { h: 2, u: 9 }, g: 0 },                 // no gravity
+    { A: { h: 2.5, u: -4.5 }, B: { h: 0, u: 14.7, t0: 0.25 }, g: 9.81 },
+    { A: { h: 0, u: 20 }, B: { h: 0, u: 20 }, g: 10 },              // refused
+    { A: { h: 0, u: 4 }, B: {}, g: 9.8 },                           // missing
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solvePair(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.moment) { said++; check('moment', r.moment.text, bag); }
+    for (const st of pairWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r, LIBRARY[0].ending);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  for (const s of LIBRARY) check('card', `${s.name} ${s.sub} ${s.note}`, bag);
+  ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
 group('What Ask Suvat\'s Solve switch shows: the engine\'s working, laid out', () => {
