@@ -57,6 +57,7 @@
 .lib-paper:hover { color: var(--accent); background: var(--hover); }
 .lib-paper:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .lib-more { margin-top: var(--sp-3); font-size: var(--fs-sm); }
+.lib-unmet { font-size: var(--fs-sm); font-weight: var(--w-small); color: var(--ink-muted); margin: 0 0 var(--sp-5); overflow-wrap: anywhere; }
 .lib-none { font-size: var(--fs-sm); font-weight: var(--w-small); color: var(--ink-muted); margin: 0; overflow-wrap: anywhere; }
 
 /* ── the question, on the values screen ───────────────────────────────
@@ -72,21 +73,22 @@
 .lib-from b { font-weight: var(--w-semi); color: var(--ink); }
 #values-h:focus { outline: none; }
 
-/* ── narrower: the paper, its session, the scenario it opens on a line of
-   its own, what happens in three lines, and
+/* ── narrower: the paper, its session and the scenario it opens, then the
+   start of what happens in two lines (all of it, and what the question
+   asks, is on the values screen's card a tap away), and
    the paper link a 60 × 48 target in the corner — a row a phone can scroll
    past, with the whole of the question on the values screen's card ──── */
 @media (max-width: 760px) {
-  .lib-open { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'paper' 'when' 'to' 'says';
-              gap: 2px var(--sp-2); padding: var(--sp-3) 60px var(--sp-3) var(--sp-4); }
+  /* a wrapping row: the paper on its own line, then its session and the
+     scenario it opens side by side while they fit, the scenario dropping to
+     a line of its own, whole, when they do not */
+  .lib-open { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--sp-2);
+              padding: var(--sp-3) 64px var(--sp-3) var(--sp-4); }
   .lib-src { display: contents; }
-  .lib-src b { grid-area: paper; }
-  .lib-src span { grid-area: when; margin: 0; white-space: nowrap; }
-  .lib-to { grid-area: to; justify-self: start; text-align: left; min-width: 0; }
-  .lib-to span { display: none; }
-  .lib-to b { display: inline; }
-  .lib-to b::before { content: '\2192\00a0'; color: var(--ink-faint); font-weight: var(--w-small); }
-  .lib-says { grid-area: says; margin-top: var(--sp-1); display: -webkit-box; -webkit-line-clamp: 3;
+  .lib-src b { flex: 0 0 100%; }
+  .lib-src span { margin: 0; white-space: nowrap; }
+  .lib-to { flex: 0 0 auto; max-width: 100%; text-align: left; }
+  .lib-says { order: 1; flex: 0 0 100%; margin-top: var(--sp-1); display: -webkit-box; -webkit-line-clamp: 2;
               -webkit-box-orient: vertical; overflow: hidden; }
   /* what it asks is on the values screen's card; the row keeps to what happens */
   .lib-asks { display: none; }

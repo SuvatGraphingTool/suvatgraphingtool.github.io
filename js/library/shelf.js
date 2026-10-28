@@ -63,7 +63,8 @@ const words = (text) => String(text).toLowerCase()
   .replace(/[\u2212\u2013\u2014]/g, '-')
   .replace(/([a-z])-([a-z])/g, '$1$2')                 // mid-point is midpoint
   .split(/[^a-z0-9.]+/).map((w) => w.replace(/^\.+|\.+$/g, '')).filter(Boolean);
-const whole = (w) => /^\d+(\.\d+)?$/.test(w) || /^q\d+(\.\d+)?$/.test(w);
+// "as" is the qualification, and has to be the whole word or it is the start of everything
+const whole = (w) => /^\d+(\.\d+)?$/.test(w) || /^q\d+(\.\d+)?$/.test(w) || w === 'as';
 
 /* Words that carry no meaning in a search: "show that", "released from rest",
    "hits the ground" are found by their other words. */
@@ -74,17 +75,40 @@ const STOP = new Set(['a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'from', 'w
 export function queryWords(query) {
   const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1')
     // a fraction is a value, not two words: 3 4/7 and 5/13 are not searched for
-    .replace(/(?:\b\d+\s+)?\b\d+\s*\/\s*\d+\b/g, ' ');
+    // (small ones only: 7357/2 and 9709/41 are papers, and they stay)
+    .replace(/(?:\b\d{1,2}\s+)?\b\d{1,2}\s*\/\s*\d{1,2}\b(?!\s*\/)/g, ' ')
+    // OCR's full name says Cambridge, and means OCR
+    .replace(/\boxford\s+cambridge\b/g, 'oxford');
   // a lone letter (an i, a j, the A of "at A") matches the start of everything
   return words(raw).filter((w) => !STOP.has(w) && (w.length > 1 || /\d/.test(w)));
+}
+
+/* What a session is also called. Cambridge prints May/June and Oct/Nov and
+   writes s19 and w19; schools say summer and winter. */
+function sessionWords(session) {
+  const m = /(\w+) (\d{4})/.exec(session || '');
+  if (!m) return '';
+  const yy = m[2].slice(2);
+  if (/^(may|june)$/i.test(m[1])) return `may june may/june summer s${yy} m${yy}`;
+  if (/^(october|november)$/i.test(m[1])) return `oct nov october november oct/nov autumn winter w${yy}`;
+  if (/^january$/i.test(m[1])) return `jan winter w${yy}`;
+  return '';
+}
+/* Which qualification: AS, International A level or A level, written the
+   ways students write them. */
+function qualification(src) {
+  if (/^8MA0/.test(src.code || '')) return 'AS AS-level as level advanced subsidiary';
+  if (/^WME/.test(src.code || '')) return 'IAL international A-level';
+  return 'A-level advanced';
 }
 
 /** The question's own words: its paper, session, what happens, what it asks, its key words. */
 function ownWords(q, nameOf) {
   const n = String(q.source.q), p = q.source.printed;
   return words([
-    q.source.board, ALIAS[q.source.boardId] || '', q.source.paper, q.source.code || '', q.source.subject || '',
-    q.source.session, `q${n}`, `q${n.split('.')[0]}`, p ? `${p} q${p}` : '',
+    q.source.board, ALIAS[q.source.boardId] || '', q.source.paper, q.source.code || '', q.source.subject || 'maths mathematics',
+    qualification(q.source), q.source.session, sessionWords(q.source.session),
+    `q${n}`, `q${n.split('.')[0]}`, n.includes('.') ? n : '', p ? `${p} q${p}` : '',
     q.says, q.asks || '', q.beyond || '', q.terms || '', nameOf(q.opens),
     // the value of g the paper uses, which students type as a way of finding it
     q.fill?.given?.g != null ? `g ${q.fill.given.g}` : '',
@@ -108,8 +132,9 @@ const hit = (list, w) => (whole(w) ? list.includes(w) : list.some((h) => h.start
    than quietly showing Edexcel 2023 and OCR 2019. Everything else is a word
    about what happens, and those rank. */
 const BOARD_WORDS = new Set(BOARDS.flatMap((b) => [b.id, ...b.alias.split(' ')]).concat(['ial']));
-const MONTHS = new Set(['january', 'february', 'march', 'may', 'june', 'october', 'november', 'winter', 'summer']);
-const isFilter = (w) => BOARD_WORDS.has(w) || MONTHS.has(w) || /^(19|20)\d\d$/.test(w) || /^q\d+(\.\d+)?$/.test(w);
+const MONTHS = new Set(['january', 'jan', 'may', 'june', 'jun', 'october', 'oct', 'november', 'nov', 'winter', 'summer', 'autumn']);
+const isFilter = (w) => BOARD_WORDS.has(w) || MONTHS.has(w) || /^(19|20)\d\d$/.test(w)
+  || /^q\d+(\.\d+)?$/.test(w) || /^[smw]\d\d$/.test(w) || w === 'as';
 
 /** A question's own words in order, for telling "time above" from "above … time". */
 const ownSeq = (q, nameOf) => words(`${q.says} ${q.asks || ''} ${q.terms || ''} ${nameOf(q.opens)}`);
@@ -142,13 +167,20 @@ export function found(query, nameOf = () => '') {
   const all = QUESTIONS.map((q, i) => ({ q, i }));
   if (!want.length) return all;
   const filters = want.filter(isFilter), free = want.filter((w) => !isFilter(w));
-  const kept = all.filter(({ q }) => { const own = ownWords(q, nameOf); return filters.every((w) => hit(own, w)); });
+  // "as" is also an ordinary word ("takes g as 10"), so as a filter it is
+  // asked of the qualification alone
+  const holds = (q, own, w) => (w === 'as' ? words(qualification(q.source)).includes('as') : hit(own, w));
+  const kept = all.filter(({ q }) => { const own = ownWords(q, nameOf); return filters.every((w) => holds(q, own, w)); });
   if (!free.length) return kept;
   const scored = kept.map((x) => ({ ...x, ...score(x.q, free, nameOf) }));
   const most = Math.max(0, ...scored.map((x) => x.count));
-  // free words that meet nothing are no evidence either way
-  if (!most) return filters.length ? kept : [];
-  return scored.filter((x) => x.count === most).sort((a, b) => b.weight - a.weight || a.i - b.i);
+  // A free word that meets nothing is no evidence either way: it is left
+  // out, and the shelf says so rather than pretending it fitted.
+  const unmet = free.filter((w) => !kept.some(({ q }) => hit(ownWords(q, nameOf), w) || hit(topicWords(q), w)));
+  const out = !most ? (filters.length ? kept : [])
+    : scored.filter((x) => x.count === most).sort((a, b) => b.weight - a.weight || a.i - b.i);
+  out.unmet = out.length ? unmet : [];
+  return out;
 }
 export const matches = (q, query, nameOf) => found(query, nameOf).some((x) => x.q === q);
 
@@ -157,9 +189,11 @@ export function shelve(query, nameOf) {
   const hits = found(query, nameOf);
   const at = (t) => hits.findIndex((x) => x.q.topic === t.id);
   // in course order normally; while searching, the shelf with the best match first
-  return TOPICS.map((t) => ({ ...t, items: hits.filter((x) => x.q.topic === t.id).map((x) => x.q) }))
+  const shelves = TOPICS.map((t) => ({ ...t, items: hits.filter((x) => x.q.topic === t.id).map((x) => x.q) }))
     .filter((t) => t.items.length)
     .sort((a, b) => (queryWords(query).length ? at(a) - at(b) : 0));
+  shelves.unmet = hits.unmet || [];
+  return shelves;
 }
 
 /**
@@ -199,7 +233,10 @@ export function mountShelf({ host, search, count, sub, open, nameOf }) {
     const shown = topics.reduce((n, t) => n + t.items.length, 0);
     count.textContent = query ? `${shown} of ${total}` : `${total} ${total === 1 ? 'question' : 'questions'}`;
     const said = query.length > 40 ? `${query.slice(0, 40)}…` : query;
-    host.innerHTML = topics.length ? topics.map((t) => {
+    const left = topics.unmet?.length
+      ? `<p class="lib-unmet">No question here mentions ${topics.unmet.map((w) => `\u201c${esc(w)}\u201d`).join(' or ')}, so ${topics.unmet.length === 1 ? 'it was' : 'they were'} left out of the search.</p>`
+      : '';
+    host.innerHTML = topics.length ? left + topics.map((t) => {
       // While searching, every match shows; otherwise a long shelf opens on its first few.
       const long = !query && t.items.length > SHELF_OPEN + 1;
       const all = !long || opened.has(t.id);

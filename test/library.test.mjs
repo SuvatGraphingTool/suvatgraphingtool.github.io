@@ -9,7 +9,7 @@
 // it, this is where it shows.
 
 import { TOPICS, QUESTIONS, BOARDS } from '../js/library/questions.js';
-import { matches, shelve, sourceTag, haystack, EXAMPLES, queryWords, PLACEHOLDER_SHORT } from '../js/library/shelf.js';
+import { matches, shelve, found, sourceTag, haystack, EXAMPLES, queryWords, PLACEHOLDER_SHORT } from '../js/library/shelf.js';
 import { SCENARIOS, byId } from '../js/scenarios.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { solveRoad } from '../js/core/road.js';
@@ -154,6 +154,20 @@ group('Search', () => {
   ok(count('edexcel zzqq') === QUESTIONS.filter((q) => q.source.boardId === 'edexcel').length, 'a stray word beside a board leaves the board');
   ok(shelve('time above', nameOf)[0].items[0].opens === 'time-above', 'time above puts a Time above a line question first, shelf and all');
   ok(['i j', '3 4/7', '5/13'].every((w) => queryWords(w).length === 0), 'single letters and fractions are not search words');
+  // Sessions the way covers and schools say them, and every paper by its code.
+  for (const w of ['summer 2019', 'may/june 2019', 'may 2019', 's19']) {
+    const got = QUESTIONS.filter((q) => matches(q, w, nameOf));
+    ok(got.length > 0 && got.every((q) => q.source.session === 'June 2019'), `"${w}" finds the June 2019 papers, and only those`);
+  }
+  ok(QUESTIONS.filter((q) => matches(q, 'winter 2012', nameOf)).every((q) => q.source.session === 'January 2012'), 'winter 2012 is January 2012');
+  for (const q of QUESTIONS) {
+    ok(found(q.source.code, nameOf).some((x) => x.q === q), `${q.id} is found by its code as printed, ${q.source.code}`);
+  }
+  const as = QUESTIONS.filter((q) => matches(q, 'AS', nameOf));
+  ok(as.length > 0 && as.every((q) => /^8MA0/.test(q.source.code)), 'AS finds the AS papers, and only those');
+  ok(count('A-level') > 0 && count('maths') > 0 && count('ocr-a') > 0, 'A-level, maths and ocr-a are words it knows');
+  ok(shelve('aqa lorry', nameOf).unmet.includes('lorry'), 'a word left out of the search is said, not hidden');
+  ok(count('4.3') === 1, 'a sub-numbered question by its number alone');
   // Every question, found first by its own paper's key words.
   for (const q of QUESTIONS) {
     ok(top(q.terms, 1)[0] === q.id, `${q.id} comes first for its own key words`, top(q.terms, 4).join(', '));

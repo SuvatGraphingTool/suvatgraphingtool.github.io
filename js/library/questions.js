@@ -30,7 +30,7 @@
 export const BOARDS = [
   { id: 'edexcel', alias: 'pearson edexcel' },
   { id: 'aqa',     alias: 'aqa' },
-  { id: 'ocr',     alias: 'ocr a' },
+  { id: 'ocr',     alias: 'ocr a ocra oxford rsa' },
   { id: 'mei',     alias: 'ocr mei' },
   { id: 'wjec',    alias: 'wjec eduqas' },
   { id: 'cie',     alias: 'cambridge caie cie international' },
