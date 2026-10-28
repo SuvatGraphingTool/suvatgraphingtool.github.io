@@ -10,6 +10,11 @@
 // the app, which decides what it means — see applyReading in js/app.js. The
 // model reads; the engine calculates; this only carries the question between.
 //
+// It is the ONE AI on the site. With Graph on, an answer about a motion is set
+// up on its ready-made scenario and flown on the stage straight away; and the
+// same answer is pinned to the whiteboard (js/board/), which is why the reader
+// is asked in board mode — one call reads the question and lays out its board.
+//
 // Voice is the browser's own speech recognition, written into the box where
 // it can be checked and corrected before anything is sent. Where the browser
 // has none (Firefox), the microphone is simply not offered.
@@ -27,8 +32,9 @@ const TXT_MAX = 2_000;
  * @param o.run()   show the flight
  * @param o.edit()  go to the values screen instead
  * @param o.show(step)  go to a screen — 'chat' is this one's
+ * @param o.pin(extraction, words)  put the same answer on the whiteboard
  */
-export function createAsk({ apply, run, edit, show }) {
+export function createAsk({ apply, run, edit, show, pin }) {
   const form = $('ask-form'), text = $('ask-text'), send = $('ask-send');
   const thread = $('ask-thread'), scroller = $('chat-scroll');
   const composer = $('ask-composer');
@@ -249,7 +255,7 @@ export function createAsk({ apply, run, edit, show }) {
 
     let res;
     try {
-      const mode = searching ? 'search' : undefined;
+      const mode = searching ? 'search' : 'board';
       if (a?.kind === 'image') {
         const prepared = await prepareImage(a.file);
         res = await readQuestion(READER, prepared, { hint: words, history, mode, signal: busy.signal });
@@ -281,6 +287,7 @@ export function createAsk({ apply, run, edit, show }) {
     remember(words, a, res.extraction);
     const r = apply(res.extraction, { graph: modes.graph, solve: modes.solve });
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
+    pin?.(res.extraction, words);
 
     // Typeset maths arrives as markup, so it goes in with innerHTML (rule 1).
     // With Graph off it is a conversation, so there is nothing to open.
@@ -290,13 +297,16 @@ export function createAsk({ apply, run, edit, show }) {
         <button type="button" class="ghost sm ask-edit">${r.runnable ? 'Check the values' : 'Add the missing values'}</button>
       </div>`
       : '';
-    // The box keeps the focus, as in any chat: the next question is the
-    // likelier next thing than the flight.
     reply(r.html, { acts, before(node) {
       r.draw?.(node);
       node.querySelector('.ask-run')?.addEventListener('click', run);
       node.querySelector('.ask-edit')?.addEventListener('click', edit);
     } });
+    // GRAPH: the motion goes straight onto its scenario's stage, flying, with
+    // its graphs open. The reply is finished at once, so it is all there in
+    // the thread to come back to, and its button flies it again. Otherwise
+    // the box keeps the focus, as in any chat.
+    if (modes.graph && r.runnable) { typing?.finish(); run(); }
   }
 
   /* ── voice ──────────────────────────────────────────────────────────── */
@@ -387,6 +397,8 @@ export function createAsk({ apply, run, edit, show }) {
       if (thread.childElementCount) { openChat(); text.focus({ preventScroll: true }); }
       else { show('scenario'); requestAnimationFrame(focus); }
     },
+    /** Ask this, as if it had been typed in the box. */
+    send(words) { if (busy) return; text.value = words; sync(); submit(); },
   };
 }
 

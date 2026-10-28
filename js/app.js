@@ -2789,7 +2789,7 @@ function applyReading(x, { graph = true, solve = false } = {}) {
   if (scenario.road) state.mark = r.mark;
   buildValuesScreen();              // which recomputes
   // The answer is shown in the chat, where the question was asked (js/ai/
-  // ask.js opens it); the flight waits for the student to ask for it.
+  // ask.js opens it); with Graph on, ask.js then flies it on the stage.
   refreshSteps();
   // A line to stay above is a question about it, and the engine answers it
   // here the same way it does under the line's own box (showAbove).
@@ -2832,16 +2832,20 @@ const ask = createAsk({
   run: showFlight,
   edit: () => go('values'),
   show: go,
+  pin: (x, words) => board?.pin(x, words),
 });
 /* ── the whiteboard ──────────────────────────────────────────────────────
-   Its own screen, built from the same pieces — see js/board/board.js. A
-   frame's "Open on the stage" goes the route a chat answer goes: the reading
-   through applyReading, then the flight. */
+   Its own screen, built from the same pieces — see js/board/board.js — and
+   fed by the chat: every answer about a motion is pinned there. A frame's
+   "Open on the stage" goes the route a chat answer goes: the reading through
+   applyReading, then the flight. An example on the empty board is asked in
+   the chat, so it is answered there like anything typed. */
 board = createBoard({
   open(x) {
     const r = applyReading(x, { graph: true });
     if (r.ok && traj) showFlight(); else go('values');
   },
+  ask: (words) => ask.send(words),
 });
 $('board-top').addEventListener('click', () => go(state.step === 'board' ? 'scenario' : 'board'));
 $('ask-top').addEventListener('click', () => ask.open());

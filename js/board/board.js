@@ -1,9 +1,10 @@
 // board.js — the whiteboard: describe any motion, and a board is built for it.
 //
 // A board in the sense of Miro: an endless dotted canvas you pan and zoom,
-// with frames on it you can drag about. Each description the student sends
-// becomes one more cluster of frames, laid out below the last, and the view
-// flies to it. The frames are the app's own ready-made pieces, not drawings:
+// with frames on it you can drag about. It has no prompt of its own: the one
+// AI is the Ask Suvat chat (js/ai/ask.js). Every answer there about a motion
+// is pinned here as one more cluster of frames, laid out below the last, and
+// the view flies to it the next time the board is opened. The frames are the app's own ready-made pieces, not drawings:
 //
 //   scene    the stage — js/render/scene.js, the road, the plate, or the
 //            parachute's own sky (js/render/drop.js) — playing on a clock
@@ -14,15 +15,15 @@
 //   working  the engine's own worked solution
 //   notes    sticky notes the model wrote: assumptions, the idea, a hint
 //
-// THE MODEL LAYS OUT; THE ENGINE CALCULATES. The reader (board mode) says
-// which situation it is, what was given and which frames to put up; every
+// THE MODEL LAYS OUT; THE ENGINE CALCULATES. The chat asks the reader in board
+// mode, so the one answer says which situation it is, what was given and which
+// frames to put up; every
 // number on the board comes from js/core/ through js/board/blueprint.js.
 // Change a value on the given sticky and the cluster is solved again, here,
 // in the time it takes to type — no second request to the model.
 
 import { readBlueprint, solveBoard } from './blueprint.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from './frames.js';
-import { readText, READER } from '../ai/capture.js';
 import { esc } from '../ai/readout.js';
 import * as scene from '../render/scene.js';
 import * as exhibit from '../render/exhibit.js';
@@ -36,10 +37,10 @@ const $ = (id) => document.getElementById(id);
 const RATE = 0.75;                       // the stage's own playback speed
 const GAP = 24, PAD = 28, HEAD = 64;     // between frames, inside a cluster, its title
 const Z_MIN = 0.2, Z_MAX = 2.5;
-const HISTORY_MAX = 6;
 /* KEPT IN THIS BROWSER, AND NOWHERE ELSE. What is saved is what the board
    was built FROM — each cluster's blueprint, the values changed on it, and
-   where its frames were dragged — never anything the engine worked out. A
+   where its frames were dragged, and the answers pinned since the board was
+   last open — never anything the engine worked out. A
    reload solves every cluster again, so a saved board can never disagree
    with the engine that draws it (rule 4). */
 const STORE = 'suvat-board-v1';
@@ -65,17 +66,21 @@ const SPEC = {
 const ROWS = [['scene', 'given', 'answers'], ['graph-s', 'graph-v', 'graph-a'], ['working', 'notes']];
 
 /**
- * @param o.open(x)  put this reading on the main stage, as Ask Suvat's
- *                   "Show me the flight" does
+ * @param o.open(x)      put this reading on the main stage, as Ask Suvat's
+ *                       "Show me the flight" does
+ * @param o.ask(words)   ask the chat this, as if it had been typed there
  */
-export function createBoard({ open } = {}) {
+export function createBoard({ open, ask } = {}) {
   const vp = $('bd-vp'), world = $('bd-world');
-  const form = $('bd-form'), text = $('bd-text'), send = $('bd-send');
   const cam = { x: 0, y: 0, z: 1 };
   let fly = null;                        // the camera's way to a cluster, while it goes
   const clusters = [];
-  const history = [];
-  let busy = null, active = false, last = 0, raf = 0;
+  /* PINNED WHILE THE BOARD IS AWAY. The chat answers on another screen, and a
+     frame's height is measured from the page — which reads nothing while the
+     board is not shown. So an answer waits here and is built when the board
+     next opens, frames arriving one after another as if being drawn. */
+  const queue = [];                      // [{ bp, words }]
+  let active = false, last = 0, raf = 0;
 
   /* ── the camera ──────────────────────────────────────────────────────── */
   /* THE CANVASES ARE DRAWN AT THE SIZE THEY ARE SEEN. Each one sizes its
@@ -194,7 +199,7 @@ export function createBoard({ open } = {}) {
   $('bd-clear').addEventListener('click', () => {
     if (!clusters.length) return;
     for (const c of clusters) c.el.remove();
-    clusters.length = 0; history.length = 0;
+    clusters.length = 0;
     $('bd-empty').hidden = false;
     Object.assign(cam, { x: 0, y: 0, z: 1 }); place();
     save();
@@ -582,25 +587,19 @@ export function createBoard({ open } = {}) {
     g.fillStyle = P.card; g.fillRect(0, 0, cv.width, cv.height);
   }
 
-  /* ── asking for a board ─────────────────────────────────────────────── */
-  async function submit(e) {
-    e?.preventDefault();
-    const words = text.value.trim();
-    if (busy || !words) return;
-    text.value = ''; sync();
-    const c = sketch(words);
-    busy = new AbortController(); sync();
-    const res = await readText(READER, words, { history: [...history], mode: 'board', signal: busy.signal });
-    const stopped = busy.signal.aborted;
-    busy = null; sync();
-    if (stopped) { fail(c, '<p>Stopped.</p>'); return; }
-    if (!res?.ok) { fail(c, `<p class="ro-bad">${esc(res?.message || 'Could not read that.')}</p>`); return; }
-    const bp = readBlueprint(res.extraction);
-    // Not a motion — a hello, a question about the last board — is answered.
-    if (!bp.ok) { fail(c, `<p>${esc(bp.error)}</p>`, bp.chat ? 'Suvat says' : undefined); return; }
-    history.push({ role: 'user', text: words }, { role: 'model', text: JSON.stringify(res.extraction) });
-    while (history.length > HISTORY_MAX) history.shift();
-    build(c, bp);
+  /* ── what the chat sends ────────────────────────────────────────────── */
+  /** The chat's answer about a motion, as a cluster — now, or when the board next opens. */
+  function pin(x, words = '') {
+    const bp = readBlueprint(x);
+    // A hello, or a reply about the last answer, is a chat and stays in the chat.
+    if (!bp.ok) return false;
+    queue.push({ bp, words });
+    while (queue.length > KEEP) queue.shift();
+    if (active) drain(); else save();
+    return true;
+  }
+  function drain() {
+    while (queue.length) { const { bp, words } = queue.shift(); build(sketch(words), bp); }
   }
 
   /* ── keeping it ──────────────────────────────────────────────────────── */
@@ -610,7 +609,7 @@ export function createBoard({ open } = {}) {
     saving = setTimeout(() => {
       const built = clusters.filter((c) => c.bp).slice(-KEEP);
       const data = {
-        cam: { x: cam.x, y: cam.y, z: cam.z }, history,
+        cam: { x: cam.x, y: cam.y, z: cam.z }, queue,
         clusters: built.map((c) => ({
           x: c.x, y: c.y, w: c.w, h: c.h, bp: c.bp, edits: c.edits,
           frames: c.frames.map((f) => ({ kind: f.kind, x: f.x, y: f.y, h: f.h || 0 })),
@@ -635,36 +634,27 @@ export function createBoard({ open } = {}) {
       } catch {}
     }
     sketch.quiet = false;
-    if (Array.isArray(data.history)) history.push(...data.history.filter((h) => typeof h?.text === 'string').slice(-HISTORY_MAX));
+    if (Array.isArray(data.queue)) queue.push(...data.queue.filter((q) => q?.bp?.ok && Array.isArray(q.bp.objects)).slice(-KEEP));
     if (data.cam && [data.cam.x, data.cam.y, data.cam.z].every(Number.isFinite)) {
       Object.assign(cam, { x: data.cam.x, y: data.cam.y, z: clamp(data.cam.z, Z_MIN, Z_MAX) });
     }
-    if (!clusters.length) $('bd-empty').hidden = false;
+    if (!clusters.length && !queue.length) $('bd-empty').hidden = false;
   }
-  function sync() {
-    send.dataset.state = busy ? 'busy' : 'send';
-    send.disabled = !busy && !text.value.trim();
-    send.setAttribute('aria-label', busy ? 'Stop' : 'Build the board');
-    form.dataset.busy = String(!!busy);
-    text.style.height = 'auto';
-    text.style.height = `${Math.min(text.scrollHeight, 140)}px`;
-  }
-  form.addEventListener('submit', submit);
-  send.addEventListener('click', (e) => { if (busy) { e.preventDefault(); busy.abort(); } });
-  text.addEventListener('input', sync);
-  text.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
+  // An example is a question asked in the chat, like any other.
   for (const b of document.querySelectorAll('.bd-chip')) {
-    b.addEventListener('click', () => { text.value = b.textContent.trim(); sync(); submit(); });
+    b.addEventListener('click', () => ask?.(b.textContent.trim()));
   }
   addEventListener('resize', () => { for (const c of clusters) c.dirty = true; wake(); });
   restore();
-  sync(); place();
+  place();
 
   return {
-    /** The board is on screen: start drawing. */
-    show() { active = true; for (const c of clusters) c.dirty = true; wake(); requestAnimationFrame(() => text.focus()); },
+    /** The board is on screen: build what was pinned meanwhile, and start drawing. */
+    show() { active = true; drain(); for (const c of clusters) c.dirty = true; wake(); },
     /** It is not: stop. */
     hide() { active = false; },
+    /** An answer from the chat, pinned as a cluster. False if it was not about a motion. */
+    pin,
     /** Build a board from a blueprint without asking the model — for tests and replays. */
     build(x, words = '') {
       const c = sketch(words); const bp = readBlueprint(x);

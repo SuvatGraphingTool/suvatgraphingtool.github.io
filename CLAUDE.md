@@ -69,7 +69,7 @@ js/core/projectile.js   the idealised projectile model
 js/core/descent.js      a parachute drop: three phases, each one of them SUVAT
 js/core/road.js         a vehicle along a straight road: the five, with no gravity in them
 js/core/question.js     exam question -> engine parameters
-js/board/               the whiteboard: describe a motion, get a board of the app's own pieces
+js/board/               the whiteboard: each chat answer, pinned as a board of the app's own pieces
 js/render/              the scene, the graphs, canvas helpers
 js/world/               the stadium — and nothing outside it
 worker/                 Cloudflare Worker for reading a photo of a question
