@@ -476,10 +476,9 @@
   </main>
 
   <!-- ── the whiteboard ──────────────────────────────────────────────
-       Every Ask Suvat answer about a motion is pinned here as a board of
-       the app's own pieces: the stage, the graphs, the given values, the
-       engine's answers and working, and sticky notes. It has no prompt of
-       its own — the chat is the one AI. Pan by dragging the board,
+       Describe any motion and Suvat builds a board for it from the app's
+       own pieces: the stage, the graphs, the given values, the engine's
+       answers and working, and sticky notes. Pan by dragging the board,
        zoom with the buttons or a pinch, drag a frame by its title. The
        model lays it out; every number on it is the engine's (rule 4).
        See js/board/. -->
@@ -488,8 +487,8 @@
       <div class="bd-world" id="bd-world"></div>
       <div class="bd-empty" id="bd-empty">
         <p class="bd-eyebrow">Whiteboard</p>
-        <h1>Ask Suvat a question. Its board lands here.</h1>
-        <p>Every motion you ask the chat about is set up on its scenario and flown on the stage — and pinned here too: the stage, the graphs, the values and the working, with every number worked out by the engine, not the AI. Change any value on the board and it solves again. Try one:</p>
+        <h1>Describe any motion. Suvat builds the board.</h1>
+        <p>The stage, the graphs, the values and the working, laid out in seconds — and every number worked out by the engine, not the AI. Change any value on the board and it solves again.</p>
         <div class="bd-chips">
           <button type="button" class="bd-chip">A ball kicked from the ground at 20 m/s at 35 degrees</button>
           <button type="button" class="bd-chip">A stone thrown flat off a 30 m bridge at 12 m/s</button>
@@ -507,6 +506,15 @@
       <button type="button" class="bd-tool bd-word" id="bd-fit">Fit</button>
       <button type="button" class="bd-tool bd-word" id="bd-clear">Clear</button>
     </div>
+    <form class="bd-dock" id="bd-form" autocomplete="off">
+      <span class="ai-orb sm" aria-hidden="true"><svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M10 2.5c.55 4.6 2.9 6.95 7.5 7.5-4.6.55-6.95 2.9-7.5 7.5-.55-4.6-2.9-6.95-7.5-7.5 4.6-.55 6.95-2.9 7.5-7.5Z" fill="currentColor"/></svg></span>
+      <label class="sr-only" for="bd-text">Describe a motion</label>
+      <textarea id="bd-text" rows="1" maxlength="1500" placeholder="Describe any motion — what moves, from where, and the numbers you know"></textarea>
+      <button type="submit" class="bd-send" id="bd-send" data-state="send" aria-label="Build the board">
+        <svg class="i-send" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="i-stop" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="currentColor"/></svg>
+      </button>
+    </form>
   </main>
 
   <!-- ── Ask Suvat, the conversation ─────────────────────────────────

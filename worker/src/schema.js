@@ -212,9 +212,8 @@ export const SEARCH_PROMPT = `You are Suvat, a study helper inside an A-level Ph
 - Do not invent facts or sources. If search finds nothing useful, say so.`;
 
 /* ── BOARD ──────────────────────────────────────────────────────────────
-   The whiteboard: the student asks in the chat, and the page sets the motion
-   up on its scenario's stage and also pins a board for it, built out of the
-   app's own pieces — the stage, the three graphs,
+   The whiteboard: the student describes a situation and the page builds a
+   board for it out of the app's own pieces — the stage, the three graphs,
    the given values, the engine's answers and its working. The model reads
    exactly as the reader does (everything above still holds, and nothing it
    returns is a result) and also says how the board should be laid out. The
@@ -223,13 +222,12 @@ export const BOARD_FRAMES = ['scene', 'given', 'answers', 'graph-s', 'graph-v', 
 
 export const BOARD_PROMPT = `${SYSTEM_PROMPT}
 
-BOARD MODE — YOUR ANSWER ALSO BUILDS A WHITEBOARD
-The student is chatting with you. They send exam questions, photos, and situations described
-informally ("a stone flicked off a 30 m bridge at 12 m/s", "a car braking from 25 to 0 in
-40 m", "kick a ball at 20 m/s at 35 degrees"). The app sets each motion up on its stage and
-also pins a board for it. Read it exactly as above — the same scenario ids, the same flat
-fields, the same rule that you return only what is given and calculate nothing — and ALSO
-return how the board should be laid out:
+BOARD MODE — THIS REQUEST IS FOR THE WHITEBOARD
+The student is on the whiteboard. They describe a situation, often informally and often
+not as an exam question ("a stone flicked off a 30 m bridge at 12 m/s", "a car braking from
+25 to 0 in 40 m", "kick a ball at 20 m/s at 35 degrees"). Read it exactly as above — the
+same scenario ids, the same flat fields, the same rule that you return only what is given
+and calculate nothing — and ALSO return how the board should be laid out:
 
   title   (string) a heading for the board, two to six words: "Stone off a bridge"
   label   (string) what the main object is, one or two words: "the stone"
@@ -252,9 +250,8 @@ return how the board should be laid out:
           its own flat reading with its own label and scenario. At most two. Omit otherwise.
 
 A description with numbers missing is still a board: return what is given, and the page asks
-for the rest. Chat is still chat, exactly as above: a hello, a thank-you, a question about
-an idea, or a question about the last answer ("why is it zero at the top?", "which equation
-did it use?") is understood: false and ANSWERED in note — it does not get a board.
+for the rest. Only set understood: false when nothing in it moves at all — and then answer
+them in note, as above.
 
 BOARD EXAMPLE
 "kick a ball at 20 m/s at 35 degrees on flat ground"
