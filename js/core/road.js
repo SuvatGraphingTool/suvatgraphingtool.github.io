@@ -149,11 +149,20 @@ export function solveRoad(k = {}) {
     notes.push(`${spare.length === 1 ? 'One value was' : 'Some values were'} more than enough — `
       + 'the rest already fixed the motion, and it agrees with them.');
   }
-  if (V.a < -EPS) notes.push('The acceleration is negative, so it is slowing down: braking.');
+  // Slowing down only when the acceleration is against the velocity: from
+  // rest, a negative a speeds it up the other way. A runner slows; a vehicle
+  // (or a bicycle) brakes. `who` and `brakes` say which (js/render/figures.js).
+  const who = k.who || 'lorry', brakes = k.brakes !== false;
+  const slow = brakes ? 'slowing down: braking' : 'slowing down';
+  if (V.a < -EPS && V.u > EPS) notes.push(`The acceleration is negative, so it is ${slow}.`);
+  else if (V.a > EPS && V.u < -EPS) notes.push(`It starts out moving towards A, and the acceleration is towards B, so it is ${slow}.`);
+  else if (Math.abs(V.a) > EPS && Math.abs(V.u) <= EPS) {
+    notes.push(`It starts from rest and speeds up towards ${V.a > 0 ? 'B' : 'A'}.`);
+  }
   const tStop = Math.abs(V.a) > EPS ? -V.u / V.a : NaN;
   if (tStop > EPS && tStop < V.t - 1e-6) {
     notes.push(`It comes to rest after ${M`t = ${d(tStop)} [s]`} and then moves back the way it came. `
-      + `The equations allow it; a ${k.who || 'lorry'} braking does not.`);
+      + `The equations allow it; a ${who} ${brakes ? 'braking' : 'slowing down'} does not.`);
   }
 
   // The point the question asked about.

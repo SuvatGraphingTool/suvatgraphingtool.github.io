@@ -234,6 +234,14 @@ group('Ask Suvat — the lorry question, read and then SOLVED BY THE ENGINE', ()
   ok(stop.given.v === 0, 'on a road, coming to rest is a real zero');
   const brake = toApp({ understood: true, scenario: 'road', summary: '', u: 20, a: -4, t: 3, atDisplacement: 30 });
   ok(brake.given.g === -4 && brake.mark === 30, 'a braking acceleration keeps its sign, and a named point is kept');
+  // what is moving, so the stage draws it
+  ok(r.who === undefined, 'a summary that names nothing leaves the lorry');
+  const said = (summary) => toApp({ understood: true, scenario: 'road', summary, s: 40, v: 10, t: 5 }).who;
+  ok(said('A cyclist moves from A to B with constant acceleration') === 'cyclist', 'a cyclist is a cyclist');
+  ok(said('A car leaves the lights; a motorcycle leaves 10 s later') === 'car', 'the first-named traveller wins');
+  ok(said('A motorbike passes A') === 'motorcycle' && said('a train between two stations') === 'train', 'a motorbike, and a train');
+  ok(said('A girl runs a 400 m race') === 'runner' && said('a girl rides her bicycle') === 'cyclist', 'a person runs unless she rides');
+  ok(said('A lorry passes a car') === 'lorry', 'a lorry named first is the lorry');
 });
 
 group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', () => {

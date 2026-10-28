@@ -162,12 +162,12 @@ const trainWheel = (L, cars) => trainSize(L, cars).wr;
 export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1 } = {}) {
   const { n, gap, c, H, wr } = trainSize(L, cars);
   at(g, X, Y, dir, () => {
-    const base = -wr * 1.4;
+    const base = -wr * 1.75;
     for (let i = 0; i < n; i++) {
       const front = -i * (c + gap), back = front - c;
       // the bogies first, so the body sits over their tops
       for (const bx of [back + c * 0.16, front - c * 0.16]) {
-        g.fillStyle = P.strong; g.fillRect(bx - wr * 2.2, base - wr * 0.2, wr * 4.4, wr * 0.9);
+        g.fillStyle = P.strong; g.fillRect(bx - wr * 2.3, base - wr * 0.1, wr * 4.6, wr * 0.75);
         for (const k of [-1, 1]) solidWheel(g, bx + k * wr * 1.15, -wr, wr, P, phase * TAU, wr >= 4);
       }
       g.fillStyle = P.card; g.strokeStyle = ring || P.strong; g.lineWidth = ring ? 2.4 : 1.6;
@@ -221,8 +221,9 @@ export function cyclist(g, X, Y, L, P, { dir = 1, ring = null, phase = 0 } = {})
     // the far leg, behind the frame
     const F2 = foot(ca + Math.PI);
     limb(g, [HIP, joint(HIP, F2, thigh, shin, 1), F2], P.faint, lw);
-    spokedWheel(g, RH.x, RH.y, r, P, -ca * GEAR);
-    spokedWheel(g, FH.x, FH.y, r, P, -ca * GEAR);
+    // clockwise on the canvas is rolling forward, as for every wheel here
+    spokedWheel(g, RH.x, RH.y, r, P, ca * GEAR);
+    spokedWheel(g, FH.x, FH.y, r, P, ca * GEAR);
     // the frame
     g.strokeStyle = ink; g.lineWidth = Math.max(1.8, L * 0.03); g.lineCap = 'round'; g.lineJoin = 'round';
     g.beginPath();
@@ -236,7 +237,7 @@ export function cyclist(g, X, Y, L, P, { dir = 1, ring = null, phase = 0 } = {})
     // the rider: trunk, arm to the bars, head
     limb(g, [HIP, SH], ink, lw * 1.5);
     limb(g, [SH, joint(SH, BAR, L * 0.16, L * 0.16, -1), BAR], ink, lw);
-    g.fillStyle = ink; g.beginPath(); g.arc(SH.x + L * 0.06, SH.y - L * 0.1, L * 0.07, 0, TAU); g.fill();
+    g.fillStyle = ink; g.beginPath(); g.arc(SH.x + L * 0.045, SH.y - L * 0.075, L * 0.068, 0, TAU); g.fill();
     // the near leg, and its crank
     const F1 = foot(ca);
     stroke(g, [BB, F1], { color: ink, width: Math.max(1.6, L * 0.025) });
@@ -265,26 +266,30 @@ export function motorcycle(g, X, Y, L, P, { dir = 1, ring = null, phase = 0 } = 
     };
     wheel(RH); wheel(FH);
     // the fork, and the swing arm
-    stroke(g, [{ x: -L * 0.3, y: -r * 2.55 }, FH], { color: ink, width: Math.max(2, L * 0.035) });
+    stroke(g, [{ x: -L * 0.24, y: -r * 2.8 }, FH], { color: ink, width: Math.max(2.4, L * 0.04) });
     stroke(g, [RH, { x: -L * 0.5, y: -r * 1.2 }], { color: ink, width: Math.max(2, L * 0.03) });
-    // the body: tail, seat, tank, down to the engine
+    // the exhaust, low along the side to the back
+    stroke(g, [{ x: -L * 0.48, y: -r * 1.1 }, { x: -L * 0.86, y: -r * 1.35 }], { color: P.faint, width: Math.max(2.4, r * 0.22) });
+    // the body: tail, seat, tank and a front fairing, down to the engine
     g.fillStyle = P.card; g.strokeStyle = ink; g.lineWidth = ring ? 2.4 : 1.6; g.lineJoin = 'round';
     g.beginPath();
-    g.moveTo(-L * 0.9, -r * 1.75); g.lineTo(-L * 0.84, -r * 2.15);
-    g.lineTo(-L * 0.56, -r * 2.1); g.lineTo(-L * 0.47, -r * 2.5);
-    g.lineTo(-L * 0.3, -r * 2.45); g.lineTo(-L * 0.33, -r * 1.75);
-    g.lineTo(-L * 0.42, -r * 1.05); g.lineTo(-L * 0.62, -r * 1.05);
-    g.lineTo(-L * 0.68, -r * 1.7); g.closePath(); g.fill(); g.stroke();
-    // the engine, a block under the tank
-    g.fillStyle = P.faint; g.fillRect(-L * 0.6, -r * 1.7, L * 0.2, r * 0.55);
+    g.moveTo(-L * 0.92, -r * 1.8); g.lineTo(-L * 0.86, -r * 2.25);
+    g.lineTo(-L * 0.56, -r * 2.2); g.lineTo(-L * 0.5, -r * 2.65);
+    g.lineTo(-L * 0.34, -r * 2.7); g.lineTo(-L * 0.2, -r * 2.95);
+    g.lineTo(-L * 0.16, -r * 2.2); g.lineTo(-L * 0.3, -r * 1.7);
+    g.lineTo(-L * 0.4, -r * 1.0); g.lineTo(-L * 0.64, -r * 1.0);
+    g.lineTo(-L * 0.7, -r * 1.7); g.closePath(); g.fill(); g.stroke();
+    // the engine, a block under the tank, and the headlamp
+    g.fillStyle = P.faint; g.fillRect(-L * 0.6, -r * 1.75, L * 0.2, r * 0.65);
+    g.beginPath(); g.arc(-L * 0.165, -r * 2.45, Math.max(1.6, r * 0.18), 0, TAU); g.fill();
     // the rider, leaning into it
-    const HIP = { x: -L * 0.64, y: -r * 2.3 }, KNEE = { x: -L * 0.45, y: -r * 2.05 }, FOOT = { x: -L * 0.54, y: -r * 1.25 };
-    const SH = { x: -L * 0.45, y: -r * 3.25 }, BAR = { x: -L * 0.27, y: -r * 2.75 };
-    const lw = Math.max(2.2, L * 0.04);
+    const HIP = { x: -L * 0.64, y: -r * 2.45 }, KNEE = { x: -L * 0.44, y: -r * 2.2 }, FOOT = { x: -L * 0.54, y: -r * 1.25 };
+    const SH = { x: -L * 0.45, y: -r * 3.45 }, BAR = { x: -L * 0.25, y: -r * 3.0 };
+    const lw = Math.max(2.8, L * 0.055);
     limb(g, [HIP, KNEE, FOOT], ink, lw * 1.2);
     limb(g, [HIP, SH], ink, lw * 1.5);
     limb(g, [SH, joint(SH, BAR, L * 0.13, L * 0.13, -1), BAR], ink, lw);
-    const hx = SH.x + L * 0.06, hy = SH.y - L * 0.085, hr = L * 0.068;
+    const hx = SH.x + L * 0.05, hy = SH.y - L * 0.075, hr = L * 0.075;
     g.fillStyle = ink; g.beginPath(); g.arc(hx, hy, hr, 0, TAU); g.fill();
     g.fillStyle = P.faint; g.beginPath(); g.arc(hx, hy, hr * 0.7, -0.6, 0.5); g.lineTo(hx, hy); g.closePath(); g.fill();
   });
@@ -293,18 +298,25 @@ export function motorcycle(g, X, Y, L, P, { dir = 1, ring = null, phase = 0 } = 
 /* ── people ────────────────────────────────────────────────────────────── */
 
 /** A runner, L tall, mid-stride: legs and arms swing with phase (one stride,
-    both feet). `still` stands her upright instead, for a runner at rest. */
+    both feet). The foot on the ground moves BACK under the hip at the speed
+    the ground goes by (FIGURES.runner.cycle is matched to the sweep), so she
+    neither skates nor moonwalks. `still` stands her upright, for a runner at
+    rest. */
 export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still = false } = {}) {
   const ink = ring || P.strong;
   const thigh = L * 0.25, shin = L * 0.26, upper = L * 0.16, fore = L * 0.15;
   const hx = -L * 0.2;
-  // each leg: the thigh's swing from vertical (forward +), the knee's bend
+  // each leg: the thigh's swing from vertical (forward +) and the knee's bend.
+  // Stance is p ∈ (0, π): the thigh sweeps from ahead to behind with the leg
+  // nearly straight. Swing is p ∈ (π, 2π): the knee folds and the leg comes
+  // through, folded most as it passes under the body.
   const leg = (p) => {
-    if (still) return { th: 0, bend: 0.05 };
-    const th = 0.55 * Math.sin(p);
-    // the knee folds most as the leg swings through, behind the body
-    const bend = 0.2 + 1.25 * Math.max(0, Math.sin(p - 1.9)) ** 1.4 + 0.25 * Math.max(0, Math.cos(p));
-    return { th, bend };
+    if (still) return { th: 0.07 * Math.cos(p), bend: 0.04 };
+    const q = ((p % TAU) + TAU) % TAU;
+    // the thigh sweeps back at a steady rate in stance, so the planted foot
+    // stays planted, and comes through at a steady rate in swing
+    const th = q < Math.PI ? SWING * (1 - (2 * q) / Math.PI) : SWING * (-1 + (2 * (q - Math.PI)) / Math.PI);
+    return { th, bend: STANCE_BEND + 1.45 * Math.max(0, -Math.sin(q)) ** 1.2 };
   };
   const pose = (p, hip) => {
     const { th, bend } = leg(p);
@@ -313,30 +325,41 @@ export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still =
     return [hip, K, F];
   };
   const a = phase * TAU;
-  // the lower foot touches the ground: the body bobs, the feet do not sink
+  // the leg in stance carries her: its foot is on the ground and the body
+  // rides on it (the other foot is in the air); standing, both are down
   const probe = { x: hx, y: 0 };
-  const low = Math.max(pose(a, probe)[2].y, pose(a + Math.PI, probe)[2].y);
+  const inStance = (((a % TAU) + TAU) % TAU) < Math.PI;
+  const low = still ? Math.max(pose(a, probe)[2].y, pose(a + Math.PI, probe)[2].y)
+    : pose(inStance ? a : a + Math.PI, probe)[2].y;
   const HIP = { x: hx, y: -low };
-  const lean = still ? 0.02 : 0.16;
+  const lean = still ? 0 : 0.14;
   const SH = { x: hx + Math.sin(lean) * L * 0.3, y: HIP.y - Math.cos(lean) * L * 0.3 };
-  const arm = (p) => {
-    if (still) return [SH, { x: SH.x, y: SH.y + upper }, { x: SH.x + fore * 0.15, y: SH.y + upper + fore }];
-    const s = -0.7 * Math.sin(p);
-    const E = { x: SH.x + upper * Math.sin(s), y: SH.y + upper * Math.cos(s) };
-    const f = s + 1.6;
+  // arms swing against the leg on their own side, elbows bent
+  const arm = (p, side) => {
+    if (still) return [SH, { x: SH.x + side * L * 0.025, y: SH.y + upper }, { x: SH.x + side * L * 0.035, y: SH.y + upper + fore }];
+    const sw = -0.75 * Math.cos(p);
+    const E = { x: SH.x + upper * Math.sin(sw), y: SH.y + upper * Math.cos(sw) };
+    const f = sw + 1.5;
     return [SH, E, { x: E.x + fore * Math.sin(f), y: E.y + fore * Math.cos(f) }];
   };
-  const lw = Math.max(2.4, L * 0.05);
+  const lw = Math.max(3, L * 0.075);
+  // a foot coming through never goes into the ground
+  const onTop = ([H, K, F]) => [H, K, { x: F.x, y: Math.min(F.y, 0) }];
   at(g, X, Y, dir, () => {
-    limb(g, pose(a + Math.PI, HIP), P.faint, lw);
-    limb(g, arm(a + Math.PI), P.faint, lw * 0.9);
-    limb(g, [HIP, SH], ink, lw * 1.6);
-    limb(g, pose(a, HIP), ink, lw);
-    limb(g, arm(a), ink, lw * 0.9);
+    limb(g, onTop(pose(a + Math.PI, HIP)), P.faint, lw);
+    limb(g, arm(a + Math.PI, -1), P.faint, lw * 0.85);
+    limb(g, [HIP, SH], ink, lw * 1.9);
+    limb(g, onTop(pose(a, HIP)), ink, lw);
+    limb(g, arm(a, 1), ink, lw * 0.85);
     g.fillStyle = ink; g.beginPath();
-    g.arc(SH.x + Math.sin(lean) * L * 0.11, SH.y - L * 0.11, L * 0.075, 0, TAU); g.fill();
+    g.arc(SH.x + Math.sin(lean) * L * 0.1, SH.y - L * 0.095, L * 0.08, 0, TAU); g.fill();
   });
 }
+const SWING = 0.5, STANCE_BEND = 0.1;
+// ground covered per stride, per px of height: twice the stance foot's sweep
+// under the hip, from the thigh SWING ahead to SWING behind
+const sweep = (th) => 0.25 * Math.sin(th) + 0.26 * Math.sin(th - STANCE_BEND);
+const STRIDE = 2 * (sweep(SWING) - sweep(-SWING));
 
 /* ── particles ─────────────────────────────────────────────────────────── */
 
@@ -364,17 +387,22 @@ export function particle(g, X, Y, L, P, { ring = null } = {}) {
  *             runner, how tall)
  *   top, mid  where its acceleration and velocity arrows go, as fractions of
  *             a lorry's length above the ground — the lorry's are the road's
- *             own numbers, so nothing moved when the lorry became one of six
+ *             own numbers, so nothing moved when the lorry became one of six,
+ *             and every top is the lorry's, which keeps the arrow under the
+ *             letter plates of the posts
  *   ground    what it stands on: 'road', 'rail' or 'track'
  *   cycle     px travelled per unit of phase, per px of L (see phaseFor)
+ *   brakes    whether slowing down is "braking" (a runner just slows down)
+ *   min       the least drawn size, px, so a person stays readable on a phone
+ *   cars      carriages, for the train
  */
 export const FIGURES = {
-  lorry:      { draw: lorry,      label: 'Lorry',      noun: 'lorry',      verb: 'Drive', size: 1,    top: 0.36, mid: 0.2,  ground: 'road',  cycle: TAU * 0.075 },
-  car:        { draw: car,        label: 'Car',        noun: 'car',        verb: 'Drive', size: 0.8,  top: 0.3,  mid: 0.18, ground: 'road',  cycle: TAU * 0.1 },
-  cyclist:    { draw: cyclist,    label: 'Cyclist',    noun: 'cyclist',    verb: 'Ride',  size: 0.6,  top: 0.52, mid: 0.12, ground: 'road',  cycle: TAU * 0.2 * GEAR },
-  motorcycle: { draw: motorcycle, label: 'Motorcycle', noun: 'motorcycle', verb: 'Ride',  size: 0.66, top: 0.5,  mid: 0.13, ground: 'road',  cycle: TAU * 0.19 },
-  train:      { draw: train,      label: 'Train',      noun: 'train',      verb: 'Drive', size: 1.5,  top: 0.4,  mid: 0.22, ground: 'rail',  cycle: TAU * 0.3 * 0.16 },
-  runner:     { draw: runner,     label: 'Runner',     noun: 'runner',     verb: 'Run',   size: 0.62, top: 0.56, mid: 0.3,  ground: 'track', cycle: 1.3 },
+  lorry:      { draw: lorry,      label: 'Lorry',      noun: 'lorry',      verb: 'Drive', size: 1,    top: 0.36, mid: 0.2,  ground: 'road',  cycle: TAU * 0.075, brakes: true },
+  car:        { draw: car,        label: 'Car',        noun: 'car',        verb: 'Drive', size: 0.8,  top: 0.36, mid: 0.18, ground: 'road',  cycle: TAU * 0.1, brakes: true },
+  cyclist:    { draw: cyclist,    label: 'Cyclist',    noun: 'cyclist',    verb: 'Ride',  size: 0.6,  top: 0.36, mid: 0.12, ground: 'road',  cycle: TAU * 0.2 * GEAR, brakes: true, min: 52 },
+  motorcycle: { draw: motorcycle, label: 'Motorcycle', noun: 'motorcycle', verb: 'Ride',  size: 0.7,  top: 0.36, mid: 0.13, ground: 'road',  cycle: TAU * 0.19, brakes: true, min: 52 },
+  train:      { draw: train,      label: 'Train',      noun: 'train',      verb: 'Drive', size: 1.6,  top: 0.36, mid: 0.16, ground: 'rail',  cycle: TAU * 0.3 * 0.16, brakes: true, cars: 2 },
+  runner:     { draw: runner,     label: 'Runner',     noun: 'runner',     verb: 'Run',   size: 0.62, top: 0.36, mid: 0.3,  ground: 'track', cycle: STRIDE, brakes: false, min: 52 },
 };
 
 /** The phase for a figure of drawn size L that has travelled `px` pixels:

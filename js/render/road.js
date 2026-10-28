@@ -42,9 +42,13 @@ export function render(canvas, cam, o) {
   const span = Math.max(hi - lo, 1);
   // the vehicle unit: a lorry's length; every traveller is drawn in proportion
   const lorryPx = clamp(w * 0.085, 64, 118);
-  const figPx = lorryPx * fig.size;
+  const figPx = Math.max(lorryPx * fig.size, fig.min || 0);
   const figLen = who === 'runner' ? figPx * 0.5 : figPx;
-  const left = Math.max(lorryPx, figLen) + 40, right = 64;
+  // room behind A for it, and — for anything that turns round and faces
+  // left (everything but the lorry, which backs up) — room beyond the far
+  // end too, since its body is then to the right of its front
+  const turns = who !== 'lorry' && (u < 0 || v < 0);
+  const left = Math.max(lorryPx, figLen) + 40, right = 64 + (turns ? figLen : 0);
   const sx = (x) => left + ((x - lo) / span) * (w - left - right);
   const roadY = Math.round(h * 0.6);
 
@@ -103,9 +107,17 @@ export function render(canvas, cam, o) {
   // ── the traveller, its front on the point it is at, facing the way it
   //    is going (a lorry backs up rather than turning round)
   const vNow = f.vel(t).x;
-  const vDir = Math.abs(vNow) > 1e-6 ? vNow : f.vel(Math.max(0, t - 1e-3)).x || u || 1;
+  // at rest it faces the way it is about to go (or last went)
+  const vDir = Math.abs(vNow) > 1e-6 ? vNow : t < 1e-6 ? a : f.vel(t - 1e-3).x;
   const dir = who === 'lorry' || vDir >= 0 ? 1 : -1;
-  fig.draw(g, Xp, roadY - 3, figPx, P, { dir, phase: phaseFor(who, figPx, Xp - X0), still: who === 'runner' && Math.abs(vNow) < 1e-6 });
+  // the wheels and legs go by distance travelled, not displacement: after a
+  // turn-round they keep rolling forwards
+  const tStop = Math.abs(a) > 1e-12 ? -u / a : NaN;
+  const pxPerM = (w - left - right) / span;
+  const dist = tStop > 0 && tStop < t
+    ? Math.abs(f.pos(tStop).x) + Math.abs(p.x - f.pos(tStop).x) : Math.abs(p.x);
+  fig.draw(g, Xp, roadY - 3, figPx, P, { dir, cars: fig.cars, still: Math.abs(vNow) < 1e-6,
+    phase: phaseFor(who, figPx, dist * pxPerM, { cars: fig.cars }) });
 
   // ── its velocity and acceleration, as vectors
   const vMax = Math.max(Math.abs(u), Math.abs(v), 1e-6);

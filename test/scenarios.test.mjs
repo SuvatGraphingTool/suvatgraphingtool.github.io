@@ -496,6 +496,22 @@ group('The figures: every traveller draws, with no NaN, either way round, at any
   }
   near(FIG.phaseFor('car', 100, 2 * Math.PI * 10), 0, 1e-9, 'a car wheel of radius 10 px turns once in 2π·10 px');
   near(FIG.phaseFor('car', 100, Math.PI * 10), 0.5, 1e-9, 'and half a turn in half that');
+  // the runner's planted foot stays where it was put while she runs over it
+  {
+    const L = 100, per = FIG.FIGURES.runner.cycle * L, xs = [];
+    for (let i = 0; i <= 18; i++) {
+      const ph = (i / 18) * 0.45, X = ph * per;
+      let tx = 0, strokes = [], cur = [];
+      const rec = new Proxy({}, { get(t, k) { if (k in t) return t[k];
+        return (...a) => { if (k === 'translate') tx = a[0]; if (k === 'beginPath') cur = []; if (k === 'moveTo' || k === 'lineTo') cur.push(a); if (k === 'stroke') strokes.push(cur); }; },
+        set(t, k, v) { t[k] = v; return true; } });
+      FIG.runner(rec, X, 0, L, P, { phase: ph });
+      const foot = strokes[3][2];
+      xs.push({ x: tx + foot[0], y: foot[1] });
+    }
+    const drift = Math.max(...xs.map((p) => p.x)) - Math.min(...xs.map((p) => p.x));
+    ok(xs.every((p) => Math.abs(p.y) < 1e-6) && drift < 2, `runner: the foot in stance stays on the ground, drifting ${drift.toFixed(2)} px over the stance`);
+  }
   ok(FIGURES_ROAD_SAY(), 'the road says the traveller in its notes: a cyclist braking does not turn round');
 });
 

@@ -626,8 +626,11 @@ function valuesVoice(descentMode) {
   }
   VOICE.el.h.innerHTML = descentMode === true ? 'How is the jump set up?' : VOICE.was.h;
   if (descentMode === 'road') {
+    // the lorry's words, unless what is moving is not a vehicle
+    const fig = FIGURES[state.who] || FIGURES.lorry;
+    const whose = state.who === 'runner' ? 'runner' : state.who === 'cyclist' ? 'cyclist' : 'vehicle';
     VOICE.el.sub.innerHTML = 'Any three of the five give you the other two. Here <b>a</b> is the '
-      + 'vehicle\u2019s own acceleration, not g — and braking is a negative one.';
+      + `${whose}\u2019s own acceleration, not g — and ${fig.brakes ? 'braking' : 'slowing down'} is a negative one.`;
     return;
   }
   VOICE.el.sub.innerHTML = descentMode
@@ -730,6 +733,7 @@ function buildRoadExtras() {
     b.addEventListener('click', () => {
       state.who = b.dataset.who;
       for (const x of $('extra').querySelectorAll('[data-who]')) x.setAttribute('aria-pressed', String(x === b));
+      valuesVoice('road');
       recompute();
     });
   }
@@ -1028,7 +1032,7 @@ function recompute() {
 function recomputeRoad() {
   const g = state.given;
   const fig = FIGURES[state.who] || FIGURES.lorry;
-  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, who: fig.noun });
+  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, who: fig.noun, brakes: fig.brakes });
   const msg = $('solve-msg'), btn = $('launch');
   if (!solved.ok) {
     if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
@@ -1790,20 +1794,53 @@ function wireLineBoxes() {
     state.markers.heightLine = r.height;
     hb.value = fmt(r.height, 2);
     say(hint, false, `A line at ${fmt(r.height, 2)} m gives exactly that.`);
+    showAbove();                     // and the line's own hint says it too
     dirty = true;
   });
 
   showAbove();
 }
 
-/** Say how long the current line is cleared for, under the height box. */
+/** Say how long the current line is cleared for, under the height box, and
+    the times it is AT the line, which a paper asks for as often. */
 function showAbove() {
   const hint = $('x-line-hint');
   if (!hint || !traj || state.markers?.heightLine == null) return;
-  const r = timeAbove(traj, state.markers.heightLine);
-  say(hint, false, r.above > 1e-9
-    ? `It is above that for ${fmt(r.above, 2)} s. A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.`
-    : 'It never gets that high. A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.');
+  const line = state.markers.heightLine;
+  const r = timeAbove(traj, line);
+  const ts = (x) => M`t = ${num(x, 2)} [s]`;
+  const secs = (x) => M`${num(x, 2)} [s]`;
+  const lands = (x) => x >= traj.tMax - 1e-9;
+  const top = traj.apexHeight, tTop = traj.tApex;
+  let at;
+  if (traj.bounces > 0) {
+    // timeAbove follows the first arc; a bounce crosses the line again
+    at = r.above > 1e-9 ? `Before its first bounce it is above that for ${secs(r.above)}.` : 'It never gets that high before it first bounces.';
+  } else if (r.above <= 1e-9) {
+    // a line exactly at the greatest height is reached, once, at the top
+    at = Math.abs(line - top) <= 1e-6 * Math.max(1, Math.abs(top)) && tTop > 0
+      ? `That is its greatest height: it just reaches it, at ${ts(tTop)}, and is never above it.`
+      : 'It never gets that high.';
+  } else if (r.crosses === 2 && r.t1 > 1e-9) {
+    at = `It passes it at ${ts(r.t1)} going up and ${ts(r.t2)} coming down, so it is above it for ${secs(r.above)}.`;
+  } else if (r.crosses === 2) {
+    at = lands(r.t2) ? `It starts on it and comes back down to it when it lands, at ${ts(r.t2)}.`
+      : `It starts on it, and comes back down through it at ${ts(r.t2)}: above it for ${secs(r.above)}.`;
+  } else if (r.crosses === 1 && r.t1 < 1e-9) {
+    at = lands(r.t2) ? `It is above it until it lands, at ${ts(r.t2)}.`
+      : `It starts above it and passes it at ${ts(r.t2)} on the way down: above it for ${secs(r.above)}.`;
+  } else if (r.crosses === 1) {
+    at = `It passes it at ${ts(r.t1)} on the way up.`;
+  } else {
+    at = `It is above that for ${secs(r.above)}.`;
+  }
+  // a paper launching from a height measures the line from the start, the
+  // box from the ground: say both
+  const h0 = traj.params.h || 0, dh = line - h0;
+  const rel = Math.abs(h0) < 1e-9 ? ''
+    : Math.abs(dh) < 1e-9 ? ' The line is measured from the ground: it is at the height it starts from.'
+    : ` The line is measured from the ground: that is ${M`${num(Math.abs(dh), 2, { trim: true })} [m]`} ${dh > 0 ? 'above' : 'below'} where it starts.`;
+  say(hint, false, `${at}${rel} A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.`);
 }
 
 /** Keep the boxes honest when the line is dragged rather than typed. */
@@ -2311,7 +2348,11 @@ function renderHud() {
   const site = siteFor(state.id);
   // The stadium's own caption ("The centre spot" and its note) is gone: the
   // picture says where it is. A scenario that happens elsewhere still names it.
-  $('place').textContent = scenario?.place || '';
+  // the road's caption follows what it stands on: a track has no road
+  const ground = scenario?.road ? (FIGURES[state.who] || FIGURES.lorry).ground : null;
+  $('place').textContent = ground === 'rail' ? 'A straight, level railway from A to B'
+    : ground === 'track' ? 'A straight, level running track from A to B'
+    : scenario?.place || '';
   $('place-note').textContent = '';
   // In the window there is no corner for a readout to sit in, and the clock
   // is in the transport where all four panes share it.
@@ -2408,7 +2449,10 @@ function showDone() {
 }
 
 function title(r) {
-  if (r.mode === 'road') return r.params.a < 0 ? 'It braked from A to B' : 'It reached B';
+  if (r.mode === 'road') {
+    const fig = FIGURES[state.who] || FIGURES.lorry;
+    return r.params.a < 0 && r.params.u > 0 ? `It ${fig.brakes ? 'braked' : 'slowed down'} from A to B` : 'It reached B';
+  }
   if (traj?.bounces > 0) return 'It finished bouncing';
   if (r.mode === '1d' && Math.abs(r.params.u) < 1e-9) return 'It hit the ground';
   if (r.mode === '1d' && r.params.h <= 1e-9) return 'It came back down';
@@ -3099,7 +3143,7 @@ function applyReading(x, { graph = true, solve = false } = {}) {
   if (r.markers.heightLine != null && state.markers) state.markers.heightLine = r.markers.heightLine;
   if (r.markers.target && state.markers) state.markers.target = r.markers.target;
   if (scenario.descent) state.descent = { ...r.descent };
-  if (scenario.road) state.mark = r.mark;
+  if (scenario.road) { state.mark = r.mark; state.who = r.who || 'lorry'; }
   buildValuesScreen();              // which recomputes
   // The answer is shown in the chat, where the question was asked (js/ai/
   // ask.js opens it); the flight waits for the student to ask for it.

@@ -15,6 +15,7 @@
 
 import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar } from './util.js';
 import { timeAbove } from '../core/projectile.js';
+import { T, num } from '../notation.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
 import * as W2 from './world2d.js';
@@ -347,11 +348,33 @@ export function render(canvas, cam, o) {
             sx(f.pos((bandT.t1 + bandT.t2) / 2).x), Y - 24,
             { color: P.mark, align: 'center', pri: 7, size: 18 });
     }
+    // the times it is AT the line, which papers ask for as often as the time
+    // above it: one to each side, so a straight-up throw's two crossings (one
+    // above the other, at the same x) do not land on each other, each saying
+    // which way it was going. Not after a bounce: timeAbove follows the first
+    // arc only, and the later arcs cross the line again.
+    const ends = bandT && bandT.above > 1e-9 && !(f.bounces > 0)
+      ? [[bandT.t1, 'up', bandT.t1 > 1e-9], [bandT.t2, 'down', bandT.t2 < f.tMax - 1e-9]].filter((e) => e[2]) : [];
 
     stroke(ctx, [{ x: 0, y: Y }, { x: w, y: Y }],
            { color: P.mark, width: grabbed ? 3.6 : 2.8, dash: [10, 7], alpha: grabbed ? 1 : .92 });
+    ends.forEach(([tt, way], i) => {
+      const X = sx(f.pos(tt).x);
+      dot(ctx, X, Y, 4.5, { fill: P.surface, stroke: P.mark, width: 2.2 });
+      // the answer the question asked for: placed before anything else
+      const right = ends.length === 1 ? true : i === 1;
+      L.add(`${way} at ${T`t = ${fmt(tt, 2)} [s]`}`, X + (right ? 12 : -12), Y + 20,
+            { color: P.mark, align: right ? 'left' : 'right', pri: 13, size: 15, weight: 700, maxPush: 40, push: 'down' });
+    });
     const snapped = snapName(markers.heightLine);
-    L.add(`${fmt(markers.heightLine, 1)} m${snapped ? ` — ${snapped}` : ''}`,
+    // from a height, also how far above (or below) the start it is: papers
+    // give the line that way ("19 m above A")
+    const h0 = f.params.h || 0, dh = markers.heightLine - h0;
+    const rel = Math.abs(h0) < 1e-9 ? ''
+      : Math.abs(dh) < 1e-9 ? 'the height it starts from'
+      : `${T`${num(Math.abs(dh), 2, { trim: true })} [m]`} ${dh > 0 ? 'above' : 'below'} the start`;
+    const also = [snapped, rel].filter(Boolean).join(', ');
+    L.add(`${fmt(markers.heightLine, 1)} m${also ? ` — ${also}` : ''}`,
           w - 12, Y, { color: P.mark, align: 'right', pri: 6, size: 17 });
     heightGrip(ctx, 76, Y, P, grabbed);
   }

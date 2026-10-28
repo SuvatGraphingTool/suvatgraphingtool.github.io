@@ -10,6 +10,29 @@
 
 const DEG = 180 / Math.PI;
 
+// The road's travellers, as the keys of FIGURES in js/render/figures.js. The
+// one the question names first wins ("a car … a motorcycle leaves later" is
+// the car's question); a person is a runner only when nothing else is named.
+const TRAVELLERS = [
+  ['motorcycle', /\b(motor ?cycle|motorbike|motor bike|moped|scooter)s?\b/],
+  ['cyclist', /\b(cyclist|bicycle|bike|cycling)s?\b/],
+  ['train', /\b(train|locomotive|tram)s?\b/],
+  ['runner', /\b(runner|running|sprinter|athlete|jogger)s?\b/],
+  ['lorry', /\b(lorry|lorries|truck|van|bus)s?\b/],
+  ['car', /\b(car)s?\b/],
+];
+const PEOPLE = /\b(girl|boy|man|woman|person|child|student)s?\b/;
+/** The traveller a piece of text names first, or undefined. */
+export function travellerIn(text) {
+  const said = String(text || '').toLowerCase();
+  let best, at = Infinity;
+  for (const [k, re] of TRAVELLERS) {
+    const m = re.exec(said);
+    if (m && m.index < at) { best = k; at = m.index; }
+  }
+  return best || (PEOPLE.test(said) ? 'runner' : undefined);
+}
+
 /* ── Angles ──────────────────────────────────────────────────────────────
    Papers give angles as trig ratios far more often than as degrees:
    sin α = 3/5, cos α = 4/5, tan α = 3/4, tan α = 7/24. Accept either. */
@@ -252,8 +275,11 @@ export function toApp(x) {
     let mark;
     if (x.atMidpoint === true) { mark = 'mid'; put('mark', null, 'given', { mid: true }); }
     else if (isNum(x.atDisplacement)) { mark = x.atDisplacement; put('mark', mark, 'given'); }
+    // What is moving, so the stage can draw it: the reader's own word for it,
+    // or the first traveller its summary names. Lorry when it names none.
+    const who = travellerIn(`${typeof x.object === 'string' ? x.object : ''} ${typeof x.summary === 'string' ? x.summary : ''}`);
     return {
-      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, items, notes,
+      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, who, items, notes,
       asks: Array.isArray(x.asks) ? x.asks.filter((q) => typeof q === 'string').slice(0, 6) : [],
       summary: typeof x.summary === 'string' ? x.summary : '',
       confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium',
