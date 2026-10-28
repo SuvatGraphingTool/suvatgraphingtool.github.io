@@ -81,3 +81,11 @@ broken.
 Several sessions push to `ai` at once. Keep commits small, rebase often, keep
 edits to shared files (`js/app.js`, `js/library.js`, `js/kits/index.js`,
 `js/render/graphs.js`) minimal, and never reformat code you don't own.
+
+## Usage (the user's instruction, 29 Oct: do the same work with less usage, even if it takes longer)
+
+- At most two library sessions work at once; the rest wait their turn. The lead or the watchdog says when.
+- Critic and audit subagents run on `model: "sonnet"`, one at a time. Give each a tight brief: the diff, the paper reference and what to try, so it doesn't re-explore the whole app.
+- Check with `read_page`, `get_page_text` and JS measurement. Take a screenshot only when nothing else can show the problem, at `scale` 0.5 or lower.
+- At most three critic rounds. After round 3, only wrong physics, false claims and broken rules (notation, colour, 13px) block shipping; everything else goes to the audit.
+- Don't re-read large files you've already read. Read only the lines you need. Keep reports to two lines.
