@@ -129,13 +129,25 @@ group('Search', () => {
   ok(q1.every((q) => String(q.source.q).split('.')[0] === '1'), 'q1 is Q1, not Q12 or Q13');
   ok(queryWords('6').length === 1 && count('6') < QUESTIONS.length, 'a bare number matches whole numbers only');
   // The words the papers themselves use, which is what a student types with
-  // the paper in front of them. Each has to find the questions it names.
-  const EXAM = [['projected', 4], ['projection', 4], ['velocity', 10], ['maximum height', 4], ['max height', 4],
-    ['greatest height', 5], ['released', 5], ['released from rest', 5], ['hits the ground', 5],
-    ['mid point', 2], ['show that', 1], ['9.8', 5], ['vertically upwards', 5]];
-  for (const [w, least] of EXAM) {
-    const n = count(w);
-    ok(n >= least && n < QUESTIONS.length + 1, `"${w}" finds at least ${least}`, `found ${n}`);
+  // the paper in front of them. Each has to find the question it names, and
+  // a word nothing on the shelves uses must not empty the shelf.
+  const top = (w, n = 3) => shelve(w, nameOf).flatMap((t) => t.items).slice(0, n).map((q) => q.id);
+  const EXAM = [
+    ['time of flight', 'mei-h640-1-2019-06-q9'], ['initial velocity', 'edx-m1-2012-01-q5'],
+    ['angle of elevation', 'ocr-h240-3-2023-06-q12'], ['horizontal distance', 'aqa-7408-1-2019-06-q4'],
+    ['distance travelled', 'aqa-mm1b-2014-06-q1'], ['comes to rest', 'aqa-mm1b-2012-06-q3'],
+    ['maximum height', 'edx-m1-2015-06-q2'], ['released from rest', 'aqa-7357-2-2019-06-q13'],
+    ['hits the ground', 'edx-8ma0-2-2018-06-q6'], ['mid point', 'edx-m1-2013-06-q4'],
+    ['show that', 'edx-9ma0-32-2020-10-q5'], ['projected vertically upwards', 'cie-9709-41-2019-06-q2'],
+  ];
+  for (const [w, id] of EXAM) {
+    const ids = shelve(w, nameOf).flatMap((t) => t.items).map((q) => q.id);
+    ok(ids.includes(id) && ids.length < QUESTIONS.length, `"${w}" finds ${id}, and not everything`, `found ${ids.length}: ${ids.slice(0, 4).join(', ')}`);
+  }
+  ok(count('cliff zzqq') === 1, 'a word nothing uses does not empty the shelf');
+  // Every question, found first by its own paper's key words.
+  for (const q of QUESTIONS) {
+    ok(top(q.terms, 1)[0] === q.id, `${q.id} comes first for its own key words`, top(q.terms, 4).join(', '));
   }
 });
 

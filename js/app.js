@@ -3063,7 +3063,8 @@ let paperSaid = null;
 // value, and rounded to far below anything a box shows.
 const boxesNow = () => JSON.stringify({
   given: Object.keys(state.given).sort().map((k) => [k, +(+state.given[k]).toPrecision(12)]),
-  theta: state.theta ?? null, h: state.h ?? null, mark: state.mark ?? null });
+  // a blank height IS ground level, so it is the same as the paper's 0
+  theta: state.theta ?? null, h: state.h ?? 0, mark: state.mark ?? null });
 function sayIfEdited() {
   if (paperSaid == null || $('lib-from').hidden) return;
   const changed = boxesNow() !== paperSaid;

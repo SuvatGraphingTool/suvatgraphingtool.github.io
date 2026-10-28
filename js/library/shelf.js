@@ -46,12 +46,17 @@ export function boardsSaid() {
    Words, not substrings. A year or a question number has to match whole —
    "2019" is not in "20190", and "q1" is not Q12 — and anything else matches
    the start of a word, so "vert" finds "vertically" and "brak" finds
-   "braking". A question is found by its own words first: its paper, as the
-   cover prints it (9MA0/32), its session, what happens and what it asks.
-   Its shelf adds a few words for the topic as a whole (vertical, range,
-   braking), and a match only on those ranks below a match in the question
-   itself. Units are not words worth matching, so "m s⁻¹", "m/s" and
-   "ms-1" are taken out of what was typed. */
+   "braking". A question is found by its own words: its paper, as the cover
+   prints it (9MA0/32), its session, what happens, what it asks, and the
+   paper's own key words (`terms`). Its shelf adds a few words for the topic
+   as a whole, which count for less.
+
+   Not every word has to match. A student types the paper's phrase — "time
+   of flight", "comes to rest" — and a word nothing on the shelves uses is
+   simply not evidence either way. What shows is the questions that match
+   the MOST of the words typed, best first; so one stray word cannot empty
+   the shelf, and a second good word narrows it. Units and filler words are
+   taken out of what was typed first. */
 const ALIAS = Object.fromEntries(BOARDS.map((b) => [b.id, b.alias]));
 const UNIT_RE = /\bm\s*\/\s*s\s*[2²]?|\bm\s*s\s*(?:[-−⁻]\s*[12¹²])?(?![a-z0-9])|\bms\s*[-−⁻]?\s*[12¹²]\b|\bmph\b|\bkm\s*\/?\s*h\b/gi;
 const words = (text) => String(text).toLowerCase()
@@ -60,13 +65,24 @@ const words = (text) => String(text).toLowerCase()
   .split(/[^a-z0-9.]+/).map((w) => w.replace(/^\.+|\.+$/g, '')).filter(Boolean);
 const whole = (w) => /^\d+(\.\d+)?$/.test(w) || /^q\d+(\.\d+)?$/.test(w);
 
-/** The question's own words: its paper, its session, what happens, what it asks. */
+/* Words that carry no meaning in a search: "show that", "released from rest",
+   "hits the ground" are found by their other words. */
+const STOP = new Set(['a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'from', 'with', 'and', 'that', 'is', 'it',
+  'its', 'for', 'by', 'find', 'calculate', 'work', 'out', 'what', 'how', 'when', 'where']);
+
+/** What was typed, as the words to look for. "question 6" is q6; units go. */
+export function queryWords(query) {
+  const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1');
+  return words(raw).filter((w) => !STOP.has(w));
+}
+
+/** The question's own words: its paper, session, what happens, what it asks, its key words. */
 function ownWords(q, nameOf) {
   const n = String(q.source.q), p = q.source.printed;
   return words([
     q.source.board, ALIAS[q.source.boardId] || '', q.source.paper, q.source.code || '', q.source.subject || '',
     q.source.session, `q${n}`, `q${n.split('.')[0]}`, p ? `${p} q${p}` : '',
-    q.says, q.asks || '', q.beyond || '', nameOf(q.opens),
+    q.says, q.asks || '', q.beyond || '', q.terms || '', nameOf(q.opens),
     // the value of g the paper uses, which students type as a way of finding it
     q.fill?.given?.g != null ? `g ${q.fill.given.g}` : '',
   ].join(' '));
@@ -81,43 +97,35 @@ export function haystack(q, nameOf = () => '') {
   return [...ownWords(q, nameOf), ...topicWords(q)];
 }
 
-/* Words that carry no meaning in a search: "show that", "released from rest",
-   "hits the ground" are found by their other words. */
-const STOP = new Set(['a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'from', 'with', 'and', 'that', 'is', 'it',
-  'its', 'for', 'by', 'find', 'calculate', 'work', 'out', 'what', 'how', 'when', 'where']);
-
-/** What was typed, as the words to look for. "question 6" is q6; units go. */
-export function queryWords(query) {
-  const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1');
-  return words(raw).filter((w) => !STOP.has(w));
-}
-
 const hit = (list, w) => (whole(w) ? list.includes(w) : list.some((h) => h.startsWith(w)));
 
-/**
- * How well a question matches what was typed: 0 for not at all; otherwise
- * higher the more of the words are in the question itself rather than only
- * in its shelf's topic words. Every word has to be somewhere.
- */
+/** How many of the typed words a question has, and how strongly: its own words count 2, its shelf's 1. */
 export function score(q, query, nameOf = () => '') {
   const want = queryWords(query);
-  if (!want.length) return 1;
   const own = ownWords(q, nameOf), topic = topicWords(q);
-  let n = 1;
+  let words = 0, weight = 0;
   for (const w of want) {
-    if (hit(own, w)) n += 2;
-    else if (hit(topic, w)) n += 1;
-    else return 0;
+    if (hit(own, w)) { words++; weight += 2; } else if (hit(topic, w)) { words++; weight += 1; }
   }
-  return n;
+  return { words, weight };
 }
-export const matches = (q, query, nameOf) => score(q, query, nameOf) > 0;
+
+/**
+ * The questions what was typed finds, best first: those matching the most
+ * of its words, then by how strongly. Nothing typed finds everything.
+ */
+export function found(query, nameOf = () => '') {
+  if (!queryWords(query).length) return QUESTIONS.map((q, i) => ({ q, i, weight: 0 }));
+  const all = QUESTIONS.map((q, i) => ({ q, i, ...score(q, query, nameOf) }));
+  const most = Math.max(0, ...all.map((x) => x.words));
+  return most ? all.filter((x) => x.words === most).sort((a, b) => b.weight - a.weight || a.i - b.i) : [];
+}
+export const matches = (q, query, nameOf) => found(query, nameOf).some((x) => x.q === q);
 
 /** The topics with at least one question left in them, best matches first. */
 export function shelve(query, nameOf) {
-  return TOPICS.map((t) => ({ ...t, items: QUESTIONS
-    .map((q, i) => ({ q, i, n: q.topic === t.id ? score(q, query, nameOf) : 0 }))
-    .filter((x) => x.n > 0).sort((a, b) => b.n - a.n || a.i - b.i).map((x) => x.q) }))
+  const hits = found(query, nameOf);
+  return TOPICS.map((t) => ({ ...t, items: hits.filter((x) => x.q.topic === t.id).map((x) => x.q) }))
     .filter((t) => t.items.length);
 }
 

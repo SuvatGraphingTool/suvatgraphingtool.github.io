@@ -72,8 +72,8 @@
 .lib-from b { font-weight: var(--w-semi); color: var(--ink); }
 #values-h:focus { outline: none; }
 
-/* ── narrower: which paper, where it goes, what happens in two lines, and
-   the paper link a 48 px square in the corner — a row a phone can scroll
+/* ── narrower: which paper, where it goes, what happens in three lines, and
+   the paper link a 60 × 48 target in the corner — a row a phone can scroll
    past, with the whole of the question on the values screen's card ──── */
 @media (max-width: 760px) {
   .lib-open { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'paper paper' 'when to' 'says says';
@@ -81,16 +81,16 @@
   .lib-src { display: contents; }
   .lib-src b { grid-area: paper; }
   .lib-src span { grid-area: when; margin: 0; white-space: nowrap; }
-  .lib-to { grid-area: to; justify-self: start; text-align: left; min-width: 0; }
+  .lib-to { grid-area: to; justify-self: stretch; text-align: left; min-width: 0; overflow: hidden;
+            white-space: nowrap; text-overflow: ellipsis; }
   .lib-to span { display: none; }
-  .lib-to b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lib-to b { display: inline; }
   .lib-to b::before { content: '\2192\00a0'; color: var(--ink-faint); font-weight: var(--w-small); }
-  .lib-says { grid-area: says; margin-top: var(--sp-1); display: -webkit-box; -webkit-line-clamp: 2;
+  .lib-says { grid-area: says; margin-top: var(--sp-1); display: -webkit-box; -webkit-line-clamp: 3;
               -webkit-box-orient: vertical; overflow: hidden; }
   /* what it asks is on the values screen's card; the row keeps to what happens */
   .lib-asks { display: none; }
-  .lib-paper { position: absolute; top: 0; right: 0; width: 56px; height: 48px; min-width: 0;
-               border-left: none; font-size: 0; justify-content: center; }
-  .lib-paper::after { font-size: var(--fs-base); margin: 0; }
+  .lib-paper { position: absolute; top: 0; right: 0; width: 60px; height: 48px; min-width: 0;
+               border-left: none; justify-content: center; }
   .lib-count { min-width: 0; }
 }
