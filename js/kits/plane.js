@@ -36,13 +36,13 @@ export const plane = {
   rows: [
     { title: 'Or a velocity at a later time, if the paper gives that instead',
       fields: [
-        { key: 'vT.x', label: `${M`vec i`} part (m s⁻¹)`, placeholder: '—', hint: 'Leave the initial velocity blank above.' },
-        { key: 'vT.y', label: `${M`vec j`} part (m s⁻¹)`, placeholder: '—', hint: 'Its velocity at that time.' },
-        { key: 'T', label: 'At time (s)', placeholder: '—', hint: 'When it has that velocity.' },
+        { key: 'vT.x', label: `${M`vec i`} part (m s⁻¹)`, aria: 'Later velocity: i part (m s⁻¹)', placeholder: '—', hint: 'Leave the initial velocity blank above.' },
+        { key: 'vT.y', label: `${M`vec j`} part (m s⁻¹)`, aria: 'Later velocity: j part (m s⁻¹)', placeholder: '—', hint: 'Its velocity at that time.' },
+        { key: 'T', label: 'Time it has it (s)', aria: 'Later velocity: the time it has it (s)', placeholder: '—', hint: 'When it has that velocity.' },
       ] },
     { title: 'What the paper asks',
       fields: [
-        { key: 'at.t', label: 'At time (s)', placeholder: '—', hint: 'Its velocity, speed and position then.' },
+        { key: 'at.t', label: 'At time (s)', aria: 'Asked: at time (s)', placeholder: '—', hint: 'Its velocity, speed and position then.' },
         { key: 'at.x', label: `When ${M`x`} is (m)`, placeholder: '—', hint: `It passes a point with this ${M`vec i`} part.` },
         { key: 'at.y', label: `When ${M`y`} is (m)`, placeholder: '—', hint: `… or with this ${M`vec j`} part.` },
         { key: 'at.speed', label: 'When its speed is (m s⁻¹)', placeholder: '—', hint: 'Often twice.' },
@@ -52,8 +52,8 @@ export const plane = {
       compass('at.due', 'When it is due … of O', 'It is in that direction from the origin.'),
     ] },
     { title: 'Or moving parallel to a vector', fields: [
-      { key: 'par.x', label: `${M`vec i`} part`, placeholder: '—', hint: `For “parallel to ${M`vec(i) + 2vec(j)`}”, 1 here …` },
-      { key: 'par.y', label: `${M`vec j`} part`, placeholder: '—', hint: '… and 2 here.' },
+      { key: 'par.x', label: `${M`vec i`} part`, aria: 'Parallel to: i part', placeholder: '—', hint: `For “parallel to ${M`vec(i) + 2vec(j)`}”, 1 here …` },
+      { key: 'par.y', label: `${M`vec j`} part`, aria: 'Parallel to: j part', placeholder: '—', hint: '… and 2 here.' },
     ] },
   ],
   // the grid is the map's own, always drawn: a switch for it would do nothing
@@ -140,13 +140,16 @@ export const plane = {
       }
       if (a.kind === 'moving') return `${a.D.src ? `${w.replace(/^./, (c) => c.toUpperCase())}` : `Moving ${w}`} at ${tr(a.t)} s, at ${tr(a.speed)} m s⁻¹, ${tr(a.dist)} m from O.`;
       if (a.kind === 'due') return `Due ${w} of O at ${tr(a.t)} s, ${tr(a.dist)} m away.`;
-      if (a.kind === 'passes') return `${a.c} = ${tr(a.X)} at ${tr(a.t)} s.`;
-      if (a.kind === 'speed') return `${tr(a.S)} m s⁻¹ at ${tr(a.t)} s.`;
+      // a moment met twice is said twice
+      const again = (a.times || []).slice(1).map((x) => ` and again at ${tr(x)} s`).join('');
+      if (a.kind === 'passes') return `${a.c} = ${tr(a.X)} at ${tr(a.t)} s${again}.`;
+      if (a.kind === 'speed') return `${tr(a.S)} m s⁻¹ at ${tr(a.t)} s${again}.`;
       return `At ${tr(a.t)} s: ${tr(a.speed)} m s⁻¹, ${tr(a.dist)} m from O.`;
     };
-    const u = solved.u;
-    const title = solved.pre.length && !ok.length ? `Initially ${tr(Math.hypot(u.x, u.y))} m s⁻¹.`
-      : ok.length ? head(ok[ok.length - 1]) : asked ? 'None of those happens.' : 'Its path, from O.';
+    // the headline is the first thing asked that has an answer, in the order
+    // the boxes ask them: the others are the eyebrow's count and the working
+    const title = solved.pre.length && !ok.length ? `Initially ${tr(solved.speed0)} m s⁻¹.`
+      : ok.length ? head(ok[0]) : asked ? 'None of those happens.' : 'Its path, from O.';
     return {
       eyebrow: asked ? `${asked} ${asked === 1 ? 'question' : 'questions'} asked · ${ok.length} answered` : 'Its path, from O',
       title,

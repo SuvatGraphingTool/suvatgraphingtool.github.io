@@ -145,9 +145,14 @@ fix the third, a alone keeps accelerating. `timeAt(mover, X)` — when it first
 reaches X.
 
 `solveOvertake({ A, B, line, at, find })` — every moment the two are level
-(`events`: the start, each overtaking, level at the line), and, with
-`find: 'B.V'` (or a, tau, for A or B), the one hidden number that makes them
-level at `line` or at `at`. Gives `found`, `extras` (each one's time and speed
+(`events`, each with a `kind`: `start`, `overtake`, `level` — level without
+passing, as at a tangency — `line` and `time`, level at the line or the time
+asked about), and, with `find: 'B.V'` (or a, tau, for A or B), the one hidden
+number that makes them level at `line` or at `at` — whether it is still
+changing speed then or holding its speed. A root that cannot be (a negative
+speed, a time longer than there is, a change of speed against its
+acceleration) is in `rejected` with its reason; with no answer at all, the
+refusal says how far it can get in that time, at best and at worst. Gives `found`, `extras` (each one's time and speed
 at the line, the time on a late one's own clock, the difference in speeds) and
 `f` with `at(t)` and `gap(t)`. `overtakeWorking(solved)` — the other one's time
 at the line, the equation for the hidden number (as the mark schemes write it),
@@ -160,7 +165,10 @@ Used by: `two-on-a-road`.
 `solvePlane({ r0, u, a, vT, T, at })` — vectors as `{ x, y }` (x east, y
 north); `vT` at time `T` instead of `u` runs back to u = v − aT. `at` asks:
 `t` (velocity, position, speed), `moving` and `due` (compass keys of
-`COMPASS`), `x` or `y` (a coordinate), `speed`. Each answer comes with its rows
+`COMPASS`), `par` (`{ x, y }`: moving parallel to a vector, either way along
+it), `x` or `y` (a coordinate), `speed`. An answer that holds for a stretch
+(`always`, with `t` and `until`) has the times it starts and stops worked,
+not only stated. Each answer comes with its rows
 of working; `planeWorking` puts the two vector equations first. `vsrc(v)`
 writes a vector as notation source (`-2vec(i) + 2vec(j)`).
 
@@ -170,6 +178,12 @@ Used by: `vectors-ij`.
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
 Unicode mathematical bold italic 𝒊). Added for `vectors-ij`; any vector anywhere.
+A vector is held to its coefficient on one line (`.m-nb`): 28𝒊 never breaks.
+
+`paren(src)` — a piece of notation source in brackets when it has a + or − at
+its top level, so it can go into a product or after a minus as it stands
+(`20 - V` → `(20 - V)`; `V`, `2V` and `(V - 5)/2` unchanged). Any substitution
+built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
 

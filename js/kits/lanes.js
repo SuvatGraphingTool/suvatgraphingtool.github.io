@@ -46,7 +46,7 @@ export const lanes = {
         { key: 'at', label: 'or level at a time (s)', placeholder: '—', hint: 'Only if the paper gives a time.' },
       ] },
   ],
-  hides: { shows: ['components', 'apex', 'ruler', 'range'], extras: ['energy'], bounce: true },
+  hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
   lapse: (f) => timeLapse(f.tMax),
 
   read(vals) {

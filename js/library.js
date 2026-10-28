@@ -82,7 +82,7 @@ export const LIBRARY = [
     ],
     tags: ['overtake', 'overtakes', 'overtaken', 'overtaking', 'pass', 'passes', 'catch up', 'chase', 'pursuit', 'meet', 'velocity-time graph', 'race', 'finish together', 'two cars', 'car', 'motorbike',
            'motorcycle', 'lorry', 'runner', 'children', 'later', 'traffic lights', 'level', 'same time', 'speed-time graph',
-           'two vehicles', 'mechanics', 'A level', 'AS level', 'M1', 'IAL'],
+           'two vehicles', 'decelerate', 'deceleration', 'slows down', 'accelerate', 'mechanics', 'A level', 'AS level', 'M1', 'IAL'],
     ending: {
       close: 'See the diagram',
       realTitle: 'What the model leaves out',
@@ -109,7 +109,8 @@ export const LIBRARY = [
     ],
     tags: ['vector', 'vectors', 'i', 'j', 'ij', 'i and j', 'unit vector', 'unit vectors', 'column vector', 'position vector',
            'velocity vector', 'due east', 'due north', 'north-west', 'north west', 'northwest', 'south-east', 'south east',
-           'north-east', 'north east', 'south-west', 'south west', 'parallel', 'speed', 'two dimensions', '2D', 'plane', 'particle', 'constant acceleration', 'mechanics',
+           'north-east', 'north east', 'south-west', 'south west', 'NW', 'NE', 'SW', 'SE', 'due west', 'due south',
+           'bearing', 'compass', 'direction', 'parallel', 'speed', 'two dimensions', '2D', 'plane', 'particle', 'constant acceleration', 'mechanics',
            'A level', 'AS level', 'M1'],
     ending: {
       close: 'See the diagram',

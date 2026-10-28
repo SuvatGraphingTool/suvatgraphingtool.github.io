@@ -14,7 +14,7 @@ import { timeLapse, lapseNote } from '../js/core/pace.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
 import { solveOvertake, overtakeWorking, mover, timeAt } from '../js/core/overtake.js';
 import { solvePlane, planeWorking } from '../js/core/plane.js';
-import { mathText, mathHTML } from '../js/notation.js';
+import { mathText, mathHTML, paren, num } from '../js/notation.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -456,6 +456,75 @@ group('Every lettered line on every library graph gets its letter', () => {
       ok(tags.length === n && apart && ordered && tied && inPlot, `${name}, ${sp.title}: ${n} letters at their lines\u2019 ends, apart, in order, each tied to its line`);
     }
   }
+});
+
+/* ── deep audit 2: what it found, and the fixes ─────────────────────── */
+group('Audit 2: the road, finding a hidden number', () => {
+  ok(paren('20 - V') === '(20 - V)' && paren('V') === 'V' && paren('(V - 5)/2') === '(V - 5)/2' && paren('-3') === '(-3)',
+    'paren brackets an expression with a top-level + or −, and nothing else');
+  // a = −1: V(20 − (20 − V)), not V(20 − 20 − V)
+  const m1 = solveOvertake({ A: { u: 20, a: -1 }, B: { u: 10 }, find: 'A.V', line: 200 });
+  const row = strip(m1.found.rows[0].s);
+  ok(m1.ok && /V\(20−\(20−V\)\)/.test(row), 'with a = −1 the time is bracketed where it is taken away', row);
+  const one = solveOvertake({ A: { u: 10 }, B: { u: 5, a: 1 }, find: 'B.V', line: 200 });
+  ok(one.ok && !/\/1|⁄1/.test(one.found.rows[0].s) && /V\(20−\(V−5\)\)/.test(strip(one.found.rows[0].s)), 'with a = 1 nothing is written over 1', strip(one.found.rows[0].s));
+  // a rejected root says the right thing for a slowing car, and a negative speed is no speed
+  const sl = solveOvertake({ A: { u: 10, a: -2 }, B: { u: 10 }, find: 'A.V', line: 50 });
+  ok(!sl.ok || sl.rejected.every((c) => !/slow down to reach, against its acceleration/.test(c.why)), 'a slowing car is never told it would have to slow down');
+  const neg = solveOvertake({ A: { u: 10 }, B: { u: 25, a: -2 }, find: 'B.V', line: 250 });
+  ok(neg.ok && neg.rejected.some((c) => c.value < 0 && /speed along the road cannot be/.test(c.why)), 'a negative final speed is rejected because a speed cannot be negative');
+  // every refusal says why, with the distance it can reach
+  for (const [k, re] of [
+    [{ A: { u: 8 }, B: { u: 2, a: 0.5 }, find: 'B.tau', at: 20 }, /only 140 m.*160 m/],
+    [{ A: { u: 10 }, B: { u: 25, a: -1 }, find: 'B.V', line: 250 }, /still covers 312\.5 m.*250 m/],
+    [{ A: { u: 10, a: -0.5 }, B: { u: 6 }, find: 'A.V', line: 90 }, /still covers 93\.75 m.*90 m/],
+    [{ A: { u: 10, a: -1 }, B: { u: 12 }, find: 'A.V', line: 120 }, /keeping its starting speed.*only 100 m.*120 m/],
+    [{ A: { u: 5 }, B: { u: 20 }, find: 'B.a', line: 100 }, /slowing to a stop.*200 m.*100 m/],
+  ]) {
+    const r = solveOvertake(k);
+    ok(!r.ok && re.test(strip(r.reason).replace(/(\d)m\b/g, '$1 m')), `refused with its reason: ${JSON.stringify(k)}`, strip(r.reason));
+  }
+  // still changing speed at the moment they are level: answered, not refused
+  const late = solveOvertake({ A: { u: 10 }, B: { tau: 30 }, find: 'B.V', line: 100 });
+  ok(late.ok && near(late.found.value, 60), 'B still speeding up at the line: V = 60 (a = 2 for 30 s)', late.reason);
+  const lateT = solveOvertake({ A: { u: 10 }, B: { V: 30, u: 2 }, find: 'B.tau', line: 500 });
+  ok(lateT.ok && near(lateT.found.value, 87.5), 'B still speeding up at the line: its time is 87.5 s');
+  // a deceleration that brings it to rest exactly at the line: it stops there
+  const stop = solveOvertake({ A: { u: 10 }, B: { u: 20 }, find: 'B.a', line: 300 });
+  ok(stop.ok && near(stop.found.value, -2 / 3) && near(stop.B.V, 0) && near(stop.B.pos(60), 300), 'slowing to rest at the line is accepted, and it stays at rest', stop.reason);
+  // the Ready line does not say B twice
+  const tb = solveOvertake({ A: { u: 10 }, B: { a: 1, u: 0 }, find: 'B.tau', line: 500 });
+  ok(tb.ok && !/B’s\s*<span class="m">.*t/.test(tb.derived[0]) && /t/.test(strip(tb.derived[0])), 'the Ready line says t_B, not B’s t_B', tb.derived[0]);
+  for (const k of [m1, one, neg, late, lateT, stop, tb]) for (const sec of overtakeWorking(k)) for (const r of sec.rows || []) {
+    ok(!/undefined|NaN|Infinity/.test(r.f + r.s + r.r), 'no undefined, NaN or Infinity in the working');
+  }
+});
+
+group('Audit 2: moving in a plane', () => {
+  const still = solvePlane({ u: { x: 3, y: 3 }, a: { x: 0, y: 0 }, at: { moving: 'NE' } }).answers[0];
+  ok(still.ok && /no acceleration/.test(strip(still.why)) && !/line of its acceleration/.test(strip(still.why)), 'no acceleration: its velocity never changes', strip(still.why));
+  const due = solvePlane({ r0: { x: -5 }, u: { x: -2, y: 0 }, a: { x: 0.4, y: 0 }, at: { due: 'W' } }).answers[0];
+  ok(due.ok && due.rows.some((r) => /t=12\.071/.test(strip(r.r))), 'due west until it comes back through O: the end time is worked', due.rows.map((r) => strip(r.r)).join(' | '));
+  const twice = solvePlane({ u: { x: -2, y: 0 }, a: { x: 1, y: 0 }, at: { speed: 1 } });
+  ok(KITS.plane.ending(twice).title === '1 m s⁻¹ at 1 s and again at 3 s.', 'a speed met twice is headlined twice', KITS.plane.ending(twice).title);
+  const both = solvePlane({ u: { x: -2, y: 0 }, a: { x: 1, y: 0 }, at: { t: 2, speed: 1 } });
+  ok(/^At 2 s/.test(KITS.plane.ending(both).title), 'the headline is the first thing asked, not the last', KITS.plane.ending(both).title);
+  const back = solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } });
+  ok(KITS.plane.ending(back).title === `Initially ${num(back.speed0, 3, { trim: true })} m s⁻¹.`, 'the initial speed in the headline is the engine’s');
+});
+
+group('Audit 2: shared pieces', () => {
+  ok(num(9.6e7, 3, { trim: true }) === '9.6 × 10⁷' && num(1e6, 3, { trim: true }) === '1 × 10⁶' && num(1e6, 3) === '1.000 × 10⁶', 'standard form trims its mantissa when asked, and only then');
+  const h = mathHTML('(28vec(i) + 36vec(j)) [m]');
+  ok((h.match(/class="m-nb"/g) || []).length === 2, 'a vector is held to its coefficient on one line');
+  for (const id of ['lanes', 'journey', 'plane']) ok(KITS[id].hides.shows.includes('grid'), `${id} offers no grid switch that would do nothing`);
+  const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  ok(/aria-describedby="\$\{id\}-h"/.test(app), 'each box’s hint is read with it');
+  const plane = [...KITS.plane.fields, ...KITS.plane.rows.flatMap((r) => r.fields)].filter((f) => f.type !== 'choice');
+  const names = plane.map((f) => strip(f.aria || `${KITS.plane.cols[f.col]}: ${f.label}`));
+  ok(new Set(names).size === names.length, 'no two boxes on the vectors screen share a name', names.join(' / '));
+  const lanes = KITS.lanes.fields.map((f) => `${KITS.lanes.cols[f.col]}: ${strip(f.label)}`);
+  ok(new Set(lanes).size === lanes.length, 'no two boxes on the road screen share a name');
 });
 
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }

@@ -210,15 +210,20 @@ function paperWords(x) {
    colliding and collision all find the scenario that collides. */
 const stem = (w) => w.toLowerCase().replace(/[^a-z0-9/]/g, '')
   .replace(/sions?$/, 'de').replace(/(ions|ion|ings|ing|ed|es|s)$/, '').replace(/e$/, '');
+/* Words that say nothing about which scenario: dropped from the search and
+   from what it searches, before stemming — so "is" never becomes an "i". */
+const STOP = new Set(['and', 'is', 'the', 'a', 'an', 'of', 'to', 'in', 'at', 'it', 'its', 'on', 'for', 'with', 'by', 'from', 'when', 'what', 'or']);
+// "3i + 4j", "-i + 3j", "due-east": a vector is its letters, a hyphen a space
+const searchWords = (x) => x.replace(/\d*\.?\d+\s*([ij])\b/gi, ' $1 ').split(/[\s\-−+]+/)
+  .filter((w) => w && !STOP.has(w.toLowerCase())).map(stem).filter(Boolean);
 function filterLibrary(q) {
   // a single letter (the i and j of vectors) has to be a whole word, not the
-  // start of every word with an i in front; 'and' says nothing at all
-  const words = q.split(/\s+/).map(stem).filter((w) => w && w !== 'and');
+  // start of every word with an i in front
+  const words = searchWords(q);
   let shown = 0;
   for (const b of $('lib-grid').querySelectorAll('.pcard')) {
     const s = LIBRARY.find((x) => x.id === b.dataset.id);
-    const hay = [s.name, s.sub, s.note, ...s.sources.map(paperWords), ...(s.tags || [])]
-      .join(' ').split(/\s+/).map(stem).filter(Boolean);
+    const hay = searchWords([s.name, s.sub, s.note, ...s.sources.map(paperWords), ...(s.tags || [])].join(' '));
     const hit = words.every((w) => hay.some((h) => (w.length === 1 ? h === w : h.startsWith(w))));
     b.hidden = !hit;
     if (hit) shown++;
@@ -757,13 +762,15 @@ function buildKitScreen() {
         ${f.hint ? `<p class="xhint">${f.hint}</p>` : ''}</div>`;
     }
     // the column's name is part of the box's name: two boxes both called
-    // "Height it starts from" are told apart by whose they are
+    // "Height it starts from" are told apart by whose they are; a box in a
+    // row may say its own (f.aria), and its hint is read with it
     const whose = f.col && K.cols?.[f.col] ? `${K.cols[f.col]}: ` : '';
+    const plain = (x) => x.replace(/<[^>]+>/g, '');
     return `<div class="xrow${f.narrow ? ' narrow' : ''}" data-x="${f.key}"><label for="${id}">${f.label}</label>
       <input id="${id}" type="text" inputmode="decimal" autocomplete="off" data-k="${f.key}"
-             aria-label="${whose}${f.label.replace(/<[^>]+>/g, '')}"
+             aria-label="${f.aria ? plain(f.aria) : `${whose}${plain(f.label)}`}"${f.hint ? ` aria-describedby="${id}-h"` : ''}
              value="${val(f.key) ?? ''}" placeholder="${f.placeholder ?? (f.optional ? '0' : '—')}">
-      ${f.hint ? `<p class="xhint" data-say="${f.say || ''}">${f.hint}</p>` : ''}</div>`;
+      ${f.hint ? `<p class="xhint" id="${id}-h" data-say="${f.say || ''}">${f.hint}</p>` : ''}</div>`;
   };
   const colNames = Object.entries(K.cols || {});
   const cols = colNames.map(([c, name]) => `

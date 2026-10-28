@@ -26,12 +26,12 @@
 import { staged, meetings, quadRoots } from './stages.js';
 import { snap } from './numeric.js';
 import { poly } from './pair.js';
-import { M, num } from '../notation.js';
+import { M, num, paren } from '../notation.js';
 
 const EPS = 1e-9;
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
-const sgn = (x) => (x < 0 ? `(${d(x)})` : d(x));
+const sgn = (x) => (d(x).startsWith('−') ? `(${d(x)})` : d(x));
 const NAMES = ['A', 'B'];
 export const FINDABLE = { a: 'acceleration', V: 'final speed', tau: 'time spent changing speed' };
 /** The hidden number, said as a noun phrase about whose it is: "B's final speed V". */
@@ -210,10 +210,18 @@ export function solveOvertake(k = {}) {
     const te = tt - t0, S = X - x0;
     if (!(te > EPS)) return fail(`${who} has not set off by then, so nothing about it can make them level.`);
     const cands = [];                 // { value, rows, why? }
+    // how far it can get by then, whatever the unknown, when that is limited
+    let bound = null;
+    // with a final speed fixed: from barely changing speed to changing to it at once
+    const vBound = (V) => {
+      const ends = [{ s: u * te, how: `barely changing speed in those ${M`${T} [s]`}` }, { s: V * te, how: `changing to ${M`${d(V)} [m s^-1]`} at once and holding it for the ${M`${T} [s]`}` }].sort((x, y) => x.s - y.s);
+      return { lo: ends[0].s, loHow: ends[0].how, hi: ends[1].s, hiHow: ends[1].how };
+    };
     const sym = find.what === 'tau' ? `t_${who}` : find.what === 'V' ? 'V' : 'a';
     const T = `${d(te)}`;
     if (find.what === 'a') {
       if (have(q.V)) {
+        bound = vBound(q.V);
         // steady by then: S = V te − (V − u)²/(2a)
         const a = (q.V - u) ** 2 / (2 * (q.V * te - S));
         cands.push({ value: snap(a), rows: [{ f: M`s = Vt - (V - u)^2/(2a)`, s: M`${d(S)} = ${d(q.V)} * ${T} - (${d(q.V)} - ${d(u)})^2/(2a)`, r: M`a = ${d(a)} [m s^-2]` }],
@@ -230,8 +238,13 @@ export function solveOvertake(k = {}) {
           ? [{ f: M`s = ut + ½a${'t_' + who}^2 + a${'t_' + who}(t - ${'t_' + who})`, s: M`${d(S)} = ${Math.abs(u) > EPS ? `${d(u)} * ${T} + ` : ''}½a * ${d(tau)}^2 + a * ${d(tau)}(${T} - ${d(tau)})`, r: M`a = ${d(a)} [m s^-2]` }]
           : [{ f: M`s = ut + ½at^2`, s: M`${d(S)} = ½a * ${T}^2`, r: M`a = ${d(a)} [m s^-2]` }], check: () => true });
       } else {
-        const a = 2 * (S - u * te) / (te * te);          // keeps accelerating
-        cands.push({ value: snap(a), rows: [{ f: M`s = ut + ½at^2`, s: M`${d(S)} = ${Math.abs(u) > EPS ? `${d(u)} * ${T} + ` : ''}½a * ${T}^2`, r: M`a = ${d(a)} [m s^-2]` }], check: () => true });
+        // keeps accelerating — or, slowing, slows until it stops and stays
+        // stopped, which must not be before the moment they are level
+        const a = 2 * (S - u * te) / (te * te);
+        const stop = a < 0 ? u / -a : Infinity;
+        cands.push({ value: snap(a), rows: [{ f: M`s = ut + ½at^2`, s: M`${d(S)} = ${Math.abs(u) > EPS ? `${d(u)} * ${T} + ` : ''}½a * ${T}^2`, r: M`a = ${d(a)} [m s^-2]` }],
+          check: () => stop >= te - 1e-9, why: stop < te - 1e-9 ? `would stop it after ${M`${d(stop)} [s]`}, before the ${M`${T} [s]`} are up` : '' });
+        bound = { lo: u * te / 2, loHow: `slowing to a stop just as the ${M`${T} [s]`} are up`, hi: Infinity };
       }
     } else {
       // V or tau, with a given, or with the other of the two given
@@ -247,23 +260,37 @@ export function solveOvertake(k = {}) {
         for (const r of roots) {
           const tau = inTau ? r : (r - u) / a;
           const value = r;
-          const why = tau > te + 1e-9 ? (inTau ? `is longer than the ${M`${T} [s]`} there is` : `would take ${M`${d(tau)} [s]`} to reach, longer than the ${M`${T} [s]`} there is`)
-            : tau < -1e-9 ? (inTau ? 'is negative' : 'would need it to slow down to reach, against its acceleration') : '';
-          cands.push({ value, Vr: r, rows: [], check: () => tau >= -1e-9 && tau <= te + 1e-9, why });
+          // a speed below zero is no speed; then a time it cannot have
+          const why = !inTau && r < -1e-9 ? 'is negative, and a speed along the road cannot be'
+            : tau > te + 1e-9 ? (inTau ? `is longer than the ${M`${T} [s]`} there is` : `would take ${M`${d(tau)} [s]`} to reach, longer than the ${M`${T} [s]`} there is`)
+            : tau < -1e-9 ? (inTau ? 'is negative'
+              : a > 0 ? `is below its starting ${M`${d(u)} [m s^-1]`}, so it would have to slow down, against its acceleration`
+                : `is above its starting ${M`${d(u)} [m s^-1]`}, so it would have to speed up, against its deceleration`) : '';
+          cands.push({ value, Vr: r, rows: [], check: () => !why, why });
         }
+        // how far it can get in that time, whatever the unknown: its distance
+        // grows (or shrinks, slowing) steadily with how long it changes speed
+        const tEnd = a < 0 ? Math.min(te, u / -a) : te;
+        const sAt = (tau) => u * te + a * te * tau - 0.5 * a * tau * tau;
+        const keep = `keeping its starting speed for the ${M`${T} [s]`}`, change = a > 0 ? `speeding up the whole ${M`${T} [s]`}`
+          : tEnd < te - 1e-9 ? `slowing until it stops, ${M`${d(tEnd)} [s]`} in` : `slowing the whole ${M`${T} [s]`}`;
+        bound = a > 0 ? { lo: sAt(0), loHow: keep, hi: sAt(tEnd), hiHow: change }
+          : { lo: sAt(tEnd), loHow: change, hi: sAt(0), hiHow: keep };
         // the area, as the mark schemes write it: the triangle (or trapezium)
         // while it changes speed, and the rectangle after
         // V written in the unknown: t_B itself when a = 1 from rest, as the papers have it
         const Vraw = inTau ? `${Math.abs(u) > EPS ? `${d(u)} + ` : ''}${Math.abs(a - 1) > EPS ? d(a) : ''}${ts}` : 'V';
-        const Vt = /[+-]/.test(Vraw) ? `(${Vraw})` : Vraw;
-        // slowing down, (V − u)/a is written (u − V)/|a|, as by hand
-        const tauS = inTau ? ts : a < 0 ? (Math.abs(a + 1) < EPS ? `${d(u)} - V` : `(${d(u)} - V)/${d(-a)}`)
-          : (Math.abs(u) > EPS ? `(V - ${d(u)})/${d(a)}` : Math.abs(a - 1) > EPS ? `V/${d(a)}` : 'V');
-        const tauB = /[+/-]/.test(tauS) && !inTau ? `(${tauS})` : tauS;
+        const Vt = paren(Vraw);
+        // slowing down, (V − u)/a is written (u − V)/|a|, as by hand; over 1 it is not written over anything
+        const over = (top, b) => (Math.abs(b - 1) < EPS ? top : `(${top})/${d(b)}`);
+        const tauS = inTau ? ts : a < 0 ? over(`${d(u)} - V`, -a)
+          : (Math.abs(u) > EPS ? over(`V - ${d(u)}`, a) : over('V', a).replace(/^\((V)\)/, '$1'));
+        // in a product a fraction is bracketed too, so the × reads as it should
+        const tauB = inTau ? tauS : /\//.test(tauS) ? `(${tauS})` : paren(tauS);
         const half = Math.abs(u) > EPS ? `½(${d(u)} + ${Vraw})` : /^\d/.test(Vraw) ? `½ * ${Vraw}` : `½${Vt}`;
         findRows = [
           { f: inTau ? M`s = ½(u + V)${ts} + V(t - ${ts})` : M`s = ½(u + V)${ts} + V(t - ${ts})`,
-            s: M`${d(S)} = ${half} * ${tauB} + ${Vt}(${T} - ${tauS})`,
+            s: M`${d(S)} = ${half} * ${tauB} + ${Vt}(${T} - ${paren(tauS)})`,
             r: M`${poly([c0, c1, c2], 4, { desc: true, sym: inTau ? ts : 'V' })} = 0` },
           { f: M`${inTau ? ts : 'V'} = (-b +- sqrt(b^2 - 4ac))/(2a)`, s: M`(${d(-c1)} +- sqrt(${sgn(c1)}^2 - 4 * ${sgn(c0)}))/2`,
             r: roots.length > 1 ? M`${inTau ? ts : 'V'} = ${d(roots[0])} "or" ${d(roots[1])}` : roots.length ? M`${inTau ? ts : 'V'} = ${d(roots[0])}` : M`"no real root"` },
@@ -272,22 +299,44 @@ export function solveOvertake(k = {}) {
         const tau = 2 * (q.V * te - S) / (q.V - u);
         cands.push({ value: snap(tau), rows: [{ f: M`s = Vt - ½(V - u)t_${who}`, s: M`${d(S)} = ${d(q.V)} * ${T} - ½(${d(q.V)} - ${d(u)})t_${who}`, r: M`t_${who} = ${d(tau)} [s]` }],
           check: (v) => v >= -1e-9 && v <= te + 1e-9 });
+        // or still changing speed then, at the rate (V − u)/t_B
+        const tau2 = (q.V - u) * te * te / (2 * (S - u * te));
+        cands.push({ value: snap(tau2), rows: [{ f: M`s = ut + ((V - u)t^2)/(2t_${who})`, s: M`${d(S)} = ${Math.abs(u) > EPS ? `${d(u)} * ${T} + ((${d(q.V)} - ${d(u)})` : `(${d(q.V)}`} * ${T}^2)/(2t_${who})`, r: M`t_${who} = ${d(tau2)} [s]` }],
+          check: (v) => v >= te - 1e-9 });
+        bound = vBound(q.V);
       } else if (have(q.tau) && find.what === 'V') {
         const tau = q.tau;
-        const Vv = (S - 0.5 * u * tau) / (te - 0.5 * tau);
-        cands.push({ value: snap(Vv), rows: [{ f: M`s = ½(u + V)t_${who} + V(t - t_${who})`, s: M`${d(S)} = ½(${d(u)} + V) * ${d(tau)} + V(${T} - ${d(tau)})`, r: M`V = ${d(Vv)} [m s^-1]` }],
-          check: (v) => v >= 0 && tau <= te + 1e-9 });
+        if (tau <= te + 1e-9) {
+          const Vv = (S - 0.5 * u * tau) / (te - 0.5 * tau);
+          cands.push({ value: snap(Vv), rows: [{ f: M`s = ½(u + V)t_${who} + V(t - t_${who})`, s: M`${d(S)} = ½(${d(u)} + V) * ${d(tau)} + V(${T} - ${d(tau)})`, r: M`V = ${d(Vv)} [m s^-1]` }],
+            check: (v) => v >= -1e-9 });
+        } else {
+          // still changing speed then: s = ut + (V − u)t²/(2t_B)
+          const Vv = u + 2 * tau * (S - u * te) / (te * te);
+          cands.push({ value: snap(Vv), rows: [{ f: M`s = ut + ((V - u)t^2)/(2t_${who})`, s: M`${d(S)} = ${Math.abs(u) > EPS ? `${d(u)} * ${T} + ((V - ${d(u)})` : '(V'} * ${T}^2)/(2 * ${d(tau)})`, r: M`V = ${d(Vv)} [m s^-1]` }],
+            check: (v) => v >= -1e-9 });
+        }
+        // slowest is slowing to a stop over its t_B; there is no fastest
+        const sStop = tau <= te ? 0.5 * u * tau : u * te - 0.5 * (u / tau) * te * te;
+        bound = { lo: sStop, loHow: `slowing to a stop over its ${M`${d(tau)} [s]`}`, hi: Infinity };
+        if (tau > te) bound.loHow += ` (${M`${T} [s]`} of which have gone by then)`;
       } else return fail(`To find ${named(who, find.what)}, give its acceleration or its other figure.`);
     }
     const good = cands.filter((c) => isFinite(c.value) && c.check(c.value) && (find.what !== 'a' || true));
     rejected = cands.filter((c) => !good.includes(c) && isFinite(c.value) && (c.why || c.Vr != null));
     if (!good.length) {
-      return fail(`No ${FINDABLE[find.what]} makes ${who} level with ${other} there`
-        + (rejected.length ? `: ${rejected.map((c) => `${M`${sym} = ${d(c.value)}`} ${c.why}`).join('; ')}.` : '.'));
+      const m = (x) => M`${d(snap(x))} [m]`;
+      const reach = bound && S > bound.hi + 1e-9 ? ` Even ${bound.hiHow}, ${who} covers only ${m(bound.hi)}, short of the ${m(S)} it needs.`
+        : bound && S < bound.lo - 1e-9 ? ` Even ${bound.loHow}, ${who} still covers ${m(bound.lo)}, more than the ${m(S)} it needs.` : '';
+      const roots = rejected.filter((c) => c.why);
+      return fail(`No ${FINDABLE[find.what]} makes ${who} level with ${other} there.${reach}`
+        + (!reach && roots.length ? ` ${roots.map((c) => `${M`${sym} = ${d(c.value)}`} ${c.why}`).join('; ')}.` : ''));
     }
     const pick = good.sort((x, y) => Math.abs(x.value) - Math.abs(y.value))[0];
     found = { who, what: find.what, sym, value: pick.value, rows: pick.rows.length ? pick.rows : findRows };
     spec[who] = { ...q, [find.what]: pick.value };
+    // slowing with nothing else given, it slows until it stops, and stays
+    if (find.what === 'a' && pick.value < 0 && !have(q.V) && !have(q.tau)) spec[who].V = 0;
     const wrong = whatsWrong(spec[who], who);
     if (wrong) return fail(`That ${FINDABLE[find.what]} does not work: ${wrong}`);
   }
@@ -295,6 +344,9 @@ export function solveOvertake(k = {}) {
   const A = mover(spec.A, 'A'), B = mover(spec.B, 'B');
   for (const p of [A, B]) {
     if (Math.abs(p.u) < EPS && Math.abs(p.a) < EPS && !(p.V > EPS)) return fail(`${p.name} never moves: give it a speed or an acceleration.`);
+    if (found && p.name === found.who && ((p.V ?? 1) < -1e-9 || (p.forever && p.a < 0))) {
+      return fail(`The only ${FINDABLE[found.what]} that would do it, ${M`${found.sym} = ${d(found.value)}`}, has ${p.name} slow to a stop and go backwards before then: no ${FINDABLE[found.what]} makes them level there.`);
+    }
     if ((p.V ?? 1) < -1e-9 || (p.forever && p.a < 0)) return fail(`${p.name} would slow to a stop and go backwards: give it a speed to slow to, and the road ahead does the rest.`);
   }
 
@@ -376,7 +428,8 @@ export function solveOvertake(k = {}) {
   const f = overtakeMotion(A, B, tMax, events, k.line);
   const own = extras.filter((x) => x.key.startsWith('own'));
   const derived = [
-    ...(found ? [`${found.who}\u2019s ${M`${found.sym} = ${d(found.value)}`}`] : []),
+    // t_B already says whose it is
+    ...(found ? [`${found.what === 'tau' ? '' : `${found.who}\u2019s `}${M`${found.sym} = ${d(found.value)}`}`] : []),
     ...own.map((x) => `${x.key.slice(3)} has been moving ${M`${d(x.value)} [s]`}`),
     ...events.filter((e) => e.kind !== 'start').map((e) => `${e.kind === 'overtake' ? `${e.ahead} passes` : 'level'} at ${M`t = ${d(e.t)} [s]`}`),
   ];

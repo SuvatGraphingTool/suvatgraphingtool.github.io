@@ -170,7 +170,9 @@ export function drawGraph(canvas, spec) {
   }
 
   L.add(title, PAD.l, 14, { color: P.ink, pri: 9, weight: 600, size: 17 });
-  L.add(unit, w - 12, 14, { color: P.faint, align: 'right', pri: 8, bg: false, size: 15 });
+  // with letters, the unit moves into their margin; and it has a halo, as
+  // the title has, so the time cursor passing behind it never strikes it out
+  L.add(unit, lettered ? w - 3 : w - 12, 14, { color: P.faint, align: 'right', pri: 8, size: 15 });
   if (shade) L.add(shade.label, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: 5, size: 15 });
   L.draw(ctx, w, h);
 }

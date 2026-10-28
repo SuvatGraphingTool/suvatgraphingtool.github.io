@@ -59,7 +59,8 @@ export function render(canvas, cam, o) {
   L.add('N', cx, cy - 36, { color: P.strong, align: 'center', pri: 6, size: 15, weight: 700, bg: false });
 
   // ── the path: all of it faintly, the part flown strongly
-  stroke(g, pts.map((p) => ({ x: X(p.x), y: Y(p.y) })), { color: P.vel, width: 1.6, dash: [3, 4], alpha: 0.45 });
+  // solid and faint, as the twelve draw their ghost path: a dash here means horizontal (rule 2)
+  stroke(g, pts.map((p) => ({ x: X(p.x), y: Y(p.y) })), { color: P.vel, width: 1.6, alpha: 0.3 });
   const flown = f.path(120, t).map((p) => ({ x: X(p.x), y: Y(p.y) }));
   stroke(g, flown, { color: P.vel, width: 2.6 });
 
@@ -82,10 +83,12 @@ export function render(canvas, cam, o) {
   }
   // ── equal steps of time along the path, labelled when asked
   const dt = niceStep(f.tMax, 10);
+  const ringed = answers.flatMap((a) => a.times || [a.t]);
   for (let i = 1; i * dt <= t + 1e-9; i++) {
     const q = f.r(i * dt);
     dot(g, X(q.x), Y(q.y), 3.4, { fill: P.vel, stroke: P.surface, width: 1.2 });
-    if (show.ticks) L.add(T`${num(i * dt, dt < 1 ? 1 : 0)} [s]`, X(q.x) + 8, Y(q.y) + 12, { color: P.vel, align: 'left', pri: 2, size: 13, bg: false, maxPush: 0 });
+    // a moment already ringed is already labelled, with its time
+    if (show.ticks && !ringed.some((ta) => Math.abs(ta - i * dt) < 1e-6)) L.add(T`${num(i * dt, dt < 1 ? 1 : 0)} [s]`, X(q.x) + 8, Y(q.y) + 12, { color: P.vel, align: 'left', pri: 2, size: 13, bg: false, maxPush: 0 });
   }
 
   // ── where it is now: position from O, velocity, acceleration

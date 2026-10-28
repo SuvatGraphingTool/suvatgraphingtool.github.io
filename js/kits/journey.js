@@ -53,7 +53,7 @@ export const journey = {
         { key: 'at.v', label: 'When its speed is (m s⁻¹)', placeholder: '—', hint: 'Usually twice: up, and braking.' },
       ] },
   ],
-  hides: { shows: ['components', 'apex', 'ruler', 'range'], extras: ['energy'], bounce: true },
+  hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
   /* A TIME-LAPSE. A train between stations takes minutes, and five minutes
      of a dot crossing a track is not a demonstration. So the clock runs at a

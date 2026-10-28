@@ -135,3 +135,5 @@
 /* A vector is bold: i, j, r and v as a student writes them on a paper. Its
    letters keep their italic, as ISO 80000-2 sets a vector. */
 .m-vec { font-weight: 800; }
+/* a vector and its coefficient are one piece on a line: 28𝒊 never breaks */
+.m-nb { white-space: nowrap; }

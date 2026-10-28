@@ -97,7 +97,7 @@ export function num(x, dp = 2, { trim = false } = {}) {
   if (Math.abs(x) < 1e-12) x = 0;
   if (typeof x !== 'number' || Number.isNaN(x)) return '—';
   if (!isFinite(x)) return x < 0 ? '−∞' : '∞';
-  if (x !== 0 && (Math.abs(x) >= 1e5 || Math.abs(x) < 1e-4)) return standardForm(x, 3);
+  if (x !== 0 && (Math.abs(x) >= 1e5 || Math.abs(x) < 1e-4)) return standardForm(x, 3, trim);
   const body = trim ? String(Number(x.toFixed(dp))) : x.toFixed(dp);
   return body.replace('-', '−');
 }
@@ -108,8 +108,25 @@ export function signed(x, dp = 2, opts) {
   return s.startsWith('−') ? `(${s})` : s;
 }
 
-function standardForm(x, sig) {
-  const [m, e] = x.toExponential(sig).split('e');
+/**
+ * A source expression put in brackets when it has a + or − at its top level,
+ * so it can go into a product, or after a minus, as it stands:
+ * `20 - V` → `(20 - V)`, while `V`, `2V` and `(V - 5)/2` are left alone.
+ * Substitutions built from pieces use it, so no piece is ever a bracket short.
+ */
+export function paren(src) {
+  let depth = 0;
+  for (const c of String(src)) {
+    if (c === '(' || c === '{') depth++;
+    else if (c === ')' || c === '}') depth--;
+    else if (depth === 0 && (c === '+' || c === '-' || c === '−')) return `(${src})`;
+  }
+  return String(src);
+}
+
+function standardForm(x, sig, trim = false) {
+  let [m, e] = x.toExponential(sig).split('e');
+  if (trim) m = m.replace(/\.?0+$/, '');
   return `${m.replace('-', '−')} × 10${toSuper(String(Number(e)))}`;
 }
 
@@ -422,15 +439,16 @@ const bare = (n) => (n.k === 'group' && n.paren ? n.body : n);
 function renderHTML(n) {
   switch (n.k) {
     case 'row': {
-      let out = '';
+      // pieces, so a vector can be held to what multiplies it: 28𝒊 and
+      // (2 + 3t)𝒊 never break across a line between the two
+      const parts = [];
       n.items.forEach((it, i) => {
         const prev = n.items[i - 1];
-        if (i > 0 && it.k !== 'op' && prev.k !== 'op' && gapNeeded(prev, it)) {
-          out += '<span class="m-sp"></span>';
-        }
-        out += renderHTML(it);
+        const gap = i > 0 && it.k !== 'op' && prev.k !== 'op' && gapNeeded(prev, it) ? '<span class="m-sp"></span>' : '';
+        if (it.k === 'vec' && i > 0 && prev.k !== 'op') parts.push(`<span class="m-nb">${parts.pop()}${gap}${renderHTML(it)}</span>`);
+        else parts.push(gap + renderHTML(it));
       });
-      return out;
+      return parts.join('');
     }
     case 'op': {
       const cls = ['m-op'];

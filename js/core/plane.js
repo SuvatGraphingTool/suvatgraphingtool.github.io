@@ -173,7 +173,8 @@ function moving(P, D, key) {
     const tt = until != null ? until / 2 : t + 1;
     return { ...base, ok: true, always: true, t, until, v: P.vel(tt), r: P.pos(tt), speed: snap(P.speed(tt)),
       rows: [head, { f: rel.f, s: rel.s, r: M`"true for every" t` }, ...(turn ? [turn] : [])],
-      why: `The relation holds for every ${M`t`}: ${Math.hypot(P.u.x, P.u.y) < EPS ? 'it starts from rest, so it moves along its acceleration' : 'its velocity is always along the line of its acceleration'}${turn ? ', and it turns round when its velocity is zero' : ''}.`,
+      why: `The relation holds for every ${M`t`}: ${Math.hypot(P.u.x, P.u.y) < EPS ? 'it starts from rest, so it moves along its acceleration'
+        : Math.hypot(P.a.x, P.a.y) < EPS ? 'with no acceleration, its velocity never changes' : 'its velocity is always along the line of its acceleration'}${turn ? ', and it turns round when its velocity is zero' : ''}.`,
       short: always ? `moving ${word} always` : until != null ? `moving ${word} until ${M`t = ${d(until)} [s]`}` : `moving ${word} from ${M`t = ${d(t)} [s]`}`, text };
   }
   const cands = tiny(c1) ? [] : [-c0 / c1];
@@ -233,8 +234,13 @@ function dueOf(P, D, key) {
       : !isFinite(hi) ? `It is ${label} from ${M`t = ${d(lo)} [s]`} on: it moves along that line, and crosses O then.`
       : `It is ${label} ${lo < EPS ? 'from the start' : `from ${M`t = ${d(lo)} [s]`}`} until ${M`t = ${d(hi)} [s]`}, when it comes back through O.`;
     const tt = lo < EPS ? Math.min(1, isFinite(hi) ? hi / 2 : 1) : lo;
+    // where it passes through O, from the component that changes: the times
+    // the text gives are worked, not just stated
+    const c = Math.abs(D.x) >= Math.abs(D.y) ? 'x' : 'y';
+    const through = [lo, hi].filter((x) => x > EPS && isFinite(x))
+      .map((x) => ({ f: M`${c} = 0`, s: M`${c === 'x' ? rx : ry} = 0`, r: M`t = ${d(x)} [s]` }));
     return { ...base, ok: true, always: true, t: lo, r: P.pos(tt), dist: snap(P.dist(tt)),
-      rows: [head, { f: rel.f, s: rel.s, r: M`"true for every" t` }],
+      rows: [head, { f: rel.f, s: rel.s, r: M`"true for every" t` }, ...through],
       why: `The relation holds for every ${M`t`}: it moves along the line through O in that direction, and is on that side of O while ${M`vec r`} points that way.`,
       short: lo < EPS && !isFinite(hi) ? `${label} always` : `${label} ${isFinite(hi) ? `until ${M`t = ${d(hi)} [s]`}` : `from ${M`t = ${d(lo)} [s]`}`}`, text };
   }
@@ -367,7 +373,7 @@ export function solvePlane(k = {}) {
   ];
   if (!derived.length) derived.push(answers.length ? 'none of those happens — see below' : 'its path, from O');
   return {
-    ok: true, mode: 'plane', axis: 'plane', r0, u, a, pre, answers, f, notes, derived,
+    ok: true, mode: 'plane', axis: 'plane', r0, u, a, speed0: snap(Math.hypot(u.x, u.y)), pre, answers, f, notes, derived,
     params: { u: Math.hypot(u.x, u.y) },
     convention: `East is the ${M`vec i`} direction and north is ${M`vec j`}; positions are from the origin O.`,
   };

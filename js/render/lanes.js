@@ -90,10 +90,20 @@ export function render(canvas, cam, o) {
     const vEnd = p.vel(f.tMax);
     L.add(p.name, X(f.tMax) + 8, Y(vEnd), { color, align: 'left', pri: 8, size: 15, weight: 700, maxPush: 20 });
   }
+  // under the axis, clear of the readouts in the top corners; moments too
+  // close for a label each share one, so neither is lost
+  const groups = [];
   for (const e of passed) {
     stroke(g, [{ x: X(e.t), y: gy1 + 8 }, { x: X(e.t), y: gy0 - 4 }], { color: P.mark, width: 1.6, dash: [4, 4] });
-    // under the axis, clear of the readouts in the top corners
-    L.add(`level at ${T`t = ${tr(e.t, 3)} [s]`}`, X(e.t), gy1 + 36, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700, push: 'down', maxPush: 20 });
+    const last = groups[groups.length - 1];
+    if (last && X(e.t) - X(last[last.length - 1].t) < 150) last.push(e); else groups.push([e]);
+  }
+  for (const grp of groups) {
+    const ts = grp.map((e) => tr(e.t, 3));
+    const text = ts.length === 1 ? `level at ${T`t = ${ts[0]} [s]`}`
+      : `level at ${T`t = ${ts.slice(0, -1).join(', ')}`} and ${T`${ts[ts.length - 1]} [s]`}`;
+    const xm = (X(grp[0].t) + X(grp[grp.length - 1].t)) / 2;
+    L.add(text, xm, gy1 + 36, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700, push: 'down', maxPush: 20 });
   }
   stroke(g, [{ x: X(t), y: gy1 }, { x: X(t), y: gy0 - 8 }], { color: P.muted, width: 1.6, dash: [5, 5] });
   dot(g, X(t), Y(A.vel(t)), 4.5, { fill: P.surface, stroke: P.vel, width: 2.2 });
