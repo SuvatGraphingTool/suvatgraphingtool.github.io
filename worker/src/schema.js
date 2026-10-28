@@ -172,6 +172,8 @@ QUESTIONS IN PARTS — (a), (b), (c)
   carries: [{"into":"u","from":"a","take":"v"}]. into is the field it fills (u, v, s, t, a, h,
   heightLine); take is what the earlier answer gives (u, v, s, t, a, apex, tApex). The app
   works it out from the earlier part. "At constant speed" means a = 0.
+- A part may be composed (see COMPOSING A SCENARIO): that part has scenario "composed" and its
+  own recipe.
 
 RULES
 - A value the question asks you to FIND is not a given value. Omit it. Do not guess it.
