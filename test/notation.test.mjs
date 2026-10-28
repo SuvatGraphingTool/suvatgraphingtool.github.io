@@ -29,6 +29,7 @@ import { trajectory } from '../js/core/trajectory.js';
 import { solveRoad, roadWorking } from '../js/core/road.js';
 import { readBlueprint, solveBoard } from '../js/board/blueprint.js';
 import { solvePair, pairWorking } from '../js/core/pair.js';
+import { solveJourney, journeyWorking } from '../js/core/journey.js';
 import { KITS } from '../js/kits/index.js';
 import { LIBRARY } from '../js/library.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
@@ -345,6 +346,50 @@ group('The Past-paper library: two in one vertical line, everything it says', ()
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   for (const s of LIBRARY) check('card', `${s.name} ${s.sub} ${s.note}`, bag);
   ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: a journey in three stages, everything it says', () => {
+  const K = KITS.journey;
+  const INPUTS = [
+    { a1: 0.5, a3: 0.25, T: 300, D: 6300, at: { t: 250, s: 3150, v: 10 } },
+    { V: 25, T: 700, D: 15000, rel: { kind: 't3=k*t1', k: 4 }, at: { t: 572 } },
+    { V: 25, T: 180, D: 3300, rel: { kind: 'a3=k*a1', k: 2 } },
+    { a1: 0.3, t1: 80, a3: 0.5, D: 4800 },
+    { t1: 60, t3: 30, T: 270, D: 4500, at: { s: 2250, v: 5 } },
+    { V: 15, a3: 2.5, D: 885, rel: { kind: 't1=k*t2', k: 1 / 3 } },
+    { V: 22, t1: 30, T: 120, D: 2145 },
+    { V: 30, a1: 0.5, a3: 0.25, T: 300, D: 6300 },
+    { a1: 1, a3: 1, T: 20, D: 100, at: { v: 10 } },
+    { V: 30, a1: 0.5, a3: 0.25, T: 300, D: 6000 },
+    { a1: 0.5, a3: 0.25, T: 100, D: 6300 },
+    { V: 10, T: 20 },
+    { a1: 0.5, a3: 0.25, T: 300, D: 6300, at: { t: 400, s: 9000, v: 40 } },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveJourney(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    for (const st of journeyWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 

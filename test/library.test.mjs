@@ -9,6 +9,7 @@ import { KITS } from '../js/kits/index.js';
 import { staged, meetings, quadRoots } from '../js/core/stages.js';
 import { solvePair, pairWorking, poly, ratio } from '../js/core/pair.js';
 import { yScale } from '../js/render/graphs.js';
+import { solveJourney, journeyWorking } from '../js/core/journey.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -179,6 +180,66 @@ group('The kit: graphs from the engine, a sketch, an ending', () => {
   const hud = K.hud(r.f, 3.5);
   ok(hud.left.length === 4 && hud.left[0].v === '8.75' && hud.left[2].v === '8.75', 'the readouts are the engine’s heights and velocities');
 });
+
+
+/* ── journey-3: the papers it names ─────────────────────────────────── */
+group('A journey in three stages: seven papers, each against its mark scheme', () => {
+  const J = (k) => solveJourney(k);
+  const e = J({ a1: 0.5, a3: 0.25, T: 300, D: 6300 });
+  ok(e.ok && e.unknown === 'V' && near(e.J.V, 30) && e.rejected.some((r) => near(r.x, 70) && /t_?2|negative/.test(strip(r.why))),
+     'Edexcel M1 J15 Q7: V = 30, and V = 70 rejected because it makes the steady time negative');
+  const as22 = J({ V: 25, T: 700, D: 15000, rel: { kind: 't3=k*t1', k: 4 }, at: { t: 572 } });
+  ok(as22.ok && near(as22.J.t1, 40) && near(as22.J.a1, 0.625) && near(as22.answers[0].v, 20),
+     'Edexcel 8MA0/22 J22 Q2: 40 s accelerating, 0.625 m s⁻², 20 m s⁻¹ at t = 572');
+  const cie = J({ V: 25, T: 180, D: 3300, rel: { kind: 'a3=k*a1', k: 2 } });
+  ok(cie.ok && near(cie.J.t1, 64) && near(cie.J.s3, 400), 'CIE 9709/43 J17 Q3: T = 64, and 400 m braking');
+  const as18 = J({ a1: 0.3, t1: 80, a3: 0.5, D: 4800 });
+  ok(as18.ok && near(as18.J.V, 24) && near(as18.J.T, 264), 'Edexcel 8MA0/02 J18 Q7: 24 m s⁻¹, and 264 s in all');
+  const ial = J({ t1: 60, t3: 30, T: 270, D: 4500, at: { s: 2250, v: 5 } });
+  ok(ial.ok && near(ial.J.V, 20) && near(ial.answers[0].t, 142.5)
+     && near(ial.answers[1].times[0], 15) && near(ial.answers[1].times[1], 262.5),
+     'Edexcel IAL WME01 Jan 2019 Q6: V = 20, halfway at 142.5 s, a quarter of V at 15 s and 262.5 s');
+  const j12 = J({ V: 15, a3: 2.5, D: 885, rel: { kind: 't1=k*t2', k: 1 / 3 } });
+  ok(j12.ok && near(j12.J.t2, 48) && near(j12.J.a1, 0.9375), 'Edexcel M1 Jan 2012 Q6: T = 48, and a = 0.9375');
+  const j13 = J({ V: 22, t1: 30, T: 120, D: 2145 });
+  ok(j13.ok && j13.unknown === 't2' && near(j13.J.t2, 75), 'Edexcel M1 J13 Q5(b): the car holds 22 m s⁻¹ for T = 75 s');
+});
+
+group('A journey: what cannot happen, and what does not agree', () => {
+  const J = (k) => solveJourney(k);
+  ok(!J({ V: 10, T: 20 }).ok, 'two numbers are not enough, and it says what is');
+  ok(/no real solution/.test(strip(J({ a1: 0.5, a3: 0.25, T: 100, D: 6300 }).reason)), 'too far in too little time: no real root, said so');
+  ok(/do not agree/.test(strip(J({ V: 30, a1: 0.5, a3: 0.25, T: 300, D: 6000 }).reason)), 'one number too many, and it disagrees');
+  ok(J({ V: 30, a1: 0.5, a3: 0.25, T: 300, D: 6300 }).ok, 'one too many, and it agrees');
+  ok(!J({ V: -3, a1: 0.5, a3: 0.25, T: 300 }).ok && !J({ a1: 0, a3: 0.25, T: 300, D: 10 }).ok, 'negative and zero rates refused');
+  const tri = J({ a1: 1, a3: 1, T: 20, D: 100 });
+  ok(tri.ok && near(tri.J.t2, 0) && near(tri.J.V, 10) && /triangle/.test(strip(tri.notes.join(' '))), 'no steady stretch: a triangle, said so');
+  const out = J({ a1: 0.5, a3: 0.25, T: 300, D: 6300, at: { t: 400, s: 9000, v: 40 } });
+  ok(out.ok && out.answers.every((a) => !a.ok) && out.notes.length === 3, 'questions outside the journey are answered as outside it');
+  const f = e30().f, bad = [];
+  for (let i = 0; i <= 60; i++) {
+    const t = (i / 60) * f.tMax;
+    if (![f.pos(t).x, f.vel(t).x, f.accel(t)].every(isFinite)) bad.push(t);
+    if (f.vel(t).x < -1e-9 || f.vel(t).x > 30 + 1e-9) bad.push(t);
+  }
+  ok(bad.length === 0, 'no NaN, and the speed stays between 0 and V');
+  ok(near(f.pos(f.tMax).x, 6300) && near(f.pos(60).x, 900) && near(f.pos(180).x, 4500), 'the motion is the stages, end to end');
+});
+
+group('A journey: the working is the mark scheme’s', () => {
+  const W = journeyWorking(e30()).map((st) => ({ title: st.title, rows: st.rows.map((r) => [strip(r.f), strip(r.s), strip(r.r)]), note: strip(st.note) }));
+  ok(W[0].rows.map((r) => r[2]).join(' | ') === 't1=2V | t3=4V | t2=300−6V', 'each stage in terms of V: 2V, 4V, 300 − 6V');
+  ok(W[1].rows[0][1] === '6300=½(300+300−6V)×V' && W[1].rows[1][2] === 'V2−100V+2100=0', 'the area: ½(300 + 300 − 6V)V = 6300, so V² − 100V + 2100 = 0');
+  ok(/V=30orV=70/.test(W[1].rows[2][2]) && /V=70 makes t2=−120s/.test(W[1].note), 'both roots, and why 70 is rejected');
+  const K = KITS.journey;
+  const G = K.graphs(e30().f, 100, { disp: 'd', vel: 'v', acc: 'a', mark: 'm' });
+  ok(G.every((sp) => sp.series.every((x) => x.dash)), 'every line dashed: motion along a track is horizontal');
+  ok(G.every((sp) => yScale(sp.series, sp.tMax).ticks.length >= 2), 'every graph has a scale');
+  ok(/<path/.test(K.thumb(byId('journey-3'))), 'the card has a sketch from its own numbers');
+  const end = K.ending(e30());
+  ok(/6300/.test(end.title) && /ph-tab/.test(end.body) && (end.body.match(/ph-row/g) || []).length >= 4, 'the ending: a row of five per stage, and the total');
+});
+function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 
 function K_never() {
   const e = KITS.pair.ending(solvePair({ A: { h: 0, u: 5 }, B: { h: 40, u: 0, t0: 3 }, g: 10 }));

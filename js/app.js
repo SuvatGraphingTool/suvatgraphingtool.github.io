@@ -746,26 +746,39 @@ function buildKitScreen() {
   const val = (k) => state.kit[k];
   const box = (f) => {
     const id = `k-${f.key.replace('.', '-')}`;
+    if (f.type === 'choice') {
+      return `<div class="xrow wide" data-x="${f.key}"><label>${f.label}</label>
+        <div class="chips" data-choice="${f.key}">${f.options.map((o) =>
+          `<button class="chip" data-v="${o.v}" aria-pressed="${val(f.key) === o.v}">${o.label}</button>`).join('')}</div>
+        ${f.hint ? `<p class="xhint">${f.hint}</p>` : ''}</div>`;
+    }
     return `<div class="xrow" data-x="${f.key}"><label for="${id}">${f.label}</label>
       <input id="${id}" type="text" inputmode="decimal" autocomplete="off" data-k="${f.key}"
-             value="${val(f.key) ?? ''}" placeholder="${f.optional ? '0' : '—'}">
-      <p class="xhint" data-say="${f.say || ''}">${f.hint}</p></div>`;
+             value="${val(f.key) ?? ''}" placeholder="${f.placeholder ?? (f.optional ? '0' : '—')}">
+      ${f.hint ? `<p class="xhint" data-say="${f.say || ''}">${f.hint}</p>` : ''}</div>`;
   };
-  const cols = Object.entries(K.cols).map(([c, name]) => `
+  const colNames = Object.entries(K.cols || {});
+  const cols = colNames.map(([c, name]) => `
     <fieldset class="kcol" data-col="${c}"><legend>${name}</legend>
       ${K.fields.filter((f) => f.col === c).map(box).join('')}</fieldset>`).join('');
+  // Rows below the columns, each a group of its own across the full width.
+  const rows = (K.rows || []).map((r) => `
+    <fieldset class="krow"><legend>${r.title}</legend>
+      <div class="krow-in">${r.fields.map(box).join('')}</div>
+      ${r.hint ? `<p class="xhint">${r.hint}</p>` : ''}</fieldset>`).join('');
   const g = state.kit.g;
-  $('extra').innerHTML = `<div class="kcols">${cols}</div>
-    <div class="xrow wide" data-x="g"><label for="k-g">Acceleration due to gravity, g (m s⁻²)</label>
+  $('extra').innerHTML = `<div class="kcols" style="--kc: ${colNames.length}">${cols}</div>${rows}`
+    + (K.g ? `<div class="xrow wide" data-x="g"><label for="k-g">Acceleration due to gravity, g (m s⁻²)</label>
       <input id="k-g" type="text" inputmode="decimal" autocomplete="off" data-k="g" value="${g ?? ''}" placeholder="—">
       <div class="chips" id="k-g-chips">${K.g.map((x) =>
         `<button class="chip" data-g="${x}" aria-pressed="${g === x}">${x}</button>`).join('')}</div>
-      <p class="xhint">Use the value the paper gives: answers depend on it.</p></div>`;
+      <p class="xhint">Use the value the paper gives: answers depend on it.</p></div>` : '');
 
+  const fieldOf = (key) => [...K.fields, ...(K.rows || []).flatMap((r) => r.fields)].find((x) => x.key === key);
   const sayDir = (inp) => {
     const hint = inp.parentElement.querySelector('.xhint');
-    if (hint.dataset.say !== 'dir') return;
-    const f = K.fields.find((x) => x.key === inp.dataset.k);
+    if (!hint || hint.dataset.say !== 'dir') return;
+    const f = fieldOf(inp.dataset.k);
     const v = state.kit[inp.dataset.k];
     hint.innerHTML = v === undefined ? f.hint : `<b>${K.dir(v)}</b> — ${f.hint}`;
   };
@@ -774,7 +787,7 @@ function buildKitScreen() {
       const v = parseValue(e.target.value);
       if (v !== undefined && isFinite(v)) state.kit[e.target.dataset.k] = v;
       else delete state.kit[e.target.dataset.k];
-      if (e.target.dataset.k === 'g') {
+      if (e.target.dataset.k === 'g' && $('k-g-chips')) {
         for (const c of $('k-g-chips').children) c.setAttribute('aria-pressed', String(parseFloat(c.dataset.g) === state.kit.g));
       }
       sayDir(e.target);
@@ -782,7 +795,19 @@ function buildKitScreen() {
     });
     sayDir(inp);
   }
-  for (const c of $('k-g-chips').children) {
+  // A choice is one of its chips, or none: press the pressed one to clear it.
+  for (const group of $('extra').querySelectorAll('[data-choice]')) {
+    for (const c of group.children) {
+      c.addEventListener('click', () => {
+        const key = group.dataset.choice;
+        const on = state.kit[key] !== c.dataset.v;
+        if (on) state.kit[key] = c.dataset.v; else delete state.kit[key];
+        for (const x of group.children) x.setAttribute('aria-pressed', String(on && x === c));
+        recompute();
+      });
+    }
+  }
+  for (const c of ($('k-g-chips')?.children || [])) {
     c.addEventListener('click', () => {
       state.kit.g = parseFloat(c.dataset.g);
       $('k-g').value = c.dataset.g;

@@ -50,12 +50,12 @@ this library: *covered* names the one of the twelve that does it.
 | 14 | AQA | 7357/2 | Jun 2023 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202023%20QP.pdf) | Falling ball passes M at u and N at 3u; time M to N; bound on height of M | g | **covered**: symbolic (M at u, N at 3u); dropped shows any one case |
 | 15 | AQA | 7357/2 | Jun 2023 | 20 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202023%20QP.pdf) | Ball thrown from 1.8 m at 14 m/s, 60°; dog starts 0.2 s later from rest, catches it at 0.3 m; find dog's acceleration | 9.8 | **candidate**: two objects meeting: a projectile caught by a dog that starts 0.2 s later |
 | 16 | Edexcel | 6677/01 M1 | Jan 2012 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Stone up and back in 3 4/7 s; find u, max height, time at least 6.6 m above A | 9.8 | **covered** by `time-above` |
-| 17 | Edexcel | 6677/01 M1 | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | 885 m trip: accelerate over T/3 s to 15 m/s, steady T s, brake at 2.5 m/s²; find T, a | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 17 | Edexcel | 6677/01 M1 | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | 885 m trip: accelerate over T/3 s to 15 m/s, steady T s, brake at 2.5 m/s²; find T, a | – | **built**: `journey-3` (T = 48, a = 0.9375) |
 | 18 | Edexcel | 6677/01 M1 | Jan 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Two boats at constant velocity; when is P due west of Q, and how far apart then | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 19 | Edexcel | 6677/01 M1 | Jun 2013 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Passes A at u, B 10 s later at 34 m/s, AB = 240 m; find u, time to midpoint | – | **covered** by `road` |
-| 20 | Edexcel | 6677/01 M1 | Jun 2013 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Car between lights 2145 m, 120 s; motorbike leaves 10 s later, passes car at 990 m | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
+| 20 | Edexcel | 6677/01 M1 | Jun 2013 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Car between lights 2145 m, 120 s; motorbike leaves 10 s later, passes car at 990 m | – | **built** in part: `journey-3` does the car (T = 75); the motorbike that overtakes it is still a **candidate** (two vehicles on one road) |
 | 21 | Edexcel | 6677/01 M1 | Jun 2015 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Stone up at 19.6 m/s; max height; time above 14.7 m | 9.8 | **covered** by `time-above` |
-| 22 | Edexcel | 6677/01 M1 | Jun 2015 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Train: accelerate 0.5, steady V, decelerate 0.25; 5 min, 6.3 km; find V (V < 50) | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 22 | Edexcel | 6677/01 M1 | Jun 2015 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Train: accelerate 0.5, steady V, decelerate 0.25; 5 min, 6.3 km; find V (V < 50) | – | **built**: `journey-3` (V = 30, V = 70 rejected) |
 | 23 | Edexcel | 6677/01 M1 | Jun 2017 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Cyclist passes A, 5 s later B at 10 m/s, AB = 40 m; find a, time to midpoint | – | **covered** by `road` |
 | 24 | Edexcel | 6677/01 M1 | Jun 2017 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Two ships at constant velocity; bearing; times when 10 km apart | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 25 | Edexcel | 9MA0/03 | Jun 2018 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Constant a found from two positions; at A the acceleration switches; time until moving north-east | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
@@ -67,14 +67,14 @@ this library: *covered* names the one of the twelve that does it.
 | 31 | Edexcel | 9MA0/32 | Jun 2023 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | a = 2.4i+j, passes A then B 5 s later; when it reaches C(4, c) | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 32 | Edexcel | 9MA0/32 | Jun 2023 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | 28 m/s from ground through a point 40 m across and 20 m up; two angles; greatest possible height | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
 | 33 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Ball leaves hand 2 m up at 9 m/s upward; time to hit ground | 10 | **covered** by `up` |
-| 34 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Train: 0.3 m/s² for 80 s, steady, −0.5 m/s²; total 4800 m; total time | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 34 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Train: 0.3 m/s² for 80 s, steady, −0.5 m/s²; total 4800 m; total time | – | **built**: `journey-3` (264 s) |
 | 35 | Edexcel | 8MA0/22 (AS) | Jun 2019 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202019%20QP%20(Mech).pdf) | Parachutist: free fall 3 s, then −12 m/s² for 2 s, then steady to ground; 550 m; find T | 10 | **candidate**: several stages; descent.js takes a steady speed, but this paper gives a braking time instead |
 | 36 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Thrown up from 1.8 m, lands at 10 m/s; find U and T | 10 | **covered** by `up` |
-| 37 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Train max 25 m/s, braking time 4× accelerating time, 700 s, 15 km; speed at t = 572 | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 37 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Train max 25 m/s, braking time 4× accelerating time, 700 s, 15 km; speed at t = 572 | – | **built**: `journey-3` (t = 40 s, a = 0.625, 20 m/s at 572 s) |
 | 38 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Two children race and finish together at 27.5 s; race length; Sam's top speed X | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
 | 39 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Up at 39.2 m/s, hits ground 10 s later; height of O; time with speed ≤ 24.5 | 9.8 | **covered** by `up` |
 | 40 | Edexcel | IAL WME01 | Jan 2019 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Two birds leave nests; B is south-west of A at t = 4; find B's speed | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
-| 41 | Edexcel | IAL WME01 | Jan 2019 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Train 270 s, 4.5 km, accelerates 60 s, brakes 30 s; V; halfway time; times at V/4 | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 41 | Edexcel | IAL WME01 | Jan 2019 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Train 270 s, 4.5 km, accelerates 60 s, brakes 30 s; V; halfway time; times at V/4 | – | **built**: `journey-3` (V = 20, 142.5 s, 15 s and 262.5 s) |
 | 42 | Edexcel | IAL WME01 | Oct 2021 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Car at 25 m/s, sign 48 m ahead; three braking models, one with a 0.2 s reaction delay | – | **candidate**: several stages along a line, one after another |
 | 43 | Edexcel | IAL WME01 | Oct 2021 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ball up from A above ground; v-t graph zero at 2.5 s; lands at 7 s; speed and height | 9.8 | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
 | 44 | Edexcel | IAL WME01 | Oct 2021 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ship leaves port at 7:00; lighthouse due east at 8:48, north-east at 9:00; find it | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
@@ -100,7 +100,7 @@ this library: *covered* names the one of the twelve that does it.
 | 64 | CIE | 9709/42 | Oct/Nov 2019 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | Tractor v-t graph, 4 segments, starts at U; find V, then U from 375 m | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
 | 65 | CIE | 9709/42 | Oct/Nov 2019 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | A up at 20 m/s from ground; B dropped from 40 m 1 s later; collision height; speed difference | 10 | **built**: `pair-vertical` |
 | 66 | CIE | 9709/42 | May/Jun 2021 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s21_qp_42.pdf) | A up at 30 m/s; B dropped from 15 m above at the same instant; they coalesce; two landing times | 10 | **built**: `pair-vertical`, the collision (0.5 s, 13.75 m). What C does after coalescing is momentum: out |
-| 67 | CIE | 9709/43 | May/Jun 2017 | 3 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s17_qp_43.pdf) | Train to 25 m/s in T s, braking at twice that rate, 180 s, 3300 m; braking distance | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 67 | CIE | 9709/43 | May/Jun 2017 | 3 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s17_qp_43.pdf) | Train to 25 m/s in T s, braking at twice that rate, 180 s, 3300 m; braking distance | – | **built**: `journey-3` (T = 64, 400 m braking) |
 | 68 | CIE | 9709/43 | May/Jun 2017 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s17_qp_43.pdf) | Up at 12 m/s; a second particle from the same point 2 s later at 20 m/s; when and where they collide | 10 | **built**: `pair-vertical` |
 | 69 | AQA Physics | 7408/1 | Jun 2019 | 04.3 | [paper](https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2019/june/AQA-74081-QP-JUN19.PDF) | Catapult releases a rock horizontally at 18 m/s from 7.5 m; range | 9.81 | **covered** by `platform` |
 | 70 | OCR A Physics | H556/01 | Jun 2019 | 19(a) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/OCR-A/Paper-1/QP/June%202019%20QP.pdf) | 18 m/s, 0.50 s reaction, stops in 38 m; deceleration | – | **candidate**: several stages along a line, one after another |
@@ -172,3 +172,53 @@ on any g including none. It can fail — one lands first, they are never in the
 air together, one stays above the other — and says which, because the meeting is
 found, never constructed (the old "Two that collide" card was removed for being
 built so it could not miss; see `design/presets.md`).
+
+### `journey-3` — A journey in three stages
+
+**Papers.** Edexcel 6677/01 M1 Jun 2015 Q7 (a₁ = 0.5, a₃ = 0.25, 5 min, 6.3 km:
+V = 30, the root 70 rejected). Edexcel 8MA0/22 Jun 2022 Q2 (V = 25, braking four
+times as long as accelerating, 700 s, 15 km: 40 s, 0.625 m s⁻², 20 m s⁻¹ at
+572 s). CIE 9709/43 May/Jun 2017 Q3 (V = 25, deceleration twice the
+acceleration, 180 s, 3300 m: T = 64, 400 m braking). Edexcel 8MA0/02 Jun 2018
+Q7 (0.3 for 80 s, then −0.5, 4800 m: 264 s). Edexcel IAL WME01 Jan 2019 Q6
+(60 s and 30 s, 270 s, 4.5 km: V = 20, halfway at 142.5 s, V⁄4 at 15 s and
+262.5 s). Edexcel M1 Jan 2012 Q6 (accelerating for a third of the steady time,
+885 m: T = 48, a = 0.9375). Edexcel M1 Jun 2013 Q5(b), the car (T = 75).
+
+**Why the twelve cannot.** The road takes one stretch of constant acceleration.
+None of the twelve has a motion that changes its acceleration twice on a
+schedule, and none takes a whole time and a whole distance as the givens.
+The parachute has three stages but they are set by a deceleration and a
+terminal speed, falling under g.
+
+**How it is solved.** By hand: one quantity is the unknown — V when the paper
+leaves it out, otherwise the time the paper names (t₁ for "four times as
+long", t₂ for "a third of the steady time") — and every stage's time is
+written in terms of it. The leftover equation, almost always the area
+D = ½(T + t₂)V, finds it: linear when V is given, a quadratic in V when not,
+whose second root makes a stage's time negative and is rejected for that
+reason, in the working. Then each stage's distance (two triangles and a
+rectangle), and the questions about a moment: the speed at a time, the time at
+a distance (halfway), the two times at a speed.
+
+**What moves.** One vehicle, three stages of constant acceleration in a row,
+built on the stages engine (`js/core/stages.js`).
+
+**The stage.** The paper's own speed–time trapezium, filling with the
+displacement colour as the clock runs, its three areas named once passed, the
+three times bracketed under the axis; and below it the track from A to B with
+the three stretches marked, the train, its equal-time marks and its velocity.
+
+**Graphs.** Displacement–time (two parabolic ends and a straight middle),
+velocity–time (the trapezium, area shaded), acceleration–time (three steps).
+All dashed: the motion is along a horizontal track.
+
+**What the student varies.** Any four of V, t₁, t₂, t₃, a₁, a₃, T, D, a
+relation between two stages (k × another), and up to three questions: speed at
+a time, time at a distance, times at a speed. More than four are checked
+against each other.
+
+**What makes it general.** Every trapezium question from rest to rest, whatever
+the paper gives, including the triangle (no steady stretch) and the quadratic in
+V. Not yet: a journey that starts or ends moving (CIE 9709/42 N19 Q2's
+tractor), or more than three stages — the stages engine already takes those.

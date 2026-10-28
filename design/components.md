@@ -48,9 +48,17 @@ A kit is an object with:
 | `ending(solved, scenario.ending)` | `{ eyebrow, title, body }` for the ending card; the scenario's `ending` supplies what the model leaves out |
 | `dir(v)` | optional: a word for a signed velocity, said back under its box |
 
+| field | (added for `journey`) |
+|---|---|
+| `rows` | `[{ title, fields, hint? }]` — groups across the full width under the columns |
+| field `type: 'choice'` | chips, one of `options: [{ v, label }]` or none; read as a string |
+| field `placeholder` | what an empty box shows; optional ones default to 0 |
+| `g` | may be left out: a kit with no gravity in it has no g row |
+
 | kit | used by |
 |---|---|
 | `pair` — `js/kits/pair.js` | `pair-vertical` |
+| `journey` — `js/kits/journey.js` | `journey-3` |
 
 ## Engine models — `js/core/`
 
@@ -71,7 +79,7 @@ question on one line: vertical, along a road, or a race.
 
 `quadRoots(c2, c1, c0)` — the real roots, in order, numerically stable.
 
-Used by: `pair-vertical`.
+Used by: `pair-vertical`, `journey-3`.
 
 ### Two particles in one vertical line — `js/core/pair.js`
 
@@ -96,7 +104,36 @@ the way a student writes it.
 
 Used by: `pair-vertical`.
 
+### A journey in three stages — `js/core/journey.js`
+
+`solveJourney({ V, t1, t2, t3, a1, a3, T, D, rel, at })` — any four of the
+eight (more are cross-checked), from rest to rest, with an optional relation
+`rel: { kind, k }` from `RELATIONS` (`t3=k*t1`, `a3=k*a1`, `t1=k*t2`) and
+questions `at: { t, s, v }`. Writes every time as `c0 + c1·x` in the one
+unknown x (V, or the time the paper names), solves the equation left over —
+usually the area D = ½(T + t₂)V, linear or quadratic — rejects roots that
+make a time negative and says why. Gives `J` (all eight plus s₁, s₂, s₃),
+`rows` (each stage in terms of the unknown), `answers`, and `f`, a staged
+motion with `stageAt(t)`.
+
+`journeyMotion(J)` — the three stages as a motion. `askAt(f, J, at)` — the
+speed at a time, the time at a distance, the times at a speed, with working.
+
+Used by: `journey-3`.
+
 ## Stages — `js/render/`
+
+### The speed–time trapezium over the track — `js/render/journey.js`
+
+`render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'journey'`.
+Above: the trapezium (dashed, horizontal motion), its area filling in the
+displacement colour to the cursor, each stage's area named once passed, V on
+the axis, the three times bracketed below it, the instants a question named
+ringed. Below: the track A to B, the three stretches as dashed displacement
+brackets, the train, equal-time marks, the velocity and acceleration arrows.
+
+Used by: `journey-3`.
+
 
 ### The vertical line — `js/render/column.js`
 
@@ -121,7 +158,7 @@ scenario:
 - **spec `points`** — `[{ t, y, color, label? }]`: an event the engine found
   (where two lines cross), drawn as a ring once the time cursor reaches it.
 
-Used by: `pair-vertical`.
+Used by: `pair-vertical` (tags, points), `journey-3` (points: the instants asked about).
 
 ## Home screen
 
