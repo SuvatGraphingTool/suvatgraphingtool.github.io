@@ -541,9 +541,22 @@ group('Over the wall: the critic’s round 1', () => {
   ok(e23.flatMap((x) => x.rows).some((r) => strip(r.f) === 'ux=ucosθ' && /28cos71\.57°/.test(strip(r.s))), 'found angle: its components are worked before u_x is used');
   ok(e23.flatMap((x) => x.rows).some((r) => strip(r.f) === 'vy=uy−gt'), 'the landing velocity’s vertical part is its own row');
   ok(KITS.target.rows.flatMap((r) => r.fields).filter((f) => f.type === 'choice' && f.key !== 'find').every((f) => f.default), 'a choice the engine defaults shows its default');
-  ok(byId('over-the-wall').params.pick === 'flat' && near(solveTarget(byId('over-the-wall').params).flagGap, 5), 'the card opens on the WJEC answer: 5 m short of the flag');
+  ok(byId('over-the-wall').params.pick === 'flat' && near(solveTarget(byId('over-the-wall').params).flagGap, 5), 'the card’s sketch is the WJEC setup, at the angle that lands 5 m short');
+  const both = strip(solveTarget({ g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130 }).notes.join(' '));
+  ok(/θ=45°landsnearerthemark:5m/.test(both.replace(/\s/g, '')) && /the flatter/.test(both), 'with two answers and a mark, it says which lands nearer, and how to fly it');
+  // round 2
+  const mei = solveTarget({ g: 9.8, h0: 5, ux: 14, uy: 0, H: 2, kind: 'wall' });
+  ok(mei.ok && near(mei.shown.span.to, Math.sqrt(120)) && /up to 10\.954/.test(strip(mei.derived[0])) && !mei.shown.at, 'MEI J18 Q9(iii) from the paper’s own data: a 2 m fence, no distance, cleared up to 10.954 m');
+  ok(/lands 35\.348 m out.*never hits it/.test(strip(solveTarget({ g: 9.8, u: 20, theta: 30, d: 50, H: 3, kind: 'face' }).reason).replace(/(\d)m\b/g, '$1 m')), 'a wall it hits that it never reaches: says where it lands, not a height under the ground');
+  for (const k of [{ g: 9.8, d: 20, H: 2, find: 'apex', top: 5, T: 3 }, { g: 9.8, d: 20, H: 2, find: 'T', T: 2, top: 5 }, { g: 9.8, u: 28, d: 40, H: 20, find: 'theta', T: 3 }]) ok(/clear that box/.test(strip(solveTarget(k).reason)), `a box typed for another question is said: ${JSON.stringify(k)}`);
+  ok(/never reaches the mark/.test(strip(solveTarget({ g: 9.8, u: 20, theta: 30, d: 30, H: 6, kind: 'net', flag: 50 }).notes.join(' '))), 'a mark it never reaches, because it hits the net, is said');
+  const close = strip(solveTarget({ g: 9.8, u: 20, d: 30, H: 9.3833, find: 'theta' }).reason);
+  ok(/9\.3832 ?m.*9\.3833 ?m/.test(close), 'just out of reach: enough figures to tell the two heights apart', close);
+  ok(targetWorking(solveTarget({ g: 9.8, theta: 30, d: 40, H: 20, find: 'u' })).flatMap((x) => x.rows).some((r) => /^u2=gd2/.test(strip(r.f))), 'finding u: the rearranged formula is a row');
+  ok(!targetWorking(e23F0()).flatMap((x) => x.rows).some((r) => /tan−1\(tanθ\)/.test(strip(r.f))), 'no θ = tan⁻¹(tan θ) row');
 });
 
+function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
 

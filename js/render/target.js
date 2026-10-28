@@ -34,7 +34,7 @@ export function render(canvas, cam, o) {
   const xs = [0, ...paths.flat().map((p) => p.x)], ys = [0, F.h0, ...paths.flat().map((p) => p.y)];
   // a wall it hits stands above where it hits, whether or not its height was given
   const faceTop = kind === 'face' && Pt ? (Pt.H ?? F.at?.y ?? 0) : null;
-  if (Pt) { xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H); if (faceTop != null) ys.push(faceTop * 1.5); }
+  if (Pt) { if (Pt.d != null) xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H); if (faceTop != null) ys.push(faceTop * 1.5); }
   if (f.flag != null) xs.push(f.flag);
   const xMax = Math.max(...xs) * 1.06 || 1, yMax = Math.max(...ys, xMax * 0.05) * 1.12;
   // The scene goes beside the readouts or below them, whichever draws it
@@ -71,7 +71,20 @@ export function render(canvas, cam, o) {
   }
 
   // ── the thing at the point
-  if (Pt) {
+  // a height with no distance: where a wall that high would be cleared, as a
+  // band along the ground and the height it has to clear
+  if (Pt && Pt.d == null && Pt.H != null && F.span) {
+    const a = X(F.span.from), b = X(F.span.to), hy = Y(Pt.H);
+    g.save(); g.fillStyle = withAlpha(P.mark, 0.14); g.fillRect(a, hy, b - a, oy - hy); g.restore();
+    stroke(g, [{ x: a, y: hy }, { x: b, y: hy }], { color: P.mark, width: 1.4, alpha: 0.8 });
+    stroke(g, [{ x: a, y: oy + 8 }, { x: b, y: oy + 8 }], { color: P.mark, width: 2 });
+    for (const xx of [a, b]) stroke(g, [{ x: xx, y: oy + 4 }, { x: xx, y: oy + 12 }], { color: P.mark, width: 2 });
+    L.add(T`"a" ${tr(Pt.H)} [m] "wall is cleared here"`, (a + b) / 2, oy + 24, { color: P.mark, align: 'center', pri: 7, size: 13, weight: 700 });
+    L.add(T`${tr(F.span.to)} [m]`, b, hy - 14, { color: P.mark, align: 'center', pri: 8, size: 14, weight: 700 });
+    if (F.span.from > 1e-9) L.add(T`${tr(F.span.from)} [m]`, a, hy - 14, { color: P.mark, align: 'center', pri: 8, size: 14, weight: 700 });
+    L.add(T`${tr(Pt.H)} [m]`, a + 8, (hy + oy) / 2, { color: P.mark, align: 'left', pri: 6, size: 14 });
+  }
+  if (Pt && Pt.d != null) {
     const px = X(Pt.d), H = Pt.H;
     const top = H != null ? Y(H) : null;
     if (kind === 'wall' && H != null) {

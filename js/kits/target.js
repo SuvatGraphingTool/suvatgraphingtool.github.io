@@ -31,8 +31,8 @@ export const target = {
   cols: { launch: 'The launch', point: 'The point' },
   rows: [
     { title: 'Or the launch as its two components', fields: [
-      { key: 'ux', label: 'Across (m s⁻¹)', aria: 'Launch velocity: across (m s⁻¹)', placeholder: '—', hint: `For ${M`(30vec(i) - 1.4vec(j))`}, 30 here …` },
-      { key: 'uy', label: 'Up (m s⁻¹)', aria: 'Launch velocity: up (m s⁻¹)', placeholder: '—', hint: '… and −1.4 here. Thrown horizontally is 0.' },
+      { key: 'ux', label: 'Across (m s⁻¹)', aria: 'Launch velocity: across (m s⁻¹)', placeholder: '—', hint: `For ${M`(20vec(i) + 5vec(j))`}, 20 here …` },
+      { key: 'uy', label: 'Up (m s⁻¹)', aria: 'Launch velocity: up (m s⁻¹)', placeholder: '—', hint: '… and 5 here; negative is thrown downwards, 0 horizontally.' },
     ] },
     { title: 'What is at the point', fields: [
       { key: 'kind', type: 'choice', label: 'It is', default: 'wall', hint: 'A wall, net or tree it does not clear, it hits. A wall it hits stops it there.',
@@ -126,6 +126,7 @@ export const target = {
     const a = S.at;
     const title = find === 'theta' ? (flights.length > 1 ? `θ = ${deg(flights[1].theta)}° or ${deg(flights[0].theta)}°.` : `θ = ${deg(S.theta)}°.`)
       : find ? `${tr(S.u)} m s⁻¹ at ${deg(S.theta)}°.`
+        : !a && P?.H != null && K.solid ? (S.span ? `A ${tr(P.H)} m ${K.word} is cleared ${S.span.from < 1e-9 ? `up to ${tr(S.span.to)} m out` : `from ${tr(S.span.from)} to ${tr(S.span.to)} m out`}.` : `Never above ${tr(P.H)} m.`)
         : !a ? `Lands ${tr(S.R)} m out.`
           : !a.reached ? `Lands before ${K.the}.`
             : K.hits ? `Hits ${K.the} ${tr(a.y)} m up.`
@@ -139,7 +140,7 @@ export const target = {
         <span role="cell">${cell(fl.u)}</span><span role="cell">${cell(fl.at?.reached ? fl.at.t : null)}</span>
         <span role="cell">${cell(fl.at?.reached ? fl.at.y : null)}</span><span role="cell">${cell(fl.top)}</span>
         <span role="cell">${cell(fl.hits ? null : fl.R)}</span></div>`;
-    const table = P ? `
+    const table = P && P.d != null ? `
       <div class="ph-tab" role="table" aria-label="Each launch, and where it is at the point">
         <div class="ph-head" role="row">
           <span role="columnheader">Launch</span>
@@ -151,7 +152,8 @@ export const target = {
         <p class="ph-units">${M`u`} in ${M`[m s^-1]`}; ${M`t`} in ${M`[s]`} from the launch; heights and the landing distance in ${M`[m]`}, from the ground and from the launch.</p>
       </div>` : '';
     return {
-      eyebrow: P ? `${K.word === 'point' ? 'A point' : `A ${K.word}`} <span class="u">${tr(P.d)}</span> <span class="u">m</span> out${P.H != null ? `, <span class="u">${tr(P.H)}</span> <span class="u">m</span> up` : ''}` : 'Its path',
+      eyebrow: P && P.d != null ? `${K.word === 'point' ? 'A point' : `A ${K.word}`} <span class="u">${tr(P.d)}</span> <span class="u">m</span> out${P.H != null ? `, <span class="u">${tr(P.H)}</span> <span class="u">m</span> up` : ''}`
+        : P ? `A ${K.word} <span class="u">${tr(P.H)}</span> <span class="u">m</span> high, anywhere` : 'Its path',
       title,
       body: `${solved.notes.map((n) => `<p>${n}</p>`).join('')}${table}`,
       real: true,
