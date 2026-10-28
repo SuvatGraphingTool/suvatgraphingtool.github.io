@@ -1180,3 +1180,6 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
    the room of two lines, so a short one does not pull its column up. */
 .kcol .xhint { min-height: calc(2 * 1.45em); }
 .done-eyebrow .u { text-transform: none; }
+/* a box whose number the engine is finding */
+.xrow input[data-found='true'] { border-style: dashed; background: transparent; }
+.xrow input[data-found='true']::placeholder { color: var(--accent); font-weight: var(--w-semi); }

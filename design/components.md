@@ -61,6 +61,7 @@ A kit is an object with:
 |---|---|
 | `pair` — `js/kits/pair.js` | `pair-vertical` |
 | `journey` — `js/kits/journey.js` | `journey-3` |
+| `lanes` — `js/kits/lanes.js` | `two-on-a-road` |
 
 ## Engine models — `js/core/`
 
@@ -93,7 +94,7 @@ question on one line: vertical, along a road, or a race.
 
 `quadRoots(c2, c1, c0)` — the real roots, in order, numerically stable.
 
-Used by: `pair-vertical`, `journey-3`.
+Used by: `pair-vertical`, `journey-3`, `two-on-a-road`.
 
 ### Two particles in one vertical line — `js/core/pair.js`
 
@@ -135,7 +136,35 @@ speed at a time, the time at a distance, the times at a speed, with working.
 
 Used by: `journey-3`.
 
+### Two on one road — `js/core/overtake.js`
+
+`mover({ t0, x0, u, a, V, tau }, name)` — one vehicle: waiting at x0 until t0,
+changing speed from u at a for tau to V, then holding V; any two of a, V, tau
+fix the third, a alone keeps accelerating. `timeAt(mover, X)` — when it first
+reaches X.
+
+`solveOvertake({ A, B, line, at, find })` — every moment the two are level
+(`events`: the start, each overtaking, level at the line), and, with
+`find: 'B.V'` (or a, tau, for A or B), the one hidden number that makes them
+level at `line` or at `at`. Gives `found`, `extras` (each one's time and speed
+at the line, the time on a late one's own clock, the difference in speeds) and
+`f` with `at(t)` and `gap(t)`. `overtakeWorking(solved)` — the other one's time
+at the line, the equation for the hidden number (as the mark schemes write it),
+and each crossing as two positions in t set equal.
+
+Used by: `two-on-a-road`.
+
 ## Stages — `js/render/`
+
+### Two lanes under two speed–time graphs — `js/render/lanes.js`
+
+`render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'overtake'`.
+Above: both speed–time graphs (dashed, A velocity hue, B second-object stone),
+each moment they are level marked under the axis. Below: two lanes, the start,
+the line, cars, equal-time marks, velocity arrows, the gap between fronts, and
+each meeting across both lanes.
+
+Used by: `two-on-a-road`.
 
 ### The speed–time trapezium over the track — `js/render/journey.js`
 

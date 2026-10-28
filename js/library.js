@@ -67,4 +67,31 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: every stage from what was given, the one unknown from the equation left over, and the answers to the questions asked about a moment.',
     } },
+
+  { id: 'two-on-a-road', group: 'library', kit: 'lanes',
+    name: 'Two on one road',
+    sub: 'one sets off later, or slows down — when is one level with the other?',
+    note: 'A car and a motorbike leave the lights ten seconds apart; a car slowing down is passed by a lorry going steadily; two children race and cross the line together. Each changes speed at a steady rate and then holds it, and they are level when the areas under their speed–time graphs are equal — so the moment, or the one number the paper hides, comes out of that.',
+    params: { A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } },
+    place: 'A straight road, two lanes',
+    sources: [
+      { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '9' },
+      { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2013', q: '5', part: 'the motorbike' },
+      { board: 'Edexcel', paper: '8MA0/22', session: 'Jun 2023', q: '1' },
+      { board: 'Edexcel', paper: 'WME01', session: 'Jun 2022', q: '7' },
+    ],
+    tags: ['overtake', 'overtakes', 'pass', 'passes', 'catch up', 'race', 'finish together', 'two cars', 'car', 'motorbike',
+           'motorcycle', 'lorry', 'runner', 'children', 'later', 'traffic lights', 'level', 'same time', 'speed-time graph',
+           'two vehicles', 'mechanics', 'A level', 'AS level', 'M1', 'IAL'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers\u2019 model, kept as it is. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Each is a point', 'level means the two points are level. Real cars overtake front to front, and a car is a few metres long, so the moment one is fully past is a little later than this.'],
+        ['The changes of speed are instant', 'the acceleration switches on and off at the corners of each speed–time graph. Nothing real does that, and the mark schemes say so.'],
+        ['Two lanes, never in each other\u2019s way', 'they are drawn side by side, and neither slows for the other.'],
+      ],
+      caveat: 'What the engine did compute is above: each one\u2019s position as a function of time in its stages, every moment the two are equal, and the one hidden number when the paper hides one.',
+    } },
 ];

@@ -84,15 +84,21 @@ export function meetings(A, B, { from = 0, to } = {}) {
   for (let i = 0; i < ts.length - 1; i++) {
     const p = ts[i], q = ts[i + 1], len = q - p;
     if (len < EPS) continue;
-    // Read the coefficients from just inside the interval, so a stage that
-    // changes exactly at p contributes its NEW acceleration.
+    // Which stage each is in, read from just inside the interval, so a stage
+    // that changes exactly at p contributes its NEW acceleration — and then
+    // the position and velocity at p from that stage's own formula, exactly,
+    // rather than extrapolated back from the middle of a long interval.
     const mid = (p + q) / 2;
-    const a = A.state(mid), b = B.state(mid);
+    const atP = (m) => {
+      const st = m.stageAt(mid);
+      if (st === null) return { x: m.stages[0].x0, v: 0, a: 0 };
+      if (st === undefined) { const e = m.state(Infinity); return { x: e.x, v: 0, a: 0 }; }
+      const r = at(st, p);
+      return { x: r.x, v: r.v, a: st.a };
+    };
+    const a = atP(A), b = atP(B);
     const dA = a.a - b.a;
-    // position and velocity at p, extrapolated back from inside the interval
-    const xAp = a.x - a.v * (mid - p) + 0.5 * a.a * (mid - p) ** 2;
-    const xBp = b.x - b.v * (mid - p) + 0.5 * b.a * (mid - p) ** 2;
-    const vAp = a.v - a.a * (mid - p), vBp = b.v - b.a * (mid - p);
+    const xAp = a.x, xBp = b.x, vAp = a.v, vBp = b.v;
     const c0 = xAp - xBp, c1 = vAp - vBp, c2 = 0.5 * dA;
     const scale = Math.max(1, Math.abs(xAp), Math.abs(xBp));
     if (Math.abs(c0) < 1e-9 * scale && Math.abs(c1) < 1e-9 && Math.abs(c2) < 1e-9) {

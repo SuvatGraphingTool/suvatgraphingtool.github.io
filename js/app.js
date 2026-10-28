@@ -812,6 +812,19 @@ function buildKitScreen() {
     sayDir(inp);
   }
   // A choice is one of its chips, or none: press the pressed one to clear it.
+  // A choice whose values name boxes (the number to find) locks the box it
+  // names and says so, rather than leaving it asking to be filled in.
+  const markFound = (key) => {
+    const chosen = state.kit[key];
+    for (const inp of $('extra').querySelectorAll('input[data-k]')) {
+      const f = fieldOf(inp.dataset.k);
+      const isIt = fieldOf(key)?.names && inp.dataset.k === chosen;
+      inp.readOnly = !!isIt;
+      inp.dataset.found = String(!!isIt);
+      if (isIt) { inp.value = ''; delete state.kit[inp.dataset.k]; }
+      inp.placeholder = isIt ? 'to find' : (f?.placeholder ?? (f?.optional ? '0' : '—'));
+    }
+  };
   for (const group of $('extra').querySelectorAll('[data-choice]')) {
     for (const c of group.children) {
       c.addEventListener('click', () => {
@@ -819,9 +832,11 @@ function buildKitScreen() {
         const on = state.kit[key] !== c.dataset.v;
         if (on) state.kit[key] = c.dataset.v; else delete state.kit[key];
         for (const x of group.children) x.setAttribute('aria-pressed', String(on && x === c));
+        markFound(key);
         recompute();
       });
     }
+    markFound(group.dataset.choice);
   }
   for (const c of ($('k-g-chips')?.children || [])) {
     c.addEventListener('click', () => {

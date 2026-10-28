@@ -53,7 +53,7 @@ this library: *covered* names the one of the twelve that does it.
 | 17 | Edexcel | 6677/01 M1 | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | 885 m trip: accelerate over T/3 s to 15 m/s, steady T s, brake at 2.5 m/s²; find T, a | – | **built**: `journey-3` (T = 48, a = 0.9375) |
 | 18 | Edexcel | 6677/01 M1 | Jan 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Two boats at constant velocity; when is P due west of Q, and how far apart then | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 19 | Edexcel | 6677/01 M1 | Jun 2013 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Passes A at u, B 10 s later at 34 m/s, AB = 240 m; find u, time to midpoint | – | **covered** by `road` |
-| 20 | Edexcel | 6677/01 M1 | Jun 2013 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Car between lights 2145 m, 120 s; motorbike leaves 10 s later, passes car at 990 m | – | **built** in part: `journey-3` does the car (T = 75); the motorbike that overtakes it is still a **candidate** (two vehicles on one road) |
+| 20 | Edexcel | 6677/01 M1 | Jun 2013 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Car between lights 2145 m, 120 s; motorbike leaves 10 s later, passes car at 990 m | – | **built**: `journey-3` does the car (T = 75); `two-on-a-road` the motorbike (50 s, a = 0.792) |
 | 21 | Edexcel | 6677/01 M1 | Jun 2015 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Stone up at 19.6 m/s; max height; time above 14.7 m | 9.8 | **covered** by `time-above` |
 | 22 | Edexcel | 6677/01 M1 | Jun 2015 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Train: accelerate 0.5, steady V, decelerate 0.25; 5 min, 6.3 km; find V (V < 50) | – | **built**: `journey-3` (V = 30, V = 70 rejected) |
 | 23 | Edexcel | 6677/01 M1 | Jun 2017 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Cyclist passes A, 5 s later B at 10 m/s, AB = 40 m; find a, time to midpoint | – | **covered** by `road` |
@@ -71,7 +71,7 @@ this library: *covered* names the one of the twelve that does it.
 | 35 | Edexcel | 8MA0/22 (AS) | Jun 2019 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202019%20QP%20(Mech).pdf) | Parachutist: free fall 3 s, then −12 m/s² for 2 s, then steady to ground; 550 m; find T | 10 | **candidate**: several stages; descent.js takes a steady speed, but this paper gives a braking time instead |
 | 36 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Thrown up from 1.8 m, lands at 10 m/s; find U and T | 10 | **covered** by `up` |
 | 37 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Train max 25 m/s, braking time 4× accelerating time, 700 s, 15 km; speed at t = 572 | – | **built**: `journey-3` (t = 40 s, a = 0.625, 20 m/s at 572 s) |
-| 38 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Two children race and finish together at 27.5 s; race length; Sam's top speed X | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
+| 38 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Two children race and finish together at 27.5 s; race length; Sam's top speed X | – | **built**: `two-on-a-road` (X = 3.92) |
 | 39 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Up at 39.2 m/s, hits ground 10 s later; height of O; time with speed ≤ 24.5 | 9.8 | **covered** by `up` |
 | 40 | Edexcel | IAL WME01 | Jan 2019 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Two birds leave nests; B is south-west of A at t = 4; find B's speed | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 41 | Edexcel | IAL WME01 | Jan 2019 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Train 270 s, 4.5 km, accelerates 60 s, brakes 30 s; V; halfway time; times at V/4 | – | **built**: `journey-3` (V = 20, 142.5 s, 15 s and 262.5 s) |
@@ -80,10 +80,10 @@ this library: *covered* names the one of the twelve that does it.
 | 44 | Edexcel | IAL WME01 | Oct 2021 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ship leaves port at 7:00; lighthouse due east at 8:48, north-east at 9:00; find it | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 45 | Edexcel | IAL WME01 | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Passes P, Q 10 s later at 28 m/s, PQ = 220; a; distance in the 5th second | – | **covered** by `road` |
 | 46 | Edexcel | IAL WME01 | Jun 2022 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Velocity known at t = 1 and t = 4; speed at t = 3.5 | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
-| 47 | Edexcel | IAL WME01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | 100 m race, finish together; Ajaz's time; Beth's T; difference in finishing speed | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
+| 47 | Edexcel | IAL WME01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | 100 m race, finish together; Ajaz's time; Beth's T; difference in finishing speed | – | **built**: `two-on-a-road` (27.5 s, T = 3.915, speeds differ by 0.085) |
 | 48 | OCR A | H240/03 | Jun 2019 | 7 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Cyclist from rest at 1.5 m/s² for 4 s, then steady; distance in 10 s | – | **candidate**: several stages along a line, one after another |
 | 49 | OCR A | H240/03 | Jun 2019 | 8 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Flight 2.4 s, horizontal velocity 5d/3, just clears a wall at d; speed 16 over the wall | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
-| 50 | OCR A | H240/03 | Jun 2022 | 9 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | A overtakes B (12 m/s) at 20 m/s, slows to 8 m/s over 30 s; when B re-overtakes | – | **candidate**: two objects on one line, each in its own stages: where and when they meet or overtake |
+| 50 | OCR A | H240/03 | Jun 2022 | 9 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | A overtakes B (12 m/s) at 20 m/s, slows to 8 m/s over 30 s; when B re-overtakes | – | **built**: `two-on-a-road` (B overtakes at t = 45 s) |
 | 51 | OCR A | H240/03 | Jun 2022 | 13 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | Just clears a wall of height a/2 at x = a, lands at 4a; angle; a given 54.6 m/s; max height | 9.8 | **candidate**: a projectile past a wall, net, tree or target point: does it clear, and the angles that pass through a point |
 | 52 | OCR A | H240/03 | Jun 2023 | 8 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | a = 3i−2j, v = 6i at t = 4; speed at t = 0 | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 53 | OCR A | H240/03 | Jun 2023 | 12 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | 39 m/s from 20 m up, sin θ = 5/13; max height; time to land (part (d) out of scope) | 10 | **covered** by `platform-angle` |
@@ -222,3 +222,50 @@ against each other.
 the paper gives, including the triangle (no steady stretch) and the quadratic in
 V. Not yet: a journey that starts or ends moving (CIE 9709/42 N19 Q2's
 tractor), or more than three stages — the stages engine already takes those.
+
+### `two-on-a-road` — Two on one road
+
+**Papers.** OCR A H240/03 Jun 2022 Q9 (A at 20 m s⁻¹ slows to 8 over 30 s and
+holds it; B steady at 12: A decelerates at 0.4, and B overtakes at t = 45 s).
+Edexcel M1 Jun 2013 Q5(c, d), the motorbike (leaves the lights 10 s after the
+car, from rest at constant a, passes it at 990 m: 50 s, a = 0.792 = 99⁄125).
+Edexcel 8MA0/22 Jun 2023 Q1 (Pat 5 s to 4 m s⁻¹, Sam at 1 m s⁻² to X, both
+27.5 s: X = 3.92). Edexcel IAL WME01 Jun 2022 Q7 (Ajaz at 0.8 to 4 m s⁻¹,
+Beth at 1 m s⁻² for T s, 100 m together: 27.5 s, T = 3.915, speeds differ by
+0.085).
+
+**Why the twelve cannot.** The road has one vehicle and one stretch of
+constant acceleration. Nothing among the twelve has two independent motions on
+one line, and the vertical pair (`pair-vertical`) has both under g.
+
+**How it is solved.** Each of the two is a motion in stages — waiting until
+its start, changing speed at a constant rate for a while, then holding a speed
+— and every moment they are level is found by the stages engine as the roots
+of a piecewise quadratic. When the paper hides one number (an acceleration, a
+speed reached, the time spent reaching it), the other's time at the line (or
+place at the time) is worked out first, and the hidden one comes from one
+equation — the area under its speed–time graph — linear in a, a quadratic in V
+or in the time, as the mark schemes write it (½T × T + T(27.5 − T) = 100). The
+root that would need longer to reach its speed than there is time is rejected,
+and says so.
+
+**The stage.** Both speed–time graphs on one pair of axes (A in the velocity
+hue, B in the second-object stone, both dashed: along the road), with each
+moment they are level marked; below, the road in two lanes, the start, the line
+the paper names, equal-time marks, the gap between their fronts and each
+meeting across both lanes.
+
+**Graphs.** Displacement–time (the two curves crossing where they are level,
+ringed), velocity–time, acceleration–time, both on each, broken at every change
+of acceleration.
+
+**What the student varies.** For each: when it sets off, its starting speed, a
+head start, and any two of its acceleration, the speed it changes to and the
+time that takes (one alone: it keeps accelerating). Optionally one of those six
+to find, from a line or a time at which they are level.
+
+**What makes it general.** Any two on one road whose speed changes once:
+overtaking, catching up, a delayed start, a race to a line, finishing together.
+Not yet: a vehicle with three stages of its own all the way to B (the car in
+J13 brakes at the end; the meeting at 990 m comes before that, so it does not
+matter here) — the stages engine already takes those.

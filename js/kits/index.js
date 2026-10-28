@@ -2,5 +2,6 @@
 // See design/components.md for what a kit is and what each one plugs in.
 import { pair } from './pair.js';
 import { journey } from './journey.js';
+import { lanes } from './lanes.js';
 
-export const KITS = { pair, journey };
+export const KITS = { pair, journey, lanes };

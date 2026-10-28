@@ -12,6 +12,7 @@ import { yScale } from '../js/render/graphs.js';
 import { snap, rat } from '../js/core/numeric.js';
 import { timeLapse, lapseNote } from '../js/core/pace.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
+import { solveOvertake, overtakeWorking, mover, timeAt } from '../js/core/overtake.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -307,6 +308,49 @@ group('The audit after two scenarios: what it found, kept found', () => {
   ok(/takes 300 s, so it is shown 20 times faster/.test(lapseNote(75, 300, 20).text) && !/really lasts/.test(lapseNote(75, 300, 20).text), 'its sentence never says a train really lasts 15 s');
   const hud = KITS.journey.hud(e30().f, 100, { rate: 0.75 });
   ok(hud.right[1].v === '15×' && hud.left[0].k === 'Displacement from A' && hud.left[1].k === 'Velocity', 'the HUD says what actually plays, in the road’s words');
+});
+
+group('Two on one road: four papers, each against its mark scheme', () => {
+  const O = (k) => solveOvertake(k);
+  const ocr = O({ A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } });
+  const over = ocr.events.find((e) => e.kind === 'overtake');
+  ok(ocr.ok && near(ocr.A.a, -0.4) && over && over.ahead === 'B' && near(over.t, 45), 'OCR H240/03 J22 Q9: A decelerates at 0.4 m s⁻², and B overtakes at t = 45 s');
+  const j13 = O({ A: { a: 22 / 30, V: 22 }, B: { t0: 10 }, find: 'B.a', line: 990 });
+  ok(j13.ok && near(j13.found.value, 0.792) && near(j13.extras.find((x) => x.key === 'ownB').value, 50),
+     'Edexcel M1 J13 Q5(c, d): the motorbike takes 50 s, at a = 0.792 m s⁻² (99⁄125)');
+  const ial = O({ A: { a: 0.8, V: 4 }, B: { a: 1 }, find: 'B.tau', line: 100 });
+  ok(ial.ok && near(ial.extras.find((x) => x.key === 'tA').value, 27.5) && near(ial.found.value, 3.915047, 1e-5)
+     && near(ial.extras.find((x) => x.key === 'dv').value, 0.08495, 1e-4), 'Edexcel IAL WME01 J22 Q7: 27.5 s, T = 3.915, and the speeds differ by 0.085 m s⁻¹');
+  const as23 = O({ A: { V: 4, tau: 5 }, B: { a: 1 }, find: 'B.V', line: 100 });
+  ok(as23.ok && near(as23.A.a, 0.8) && as23.found.value.toFixed(2) === '3.92', 'Edexcel 8MA0/22 J23 Q1: Pat at 0.8 m s⁻², and X = 3.92');
+  const W = overtakeWorking(ial).map((st) => st.rows.map((r) => [strip(r.f), strip(r.s), strip(r.r)]));
+  ok(W[1][0][1] === '100=½tB×tB+tB(27.5−tB)' && W[1][0][2] === 'tB2−55tB+200=0', 'the race in the mark scheme’s own form: ½T × T + T(27.5 − T) = 100');
+  ok(/tB=51\.085 is longer than the 27\.5s there is/.test(strip(overtakeWorking(ial)[1].note)), 'the other root rejected, with the reason');
+  const Wo = overtakeWorking(ocr).map((st) => st.rows.map((r) => strip(r.r)).join(' | '));
+  ok(/sA=180\+8t \| sB=12t \| 4t−180=0 \| t=45s/.test(Wo[0]), 'the overtaking: 180 + 8t = 12t, so t = 45 s');
+});
+
+group('Two on one road: what cannot happen, and the edges', () => {
+  const O = (k) => solveOvertake(k);
+  ok(!O({ A: { u: 10, a: 1, V: 20, tau: 10 }, B: { u: 5 } }).ok, 'three of a, V and the time: refused, one too many');
+  ok(/where they are level/.test(O({ A: { u: 10 }, B: { a: 1 }, find: 'B.a' }).reason), 'to find a number, it asks where they are level');
+  ok(!O({ A: { u: 0 }, B: { u: 5 } }).ok, 'one that never moves is refused');
+  const ahead = O({ A: { u: 20 }, B: { u: 10 } });
+  ok(ahead.ok && /never level again: A stays ahead/.test(strip(ahead.notes.join(' '))), 'never level again: said so');
+  const late = O({ A: { u: 10 }, B: { t0: 5, a: 2 } });
+  const e = late.events.find((x) => x.kind === 'overtake');
+  ok(e && near(10 * e.t, (e.t - 5) ** 2), 'a late starter catches up where 10t = (t − 5)², exactly');
+  const head = O({ A: { u: 30, a: -2, V: 10 }, B: { u: 15, x0: -50 } });
+  ok(head.ok && near(head.events.find((x) => x.kind === 'overtake').t, 30), 'a head start (B 50 m behind) is counted');
+  const m = mover({ u: 3, a: 2, V: 7 }, 'A');
+  ok(near(m.tau, 2) && near(timeAt(m, 10), 2) && near(m.pos(4), 10 + 14), 'a mover: changes for 2 s to 7 m s⁻¹, then holds it');
+  const K = KITS.lanes;
+  const G = K.graphs(O({ A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } }).f, 10, { disp: 'd', vel: 'v', acc: 'a', second: 's', mark: 'm' });
+  ok(G.every((sp) => sp.series.every((x) => x.dash && x.tag && Array.isArray(x.breaks))), 'every line dashed, lettered and broken at its changes');
+  ok(G[0].points.length === 1 && near(G[0].points[0].t, 45), 'the overtaking ringed on the displacement graph');
+  ok(/<path/.test(K.thumb(byId('two-on-a-road'))), 'the card has a sketch from its own numbers');
+  const end = K.ending(O({ A: { a: 22 / 30, V: 22 }, B: { t0: 10 }, find: 'B.a', line: 990 }));
+  ok(/0\.792/.test(end.title) && (end.body.match(/acceleration is/g) || []).length === 0 && /ph-tab/.test(end.body), 'the ending: the number in the title, not said twice, and a row of five each');
 });
 
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }

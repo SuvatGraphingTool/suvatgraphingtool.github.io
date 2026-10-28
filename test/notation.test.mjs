@@ -30,6 +30,7 @@ import { solveRoad, roadWorking } from '../js/core/road.js';
 import { readBlueprint, solveBoard } from '../js/board/blueprint.js';
 import { solvePair, pairWorking } from '../js/core/pair.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
+import { solveOvertake, overtakeWorking } from '../js/core/overtake.js';
 import { KITS } from '../js/kits/index.js';
 import { LIBRARY } from '../js/library.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
@@ -374,6 +375,49 @@ group('The Past-paper library: a journey in three stages, everything it says', (
     for (const x of r.notes || []) { said++; check('note', x, bag); }
     if (r.reason) { said++; check('reason', r.reason, bag); }
     for (const st of journeyWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two on one road, everything it says', () => {
+  const K = KITS.lanes;
+  const INPUTS = [
+    { A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } },
+    { A: { a: 22 / 30, V: 22 }, B: { t0: 10 }, find: 'B.a', line: 990 },
+    { A: { a: 0.8, V: 4 }, B: { a: 1 }, find: 'B.tau', line: 100 },
+    { A: { V: 4, tau: 5 }, B: { a: 1 }, find: 'B.V', line: 100 },
+    { A: { u: 10 }, B: { t0: 5, a: 2 } },
+    { A: { u: 30, a: -2, V: 10 }, B: { u: 15, x0: -50 } },
+    { A: { u: 20 }, B: { u: 10 } },
+    { A: { u: 10 }, B: { u: 2, a: 0.5, t0: 3 }, find: 'B.V', line: 400 },
+    { A: { u: 10 }, B: { a: 1 }, find: 'B.a', at: 20 },
+    { A: { u: 10, a: 1, V: 20, tau: 10 }, B: { u: 5 } },
+    { A: { u: 10 }, B: { a: 1 }, find: 'B.a' },
+    { A: { u: 0 }, B: { u: 5 } },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveOvertake(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    for (const st of overtakeWorking(r)) {
       check('title', st.title, bag);
       for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
       if (st.note) check('note', st.note, bag);
