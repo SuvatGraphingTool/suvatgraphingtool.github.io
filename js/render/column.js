@@ -17,7 +17,7 @@
 //   · the gap between them as a solid displacement bracket, because closing
 //     that gap is the whole question;
 //   · a particle that has not set off yet is held where it starts, and says
-//     when it will be let go;
+//     when it sets off;
 //   · the meeting, once it has happened: a mark at the point and a line
 //     across at that height, with the time and the height the engine found.
 //
@@ -183,8 +183,9 @@ export function render(canvas, cam, o) {
     L.add(name, cx + side * lane('letter'), y, {
       color: P.ink, align: 'center', pri: 9, size: 17, weight: 700 });
     if (held && p.t0 > 1e-9) {
-      L.add(`let go at ${T`t = ${num(p.t0, 2, { trim: true })} [s]`}`, cx + side * lane('letter'), y - 24, {
-        color: P.muted, align: side < 0 ? 'right' : 'left', pri: 6, size: 14 });
+      // above it, on the line, clear of the bracket out to the side
+      L.add(`sets off at ${T`t = ${num(p.t0, 2, { trim: true })} [s]`}`, cx, y - 30, {
+        color: P.muted, align: 'center', pri: 6, size: 14 });
     }
   };
   draw(A, now.A, -1, null, 'A');
