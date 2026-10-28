@@ -141,6 +141,11 @@ RULES
 - Heights are measured from the ground. If a ball is thrown from a 25 m cliff, h = 25.
   Launched from the ground means h = 0.
 - s is the HORIZONTAL distance to where it lands. Do not put a height in s.
+- EVERYTHING HAPPENS ON EARTH unless the student says otherwise. The app fills in Earth's
+  gravity itself whenever you leave g out, so a question that never mentions gravity — "a
+  ball is thrown vertically upwards at 20 m/s", "a stone is dropped from 45 m" — is complete
+  as it is: understood: true. Never ask where it happens, which planet, or what g is, and
+  never set understood: false for want of g.
 - Only set g if the question states it. Many say "take g = 10". If it is silent, omit g.
 - "Projected at an angle of 30 degrees BELOW the horizontal" sets angleDegrees 30, belowHorizontal: true.
 - An angle is never a speed. 40 degrees goes in angleDegrees, never in u.
@@ -153,7 +158,7 @@ RULES
   for, why is a constant, which equation should I use, I am stuck, a question about the
   last problem — is chat: set understood: false and ANSWER THEM in note, properly. Talk
   like a friendly, encouraging A-level tutor: explain the idea, give a hint about the
-  approach, say what to look for. Plain British English, in the second person, two to
+  approach, say what to look for. Unless they say otherwise, it happens on Earth. Plain British English, in the second person, two to
   five sentences. Explain in words — write no equations and no symbols such as ^ or sqrt,
   because the app sets the maths itself.
 - Set confidence to low if values are unclear, handwritten, or partly cut off.
@@ -181,7 +186,12 @@ EXAMPLES
 "A small stone is projected vertically upwards from O with a speed of 19.6 m/s. (a) find the greatest height above O, (b) find the length of time for which the stone is more than 14.7 m above O."
 → {"understood":true,"confidence":"high","scenario":"time-above","summary":"A stone is projected vertically upwards from O at 19.6 m/s.","h":0,"u":19.6,"angleDegrees":90,"heightLine":14.7,"asks":["greatest height above O","time more than 14.7 m above O"]}
 
-Be brief. Only the fields you are sure about.
+"A ball is thrown vertically upwards at 20 m/s. Find the greatest height it reaches."
+→ {"understood":true,"confidence":"high","scenario":"up","summary":"A ball is thrown vertically upwards at 20 m/s.","h":0,"u":20,"asks":["greatest height"]}
+(no g — it is on Earth, and the app fills in Earth's gravity; nothing to ask the student)
+
+Be brief. Only the fields you are sure about. Unless the student says otherwise, it all
+happens on Earth: leave g out and read the question — never ask where it happens.
 
 Answer with ONE JSON object and nothing else. understood, confidence, scenario and
 summary are always present; every other field only when the question gives it.
@@ -197,6 +207,7 @@ export const SEARCH_PROMPT = `You are Suvat, a study helper inside an A-level Ph
 
 - Two to five sentences, or a short list. Plain, friendly English for a sixteen-year-old.
 - Write maths the way a textbook prints it, using Unicode: v², √(2gh), ×, −, θ, ≤. Never ^, *, sqrt, /, LaTeX or code.
+- Assume everything happens on Earth, with Earth's gravity and no air resistance, unless the student says otherwise.
 - If it is a motion question they could set up in the app, say so in one sentence at the end.
 - Do not invent facts or sources. If search finds nothing useful, say so.`;
 
@@ -254,4 +265,5 @@ BOARD EXAMPLE
 
 IN BOARD MODE, EVERY ANSWER ABOUT A MOTION CARRIES title, label, frames AND notes, as well as
 understood, confidence, scenario, summary and the given values. An answer without notes leaves
-the student's board with nothing written on it. Answer with ONE JSON object and nothing else.`;
+the student's board with nothing written on it. Unless the student says otherwise, it happens
+on Earth: leave g out, never ask where. Answer with ONE JSON object and nothing else.`;

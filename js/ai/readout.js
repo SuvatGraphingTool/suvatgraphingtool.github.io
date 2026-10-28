@@ -50,7 +50,7 @@ function fromHTML(it) {
   if (it.rise != null) return `from a greatest height of ${M`${num(it.rise, 2, { trim: true })} [m]`} above the launch`;
   if (it.vertical) return 'thrown straight up';
   if (it.k === 'line') return 'how long it spends above it';
-  if (it.how === 'assumed' && it.k === 'g') return 'the question does not say';
+  if (it.how === 'assumed' && it.k === 'g') return 'on Earth';
   if (it.how === 'assumed' && it.k === 'h') return 'it starts on the ground';
   return '';
 }
