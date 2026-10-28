@@ -127,6 +127,7 @@ const state = {
 
 const cam = scene.createCamera();
 let board = null;                // the whiteboard, made once the page is up — see the end of this file
+let shelfReturn = null;          // the library question last opened, for focus to come back to
 /* ── the window, for the scenarios that watch themselves in one ──────────
    A parachute drop is four views of one motion rather than one view with the
    graphs in a sidebar — see js/render/panes.js. The window keeps its own
@@ -1548,6 +1549,7 @@ function wireLineBoxes() {
     state.markers.heightLine = r.height;
     hb.value = fmt(r.height, 2);
     say(hint, false, `A line at ${fmt(r.height, 2)} m gives exactly that.`);
+    showAbove();                  // and the height box's own line follows it
     dirty = true;
   });
 
@@ -1774,6 +1776,11 @@ function go(step) {
   $('board-top').setAttribute('aria-pressed', String(step === 'board'));
   if (step === 'board') board?.show(); else board?.hide();
   $('options-btn').hidden = step !== 'flight';
+  if (step === 'scenario' && shelfReturn) {
+    // back on the shelf, on the question that was opened from it
+    document.querySelector(`.lib-open[data-q="${shelfReturn}"]`)?.focus({ preventScroll: true });
+    shelfReturn = null;
+  }
   refreshSteps();
   dirty = true;
   requestAnimationFrame(() => { dirty = true; });
@@ -3042,18 +3049,33 @@ function openQuestion(q) {
   }
   $('lib-from').innerHTML = questionHTML(q);
   $('lib-from').hidden = false;
+  paperSaid = boxesNow();
+  shelfReturn = q.id;
   $('screen-values').scrollTop = 0;
   $('values-h').focus({ preventScroll: true });
 }
-// Any edit on the values screen after a library question opened it is no
-// longer the paper's own numbers, and the card says so.
-const markEdited = (e) => {
-  if ($('lib-from').hidden || !e.target.closest('input, .chip')) return;
+// The paper's own numbers, as they were put in, so the card can tell when
+// the boxes no longer hold them — and stop saying so when they do again.
+// The line in Time above a line is left out: moving it is one of the things
+// these questions ask for, not a change to what the paper gave.
+let paperSaid = null;
+const boxesNow = () => JSON.stringify({ given: state.given, theta: state.theta ?? null,
+                                        h: state.h ?? null, mark: state.mark ?? null });
+function sayIfEdited() {
+  if (paperSaid == null || $('lib-from').hidden) return;
+  const changed = boxesNow() !== paperSaid;
   const note = $('lib-from').querySelector('.lib-from-edit');
-  if (note) note.hidden = false;
-};
-$('screen-values').addEventListener('input', markEdited);
-$('screen-values').addEventListener('click', markEdited);
+  if (note) note.hidden = !changed;
+  if (!scenario.road && !scenario.descent) {
+    document.querySelector('#screen-values .h-sub').textContent = changed
+      ? 'Started from the paper\u2019s numbers, and some of them are changed now.'
+      : 'The paper\u2019s numbers are in the boxes. Launch it, or change any of them and see what changes.';
+  }
+}
+// After the screen's own handlers have run, which is what the next tick is.
+for (const ev of ['input', 'change', 'click']) {
+  $('screen-values').addEventListener(ev, () => setTimeout(sayIfEdited, 0));
+}
 mountShelf({ host: $('lib-shelf'), search: $('lib-q'), count: $('lib-count'), sub: $('lib-sub'),
              open: openQuestion, nameOf: (id) => byId(id)?.name || '' });
 // The link to the library above the cards moves the student there and puts

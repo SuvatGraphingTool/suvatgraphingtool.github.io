@@ -9,7 +9,7 @@
 // it, this is where it shows.
 
 import { TOPICS, QUESTIONS, BOARDS } from '../js/library/questions.js';
-import { matches, shelve, sourceTag, haystack, EXAMPLES, queryWords } from '../js/library/shelf.js';
+import { matches, shelve, sourceTag, haystack, EXAMPLES, queryWords, PLACEHOLDER_SHORT } from '../js/library/shelf.js';
 import { SCENARIOS, byId } from '../js/scenarios.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { solveRoad } from '../js/core/road.js';
@@ -108,7 +108,17 @@ group('Search', () => {
     for (const w of b.alias.split(' ')) ok(haystack(q, nameOf).includes(w), `${b.id} is found by "${w}"`);
   }
   ok(/· Q/.test(sourceTag(any.source)), 'the tag reads board, paper, session and question');
+  const first = (w) => shelve(w, nameOf).flatMap((t) => t.items)[0];
   for (const ex of EXAMPLES) ok(QUESTIONS.some((q) => matches(q, ex, nameOf)), `the box's own example "${ex}" finds something`);
+  ok(/cliff/.test(first('cliff')?.says), 'cliff puts the cliff question first');
+  ok(QUESTIONS.filter((q) => matches(q, 'lorry', nameOf)).length === 1, 'lorry finds the lorry, not every vehicle');
+  ok(QUESTIONS.filter((q) => matches(q, 'IAL', nameOf)).every((q) => /IAL/.test(q.source.paper)), 'IAL finds only IAL papers');
+  ok(matches(QUESTIONS.find((q) => q.id === 'aqa-mm1b-2012-06-q3'), 'stop', nameOf), 'stop finds the braking car, by what it does not answer too');
+  ok(QUESTIONS.some((q) => matches(q, '9MA0/32', nameOf)) && QUESTIONS.some((q) => matches(q, '8MA0/22', nameOf)), 'a paper as its cover prints it');
+  ok(QUESTIONS.some((q) => matches(q, '04.3', nameOf)), "and a question number as AQA prints it");
+  ok(['m s-1', 'm s⁻¹', 'ms-1', 'm/s'].every((w) => queryWords(w).length === 0), 'a unit, however it is typed, is not a word');
+  ok(['θ', '−', '-', '.', 'é'].every((w) => queryWords(w).length === 0), 'nor is a stray symbol');
+  ok(PLACEHOLDER_SHORT.length <= 24, 'the phone placeholder fits a phone');
   const count = (w) => QUESTIONS.filter((q) => matches(q, w, nameOf)).length;
   ok(count('vertical') > 0 && count('vertically') > 0, 'vertical and vertically both find the up-and-down shelf');
   ok(count('midpoint') > 0 && count('mid-point') === count('midpoint'), 'midpoint, with or without its hyphen');

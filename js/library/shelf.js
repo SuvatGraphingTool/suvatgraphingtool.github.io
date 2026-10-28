@@ -15,6 +15,8 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 /** The examples the search box offers. The test checks each one finds something. */
 export const EXAMPLES = ['Edexcel 2023', 'cliff', 'lorry'];
 export const PLACEHOLDER = `Board, year, or what happens: ${EXAMPLES.join(', ')}`;
+/** On a phone the box is too narrow for examples; the line keeps to what fits. */
+export const PLACEHOLDER_SHORT = 'Board, year or topic';
 
 /** How many of a shelf's questions show before "Show all". */
 export const SHELF_OPEN = 4;
@@ -44,45 +46,71 @@ export function boardsSaid() {
    Words, not substrings. A year or a question number has to match whole —
    "2019" is not in "20190", and "q1" is not Q12 — and anything else matches
    the start of a word, so "vert" finds "vertically" and "brak" finds
-   "braking". Each shelf carries the words students search for that its
-   questions might not happen to use. Units are not words worth matching:
-   "m/s" and "ms-1" are dropped from what was typed. */
+   "braking". A question is found by its own words first: its paper, as the
+   cover prints it (9MA0/32), its session, what happens and what it asks.
+   Its shelf adds a few words for the topic as a whole (vertical, range,
+   braking), and a match only on those ranks below a match in the question
+   itself. Units are not words worth matching, so "m s⁻¹", "m/s" and
+   "ms-1" are taken out of what was typed. */
 const ALIAS = Object.fromEntries(BOARDS.map((b) => [b.id, b.alias]));
-const UNITS = new Set(['m', 's', 'ms', 'm/s', 'm/s2', 'ms-1', 'ms-2', 'mph', 'kmh']);
+const UNIT_RE = /\bm\s*\/\s*s\s*[2²]?|\bm\s*s\s*(?:[-−⁻]\s*[12¹²])?(?![a-z0-9])|\bms\s*[-−⁻]?\s*[12¹²]\b|\bmph\b|\bkm\s*\/?\s*h\b/gi;
 const words = (text) => String(text).toLowerCase()
-  .replace(/[−–—]/g, '-')
+  .replace(/[\u2212\u2013\u2014]/g, '-')
   .replace(/([a-z])-([a-z])/g, '$1$2')                 // mid-point is midpoint
   .split(/[^a-z0-9.]+/).map((w) => w.replace(/^\.+|\.+$/g, '')).filter(Boolean);
 const whole = (w) => /^\d+(\.\d+)?$/.test(w) || /^q\d+(\.\d+)?$/.test(w);
 
-/** Every word a question can be found by. */
-export function haystack(q, nameOf = () => '') {
-  const t = TOPICS.find((x) => x.id === q.topic);
-  const n = String(q.source.q);
+/** The question's own words: its paper, its session, what happens, what it asks. */
+function ownWords(q, nameOf) {
+  const n = String(q.source.q), p = q.source.printed;
   return words([
-    q.source.board, ALIAS[q.source.boardId] || '', q.source.paper, q.source.subject || '', q.source.session,
-    `q${n}`, `q${n.split('.')[0]}`, q.says, q.asks || '',
-    t ? `${t.label} ${(t.words || []).join(' ')}` : '', nameOf(q.opens),
+    q.source.board, ALIAS[q.source.boardId] || '', q.source.paper, q.source.code || '', q.source.subject || '',
+    q.source.session, `q${n}`, `q${n.split('.')[0]}`, p ? `${p} q${p}` : '',
+    q.says, q.asks || '', q.beyond || '', nameOf(q.opens),
   ].join(' '));
 }
+const topicWords = (q) => {
+  const t = TOPICS.find((x) => x.id === q.topic);
+  return t ? words(`${t.label} ${(t.words || []).join(' ')}`) : [];
+};
 
-/** What was typed, as the words to look for. "question 6" is q6. */
+/** Every word a question can be found by. */
+export function haystack(q, nameOf = () => '') {
+  return [...ownWords(q, nameOf), ...topicWords(q)];
+}
+
+/** What was typed, as the words to look for. "question 6" is q6; units go. */
 export function queryWords(query) {
-  const raw = String(query || '').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1');
-  return raw.split(/\s+/).filter((w) => w && !UNITS.has(w)).flatMap(words).filter((w) => !UNITS.has(w));
+  const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1');
+  return words(raw);
 }
 
-/** Does a question match what was typed? Every word has to be in it, in any order. */
-export function matches(q, query, nameOf) {
+const hit = (list, w) => (whole(w) ? list.includes(w) : list.some((h) => h.startsWith(w)));
+
+/**
+ * How well a question matches what was typed: 0 for not at all; otherwise
+ * higher the more of the words are in the question itself rather than only
+ * in its shelf's topic words. Every word has to be somewhere.
+ */
+export function score(q, query, nameOf = () => '') {
   const want = queryWords(query);
-  if (!want.length) return true;
-  const hay = haystack(q, nameOf);
-  return want.every((w) => (whole(w) ? hay.includes(w) : hay.some((h) => h.startsWith(w))));
+  if (!want.length) return 1;
+  const own = ownWords(q, nameOf), topic = topicWords(q);
+  let n = 1;
+  for (const w of want) {
+    if (hit(own, w)) n += 2;
+    else if (hit(topic, w)) n += 1;
+    else return 0;
+  }
+  return n;
 }
+export const matches = (q, query, nameOf) => score(q, query, nameOf) > 0;
 
-/** The topics with at least one question left in them, in the shelf's order. */
+/** The topics with at least one question left in them, best matches first. */
 export function shelve(query, nameOf) {
-  return TOPICS.map((t) => ({ ...t, items: QUESTIONS.filter((q) => q.topic === t.id && matches(q, query, nameOf)) }))
+  return TOPICS.map((t) => ({ ...t, items: QUESTIONS
+    .map((q, i) => ({ q, i, n: q.topic === t.id ? score(q, query, nameOf) : 0 }))
+    .filter((x) => x.n > 0).sort((a, b) => b.n - a.n || a.i - b.i).map((x) => x.q) }))
     .filter((t) => t.items.length);
 }
 
@@ -96,7 +124,10 @@ export function shelve(query, nameOf) {
 export function mountShelf({ host, search, count, sub, open, nameOf }) {
   const total = QUESTIONS.length;
   const opened = new Set();               // shelves showing all their questions
-  search.placeholder = PLACEHOLDER;
+  const narrow = typeof matchMedia === 'function' ? matchMedia('(max-width: 760px)') : null;
+  const fit = () => { search.placeholder = narrow?.matches ? PLACEHOLDER_SHORT : PLACEHOLDER; };
+  fit();
+  narrow?.addEventListener?.('change', fit);
   if (sub) {
     sub.textContent = `Real questions from ${boardsSaid()} A-level papers, described in our own words. `
       + 'Press one and its scenario opens with the paper’s numbers already in the boxes.';
@@ -114,20 +145,23 @@ export function mountShelf({ host, search, count, sub, open, nameOf }) {
     </li>`;
   };
   const paint = () => {
-    const query = search.value.trim();
+    // Typing that holds no word at all (a stray symbol) filters nothing.
+    const query = queryWords(search.value).length ? search.value.trim() : '';
     const topics = shelve(query, nameOf);
     const shown = topics.reduce((n, t) => n + t.items.length, 0);
     count.textContent = query ? `${shown} of ${total}` : `${total} ${total === 1 ? 'question' : 'questions'}`;
     const said = query.length > 40 ? `${query.slice(0, 40)}…` : query;
     host.innerHTML = topics.length ? topics.map((t) => {
       // While searching, every match shows; otherwise a long shelf opens on its first few.
-      const all = !!query || opened.has(t.id) || t.items.length <= SHELF_OPEN + 1;
+      const long = !query && t.items.length > SHELF_OPEN + 1;
+      const all = !long || opened.has(t.id);
       const items = all ? t.items : t.items.slice(0, SHELF_OPEN);
       return `<div class="pgroup lib-group">
         <div class="pglabel">${esc(t.label)}</div>
         ${t.blurb ? `<p class="pgblurb">${esc(t.blurb)}</p>` : ''}
         <ul class="lib-list" id="lib-list-${esc(t.id)}">${items.map(row).join('')}</ul>
-        ${all ? '' : `<button type="button" class="linkish lib-more" data-t="${esc(t.id)}" aria-controls="lib-list-${esc(t.id)}">Show all ${t.items.length}</button>`}
+        ${long ? `<button type="button" class="linkish lib-more" data-t="${esc(t.id)}" aria-controls="lib-list-${esc(t.id)}"
+            aria-expanded="${all}">${all ? 'Show fewer' : `Show all ${t.items.length}`}</button>` : ''}
       </div>`;
     }).join('')
       : `<p class="lib-none">Nothing on the shelves matches “${esc(said)}”. Try a board, a year, or what moves in the question.</p>`;
@@ -135,11 +169,13 @@ export function mountShelf({ host, search, count, sub, open, nameOf }) {
   host.addEventListener('click', (e) => {
     const more = e.target.closest('.lib-more');
     if (more) {
-      const t = more.dataset.t;
-      opened.add(t);
+      const t = more.dataset.t, opening = !opened.has(t);
+      if (opening) opened.add(t); else opened.delete(t);
       paint();
-      // keep the student where they were: on the first question that just appeared
-      host.querySelector(`#lib-list-${t} .lib-q:nth-child(${SHELF_OPEN + 1}) .lib-open`)?.focus();
+      // keep the student where they were: on the first question that just
+      // appeared, or back on the button when the shelf closes again
+      (opening ? host.querySelector(`#lib-list-${t} .lib-q:nth-child(${SHELF_OPEN + 1}) .lib-open`)
+               : host.querySelector(`.lib-more[data-t="${t}"]`))?.focus();
       return;
     }
     const b = e.target.closest('.lib-open');

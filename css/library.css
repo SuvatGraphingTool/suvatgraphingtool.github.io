@@ -82,5 +82,6 @@
   .lib-to { grid-area: to; }
   .lib-paper { min-height: 44px; justify-content: flex-start; border-left: none; border-top: 1px solid var(--border-soft); margin: 0 var(--sp-4); }
   .lib-count { min-width: 0; }
-  .lib-search input { font-size: var(--fs-sm); }
+  /* what it asks is on the values screen's card; the row keeps to what happens */
+  .lib-asks { display: none; }
 }
