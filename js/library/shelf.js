@@ -186,7 +186,9 @@ export function found(query, nameOf = () => '') {
   const all = QUESTIONS.map((q, i) => ({ q, i }));
   const as = meansAS(query);
   if (!want.length && !as) return all;
-  const filters = want.filter(isFilter).concat(as ? ['as'] : []), free = want.filter((w) => !isFilter(w));
+  // the word that made it AS (level, paper) has done its job and is not searched for again
+  const filters = want.filter(isFilter).concat(as ? ['as'] : []);
+  const free = want.filter((w) => !isFilter(w) && !(as && /^(levels?|papers?)$/.test(w)));
   // "as" is also an ordinary word ("takes g as 10"), so as a filter it is
   // asked of the qualification alone
   const holds = (q, own, w) => (w === 'as' ? words(qualification(q.source)).includes('as') : hit(own, w));

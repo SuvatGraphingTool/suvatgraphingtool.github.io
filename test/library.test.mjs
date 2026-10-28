@@ -180,6 +180,7 @@ group('Search', () => {
   }
   ok(count('A levels') === count('A-level') && QUESTIONS.filter((q) => matches(q, 'as levels', nameOf)).every((q) => /^8MA0/.test(q.source.code)), 'A levels and AS levels, plural');
   ok(QUESTIONS.filter((q) => matches(q, 'PROJECTED AS A PARTICLE', nameOf)).some((q) => q.source.boardId === 'cie'), 'capitals mid-sentence are not the AS filter');
+  ok(['AS levels', 'AS papers'].every((w) => shelve(w, nameOf).unmet.length === 0), 'the word that made it AS is not reported as left out');
   ok(QUESTIONS.filter((q) => matches(q, 'jan 12', nameOf)).every((q) => q.source.session === 'January 2012'), 'jan 12 is January 2012');
   ok(count('m19') === 0, 'm19 is Cambridge\u2019s February and March, which is not on the shelves');
   ok(shelve('aqa lorry', nameOf).filtered && shelve('zzqq lorry', nameOf).filtered === false, 'the left-out line knows whether a filter narrowed the shelf');
