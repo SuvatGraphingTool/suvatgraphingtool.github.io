@@ -1817,7 +1817,10 @@ function closePace() { $('pace').hidden = true; }
  */
 function syncRate() {
   const value = Math.round(state.rate * 100);
-  const shown = `${num(state.rate, 2)}×`;
+  // A time-lapse kit plays its motion at a multiple of real time; the
+  // setting shown is what actually happens, so 0.75× of a 20× lapse is 15×.
+  const lapse = kit()?.lapse?.(traj) ?? 1;
+  const shown = lapse > 1 ? `${num(state.rate * lapse, 1, { trim: true })}× real time` : `${num(state.rate, 2)}×`;
   $('pace-rate').value = String(value);
   $('pace-val').textContent = shown;
   // Not while it is being dragged: writing to a slider under the thumb is how
@@ -1827,7 +1830,7 @@ function syncRate() {
   $('bar-rate-val').textContent = shown;
 
   // what the student watches, which a time-lapse kit shortens
-  const tMax = traj?.tMax / (kit()?.lapse?.(traj) ?? 1);
+  const tMax = traj?.tMax / lapse;
   const note = $('pace-note'), use = $('pace-use');
   const pins = [$('pace-pin'), $('bar-rate-pin')];
   if (!(tMax > 0)) {
@@ -1839,7 +1842,9 @@ function syncRate() {
 
   const best = recommend(tMax);
   const r = paceNote(value, tMax);
-  note.textContent = r.text;
+  note.textContent = lapse > 1
+    ? `A time-lapse: this journey takes ${num(traj.tMax, 0)} s, so it is shown ${num(lapse, 0)} times faster than real time, and the slider slows that down. ${r.text}`
+    : r.text;
   note.dataset.ok = String(r.ok);
   use.hidden = r.ok;
   // The bar has no room for the sentence, so it says the same verdict the

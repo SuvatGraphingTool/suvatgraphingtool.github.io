@@ -60,10 +60,11 @@ export const journey = {
      seconds, and the stage says so beside the clock. Nothing in the physics
      changes: t is still the journey's own time. */
   lapse(f) {
+    // the smallest of 1, 2, 5, 10, 20… that gets it inside fifteen seconds
     const want = f.tMax / 15;
     if (!(want > 1)) return 1;
     const mag = 10 ** Math.floor(Math.log10(want)), n = want / mag;
-    return (n >= 5 ? 5 : n >= 2 ? 2 : 1) * mag;
+    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
   },
 
   read(vals) {
@@ -163,12 +164,12 @@ export const journey = {
         <p class="ph-units">The direction of travel is positive, so braking is a negative ${M`a`}. ${M`u`} and ${M`v`} in
           ${M`[m s^-1]`}, ${M`a`} in ${M`[m s^-2]`}, ${M`s`} in ${M`[m]`}, ${M`t`} in ${M`[s]`}, each stage timed from its own start.</p>
       </div>`;
-    const found = unknown ? `<p>The one unknown was ${M`${unknown === 'V' ? 'V' : `${unknown[0]}_${unknown[1]}`}`}: every stage
-      was written in terms of it, and ${solved.fixedBy} fixed it at
+    const found = unknown ? `<p>The one unknown was ${M`${unknown === 'V' ? 'V' : `${unknown[0]}_${unknown[1]}`}`}${solved.dependsOn
+      ? ': every stage that depended on it was written in terms of it, and' : '. Every time followed from what was given, and'} ${solved.fixedBy} fixed it at
       <b>${M`${tr(solved.x)} ${unknown === 'V' ? '[m s^-1]' : '[s]'}`}</b>.</p>` : '';
     const asked = answers.filter((a) => a.ok).map((a) => `<p>${a.text}</p>`).join('');
     return {
-      eyebrow: `From A to B in ${tr(J.T)} s`,
+      eyebrow: `From A to B in ${tr(J.T)} seconds`,
       title: `${tr(J.D)} m, at up to ${tr(J.V)} m s⁻¹.`,
       body: `${found}${asked}${table}`,
       real: true,

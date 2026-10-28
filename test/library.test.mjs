@@ -265,6 +265,11 @@ group('A journey: what critic round 1 found, kept found', () => {
   const G = KITS.journey.graphs(e30().f, 100, { disp: 'd', vel: 'v', acc: 'a', mark: 'm' });
   ok(G[2].series[0].breaks.length === 2, 'the acceleration graph is broken at each change: no vertical lines');
   ok(KITS.journey.lapse(e30().f) === 20 && KITS.journey.lapse({ tMax: 8 }) === 1, 'five minutes plays as a 20× time-lapse; a short one in real time');
+  ok(KITS.journey.lapse({ tMax: 700 }) === 50 && KITS.journey.lapse({ tMax: 270 }) === 20, 'every journey inside about fifteen seconds of watching');
+  const ial = J({ t1: 60, t3: 30, T: 270, D: 4500 });
+  ok(!ial.dependsOn && /Every time followed from what was given/.test(strip(KITS.journey.ending(ial).body))
+     && /Every time follows from what is given/.test(strip(journeyWorking(ial)[0].note)), 'when no time depends on the unknown, neither the working nor the ending says it did');
+  ok(/which is the whole distance, fixed it/.test(strip(KITS.journey.ending(e30()).body)), 'the ending\u2019s sentence about the area is whole');
   const hud = KITS.journey.hud(e30().f, 300);
   ok(/rest/.test(hud.left[2].k) && hud.right.some((b) => b.v === '20×'), 'at B it says at rest, and the clock says it is a time-lapse');
 });

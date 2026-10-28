@@ -173,7 +173,11 @@ export function render(canvas, cam, o) {
     if (Math.abs(a) > 1e-9) {
       const len = Math.sign(a) * 44;
       arrow(g, xs - trainPx / 2 - len / 2, ay, xs - trainPx / 2 + len / 2, ay, { color: P.acc, width: 2.6, head: 10 });
-      L.add(T`${a > 0 ? 'a_1' : 'a_3'} = ${tr(Math.abs(a), 4)} [m s^-2]`, xs - trainPx / 2, ay - 18, { color: P.acc, align: 'center', pri: 5, size: 14 });
+      // beside its arrow, on the side away from the head, and never pushed
+      // up into the graph above
+      const right = a < 0;
+      L.add(T`${a > 0 ? 'a_1' : 'a_3'} = ${tr(Math.abs(a), 4)} [m s^-2]`, xs - trainPx / 2 + (right ? 1 : -1) * (Math.abs(len) / 2 + 10), ay,
+        { color: P.acc, align: right ? 'left' : 'right', pri: 5, size: 14, maxPush: 0 });
     } else {
       L.add('no acceleration: steady speed', xs - trainPx / 2, ay, { color: P.acc, align: 'center', pri: 5, size: 14 });
     }

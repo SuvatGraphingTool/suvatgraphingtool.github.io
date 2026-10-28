@@ -307,8 +307,10 @@ export function solveJourney(k = {}) {
   return {
     ok: true, mode: 'journey', axis: 'along', J, given, unknown, x, rejected, rows, steps, rel, f, answers,
     lin: { V, T: Tf, t1: t.t1, t2: t.t2, t3: t.t3 },
+    // whether any stage's time had to be written in terms of the unknown
+    dependsOn: ['t1', 't2', 't3'].some((q) => !isConst(t[q])),
     // what fixed the unknown, said in words, for the ending
-    fixedBy: steps[0] ? { D: 'the area under the speed–time graph — the whole distance', T: 'the whole time',
+    fixedBy: steps[0] ? { D: 'the area under the speed–time graph, which is the whole distance,', T: 'the whole time',
                           rel: 'the relation between the two stages', a1: 'the acceleration', a3: 'the deceleration' }[steps[0].solver.key] : null,
     params: { V: J.V, T: J.T, D: J.D }, notes, derived, Dgiven: have(k.D) ? k.D : J.D,
     convention: 'From rest at A to rest at B, the direction of travel positive.',
@@ -422,7 +424,7 @@ export function journeyWorking(solved) {
     out.push({
       title: unknown ? `Each stage in terms of ${unknown === 'V' ? 'V' : 'the unknown'}` : 'Each stage from what is given',
       rows,
-      note: unknown && Object.values(solved.lin).some((f) => !isConst(f))
+      note: unknown && solved.dependsOn
         ? `${M`${S(unknown)}`} is the one quantity not given, so every time that depends on it is written in terms of it, and one equation is left to find it.`
         : unknown ? `Every time follows from what is given; ${M`${S(unknown)}`} is what is left to find.`
         : 'A time from each rate: the time to reach the top speed is the speed divided by the rate.',
