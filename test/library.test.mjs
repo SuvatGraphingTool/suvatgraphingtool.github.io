@@ -9,7 +9,7 @@
 // it, this is where it shows.
 
 import { TOPICS, QUESTIONS, BOARDS } from '../js/library/questions.js';
-import { matches, shelve, found, sourceTag, haystack, EXAMPLES, queryWords, PLACEHOLDER_SHORT } from '../js/library/shelf.js';
+import { matches, shelve, found, searching, sourceTag, haystack, EXAMPLES, queryWords, PLACEHOLDER_SHORT } from '../js/library/shelf.js';
 import { SCENARIOS, byId } from '../js/scenarios.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { solveRoad } from '../js/core/road.js';
@@ -174,6 +174,12 @@ group('Search', () => {
   ok(g10.includes('ocr') && g10.includes('cie'), 'g as 10 is not a search for AS papers');
   ok(['AS', 'as level', 'AS maths'].every((w) => QUESTIONS.filter((q) => matches(q, w, nameOf)).every((q) => /^8MA0/.test(q.source.code))), 'AS, as level, AS maths are');
   ok(count('A level') === count('A-level'), 'A level and A-level are one word');
+  // the screen asks searching() before it searches, so the test goes the same way
+  for (const w of ['AS', 'as']) {
+    ok(searching(w) && shelve(w, nameOf).flatMap((t) => t.items).every((q) => /^8MA0/.test(q.source.code)), `"${w}" on its own is a search, and finds the AS papers`);
+  }
+  ok(count('A levels') === count('A-level') && QUESTIONS.filter((q) => matches(q, 'as levels', nameOf)).every((q) => /^8MA0/.test(q.source.code)), 'A levels and AS levels, plural');
+  ok(QUESTIONS.filter((q) => matches(q, 'PROJECTED AS A PARTICLE', nameOf)).some((q) => q.source.boardId === 'cie'), 'capitals mid-sentence are not the AS filter');
   ok(QUESTIONS.filter((q) => matches(q, 'jan 12', nameOf)).every((q) => q.source.session === 'January 2012'), 'jan 12 is January 2012');
   ok(count('m19') === 0, 'm19 is Cambridge\u2019s February and March, which is not on the shelves');
   ok(shelve('aqa lorry', nameOf).filtered && shelve('zzqq lorry', nameOf).filtered === false, 'the left-out line knows whether a filter narrowed the shelf');

@@ -75,7 +75,7 @@ const STOP = new Set(['a', 'an', 'as', 'the', 'of', 'to', 'in', 'on', 'at', 'fro
 export function queryWords(query) {
   const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1')
     // A level is one word however it is typed; a month's two-digit year is its year
-    .replace(/\ba[\s-]+level\b/g, 'alevel')
+    .replace(/\ba[\s-]+levels?\b/g, 'alevel')
     .replace(/\b(jan|january|may|june|jun|oct|october|nov|november)\s+(\d\d)\b/g, '$1 20$2')
     // a fraction is a value, not two words: 3 4/7 and 5/13 are not searched for
     // (small ones only: 7357/2 and 9709/41 are papers, and they stay)
@@ -142,8 +142,18 @@ const isFilter = (w) => BOARD_WORDS.has(w) || MONTHS.has(w) || /^(19|20)\d\d$/.t
 /* "as" is the qualification only when it is plainly meant as one — typed
    as AS, or as AS level, AS paper or AS maths, or on its own. Anywhere else
    ("modelled as a particle", "g as 10") it is an ordinary word. */
-const meansAS = (query) => /(^|[^A-Za-z])AS([^A-Za-z]|$)/.test(String(query))
-  || /\bas[\s-]*(level|paper|maths|mathematics)\b/i.test(String(query)) || /^\s*as\s*$/i.test(String(query));
+function meansAS(query) {
+  const q = String(query || '');
+  if (/^\s*as\s*$/i.test(q) || /\bas[\s-]*(levels?|papers?|maths|mathematics)\b/i.test(q)) return true;
+  // capitals alone are not enough ("PROJECTED AS A PARTICLE"): AS has to
+  // open or close what was typed, or stand beside a year
+  const t = q.trim().split(/\s+/);
+  return t.some((w, i) => w === 'AS' && (i === 0 || i === t.length - 1
+    || /^(19|20)\d\d$/.test(t[i + 1] || '') || /^(19|20)\d\d$/.test(t[i - 1] || '')));
+}
+
+/** Is what was typed a search at all? (An AS on its own is, though it is no word.) */
+export const searching = (query) => queryWords(query).length > 0 || meansAS(query);
 
 /** A question's own words in order, for telling "time above" from "above … time". */
 const ownSeq = (q, nameOf) => words(`${q.says} ${q.asks || ''} ${q.terms || ''} ${nameOf(q.opens)}`);
@@ -202,7 +212,7 @@ export function shelve(query, nameOf) {
   // in course order normally; while searching, the shelf with the best match first
   const shelves = TOPICS.map((t) => ({ ...t, items: hits.filter((x) => x.q.topic === t.id).map((x) => x.q) }))
     .filter((t) => t.items.length)
-    .sort((a, b) => (queryWords(query).length ? at(a) - at(b) : 0));
+    .sort((a, b) => (searching(query) ? at(a) - at(b) : 0));
   shelves.unmet = hits.unmet || [];
   shelves.filtered = !!hits.filtered;
   return shelves;
@@ -240,7 +250,7 @@ export function mountShelf({ host, search, count, sub, open, nameOf }) {
   };
   const paint = () => {
     // Typing that holds no word at all (a stray symbol) filters nothing.
-    const query = queryWords(search.value).length ? search.value.trim() : '';
+    const query = searching(search.value) ? search.value.trim() : '';
     const topics = shelve(query, nameOf);
     const shown = topics.reduce((n, t) => n + t.items.length, 0);
     count.textContent = query ? `${shown} of ${total}` : `${total} ${total === 1 ? 'question' : 'questions'}`;
