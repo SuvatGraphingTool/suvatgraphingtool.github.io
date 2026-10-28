@@ -8,7 +8,7 @@ import { SCENARIOS, byId } from '../js/scenarios.js';
 import { KITS } from '../js/kits/index.js';
 import { staged, meetings, quadRoots } from '../js/core/stages.js';
 import { solvePair, pairWorking, poly, ratio } from '../js/core/pair.js';
-import { yScale } from '../js/render/graphs.js';
+import { yScale, tagSpots } from '../js/render/graphs.js';
 import { snap, rat } from '../js/core/numeric.js';
 import { timeLapse, lapseNote } from '../js/core/pace.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
@@ -427,6 +427,29 @@ group('Moving in a plane: edges, and the notation for vectors', () => {
   ok(/<path/.test(K.thumb(byId('vectors-ij'))), 'the card has a sketch from its own numbers');
   const e = K.ending(Pl({ r0: { x: 13.6, y: 0 }, u: { x: 6, y: 2.4 }, a: { x: -0.8, y: 0.1 }, at: { moving: 'NW' } }));
   ok(/north-west at 12/.test(e.title), 'the ending names what it found');
+});
+
+group('Every lettered line on every library graph gets its letter', () => {
+  const P = { disp: 'd', vel: 'v', acc: 'a', second: 's', mark: 'm' };
+  const cases = [
+    ['pair-vertical', KITS.pair, solvePair(byId('pair-vertical').params)],
+    ['N19', KITS.pair, solvePair({ A: { h: 0, u: 20 }, B: { h: 40, u: 0, t0: 1 }, g: 10 })],
+    ['two-on-a-road', KITS.lanes, solveOvertake(byId('two-on-a-road').params)],
+    ['IAL race', KITS.lanes, solveOvertake({ A: { a: 0.8, V: 4 }, B: { a: 1 }, find: 'B.tau', line: 100 })],
+    ['vectors-ij', KITS.plane, solvePlane(byId('vectors-ij').params)],
+    ['AQA J12', KITS.plane, solvePlane({ u: { x: -1, y: 3 }, a: { x: 0.1, y: -0.2 }, at: { due: 'E', moving: 'SE' } })],
+    ['AQA Jan13', KITS.plane, solvePlane({ r0: { x: 13.6, y: 0 }, u: { x: 6, y: 2.4 }, a: { x: -0.8, y: 0.1 }, at: { moving: 'NW' } })],
+  ];
+  for (const [name, K, r] of cases) {
+    for (const sp of K.graphs(r.f, 0, P)) {
+      // the app's graph size: 294 × 183
+      const { lo, hi } = yScale(sp.series, sp.tMax);
+      const X = (t) => 52 + (t / sp.tMax) * (294 - 68), Y = (v) => 28 + 121 - ((v - lo) / (hi - lo)) * 121;
+      const spots = tagSpots(sp.series, sp.tMax, X, Y, 44, 139);
+      const want = sp.series.filter((x) => x.tag).length;
+      ok(spots.length === want && spots.every((q) => isFinite(q.x) && isFinite(q.y)), `${name}, ${sp.title}: ${want} letters, every one placed`);
+    }
+  }
 });
 
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }

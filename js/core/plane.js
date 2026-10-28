@@ -82,13 +82,16 @@ export function planeMotion({ r0, u, a }, tMax) {
 
 /** c0 + c1 t as the i or j part of a vector: (1 + t)i, 2j, −3j — a
     bracket only when there are two terms to hold together. */
-function vecSum([ax, bx], [ay, by]) {
-  const one = ([c0, c1], e) => {
-    if (tiny(c1)) return tiny(c0) ? null : { neg: c0 < 0, body: `${Math.abs(Math.abs(c0) - 1) < EPS ? '' : d(Math.abs(c0))}vec(${e})` };
-    if (tiny(c0)) return { neg: c1 < 0, body: `${Math.abs(Math.abs(c1) - 1) < EPS ? '' : d(Math.abs(c1))}t vec(${e})` };
-    return { neg: false, body: `(${poly([c0, c1, 0])})vec(${e})` };
+function vecSum(cx, cy) {
+  const one = (cs, e) => {
+    const c = [...cs, 0, 0].slice(0, 3);
+    const n = c.filter((x) => !tiny(x)).length;
+    if (!n) return null;
+    if (n > 1) return { neg: false, body: `(${poly(c)}) vec(${e})` };
+    const src = poly(c), neg = src.startsWith('-'), body = neg ? src.slice(1) : src;
+    return { neg, body: `${body === '1' ? '' : body} vec(${e})` };
   };
-  const parts = [one([ax, bx], 'i'), one([ay, by], 'j')].filter(Boolean);
+  const parts = [one(cx, 'i'), one(cy, 'j')].filter(Boolean);
   if (!parts.length) return '0';
   return parts.map((q, i) => (i === 0 ? `${q.neg ? '-' : ''}${q.body}` : `${q.neg ? '-' : '+'} ${q.body}`)).join(' ');
 }
@@ -143,7 +146,9 @@ function moving(P, D, key) {
   const dot = positiveFrom(P.u.x * D.x + P.u.y * D.y, P.a.x * D.x + P.a.y * D.y);
   const word = D.word, base = { kind: 'moving', key, D };
   const vx = poly([P.u.x, P.a.x, 0]), vy = poly([P.u.y, P.a.y, 0]);
-  const rel = D.src && D.x !== 0 && D.y !== 0 ? { f: M`${times(D.y, 'v_x')} = ${times(D.x, 'v_y')}`, s: M`${times(D.y, `(${vx})`)} = ${times(D.x, `(${vy})`)}`, why: `${word}, its two components are in the same ratio as that vector\u2019s` }
+  // −2vₓ = −v_y is 2vₓ = v_y: both sides' signs taken off together
+  const [py, px] = D.x < 0 && D.y < 0 ? [-D.y, -D.x] : [D.y, D.x];
+  const rel = D.src && D.x !== 0 && D.y !== 0 ? { f: M`${times(py, 'v_x')} = ${times(px, 'v_y')}`, s: M`${times(py, `(${vx})`)} = ${times(px, `(${vy})`)}`, why: `${word}, its two components are in the same ratio as that vector\u2019s` }
     : D.x === 0 ? { f: M`v_x = 0`, s: M`${vx} = 0`, why: D.src ? `${word}, it has no ${M`vec i`} component` : `due ${word}, it has no ${M`vec i`} component` }
     : D.y === 0 ? { f: M`v_y = 0`, s: M`${vy} = 0`, why: D.src ? `${word}, it has no ${M`vec j`} component` : `due ${word}, it has no ${M`vec j`} component` }
     : D.x === D.y ? { f: M`v_x = v_y`, s: M`${vx} = ${vy}`, why: `${word}, its two components are equal` }
@@ -173,9 +178,12 @@ function moving(P, D, key) {
   const ts = after0(cands, false).filter((t) => { const v = P.vel(t); return D.either ? Math.hypot(v.x, v.y) > EPS : v.x * D.x + v.y * D.y > EPS; });
   if (!ts.length) {
     const tr = after0(cands, false)[0];
-    return { ...base, ok: false, note: tr != null
-      ? `It is never moving ${word}: at ${M`t = ${d(tr)} [s]`}, the one moment its velocity lines up with that direction, it is moving the opposite way.`
-      : `It is never moving ${word}.` };
+    const still = tr != null && P.speed(tr) < 1e-9;
+    return { ...base, ok: false, note: still
+      ? `It is never moving ${word}: it moves along the line of ${M`${vsrc(P.a)}`}, and at ${M`t = ${d(tr)} [s]`}, where the equation is met, it is at rest.`
+      : tr != null
+        ? `It is never moving ${word}: at ${M`t = ${d(tr)} [s]`}, the one moment its velocity lines up with that direction, it is moving the opposite way.`
+        : `It is never moving ${word}.` };
   }
   const t = ts[0], v = P.vel(t), r = P.pos(t), sp = Math.hypot(v.x, v.y), dist = Math.hypot(r.x, r.y);
   return {
@@ -202,7 +210,7 @@ function dueOf(P, D, key) {
   const rel = D.src ? { f: M`${times(D.y, 'x')} = ${times(D.x, 'y')}`, s: M`${times(D.y, `(${rx})`)} = ${times(D.x, `(${ry})`)}` }
     : D.x === 0 ? { f: M`x = 0`, s: M`${rx} = 0` } : D.y === 0 ? { f: M`y = 0`, s: M`${ry} = 0` }
     : D.x === D.y ? { f: M`x = y`, s: M`${rx} = ${ry}` } : { f: M`x = -y`, s: M`${rx} = -(${ry})` };
-  const head = { f: M`vec r = (${rx})vec(i) + (${ry})vec(j)`, s: '', r: '' };
+  const head = { f: M`vec r = ${vecSum([P.r0.x, P.u.x, P.a.x / 2], [P.r0.y, P.u.y, P.a.y / 2])}`, s: '', r: '' };
   const label = D.src ? `in the direction ${M`(${D.src})`} from O` : `due ${word} of O`;
   // ALWAYS on that line through O: the relation is an identity
   if (tiny(c2) && tiny(c1) && tiny(c0)) {
@@ -378,7 +386,7 @@ export function planeWorking(solved) {
     rows: [
       ...solved.pre,
       { f: M`vec v = vec u + vec(a)t`, s: '', r: M`vec v = ${vecSum([solved.u.x, solved.a.x], [solved.u.y, solved.a.y])}` },
-      { f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: '', r: M`vec r = (${poly([solved.r0.x, solved.u.x, solved.a.x / 2])})vec(i) + (${poly([solved.r0.y, solved.u.y, solved.a.y / 2])})vec(j)` },
+      { f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: '', r: M`vec r = ${vecSum([solved.r0.x, solved.u.x, solved.a.x / 2], [solved.r0.y, solved.u.y, solved.a.y / 2])}` },
     ],
     note: `Each is two SUVAT equations side by side: the ${M`vec i`} parts on their own, and the ${M`vec j`} parts on their own.${solved.pre.length ? ` The velocity at the later time, run back to ${M`t = 0`}, gives ${M`vec u`}.` : ''}`,
   });

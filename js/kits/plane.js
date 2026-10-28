@@ -134,7 +134,7 @@ export const plane = {
       const w = a.D ? (a.D.src ? a.D.plain : a.D.word) : '';
       if (a.always) {
         if (a.kind === 'moving') return `Moving ${w} ${a.until != null ? `until ${tr(a.until)} s` : a.t > 0 ? `from ${tr(a.t)} s on` : 'the whole time'}.`;
-        if (a.kind === 'due') return `${a.D.src ? 'In that direction from' : `Due ${w} of`} O${a.short && /until/.test(a.short) ? ', until it comes back' : ''}.`;
+        if (a.kind === 'due') return `${a.D.src ? 'In that direction from' : `Due ${w} of`} O${/until/.test(a.short) ? ', until it comes back through O' : a.t > 0 ? `, from ${tr(a.t)} s on` : ', the whole time'}.`;
         if (a.kind === 'passes') return `${a.c} = ${tr(a.X)} the whole time.`;
         if (a.kind === 'speed') return `${tr(a.S)} m s⁻¹ the whole time.`;
       }

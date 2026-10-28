@@ -35,6 +35,35 @@ export function yScale(series, tMax) {
   return { lo, hi, stepY, ticks };
 }
 
+/**
+ * Where each object's letter goes: ON its own line, haloed, at the first of a
+ * few instants where no other line and no letter already placed is within a
+ * label's height, clear of the title row (yTop) and the axis labels (yBot);
+ * where nowhere is clear, at the instant with the most room. Every tagged
+ * series gets a spot. Pure, so a test can ask for every library graph.
+ */
+export function tagSpots(series, tMax, X, Y, yTop, yBot) {
+  const out = [];
+  const QS = [0.08, 0.18, 0.3, 0.45, 0.6, 0.75, 0.9];
+  const inside = (py) => py >= yTop && py <= yBot;
+  const room = (s, tt) => {
+    const y = s.fn(tt);
+    if (!isFinite(y)) return -1;
+    const py = Y(y);
+    if (!inside(py)) return -1;
+    const ds = [...series.filter((o) => o !== s).map((o) => o.fn(tt)).filter(isFinite).map((v) => Math.abs(Y(v) - py)),
+                ...out.filter((q) => Math.abs(q.x - X(tt)) < 30).map((q) => Math.abs(q.y - py) * 24 / 26)];
+    return ds.length ? Math.min(...ds) : 99;
+  };
+  for (const s of series.filter((x) => x.tag)) {
+    let tt = QS.map((q) => q * tMax).find((c) => room(s, c) >= 24);
+    if (tt == null) tt = QS.map((q) => q * tMax).reduce((b, c) => (room(s, c) > room(s, b) ? c : b));
+    const y = s.fn(tt);
+    out.push({ tag: s.tag, color: s.color, x: X(tt), y: Math.min(Math.max(Y(isFinite(y) ? y : 0), yTop), yBot) });
+  }
+  return out;
+}
+
 export function drawGraph(canvas, spec) {
   const { ctx, w, h } = fitCanvas(canvas);
   if (w < 60 || h < 60) return;
@@ -109,46 +138,11 @@ export function drawGraph(canvas, spec) {
     }
   }
 
-  // A LINE PER OBJECT, when there is more than one, carries its letter
-  // beside it, early on — on the side away from the other lines, so the
-  // letter is plainly on its own line and never in the axis labels.
-  const tagged = series.filter((s) => s.tag);
-  if (tagged.length) {
-    // A letter sits ON its own line, haloed, at an instant early in the run
-    // where no other line comes within reach — so it cannot be read as naming
-    // a neighbour, whichever side of it the neighbour is.
-    // a label is about 25 px tall: no other line, and no letter already
-    // placed, within that of this one
-    const placedTags = [];
-    const near = (s, tt, py) => series.some((o) => o !== s && isFinite(o.fn(tt)) && Math.abs(Y(o.fn(tt)) - py) < 24)
-      || placedTags.some((q) => Math.abs(q.x - X(tt)) < 30 && Math.abs(q.y - py) < 26);
-    // clear of the title's row above and the axis labels below, so the
-    // label placer never has to push a letter off its line
-    const inside = (py) => py >= PAD.t + 16 && py <= PAD.t + gh - 10;
-    for (const s of tagged) {
-      let spot = null;
-      const QS = [0.08, 0.18, 0.3, 0.45, 0.6, 0.75, 0.9];
-      for (const q of QS) {
-        const tt = q * tMax, y = s.fn(tt);
-        if (!isFinite(y)) continue;
-        const py = Y(y);
-        if (inside(py) && !near(s, tt, py)) { spot = { tt, py }; break; }
-      }
-      // nowhere fully clear: the instant where it is furthest from everything else
-      if (!spot) {
-        const room = (tt) => {
-          const py = Y(s.fn(tt));
-          if (!inside(py)) return -1;
-          const ds = [...series.filter((o) => o !== s).map((o) => Math.abs(Y(o.fn(tt)) - py)),
-                      ...placedTags.filter((q) => Math.abs(q.x - X(tt)) < 30).map((q) => Math.abs(q.y - py))].filter(isFinite);
-          return ds.length ? Math.min(...ds) : 99;
-        };
-        const tt = QS.map((q) => q * tMax).reduce((b, c) => (room(c) > room(b) ? c : b));
-        spot = { tt, py: clamp(Y(s.fn(tt)), PAD.t + 16, PAD.t + gh - 10) };
-      }
-      placedTags.push({ x: X(spot.tt), y: spot.py });
-      L.add(s.tag, X(spot.tt), spot.py, { color: s.color, align: 'center', pri: 7, size: 15, weight: 800, maxPush: 20 });
-    }
+  // A LINE PER OBJECT, when there is more than one, carries its letter.
+  for (const sp of tagSpots(series, tMax, X, Y, PAD.t + 16, PAD.t + gh - 10)) {
+    // never dropped: a letter that cannot sit where it should is drawn
+    // further off with a leader to its line, never left out
+    L.add(sp.tag, sp.x, sp.y, { color: sp.color, align: 'center', pri: 8, size: 15, weight: 800 });
   }
   if (spec.note) L.add(spec.note, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: 4, size: 14 });
   // EVENTS the engine found — where two lines cross, say — as a ring on the
