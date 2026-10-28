@@ -631,6 +631,47 @@ function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
 
 /* ── deep audit 2: what it found, and the fixes ─────────────────────── */
+group('Two on a road or two tracks: holding a speed, then braking to rest together', () => {
+  const O = (k) => solveOvertake(k);
+  const W = (r) => overtakeWorking(r).map((st) => ({ title: strip(st.title), rows: st.rows.map((x) => [strip(x.f), strip(x.s), strip(x.r)]), note: strip(st.note) }));
+  // M1 J16 Q4: M at 40 holds T s, N at 30 holds 25 s, both brake to rest beside Y, 975 m
+  const trains = O({ A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 975, where: 'rail' });
+  ok(trains.ok && near(trains.found.value, 8.75) && near(trains.B.tau, 15) && near(trains.A.a, -1.28), 'Edexcel M1 J16 Q4: T = 8.75, N brakes for 15 s, M at 1.28 m s⁻²');
+  const wt = W(trains);
+  ok(wt.some((x) => x.rows.some((r) => r[1] === '975=30×25+½×30tB' && r[2] === 'tB=15s')), 'N: 975 = 30 × 25 + ½ × 30t, so 15 s braking');
+  ok(wt.some((x) => x.rows.some((r) => r[1] === '25+15' && r[2] === 't=40s')), 'N reaches Y at 25 + 15 = 40 s');
+  ok(wt.some((x) => x.rows.some((r) => r[1] === '975=40TA+½×40(40−TA)' && r[2] === 'TA=8.75s')), 'M as the mark scheme: 975 = 40T + ½ × 40(40 − T)');
+  const rest = trains.events.find((e) => e.rest);
+  ok(rest && rest.kind === 'line' && near(rest.t, 40) && near(rest.x, 975) && !rest.first, 'they come to rest at Y together, at 40 s — one event, not “the same motion twice”');
+  ok(trains.f.where === 'rail' && trains.f.crossings.length === 1 && near(trains.f.crossings[0].t, 16.5625) && near(trains.f.crossings[0].v, 30), 'drawn on tracks; the speed lines cross once, at 30 m s⁻¹');
+  ok(near(trains.f.dist(40).A, 975) && near(trains.f.dist(40).B, 975), 'the two areas are both 975 m at the end');
+  // M1 J10 Q5: P at 25 brakes from T, Q at 20 brakes from 25 s, both stop at X 800 m on
+  const cars = O({ A: { u: 25, ends: true }, B: { u: 20, hold: 25, ends: true }, find: 'A.hold', line: 800 });
+  ok(cars.ok && near(cars.found.value, 9) && near(timeAt(cars.B, 800), 55) && cars.f.where === 'road', 'Edexcel M1 J10 Q5: Q stops at 55 s, and T = 9');
+  const e = KITS.lanes.ending(cars);
+  ok(/time at its first speed is 9 s/.test(strip(e.title)) && !/differ by/.test(e.body), 'the ending names T, and says nothing of a 0 difference in speeds');
+  // the same, run forwards with T given: they still stop together
+  const fwd = O({ A: { u: 40, hold: 8.75, ends: true }, B: { u: 30, hold: 25, ends: true }, line: 975 });
+  ok(fwd.ok && fwd.events.some((x) => x.rest && near(x.t, 40)) && W(fwd).some((x) => /come to rest together/.test(x.title)), 'with T given, both stop beside Y at 40 s, worked as each one’s stopping time');
+  // the other unknowns, from the same stopping
+  ok(near(O({ A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.a', line: 975 }).found.value, -1.28), 'or M’s deceleration: 1.28');
+  ok(near(O({ A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.tau', line: 975 }).found.value, 31.25), 'or how long M brakes: 31.25 s');
+  ok(near(O({ A: { u: 40, ends: true }, B: { u: 30, a: -2, ends: true }, find: 'A.hold', line: 975 }).B.hold, 25), 'N’s 25 s from its rate instead: the line fixes the hold');
+  // a hold, then a change, without stopping: T from the rectangles
+  const h = O({ A: { u: 20, a: -1, V: 0 }, B: { u: 10 }, find: 'A.hold', line: 300 });
+  ok(h.ok && near(h.found.value, 5) && near(h.A.pos(30), 300) && near(timeAt(h.B, 300), 30), 'a hold before braking, found from where they are level: 5 s');
+  // what cannot be
+  ok(/more than the 2000m/.test(strip(O({ A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 2000 }).reason)), 'too far for M to stop in time: refused, with how far it gets');
+  ok(/past the line/.test(strip(O({ A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 700 }).reason)), 'holding 25 s carries N past a 700 m line: refused');
+  ok(/say how far along the line is/.test(O({ A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true } }).reason), 'stopping at the line with no line: asks for it');
+  ok(/Give only one/.test(strip(O({ A: { u: 40, ends: true }, B: { u: 30, a: -2, hold: 25, ends: true }, find: 'A.hold', line: 975 }).reason)), 'the line fixes one of hold, rate, time: two given is refused');
+  ok(/negative/.test(O({ A: { u: 40, hold: -1 }, B: { u: 30 } }).reason), 'a negative hold is refused');
+  ok(!O({ A: { u: 0, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 975 }).ok, 'from rest to rest is no change of speed: refused');
+  const late = O({ A: { u: 40, hold: 2, ends: true }, B: { u: 30, hold: 25, ends: true }, line: 975 });
+  ok(late.events.some((x) => x.rest && x.first === 'B' && near(x.t, 46.75) && near(x.tFirst, 40)), 'one stopped earlier: the other comes to rest beside it later, and both times are said');
+  ok(KITS.lanes.read({ 'A.u': 40, 'A.ends': 'line', where: 'rail' }).A.ends === true && KITS.lanes.read({}).where === 'road', 'the kit reads “at the line” and the setting');
+});
+
 group('Audit 2: the road, finding a hidden number', () => {
   ok(paren('20 - V') === '(20 - V)' && paren('V') === 'V' && paren('(V - 5)/2') === '(V - 5)/2' && paren('-3') === '(-3)',
     'paren brackets an expression with a top-level + or −, and nothing else');

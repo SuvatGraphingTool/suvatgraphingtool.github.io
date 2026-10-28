@@ -223,7 +223,7 @@ the paper gives, including the triangle (no steady stretch) and the quadratic in
 V. Not yet: a journey that starts or ends moving (CIE 9709/42 N19 Q2's
 tractor), or more than three stages — the stages engine already takes those.
 
-### `two-on-a-road` — Two on one road
+### `two-on-a-road` — Two on a road, or on two tracks
 
 **Papers.** OCR A H240/03 Jun 2022 Q9 (A at 20 m s⁻¹ slows to 8 over 30 s and
 holds it; B steady at 12: A decelerates at 0.4, and B overtakes at t = 45 s).
@@ -232,7 +232,11 @@ car, from rest at constant a, passes it at 990 m: 50 s, a = 0.792 = 99⁄125).
 Edexcel 8MA0/22 Jun 2023 Q1 (Pat 5 s to 4 m s⁻¹, Sam at 1 m s⁻² to X, both
 27.5 s: X = 3.92). Edexcel IAL WME01 Jun 2022 Q7 (Ajaz at 0.8 to 4 m s⁻¹,
 Beth at 1 m s⁻² for T s, 100 m together: 27.5 s, T = 3.915, speeds differ by
-0.085).
+0.085). Edexcel M1 Jun 2016 Q4 (train M passes train N at the trackside point X
+at 40 and 30 m s⁻¹; M holds 40 for T s, N holds 30 for 25 s, each then brakes
+uniformly to rest beside Y, the same time from X to Y, XY = 975 m: T = 8.75).
+Edexcel M1 Jun 2010 Q5 (car P at 25 passes car Q at 20; P brakes from T, Q from
+25 s, both stop at X 800 m on at the same instant: T = 9).
 
 **Why the twelve cannot.** The road has one vehicle and one stretch of
 constant acceleration. Nothing among the twelve has two independent motions on
@@ -259,13 +263,26 @@ meeting across both lanes.
 ringed), velocity–time, acceleration–time, both on each, broken at every change
 of acceleration.
 
-**What the student varies.** For each: when it sets off, its starting speed, a
-head start, and any two of its acceleration, the speed it changes to and the
-time that takes (one alone: it keeps accelerating). Optionally one of those six
-to find, from a line or a time at which they are level.
+**Coming to rest at the line (added 29 Oct 2026).** Each may hold its first
+speed for T s before it changes speed, and may be marked to end its change at
+the line (to rest there, with V blank). The line then fixes its rate from the
+area, s = uT + ½ut, and the other one's time to the line, with
+s = uT + ½u(t − T), gives the hidden T (975 = 40T + ½ × 40(40 − T), T = 8.75).
+The two stopping together is one event, not "the same motion twice". The stage
+shades the area under each line so far (displacement hue, A solid, B hatched),
+rings where the two lines cross (the same speed), drops each T to the time
+axis, and can be drawn as two trains on parallel tracks between the trackside
+posts X and Y.
 
-**What makes it general.** Any two on one road whose speed changes once:
-overtaking, catching up, a delayed start, a race to a line, finishing together.
+**What the student varies.** For each: when it sets off, its starting speed,
+how long it holds it, a head start, and any two of its acceleration, the speed
+it changes to and the time that takes (one alone: it keeps accelerating), or
+that it comes to rest at the line. Optionally one of those to find, from a line
+or a time at which they are level. And whether it is drawn as cars or trains.
+
+**What makes it general.** Any two side by side whose speed changes once,
+before or after a held speed: overtaking, catching up, a delayed start, a race
+to a line, finishing together, braking to rest together.
 Not yet: a vehicle with three stages of its own all the way to B (the car in
 J13 brakes at the end; the meeting at 990 m comes before that, so it does not
 matter here) — the stages engine already takes those.

@@ -138,12 +138,31 @@ speed at a time, the time at a distance, the times at a speed, with working.
 
 Used by: `journey-3`.
 
-### Two on one road — `js/core/overtake.js`
+### Two on one road (or two tracks) — `js/core/overtake.js`
 
-`mover({ t0, x0, u, a, V, tau }, name)` — one vehicle: waiting at x0 until t0,
-changing speed from u at a for tau to V, then holding V; any two of a, V, tau
-fix the third, a alone keeps accelerating. `timeAt(mover, X)` — when it first
-reaches X.
+`mover({ t0, x0, u, hold, a, V, tau, ends }, name)` — one vehicle: waiting at
+x0 until t0, holding u for `hold` seconds (blank is none), changing speed from
+u at a for tau to V, then holding V (V = 0: at rest); any two of a, V, tau fix
+the third, a alone keeps accelerating. `timeAt(mover, X)` — when it first
+reaches X (coming to rest exactly at X counts, though it is a tangent).
+
+`ends: true` — its change of speed ends exactly at `line` (V blank is 0: it
+comes to rest there, "beside the point Y"). The line then fixes whichever one
+of its hold, rate and time changing speed is missing, from the area under its
+speed–time graph: s = uT + ½(u + V)t. Two that both come to rest at the line
+at one instant are one `line` event with `rest: true` (with `first` set when
+one stopped there earlier), never "the same motion twice".
+
+`find: 'A.hold'` — the time T_A it holds its first speed: for one that ends at
+the line, from s = uT + ½(u + V)(t − T) with t the other one's time to the
+line (Edexcel M1 J16 Q4, J10 Q5, as the mark schemes write it); for one that
+does not, from the rectangle, the change and the rectangle after it. With
+`ends`, `find` may also be its rate, its time changing speed or its V, and the
+rest of its change is worked after it. `sameSpeed(A, B, tMax)` — where the two
+speed–time graphs cross (`f.crossings`). `f.dist(t)` — each one's distance so
+far, the area under its line. `where: 'rail'` draws two trains on parallel
+tracks between the trackside posts X and Y (figures.js `train`, `rails`,
+`post`); the default is two cars on one road.
 
 `solveOvertake({ A, B, line, at, find })` — every moment the two are level
 (`events`, each with a `kind`: `start`, `overtake`, `level` — level without

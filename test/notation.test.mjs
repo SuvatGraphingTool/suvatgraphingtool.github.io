@@ -459,6 +459,14 @@ group('The Past-paper library: two on one road, everything it says', () => {
     { A: { u: 10, a: 1, V: 20, tau: 10 }, B: { u: 5 } },
     { A: { u: 10 }, B: { a: 1 }, find: 'B.a' },
     { A: { u: 0 }, B: { u: 5 } },
+    { A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 975, where: 'rail' },
+    { A: { u: 25, ends: true }, B: { u: 20, hold: 25, ends: true }, find: 'A.hold', line: 800 },
+    { A: { u: 40, hold: 2, ends: true }, B: { u: 30, hold: 25, ends: true }, line: 975 },
+    { A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.V', line: 975 },
+    { A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.a', line: 975 },
+    { A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 2000 },
+    { A: { u: 20, a: -1, V: 0 }, B: { u: 10 }, find: 'A.hold', line: 300 },
+    { A: { u: 40, a: -1, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.V', line: 975 },
   ];
   const bag = [];
   let said = 0;
