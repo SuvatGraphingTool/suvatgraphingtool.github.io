@@ -98,6 +98,53 @@
 .ask-mode[aria-pressed='true'] .m-lb { max-width: 80px; opacity: 1; }
 .ask-mode:focus-visible, .pbox-ic:focus-visible, .pbox-go:focus-visible { outline: 2px solid var(--pb-graph); outline-offset: 1px; }
 
+/* ── how Suvat answers: the same three switches, as cards under the box ──
+   Each is a card of the box's own dark glass: an icon in a rounded tile,
+   the name, and one line on what it does. Off, the tile is quiet and takes
+   its hue on hover; on, the tile fills with the hue, the card is edged and
+   tinted with it, a tick pops in at the corner and the icon turns once.
+   They share their state with the icons in the bar, and leave the chat to
+   those icons alone. */
+.ask-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); margin-top: var(--sp-3); }
+#chat-dock .ask-modes { display: none; }
+.ask-card {
+  --c: var(--pb-mute);
+  position: relative; display: flex; align-items: center; gap: var(--sp-3); min-width: 0;
+  padding: 12px 14px; border-radius: 18px; text-align: left; color: var(--pb-ink);
+  background: rgba(31,32,35,0.80); border: 1px solid rgba(255,255,255,0.08);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.16);
+  transition: transform 180ms cubic-bezier(.2,.8,.2,1), background 220ms, border-color 220ms, box-shadow 220ms;
+}
+.ask-card[data-hue='search'] { --c: var(--pb-search); } .ask-card[data-hue='solve'] { --c: var(--pb-solve); } .ask-card[data-hue='graph'] { --c: var(--pb-graph); }
+.ask-card:hover { transform: translateY(-2px); background: rgba(38,39,43,0.88); box-shadow: 0 10px 26px rgba(0,0,0,0.22); }
+.ask-card:active { transform: translateY(0) scale(.98); }
+.ask-card .m-ic {
+  width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px;
+  color: var(--pb-mute); background: rgba(255,255,255,0.07);
+  transition: background 220ms, color 220ms, transform 500ms cubic-bezier(.34,1.56,.64,1);
+}
+.ask-card .m-ic svg { width: 22px; height: 22px; }
+.ask-card:hover .m-ic { color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); transform: rotate(-8deg) scale(1.06); }
+.ask-card .m-tx { display: grid; min-width: 0; line-height: 1.3; }
+.ask-card .m-tx b { font-size: var(--fs-sm); font-weight: var(--w-semi); }
+.ask-card .m-tx small { font-size: var(--fs-xs); font-weight: var(--w-small); color: var(--pb-mute);
+                        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ask-card .m-tick {
+  position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--c); color: #fff;
+  opacity: 0; transform: scale(.4); transition: opacity 180ms, transform 280ms cubic-bezier(.34,1.56,.64,1);
+}
+.ask-card .m-tick svg { width: 12px; height: 12px; }
+.ask-card[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--c) 75%, transparent);
+  background: color-mix(in srgb, var(--c) 14%, rgba(31,32,35,0.88));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--c) 28%, transparent);
+}
+.ask-card[aria-pressed='true'] .m-ic { color: #fff; background: var(--c); transform: rotate(360deg); }
+.ask-card[aria-pressed='true'] .m-tick { opacity: 1; transform: scale(1); }
+.ask-card:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
 /* The one round button: microphone, send, stop, or the end of a recording. */
 .pbox-go {
   width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center;
@@ -145,7 +192,7 @@
               background: rgba(46,48,51,0.8); color: #E5E7EB; font-size: var(--fs-lg); }
 
 @media (prefers-reduced-motion: reduce) {
-  .ask-mode .m-ic, .rec-bars i, .rec-time i { transition: none; animation: none; }
+  .ask-mode .m-ic, .ask-card, .ask-card .m-ic, .ask-card .m-tick, .rec-bars i, .rec-time i { transition: none; animation: none; }
 }
 
 /* ── a reply solved: the engine's working, step by step ──────────────── */
@@ -179,6 +226,11 @@
 @media (max-width: 560px) {
   .ask-hero { min-height: calc(100dvh - 64px); padding: var(--sp-6) var(--sp-3); justify-content: flex-end; }
   .pbox-left { gap: 0; }
+  .ask-card { padding: 8px 10px 8px 8px; gap: var(--sp-2); }
+  .ask-card .m-ic { width: 32px; height: 32px; border-radius: 10px; }
+  .ask-card .m-ic svg { width: 18px; height: 18px; }
+  .ask-card .m-tx small { display: none; }
+  .ask-card .m-tick { top: 4px; right: 4px; width: 16px; height: 16px; }
 }
 
 /* ── the chat ───────────────────────────────────────────────────────────

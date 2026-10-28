@@ -108,7 +108,10 @@ export function createAsk({ apply, run, edit, show }) {
   const MODES_KEY = 'suvat-ask-modes';
   const modes = { search: false, solve: false, graph: true };
   try { Object.assign(modes, JSON.parse(localStorage.getItem(MODES_KEY) || '{}')); } catch {}
-  for (const b of document.querySelectorAll('.ask-mode')) {
+  // Each mode has two switches: an icon in the box's bar, and a card under
+  // the box while it sits on the scenario screen. Both read and set one state.
+  const SWITCHES = '.ask-mode, .ask-card';
+  for (const b of document.querySelectorAll(SWITCHES)) {
     const k = b.dataset.mode;
     b.setAttribute('aria-pressed', String(!!modes[k]));
     b.addEventListener('click', () => {
@@ -124,7 +127,7 @@ export function createAsk({ apply, run, edit, show }) {
   }
   if (modes.search && modes.solve) modes.solve = false;
   function showModes() {
-    for (const m of document.querySelectorAll('.ask-mode')) m.setAttribute('aria-pressed', String(!!modes[m.dataset.mode]));
+    for (const m of document.querySelectorAll(SWITCHES)) m.setAttribute('aria-pressed', String(!!modes[m.dataset.mode]));
     if (!rec) text.placeholder = modes.search ? 'Search the web…'
       : modes.solve ? 'Solve it step by step…'
       : modes.graph ? 'Ask Suvat — it will draw it…' : 'Ask Suvat';
