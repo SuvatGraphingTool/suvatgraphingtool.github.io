@@ -34,6 +34,7 @@
 //   [m s^-2]             a unit — upright, never italic
 //   "at the top"         prose inside an equation — upright
 //   °                    degrees, set tight against the number
+//   vec(i)  vec r        a vector, in bold: 𝐢, 𝐫
 //
 //   Interpolate NUMBERS into the templates, not prose: the source is parsed,
 //   so `${num(x)}` is read as a number and typeset like one.
@@ -113,6 +114,14 @@ function standardForm(x, sig) {
 }
 
 const toSuper = (s) => [...s].map((c) => SUPERS[c] ?? c).join('');
+// Unicode's mathematical bold letters, for a vector where there is no HTML:
+// 𝐢, 𝐣, 𝐫. Anything else is left as it is.
+const toBold = (s) => [...s].map((c) => {
+  const n = c.charCodeAt(0);
+  if (n >= 97 && n <= 122) return String.fromCodePoint(0x1D41A + n - 97);
+  if (n >= 65 && n <= 90) return String.fromCodePoint(0x1D400 + n - 65);
+  return c;
+}).join('');
 const toSub = (s) => [...s].map((c) => SUBS[c] ?? c).join('');
 
 /* ── the public renderers ───────────────────────────────────────────── */
@@ -212,6 +221,7 @@ function lex(src) {
       const w = m[0]; i += w.length;
       if (w === 'sqrt') out.push({ k: 'sqrt' });
       else if (w === 'abs') out.push({ k: 'abs' });
+      else if (w === 'vec') out.push({ k: 'vec' });
       else if (w === 'inf') out.push({ k: 'num', v: '∞' });
       else if (GREEK[w]) out.push({ k: 'name', v: GREEK[w], greek: true });
       else if (FUNCS.has(w)) out.push({ k: 'fn', v: w });
@@ -337,7 +347,7 @@ function product(p) {
   return row(items);
 }
 
-const startsFactor = (t) => ['num', 'name', 'fn', 'sqrt', 'abs', 'unit', 'text'].includes(t.k)
+const startsFactor = (t) => ['num', 'name', 'fn', 'sqrt', 'abs', 'vec', 'unit', 'text'].includes(t.k)
   || (t.k === 'open');
 
 function power(p) {
@@ -374,6 +384,11 @@ function atom(p) {
     case 'abs': {
       const inner = power(p);
       return { k: 'abs', body: inner.k === 'group' && inner.paren ? inner.body : inner };
+    }
+    case 'vec': {
+      // A vector is set in bold — i, j, r, v — and its brackets go, like a radical's.
+      const inner = power(p);
+      return { k: 'vec', body: inner.k === 'group' && inner.paren ? inner.body : inner };
     }
     case 'fn': {
       let exp = null;
@@ -451,6 +466,8 @@ function renderHTML(n) {
         + `<span class="m-sp"></span>${renderHTML(n.arg)}`;
     case 'abs':
       return `<span class="m-bar">|</span>${renderHTML(n.body)}<span class="m-bar">|</span>`;
+    case 'vec':
+      return `<b class="m-vec">${renderHTML(n.body)}</b>`;
     case 'sqrt':
       return `<span class="m-sqrt"><span class="m-radix">√</span>`
         + `<span class="m-rad">${renderHTML(bare(n.body))}</span></span>`;
@@ -503,6 +520,7 @@ function renderText(n) {
     case 'deg': return `${renderText(n.base)}°`;
     case 'fn':  return `${n.name}${n.exp ? toSuper(renderText(parse(n.exp))) : ''}${THIN}${renderText(n.arg)}`;
     case 'abs': return `|${renderText(n.body)}|`;
+    case 'vec': return toBold(renderText(n.body));
     // Without a bar to draw, the radicand keeps its brackets.
     case 'sqrt': return `√(${renderText(bare(n.body))})`;
     case 'frac': return `${wrap(n.num)}${SOLIDUS}${wrap(n.den)}`;

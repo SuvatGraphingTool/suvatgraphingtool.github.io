@@ -94,4 +94,31 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each one\u2019s position as a function of time in its stages, every moment the two are equal, and the one hidden number when the paper hides one.',
     } },
+
+  { id: 'vectors-ij', group: 'library', kit: 'plane',
+    name: 'Moving in a plane, in i and j',
+    sub: 'a constant acceleration vector — when is it moving north-west?',
+    note: 'A particle on a plane, east as i and north as j, with a velocity and a constant acceleration both given as vectors. Every question in this family is two SUVAT equations side by side, one per direction: when is it due east of O, when is it moving south-east, where does it cross a line, how fast is it going then.',
+    params: { u: { x: -1, y: 3 }, a: { x: 0.1, y: -0.2 }, at: { due: 'E' } },
+    place: 'A plane, seen from above: i east, j north',
+    sources: [
+      { board: 'AQA', paper: 'MM1B', session: 'Jun 2012', q: '7' },
+      { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '7' },
+      { board: 'Edexcel', paper: '9MA0/32', session: 'Oct 2020', q: '2' },
+      { board: 'OCR A', paper: 'H240/03', session: 'Jun 2023', q: '8' },
+    ],
+    tags: ['vector', 'vectors', 'i and j', 'i j', 'position vector', 'velocity vector', 'due east', 'due north', 'north-west',
+           'south-east', 'north-east', 'south-west', 'bearing', 'plane', 'particle', 'constant acceleration', 'mechanics',
+           'A level', 'AS level', 'M1'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers\u2019 model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['A point on a flat plane', 'the particle has no size and the plane no slope or edge; north and east are straight lines that never curve.'],
+        ['The acceleration never changes', 'whatever force gives it is the same size and the same direction for as long as the question lasts.'],
+        ['Nothing is watched beyond the questions', 'the path is drawn a little past the last moment asked about, and the model says nothing about what happens after.'],
+      ],
+      caveat: 'What the engine did compute is above: each component of the position and the velocity as a function of time, and each moment the paper asked about.',
+    } },
 ];

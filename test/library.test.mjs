@@ -13,6 +13,8 @@ import { snap, rat } from '../js/core/numeric.js';
 import { timeLapse, lapseNote } from '../js/core/pace.js';
 import { solveJourney, journeyWorking } from '../js/core/journey.js';
 import { solveOvertake, overtakeWorking, mover, timeAt } from '../js/core/overtake.js';
+import { solvePlane, planeWorking } from '../js/core/plane.js';
+import { mathText, mathHTML } from '../js/notation.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -378,6 +380,44 @@ group('Two on one road: what cannot happen, and the edges', () => {
   ok(/<path/.test(K.thumb(byId('two-on-a-road'))), 'the card has a sketch from its own numbers');
   const end = K.ending(O({ A: { a: 22 / 30, V: 22 }, B: { t0: 10 }, find: 'B.a', line: 990 }));
   ok(/0\.792/.test(end.title) && (end.body.match(/acceleration is/g) || []).length === 0 && /ph-tab/.test(end.body), 'the ending: the number in the title, not said twice, and a row of five each');
+});
+
+group('Moving in a plane, in i and j: four papers, each against its mark scheme', () => {
+  const Pl = (k) => solvePlane(k);
+  const aqa12 = Pl({ u: { x: -1, y: 3 }, a: { x: 0.1, y: -0.2 }, at: { due: 'E', moving: 'SE' } });
+  const due = aqa12.answers.find((x) => x.kind === 'due'), se = aqa12.answers.find((x) => x.kind === 'moving');
+  ok(due.ok && near(due.t, 30) && se.ok && near(se.t, 20) && near(se.v.x, 1) && near(se.v.y, -1) && near(se.speed, Math.SQRT2),
+     'AQA MM1B J12 Q7: due east of O at 30 s; moving south-east at 20 s, v = i − j, speed 1.41');
+  const aqa13 = Pl({ r0: { x: 13.6, y: 0 }, u: { x: 6, y: 2.4 }, a: { x: -0.8, y: 0.1 }, at: { moving: 'NW' } });
+  const nw = aqa13.answers[0];
+  ok(nw.ok && near(nw.t, 12) && near(nw.r.x, 28) && near(nw.r.y, 36) && nw.dist.toFixed(1) === '45.6', 'AQA MM1B Jan13 Q7: moving north-west at 12 s, at 28i + 36j, 45.6 m from O');
+  const ed = Pl({ u: { x: -2, y: 2 }, a: { x: 4, y: -5 }, at: { t: 2, y: -4.5 } });
+  const at2 = ed.answers.find((x) => x.kind === 't'), py = ed.answers.find((x) => x.kind === 'passes');
+  ok(near(at2.v.x, 6) && near(at2.v.y, -8) && near(py.t, 1.8) && near(py.r.x, 2.88), 'Edexcel 9MA0/32 Oct20 Q2: v = 6i − 8j at t = 2; passes y = −4.5 at 1.8 s, where λ = 2.88');
+  const ocr = Pl({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } });
+  ok(ocr.ok && near(ocr.u.x, -6) && near(ocr.u.y, 8) && /10m s−1/.test(strip(ocr.pre[1].r)), 'OCR H240/03 J23 Q8: u = v − aT = −6i + 8j, speed 10');
+  const W = planeWorking(aqa12).map((st) => st.rows.map((r) => strip(r.f) + ' | ' + strip(r.s) + ' | ' + strip(r.r)));
+  ok(W[0].some((x) => /v=\(−1\+0\.1t\)i\+\(3−0\.2t\)j/.test(x)) && W.some((st) => st.some((x) => /y=0 \| 3t−0\.1t2=0 \| t=30s/.test(x))), 'the working: v and r in components, and y = 0 for due east, as the mark scheme');
+  ok(W.some((st) => st.some((x) => /vx=−vy \| −1\+0\.1t=−\(3−0\.2t\) \| t=20s/.test(x))), 'south-east: vₓ = −v_y, as the mark scheme');
+});
+
+group('Moving in a plane: edges, and the notation for vectors', () => {
+  const Pl = (k) => solvePlane(k);
+  ok(mathText('vec(i) + vec r') === '𝐢 + 𝐫' && /<b class="m-vec"><i class="m-var">i<\/i><\/b>/.test(mathHTML('vec(i)')), 'vectors are bold, in HTML and on a canvas');
+  ok(!Pl({ u: { x: 1, y: 1 } }).ok && !Pl({ a: { x: 1, y: 0 } }).ok, 'no acceleration, or no velocity: what is missing is said');
+  ok(!Pl({ u: { x: 1, y: 0 }, vT: { x: 2, y: 0 }, T: 1, a: { x: 1, y: 0 } }).ok, 'an initial velocity and a later one: refused, one fixes the other');
+  const never = Pl({ u: { x: 1, y: 0 }, a: { x: 0, y: 1 }, at: { moving: 'W', due: 'S' } });
+  ok(never.answers.every((a) => !a.ok) && never.notes.length === 2, 'never moving west, never due south: said, not invented');
+  const opp = Pl({ u: { x: 2, y: 0 }, a: { x: -1, y: 0 }, at: { moving: 'E' } });
+  ok(opp.answers[0].ok && near(opp.answers[0].t, 0), 'moving east from the start is at t = 0');
+  const twice = Pl({ u: { x: 0, y: 10 }, a: { x: 0, y: -2 }, at: { y: 16, speed: 4 } });
+  ok(near(twice.answers[0].times[0], 2) && near(twice.answers[0].times[1], 8) && near(twice.answers[1].times[0], 3) && near(twice.answers[1].times[1], 7), 'a coordinate and a speed met twice: both times');
+  const K = KITS.plane;
+  const G = K.graphs(solvePlane({ u: { x: -1, y: 3 }, a: { x: 0.1, y: -0.2 }, at: { due: 'E' } }).f, 5, { disp: 'd', vel: 'v', acc: 'a', mark: 'm' });
+  ok(G.every((sp) => sp.series[0].dash && !sp.series[1].dash), 'i parts dashed, j parts solid, on every graph');
+  ok(/<path/.test(K.thumb(byId('vectors-ij'))), 'the card has a sketch from its own numbers');
+  const e = K.ending(Pl({ r0: { x: 13.6, y: 0 }, u: { x: 6, y: 2.4 }, a: { x: -0.8, y: 0.1 }, at: { moving: 'NW' } }));
+  ok(/north-west at 12/.test(e.title), 'the ending names what it found');
 });
 
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }

@@ -62,6 +62,7 @@ A kit is an object with:
 | `pair` — `js/kits/pair.js` | `pair-vertical` |
 | `journey` — `js/kits/journey.js` | `journey-3` |
 | `lanes` — `js/kits/lanes.js` | `two-on-a-road` |
+| `plane` — `js/kits/plane.js` | `vectors-ij` |
 
 ## Engine models — `js/core/`
 
@@ -154,7 +155,32 @@ and each crossing as two positions in t set equal.
 
 Used by: `two-on-a-road`.
 
+### A particle in a plane, in i and j — `js/core/plane.js`
+
+`solvePlane({ r0, u, a, vT, T, at })` — vectors as `{ x, y }` (x east, y
+north); `vT` at time `T` instead of `u` runs back to u = v − aT. `at` asks:
+`t` (velocity, position, speed), `moving` and `due` (compass keys of
+`COMPASS`), `x` or `y` (a coordinate), `speed`. Each answer comes with its rows
+of working; `planeWorking` puts the two vector equations first. `vsrc(v)`
+writes a vector as notation source (`-2vec(i) + 2vec(j)`).
+
+Used by: `vectors-ij`.
+
+## Notation — `js/notation.js`
+
+`vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
+Unicode mathematical bold 𝐢). Added for `vectors-ij`; any vector anywhere.
+
 ## Stages — `js/render/`
+
+### A map in i and j — `js/render/vectors.js`
+
+`render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'plane'`.
+One scale both ways, grid in metres, O, a north arrow, the path (flown strong,
+to come faint), the position vector, the velocity (components when asked),
+the acceleration when asked, each answer ringed with its time.
+
+Used by: `vectors-ij`.
 
 ### Two lanes under two speed–time graphs — `js/render/lanes.js`
 

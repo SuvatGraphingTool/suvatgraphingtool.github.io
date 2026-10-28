@@ -3,5 +3,6 @@
 import { pair } from './pair.js';
 import { journey } from './journey.js';
 import { lanes } from './lanes.js';
+import { plane } from './plane.js';
 
-export const KITS = { pair, journey, lanes };
+export const KITS = { pair, journey, lanes, plane };
