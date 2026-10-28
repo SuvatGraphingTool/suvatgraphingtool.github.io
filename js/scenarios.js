@@ -251,9 +251,7 @@ export const SCENARIOS = [
     place: 'A straight, level road from A to B' },
 ];
 
-/** Scenarios assembled from a recipe (js/compose/registry.js), by id, for this visit. */
-export const COMPOSED = new Map();
-export const byId = (id) => SCENARIOS.find((s) => s.id === id) || COMPOSED.get(id);
+export const byId = (id) => SCENARIOS.find((s) => s.id === id);
 export const DEFAULT_SCENARIO = 'platform-angle';
 
 /** Only three fields, as asked: Earth, the Moon, and none at all. */

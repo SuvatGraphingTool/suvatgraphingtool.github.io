@@ -8,8 +8,6 @@
 // derived quantity — resolving tan α = 3/4 into degrees, working back from a
 // range to a launch speed — happens here, in code, with tests behind it.
 
-import { compose } from '../compose/registry.js';
-
 const DEG = 180 / Math.PI;
 
 /* ── Angles ──────────────────────────────────────────────────────────────
@@ -198,24 +196,6 @@ function normaliseMarkers(m) {
 const GROUNDED = new Set(['up', 'arc', 'time-above']);
 const LOCKED_THETA = { up: 90, down: -90, platform: 0, bullet: 0 };
 const ONE_D = new Set(['up', 'down', 'dropped', 'parachute']);
-
-/* What a scenario takes from a reading. For the twelve it is keyed by id, as
-   it always was; a composed scenario says the same things through the flags
-   its pieces set (js/compose/registry.js), so it is read by the same rules. */
-function profileOf(id, sc) {
-  if (!sc) {
-    return { road: id === 'road', descent: id === 'parachute', dropped: id === 'dropped',
-             locked: LOCKED_THETA[id], grounded: GROUNDED.has(id), oneD: ONE_D.has(id),
-             line: id === 'time-above', target: id === 'monkey', down: id === 'platform-down' };
-  }
-  const launch = sc.recipe?.pieces?.find((p) => p.piece === 'launch');
-  const locked = sc.lockAngle ? sc.params.theta : undefined;
-  return { road: !!sc.road, descent: !!sc.descent, dropped: !!sc.noAngle, locked,
-           grounded: launch?.from === 'ground',
-           oneD: !!sc.noAngle || !!sc.descent || Math.abs(locked ?? 0) === 90,
-           line: sc.markers?.heightLine != null, target: !!sc.markers?.target,
-           down: !!sc.theta && sc.theta.max <= 0 };
-}
 export const APP_SCENARIOS = ['up', 'arc', 'dropped', 'down', 'platform-down', 'platform',
   'platform-angle', 'time-above', 'parachute', 'bullet', 'monkey', 'road'];
 
@@ -229,22 +209,6 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
  *   items   [{ k, value, how: 'given'|'worked'|'assumed', ratio? }] for the readout
  */
 export function toApp(x) {
-  const r = read(x);
-  // A value carried from an earlier part's answer (js/core/parts.js) is
-  // shown as that, not as one the question gave.
-  const marks = r.ok && x.carried && typeof x.carried === 'object' ? x.carried : null;
-  if (marks) {
-    for (const it of r.items) {
-      const m = marks[ITEM_FIELD[it.k] || it.k];
-      if (m && it.how === 'given') Object.assign(it, { how: 'carried', from: m.from, take: m.take });
-    }
-  }
-  return r;
-}
-// An item's key, as the reading's field it came from.
-const ITEM_FIELD = { line: 'heightLine' };
-
-function read(x) {
   if (!x || typeof x !== 'object') return { ok: false, error: 'Nothing came back from the reader.' };
   if (x.understood === false) {
     // Not a question — often just "hello". The reader's note is its answer,
@@ -254,21 +218,11 @@ function read(x) {
       : { ok: false, error: 'That did not read as a projectile or falling-object question.' };
   }
   let id = x.scenario;
-  // NONE OF THE TWELVE FITS: the reader sent a recipe instead, naming the
-  // app's own pieces. It is checked and assembled exactly as js/compose/
-  // registry.js says, or refused with its reason — never guessed into shape.
-  let sc = null;
-  if (id === 'composed') {
-    const built = compose(x.recipe);
-    if (!built.ok) return { ok: false, error: `Suvat tried to build a scenario for this one, but the recipe did not hold together: ${built.error}` };
-    sc = built.scenario; id = sc.id;
-  }
   // A vertical throw with a line to stay above is Time above a line at 90°,
   // whichever card the reader reached for: only that one draws the line.
   const upLine = id === 'up' && isNum(x.heightLine);
   if (upLine) id = 'time-above';
-  const P = profileOf(id, sc);
-  if (!sc && !APP_SCENARIOS.includes(id)) {
+  if (!APP_SCENARIOS.includes(id)) {
     return { ok: false, error: 'That is a motion question, but not one of the situations this playground can set up yet. Pick the closest scenario and type the numbers in.' };
   }
 
@@ -290,7 +244,7 @@ function read(x) {
   // the five, a is the vehicle's own (negative is braking), and "from rest"
   // and "comes to rest" are real zeros. The a box is keyed g in js/app.js,
   // as it is for every scenario.
-  if (P.road) {
+  if (id === 'road') {
     for (const k of ['s', 'u', 'v', 't']) {
       if (isNum(x[k]) && !(k === 't' && x[k] <= 0)) { given[k] = x[k]; put(k, x[k], 'given'); }
     }
@@ -313,12 +267,12 @@ function read(x) {
   // h — measured from the ground. The ground scenarios start on it.
   let h;
   if (isNum(x.h)) { h = x.h; put('h', h, 'given'); }
-  else if (P.grounded) { h = 0; put('h', 0, 'assumed'); }
+  else if (GROUNDED.has(id)) { h = 0; put('h', 0, 'assumed'); }
 
   // θ — fixed by the scenario, given, or worked from a ratio.
   let theta;
-  if (P.dropped || P.descent) theta = undefined;
-  else if (P.locked !== undefined) theta = P.locked;
+  if (id === 'dropped' || id === 'parachute') theta = undefined;
+  else if (id in LOCKED_THETA) theta = LOCKED_THETA[id];
   else if (upLine) { theta = 90; put('theta', 90, 'given', { vertical: true }); }
   else if (x.angle) {
     const a = resolveAngle(x.angle);
@@ -326,25 +280,25 @@ function read(x) {
     theta = a.degrees;
     // The card says which way it is aimed, so a sign the reader lost is
     // restored by the scenario it chose.
-    if (P.down) theta = -Math.abs(theta);
+    if (id === 'platform-down') theta = -Math.abs(theta);
     if (x.angle.ratio) put('theta', theta, 'worked', { ratio: { ...x.angle.ratio } });
-    else put('theta', theta, 'given', theta === 90 && P.line ? { vertical: true } : {});
+    else put('theta', theta, 'given', theta === 90 && id === 'time-above' ? { vertical: true } : {});
   }
 
   // The five.
   // A launch speed of nothing is a drop, and a drop has its own card. On any
   // other card a zero is the reader filling a gap, not reading a number.
-  if (P.dropped) given.u = 0;
+  if (id === 'dropped') given.u = 0;
   else if (isNum(x.u) && x.u > 0) { given.u = x.u; put('u', x.u, 'given'); }
   // A landing speed the reader could not have read: nothing lands at rest,
   // and nothing launched from above the ground lands at the speed it left.
   // Readers invent both, so both are dropped rather than handed to the engine.
   const vOk = isNum(x.v) && Math.abs(x.v) >= 0.5 && !(x.v === x.u && (h ?? 0) > 0);
-  if (vOk && !P.descent) { given.v = Math.abs(x.v); put('v', given.v, 'given'); }
-  if (isNum(x.t) && x.t > 0 && !P.descent) { given.t = x.t; put('t', x.t, 'given'); }
+  if (vOk && id !== 'parachute') { given.v = Math.abs(x.v); put('v', given.v, 'given'); }
+  if (isNum(x.t) && x.t > 0 && id !== 'parachute') { given.t = x.t; put('t', x.t, 'given'); }
   // s is the horizontal distance to the landing. In a straight line there
   // is none, and a height the reader put there is already in h.
-  if (isNum(x.s) && !P.oneD) { given.s = x.s; put('s', x.s, 'given'); }
+  if (isNum(x.s) && !ONE_D.has(id)) { given.s = x.s; put('s', x.s, 'given'); }
 
   // A speed worked back from a greatest height, when the speed is not given.
   if (given.u === undefined && isNum(x.apexAboveLaunch)) {
@@ -358,15 +312,15 @@ function read(x) {
 
   // What only some scenarios carry.
   const markers = {};
-  if (P.line && isNum(x.heightLine)) {
+  if (id === 'time-above' && isNum(x.heightLine)) {
     markers.heightLine = x.heightLine;
     put('line', x.heightLine, 'given');
   }
-  if (P.target && x.target && isNum(x.target.x) && isNum(x.target.y)) {
+  if (id === 'monkey' && x.target && isNum(x.target.x) && isNum(x.target.y)) {
     markers.target = { x: x.target.x, y: x.target.y };
   }
   const descent = {};
-  if (P.descent) {
+  if (id === 'parachute') {
     // A reader that missed the descent fields usually put the free-fall time
     // in t and the steady speed in v, which is what they are.
     const d = { tOpen: x.t, vTerm: x.v, ...(x.descent || {}) };

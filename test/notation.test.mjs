@@ -29,7 +29,6 @@ import { trajectory } from '../js/core/trajectory.js';
 import { solveRoad, roadWorking } from '../js/core/road.js';
 import { readBlueprint, solveBoard } from '../js/board/blueprint.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
-import { TOPICS as LIB_TOPICS, QUESTIONS as LIB_QUESTIONS } from '../js/library/questions.js';
 
 let pass = 0, fail = 0;
 
@@ -505,18 +504,6 @@ group('The scenarios say it in words, or they say it properly', () => {
   for (const g of GROUPS) look(`group ${g.id}`, g);
   ok(bag.length === 0, 'no programmer\'s maths anywhere in the scenario prose',
      bag.join('\n         '));
-});
-
-group('The past-paper library says it in words, or says it properly', () => {
-  // Every shelf and every question's paraphrase is on screen one. The link
-  // to the paper is an address, not prose, so it is the one thing skipped.
-  const bag = [];
-  for (const t of LIB_TOPICS) { check(`topic ${t.id}`, t.label, bag); check(`topic ${t.id}`, t.blurb, bag); }
-  for (const q of LIB_QUESTIONS) {
-    for (const k of ['says', 'asks', 'beyond']) if (q[k]) check(`${q.id}.${k}`, q[k], bag);
-    for (const k of ['board', 'paper', 'session']) check(`${q.id}.${k}`, q.source[k], bag);
-  }
-  ok(bag.length === 0, 'no programmer\'s maths anywhere on the library shelves', bag.join('\n         '));
 });
 
 group('The whiteboard: every frame it builds, for every kind of board', () => {

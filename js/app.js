@@ -26,11 +26,9 @@ import { drawGraph, graphSpecs } from './render/graphs.js';
 import { fmt, palette, clamp } from './render/util.js';
 import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
-import { splitParts, carryInto, partName } from './core/parts.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML } from './ai/readout.js';
-import { mountShelf, sourceTag, questionHTML } from './library/shelf.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -127,7 +125,6 @@ const state = {
 
 const cam = scene.createCamera();
 let board = null;                // the whiteboard, made once the page is up — see the end of this file
-let shelfReturn = null;          // the library question last opened, for focus to come back to
 /* ── the window, for the scenarios that watch themselves in one ──────────
    A parachute drop is four views of one motion rather than one view with the
    graphs in a sidebar — see js/render/panes.js. The window keeps its own
@@ -136,9 +133,6 @@ let shelfReturn = null;          // the library question last opened, for focus 
 const win = panes.createWindow(4);
 let paneSig = null;                 // the solve the panes were last built from
 let scenario = null, solved = null, traj = null, second = null, ghost = null, dirty = true;
-// A question in parts, and the parts side by side — see readAnswer.
-let parts = null;          // { list: [{ labels, name, reading, runnable, snap }], at }
-const cmp = { on: false, t: 0, playing: false, last: 0, raf: 0, panes: [] };
 
 /** Does this scenario replace the single view with the pane window? */
 const windowed = () => !!scenario?.descent;
@@ -159,7 +153,7 @@ function buildScenarioScreen() {
       <div class="pgrid-row">${cards}</div></div>`;
   }).join('');
   for (const b of $('pgrid').querySelectorAll('.pcard')) {
-    b.addEventListener('click', () => { setParts(null); chooseScenario(b.dataset.id); });
+    b.addEventListener('click', () => chooseScenario(b.dataset.id));
   }
   wireSpotlight();
 }
@@ -328,11 +322,7 @@ function aimFor(s) {
   return (Math.atan2(t.y - (s.params.h || 0), t.x) * 180) / Math.PI;
 }
 
-/**
- * @param o.stay  set the scenario up without leaving the screen you are on —
- *                a chat answer does this, and the chat stays in view
- */
-function chooseScenario(id, { stay = false } = {}) {
+function chooseScenario(id) {
   scenario = byId(id);
   state.id = id;
   state.given = {};
@@ -362,7 +352,6 @@ function chooseScenario(id, { stay = false } = {}) {
   scene.fitView(cam);
   requestAnimationFrame(() => { scene.fitView(cam); dirty = true; });
   $('chosen').textContent = scenario.name;
-  $('lib-from').hidden = true;      // the library's question, until it says otherwise
   buildValuesScreen();
   // An exhibit opens on the experiment itself, not on a form. The gate is
   // `exhibit` rather than `intro`, because Monkey vs Hunter no longer has an
@@ -374,7 +363,6 @@ function chooseScenario(id, { stay = false } = {}) {
     recompute();
     if (traj) { state.launched = true; state.firedBefore = false; state.t = 0; state.playing = false; }
     buildLive();
-    if (stay) return;
     go('flight');
     if (scenario.intro) openIntro();
   } else {
@@ -384,7 +372,7 @@ function chooseScenario(id, { stay = false } = {}) {
     // on the way out of one of those left that answer in place for whatever
     // was picked next.
     buildLive();
-    if (!stay) go('values');
+    go('values');
   }
 }
 
@@ -556,9 +544,7 @@ function valuesVoice(descentMode) {
     };
     VOICE.was = { h: VOICE.el.h.innerHTML, sub: VOICE.el.sub.innerHTML };
   }
-  // `descentMode` is true for the parachute and 'road' for the road, and only
-  // the parachute is a jump: the road asks the ordinary question.
-  VOICE.el.h.innerHTML = descentMode === true ? 'How is the jump set up?' : VOICE.was.h;
+  VOICE.el.h.innerHTML = descentMode ? 'How is the jump set up?' : VOICE.was.h;
   if (descentMode === 'road') {
     VOICE.el.sub.innerHTML = 'Any three of the five give you the other two. Here <b>a</b> is the '
       + 'vehicle\u2019s own acceleration, not g — and braking is a negative one.';
@@ -930,10 +916,7 @@ function sayAngle() {
 
   if (band) {
     band.dataset.mode = solved.mode;
-    band.innerHTML = solved.mode === '1d' && gaveTheta
-      ? `<b>Straight-line motion.</b> At ${M`${fmt(solved.params.theta, 0)}`}° it stays on one
-         vertical line, so the engine solves the five along that line.`
-      : solved.mode === '1d'
+    band.innerHTML = solved.mode === '1d'
       ? `<b>Straight-line motion.</b> No angle was given and none can be worked out from
          these values — so the engine is solving the five along one line, which is the
          correct answer to a question that never mentioned a direction. Nothing is
@@ -1549,7 +1532,6 @@ function wireLineBoxes() {
     state.markers.heightLine = r.height;
     hb.value = fmt(r.height, 2);
     say(hint, false, `A line at ${fmt(r.height, 2)} m gives exactly that.`);
-    showAbove();                  // and the height box's own line follows it
     dirty = true;
   });
 
@@ -1769,18 +1751,13 @@ function go(step) {
   if (state.step === 'flight' && step !== 'flight' && state.playing) {
     state.playing = false; setPlayIcon(false);
   }
-  if (step !== 'flight') { hideDone(); closeAskAt(); closeCompare(); }
+  if (step !== 'flight') { hideDone(); closeAskAt(); }
   state.step = step;
   $('app').dataset.step = step;
   // The whiteboard draws only while it is on screen.
   $('board-top').setAttribute('aria-pressed', String(step === 'board'));
   if (step === 'board') board?.show(); else board?.hide();
   $('options-btn').hidden = step !== 'flight';
-  if (step === 'scenario' && shelfReturn) {
-    // back on the shelf, on the question that was opened from it
-    document.querySelector(`.lib-open[data-q="${shelfReturn}"]`)?.focus({ preventScroll: true });
-    shelfReturn = null;
-  }
   refreshSteps();
   dirty = true;
   requestAnimationFrame(() => { dirty = true; });
@@ -1817,7 +1794,6 @@ function refreshSteps() {
 }
 
 function togglePlay() {
-  if (cmp.on) { replayCompare(); return; }
   if (!traj) return;
   hideDone(); closeResolve();
   // THE BULLET IS STARTED BY ITS STRING. Play trips the rig the same way a
@@ -2797,10 +2773,10 @@ for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) 
    exactly the route a typed question takes: chooseScenario, the five, and
    recompute, where solveLaunch works out the rest or says what is missing.
    Nothing on this route calculates a flight that the engine did not. */
-function applyReading(x, { graph = true, solve = false, part } = {}) {
+function applyReading(x, { graph = true, solve = false } = {}) {
   const r = toApp(x);
   if (!r.ok) return r;
-  chooseScenario(r.id, { stay: true });
+  chooseScenario(r.id);
   closeIntro();
   Object.assign(state.given, r.given);
   if (r.theta !== undefined && !scenario.lockAngle && !scenario.noAngle && !scenario.aimAtTarget) {
@@ -2819,7 +2795,7 @@ function applyReading(x, { graph = true, solve = false, part } = {}) {
   // here the same way it does under the line's own box (showAbove).
   const above = traj && scenario.dragLine && state.markers?.heightLine != null
     ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
-  let html = readoutHTML(r, { name: scenario.name, solved, above, part });
+  let html = readoutHTML(r, { name: scenario.name, solved, above });
   // SOLVE: the engine's own working, the same steps the working panel shows.
   if (solve && traj && solved?.ok) {
     const steps = scenario.road ? roadWorking(solved)
@@ -2831,179 +2807,21 @@ function applyReading(x, { graph = true, solve = false, part } = {}) {
   // on the stage, not in the chat. Off, the reply is words only, like any chat.
   return { ok: true, runnable: !!traj && graph, html };
 }
-/* ── a question in parts ─────────────────────────────────────────────────
-   (a), (b), (c) that are different motions — see js/core/parts.js. Each part
-   is applied in turn, exactly as a one-part answer is, and anything it
-   carries from an earlier part is read off the engine's solution to that
-   part. The stage then starts on (a), and a bar over it moves on to (b), or
-   puts the parts side by side. */
-
-/** The chat's answer: one reading, or one per part. */
-function readAnswer(x, opts = {}) {
-  const list = splitParts(x);
-  if (list.length < 2) {
-    setParts(null);
-    return applyReading(list.length === 1 && !x.scenario ? list[0] : x, opts);
-  }
-  const answers = {}, done = [], out = [];
-  for (const p of list) {
-    const { reading, missing } = carryInto(p, answers);
-    const name = partName(p.labels);
-    const r = applyReading(reading, { ...opts, part: name });
-    if (r.ok && solved?.ok) for (const l of p.labels) answers[l] = solved;
-    const runnable = r.ok && !!traj;
-    done.push({ labels: p.labels, name, reading, runnable, snap: runnable ? snapshot() : null });
-    // A carry the engine could not supply is said, in the part that needed it.
-    const gaps = missing.map((m) => `<p class="ro-warn">This part uses the answer to (${m.from}), which the engine could not find yet.</p>`).join('');
-    out.push({ name, runnable: runnable && opts.graph !== false,
-               html: r.ok ? r.html + gaps : `<p class="ro-eyebrow">Part ${name}</p><p class="ro-bad">${r.error}</p>` });
-  }
-  // The stage starts on the first part.
-  const first = done.findIndex((d) => d.runnable);
-  applyReading(done[Math.max(0, first)].reading, opts);
-  setParts({ list: done, at: Math.max(0, first) });
-  return { ok: true, runnable: first >= 0 && opts.graph !== false, parts: out,
-           compare: done.filter((d) => d.snap).length >= 2 };
-}
-/** What a part needs to be drawn again beside the others. */
-function snapshot() {
-  return { traj, second, scenario, markers: JSON.parse(JSON.stringify(state.markers || {})) };
-}
-function setParts(p) {
-  parts = p;
-  closeCompare();
-  syncPartsNav();
-}
-/** Part i on the stage. From the chat it asks how fast, as any flight does;
-    moving on from the stage keeps the speed already chosen. */
-function showPart(i, { pace = false } = {}) {
-  const p = parts?.list[i];
-  if (!p) return;
-  applyReading(p.reading, { graph: true });
-  parts.at = i;
-  closeCompare();
-  syncPartsNav();
-  if (!traj) { go('values'); return; }
-  openGraphs();
-  if (pace && !scenario.exhibit) launch(); else runFlight();
-}
-function syncPartsNav() {
-  const nav = $('parts-nav');
-  nav.hidden = !parts;
-  if (!parts) return;
-  const { list, at } = parts;
-  $('pn-chips').innerHTML = list.map((p, i) => `<button type="button" class="pn-chip" data-i="${i}"
-    aria-pressed="${i === at}"${p.runnable ? '' : ' disabled'} aria-label="Part ${p.name}">${p.name}</button>`).join('');
-  const next = list.findIndex((p, i) => i > at && p.runnable);
-  $('pn-next').hidden = next < 0;
-  if (next >= 0) { $('pn-next').dataset.i = String(next); $('pn-next').textContent = `Show me part ${list[next].name}`; }
-  $('pn-compare').hidden = list.filter((p) => p.snap).length < 2;
-  $('pn-compare').setAttribute('aria-pressed', String(cmp.on));
-}
-$('pn-chips').addEventListener('click', (e) => {
-  const b = e.target.closest('.pn-chip');
-  if (b && !b.disabled) showPart(Number(b.dataset.i));
-});
-$('pn-next').addEventListener('click', () => showPart(Number($('pn-next').dataset.i)));
-$('pn-compare').addEventListener('click', () => (cmp.on ? closeCompare() : openCompare()));
-
-/* ── the parts side by side ──────────────────────────────────────────────
-   Every part that runs, each on a stage of its own, over one shared clock:
-   two abreast on a laptop, stacked on a phone. Each stage is drawn by the
-   same renderer the main stage would use for it, with its own camera — and
-   its own cached backdrop (`layer`), so two places do not repaint each other
-   every frame. Nothing here is worked out: each motion is the engine's,
-   kept from when its part was applied. */
-function openCompare() {
-  const list = parts?.list.filter((p) => p.snap) || [];
-  if (list.length < 2) return;
-  state.playing = false; setPlayIcon(false); hideDone(); closePace();
-  cmp.panes = list.map((p) => ({ p, cam: scene.createCamera() }));
-  $('cmp-grid').innerHTML = cmp.panes.map(({ p }, i) => `<figure class="cmp-pane">
-      <figcaption class="cmp-h"><b>Part ${p.name}</b> <span>${p.snap.scenario.name}</span>
-        <span class="cmp-t" data-i="${i}"></span></figcaption>
-      ${p.snap.scenario.descent
-        ? '<p class="cmp-none">A parachute drop plays on its own stage.</p>'
-        : `<div class="cmp-stage"><canvas data-i="${i}" aria-label="Part ${p.name}, ${p.snap.scenario.name}"></canvas></div>`}
-    </figure>`).join('');
-  $('compare').hidden = false;
-  $('canvas-wrap').dataset.compare = 'on';
-  cmp.on = true;
-  syncPartsNav();
-  replayCompare();
-}
-function closeCompare() {
-  if (!cmp.on) return;
-  cmp.on = false; cmp.playing = false;
-  cancelAnimationFrame(cmp.raf);
-  $('compare').hidden = true;
-  $('canvas-wrap').dataset.compare = 'off';
-  $('cmp-grid').innerHTML = '';
-  setPlayIcon(false);
-  syncPartsNav();
-  dirty = true;
-}
-function replayCompare() {
-  cmp.t = 0; cmp.playing = true; cmp.last = performance.now();
-  setPlayIcon(true);
-  cancelAnimationFrame(cmp.raf);
-  cmp.raf = requestAnimationFrame(compareFrame);
-}
-function compareFrame(now) {
-  if (!cmp.on) return;
-  const dt = Math.min(0.05, (now - cmp.last) / 1000);
-  cmp.last = now;
-  const end = Math.max(...cmp.panes.map(({ p }) => p.snap.traj.tMax || 0));
-  if (cmp.playing) {
-    cmp.t += dt * state.rate;
-    if (cmp.t >= end) { cmp.t = end; cmp.playing = false; setPlayIcon(false); }
-  }
-  drawCompare();
-  $('scrub').value = end ? cmp.t / end : 0;
-  if (cmp.playing) cmp.raf = requestAnimationFrame(compareFrame);
-}
-function drawCompare() {
-  cmp.panes.forEach(({ p, cam }, i) => {
-    const c = $('cmp-grid').querySelector(`canvas[data-i="${i}"]`);
-    const { traj: f, second: s2, scenario: sc, markers } = p.snap;
-    const t = Math.min(cmp.t, f.tMax || 0);
-    if (c) {
-      const o = { traj: f, second: s2, ghost: null, t, show: state.show, fired: true, verdict: null,
-                  overview: false, hoverMark: null, markers, scenario: sc, secondLabel: sc.second?.label,
-                  resolve: null, hover: null, layer: `compare-${i}` };
-      if (sc.stage === 'road') roadStage.render(c, cam, o);
-      else if (sc.stage === 'range') range.render(c, cam, o);
-      else if (sc.plate) exhibit.render(c, cam, o);
-      else scene.render(c, cam, o);
-    }
-    const clock = $('cmp-grid').querySelector(`.cmp-t[data-i="${i}"]`);
-    if (clock) clock.innerHTML = M`t = ${fmt(t, 2)} [s]`;
-  });
-}
-new ResizeObserver(() => { if (cmp.on && !cmp.playing) drawCompare(); }).observe($('compare'));
-
-/** The graphs open beside the stage, as Graph promised in the chat. */
-function openGraphs() {
+/** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
+function showFlight() {
+  if (!traj) return;
+  // Graph was on: the stage opens with its graphs showing, as the reply did.
   state.extras.graphs = true;
   const box = $('extras').querySelector('input[data-k="graphs"]');
   if (box) box.checked = true;
   $('graphs-wrap').hidden = false;
   if (!state.options && !windowed()) $('options-btn').click();   // where the graphs live
-}
-
-/** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
-function showFlight() {
-  if (!traj) return;
-  openGraphs();
   if (scenario.exhibit) runFlight(); else launch();
 }
 const ask = createAsk({
-  apply: readAnswer,
-  // A question in parts starts on its first part; the bar on the stage
-  // moves on from there.
-  run: () => (parts ? showPart(0, { pace: true }) : showFlight()),
+  apply: applyReading,
+  run: showFlight,
   edit: () => go('values'),
-  compare: () => { if (!parts) return; showPart(0); openCompare(); },
   show: go,
 });
 /* ── the whiteboard ──────────────────────────────────────────────────────
@@ -3012,81 +2830,11 @@ const ask = createAsk({
    through applyReading, then the flight. */
 board = createBoard({
   open(x) {
-    setParts(null);                  // a board frame is one motion, not a part
     const r = applyReading(x, { graph: true });
     if (r.ok && traj) showFlight(); else go('values');
   },
 });
 $('board-top').addEventListener('click', () => go(state.step === 'board' ? 'scenario' : 'board'));
-
-/* ── the past-paper library ──────────────────────────────────────────────
-   A question pressed on the shelf opens its scenario with the paper's
-   numbers in the boxes: what a student would have typed from it, and
-   nothing the engine should be left to work out. It does not go through
-   applyReading, because that route is for a READER's answer and rightly
-   second-guesses it (a zero speed, a landing speed equal to the launch
-   speed) — these entries were checked against the paper by hand. The
-   eyebrow says which paper it was, the card under the heading says what it
-   asks and what this app does not answer, and the card notices when the
-   paper's numbers have been changed. See js/library/. */
-function openQuestion(q) {
-  chooseScenario(q.opens);
-  closeIntro();
-  const f = q.fill || {};
-  Object.assign(state.given, f.given);
-  if (f.theta !== undefined && !scenario.lockAngle && !scenario.noAngle) state.theta = f.theta;
-  if (f.h !== undefined) state.h = f.h;
-  if (f.line != null && state.markers) state.markers.heightLine = f.line;
-  if (f.descent) state.descent = { ...f.descent };
-  if (f.mark !== undefined) state.mark = f.mark;
-  buildValuesScreen();              // which recomputes
-  $('chosen').textContent = `${scenario.name} \u00b7 ${sourceTag(q.source)}`;
-  // The screen's usual line says the angle is not needed, which is beside
-  // the point under a question that has just filled it in.
-  if (!scenario.road && !scenario.descent) {
-    document.querySelector('#screen-values .h-sub').textContent =
-      'Opened with the paper\u2019s own numbers in the boxes. Launch it, or change any of them and see what changes.';
-  }
-  $('lib-from').innerHTML = questionHTML(q);
-  $('lib-from').hidden = false;
-  paperH0 = f.h === 0;
-  paperSaid = boxesNow();
-  shelfReturn = q.id;
-  $('screen-values').scrollTop = 0;
-  $('values-h').focus({ preventScroll: true });
-}
-// The paper's own numbers, as they were put in, so the card can tell when
-// the boxes no longer hold them — and stop saying so when they do again.
-// The line in Time above a line is left out: moving it is one of the things
-// these questions ask for, not a change to what the paper gave.
-let paperSaid = null, paperH0 = false;
-// Sorted, so a value cleared and typed again in a different order is the same
-// value, and rounded to far below anything a box shows.
-const boxesNow = () => JSON.stringify({
-  given: Object.keys(state.given).sort().map((k) => [k, +(+state.given[k]).toPrecision(12)]),
-  // a blank height is ground level, the same as a paper's 0 — but only where
-  // the paper gave 0; where the height is the unknown, typing 0 is a change
-  theta: state.theta ?? null, h: state.h ?? (paperH0 ? 0 : null), mark: state.mark ?? null });
-function sayIfEdited() {
-  if (paperSaid == null || $('lib-from').hidden) return;
-  const changed = boxesNow() !== paperSaid;
-  const note = $('lib-from').querySelector('.lib-from-edit');
-  if (note) note.hidden = !changed;
-}
-// After the screen's own handlers have run, which is what the next tick is.
-for (const ev of ['input', 'change', 'click']) {
-  $('screen-values').addEventListener(ev, () => setTimeout(sayIfEdited, 0));
-}
-mountShelf({ host: $('lib-shelf'), search: $('lib-q'), count: $('lib-count'), sub: $('lib-sub'),
-             open: openQuestion, nameOf: (id) => byId(id)?.name || '' });
-// The link to the library above the cards moves the student there and puts
-// them in the search box, without leaving a #library in the address bar.
-document.querySelector('a[href="#library"]')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  $('library').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  $('lib-q').focus({ preventScroll: true });
-});
-
 $('ask-top').addEventListener('click', () => ask.open());
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },

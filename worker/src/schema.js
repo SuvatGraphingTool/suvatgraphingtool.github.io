@@ -12,17 +12,10 @@
 //
 // The schema is deliberately small. The whole response is ~80–150 tokens,
 // which is most of why this is fast.
-//
-// When none of the twelve fits, the model may build a scenario from the
-// app's own pieces instead (scenario "composed", with a recipe). The pieces
-// it is told about are written out from js/compose/registry.js below, so the
-// prompt can never offer a piece the code does not have.
-
-import { PIECES, KINDS } from '../../js/compose/registry.js';
 
 export const SCENARIO_IDS = [
   'up', 'arc', 'dropped', 'down', 'platform-down', 'platform', 'platform-angle',
-  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'composed', 'other',
+  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'other',
 ];
 
 export const EXTRACTION_SCHEMA = {
@@ -72,37 +65,9 @@ export const EXTRACTION_SCHEMA = {
       description: 'What the question asks for, each a short phrase: "time of flight", "speed on landing".',
     },
     note: { type: 'string', description: 'Only if something is ambiguous or unreadable. Otherwise omit.' },
-
-    // None of the twelve fits: a scenario built from the app's pieces — see
-    // COMPOSING A SCENARIO in the prompt, and js/compose/registry.js.
-    recipe: {
-      type: 'object',
-      description: 'composed only: the scenario built from the pieces — name, optional sub, and pieces. Never an answer.',
-    },
-
-    // A question in parts whose parts are different motions — see QUESTIONS
-    // IN PARTS in the prompt, and js/core/parts.js for what the page does.
-    parts: {
-      type: 'array', items: { type: 'object' },
-      description: 'Only when the parts (a), (b), (c) need DIFFERENT motions — a different scenario, or different values. One reading per part, in order: label, scenario, asks, every value that part uses, and carries.',
-    },
   },
   required: ['understood', 'confidence', 'scenario', 'summary'],
 };
-
-/* The pieces, as the model is told them: one line for each kind, one for
-   each piece, and one for each setting it takes. Straight from the registry
-   — its `says` are written for the model (design/composer.md). */
-const SETTING = (v) => (v.type === 'one' ? `one of: ${v.of.join(' | ')}`
-  : v.type === 'number' ? `number, ${v.min} to ${v.max}`
-  : v.type === 'bool' ? 'true or false'
-  : `text, up to ${v.max} characters`);
-const COUNT = (r) => (r.min === r.max ? `exactly ${r.min}` : `${r.min} to ${r.max}`);
-export const PIECE_GUIDE = Object.entries(KINDS).filter(([, r]) => !r.auto).map(([kind, r]) =>
-  `${kind} — ${r.says} (${COUNT(r)}):\n` + PIECES.filter((p) => p.kind === kind).map((p) =>
-    `  ${p.id} — ${p.says}` + Object.entries(p.params || {}).map(([k, v]) =>
-      `\n      ${k} (${SETTING(v)}${v.required ? ', required' : ''}) — ${v.says}`).join('')).join('\n'))
-  .join('\n');
 
 const FIELDS = Object.entries(EXTRACTION_SCHEMA.properties)
   .map(([k, v]) => `  ${k} (${v.type}${v.enum ? `: ${v.enum.join(' | ')}` : ''})${v.description ? ` — ${v.description}` : ''}`)
@@ -134,9 +99,7 @@ WHAT YOU DO
    monkey         a projectile aimed straight at a target that drops as it is fired
    road           a car, lorry, train, cyclist or particle moving along a straight HORIZONTAL
                   road or line with constant acceleration — no gravity in the question
-   composed       none of these fits, but the app's pieces can build it: see COMPOSING A
-                  SCENARIO below
-   other          anything else about motion that none of these fit and the pieces cannot build
+   other          anything else about motion that none of these fit
 2. Return the values that are GIVEN.
 
 Do no arithmetic in what you return. If the question says tan a = 3/4, return ratioFn
@@ -158,22 +121,6 @@ THE CONVERSATION
   everything you read before plus the change, understood: true.
 - A follow-up about the question ("why is the vertical speed zero at the top?", "which
   equation did it use?") is chat: answer it in note, using what you know of the question.
-
-QUESTIONS IN PARTS — (a), (b), (c)
-- When the parts need DIFFERENT motions — a different scenario, or the same scenario with
-  different values (thrown up in (a), then asked about a line in (b); a lorry that speeds up,
-  cruises, then brakes) — ALSO return parts: one flat reading per part, in order, each with
-  label ("a"), scenario, asks and EVERY given value that part uses, repeated even when an
-  earlier part gave it. Keep the top-level reading too, as you would without parts.
-- When every part is about the same motion with the same values, return no parts: one
-  reading, with asks listing every part.
-- A value a part takes from an earlier part's ANSWER ("use your answer to (a)", "it then
-  travels at this speed") is a carry, never a number you write:
-  carries: [{"into":"u","from":"a","take":"v"}]. into is the field it fills (u, v, s, t, a, h,
-  heightLine); take is what the earlier answer gives (u, v, s, t, a, apex, tApex). The app
-  works it out from the earlier part. "At constant speed" means a = 0.
-- A part may be composed (see COMPOSING A SCENARIO): that part has scenario "composed" and its
-  own recipe.
 
 RULES
 - A value the question asks you to FIND is not a given value. Omit it. Do not guess it.
@@ -216,53 +163,6 @@ RULES
   because the app sets the maths itself.
 - Set confidence to low if values are unclear, handwritten, or partly cut off.
 
-COMPOSING A SCENARIO — ONLY WHEN NONE OF THE TWELVE FITS
-The twelve are built from the app's own pieces, and you can build a new one from the same
-pieces when a question needs something none of them has. Most questions fit one of the
-twelve: every launch takes the height the question gives, and time-above takes any height
-and any angle. Whenever one fits, use it — it has a card and words written for it, and a
-composed scenario has neither. What the twelve cannot set up today:
-- something thrown off a cliff, tower or building BESIDE one let go from rest at the same
-  instant ("which lands first?") — bullet is only a rifle on a bench, at most 3 m up.
-Never compose for a question the twelve can set up, and never choose "other" for a
-projectile question the pieces can build.
-
-To compose, return scenario "composed" and a recipe, BESIDE the same flat fields as any
-reading (h, u, angleDegrees, heightLine, targetX, targetY ...). The recipe says what the
-scenario is made of; the flat fields carry the question's numbers, as always. The recipe
-holds no answer and nothing worked out.
-  recipe: {"name": two to five words, "sub": a short line under it (optional),
-           "pieces": [{"piece": an id below, ...that piece's settings and nothing else}]}
-- Exactly one motion and one stage; at most one body and one companion; up to two markers
-  and two controls. The graphs, the working and the values always come: never name them.
-- A launch is drawn in the stadium, a straight-line motion on the road, a parachute drop in
-  the sky. The plate, the range and live sliders are for an experiment, not an exam question.
-- The launch angle: "free" whenever the question gives an angle — the angle itself goes in
-  angleDegrees (or the ratio fields), never in the recipe. "fixed" only for a throw that is
-  always horizontal (degrees 0) or always vertical (90 up, -90 down), and then degrees is
-  required. "released" for something let go from rest.
-- In the stadium, pick the spot whose place fits: a cliff, tower or building is the north
-  upper tier (platform, platform-angle or platform-down); level ground is a goal line (arc).
-- A height line's at is the same number as heightLine. A target's x and y are targetX and
-  targetY.
-- The app checks every recipe and refuses one that does not hold together, so use only the
-  pieces and settings below, exactly as they are written.
-
-THE PIECES
-${PIECE_GUIDE}
-
-COMPOSING EXAMPLES
-"A ball is thrown from the top of a 20 m cliff at 15 m/s at 40° above the horizontal. For how long is it more than 22 m above the ground?"
-→ {"understood":true,"confidence":"high","scenario":"time-above","summary":"A ball is thrown at 15 m/s at 40° from a 20 m cliff.","h":20,"u":15,"angleDegrees":40,"heightLine":22,"asks":["time more than 22 m above the ground"]}
-(not composed — time-above takes the 20 m cliff as it is)
-
-"A stone is thrown horizontally at 12 m/s from a 45 m tower. At the same instant a second stone is dropped from the tower. Which lands first?"
-→ {"understood":true,"confidence":"high","scenario":"composed","recipe":{"name":"Thrown and dropped","sub":"off a tower, at the same instant","pieces":[{"piece":"launch","angle":"fixed","degrees":0,"from":"height"},{"piece":"stadium","spot":"platform"},{"piece":"ball"},{"piece":"released-beside","label":"dropped","pair":"same height"}]},"summary":"A stone is thrown flat at 12 m/s from a 45 m tower as another is dropped.","h":45,"u":12,"asks":["which lands first"]}
-
-"From the top of a 40 m building a ball is projected at 15 m/s at 25° above the horizontal, and at the same instant a second ball is released from rest beside it."
-→ {"understood":true,"confidence":"high","scenario":"composed","recipe":{"name":"Projected and released","sub":"off a building, at the same instant","pieces":[{"piece":"launch","angle":"free","from":"height"},{"piece":"stadium","spot":"platform-angle"},{"piece":"ball"},{"piece":"released-beside","label":"released","pair":"same height"}]},"summary":"A ball is projected at 15 m/s at 25° from a 40 m building as another is released.","h":40,"u":15,"angleDegrees":25}
-(the 25° is in angleDegrees; a free launch takes no degrees)
-
 EXAMPLES
 "A ball is projected from the top of a 25 m cliff at 45° above the horizontal and lands 100 m from the foot of the cliff. Take g = 9.8. Find the speed of projection."
 → {"understood":true,"confidence":"high","scenario":"platform-angle","summary":"A ball is projected at 45° from a 25 m cliff and lands 100 m away.","h":25,"angleDegrees":45,"s":100,"g":9.8,"asks":["speed of projection"]}
@@ -284,10 +184,7 @@ EXAMPLES
 → {"understood":true,"confidence":"high","scenario":"road","summary":"A car brakes from 20 m/s to rest in 50 m.","u":20,"v":0,"s":50}
 
 "A small stone is projected vertically upwards from O with a speed of 19.6 m/s. (a) find the greatest height above O, (b) find the length of time for which the stone is more than 14.7 m above O."
-→ {"understood":true,"confidence":"high","scenario":"time-above","summary":"A stone is projected vertically upwards from O at 19.6 m/s.","h":0,"u":19.6,"angleDegrees":90,"heightLine":14.7,"asks":["greatest height above O","time more than 14.7 m above O"],"parts":[{"label":"a","scenario":"up","h":0,"u":19.6,"asks":["greatest height above O"]},{"label":"b","scenario":"time-above","h":0,"u":19.6,"angleDegrees":90,"heightLine":14.7,"asks":["time more than 14.7 m above O"]}]}
-
-"A lorry starts from rest and accelerates at 2 m/s² for 10 s. It then travels at constant speed for 30 s, and then decelerates uniformly to rest over 50 m. Find (a) its greatest speed, (b) the distance at constant speed, (c) the deceleration."
-→ {"understood":true,"confidence":"high","scenario":"road","summary":"A lorry speeds up from rest, cruises for 30 s, then brakes to rest in 50 m.","u":0,"a":2,"t":10,"asks":["greatest speed","distance at constant speed","deceleration"],"parts":[{"label":"a","scenario":"road","u":0,"a":2,"t":10,"asks":["greatest speed"]},{"label":"b","scenario":"road","a":0,"t":30,"carries":[{"into":"u","from":"a","take":"v"}],"asks":["distance at constant speed"]},{"label":"c","scenario":"road","v":0,"s":50,"carries":[{"into":"u","from":"b","take":"v"}],"asks":["deceleration"]}]}
+→ {"understood":true,"confidence":"high","scenario":"time-above","summary":"A stone is projected vertically upwards from O at 19.6 m/s.","h":0,"u":19.6,"angleDegrees":90,"heightLine":14.7,"asks":["greatest height above O","time more than 14.7 m above O"]}
 
 "A ball is thrown vertically upwards at 20 m/s. Find the greatest height it reaches."
 → {"understood":true,"confidence":"high","scenario":"up","summary":"A ball is thrown vertically upwards at 20 m/s.","h":0,"u":20,"asks":["greatest height"]}
@@ -295,7 +192,6 @@ EXAMPLES
 
 Be brief. Only the fields you are sure about. Unless the student says otherwise, it all
 happens on Earth: leave g out and read the question — never ask where it happens.
-Parts that need different motions also get parts, one reading each.
 
 Answer with ONE JSON object and nothing else. understood, confidence, scenario and
 summary are always present; every other field only when the question gives it.
@@ -352,7 +248,6 @@ and calculate nothing — and ALSO return how the board should be laid out:
   others  (array, optional) when the description has MORE THAN ONE moving object ("two
           balls thrown at 30° and 60°", "one dropped and one thrown"), each extra object as
           its own flat reading with its own label and scenario. At most two. Omit otherwise.
-          A composed scenario's companion IS its second object: never repeat it in others.
 
 A description with numbers missing is still a board: return what is given, and the page asks
 for the rest. Only set understood: false when nothing in it moves at all — and then answer

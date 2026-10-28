@@ -253,8 +253,7 @@ export function render(canvas, cam, o) {
   const P = palette();
   const L = labels();
   const tn = W2.tones();
-  // A composed scenario names its spot; a ready-made one is its own.
-  const site = siteFor(scenario?.spot || scenario?.id);
+  const site = siteFor(scenario?.id);
   const { u0 } = siteMap(site);
   const list = [f, second].filter(Boolean);
   const section = slice({ axis: site.axis, at: site.at, dir: site.dir });
@@ -282,8 +281,7 @@ export function render(canvas, cam, o) {
   // the cache and repainting the identical frame.
   const key = [w, h, document.documentElement.dataset.theme, cam.scale.toFixed(4),
                cam.cx.toFixed(2), cam.cy.toFixed(2), scenario?.id].join('|');
-  // A stage of its own — the parts side by side — keeps its own backdrop.
-  const bg = W2.layer(o.layer || 'section', w, h, key, (g) => {
+  const bg = W2.layer('section', w, h, key, (g) => {
     W2.drawSection({ ctx: g, w, h, span, scale: cam.scale, sx: su, sy, px: pu, py,
                      section, tn, L: null });
   });

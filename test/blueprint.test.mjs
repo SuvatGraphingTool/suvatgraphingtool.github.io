@@ -88,21 +88,5 @@ group('A board with something missing says what, and an edit fills it', () => {
   near(g10.traj.tFlight, flight({ u: 12, theta: 0, h: 30, g: 10 }).tFlight, 1e-9, 'and g = 10, where the paper says so');
 });
 
-group('A composed board keeps its companion once', () => {
-  // As Gemma answered "throw a ball flat off a 50 m tower at 14 m/s and drop
-  // another at the same time": the recipe's companion, and the same ball in others.
-  const recipe = { name: 'Thrown and dropped', pieces: [
-    { piece: 'launch', angle: 'fixed', degrees: 0, from: 'height' }, { piece: 'stadium', spot: 'platform' },
-    { piece: 'ball' }, { piece: 'released-beside', label: 'dropped', pair: 'same height' }] };
-  const bp = read({ scenario: 'composed', recipe, h: 50, u: 14, label: 'the ball',
-                    others: [{ label: 'dropped', scenario: 'released-beside', h: 50 }] });
-  ok(bp.ok && bp.objects.length === 1, 'the dropped ball is the companion, not a second object');
-  const one = solveObject(bp.objects[0].x);
-  ok(one.ok && one.second, 'and it is flown beside the first');
-  const free = read({ scenario: 'composed', h: 50, u: 14, recipe: { name: 'Off a tower', pieces: recipe.pieces.slice(0, 3) },
-                      others: [{ label: 'dropped', scenario: 'dropped', h: 50 }] });
-  ok(free.objects.length === 2, 'with no companion in the recipe, others are kept');
-});
-
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
