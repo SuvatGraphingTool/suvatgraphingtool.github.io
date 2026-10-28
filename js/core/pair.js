@@ -63,7 +63,7 @@ function coeffs(p, held) {
 }
 
 /** c0 + c1 t + c2 t², as source for M``: `35 + 10t - 5t^2`. */
-export function poly([c0, c1, c2], dp = 3, { desc = false } = {}) {
+export function poly([c0, c1, c2], dp = 3, { desc = false, sym = 't' } = {}) {
   const terms = [];
   const add = (c, tail) => {
     if (Math.abs(c) < 1e-9) return;
@@ -71,7 +71,7 @@ export function poly([c0, c1, c2], dp = 3, { desc = false } = {}) {
     const body = tail && Math.abs(mag - 1) < 1e-9 ? tail : `${d(mag, dp)}${tail}`;
     terms.push({ neg: c < 0, body });
   };
-  add(c2, 't^2'); add(c1, 't'); add(c0, '');
+  add(c2, `${sym}^2`); add(c1, sym); add(c0, '');
   // A height reads constant first, h + ut − ½gt²; an equation to solve reads
   // highest power first, 10t − 35 = 0.
   if (!desc) terms.reverse();
