@@ -45,6 +45,7 @@
 <link rel="modulepreload" href="./js/render/workshop.js">
 <link rel="modulepreload" href="./js/render/stringrig.js">
 <link rel="modulepreload" href="./js/ai/capture.js">
+<link rel="modulepreload" href="./js/ai/typewriter.js">
 <link rel="modulepreload" href="./js/board/blueprint.js">
 <link rel="modulepreload" href="./js/board/frames.js">
 <link rel="modulepreload" href="./js/render/warehouse.js">
@@ -92,8 +93,12 @@
          See js/ai/ask.js, css/ask.css, js/core/question.js and worker/. -->
     <section class="ask ask-hero" id="ask" aria-labelledby="ask-h">
       <h1 class="sr-only" id="ask-h">Ask Suvat</h1>
-      <div class="ask-col">
-        <div class="ask-thread" id="ask-thread" aria-live="polite" hidden></div>
+      <!-- The box lives here until the first message is sent; then it moves
+           to the foot of the chat screen below (#chat-dock) and back again
+           when the chat is left. One element, so one set of listeners. -->
+      <div class="ask-col" id="ask-slot">
+        <button type="button" class="ask-resume" id="ask-resume" hidden><span class="ai-orb xs" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 2.5c.55 4.6 2.9 6.95 7.5 7.5-4.6.55-6.95 2.9-7.5 7.5-.55-4.6-2.9-6.95-7.5-7.5 4.6-.55 6.95-2.9 7.5-7.5Z" fill="currentColor"/></svg></span>Back to your chat</button>
+        <div class="ask-composer" id="ask-composer">
         <form class="pbox" id="ask-form" data-listening="false" data-drop="false" data-busy="false">
           <div class="ask-att" id="ask-att" hidden>
             <button type="button" class="ask-thumb" id="ask-att-view" aria-label="See the attachment full size">
@@ -129,9 +134,9 @@
           </div>
           <input type="file" id="ask-doc-in" accept="image/*,application/pdf,.pdf,text/plain,.txt" hidden>
         </form>
-        <p class="ask-fine">Suvat reads the question with Gemma on Cloudflare or with Google Gemini, which may keep what you send. Send the question, not your name.</p>
+        <p class="ask-fine">Messages are processed by Google Gemini and Cloudflare and may be retained. Do not include personal information.</p>
+        </div>
       </div>
-      <dialog class="ask-view" id="ask-view" aria-label="The attachment"><img id="ask-view-img" alt="The attachment, full size"><button type="button" class="ask-view-x" id="ask-view-x" aria-label="Close">×</button></dialog>
     </section>
 
     <div class="centre">
@@ -511,6 +516,26 @@
       </button>
     </form>
   </main>
+
+  <!-- ── Ask Suvat, the conversation ─────────────────────────────────
+       The first message sent from the box on screen one opens this: the
+       whole screen becomes the chat, the box glides to the foot of it, and
+       each reply is written out a letter at a time (js/ai/typewriter.js).
+       "Scenarios" goes back to the cards with the chat kept; "New chat"
+       clears it. See js/ai/ask.js and css/ask.css. -->
+  <main class="screen" id="screen-chat" aria-label="Ask Suvat">
+    <div class="chat-bar">
+      <button type="button" class="chat-btn" id="chat-back"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Scenarios</button>
+      <p class="chat-title"><span class="ai-orb xs" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 2.5c.55 4.6 2.9 6.95 7.5 7.5-4.6.55-6.95 2.9-7.5 7.5-.55-4.6-2.9-6.95-7.5-7.5 4.6-.55 6.95-2.9 7.5-7.5Z" fill="currentColor"/></svg></span>Ask Suvat</p>
+      <button type="button" class="chat-btn" id="chat-new"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>New chat</button>
+    </div>
+    <div class="chat-scroll" id="chat-scroll">
+      <div class="ask-thread chat-col" id="ask-thread" aria-live="polite"></div>
+    </div>
+    <div class="chat-dock chat-col" id="chat-dock"></div>
+  </main>
+
+  <dialog class="ask-view" id="ask-view" aria-label="The attachment"><img id="ask-view-img" alt="The attachment, full size"><button type="button" class="ask-view-x" id="ask-view-x" aria-label="Close">×</button></dialog>
 
 </div>
 

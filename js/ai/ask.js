@@ -1,7 +1,11 @@
-// ask.js — "Ask Suvat": a chat box on the first screen.
+// ask.js — "Ask Suvat": a chat box on the first screen, and the chat it opens.
 //
 // Type the question, add a picture of it or the paper as a file, or say it.
-// This file owns the box and the reply under it, and nothing else. It sends
+// The first message turns the whole screen into the chat (#screen-chat): the
+// box glides from the middle of the first screen to the foot of the chat, as
+// it does in the chat assistants, and every reply is written out a letter at
+// a time (js/ai/typewriter.js).
+// This file owns the box, the chat and its replies, and nothing else. It sends
 // the question to the reader (js/ai/capture.js) and hands what comes back to
 // the app, which decides what it means — see applyReading in js/app.js. The
 // model reads; the engine calculates; this only carries the question between.
@@ -12,6 +16,7 @@
 
 import { prepareImage, readQuestion, readText, READER } from './capture.js';
 import { esc, proseHTML, sourcesHTML } from './readout.js';
+import { typeOut } from './typewriter.js';
 
 const $ = (id) => document.getElementById(id);
 const PDF_MAX = 4_000_000;          // the Worker's own limit, checked here first
@@ -21,10 +26,12 @@ const TXT_MAX = 2_000;
  * @param o.apply(extraction) → { ok, html?, runnable?, error? }
  * @param o.run()   show the flight
  * @param o.edit()  go to the values screen instead
+ * @param o.show(step)  go to a screen — 'chat' is this one's
  */
-export function createAsk({ apply, run, edit }) {
+export function createAsk({ apply, run, edit, show }) {
   const form = $('ask-form'), text = $('ask-text'), send = $('ask-send');
-  const thread = $('ask-thread');
+  const thread = $('ask-thread'), scroller = $('chat-scroll');
+  const composer = $('ask-composer');
   let att = null, busy = null;     // att: { kind: 'image'|'pdf', file }
   const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   let rec = null, before = '';     // the browser's own speech recognition, while it listens
@@ -34,6 +41,65 @@ export function createAsk({ apply, run, edit }) {
   const history = [];
   const HISTORY_MAX = 8;
   let current = null;              // this turn's reply, while it is being written
+  let typing = null;               // the reply being typed out, if one is
+
+  /* ── the chat screen ────────────────────────────────────────────────────
+     The box is one element, moved to wherever the screen on show wants it:
+     the foot of the chat, or the middle of the first screen. */
+  const app = $('app');
+  const inChat = () => app.dataset.step === 'chat';
+  function dock() {
+    const slot = inChat() ? $('chat-dock') : $('ask-slot');
+    if (composer.parentNode !== slot) slot.append(composer);
+    $('ask-resume').hidden = inChat() || !thread.childElementCount;
+  }
+  new MutationObserver(dock).observe(app, { attributes: true, attributeFilter: ['data-step'] });
+
+  /* The first message opens the chat. Where the browser can, it is a view
+     transition: the box is named, so it glides to its new place while the
+     rest cross-fades. Elsewhere the same glide is done by hand. */
+  const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let opening = false;              // a view transition has been asked for
+  function openChat({ instant = false } = {}) {
+    if (inChat()) return;
+    const swap = () => {
+      opening = false;
+      if (inChat()) return;
+      show('chat'); dock(); follow(true);
+      text.focus({ preventScroll: true });
+    };
+    // A reply with graphs in it needs the chat on screen now, to draw them.
+    if (instant || calm()) { swap(); return; }
+    if (opening) return;
+    if (document.startViewTransition) { opening = true; document.startViewTransition(swap); return; }
+    const from = composer.getBoundingClientRect();
+    swap();
+    const to = composer.getBoundingClientRect();
+    const ease = 'cubic-bezier(.2,.8,.2,1)';
+    composer.animate([{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)` }, { transform: 'none' }],
+      { duration: 520, easing: ease });
+    $('screen-chat').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: ease });
+  }
+  function newChat() {
+    typing?.finish(); busy?.abort();
+    for (const img of thread.querySelectorAll('img.ask-shot')) URL.revokeObjectURL(img.src);
+    thread.replaceChildren();
+    history.length = 0; current = null;
+    show('scenario');
+    focus();
+  }
+  function focus() { text.focus(); text.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+
+  /* The chat keeps to its newest line while it is written — unless the
+     student has scrolled up to read something, which it then leaves alone. */
+  let stick = true;
+  scroller.addEventListener('scroll', () => {
+    stick = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
+  }, { passive: true });
+  function follow(force = false) {
+    if (force) stick = true;
+    if (stick) scroller.scrollTop = scroller.scrollHeight;
+  }
 
   /* ── the three switches ─────────────────────────────────────────────────
      Search  a written answer from a web search, with its sources
@@ -123,18 +189,26 @@ export function createAsk({ apply, run, edit }) {
   }
 
   /* ── the conversation: every message, oldest at the top ───────────────── */
-  function reply(html, { busy: thinking = false, acts = null } = {}) {
-    thread.hidden = false;
+  /** A reply. Unless it is the dots, it is written out a letter at a time;
+      `before` runs first, on the whole reply, so graphs are drawn at their
+      real size before they are hidden to be typed in. */
+  function reply(html, { busy: thinking = false, acts = null, before = null } = {}) {
+    openChat({ instant: !!before });
     let r = current;
     if (!r) { r = document.createElement('div'); r.className = 'ask-msg ask-reply'; thread.append(r); }
     if (thinking) current = r; else current = null;
     r.dataset.busy = String(thinking);
     r.innerHTML = `<span class="ai-orb sm" aria-hidden="true">${SPARK}</span><div class="ask-bubble">${html}${acts || ''}</div>`;
-    thread.scrollTop = thread.scrollHeight;
+    before?.(r);
+    if (!thinking) {
+      typing?.finish();
+      typing = typeOut(r.querySelector('.ask-bubble'), { tick: follow });
+    }
+    follow();
     return r;
   }
   function echo(words, a) {
-    thread.hidden = false;
+    typing?.finish();
     // Only the newest answer's buttons act: an older one would run whatever
     // question is set up now, not the one it was written for.
     for (const old of thread.querySelectorAll('.ask-acts')) old.remove();
@@ -147,7 +221,7 @@ export function createAsk({ apply, run, edit }) {
       : `<span class="ask-chip">PDF · ${esc(a.file.name || '')}</span>`;
     q.innerHTML = `<div class="ask-bubble">${what}${words ? `<p>${esc(words)}</p>` : ''}</div>`;
     thread.append(q);
-    thread.scrollTop = thread.scrollHeight;
+    follow(true);
   }
   function remember(words, a, extraction) {
     const said = a ? `[sent ${a.kind === 'pdf' ? 'the question paper as a PDF' : 'a photo of the question'}]${words ? ` ${words}` : ''}` : words;
@@ -160,6 +234,7 @@ export function createAsk({ apply, run, edit }) {
     if (busy || (!text.value.trim() && !att)) return;
     stopMic();
     const words = text.value.trim(), a = att;
+    openChat();
     echo(words, a);
     text.value = ''; detach();
     busy = new AbortController(); sync();
@@ -215,11 +290,13 @@ export function createAsk({ apply, run, edit }) {
         <button type="button" class="ghost sm ask-edit">${r.runnable ? 'Check the values' : 'Add the missing values'}</button>
       </div>`
       : '';
-    const node = reply(r.html, { acts });
-    r.draw?.(node);
-    node.querySelector('.ask-run')?.addEventListener('click', run);
-    node.querySelector('.ask-edit')?.addEventListener('click', edit);
-    (r.runnable ? node.querySelector('.ask-run') : node.querySelector('.ask-edit'))?.focus();
+    // The box keeps the focus, as in any chat: the next question is the
+    // likelier next thing than the flight.
+    reply(r.html, { acts, before(node) {
+      r.draw?.(node);
+      node.querySelector('.ask-run')?.addEventListener('click', run);
+      node.querySelector('.ask-edit')?.addEventListener('click', edit);
+    } });
   }
 
   /* ── voice ──────────────────────────────────────────────────────────── */
@@ -286,6 +363,9 @@ export function createAsk({ apply, run, edit }) {
     $('ask-view').showModal?.();
   });
   $('ask-view-x').addEventListener('click', () => $('ask-view').close());
+  $('ask-resume').addEventListener('click', () => openChat());
+  $('chat-back').addEventListener('click', () => show('scenario'));
+  $('chat-new').addEventListener('click', newChat);
   $('ask-view').addEventListener('click', (e) => { if (e.target === $('ask-view')) $('ask-view').close(); });
   // A picture pasted or dropped on the box is a picture added.
   text.addEventListener('paste', (e) => {
@@ -299,8 +379,15 @@ export function createAsk({ apply, run, edit }) {
     attach(e.dataTransfer?.files?.[0]);
   });
   sync();
+  dock();
 
-  return { focus: () => { text.focus(); text.scrollIntoView({ block: 'center', behavior: 'smooth' }); } };
+  return {
+    /** The top bar's "Ask Suvat": the chat if there is one, else the box. */
+    open() {
+      if (thread.childElementCount) { openChat(); text.focus({ preventScroll: true }); }
+      else { show('scenario'); requestAnimationFrame(focus); }
+    },
+  };
 }
 
 function fileBase64(file) {

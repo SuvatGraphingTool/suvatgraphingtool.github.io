@@ -2788,9 +2788,9 @@ function applyReading(x, { graph = true, solve = false } = {}) {
   if (scenario.descent) state.descent = { ...r.descent };
   if (scenario.road) state.mark = r.mark;
   buildValuesScreen();              // which recomputes
-  // The answer is shown where the question was asked; the flight waits for
-  // the student to ask for it.
-  go('scenario');
+  // The answer is shown in the chat, where the question was asked (js/ai/
+  // ask.js opens it); the flight waits for the student to ask for it.
+  refreshSteps();
   // A line to stay above is a question about it, and the engine answers it
   // here the same way it does under the line's own box (showAbove).
   const above = traj && scenario.dragLine && state.markers?.heightLine != null
@@ -2831,6 +2831,7 @@ const ask = createAsk({
   apply: applyReading,
   run: showFlight,
   edit: () => go('values'),
+  show: go,
 });
 /* ── the whiteboard ──────────────────────────────────────────────────────
    Its own screen, built from the same pieces — see js/board/board.js. A
@@ -2843,7 +2844,7 @@ board = createBoard({
   },
 });
 $('board-top').addEventListener('click', () => go(state.step === 'board' ? 'scenario' : 'board'));
-$('ask-top').addEventListener('click', () => { go('scenario'); requestAnimationFrame(ask.focus); });
+$('ask-top').addEventListener('click', () => ask.open());
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, win, choose: chooseScenario, launch, runFlight, go,

@@ -13,9 +13,13 @@
    orange low in the frame, through peach and rose to a pale sky. The same
    picture in both themes, as the scenario cards are pictures — at night it
    is held a little lower, so it does not glare. */
-.ask-hero {
+/* The box's own colours go with the box, which moves between this screen
+   and the chat's (js/ai/ask.js, dock). */
+.ask-composer {
   --pb-bg: #1F2023; --pb-line: #444444; --pb-ink: #F3F4F6; --pb-mute: #9CA3AF; --pb-hover: #D1D5DB;
   --pb-search: #1EAEDB; --pb-solve: #8B5CF6; --pb-graph: #FF7E5F;   /* graph: the site's coral */
+}
+.ask-hero {
   position: relative; min-height: calc(100dvh - 64px); margin: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: var(--sp-10) var(--sp-4);
@@ -27,7 +31,15 @@
   content: ''; position: absolute; inset: 0; background: rgba(20,14,16,0.28); pointer-events: none;
 }
 .ask-col { position: relative; width: min(640px, 100%); display: flex; flex-direction: column; gap: var(--sp-3); }
-.ask-hero .ask-thread { max-height: 62vh; overflow-y: auto; margin: 0; padding: 2px; }
+.ask-resume {
+  align-self: center; display: inline-flex; align-items: center; gap: var(--sp-2);
+  height: 36px; padding: 0 var(--sp-4) 0 var(--sp-2); border-radius: var(--r-pill);
+  background: rgba(31,32,35,0.82); color: #F3F4F6; font-size: var(--fs-sm); font-weight: var(--w-semi);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18); transition: background 150ms;
+}
+.ask-resume:hover { background: rgba(31,32,35,0.95); }
+.ask-resume:focus-visible { outline: 2px solid #FF7E5F; outline-offset: 2px; }
+.ask-resume[hidden] { display: none; }
 .ask-hero .ask-fine { color: rgba(31,32,35,0.78); text-align: center; margin: var(--sp-1) 0 0; font-weight: var(--w-small); }
 .pick-h { font-size: var(--fs-2xl); margin-bottom: var(--sp-2); }
 
@@ -176,4 +188,80 @@
 @media (max-width: 560px) {
   .ask-hero { min-height: calc(100dvh - 64px); padding: var(--sp-6) var(--sp-3); justify-content: flex-end; }
   .pbox-left { gap: 0; }
+}
+
+/* ── the chat ───────────────────────────────────────────────────────────
+   The whole screen, once the first message is sent: a bar with the way
+   back and a new chat, the conversation in one centred column that scrolls
+   at the window's edge, and the box at the foot. Suvat's replies sit on
+   the page beside its mark, as the assistants' do; the student's own are
+   bubbles on the right. */
+.app[data-step='chat'] #screen-chat { display: flex; }
+#screen-chat { flex-direction: column; overflow: hidden; background: var(--surface); }
+.chat-col { width: min(760px, calc(100% - 2 * var(--sp-4))); margin-inline: auto; }
+
+.chat-bar {
+  flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  gap: var(--sp-3); padding: var(--sp-2) var(--sp-6); border-bottom: 1px solid var(--border-soft);
+}
+.chat-title { margin: 0; display: inline-flex; align-items: center; gap: var(--sp-2);
+              font-weight: var(--w-semi); color: var(--ink-strong); }
+.chat-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 var(--sp-3);
+  border-radius: var(--r-pill); font-size: var(--fs-sm); color: var(--ink-muted);
+  transition: background 120ms, color 120ms;
+}
+.chat-btn:first-child { justify-self: start; }
+.chat-btn:last-child { justify-self: end; }
+.chat-btn:hover { background: var(--hover); color: var(--ink); }
+.chat-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chat-btn svg { width: 18px; height: 18px; }
+
+.chat-scroll {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  /* the conversation fades out under the bar rather than being cut by it */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24px);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 24px);
+}
+#screen-chat .ask-thread {
+  max-height: none; overflow: visible; margin: 0 auto; padding: var(--sp-8) 0 var(--sp-6);
+  gap: var(--sp-6);
+}
+#screen-chat .ask-bubble { font-size: var(--fs-base); line-height: 1.6; }
+#screen-chat .ask-reply .ask-bubble { background: none; border: none; box-shadow: none; padding: 5px 0 0; }
+#screen-chat .ask-mine .ask-bubble { max-width: min(80%, 560px); border-radius: 22px; border-bottom-right-radius: var(--r-sm); }
+.chat-dock { flex: none; padding: var(--sp-2) 0 max(var(--sp-4), env(safe-area-inset-bottom)); }
+#screen-chat .ask-fine { text-align: center; margin: var(--sp-2) 0 0; }
+
+/* Each message rises into place as it arrives. */
+.ask-msg { animation: msg-in 320ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes msg-in { from { opacity: 0; transform: translateY(10px); } }
+
+/* Into the chat: the box is named, so a view transition glides it from the
+   middle of the first screen to the foot of this one while the rest
+   cross-fades. Browsers without view transitions get the same glide from
+   js/ai/ask.js. */
+.ask-composer { view-transition-name: ask-composer; }
+::view-transition-group(ask-composer) { animation-duration: 520ms; animation-timing-function: cubic-bezier(.2,.8,.2,1); }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 360ms; }
+
+/* ── a reply, written out — js/ai/typewriter.js ──────────────────────── */
+.tw-wait { display: none !important; }
+.tw-in { animation: tw-in 200ms ease-out both; }
+.tw-fade { animation: tw-in 320ms ease-out both; }
+@keyframes tw-in { from { opacity: 0; } }
+.tw-caret {
+  display: inline-block; width: 9px; height: 9px; margin-left: 3px; border-radius: 50%;
+  background: var(--accent-fill); vertical-align: baseline; animation: tw-caret 900ms ease-in-out infinite;
+}
+@keyframes tw-caret { 50% { opacity: .35; transform: scale(.8); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-msg, .tw-in, .tw-fade, .tw-caret { animation: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+@media (max-width: 560px) {
+  .chat-bar { padding: var(--sp-2) var(--sp-3); }
+  .chat-btn { font-size: var(--fs-xs); padding: 0 var(--sp-2); }
+  .chat-col { width: calc(100% - 2 * var(--sp-3)); }
 }
