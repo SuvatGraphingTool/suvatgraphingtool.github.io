@@ -12,10 +12,17 @@
 //
 // The schema is deliberately small. The whole response is ~80–150 tokens,
 // which is most of why this is fast.
+//
+// When none of the twelve fits, the model may build a scenario from the
+// app's own pieces instead (scenario "composed", with a recipe). The pieces
+// it is told about are written out from js/compose/registry.js below, so the
+// prompt can never offer a piece the code does not have.
+
+import { PIECES, KINDS } from '../../js/compose/registry.js';
 
 export const SCENARIO_IDS = [
   'up', 'arc', 'dropped', 'down', 'platform-down', 'platform', 'platform-angle',
-  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'other',
+  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'composed', 'other',
 ];
 
 export const EXTRACTION_SCHEMA = {
@@ -66,6 +73,13 @@ export const EXTRACTION_SCHEMA = {
     },
     note: { type: 'string', description: 'Only if something is ambiguous or unreadable. Otherwise omit.' },
 
+    // None of the twelve fits: a scenario built from the app's pieces — see
+    // COMPOSING A SCENARIO in the prompt, and js/compose/registry.js.
+    recipe: {
+      type: 'object',
+      description: 'composed only: the scenario built from the pieces — name, optional sub, and pieces. Never an answer.',
+    },
+
     // A question in parts whose parts are different motions — see QUESTIONS
     // IN PARTS in the prompt, and js/core/parts.js for what the page does.
     parts: {
@@ -75,6 +89,20 @@ export const EXTRACTION_SCHEMA = {
   },
   required: ['understood', 'confidence', 'scenario', 'summary'],
 };
+
+/* The pieces, as the model is told them: one line for each kind, one for
+   each piece, and one for each setting it takes. Straight from the registry
+   — its `says` are written for the model (design/composer.md). */
+const SETTING = (v) => (v.type === 'one' ? `one of: ${v.of.join(' | ')}`
+  : v.type === 'number' ? `number, ${v.min} to ${v.max}`
+  : v.type === 'bool' ? 'true or false'
+  : `text, up to ${v.max} characters`);
+const COUNT = (r) => (r.min === r.max ? `exactly ${r.min}` : `${r.min} to ${r.max}`);
+export const PIECE_GUIDE = Object.entries(KINDS).filter(([, r]) => !r.auto).map(([kind, r]) =>
+  `${kind} — ${r.says} (${COUNT(r)}):\n` + PIECES.filter((p) => p.kind === kind).map((p) =>
+    `  ${p.id} — ${p.says}` + Object.entries(p.params || {}).map(([k, v]) =>
+      `\n      ${k} (${SETTING(v)}${v.required ? ', required' : ''}) — ${v.says}`).join('')).join('\n'))
+  .join('\n');
 
 const FIELDS = Object.entries(EXTRACTION_SCHEMA.properties)
   .map(([k, v]) => `  ${k} (${v.type}${v.enum ? `: ${v.enum.join(' | ')}` : ''})${v.description ? ` — ${v.description}` : ''}`)
@@ -106,7 +134,9 @@ WHAT YOU DO
    monkey         a projectile aimed straight at a target that drops as it is fired
    road           a car, lorry, train, cyclist or particle moving along a straight HORIZONTAL
                   road or line with constant acceleration — no gravity in the question
-   other          anything else about motion that none of these fit
+   composed       none of these fits, but the app's pieces can build it: see COMPOSING A
+                  SCENARIO below
+   other          anything else about motion that none of these fit and the pieces cannot build
 2. Return the values that are GIVEN.
 
 Do no arithmetic in what you return. If the question says tan a = 3/4, return ratioFn
@@ -183,6 +213,53 @@ RULES
   five sentences. Explain in words — write no equations and no symbols such as ^ or sqrt,
   because the app sets the maths itself.
 - Set confidence to low if values are unclear, handwritten, or partly cut off.
+
+COMPOSING A SCENARIO — ONLY WHEN NONE OF THE TWELVE FITS
+The twelve are built from the app's own pieces, and you can build a new one from the same
+pieces when a question needs something none of them has. Most questions fit one of the
+twelve: every launch takes the height the question gives, and time-above takes any height
+and any angle. Whenever one fits, use it — it has a card and words written for it, and a
+composed scenario has neither. What the twelve cannot set up today:
+- something thrown off a cliff, tower or building BESIDE one let go from rest at the same
+  instant ("which lands first?") — bullet is only a rifle on a bench, at most 3 m up.
+Never compose for a question the twelve can set up, and never choose "other" for a
+projectile question the pieces can build.
+
+To compose, return scenario "composed" and a recipe, BESIDE the same flat fields as any
+reading (h, u, angleDegrees, heightLine, targetX, targetY ...). The recipe says what the
+scenario is made of; the flat fields carry the question's numbers, as always. The recipe
+holds no answer and nothing worked out.
+  recipe: {"name": two to five words, "sub": a short line under it (optional),
+           "pieces": [{"piece": an id below, ...that piece's settings and nothing else}]}
+- Exactly one motion and one stage; at most one body and one companion; up to two markers
+  and two controls. The graphs, the working and the values always come: never name them.
+- A launch is drawn in the stadium, a straight-line motion on the road, a parachute drop in
+  the sky. The plate, the range and live sliders are for an experiment, not an exam question.
+- The launch angle: "free" whenever the question gives an angle — the angle itself goes in
+  angleDegrees (or the ratio fields), never in the recipe. "fixed" only for a throw that is
+  always horizontal (degrees 0) or always vertical (90 up, -90 down), and then degrees is
+  required. "released" for something let go from rest.
+- In the stadium, pick the spot whose place fits: a cliff, tower or building is the north
+  upper tier (platform, platform-angle or platform-down); level ground is a goal line (arc).
+- A height line's at is the same number as heightLine. A target's x and y are targetX and
+  targetY.
+- The app checks every recipe and refuses one that does not hold together, so use only the
+  pieces and settings below, exactly as they are written.
+
+THE PIECES
+${PIECE_GUIDE}
+
+COMPOSING EXAMPLES
+"A ball is thrown from the top of a 20 m cliff at 15 m/s at 40° above the horizontal. For how long is it more than 22 m above the ground?"
+→ {"understood":true,"confidence":"high","scenario":"time-above","summary":"A ball is thrown at 15 m/s at 40° from a 20 m cliff.","h":20,"u":15,"angleDegrees":40,"heightLine":22,"asks":["time more than 22 m above the ground"]}
+(not composed — time-above takes the 20 m cliff as it is)
+
+"A stone is thrown horizontally at 12 m/s from a 45 m tower. At the same instant a second stone is dropped from the tower. Which lands first?"
+→ {"understood":true,"confidence":"high","scenario":"composed","recipe":{"name":"Thrown and dropped","sub":"off a tower, at the same instant","pieces":[{"piece":"launch","angle":"fixed","degrees":0,"from":"height"},{"piece":"stadium","spot":"platform"},{"piece":"ball"},{"piece":"released-beside","label":"dropped","pair":"same height"}]},"summary":"A stone is thrown flat at 12 m/s from a 45 m tower as another is dropped.","h":45,"u":12,"asks":["which lands first"]}
+
+"From the top of a 40 m building a ball is projected at 15 m/s at 25° above the horizontal, and at the same instant a second ball is released from rest beside it."
+→ {"understood":true,"confidence":"high","scenario":"composed","recipe":{"name":"Projected and released","sub":"off a building, at the same instant","pieces":[{"piece":"launch","angle":"free","from":"height"},{"piece":"stadium","spot":"platform-angle"},{"piece":"ball"},{"piece":"released-beside","label":"released","pair":"same height"}]},"summary":"A ball is projected at 15 m/s at 25° from a 40 m building as another is released.","h":40,"u":15,"angleDegrees":25}
+(the 25° is in angleDegrees; a free launch takes no degrees)
 
 EXAMPLES
 "A ball is projected from the top of a 25 m cliff at 45° above the horizontal and lands 100 m from the foot of the cliff. Take g = 9.8. Find the speed of projection."
@@ -273,6 +350,7 @@ and calculate nothing — and ALSO return how the board should be laid out:
   others  (array, optional) when the description has MORE THAN ONE moving object ("two
           balls thrown at 30° and 60°", "one dropped and one thrown"), each extra object as
           its own flat reading with its own label and scenario. At most two. Omit otherwise.
+          A composed scenario's companion IS its second object: never repeat it in others.
 
 A description with numbers missing is still a board: return what is given, and the page asks
 for the rest. Only set understood: false when nothing in it moves at all — and then answer

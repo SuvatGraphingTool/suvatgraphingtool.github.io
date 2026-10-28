@@ -98,7 +98,7 @@ export const PIECES = [
       degrees: { type: 'number', min: -90, max: 90, says: 'the angle when it is fixed, above the horizontal (negative is below)' },
       min:     { type: 'number', min: -90, max: 90, says: 'the lowest angle the student may set, when it is free' },
       max:     { type: 'number', min: -90, max: 90, says: 'the highest angle the student may set, when it is free' },
-      from:    { type: 'one', of: ['ground', 'height'], says: 'where it starts, for the picture on its card' },
+      from:    { type: 'one', of: ['ground', 'height'], says: 'where it starts: on the ground, or up on a cliff, tower or building' },
     },
     needs(p) {
       if (p.angle === 'fixed' && !num(p.degrees)) return 'A fixed angle needs its degrees.';
@@ -280,12 +280,12 @@ export const PIECES = [
   { id: 'live-sliders', kind: 'control',
     says: 'Speed and angle sliders on the stage itself, for an experiment that is played with rather than solved.',
     params: {
-      uMin: { type: 'number', min: 0, max: 1000, required: true },
-      uMax: { type: 'number', min: 0, max: 1000, required: true },
-      uStep: { type: 'number', min: 0.01, max: 100 },
-      thetaMin: { type: 'number', min: -90, max: 90 },
-      thetaMax: { type: 'number', min: -90, max: 90 },
-      thetaStep: { type: 'number', min: 0.01, max: 10 },
+      uMin: { type: 'number', min: 0, max: 1000, required: true, says: 'the slowest speed on the slider, m/s' },
+      uMax: { type: 'number', min: 0, max: 1000, required: true, says: 'the fastest speed on the slider, m/s' },
+      uStep: { type: 'number', min: 0.01, max: 100, says: 'how far one notch moves the speed' },
+      thetaMin: { type: 'number', min: -90, max: 90, says: 'the lowest angle on an angle slider, if there is one' },
+      thetaMax: { type: 'number', min: -90, max: 90, says: 'the highest angle on that slider' },
+      thetaStep: { type: 'number', min: 0.01, max: 10, says: 'how far one notch moves the angle' },
     },
     needs(p, ctx) {
       if (!['plate', 'range'].includes(stageOf(ctx))) return 'Live sliders belong on an experiment: the plate or the range.';

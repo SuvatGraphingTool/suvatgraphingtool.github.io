@@ -62,7 +62,11 @@ export function readBlueprint(x) {
   want = FRAMES.filter((f) => want.includes(f));
 
   const objects = [{ label: text(label, 40) || 'it', x: main }];
-  for (const o of (Array.isArray(others) ? others : []).slice(0, MAX_OTHERS)) {
+  // A composed scenario's companion (js/compose/registry.js) is already its
+  // second object, flown beside it; listed again in others it would be drawn twice.
+  const paired = main.scenario === 'composed' && Array.isArray(main.recipe?.pieces)
+    && main.recipe.pieces.some((p) => ['released-beside', 'drops-from-target'].includes(p?.piece));
+  for (const o of (paired ? [] : Array.isArray(others) ? others : []).slice(0, MAX_OTHERS)) {
     if (!o || typeof o !== 'object') continue;
     const { label: l, ...rest } = o;
     objects.push({ label: text(l, 40) || `object ${objects.length + 1}`,

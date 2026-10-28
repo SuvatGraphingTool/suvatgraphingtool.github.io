@@ -18,6 +18,7 @@ import { flight } from '../js/core/projectile.js';
 import { toApp } from '../js/core/question.js';
 import { solveObject } from '../js/board/blueprint.js';
 import { engineValue } from '../js/core/parts.js';
+import { SYSTEM_PROMPT, BOARD_PROMPT, PIECE_GUIDE, SCENARIO_IDS, EXTRACTION_SCHEMA } from '../worker/src/schema.js';
 
 let pass = 0, fail = 0;
 const ok = (cond, msg, detail = '') => {
@@ -228,6 +229,29 @@ group('The registry tells the truth about the code', () => {
   const unknown = [...read].filter((k) => !known.has(k));
   ok(!unknown.length, `every scenario flag the app reads is classified (${read.size})`, `not in SCENARIO_KEYS: ${unknown.join(', ')}`);
   ok(FLAT_SITE && Object.keys(SITES).length >= 10, 'the stadium spots are the world’s own');
+});
+
+group('The reader is told the pieces as the code has them', () => {
+  ok(SCENARIO_IDS.includes('composed') && EXTRACTION_SCHEMA.properties.recipe, 'the schema offers "composed" and a recipe');
+  for (const p of PIECES.filter((q) => !q.auto)) {
+    ok(PIECE_GUIDE.includes(`  ${p.id} — ${p.says}`), `the prompt describes ${p.id} in its own words`);
+    for (const [k, v] of Object.entries(p.params || {})) {
+      ok(typeof v.says === 'string' && v.says.length > 4 && PIECE_GUIDE.includes(`${k} (`),
+         `  and its setting ${k}, with words for the model`);
+    }
+  }
+  ok(!PIECES.some((p) => p.auto && PIECE_GUIDE.includes(`  ${p.id} — `)), 'graphs, working and values are not offered: they always come');
+  ok(SYSTEM_PROMPT.includes(PIECE_GUIDE) && BOARD_PROMPT.includes(PIECE_GUIDE), 'the reader and the whiteboard are both told them');
+  // Every recipe the prompt shows the model assembles, and its reading goes
+  // through — an example that drifted from the code would teach it to fail.
+  const shown = [...SYSTEM_PROMPT.matchAll(/^→ (\{.*"scenario":"composed".*\})$/gm)].map((m) => JSON.parse(m[1]));
+  ok(shown.length >= 1, `the prompt shows composed examples (${shown.length})`);
+  for (const x of shown) {
+    const built = assemble(x.recipe);
+    ok(built.ok, `example "${x.recipe.name}" assembles`, built.error);
+    const r = toApp(x);
+    ok(r.ok, `  and its reading reaches the app`, r.error);
+  }
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

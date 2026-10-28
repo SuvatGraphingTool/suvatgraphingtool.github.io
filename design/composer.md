@@ -81,24 +81,25 @@ and none of those.
 One JSON object: `name`, optional `sub` and `note`, and `pieces`. Each piece
 is an object naming its `piece`, plus its settings and nothing else.
 
-A question no ready-made scenario fits, *"a ball is thrown up from a 20 m
-cliff; for how long is it more than 25 m above the ground?"*:
+A question no ready-made scenario fits, *"a stone is thrown horizontally at
+12 m/s from a 45 m tower; at the same instant a second is dropped; which lands
+first?"* (Bullet vs Drop is a rifle on a bench, at most 3 m up):
 
 ```json
 {
-  "name": "Above a line, from a cliff",
-  "sub": "thrown up, off a height",
+  "name": "Thrown and dropped",
+  "sub": "off a tower, at the same instant",
   "pieces": [
-    { "piece": "launch", "angle": "free", "min": 0, "max": 90, "from": "height" },
-    { "piece": "stadium", "spot": "platform-angle" },
+    { "piece": "launch", "angle": "fixed", "degrees": 0, "from": "height" },
+    { "piece": "stadium", "spot": "platform" },
     { "piece": "ball" },
-    { "piece": "height-line", "at": 25, "drag": true }
+    { "piece": "released-beside", "label": "dropped", "pair": "same height" }
   ]
 }
 ```
 
-What the student typed (20 m, the speed, the angle) is not in the recipe. It
-goes in the values boxes as it does today, through `js/core/question.js`, and
+What the student typed (45 m, 12 m/s) is not in the recipe. It goes in the
+values boxes as it does today, through `js/core/question.js`, and
 `solveLaunch` works out the rest.
 
 The most involved of the twelve, Monkey vs Hunter, is six pieces:
@@ -175,6 +176,31 @@ returns `solved.five` and `solved.extras`, and a later part carries from it
 like any other. The stadium reads a composed scenario's `spot`
 (`js/render/scene.js`).
 
+## The reader composes
+
+`worker/src/schema.js` has a section, COMPOSING A SCENARIO, that tells the
+model when to compose and how. Its piece list (`PIECE_GUIDE`) is written out
+from `PIECES` and `KINDS` when the Worker is built: each kind with its count,
+each piece with its `says`, and each setting with its type, range and `says`.
+The prompt cannot offer a piece the code does not have.
+
+It tells the model to compose **only when none of the twelve fits**. Most
+questions fit: every launch takes the height the question gives, and Time
+above a line takes any height and any angle. A composed scenario has no card
+and no words written for it, so a ready-made one is always better when there
+is one. What the pieces build today that the twelve cannot is a throw from a
+height beside an object let go at the same instant. Stage 2b adds more.
+
+`test/compose.test.mjs` checks that:
+
+- every piece and setting is in the prompt, in its own words;
+- the reader and the whiteboard are both told them;
+- every composed example the prompt shows assembles, and its reading reaches
+  the app.
+
+On the whiteboard, a composed scenario's companion is its second object. If
+the model lists it again in `others`, `readBlueprint` drops the repeat.
+
 ## Adding a piece
 
 The registry is the one place a piece is described, and the library of
@@ -225,9 +251,9 @@ Rules for a new piece:
    the engine solves each part. Multi-part *questions* are being built
    separately in the reader, so this stage agrees the hand-off with that
    work.
-3. **The reader learns to compose**: a compose mode in
-   `worker/src/schema.js`, its piece list generated from this registry. Ask
-   Suvat uses it when no ready-made scenario fits.
+3. **The reader composes** (done): COMPOSING A SCENARIO in
+   `worker/src/schema.js`, its piece list written out from this registry.
+   Ask Suvat and the whiteboard use it when no ready-made scenario fits.
 4. **On the stage**: the app takes a composed scenario wherever it takes a
    ready-made one, with the same stage, graphs, working panel and notation.
    `siteFor` reads `spot`, and the chooser shows what was composed. A composed
