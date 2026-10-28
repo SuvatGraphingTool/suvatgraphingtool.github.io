@@ -31,7 +31,7 @@ export const BOARDS = [
   { id: 'edexcel', alias: 'pearson edexcel' },
   { id: 'aqa',     alias: 'aqa' },
   { id: 'ocr',     alias: 'ocr a ocra oxford rsa' },
-  { id: 'mei',     alias: 'ocr mei' },
+  { id: 'mei',     alias: 'ocr mei oxford rsa' },
   { id: 'wjec',    alias: 'wjec eduqas' },
   { id: 'cie',     alias: 'cambridge caie cie international' },
 ];
@@ -99,7 +99,7 @@ export const QUESTIONS = [
     says: 'Launched at 39 m s⁻¹ from a point 20 m above flat ground, at the angle whose sine is five thirteenths, which is 22.62°. This paper takes g as 10 m s⁻².',
     asks: 'Its greatest height, and how long until it lands.',
     beyond: 'A limitation of the model, and a final part where a second ball has a varying acceleration.',
-    terms: 'projected angle elevation sin maximum greatest height time flight lands ground horizontal',
+    terms: 'projected angle elevation sin theta maximum greatest height time flight lands ground horizontal',
     fill: { given: { u: 39, g: 10 }, theta: 22.62, h: 20 },
     answers: [{ q: 'apex', value: 31.25, tol: 0.01 }, { q: 'tFlight', value: 4, tol: 0.01 }] },
 

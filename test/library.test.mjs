@@ -168,6 +168,15 @@ group('Search', () => {
   ok(count('A-level') > 0 && count('maths') > 0 && count('ocr-a') > 0, 'A-level, maths and ocr-a are words it knows');
   ok(shelve('aqa lorry', nameOf).unmet.includes('lorry'), 'a word left out of the search is said, not hidden');
   ok(count('4.3') === 1, 'a sub-numbered question by its number alone');
+  // "as" is the qualification only when it is plainly meant as one
+  ok(QUESTIONS.filter((q) => matches(q, 'modelled as a particle', nameOf)).some((q) => q.source.boardId === 'cie'), 'modelled as a particle still finds the particle');
+  const g10 = QUESTIONS.filter((q) => matches(q, 'g as 10', nameOf)).map((q) => q.source.boardId);
+  ok(g10.includes('ocr') && g10.includes('cie'), 'g as 10 is not a search for AS papers');
+  ok(['AS', 'as level', 'AS maths'].every((w) => QUESTIONS.filter((q) => matches(q, w, nameOf)).every((q) => /^8MA0/.test(q.source.code))), 'AS, as level, AS maths are');
+  ok(count('A level') === count('A-level'), 'A level and A-level are one word');
+  ok(QUESTIONS.filter((q) => matches(q, 'jan 12', nameOf)).every((q) => q.source.session === 'January 2012'), 'jan 12 is January 2012');
+  ok(count('m19') === 0, 'm19 is Cambridge\u2019s February and March, which is not on the shelves');
+  ok(shelve('aqa lorry', nameOf).filtered && shelve('zzqq lorry', nameOf).filtered === false, 'the left-out line knows whether a filter narrowed the shelf');
   // Every question, found first by its own paper's key words.
   for (const q of QUESTIONS) {
     ok(top(q.terms, 1)[0] === q.id, `${q.id} comes first for its own key words`, top(q.terms, 4).join(', '));

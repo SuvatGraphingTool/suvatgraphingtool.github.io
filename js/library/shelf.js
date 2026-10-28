@@ -68,12 +68,15 @@ const whole = (w) => /^\d+(\.\d+)?$/.test(w) || /^q\d+(\.\d+)?$/.test(w) || w ==
 
 /* Words that carry no meaning in a search: "show that", "released from rest",
    "hits the ground" are found by their other words. */
-const STOP = new Set(['a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'from', 'with', 'and', 'that', 'is', 'it',
+const STOP = new Set(['a', 'an', 'as', 'the', 'of', 'to', 'in', 'on', 'at', 'from', 'with', 'and', 'that', 'is', 'it',
   'its', 'for', 'by', 'find', 'calculate', 'work', 'out', 'what', 'how', 'when', 'where']);
 
 /** What was typed, as the words to look for. "question 6" is q6; units go. */
 export function queryWords(query) {
   const raw = String(query || '').replace(UNIT_RE, ' ').toLowerCase().replace(/\bquestion\s+(\d)/g, 'q$1')
+    // A level is one word however it is typed; a month's two-digit year is its year
+    .replace(/\ba[\s-]+level\b/g, 'alevel')
+    .replace(/\b(jan|january|may|june|jun|oct|october|nov|november)\s+(\d\d)\b/g, '$1 20$2')
     // a fraction is a value, not two words: 3 4/7 and 5/13 are not searched for
     // (small ones only: 7357/2 and 9709/41 are papers, and they stay)
     .replace(/(?:\b\d{1,2}\s+)?\b\d{1,2}\s*\/\s*\d{1,2}\b(?!\s*\/)/g, ' ')
@@ -89,7 +92,7 @@ function sessionWords(session) {
   const m = /(\w+) (\d{4})/.exec(session || '');
   if (!m) return '';
   const yy = m[2].slice(2);
-  if (/^(may|june)$/i.test(m[1])) return `may june may/june summer s${yy} m${yy}`;
+  if (/^(may|june)$/i.test(m[1])) return `may june may/june summer s${yy}`;
   if (/^(october|november)$/i.test(m[1])) return `oct nov october november oct/nov autumn winter w${yy}`;
   if (/^january$/i.test(m[1])) return `jan winter w${yy}`;
   return '';
@@ -108,7 +111,7 @@ function ownWords(q, nameOf) {
   return words([
     q.source.board, ALIAS[q.source.boardId] || '', q.source.paper, q.source.code || '', q.source.subject || 'maths mathematics',
     qualification(q.source), q.source.session, sessionWords(q.source.session),
-    `q${n}`, `q${n.split('.')[0]}`, n.includes('.') ? n : '', p ? `${p} q${p}` : '',
+    `q${n}`, `q${n.split('.')[0]}`, n, n.split('.')[0], p ? `${p} q${p}` : '',
     q.says, q.asks || '', q.beyond || '', q.terms || '', nameOf(q.opens),
     // the value of g the paper uses, which students type as a way of finding it
     q.fill?.given?.g != null ? `g ${q.fill.given.g}` : '',
@@ -134,7 +137,13 @@ const hit = (list, w) => (whole(w) ? list.includes(w) : list.some((h) => h.start
 const BOARD_WORDS = new Set(BOARDS.flatMap((b) => [b.id, ...b.alias.split(' ')]).concat(['ial']));
 const MONTHS = new Set(['january', 'jan', 'may', 'june', 'jun', 'october', 'oct', 'november', 'nov', 'winter', 'summer', 'autumn']);
 const isFilter = (w) => BOARD_WORDS.has(w) || MONTHS.has(w) || /^(19|20)\d\d$/.test(w)
-  || /^q\d+(\.\d+)?$/.test(w) || /^[smw]\d\d$/.test(w) || w === 'as';
+  || /^q\d+(\.\d+)?$/.test(w) || /^[sw]\d\d$/.test(w);
+
+/* "as" is the qualification only when it is plainly meant as one — typed
+   as AS, or as AS level, AS paper or AS maths, or on its own. Anywhere else
+   ("modelled as a particle", "g as 10") it is an ordinary word. */
+const meansAS = (query) => /(^|[^A-Za-z])AS([^A-Za-z]|$)/.test(String(query))
+  || /\bas[\s-]*(level|paper|maths|mathematics)\b/i.test(String(query)) || /^\s*as\s*$/i.test(String(query));
 
 /** A question's own words in order, for telling "time above" from "above … time". */
 const ownSeq = (q, nameOf) => words(`${q.says} ${q.asks || ''} ${q.terms || ''} ${nameOf(q.opens)}`);
@@ -165,8 +174,9 @@ export function score(q, free, nameOf = () => '') {
 export function found(query, nameOf = () => '') {
   const want = queryWords(query);
   const all = QUESTIONS.map((q, i) => ({ q, i }));
-  if (!want.length) return all;
-  const filters = want.filter(isFilter), free = want.filter((w) => !isFilter(w));
+  const as = meansAS(query);
+  if (!want.length && !as) return all;
+  const filters = want.filter(isFilter).concat(as ? ['as'] : []), free = want.filter((w) => !isFilter(w));
   // "as" is also an ordinary word ("takes g as 10"), so as a filter it is
   // asked of the qualification alone
   const holds = (q, own, w) => (w === 'as' ? words(qualification(q.source)).includes('as') : hit(own, w));
@@ -180,6 +190,7 @@ export function found(query, nameOf = () => '') {
   const out = !most ? (filters.length ? kept : [])
     : scored.filter((x) => x.count === most).sort((a, b) => b.weight - a.weight || a.i - b.i);
   out.unmet = out.length ? unmet : [];
+  out.filtered = filters.length > 0;
   return out;
 }
 export const matches = (q, query, nameOf) => found(query, nameOf).some((x) => x.q === q);
@@ -193,6 +204,7 @@ export function shelve(query, nameOf) {
     .filter((t) => t.items.length)
     .sort((a, b) => (queryWords(query).length ? at(a) - at(b) : 0));
   shelves.unmet = hits.unmet || [];
+  shelves.filtered = !!hits.filtered;
   return shelves;
 }
 
@@ -234,7 +246,7 @@ export function mountShelf({ host, search, count, sub, open, nameOf }) {
     count.textContent = query ? `${shown} of ${total}` : `${total} ${total === 1 ? 'question' : 'questions'}`;
     const said = query.length > 40 ? `${query.slice(0, 40)}…` : query;
     const left = topics.unmet?.length
-      ? `<p class="lib-unmet">No question here mentions ${topics.unmet.map((w) => `\u201c${esc(w)}\u201d`).join(' or ')}, so ${topics.unmet.length === 1 ? 'it was' : 'they were'} left out of the search.</p>`
+      ? `<p class="lib-unmet">${topics.filtered ? 'None of the questions below mention' : 'No question on the shelves mentions'} ${topics.unmet.map((w) => `\u201c${esc(w)}\u201d`).join(' or ')}, so ${topics.unmet.length === 1 ? 'it was' : 'they were'} left out of the search.</p>`
       : '';
     host.innerHTML = topics.length ? left + topics.map((t) => {
       // While searching, every match shows; otherwise a long shelf opens on its first few.
