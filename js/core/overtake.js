@@ -326,8 +326,11 @@ export function solveOvertake(k = {}) {
   // Who is ahead just after each crossing: that is who has overtaken.
   const lead = (t) => (A.pos(t) > B.pos(t) + 1e-9 ? 'A' : B.pos(t) > A.pos(t) + 1e-9 ? 'B' : null);
   const events = shown.map((m) => {
-    const probe = m.start ? Math.min(1, tMax * 0.05) : 1e-4;
-    const ahead = lead(m.t + probe), before = m.t > 1e-6 ? lead(m.t - 1e-4) : null;
+    // who draws ahead from the start: read once the first has set off, and
+    // before they could next be level
+    const go = Math.min(A.t0, B.t0), next = later.length ? later[0].t : Infinity;
+    const at = m.start ? go + Math.min(1, tMax * 0.05, (next - go) / 2) : m.t + 1e-4;
+    const ahead = lead(at), before = m.t > 1e-6 ? lead(m.t - 1e-4) : null;
     const atLine = have(k.line) && Math.abs(m.x - k.line) < 1e-6 * Math.max(1, k.line);
     const atTime = have(k.at) && Math.abs(m.t - k.at) < 1e-6 * Math.max(1, k.at);
     const kind = m.start ? 'start' : atLine ? 'line' : atTime ? 'time' : ahead && before && ahead !== before ? 'overtake' : 'level';
