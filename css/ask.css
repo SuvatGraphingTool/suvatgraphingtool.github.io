@@ -1,9 +1,10 @@
 /* ask.css — Ask Suvat as the first thing on the page, and what it sends back.
    The older box styles are in css/app.css; this file turns that box into the
    page's headline — a field on top, a bar of tools and switches under it —
-   and styles the three kinds of reply: the reading drawn as a flight and its
-   graphs (Graph), the engine's worked solution (Solve), and a written answer
-   with sources (Search). Tokens only, as everywhere. */
+   and styles the three kinds of reply: the reading with the way to its flight
+   (Graph), the engine's worked solution (Solve), and a written answer with
+   sources (Search). The flight and its graphs are drawn on the stage, not in
+   the chat. Tokens only, as everywhere. */
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
            clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
@@ -146,16 +147,6 @@
 @media (prefers-reduced-motion: reduce) {
   .ask-mode .m-ic, .rec-bars i, .rec-time i { transition: none; animation: none; }
 }
-
-/* ── a reply drawn: the flight, and its three graphs ─────────────────── */
-.ro-viz { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-          gap: var(--sp-2); margin-top: var(--sp-3); }
-.ro-viz figure { margin: 0; position: relative; height: 150px; background: var(--surface);
-                 border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
-.ro-viz figure.ro-path { grid-column: 1 / -1; height: 170px; }
-.ro-viz svg, .ro-viz canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.ro-viz figcaption { position: absolute; left: 10px; top: 6px; font-size: var(--fs-xs);
-                     font-weight: var(--w-semi); color: var(--ink-muted); }
 
 /* ── a reply solved: the engine's working, step by step ──────────────── */
 .ro-steps { list-style: none; counter-reset: step; padding: 0; margin: var(--sp-3) 0 0;

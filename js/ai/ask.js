@@ -74,7 +74,6 @@ export function createAsk({ apply, run, edit, show, pin }) {
       show('chat'); dock(); follow(true);
       text.focus({ preventScroll: true });
     };
-    // A reply with graphs in it needs the chat on screen now, to draw them.
     if (instant || calm()) { swap(); return; }
     if (opening) return;
     if (document.startViewTransition) { opening = true; document.startViewTransition(swap); return; }
@@ -196,10 +195,10 @@ export function createAsk({ apply, run, edit, show, pin }) {
 
   /* ── the conversation: every message, oldest at the top ───────────────── */
   /** A reply. Unless it is the dots, it is written out a letter at a time;
-      `before` runs first, on the whole reply, so graphs are drawn at their
-      real size before they are hidden to be typed in. */
+      `before` runs first, on the whole reply, before it is hidden to be
+      typed in. */
   function reply(html, { busy: thinking = false, acts = null, before = null } = {}) {
-    openChat({ instant: !!before });
+    openChat();
     let r = current;
     if (!r) { r = document.createElement('div'); r.className = 'ask-msg ask-reply'; thread.append(r); }
     if (thinking) current = r; else current = null;
@@ -298,7 +297,6 @@ export function createAsk({ apply, run, edit, show, pin }) {
       </div>`
       : '';
     reply(r.html, { acts, before(node) {
-      r.draw?.(node);
       node.querySelector('.ask-run')?.addEventListener('click', run);
       node.querySelector('.ask-edit')?.addEventListener('click', edit);
     } });

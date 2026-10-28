@@ -28,7 +28,7 @@ import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
-import { readoutHTML, solutionHTML, vizHTML } from './ai/readout.js';
+import { readoutHTML, solutionHTML } from './ai/readout.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -2803,18 +2803,9 @@ function applyReading(x, { graph = true, solve = false } = {}) {
       : buildWorking(traj, traj.tMax);
     html += solutionHTML(steps, { moment: solved.moment });
   }
-  // GRAPH: the flight and its three graphs, drawn in the reply from the same
-  // motion the stage will play. Off, the reply is words only, like any chat.
-  const f = graph && traj ? traj : null;
-  if (f) html += vizHTML(f);
-  const draw = f ? (node) => {
-    const P = palette();
-    for (const spec of graphSpecs(f, f.tMax, P)) {
-      const c = node.querySelector(`canvas[data-graph="${spec.canvas}"]`);
-      if (c) drawGraph(c, spec);
-    }
-  } : null;
-  return { ok: true, runnable: !!traj && graph, html, draw };
+  // GRAPH: the reply offers the flight; the flight and its graphs are drawn
+  // on the stage, not in the chat. Off, the reply is words only, like any chat.
+  return { ok: true, runnable: !!traj && graph, html };
 }
 /** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
 function showFlight() {

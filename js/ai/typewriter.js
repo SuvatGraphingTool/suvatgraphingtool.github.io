@@ -21,7 +21,7 @@
 
 const RATE = 110;                 // letters a second, for a short reply
 const MOST = 2.4;                 // seconds a long reply may take, at most
-const WHOLE = 'span.m, .ro-viz, figure, canvas, svg, img, button, .ask-acts, .ro-src, table, br, hr';
+const WHOLE = 'span.m, figure, canvas, svg, img, button, .ask-acts, .ro-src, table, br, hr';
 
 /**
  * @param root      the element whose contents are written out
