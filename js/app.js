@@ -203,7 +203,7 @@ function paperWords(x) {
   const m = /^(.*)\s(\d{4})$/.exec(x.session) || [];
   const [month, letter, cie] = MONTHS[m[1]] || [];
   const yy = m[2] ? m[2].slice(2) : '';
-  return [x.board, BOARD_NAMES[x.board] || '', x.paper, x.session, `Q${x.q}`, `question ${x.q}`,
+  return [x.board, BOARD_NAMES[x.board] || '', x.paper, x.paper.replace(/\//g, ' '), 'paper', x.session, `Q${x.q}`, `question ${x.q}`,
     month ? `${month} ${m[2]} ${letter}${yy} ${cie}${yy}` : ''].join(' ');
 }
 /* A word and its endings are the same word here: collide, collides,

@@ -8,6 +8,7 @@ import { SCENARIOS, byId } from '../js/scenarios.js';
 import { KITS } from '../js/kits/index.js';
 import { staged, meetings, quadRoots } from '../js/core/stages.js';
 import { solvePair, pairWorking, poly, ratio } from '../js/core/pair.js';
+import { yScale } from '../js/render/graphs.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -115,11 +116,13 @@ group('It can fail, and says why, instead of being steered into a meeting', () =
 /* ── what it shows ──────────────────────────────────────────────────── */
 group('What it says when there is no meeting in the air is what happened', () => {
   const ground = solvePair({ A: { h: 0, u: 10 }, B: { h: 20, u: 0 }, g: 10 });
-  ok(ground.outcome === 'ground' && /level only on the ground: both land at the same instant, t=2s/.test(strip(ground.say)), 'both land together: level only on the ground');
+  ok(ground.outcome === 'ground' && /level only on the ground\. Both land at the same instant, t=2s/.test(strip(ground.say)), 'both land together: level only on the ground');
   const up = solvePair({ A: { h: 10, u: 0, t0: 5 }, B: { h: 0, u: 5 }, g: 10 });
   ok(/B is back on the ground at t=1s, before A is let go at t=5s, held 10m up/.test(strip(up.say)), 'one lands while the other is still held up high — said as that, not as \u201cnever in the air\u201d');
   const space = solvePair({ A: { h: 0, u: 5 }, B: { h: 20, u: 5 }, g: 0 });
   ok(/neither comes back down/.test(strip(space.say)) && /10 s/.test(space.watched) && space.f.tMax === 10, 'no gravity, nothing lands: it says so, and how long it was watched');
+ const tower = solvePair({ A: { h: 10, u: 0, t0: 1 }, B: { h: 0, u: 5, t0: 3 }, g: 10 });
+  ok(/A reaches the ground at/.test(strip(tower.say)) && !/back on/.test(strip(tower.say)), 'one dropped from a tower reaches the ground; it is not \u201cback\u201d on it');
   ok(K_never(), 'the ending for a run that did not meet leaves out the collision caveats');
 });
 
@@ -131,7 +134,8 @@ group('The time each paper asks for, on each particle\u2019s own clock', () => {
   ok(r.extras.find((x) => x.key === 'tB').value.toFixed(3) === '0.143', 'and among the answers');
   const neg = pairWorking(solvePair({ A: { h: 5, u: 0, t0: 10 }, B: { h: 20, u: 0 }, g: 10 }));
   ok(/t=−1\.732s is before the clock starts/.test(strip(neg[1].note)), 'a negative root is rejected, with the reason');
-  ok(ratio(35, 10).p === 7 && ratio(35, 10).q === 2 && ratio(60, 28).q === 7 && ratio(3, 1) === null && ratio(Math.PI, 1) === null, 'fractions in lowest terms, only when short and exact');
+  ok(ratio(35, 10).p === 7 && ratio(35, 10).q === 2 && ratio(60, 28).q === 7 && ratio(3, 1) === null && ratio(Math.PI, 1) === null
+     && ratio(45.1, 20.2) === null, 'fractions in lowest terms, only when short and exact: 7/2, 15/7, never 451/202');
 });
 
 group('The working says what the mark scheme says, in the same order', () => {
@@ -161,6 +165,13 @@ group('The kit: graphs from the engine, a sketch, an ending', () => {
   ok(near(G[1].series[0].fn(2) - G[1].series[1].fn(2), G[1].series[0].fn(3) - G[1].series[1].fn(3)), 'once both are free the velocity lines are parallel');
   ok(G[2].series[0].tag === 'B' && G[2].series[0].fn(0.5) === 0 && G[2].series[0].fn(2) === -10, 'B has no acceleration while held, and −g once let go');
   ok(G[2].series[1].tag === 'A' && /both/.test(G[2].note), 'A is drawn last, on top, and the graph says both are −g');
+  for (const [name, k] of [['N19', { A: { h: 0, u: 20 }, B: { h: 40, u: 0, t0: 1 }, g: 10 }],
+                           ['J17', { A: { h: 0, u: 12 }, B: { h: 0, u: 20, t0: 2 }, g: 10 }],
+                           ['held', { A: { h: 0, u: 20 }, B: { h: 3, u: 0, t0: 5 }, g: 9.8 }]]) {
+    const rr = solvePair(k);
+    const few = K.graphs(rr.f, 0, P).filter((sp) => yScale(sp.series, sp.tMax).ticks.length < 2);
+    ok(few.length === 0, `${name}: every graph has a scale to read off (two or more y labels, as every graph on the site)`);
+  }
   ok(G[0].points.length === 1 && near(G[0].points[0].y, 8.75), 'the meeting is marked on the height–time graph');
   ok((K.thumb(byId('pair-vertical')).match(/<circle/g) || []).length > 10, 'the card has a sketch drawn from its own numbers');
   const e = K.ending(r, byId('pair-vertical').ending);

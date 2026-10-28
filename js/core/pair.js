@@ -97,7 +97,8 @@ export function ratio(p, q) {
       const gcd = (x, y) => (y ? gcd(y, x % y) : Math.abs(x));
       const c = gcd(a, b) || 1;
       a /= c; b /= c;
-      return b > 1 && b <= 1000 ? { p: a, q: b } : null;
+      // a fraction a student would write: 7/2, 1/7 — not 451/202
+      return b > 1 && b <= 20 && Math.abs(a) <= 400 ? { p: a, q: b } : null;
     }
   }
   return null;
@@ -178,7 +179,7 @@ export function solvePair(k = {}) {
   const notes = [];
   if (!have(k.A.t0) && !have(k.B.t0)) notes.push(`Both set off at the same instant, ${M`t = 0`}.`);
 
-  let moment = null, rows = null, tMax, outcome, say, watched;
+  let moment = null, rows = null, tMax, outcome, say, why, watched;
   if (meet) {
     outcome = 'met';
     const heldA = A.stageAt(meet.t)?.kind === 'held', heldB = B.stageAt(meet.t)?.kind === 'held';
@@ -205,7 +206,7 @@ export function solvePair(k = {}) {
     watched = 'Stopped at the collision';
     tMax = meet.t;
   } else {
-    ({ outcome, say, watched, tMax } = neverMet(A, B, g));
+    ({ outcome, say, why, watched, tMax } = neverMet(A, B, g));
     notes.push(say);
   }
 
@@ -227,7 +228,7 @@ export function solvePair(k = {}) {
 
   return {
     ok: true, mode: 'pair', axis: 'up', params: { g, A: { h: A.h, u: A.u, t0: A.t0 }, B: { h: B.h, u: B.u, t0: B.t0 } },
-    f, A, B, meet, moment, rows, extras, derived, notes, outcome, say, watched,
+    f, A, B, meet, moment, rows, extras, derived, notes, outcome, say, why, watched,
     convention: 'Taking up as positive, with heights measured from the ground.',
   };
 }
@@ -239,33 +240,37 @@ function neverMet(A, B, g) {
   const finite = isFinite(A.tLand) && isFinite(B.tLand);
   // Level only on the ground: both arrive at the same instant.
   if (finite && Math.abs(A.tLand - B.tLand) < 1e-7) {
+    const why = `Both land at the same instant, ${t(A.tLand)}. `
+      + 'Until then one is always above the other, so there is no meeting in the air.';
     return { outcome: 'ground', tMax: A.tLand, watched: 'Both reached the ground together',
-      say: `They are level only on the ground: both land at the same instant, ${t(A.tLand)}. `
-        + 'Until then one is always above the other, so there is no meeting in the air.' };
+      why, say: `They are level only on the ground. ${why}` };
   }
   const first = A.tLand <= B.tLand ? A : B, other = first === A ? B : A;
   // The first is down before the other has even been let go.
   if (first.tLand <= other.t0 + 1e-9) {
     const where = other.h > EPS ? `, held ${M`${d(other.h)} [m]`} up until then` : ', waiting on the ground until then';
+    const why = `${first.name} ${first.h > EPS ? 'reaches' : 'is back on'} the ground at ${t(first.tLand)}, `
+      + `before ${other.name} is let go at ${t(other.t0)}${where}.`;
     return { outcome: 'never', tMax: finite ? Math.max(A.tLand, B.tLand) : other.t0 + LOOK,
       watched: finite ? 'Watched until both were down' : `Watched for ${LOOK} s after ${other.name} set off`,
-      say: `They never meet. ${first.name} is back on the ground at ${t(first.tLand)}, `
-        + `before ${other.name} is let go at ${t(other.t0)}${where}.` };
+      why, say: `They never meet. ${why}` };
   }
   // Both off the ground together for a while, and one stays above throughout.
   const lo = Math.max(A.t0, B.t0), hi = Math.min(first.tLand, lo + 1);
   const mid = (lo + hi) / 2;
   const top = A.pos(mid) > B.pos(mid) ? A : B, low = top === A ? B : A;
   if (!isFinite(first.tLand)) {
+    const why = `With no gravity neither comes back down, and ${low.name} stays below ${top.name} `
+      + 'all the way: the gap between them never closes.';
     return { outcome: 'never', tMax: lo + LOOK, watched: `Watched for ${LOOK} s after the later start`,
-      say: `They never meet. With no gravity neither comes back down, and ${low.name} stays below ${top.name} `
-        + 'all the way: the gap between them never closes.' };
+      why, say: `They never meet. ${why}` };
   }
+  const why = `${low.name} stays below ${top.name} for as long as both are off the ground, `
+    + `and ${first.name} lands first, at ${t(first.tLand)}.`
+    + (g < EPS ? ' With no gravity, nothing turns either of them round.' : '');
   return { outcome: 'never', tMax: finite ? Math.max(A.tLand, B.tLand) : first.tLand + LOOK,
     watched: finite ? 'Watched until both were down' : `Watched for ${LOOK} s after ${first.name} landed`,
-    say: `They never meet. ${low.name} stays below ${top.name} for as long as both are off the ground, `
-      + `and ${first.name} lands first, at ${t(first.tLand)}.`
-      + (g < EPS ? ' With no gravity, nothing turns either of them round.' : '') };
+    why, say: `They never meet. ${why}` };
 }
 
 /* ── the motion, in the shape the transport asks for ────────────────────
@@ -330,7 +335,7 @@ export function pairWorking(solved) {
     rows: [heightRow(A, g, heldA), heightRow(B, g, heldB)],
     note: (`${M`y`} is the height above the ground and ${M`t`} is time on the one clock. `
       + (lateFree.length
-        ? `${lateFree.map((p) => p.name).join(' and ')} only starts moving at ${lateFree.map((p) => M`t = ${d(p.t0)} [s]`).join(' and ')}, `
+        ? `${lateFree.map((p) => p.name).join(' and ')} only ${lateFree.length > 1 ? 'start' : 'starts'} moving at ${lateFree.map((p) => M`t = ${d(p.t0)} [s]`).join(' and ')}, `
           + `so ${lateFree.length > 1 ? 'their' : 'its'} own time is ${lateFree.map((p) => (p.name === 'A' ? M`t - t_A` : M`t - t_B`)).join(' and ')}.`
         : (heldA || heldB) ? `${heldA ? 'A' : 'B'} has not been let go yet, so its height is simply where it is held.` : '')).trim(),
   }];

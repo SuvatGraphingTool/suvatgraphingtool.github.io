@@ -24,7 +24,8 @@ export const LIBRARY = [
       { board: 'CIE', paper: '9709/43', session: 'May/Jun 2017', q: '5' },
       { board: 'CIE', paper: '9709/42', session: 'May/Jun 2021', q: '6', part: 'the collision' },
     ],
-    tags: ['collide', 'collision', 'meet', 'two particles', 'vertical', 'dropped', 'projected upwards', 'later', 'same vertical line'],
+    tags: ['collide', 'collision', 'meet', 'two particles', 'particle', 'ball', 'stone', 'vertical', 'dropped', 'released',
+           'projected upwards', 'thrown up', 'later', 'same vertical line', 'mechanics', 'paper 4', 'A level', 'AS level'],
     ending: {
       close: 'See the diagram',
       realTitle: 'What the model leaves out',

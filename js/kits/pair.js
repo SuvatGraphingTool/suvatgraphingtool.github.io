@@ -79,13 +79,13 @@ export const pair = {
       { label: 'A', tag: 'A', fn: fnA, color: cA, dash: null },
     ];
     return [
-      { canvas: 'g-s', title: 'Height–time', unit: 'm', tMax, t, headroom: 0.24,
+      { canvas: 'g-s', title: 'Height–time', unit: 'm', tMax, t,
         series: both((tt) => A.pos(tt), (tt) => B.pos(tt), P.disp),
         points: meet ? [{ t: meet.t, y: meet.x, color: P.mark }] : [] },
-      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax, t, headroom: 0.24,
+      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax, t,
         series: both((tt) => A.vel(tt), (tt) => B.vel(tt), P.vel),
         points: meet ? [{ t: meet.t, y: meet.vA, color: P.mark }, { t: meet.t, y: meet.vB, color: P.mark }] : [] },
-      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t, headroom: 0.24,
+      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,
         series: both((tt) => A.acc(tt), (tt) => B.acc(tt), P.acc),
         note: Math.abs(A.g) > 1e-9 ? 'both −g once moving' : '' },
     ];
@@ -98,27 +98,29 @@ export const pair = {
     const r = solvePair(s.params);
     if (!r.ok) return '<svg viewBox="0 0 120 60" aria-hidden="true"></svg>';
     const { A, B, meet, f } = r;
-    const Y = (y) => 51.5 - (y / (f.top * 1.08)) * 44, X = 52;
+    const Y = (y) => 51.5 - (y / (f.top * 1.1)) * 44, X = 56;
     const dots = (p, side, color) => {
       const out = [];
-      for (let i = 0; i <= 12; i++) {
-        const t = (i / 12) * f.tMax;
+      for (let i = 0; i <= 10; i++) {
+        const t = (i / 10) * f.tMax;
         if (t < p.t0 - 1e-9) continue;
-        const x = X + side * (f.rising(p, t) ? 7 : 13);
-        out.push(`<circle cx="${x}" cy="${Y(p.pos(t)).toFixed(1)}" r="2" fill="${color}"/>`);
+        const x = X + side * (f.rising(p, t) ? 8 : 17);
+        out.push(`<circle cx="${x}" cy="${Y(p.pos(t)).toFixed(1)}" r="2.3" fill="${color}"/>`);
       }
       return out.join('');
     };
-    const tower = (p, side) => (p.h > 0 ? `<rect x="${side > 0 ? X + 20 : X - 34}" y="${Y(p.h).toFixed(1)}" width="14"
-        height="${(51.5 - Y(p.h)).toFixed(1)}" fill="var(--border-soft)" stroke="var(--border)" stroke-width="1"/>
-      <line x1="${X + side * 3}" y1="${Y(p.h).toFixed(1)}" x2="${side > 0 ? X + 20 : X - 20}" y2="${Y(p.h).toFixed(1)}"
-        stroke="var(--ink-faint)" stroke-width="1.6"/>` : '');
+    const tower = (p, side) => {
+      if (!(p.h > 0)) return '';
+      const x0 = side > 0 ? X + 28 : X - 40, y = Y(p.h).toFixed(1);
+      return `<rect x="${x0}" y="${y}" width="12" height="${(51.5 - Y(p.h)).toFixed(1)}" fill="var(--border-soft)" stroke="var(--border)" stroke-width="1"/>
+        <line x1="${X + side * 4}" y1="${y}" x2="${side > 0 ? X + 28 : X - 28}" y2="${y}" stroke="var(--ink-faint)" stroke-width="1.6"/>`;
+    };
     return `<svg viewBox="0 0 120 60" aria-hidden="true">
       <line x1="2" y1="51.5" x2="118" y2="51.5" stroke="var(--border)" stroke-width="1"/>
       ${tower(A, -1)}${tower(B, 1)}
       <line x1="${X}" y1="51.5" x2="${X}" y2="4" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="2 2.5"/>
       ${dots(A, -1, 'var(--vel)')}${dots(B, 1, 'var(--second)')}
-      ${meet ? `<circle cx="${X}" cy="${Y(meet.x).toFixed(1)}" r="4.2" fill="none" stroke="var(--mark)" stroke-width="1.8"/>` : ''}
+      ${meet ? `<circle cx="${X}" cy="${Y(meet.x).toFixed(1)}" r="4.4" fill="none" stroke="var(--mark)" stroke-width="1.8"/>` : ''}
     </svg>`;
   },
 
@@ -130,7 +132,7 @@ export const pair = {
       return {
         eyebrow: solved.watched,
         title: solved.outcome === 'ground' ? 'Level only on the ground.' : 'They never met.',
-        body: `<p>${solved.say}</p>
+        body: `<p>${solved.why}</p>
           <p>Nothing was steered here: the two motions are exactly the ones you set. Change a
           start time, a height or a velocity and run it again.</p>`,
         real: false,
@@ -157,14 +159,14 @@ export const pair = {
           timed from when that particle set off — which is the ${M`t`} most papers ask for.</p>
       </div>`;
     const ex = (key) => solved.extras.find((x) => x.key === key)?.value;
-    const own = solved.moment.own.map((r) => `${num(r.t, 3, { trim: true })} after ${r.name} set off`).join(', ');
+    const tr = (x, dp = 2) => num(x, dp, { trim: true });
+    const own = solved.moment.own.map((r) => `${tr(r.t, 3)} s after ${r.name} sets off`).join(', ');
     return {
-      eyebrow: `Stopped at the collision, ${num(meet.t, 3, { trim: true })} seconds in${own ? ` · ${own}` : ''}`,
-      title: `They meet ${fmt(meet.x, 2)} m above the ground.`,
-      body: `<p>${solved.say}</p>
-        <p>Each one is SUVAT on its own, with ${M`a = -g`}; the meeting is the one instant both
-          give the same height. Their speeds then differ by <b>${fmt(ex('dSpeed'), 2)} m s⁻¹</b>,
-          and they close on each other at <b>${fmt(ex('closing'), 2)} m s⁻¹</b>.</p>${table}`,
+      eyebrow: `Stopped at the collision, ${tr(meet.t, 3)} s in${own ? ` · ${own}` : ''}`,
+      title: `They meet ${tr(meet.x)} m above the ground.`,
+      body: `<p>Each one is SUVAT on its own, with ${M`a = -g`}; the meeting is the one instant both
+          give the same height. Their speeds then differ by <b>${tr(ex('dSpeed'))} m s⁻¹</b>,
+          and they close on each other at <b>${tr(ex('closing'))} m s⁻¹</b>.</p>${table}`,
       real: true,
     };
   },

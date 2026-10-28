@@ -30,7 +30,7 @@ import { T, num } from '../notation.js';
 
 const BALL = 9;              // drawn at a size you can see, not at the size it is
 // Distances out from the line at full size, the same on both sides.
-const LANE = { arrow: 16, up: 30, down: 44, letter: 62, acc: 84, tower: [124, 184] };
+const LANE = { arrow: 16, up: 30, down: 44, letter: 62, acc: 84, tower: [140, 200] };
 const HUD = 250;             // the readouts' column, top left, and the scale's labels beside it
 const LABELS = 140;          // room for the labels right of whatever is right of the line
 
@@ -116,7 +116,7 @@ export function render(canvas, cam, o) {
       stroke(g, [{ x: cx + Math.cos(an) * 15, y: my + Math.sin(an) * 15 },
                  { x: cx + Math.cos(an) * 24, y: my + Math.sin(an) * 24 }], { color: P.mark, width: 2.4 });
     }
-    L.add(`they meet ${T`${fmt(meet.x, 2)} [m]`} up`, outR, my - 16, { color: P.mark, align: 'left', pri: 10, size: 16, weight: 700 });
+    L.add(`they meet ${T`${num(meet.x, 2, { trim: true })} [m]`} up`, outR, my - 16, { color: P.mark, align: 'left', pri: 10, size: 16, weight: 700 });
     L.add(T`t = ${num(meet.t, 3, { trim: true })} [s]`, outR, my + 14, { color: P.mark, align: 'left', pri: 10, size: 16, weight: 700 });
   }
 
@@ -131,8 +131,13 @@ export function render(canvas, cam, o) {
       const x = cx + side * (f.rising(p, tt) ? lane('up') : lane('down'));
       dot(g, x, y, 3.8, { fill: color, stroke: P.surface, width: 1.4 });
       if (show.ticks) {
-        L.add(T`${num(tt, dp)} [s]`, cx + side * (lane('down') + 9), y,
-          { color, align: side < 0 ? 'right' : 'left', pri: 2, size: 13, bg: false, maxPush: 20 });
+        // The way up is labelled just beyond the lanes, the way down a column
+        // further out, so the two times at one height are both readable. A
+        // label level with a platform drops below it.
+        const up = f.rising(p, tt);
+        const ly = Math.abs(y - Y(p.h)) < 10 && p.h > 1e-6 ? y + 13 : y;
+        L.add(T`${num(tt, dp)} [s]`, cx + side * (lane('down') + (up ? 9 : 52)), ly,
+          { color, align: side < 0 ? 'right' : 'left', pri: up ? 3 : 2, size: 13, bg: false, maxPush: 20 });
       }
     }
   };
@@ -163,7 +168,10 @@ export function render(canvas, cam, o) {
       const len = clamp(Math.abs(s.v) * vLen, 14, 160) * Math.sign(s.v);
       const ax = cx + side * lane('arrow');
       arrow(g, ax, y, ax, y - len, { color: P.velVec, width: 3, head: 11 });
-      L.add(T`${fmt(s.v, 1)} [m s^-1]`, ax + side * 6, y - len - Math.sign(len) * 10, {
+      // the label at the arrow's tip, but never on the ground line
+      let ly = y - len - Math.sign(len) * 10;
+      if (ly > groundY - 10) ly = Math.max(ly, groundY + 16);
+      L.add(T`${fmt(s.v, 2)} [m s^-1]`, ax + side * 6, ly, {
         color: P.vel, align: side < 0 ? 'right' : 'left', pri: 7, size: 15, weight: 700 });
     }
     if (show.acceleration && !held && s.stage && Math.abs(p.g) > 1e-9) {

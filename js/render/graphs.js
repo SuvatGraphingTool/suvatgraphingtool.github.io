@@ -9,6 +9,29 @@ import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels, fade, wi
 
 const PAD = { l: 52, r: 16, t: 28, b: 34 };
 
+/**
+ * The vertical range a graph shows, and its tick step: every series sampled
+ * across the run, a little room either side, and zero always in view. Pure,
+ * so a test can ask whether a graph will carry enough labels to be read.
+ */
+export function yScale(series, tMax) {
+  let lo = Infinity, hi = -Infinity;
+  for (const s of series) {
+    for (let i = 0; i <= 120; i++) {
+      const y = s.fn((i / 120) * tMax);
+      if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
+    }
+  }
+  if (!isFinite(lo)) { lo = -1; hi = 1; }
+  if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
+  const pad = (hi - lo) * 0.14;
+  lo = Math.min(0, lo - pad); hi = Math.max(0, hi + pad);
+  const stepY = niceStep(hi - lo, 3);
+  const ticks = [];
+  for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) ticks.push(y);
+  return { lo, hi, stepY, ticks };
+}
+
 export function drawGraph(canvas, spec) {
   const { ctx, w, h } = fitCanvas(canvas);
   if (w < 60 || h < 60) return;
@@ -19,25 +42,12 @@ export function drawGraph(canvas, spec) {
   ctx.fillStyle = P.card; ctx.fillRect(0, 0, w, h);
   const gw = w - PAD.l - PAD.r, gh = h - PAD.t - PAD.b;
 
-  let lo = Infinity, hi = -Infinity;
-  for (const s of series) {
-    for (let i = 0; i <= 120; i++) {
-      const y = s.fn((i / 120) * tMax);
-      if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
-    }
-  }
-  if (!isFinite(lo)) { lo = -1; hi = 1; }
-  if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
-  // A graph whose lines sit along its top (an object held still at its
-  // greatest height) asks for more room above them, clear of the title.
-  const pad = (hi - lo) * (spec.headroom ?? 0.14);
-  lo = Math.min(0, lo - pad); hi = Math.max(0, hi + pad);
+  const { lo, hi, stepY } = yScale(series, tMax);
 
   const X = (tt) => PAD.l + (tt / (tMax || 1)) * gw;
   const Y = (yy) => PAD.t + gh - ((yy - lo) / (hi - lo)) * gh;
 
   // gridlines — dotted, both ways, in the theme's chart style
-  const stepY = niceStep(hi - lo, 3);
   const stepT0 = niceStep(tMax, 4);
   ctx.save(); ctx.strokeStyle = P.grid; ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.beginPath();
   for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) {
@@ -98,8 +108,8 @@ export function drawGraph(canvas, spec) {
       let above = !others.length || y >= Math.max(...others) - 1e-9;
       // ...unless that side is off the plot, into the title or the axis labels
       const inside = (py) => py >= PAD.t + 10 && py <= PAD.t + gh - 10;
-      if (!inside(Y(y) + (above ? -14 : 14))) above = !above;
-      L.add(s.tag, X(tt) + 4, Y(y) + (above ? -14 : 14), { color: s.color, align: 'left', pri: 7, size: 15, weight: 700, push: above ? 'up' : 'down', maxPush: 20 });
+      if (!inside(Y(y) + (above ? -17 : 17))) above = !above;
+      L.add(s.tag, X(tt) + 4, Y(y) + (above ? -17 : 17), { color: s.color, align: 'left', pri: 7, size: 15, weight: 700, push: above ? 'up' : 'down', maxPush: 20 });
     }
   }
   if (spec.note) L.add(spec.note, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: 4, size: 14 });
