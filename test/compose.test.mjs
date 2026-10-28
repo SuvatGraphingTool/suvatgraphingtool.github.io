@@ -15,6 +15,9 @@ import { SITES, siteFor } from '../js/world/world.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { trajectory } from '../js/core/trajectory.js';
 import { flight } from '../js/core/projectile.js';
+import { toApp } from '../js/core/question.js';
+import { solveObject } from '../js/board/blueprint.js';
+import { engineValue } from '../js/core/parts.js';
 
 let pass = 0, fail = 0;
 const ok = (cond, msg, detail = '') => {
@@ -60,7 +63,7 @@ const RECIPES = {
 /* The flags that decide what is solved and drawn. `params` matters only
    where the app reads it — the locked angle — and is otherwise the card's
    sketch, so it is compared where it is read. */
-const COMPARED = SCENARIO_KEYS.structural.filter((k) => !['params', 'second', 'descent', 'site'].includes(k));
+const COMPARED = SCENARIO_KEYS.structural.filter((k) => !['params', 'second', 'descent', 'site', 'spot', 'recipe'].includes(k));
 
 group('All twelve ready-made scenarios, rebuilt from recipes', () => {
   ok(Object.keys(RECIPES).length === SCENARIOS.length && SCENARIOS.every((s) => RECIPES[s.id]),
@@ -157,11 +160,50 @@ group('A new recipe — one no ready-made scenario is', () => {
     { piece: 'ball' }, { piece: 'height-line', at: 25, drag: true }] });
   ok(r.ok, 'assembles', r.error);
   const sc = r.scenario;
-  ok(sc.id === 'composed-above-a-line-from-a-cliff' && sc.group === 'composed' && sc.composed, 'is marked as composed, with its own id');
+  ok(/^composed-above-a-line-from-a-cliff-[a-z0-9]+$/.test(sc.id) && sc.group === 'composed' && sc.composed, 'is marked as composed, with its own id');
   ok(!byId(sc.id), 'and does not collide with a ready-made one');
   ok(sc.dragLine && sc.markers.heightLine === 25 && same(sc.theta, { min: 0, max: 90 }), 'carries the flags its pieces stand for');
   ok(!HAND_BUILT.some((k) => k in sc && k !== 'group'), 'and none of the hand-written parts');
   ok(same(sc.recipe.pieces.map((p) => p.piece), ['launch', 'stadium', 'ball', 'height-line']), 'keeps the recipe it was built from');
+});
+
+group('A reading that carries a recipe', () => {
+  // What the reader sends when none of the twelve fits: scenario "composed",
+  // the recipe, and the values the question GIVES — never what it asks for.
+  const cliff = { name: 'Above a line, from a cliff', pieces: [
+    { piece: 'launch', angle: 'free', min: 0, max: 90, from: 'height' }, { piece: 'stadium', spot: 'platform-angle' },
+    { piece: 'height-line', at: 25, drag: true }] };
+  const x = { understood: true, confidence: 'high', scenario: 'composed', recipe: cliff,
+              summary: 'A ball is thrown at 15 m/s at 40° from a 20 m cliff.', h: 20, u: 15, angleDegrees: 40, heightLine: 22,
+              asks: ['time more than 25 m above the ground'] };
+  const r = toApp(x);
+  ok(r.ok, 'is read', r.error);
+  ok(/^composed-/.test(r.id) && byId(r.id)?.composed, 'becomes a scenario the app can choose by its id');
+  ok(r.given.u === 15 && r.h === 20 && r.theta === 40 && r.given.g === 9.81, 'with the values the question gave, and g assumed');
+  ok(r.markers.heightLine === 22 && r.items.some((it) => it.k === 'line'), 'and its line, because the recipe has one');
+  ok(toApp(x).id === r.id, 'the same recipe is the same scenario');
+
+  const o = solveObject(x);
+  ok(o.ok && o.above && o.above.above > 0, 'the engine solves it, and finds the time above the line', o.reason);
+  ok(o.ok && o.solved.five && o.solved.five.u && Array.isArray(o.solved.extras), 'in the shape a later part carries from (five, extras)');
+  ok(engineValue(o.solved, 'tApex') != null && engineValue(o.solved, 'u') === 15, 'and a carry reads it like any other part');
+
+  // Read by its pieces, exactly as the twelve are read by their ids.
+  const drop = toApp({ understood: true, scenario: 'composed', recipe: { name: 'Let go over a line', pieces: [
+    { piece: 'launch', angle: 'released', from: 'height' }, { piece: 'stadium', spot: 'dropped' }, { piece: 'height-line', at: 10 }] },
+    h: 40, u: 7, s: 12, heightLine: 10 });
+  ok(drop.ok && drop.given.u === 0 && drop.theta === undefined && drop.given.s === undefined,
+    'a released object has no speed, no angle and no horizontal distance');
+  const flat = toApp({ understood: true, scenario: 'composed', recipe: { name: 'Fired flat at a target', pieces: [
+    { piece: 'launch', angle: 'fixed', degrees: 0 }, { piece: 'stadium', spot: 'bullet' }, { piece: 'target', x: 30, y: 1 }] },
+    h: 2, u: 40, angleDegrees: 25, targetX: 30, targetY: 1 });
+  ok(flat.ok && flat.theta === 0 && flat.markers.target?.x === 30, 'a fixed angle wins over one the reader sent, and a target is read');
+  ok(toApp({ understood: true, scenario: 'composed', recipe: { name: 'Lorry', pieces: [{ piece: 'straight-line' }, { piece: 'road' }] },
+    u: 10, v: 20, t: 5 }).given.u === 10, 'a road recipe is read as the road is');
+
+  const bad = toApp({ understood: true, scenario: 'composed', recipe: { name: 'x', pieces: [{ piece: 'trebuchet' }] } });
+  ok(!bad.ok && /did not hold together/.test(bad.error) && /trebuchet/.test(bad.error), 'a recipe that does not assemble is refused, with its reason');
+  ok(!toApp({ understood: true, scenario: 'composed' }).ok, 'and so is "composed" with no recipe');
 });
 
 group('The registry tells the truth about the code', () => {

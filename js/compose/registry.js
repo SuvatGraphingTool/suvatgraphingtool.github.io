@@ -25,7 +25,7 @@
 // app reads it; SCENARIO_KEYS lists every flag the app reads, and the test
 // fails when the code reads one this file has not classified.
 
-import { FLAT_SITE } from '../scenarios.js';
+import { FLAT_SITE, COMPOSED } from '../scenarios.js';
 import { SITES } from '../world/world.js';
 
 /* ── the engines ─────────────────────────────────────────────────────────
@@ -331,10 +331,10 @@ export const HAND_BUILT = ['ending', 'intro', 'card', 'place', 'group'];
 export const SCENARIO_KEYS = {
   structural: ['params', 'lockAngle', 'noAngle', 'fixedU', 'theta', 'markers', 'dragLine', 'straightUp',
                'road', 'stage', 'descent', 'exhibit', 'plate', 'backdrop', 'site', 'seed', 'projectile',
-               'second', 'aimAtTarget', 'dragTarget', 'branches', 'live',
+               'second', 'aimAtTarget', 'dragTarget', 'branches', 'live', 'spot', 'recipe',
                // read by the stage, set by no scenario today
                'secondMarks', 'showPerpendicular'],
-  words: ['id', 'name', 'sub', 'note', 'pairLabel', 'caughtLabel', ...HAND_BUILT],
+  words: ['id', 'name', 'sub', 'note', 'pairLabel', 'caughtLabel', 'composed', ...HAND_BUILT],
 };
 
 /* ── checking and assembling ─────────────────────────────────────────── */
@@ -411,11 +411,27 @@ export function assemble(recipe) {
   // Built in a fixed order — motion, stage, then the rest — so a later
   // piece can refine what an earlier one set (the live slider's angle range).
   const ORDER = ['motion', 'stage', 'body', 'companion', 'marker', 'control'];
-  const sc = { id: `composed-${slug(name)}`, group: 'composed', composed: true, name,
+  const sc = { id: `composed-${slug(name)}-${hash(JSON.stringify(recipe.pieces))}`, group: 'composed', composed: true, name,
                sub: recipe.sub?.trim() || '', note: recipe.note?.trim() || '' };
   for (const kind of ORDER) for (const q of pieces.filter((x) => x.def.kind === kind)) q.def.apply(sc, q.p, ctx);
   sc.recipe = JSON.parse(JSON.stringify(recipe));
   return { ok: true, scenario: sc };
 }
 
+/**
+ * A recipe assembled and kept, so byId() in js/scenarios.js finds it and the
+ * app can choose it like any other scenario. The same recipe gives the same id.
+ */
+export function compose(recipe) {
+  const r = assemble(recipe);
+  if (r.ok) COMPOSED.set(r.scenario.id, r.scenario);
+  return r;
+}
+
+/* Two recipes with one name are still two scenarios. */
+function hash(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36).slice(0, 5);
+}
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'scenario';

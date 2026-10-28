@@ -253,7 +253,8 @@ export function render(canvas, cam, o) {
   const P = palette();
   const L = labels();
   const tn = W2.tones();
-  const site = siteFor(scenario?.id);
+  // A composed scenario names its spot; a ready-made one is its own.
+  const site = siteFor(scenario?.spot || scenario?.id);
   const { u0 } = siteMap(site);
   const list = [f, second].filter(Boolean);
   const section = slice({ axis: site.axis, at: site.at, dir: site.dir });

@@ -142,6 +142,39 @@ A scenario object, the same shape as the twelve. It also carries:
 `params` is set the way the twelve set it. It matters only where the app reads
 it (the locked angle); otherwise it is the card's sketch.
 
+## A reading that carries a recipe
+
+When none of the twelve fits, the reader sends `scenario: "composed"` with the
+recipe beside the values the question gives, in the same flat fields as any
+other reading:
+
+```json
+{ "understood": true, "scenario": "composed",
+  "recipe": { "name": "Above a line, from a cliff", "pieces": [ … ] },
+  "summary": "A ball is thrown at 15 m/s at 40° from a 20 m cliff.",
+  "h": 20, "u": 15, "angleDegrees": 40, "heightLine": 22 }
+```
+
+`toApp` in `js/core/question.js` hands the recipe to `compose()`. That
+assembles it, keeps it in `COMPOSED` in `js/scenarios.js` (so `byId` finds
+it), and gives back its id. The reading then goes the route every reading
+goes: `applyReading`, `chooseScenario`, the values screen, `solveLaunch`, the
+stage.
+
+The values are read by the scenario's **pieces**, by the same rules the
+twelve are read by their ids. A released object has no speed and no angle; a
+fixed angle wins over one the reader sent; a height line or a target is read
+only when the recipe has one; a straight-line motion is read as the road is.
+
+A recipe that does not assemble refuses the whole reading, with
+`assemble()`'s reason.
+
+The same route serves the whiteboard (`solveObject`) and questions in parts
+(`js/core/parts.js`). A composed part is solved by the same engines, so it
+returns `solved.five` and `solved.extras`, and a later part carries from it
+like any other. The stadium reads a composed scenario's `spot`
+(`js/render/scene.js`).
+
 ## Adding a piece
 
 The registry is the one place a piece is described, and the library of
@@ -181,9 +214,12 @@ Rules for a new piece:
 
 ## Where this goes next
 
-1. **Registry** (this stage): the pieces, the recipe, `assemble()`, and the
+1. **Registry** (done): the pieces, the recipe, `assemble()`, and the
    proof that the twelve are compositions.
-2. **Recipes with more than one part**: several objects, or one motion in
+2a. **Readings with a recipe** (done): `scenario: "composed"` is assembled,
+   chosen, solved and drawn like a ready-made scenario, on the stage, on the
+   whiteboard and as one part of a question in parts.
+2b. **Recipes with more than one part**: several objects, or one motion in
    phases (a ball thrown up a cliff, then rolling; two objects with
    different launches meeting). The page validates and assembles them, and
    the engine solves each part. Multi-part *questions* are being built
