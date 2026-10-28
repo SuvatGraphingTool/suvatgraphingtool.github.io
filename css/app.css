@@ -1161,7 +1161,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .kcol { margin: 0; padding: 0; border: 0; display: grid; gap: var(--sp-3); align-content: start; min-width: 0; }
 .kcol legend { font-size: var(--fs-xs); letter-spacing: 0.09em; text-transform: uppercase; font-weight: var(--w-bold); color: var(--ink-strong); margin-bottom: var(--sp-2); padding: 0; }
 .kcol[data-col='B'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--second); vertical-align: -1px; }
-.kcol[data-col='A'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--vel); vertical-align: -1px; }
+.kcol[data-col='A'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--ink-strong); vertical-align: -1px; }
 .ph-row[data-key='second'] { border-left: 3px solid var(--second); }
 @media (max-width: 560px) { .kcols { grid-template-columns: minmax(0, 1fr); } }
-.ph-row[data-key='first'] { border-left: 3px solid var(--vel); }
+.ph-row[data-key='first'] { border-left: 3px solid var(--ink-strong); }

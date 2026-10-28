@@ -7,7 +7,7 @@ import { LIBRARY } from '../js/library.js';
 import { SCENARIOS, byId } from '../js/scenarios.js';
 import { KITS } from '../js/kits/index.js';
 import { staged, meetings, quadRoots } from '../js/core/stages.js';
-import { solvePair, pairWorking, poly } from '../js/core/pair.js';
+import { solvePair, pairWorking, poly, ratio } from '../js/core/pair.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -81,7 +81,7 @@ group('CIE 9709/42 May/Jun 2021 Q6, the collision: up at 30, one let go 15 m abo
 /* ── and what cannot happen ─────────────────────────────────────────── */
 group('It can fail, and says why, instead of being steered into a meeting', () => {
   const late = solvePair({ A: { h: 0, u: 5 }, B: { h: 40, u: 0, t0: 3 }, g: 10 });
-  ok(late.ok && !late.meet && /never in the air together/.test(strip(late.notes.join(' '))), 'A lands before B is let go: never in the air together');
+  ok(late.ok && !late.meet && /A is back on the ground at t=1s, before B is let go at t=3s, held 40m up/.test(strip(late.say)), 'A lands before B is let go, and it says B was held 40 m up meanwhile');
   ok(near(late.f.tMax, Math.max(late.A.tLand, late.B.tLand)), 'and it is watched until both are down');
   const below = solvePair({ A: { h: 0, u: 5 }, B: { h: 2, u: 30 }, g: 9.8 });
   ok(below.ok && !below.meet && /never meet/i.test(strip(below.notes.join(' '))), 'one thrown up faster from above stays above');
@@ -113,15 +113,39 @@ group('It can fail, and says why, instead of being steered into a meeting', () =
 });
 
 /* ── what it shows ──────────────────────────────────────────────────── */
+group('What it says when there is no meeting in the air is what happened', () => {
+  const ground = solvePair({ A: { h: 0, u: 10 }, B: { h: 20, u: 0 }, g: 10 });
+  ok(ground.outcome === 'ground' && /level only on the ground: both land at the same instant, t=2s/.test(strip(ground.say)), 'both land together: level only on the ground');
+  const up = solvePair({ A: { h: 10, u: 0, t0: 5 }, B: { h: 0, u: 5 }, g: 10 });
+  ok(/B is back on the ground at t=1s, before A is let go at t=5s, held 10m up/.test(strip(up.say)), 'one lands while the other is still held up high — said as that, not as \u201cnever in the air\u201d');
+  const space = solvePair({ A: { h: 0, u: 5 }, B: { h: 20, u: 5 }, g: 0 });
+  ok(/neither comes back down/.test(strip(space.say)) && /10 s/.test(space.watched) && space.f.tMax === 10, 'no gravity, nothing lands: it says so, and how long it was watched');
+  ok(K_never(), 'the ending for a run that did not meet leaves out the collision caveats');
+});
+
+group('The time each paper asks for, on each particle\u2019s own clock', () => {
+  const r = solvePair({ A: { h: 0, u: 12 }, B: { h: 0, u: 20, t0: 2 }, g: 10 });
+  ok(/0\.143s after B sets off/.test(strip(r.moment.text)) && r.derived.some((x) => /0\.143s after B/.test(strip(x))), 'J17: 0.143 s after the second is projected, in the headline');
+  const W = pairWorking(r).map((st) => st.rows.map((x) => strip(x.r)).join(' | '));
+  ok(W.some((x) => /^17=0\.143s$/.test(x)), 'and in the working as 1/7 = 0.143 s');
+  ok(r.extras.find((x) => x.key === 'tB').value.toFixed(3) === '0.143', 'and among the answers');
+  const neg = pairWorking(solvePair({ A: { h: 5, u: 0, t0: 10 }, B: { h: 20, u: 0 }, g: 10 }));
+  ok(/t=−1\.732s is before the clock starts/.test(strip(neg[1].note)), 'a negative root is rejected, with the reason');
+  ok(ratio(35, 10).p === 7 && ratio(35, 10).q === 2 && ratio(60, 28).q === 7 && ratio(3, 1) === null && ratio(Math.PI, 1) === null, 'fractions in lowest terms, only when short and exact');
+});
+
 group('The working says what the mark scheme says, in the same order', () => {
   const W = pairWorking(solvePair({ A: { h: 0, u: 20 }, B: { h: 40, u: 0, t0: 1 }, g: 10 })).map((s) => ({
     title: s.title, rows: s.rows.map((r) => [strip(r.f), strip(r.s), strip(r.r)]),
   }));
-  ok(W.length === 4, 'where each is, the meeting, the height, the velocities');
+  ok(W.length === 5, 'where each is, the meeting, the height, B\u2019s own clock, the velocities');
   ok(W[0].rows[1][2] === 'yB=35+10t−5t2', 'B multiplied out: 35 + 10t − 5t²');
   ok(W[1].rows[0][2] === '10t−35=0', 'the t² terms cancel, leaving 10t − 35 = 0');
   ok(W[1].rows[1][2] === 't=3.5s' && W[2].rows[0][2] === 'y=8.75m', 't = 3.5 s and 8.75 m');
-  ok(W[3].rows[0][2] === 'vA=−15m s−1' && W[3].rows[1][2] === 'vB=−25m s−1', 'both velocities, with their signs');
+  ok(W[0].rows[1][1] === '40−½×10(t−1)2', 'nothing substituted that a student would leave out: no 0(t − 1)');
+  ok(W[1].rows[1][1] === '72', 't = 35/10 is also written as 7/2');
+  ok(W[3].rows[0][2] === '52=2.5s', 'on B\u2019s own clock, 5/2 = 2.5 s');
+  ok(W[4].rows[0][2] === 'vA=−15m s−1' && W[4].rows[1][2] === 'vB=−25m s−1', 'both velocities, with their signs');
   ok(poly([0, 0, 0]) === '0' && poly([-60, 40, -5]) === '-60 + 40t - 5t^2' && poly([0, 1, 0]) === 't', 'polynomials are written as a student writes them');
 });
 
@@ -135,14 +159,20 @@ group('The kit: graphs from the engine, a sketch, an ending', () => {
   ok(G.every((x) => x.series.length === 2 && x.series.every((s) => s.dash === null && s.tag)), 'two solid, lettered lines on each — vertical motion');
   ok(near(G[0].series[0].fn(3.5), G[0].series[1].fn(3.5)), 'the height lines cross at the meeting');
   ok(near(G[1].series[0].fn(2) - G[1].series[1].fn(2), G[1].series[0].fn(3) - G[1].series[1].fn(3)), 'once both are free the velocity lines are parallel');
-  ok(G[2].series[1].fn(0.5) === 0 && G[2].series[1].fn(2) === -10, 'B has no acceleration while held, and −g once let go');
+  ok(G[2].series[0].tag === 'B' && G[2].series[0].fn(0.5) === 0 && G[2].series[0].fn(2) === -10, 'B has no acceleration while held, and −g once let go');
+  ok(G[2].series[1].tag === 'A' && /both/.test(G[2].note), 'A is drawn last, on top, and the graph says both are −g');
   ok(G[0].points.length === 1 && near(G[0].points[0].y, 8.75), 'the meeting is marked on the height–time graph');
-  ok(/<svg[\s\S]*<path/.test(K.thumb(byId('pair-vertical'))), 'the card has a sketch drawn from its own numbers');
+  ok((K.thumb(byId('pair-vertical')).match(/<circle/g) || []).length > 10, 'the card has a sketch drawn from its own numbers');
   const e = K.ending(r, byId('pair-vertical').ending);
   ok(/8\.75/.test(e.title) && /3\.5/.test(e.eyebrow) && /ph-tab/.test(e.body), 'the ending card: the height, the time, and a row of five for each');
   const hud = K.hud(r.f, 3.5);
-  ok(hud.left.length === 4 && hud.left[0].v === '8.8', 'the readouts are the engine’s heights and velocities');
+  ok(hud.left.length === 4 && hud.left[0].v === '8.75' && hud.left[2].v === '8.75', 'the readouts are the engine’s heights and velocities');
 });
+
+function K_never() {
+  const e = KITS.pair.ending(solvePair({ A: { h: 0, u: 5 }, B: { h: 40, u: 0, t0: 3 }, g: 10 }));
+  return e.real === false && /never met/.test(e.title) && !/collision ends/.test(e.body);
+}
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

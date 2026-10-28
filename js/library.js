@@ -15,7 +15,7 @@
 export const LIBRARY = [
   { id: 'pair-vertical', group: 'library', kit: 'pair',
     name: 'Two in one vertical line',
-    sub: 'one goes up, one comes down — when do they meet?',
+    sub: 'two clocks, one line — when, and where, do they meet?',
     note: 'Two particles share a vertical line but not a clock: one is thrown up, and a second is dropped from above it, or thrown after it, some time later. Each is SUVAT on its own; they collide at the one instant both give the same height — if that happens before either lands.',
     params: { A: { h: 0, u: 20, t0: 0 }, B: { h: 40, u: 0, t0: 1 }, g: 10 },
     place: 'One vertical line, two clocks',

@@ -28,7 +28,9 @@ export function drawGraph(canvas, spec) {
   }
   if (!isFinite(lo)) { lo = -1; hi = 1; }
   if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
-  const pad = (hi - lo) * 0.14;
+  // A graph whose lines sit along its top (an object held still at its
+  // greatest height) asks for more room above them, clear of the title.
+  const pad = (hi - lo) * (spec.headroom ?? 0.14);
   lo = Math.min(0, lo - pad); hi = Math.max(0, hi + pad);
 
   const X = (tt) => PAD.l + (tt / (tMax || 1)) * gw;
@@ -83,15 +85,24 @@ export function drawGraph(canvas, spec) {
     }
   }
 
-  // A LINE PER OBJECT, when there is more than one, carries its letter at
-  // its far end, so two lines in two hues are named where they are read.
-  // At its START, where two objects are usually furthest apart — the end is
-  // often where they meet.
-  for (const s of series) {
-    if (!s.tag) continue;
-    const y = s.fn(0);
-    if (isFinite(y)) L.add(s.tag, X(0) + 8, Y(y) + 13, { color: s.color, align: 'left', pri: 7, size: 15, weight: 700, push: 'down', maxPush: 40 });
+  // A LINE PER OBJECT, when there is more than one, carries its letter
+  // beside it, early on — on the side away from the other lines, so the
+  // letter is plainly on its own line and never in the axis labels.
+  const tagged = series.filter((s) => s.tag);
+  if (tagged.length) {
+    const tt = tMax * 0.06;
+    for (const s of tagged) {
+      const y = s.fn(tt);
+      if (!isFinite(y)) continue;
+      const others = series.filter((o) => o !== s).map((o) => o.fn(tt)).filter(isFinite);
+      let above = !others.length || y >= Math.max(...others) - 1e-9;
+      // ...unless that side is off the plot, into the title or the axis labels
+      const inside = (py) => py >= PAD.t + 10 && py <= PAD.t + gh - 10;
+      if (!inside(Y(y) + (above ? -14 : 14))) above = !above;
+      L.add(s.tag, X(tt) + 4, Y(y) + (above ? -14 : 14), { color: s.color, align: 'left', pri: 7, size: 15, weight: 700, push: above ? 'up' : 'down', maxPush: 20 });
+    }
   }
+  if (spec.note) L.add(spec.note, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: 4, size: 14 });
   // EVENTS the engine found — where two lines cross, say — as a ring on the
   // line at that instant, drawn once the cursor has reached it.
   for (const p of spec.points || []) {

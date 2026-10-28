@@ -170,7 +170,6 @@ function buildScenarioScreen() {
    papers it came from. The search box searches these and nothing else: the
    name, what it is for, the boards and papers, and the words a question in
    that family tends to use. See js/library.js. */
-const sourceLine = (s) => s.sources.map((x) => `${x.board} ${x.paper} ${x.session} Q${x.q}`).join(' · ');
 function buildLibrary() {
   const grid = $('lib-grid');
   if (!grid) return;
@@ -191,13 +190,34 @@ function buildLibrary() {
   box.dataset.wired = '1';
   box.addEventListener('input', () => filterLibrary(box.value));
 }
+/* What a student might type for a paper: the board's full name, and the
+   session the way each board's own files and students write it — June 2017,
+   J17 and s17 (CIE's summer code) are the same sitting. */
+const BOARD_NAMES = {
+  CIE: 'Cambridge International CAIE', AQA: 'AQA', Edexcel: 'Pearson Edexcel',
+  OCR: 'OCR', 'OCR A': 'OCR', 'OCR MEI': 'OCR MEI', WJEC: 'WJEC Eduqas',
+};
+const MONTHS = { Jan: ['January', 'J', 'w'], 'May/Jun': ['June', 'J', 's'], Jun: ['June', 'J', 's'],
+                 'Oct/Nov': ['November', 'N', 'w'], Nov: ['November', 'N', 'w'], 'Feb/Mar': ['March', 'M', 'm'], Oct: ['October', 'O', 'w'] };
+function paperWords(x) {
+  const m = /^(.*)\s(\d{4})$/.exec(x.session) || [];
+  const [month, letter, cie] = MONTHS[m[1]] || [];
+  const yy = m[2] ? m[2].slice(2) : '';
+  return [x.board, BOARD_NAMES[x.board] || '', x.paper, x.session, `Q${x.q}`, `question ${x.q}`,
+    month ? `${month} ${m[2]} ${letter}${yy} ${cie}${yy}` : ''].join(' ');
+}
+/* A word and its endings are the same word here: collide, collides,
+   colliding and collision all find the scenario that collides. */
+const stem = (w) => w.toLowerCase().replace(/[^a-z0-9/]/g, '')
+  .replace(/sions?$/, 'de').replace(/(ions|ion|ings|ing|ed|es|s)$/, '').replace(/e$/, '');
 function filterLibrary(q) {
-  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const words = q.split(/\s+/).map(stem).filter(Boolean);
   let shown = 0;
   for (const b of $('lib-grid').querySelectorAll('.pcard')) {
     const s = LIBRARY.find((x) => x.id === b.dataset.id);
-    const hay = [s.name, s.sub, s.note, sourceLine(s), ...(s.tags || [])].join(' ').toLowerCase();
-    const hit = words.every((w) => hay.includes(w));
+    const hay = [s.name, s.sub, s.note, ...s.sources.map(paperWords), ...(s.tags || [])]
+      .join(' ').split(/\s+/).map(stem).filter(Boolean);
+    const hit = words.every((w) => hay.some((h) => h.startsWith(w) || (w.length > 3 && w.startsWith(h) && h.length > 3)));
     b.hidden = !hit;
     if (hit) shown++;
   }
@@ -2321,6 +2341,9 @@ function showEnding() {
 function showKitDone() {
   const e = scenario.ending || {};
   const r = kit().ending(solved, e);
+  // What the model leaves out belongs to a run that met. A run that did not
+  // has nothing in it the collision caveats are about, so they are not shown.
+  $('exdone-real-h').closest('.ex-real').hidden = r.real === false;
   $('exdone-eyebrow').textContent = r.eyebrow;
   $('exdone-title').textContent = r.title;
   $('exdone-body').innerHTML = r.body;
@@ -2348,6 +2371,7 @@ function showKitDone() {
  * boundaries is not an approximation of the curve — it is the curve.
  */
 function showDescentDone() {
+  $('exdone-real-h').closest('.ex-real').hidden = false;
   const e = scenario.ending, p = solved.params, ph = solved.phases;
   const land = solved.vLanding;
 
@@ -2460,6 +2484,7 @@ function vtSketch(ph, r, p) {
  * scenario's own paragraphs the run has earned.
  */
 function showMonkeyDone() {
+  $('exdone-real-h').closest('.ex-real').hidden = false;
   const e = scenario.ending, v = state.verdict;
   if (!v) return showDone();
   const head = e[v.kind] || e.caught;
@@ -2509,6 +2534,7 @@ function showMonkeyDone() {
  * spin or a round Earth, because it did not.
  */
 function showRangeDone() {
+  $('exdone-real-h').closest('.ex-real').hidden = false;
   const e = scenario.ending;
   const p = solved.params;
   const tF = traj.tFlight ?? traj.tMax;

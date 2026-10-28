@@ -313,6 +313,10 @@ group('The Past-paper library: two in one vertical line, everything it says', ()
     { A: { h: 0, u: 5 }, B: { h: 2, u: 9 }, g: 0 },                 // no gravity
     { A: { h: 2.5, u: -4.5 }, B: { h: 0, u: 14.7, t0: 0.25 }, g: 9.81 },
     { A: { h: 0, u: 20 }, B: { h: 0, u: 20 }, g: 10 },              // refused
+    { A: { h: 0, u: 10 }, B: { h: 20, u: 0 }, g: 10 },              // level only on the ground
+    { A: { h: 10, u: 0, t0: 5 }, B: { h: 0, u: 5 }, g: 10 },        // one lands while the other is held up
+    { A: { h: 5, u: 0, t0: 10 }, B: { h: 20, u: 0 }, g: 10 },       // a negative root rejected
+    { A: { h: 0, u: 5 }, B: { h: 20, u: 5 }, g: 0 },                // nothing lands
     { A: { h: 0, u: 4 }, B: {}, g: 9.8 },                           // missing
   ];
   const bag = [];
@@ -329,7 +333,7 @@ group('The Past-paper library: two in one vertical line, everything it says', ()
       if (st.note) check('note', st.note, bag);
     }
     if (r.ok) {
-      const e = K.ending(r, LIBRARY[0].ending);
+      const e = K.ending(r);
       for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
       for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
         const h = K.hud(r.f, t);

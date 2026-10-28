@@ -43,8 +43,9 @@
   white-space: normal;
   /* Merriweather is a big serif — a tall x-height and wide letters — so beside
      Montserrat it is set a touch SMALLER than the prose, where Source Serif 4
-     needed 1.04em to keep up. */
-  font-size: 0.95em;
+     needed 1.04em to keep up. Never under the 13 px floor, though: in a
+     13 px caption 0.95em would set the maths at 12.35 px. */
+  font-size: max(13px, 0.95em);
 }
 
 /* ISO 80000-2: quantities italic, units and function names upright. The rule
