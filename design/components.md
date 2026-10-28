@@ -162,7 +162,10 @@ rest of its change is worked after it. `sameSpeed(A, B, tMax)` — where the two
 speed–time graphs cross (`f.crossings`). `f.dist(t)` — each one's distance so
 far, the area under its line. `where: 'rail'` draws two trains on parallel
 tracks between the trackside posts X and Y (figures.js `train`, `rails`,
-`post`); the default is two cars on one road.
+`post`), and everything the engine says then calls the start X and the line Y
+(`railWords`). The kit adds `lights` (figures.js `trafficLights` at the start)
+and `figs: { A, B }` — each one's figure on the road from `FIGURES` (car,
+motorcycle, lorry, cyclist, runner); the default is two cars on one road.
 
 `solveOvertake({ A, B, line, at, find })` — every moment the two are level
 (`events`, each with a `kind`: `start`, `overtake`, `level` — level without

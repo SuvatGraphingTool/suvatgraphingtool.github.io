@@ -670,6 +670,15 @@ group('Two on a road or two tracks: holding a speed, then braking to rest togeth
   const late = O({ A: { u: 40, hold: 2, ends: true }, B: { u: 30, hold: 25, ends: true }, line: 975 });
   ok(late.events.some((x) => x.rest && x.first === 'B' && near(x.t, 46.75) && near(x.tFirst, 40)), 'one stopped earlier: the other comes to rest beside it later, and both times are said');
   ok(KITS.lanes.read({ 'A.u': 40, 'A.ends': 'line', where: 'rail' }).A.ends === true && KITS.lanes.read({}).where === 'road', 'the kit reads “at the line” and the setting');
+  ok(wt.every((x) => !/the line|the start|road/.test(x.title + x.note)) && /When B reaches Y/.test(wt.map((x) => x.title).join()) && /975m from X/.test(strip(trains.notes.join(' '))),
+     'on the tracks it says X and Y, never “the line”, “the start” or “road”');
+  const kr = KITS.lanes.read({ where: 'lights', 'B.fig': 'motorcycle' });
+  ok(kr.where === 'road' && kr.lights && kr.figs.B === 'motorcycle' && kr.figs.A === 'car', 'leaving traffic lights is the road with lights; each one’s figure is read');
+  const vEnd = O({ A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.V', line: 975 });
+  ok(!/It stops there/.test(W(vEnd).map((x) => x.note).join(' ')) && /gets there at the same instant as B/.test(W(vEnd).map((x) => x.note).join(' ')), 'finding a V that is not 0: it does not claim it stops');
+  ok(/far beyond any real vehicle/.test(strip(O({ A: { u: 40 }, B: { u: 30, hold: 25, ends: true }, line: 751 }).notes.join(' '))), 'a deceleration of 450 m s⁻² is said to be beyond any real vehicle');
+  const lateA = W(O({ A: { t0: 5, u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 975 }));
+  ok(lateA.some((x) => x.rows[0] && x.rows[0][1] === '40−5' && x.rows[0][2] === 't=35s'), 'a late starter’s own clock is worked first: 40 − 5 = 35 s');
 });
 
 group('Audit 2: the road, finding a hidden number', () => {

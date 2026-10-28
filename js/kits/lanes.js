@@ -3,14 +3,17 @@
 // boxes to show, reads them, and lays out what the engine answered (rule 4).
 // See design/components.md.
 
-import { solveOvertake, overtakeWorking, named } from '../core/overtake.js';
+import { solveOvertake, overtakeWorking, named, railWords } from '../core/overtake.js';
 import * as stage from '../render/lanes.js';
 import { timeLapse } from '../core/pace.js';
+import { FIGURES } from '../render/figures.js';
 import { M, num } from '../notation.js';
 
 // the precision the working uses: three places, four for a rate under 1
 const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const KEYS = ['t0', 'x0', 'u', 'hold', 'a', 'V', 'tau'];
+// what may travel on the road; on the tracks it is always a train
+const ROAD = ['car', 'motorcycle', 'lorry', 'cyclist', 'runner'];
 
 const one = (n) => [
   { key: `${n}.t0`, col: n, label: 'Sets off at (s)', optional: true, hint: '“Ten seconds later” is 10. Blank is 0.' },
@@ -19,9 +22,12 @@ const one = (n) => [
   { key: `${n}.a`, col: n, label: `Acceleration ${M`a`} (m s⁻²)`, placeholder: '—', hint: 'Negative to slow down.' },
   { key: `${n}.V`, col: n, label: `Speed it changes to ${M`V`} (m s⁻¹)`, placeholder: '—', hint: 'Then holds it. Blank: it keeps on accelerating.' },
   { key: `${n}.tau`, col: n, label: `Time it changes for ${M`t_${n}`} (s)`, placeholder: '—', hint: 'Any two of these three fix the third.' },
-  { key: `${n}.ends`, col: n, type: 'choice', label: 'Where its change of speed ends',
-    options: [{ v: 'line', label: 'At the line' }],
-    hint: '“Comes to rest at Y”: press this and leave its V blank. The line then fixes its rate.' },
+  { key: `${n}.ends`, col: n, type: 'choice', label: 'Its change of speed ends at the line',
+    options: [{ v: 'line', label: 'Yes — it stops there' }],
+    hint: '“Comes to rest at X”: press this and leave its V blank (press again to undo). The line then fixes whichever of its hold, rate or time changing is missing.' },
+  { key: `${n}.fig`, col: n, type: 'choice', label: 'What it is, on the road',
+    options: ROAD.map((k) => ({ v: k, label: FIGURES[k].label })),
+    hint: 'Only the picture. Blank is a car; on the tracks both are trains.' },
   { key: `${n}.x0`, col: n, label: 'Head start (m)', optional: true, hint: 'Ahead of the start line. Blank is 0.' },
 ];
 
@@ -41,8 +47,8 @@ export const lanes = {
     { title: 'Where they are',
       fields: [
         { key: 'where', type: 'choice', label: 'Drawn as',
-          options: [{ v: 'road', label: 'Two cars on one road' }, { v: 'rail', label: 'Two trains on parallel tracks' }],
-          hint: 'Only the picture changes. On the tracks, the start is the post X and the line the post Y.' },
+          options: [{ v: 'road', label: 'On one road' }, { v: 'lights', label: 'Leaving traffic lights' }, { v: 'rail', label: 'Two trains on parallel tracks' }],
+          hint: 'Only the picture and its words change. On the tracks, the start is the post X and the line the post Y.' },
       ] },
     { title: 'Find one number from where they are level, if the paper asks',
       fields: [
@@ -50,8 +56,8 @@ export const lanes = {
           options: ['A', 'B'].flatMap((n) => [
             { v: `${n}.a`, label: `${n}’s ${M`a`}` },
             { v: `${n}.V`, label: `${n}’s ${M`V`}` },
-            { v: `${n}.tau`, label: `${n}’s ${M`t_${n}`}` },
-            { v: `${n}.hold`, label: `${n}’s ${M`T_${n}`}` },
+            { v: `${n}.tau`, label: M`t_${n}` },
+            { v: `${n}.hold`, label: M`T_${n}` },
           ]),
           hint: 'Its box above is then left to the engine. They finish together, stop together, or one passes the other at a given place: that is the line.' },
         { key: 'line', label: 'Level at a line (m)', placeholder: '—', hint: 'The finish, or where one passes the other.' },
@@ -63,22 +69,30 @@ export const lanes = {
 
   read(vals) {
     const p = (n) => ({ ...Object.fromEntries(KEYS.map((q) => [q, vals[`${n}.${q}`]])), ends: vals[`${n}.ends`] === 'line' });
-    const k = { A: p('A'), B: p('B'), line: vals.line, at: vals.at, find: vals.find || null, where: vals.where || 'road' };
+    const where = vals.where || 'road';
+    const k = { A: p('A'), B: p('B'), line: vals.line, at: vals.at, find: vals.find || null,
+      where: where === 'lights' ? 'road' : where, lights: where === 'lights',
+      figs: { A: vals['A.fig'] || 'car', B: vals['B.fig'] || 'car' } };
     // the box for the number being found is ignored, as the hint says
     if (k.find) { const [n, q] = k.find.split('.'); delete k[n][q]; }
     return k;
   },
-  solve: solveOvertake,
+  // what it is drawn as is the stage's, carried on the motion untouched
+  solve: (k) => {
+    const r = solveOvertake(k);
+    if (r.ok) Object.assign(r.f, { figs: k.figs || { A: 'car', B: 'car' }, lights: !!k.lights });
+    return r;
+  },
   working: (solved) => overtakeWorking(solved),
   render: stage.render,
 
   hud(f, t, { rate = 1 } = {}) {
-    const s = f.at(t), lapse = timeLapse(f.tMax);
+    const s = f.at(t), lapse = timeLapse(f.tMax), from = f.where === 'rail' ? 'from X' : 'from the start';
     return {
       left: [
-        { k: 'A from the start', v: num(s.A.x, 1), unit: 'm', hue: 'disp' },
+        { k: `A ${from}`, v: num(s.A.x, 1), unit: 'm', hue: 'disp' },
         { k: 'A’s velocity', v: num(s.A.v, 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'B from the start', v: num(s.B.x, 1), unit: 'm', hue: 'disp' },
+        { k: `B ${from}`, v: num(s.B.x, 1), unit: 'm', hue: 'disp' },
         { k: 'B’s velocity', v: num(s.B.v, 2), unit: 'm s⁻¹', hue: 'vel' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' },
@@ -157,7 +171,7 @@ export const lanes = {
     const table = main ? `
       <div class="ph-tab" role="table" aria-label="Each one, from when it set off to the moment they are level">
         <div class="ph-head" role="row">
-          <span role="columnheader">On the road</span>
+          <span role="columnheader">${solved.where === 'rail' ? 'On the tracks' : 'On the road'}</span>
           <span role="columnheader">${M`u`}</span><span role="columnheader">${M`v`}</span>
           <span role="columnheader">${M`a`}</span><span role="columnheader">${M`s`}</span>
           <span role="columnheader">${M`t`}</span>
@@ -168,12 +182,13 @@ export const lanes = {
       </div>` : '';
     // two at rest at the line have no difference in speed to report
     const dv = ex('vA') === 0 && ex('vB') === 0 ? null : ex('dv');
+    const say = solved.where === 'rail' ? railWords : (x) => x;
     return {
-      eyebrow: main ? `Level at ${tr(main.t, 3)} <span class="u">s</span>, ${tr(main.x)} <span class="u">m</span> from the start`
-        : later ? `Level only later, at ${tr(later.t, 3)} <span class="u">s</span>` : 'Never level after the start',
-      title,
+      eyebrow: say(main ? `Level at ${tr(main.t, 3)} <span class="u">s</span>, ${tr(main.x)} <span class="u">m</span> from the start`
+        : later ? `Level only later, at ${tr(later.t, 3)} <span class="u">s</span>` : 'Never level after the start'),
+      title: say(title),
       // the found number is the title, so it is not said again under it
-      body: `${solved.notes.slice(found ? 1 : 0).map((n) => `<p>${n}</p>`).join('')}${dv != null ? `<p>Their speeds at the line differ by <b>${tr(dv)} m s⁻¹</b>.</p>` : ''}${table}`,
+      body: say(`${solved.notes.slice(found ? 1 : 0).map((n) => `<p>${n}</p>`).join('')}${dv != null ? `<p>Their speeds at the line differ by <b>${tr(dv)} m s⁻¹</b>.</p>` : ''}${table}`),
       real: true,
     };
   },

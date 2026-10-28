@@ -49,6 +49,21 @@ const UNIT_OF = { a: '[m s^-2]', V: '[m s^-1]', tau: '[s]', hold: '[s]' };
 /** The letter a found number is written with: T_A for the time A holds its speed. */
 const symOf = (who, what) => (what === 'tau' ? `t_${who}` : what === 'hold' ? `T_${who}` : what === 'V' ? 'V' : 'a');
 
+/** On the tracks the papers' words are the trackside points: the start is X
+    and the line is Y, and it is a track, not a road. Everything the engine
+    says goes through this when it is drawn as trains. */
+const RAIL = [
+  [/say how far along the line is/g, 'say how far Y is from X'],
+  [/a line along the road/g, 'a point beside the track'],
+  [/Along the road from the start/g, 'Along the track from X'],
+  [/\bthe start line\b/g, 'X'],
+  [/\bfrom the start\b/g, 'from X'],
+  [/\bAt the line\b/g, 'At Y'],
+  [/\bthe line\b/g, 'Y'],
+  [/\bthe road\b/g, 'the track'],
+];
+export const railWords = (x) => (typeof x === 'string' ? RAIL.reduce((s, [re, w]) => s.replace(re, w), x) : x);
+
 /* ── one of the two ───────────────────────────────────────────────────── */
 /**
  * @param q { t0, x0, u, hold, a, V, tau } — it holds u for `hold` seconds
@@ -107,7 +122,7 @@ export function timeAt(p, X) {
 const at0 = (st, tau) => st.x0 + st.u * tau + 0.5 * st.a * tau * tau;
 
 /* ── the working for one mover: where it is at a time, or when it reaches a place ── */
-function reachRows(p, X) {
+function reachRows(p, X, less = null) {
   const n = p.name, t = timeAt(p, X);
   // one that comes to rest at the line gets there as its change of speed ends
   if (p.ends && t != null) {
@@ -120,25 +135,33 @@ function reachRows(p, X) {
     if (X <= xh + 1e-9) {
       return { t, rows: [{ f: M`t = ${p.t0 > EPS ? `${d(p.t0)} + ` : ''}s/u`, s: M`${p.t0 > EPS ? `${d(p.t0)} + ` : ''}${d(X - p.x0)}/${d(p.u)}`, r: M`t = ${d(t)} [s]` }] };
     }
-    const r = reachRows(afterHold(p), X);
-    return { t, rows: [{ f: M`s = uT_${n}`, s: M`${d(p.u)} * ${d(p.hold)}`, r: M`s = ${d(snap(p.u * p.hold))} [m]` }, ...r.rows] };
+    // what is left after the hold is written as what it is, s − s₁
+    const s1 = snap(p.u * p.hold);
+    const r = reachRows(afterHold(p), X, { s1, full: X - p.x0 });
+    return { t, rows: [{ f: M`s_1 = uT_${n}`, s: M`${d(p.u)} * ${d(p.hold)}`, r: M`s_1 = ${d(s1)} [m]` }, ...r.rows] };
   }
   const rows = [];
+  // the distance still to go, and its symbol: all of it, or what the hold left
+  const D = less ? `(${d(less.full)} - ${d(less.s1)})` : d(X - p.x0), Sf = less ? '(s - s_1)' : 's';
   const late = p.t0 > EPS;
   const ch = p.stages.find((st) => st.kind === 'changing');
   if (ch && t <= ch.t1 + 1e-9) {
     // still changing speed when it gets there: s = ut + ½at²
     const T = late ? `(t - ${d(p.t0)})` : 't';
-    rows.push({ f: M`s = ut + ½at^2`, s: M`${d(X - p.x0)} = ${Math.abs(p.u) > EPS ? `${sgn(p.u)}${T} + ` : ''}½ * ${sgn(p.a)}${T}^2`, r: M`t = ${d(t)} [s]` });
+    rows.push({ f: M`${Sf} = ut + ½at^2`, s: M`${D} = ${Math.abs(p.u) > EPS ? `${sgn(p.u)}${T} + ` : ''}½ * ${sgn(p.a)}${T}^2`, r: M`t = ${d(t)} [s]` });
   } else if (ch) {
     const sCh = ch.u * (ch.t1 - ch.t0) + 0.5 * ch.a * (ch.t1 - ch.t0) ** 2;
     const z = Math.abs(p.u) < EPS;
     // (its time changing speed is in the step before, with the rest of its figures)
-    rows.push({ f: M`s = ½(u + V)t_${n}`, s: z ? M`½ * ${d(p.V)} * ${d(p.tau)}` : M`½(${d(p.u)} + ${d(p.V)}) * ${d(p.tau)}`, r: M`s = ${d(sCh)} [m]` });
-    rows.push({ f: M`t = ${late ? `${d(p.t0)} + ` : ''}t_${n} + (${d(X - p.x0)} - s)/V`,
-                s: M`${late ? `${d(p.t0)} + ` : ''}${d(p.tau)} + (${d(X - p.x0)} - ${d(sCh)})/${d(p.V)}`, r: M`t = ${d(t)} [s]` });
+    const sc = less ? 's_2' : 's';
+    rows.push({ f: M`${sc} = ½(u + V)t_${n}`, s: z ? M`½ * ${d(p.V)} * ${d(p.tau)}` : M`½(${d(p.u)} + ${d(p.V)}) * ${d(p.tau)}`, r: M`${sc} = ${d(sCh)} [m]` });
+    rows.push(less
+      ? { f: M`t = ${late ? `${d(p.t0)} + ` : ''}t_${n} + (s - s_1 - s_2)/V`,
+          s: M`${late ? `${d(p.t0)} + ` : ''}${d(p.tau)} + (${d(less.full)} - ${d(less.s1)} - ${d(sCh)})/${d(p.V)}`, r: M`t = ${d(t)} [s]` }
+      : { f: M`t = ${late ? `${d(p.t0)} + ` : ''}t_${n} + (${d(X - p.x0)} - s)/V`,
+          s: M`${late ? `${d(p.t0)} + ` : ''}${d(p.tau)} + (${d(X - p.x0)} - ${d(sCh)})/${d(p.V)}`, r: M`t = ${d(t)} [s]` });
   } else {
-    rows.push({ f: M`t = ${late ? `${d(p.t0)} + ` : ''}s/u`, s: M`${late ? `${d(p.t0)} + ` : ''}${d(X - p.x0)}/${d(p.u)}`, r: M`t = ${d(t)} [s]` });
+    rows.push({ f: M`t = ${late ? `${d(p.t0)} + ` : ''}${Sf}/u`, s: M`${late ? `${d(p.t0)} + ` : ''}${D}/${d(p.u)}`, r: M`t = ${d(t)} [s]` });
   }
   return { t, rows };
 }
@@ -150,7 +173,7 @@ function placeRows(p, t) {
     if (te <= p.hold + 1e-9) return [{ f: M`s_${n} = ut`, s: M`${d(p.u)} * ${d(te)}`, r: M`s_${n} = ${d(x - p.x0)} [m]` }];
     const rest = placeRows(afterHold(p), t);
     // the held part is a rectangle; the rest is measured from where it left off
-    return [{ f: M`s = uT_${n}`, s: M`${d(p.u)} * ${d(p.hold)}`, r: M`s = ${d(snap(p.u * p.hold))} [m]` },
+    return [{ f: M`s_1 = uT_${n}`, s: M`${d(p.u)} * ${d(p.hold)}`, r: M`s_1 = ${d(snap(p.u * p.hold))} [m]` },
       ...rest.map((row, i) => (i === rest.length - 1 ? { ...row, r: M`s_${n} = ${d(snap(p.u * p.hold))} + ${d(snap(x - p.x0 - p.u * p.hold))} = ${d(x - p.x0)} [m]` } : row))];
   }
   const ch = p.stages.find((st) => st.kind === 'changing');
@@ -273,10 +296,12 @@ function findToLine(q, who, what, te, S, other, tt) {
   const when = `at ${M`t = ${d(tt)} [s]`}, when ${other} gets there${late ? ` (${M`${T} [s]`} after ${who} sets off)` : ''}`;
   const tauRow = (h, tau) => ({ f: M`${ts} = t - ${Ts}`, s: M`${T} - ${d(h)}`, r: M`${ts} = ${d(tau)} [s]` });
   const aRow = (V, tau, a) => ({ f: M`a_${who} = (V - u)/${ts}`, s: M`(${d(V)} - ${d(u)})/${d(tau)}`, r: M`a_${who} = ${d(a)} [m s^-2]` });
+  // a late starter's t is on its own clock, and the working says so first
+  const own = late ? [{ f: M`t = ${d(tt)} - t_0`, s: M`${d(tt)} - ${d(tt - te)}`, r: M`t = ${T} [s]` }] : [];
   const done = (value, rows, then, h, tau, V) => {
     const a = snap((V - u) / tau);
     if (!(tau > 1e-9)) return { fail: `${who} would have no time left to change speed: no ${FINDABLE[what]} makes it stop at the line ${when}.` };
-    return { value, rows, then: then(a), spec: { ...q, u, V, hold: h, tau, a, ends: true } };
+    return { value, rows: [...own, ...rows], then: then(a), spec: { ...q, u, V, hold: h, tau, a, ends: true } };
   };
   if (what === 'V') {
     const giv = ['hold', 'tau', 'a'].filter(has);
@@ -338,7 +363,8 @@ function findToLine(q, who, what, te, S, other, tt) {
  *          the line (or at the time).
  */
 export function solveOvertake(k = {}) {
-  const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
+  const say = k.where === 'rail' ? railWords : (x) => x;
+  const fail = (reason) => ({ ok: false, reason: say(reason), derived: [], notes: [] });
   const find = k.find ? { who: k.find.split('.')[0], what: k.find.split('.')[1] } : null;
   for (const n of NAMES) {
     const q = k[n] || {};
@@ -564,7 +590,7 @@ export function solveOvertake(k = {}) {
     const pick = good.sort((x, y) => Math.abs(x.value) - Math.abs(y.value))[0];
     found = { who, what: find.what, sym, value: pick.value, rows: pick.rows.length ? pick.rows : findRows };
     // after a given hold, the distance it covered holding comes first
-    if (h0 > EPS) found.rows = [{ f: M`s = uT_${who}`, s: M`${d(u)} * ${d(h0)}`, r: M`s = ${d(snap(u * h0))} [m]` }, ...found.rows];
+    if (h0 > EPS) found.rows = [{ f: M`s_1 = uT_${who}`, s: M`${d(u)} * ${d(h0)}`, r: M`s_1 = ${d(snap(u * h0))} [m]` }, ...found.rows];
     spec[who] = { ...q, [find.what]: pick.value };
     }
     // slowing with nothing else given, it slows until it stops, and stays
@@ -681,14 +707,23 @@ export function solveOvertake(k = {}) {
   ];
   if (!derived.length) derived.push(after.length ? `level later, at ${M`t = ${d(after[0].t)} [s]`}` : 'never level after the start');
 
+  // the papers' extremes are a few m s⁻² at most: a figure far beyond any real
+  // vehicle is a fact of the numbers given, and is said so, not hidden
+  for (const p of [A, B]) {
+    if (Math.abs(p.a) > 15 && isFinite(p.tau) && p.tau > EPS) {
+      notes.push(`${p.name}\u2019s ${p.a < 0 ? 'deceleration' : 'acceleration'} comes out at ${M`${d(Math.abs(p.a))} [m s^-2]`}, ${p.a < 0 ? 'stopping' : 'changing speed'} in ${M`${d(p.tau)} [s]`} — far beyond any real vehicle (hard braking is about ${M`10 [m s^-2]`}). The model allows it; the numbers are worth a second look.`);
+    }
+  }
+  for (const e of events) e.text = say(e.text);
+  for (const x of extras) x.label = say(x.label);
   return {
     ok: true, mode: 'overtake', axis: 'along', A, B, found, rejected, refRows, tLevel, line: have(k.line) ? k.line : null,
     events: events.map((e) => ({ ...e, own: { A: snap(Math.max(0, e.t - A.t0)), B: snap(Math.max(0, e.t - B.t0)) } })),
     later: after.length ? { t: snap(after[0].t), x: snap(after[0].x) } : null, before: have(k.line) ? 'the line' : have(k.at) ? 'then' : null,
     change: [lineRows.A ?? changeRows(spec.A, A), lineRows.B ?? changeRows(spec.B, B)], given: spec,
     lineRows, where: f.where,
-    f, extras, notes, derived,
-    convention: 'Along the road from the start is positive, on one clock.',
+    f, extras, notes: notes.map(say), derived: derived.map(say),
+    convention: say('Along the road from the start is positive, on one clock.'),
   };
 }
 
@@ -754,11 +789,22 @@ function overtakeMotion(A, B, tMax, events, line) {
 /* ── the working ──────────────────────────────────────────────────────── */
 export function overtakeWorking(solved) {
   if (!solved?.ok) return [];
+  if (solved.where === 'rail') {
+    return working(solved).map((st) => ({ ...st, title: railWords(st.title), note: railWords(st.note) }));
+  }
+  return working(solved);
+}
+
+function working(solved) {
   const { A, B, events, found, refRows, tLevel, rejected, line, extras, change } = solved;
   const out = [];
   // the one whose number is found has its other figures worked after it
   const first = found ? change[found.who === 'A' ? 1 : 0] : change.flat();
   const then = found ? change[found.who === 'A' ? 0 : 1] : [];
+  const late = (n) => (n === 'A' ? A : B).t0 > EPS;
+  // finding how long it holds its speed, its change of speed is known first
+  // and is used in the equation, so it is worked before it, not after
+  const thenFirst = found && found.what === 'hold' && !(found.who === 'A' ? A : B).ends;
   // one that comes to rest at the line: the line fixes its change of speed
   const area = (p) => `${p.name} ${p.hold > EPS ? `holds ${M`${d(p.u)} [m s^-1]`} for ${found && found.who === p.name ? M`T_${p.name}` : M`T_${p.name} = ${d(p.hold)} [s]`}, then ` : ''}${p.V < EPS ? 'slows to rest' : `changes to ${M`${d(p.V)} [m s^-1]`}`} at the line: the area under its speed–time graph — ${p.hold > EPS ? 'a rectangle, then ' : ''}${p.V < EPS || Math.abs(p.u) < EPS ? 'a triangle' : 'a trapezium'} — is the ${M`${d(line - p.x0)} [m]`} to the line.`;
   const ruled = (p) => solved.lineRows?.[p.name] && !(found && found.who === p.name);
@@ -773,14 +819,15 @@ export function overtakeWorking(solved) {
     const other = found.who === 'A' ? 'B' : 'A';
     out.push({ title: line != null ? `When ${other} reaches the line` : `Where ${other} is then`, rows: refRows,
       note: line != null ? `They are level at the line, so ${found.who} must reach it at the same time: ${M`t = ${d(tLevel)} [s]`}.` : '' });
+    if (then.length && thenFirst) out.push({ title: `${found.who}\u2019s change of speed`, rows: then });
     out.push({ title: `${named(found.who, found.what)}, from that`, rows: found.rows,
       note: [
-        (found.who === 'A' ? A : B).ends ? `${area(found.who === 'A' ? A : B)} It stops there at the same instant, so it takes the same time.`
+        (found.who === 'A' ? A : B).ends ? `${area(found.who === 'A' ? A : B)} ${(found.who === 'A' ? A : B).V < EPS ? 'It stops there at the same instant' : `It gets there at the same instant as ${found.who === 'A' ? 'B' : 'A'}`}, so it takes the same time${late(found.who) ? `, ${M`t`} on its own clock` : ''}.`
           : found.what === 'hold' ? `${found.who} holds its first speed for ${M`T_${found.who}`} seconds and then changes speed: the area under its speed–time graph — a rectangle, then a triangle or trapezium${(found.who === 'A' ? A : B).forever ? '' : ', then a rectangle again'} — is the distance.`
           : found.what !== 'a' ? `${found.who} changes speed for ${M`t_${found.who}`} seconds and then holds its speed: the area under its speed–time graph — a triangle or trapezium while it changes speed, then a rectangle — is the distance.` : '',
         ...rejected.map((c) => `${M`${found.sym} = ${d(c.value)}`} ${c.why}, so it is rejected.`),
       ].filter(Boolean).join(' ') });
-    if (then.length) out.push({ title: `And so ${found.who}\u2019s change of speed`, rows: then });
+    if (then.length && !thenFirst) out.push({ title: `And so ${found.who}\u2019s change of speed`, rows: then });
   }
   // Each crossing after the start: both positions as polynomials in t in the
   // stages they are in, set equal.

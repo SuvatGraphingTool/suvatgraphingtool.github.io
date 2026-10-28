@@ -73,7 +73,7 @@ export const LIBRARY = [
     sub: 'one sets off later, slows down, or brakes to rest — when are they level?',
     note: 'A car and a motorbike leave the lights ten seconds apart; a car slowing down is passed by a lorry going steadily; two children race and cross the line together; one train overtakes another on parallel tracks and both brake to rest beside the same post at the same instant. Each may hold its speed for a while, then changes speed at a steady rate. From the same start, they are level when the areas under their speed–time graphs are equal — so the moment, or the one number the paper hides, comes out of that.',
     params: { A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } },
-    place: 'A straight road, two lanes — or two parallel tracks',
+    place: 'Side by side: a straight road, or two parallel tracks',
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '9' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2013', q: '5', part: 'the motorbike' },
@@ -93,9 +93,9 @@ export const LIBRARY = [
       realTitle: 'What the model leaves out',
       realLead: 'The papers\u2019 model, kept as it is. None of this was computed; it is what the numbers were taken to mean.',
       why: [
-        ['Each is a point', 'level means the two points are level. Real cars overtake front to front, and a car is a few metres long, so the moment one is fully past is a little later than this.'],
+        ['Each is a point', 'level means the two points are level. Real vehicles overtake front to front, and a car is a few metres long (a train far more), so the moment one is fully past is a little later than this.'],
         ['The changes of speed are instant', 'the acceleration switches on and off at the corners of each speed–time graph. Nothing real does that, and the mark schemes say so.'],
-        ['Two lanes, never in each other\u2019s way', 'they are drawn side by side — two lanes, or two tracks — and neither slows for the other.'],
+        ['Never in each other\u2019s way', 'they are drawn side by side, in two lanes or on two tracks, and neither slows for the other.'],
       ],
       caveat: 'What the engine did compute is above: each one\u2019s position as a function of time in its stages, every moment the two are equal, and the one hidden number when the paper hides one.',
     } },
