@@ -64,6 +64,7 @@ A kit is an object with:
 | `lanes` — `js/kits/lanes.js` | `two-on-a-road` |
 | `plane` — `js/kits/plane.js` | `vectors-ij` |
 | `target` — `js/kits/target.js` | `over-the-wall` |
+| `bounce` — `js/kits/bounce.js` | `bounce` |
 
 ## Engine models — `js/core/`
 
@@ -96,7 +97,16 @@ question on one line: vertical, along a road, or a race.
 
 `quadRoots(c2, c1, c0)` — the real roots, in order, numerically stable.
 
-Used by: `pair-vertical`, `journey-3`, `two-on-a-road`.
+`toLevel({ t0, x0, u, a, kind }, level)` — a stage that runs until the object
+first reaches a level (the ground); `t1` is Infinity when it never does.
+`rebound(prev, k, level)` — the stage after an impact: from where and when
+`prev` ended, back the other way at k times the speed it arrived with, until
+it reaches the level again (kind `'rebound'`, with `vIn`). A bouncing ball is
+`staged([toLevel(...), rebound(...), rebound(...)])`: position continuous,
+velocity jumping at every impact. `timesAt(m, x, { from, to })` — every
+moment a staged motion is at position x, each `{ t, v }`.
+
+Used by: `pair-vertical`, `journey-3`, `two-on-a-road`, `bounce`.
 
 ### Two particles in one vertical line — `js/core/pair.js`
 
@@ -215,6 +225,26 @@ mark, and where a wall that high is cleared.
 
 Used by: `over-the-wall`.
 
+### A ball that bounces — `js/core/bounce.js`
+
+`solveBounce({ start, h, U, V, w, H, e, n, y, stop, axis, g })` — `start` is
+`'drop'`, `'down'` or `'up'`; any two of the height h, the throw speed U and
+the impact speed V fix the throw (one when released); any one of the rebound
+speed w, the rebound height H or the fraction kept e fixes the bounce (more
+are cross-checked to 1 %, and a rebound faster than the impact is refused).
+Watches to the n-th impact (1–6, default 2), or with `stop: 'y'` to the first
+time after the bounce it is at height y. `axis` `'up'` or `'down'` is the sign
+convention every signed number is reported in; heights stay heights. Gives
+`impacts` (each `{ k, t, vIn, vOut, H, gap }`), `crossings` of y (each `{ t,
+after, since, dir }`), `top0` (the top of an upward throw), `extras` and `f`,
+whose `at(t)` gives `{ y, v, a, vUp, flight }` and whose `jumps` are the
+impact times. `bounceWorking(solved)` — the fall (v² = u² + 2as, then
+v = u + at), the bounce, each flight between impacts, the total, and the
+height asked about, all in the student's convention. `bounceMotion({ h, u, g,
+e, impacts })` — the bare staged motion, up positive.
+
+Used by: `bounce`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -332,6 +362,23 @@ with the engine's time and height. Frames the whole motion and does not pan.
 
 Used by: `pair-vertical`.
 
+### A ball over the ground — `js/render/bounce.js`
+
+`render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'bounce'`.
+Hard ground and a brick balcony at the start height; the ball at a visible
+size sitting on the ground at impact (its bottom is the model's point), its
+shadow, a squash and a burst as it lands; equal-time marks, the way down and
+the way up in two lanes, earlier flights fainter; the start height and the
+latest rebound height as displacement brackets; B, the height asked about, as
+a lime line with its times ringed; the latest impact's speeds in and out; the
+velocity arrow labelled in the chosen convention, which the stage states with
+an arrow. Reusable on their own: `court(g, x0, x1, groundY, bottom, P,
+pxPerM)` — paving on earth in the scene tones; `balcony(g, xWall0, xWall1,
+tip, yPx, groundY, pxPerM, P)` — a brick wall, a window to each storey, and a
+railed ledge out to `tip` at a height. `sketch(f)` — the card's SVG.
+
+Used by: `bounce`.
+
 ## Graph overlays — `js/render/graphs.js`
 
 `drawGraph(canvas, spec)` takes two optional additions, available to any
@@ -339,8 +386,12 @@ scenario:
 
 - **series `tag`** — a letter (A, B) drawn at the start of the line, in its
   colour, for graphs with one line per object.
-- **spec `points`** — `[{ t, y, color, label? }]`: an event the engine found
-  (where two lines cross), drawn as a ring once the time cursor reaches it.
+- **spec `points`** — `[{ t, y, color, label?, dy? }]`: an event the engine found
+  (where two lines cross), drawn as a ring once the time cursor reaches it;
+  its label goes below-left, or `dy` px down (negative: above).
+- **series `jumps`** — times where the value itself jumps in an instant (a
+  velocity at a bounce): drawn as separate pieces with a thin dashed upright
+  between the value before and after, as the mark schemes sketch it.
 - **series `breaks`** — times where the series jumps (an acceleration changing
   from one constant to the next, a particle let go): drawn as separate pieces,
   with no vertical line joining them.
@@ -349,7 +400,7 @@ scenario:
 - **`yScale(series, tMax)`** — the pure range and ticks every graph uses: the
   step from the data, room below and more above so a top line clears the title.
 
-Used by: `pair-vertical` (tags, points), `journey-3` (points: the instants asked about).
+Used by: `pair-vertical` (tags, points), `journey-3` (points: the instants asked about), `bounce` (jumps, points with `dy`).
 
 ## Home screen
 

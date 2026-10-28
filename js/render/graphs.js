@@ -118,7 +118,16 @@ export function drawGraph(canvas, spec) {
     // A series with `breaks` jumps there — an acceleration that changes from
     // one constant to the next — so it is drawn as separate pieces, with no
     // line joining the levels: a step graph has no vertical lines in it.
-    const cuts = [0, ...(s.breaks || []).filter((b) => b > 1e-9 && b < tMax - 1e-9), tMax];
+    const cuts = [0, ...[...(s.breaks || []), ...(s.jumps || [])].filter((b) => b > 1e-9 && b < tMax - 1e-9).sort((p, q) => p - q), tMax];
+    // A series with `jumps` changes value in an instant there — a velocity at
+    // a bounce — and is shown as the papers sketch it: a thin dashed upright
+    // from the value before to the value after, lighter than the line, so it
+    // reads as a jump and never as a stretch of time.
+    for (const j of s.jumps || []) {
+      if (!(j > 1e-9 && j < tMax - 1e-9)) continue;
+      const e = tMax * 1e-6, y0 = s.fn(j - e), y1 = s.fn(j + e);
+      if (isFinite(y0) && isFinite(y1)) stroke(ctx, [{ x: X(j), y: Y(y0) }, { x: X(j), y: Y(y1) }], { color: s.color, width: 1.4, dash: [3, 4], alpha: 0.7 });
+    }
     for (let k = 0; k < cuts.length - 1; k++) {
       const a = cuts[k], b = cuts[k + 1], e = (b - a) * 1e-6, pts = [];
       const n = Math.max(2, Math.ceil(160 * (b - a) / (tMax || 1)));
@@ -158,7 +167,8 @@ export function drawGraph(canvas, spec) {
   for (const p of spec.points || []) {
     if (!(t >= p.t - 1e-9) || !isFinite(p.y)) continue;
     dot(ctx, X(p.t), Y(p.y), 6.5, { stroke: p.color, width: 2.4 });
-    if (p.label) L.add(p.label, X(p.t) - 12, Y(p.y) + 16, { color: p.color, align: 'right', pri: 6, size: 14, weight: 700, maxPush: 20 });
+    // a label goes below-left of its ring, or above-left when it says so (`dy`)
+    if (p.label) L.add(p.label, X(p.t) - 12, Y(p.y) + (p.dy ?? 16), { color: p.color, align: 'right', pri: 6, size: 14, weight: 700, maxPush: 20 });
   }
 
   // time cursor

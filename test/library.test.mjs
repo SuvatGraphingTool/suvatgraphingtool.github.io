@@ -15,6 +15,8 @@ import { solveJourney, journeyWorking } from '../js/core/journey.js';
 import { solveOvertake, overtakeWorking, mover, timeAt } from '../js/core/overtake.js';
 import { solvePlane, planeWorking } from '../js/core/plane.js';
 import { solveTarget, targetWorking, flight } from '../js/core/target.js';
+import { solveBounce, bounceWorking } from '../js/core/bounce.js';
+import { toLevel, rebound, timesAt } from '../js/core/stages.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
 
 let pass = 0, fail = 0;
@@ -747,6 +749,90 @@ group('Audit 2: shared pieces', () => {
   ok(new Set(names).size === names.length, 'no two boxes on the vectors screen share a name', names.join(' / '));
   const lanes = KITS.lanes.fields.map((f) => `${KITS.lanes.cols[f.col]}: ${strip(f.label)}`);
   ok(new Set(lanes).size === lanes.length, 'no two boxes on the road screen share a name');
+});
+
+/* ── bounce: the papers it names, and what it must refuse ───────────── */
+group('A stage to a level, a rebound off it, and the times at a level', () => {
+  const s1 = toLevel({ t0: 0, x0: 2, u: 0, a: -9.8, kind: 'fall' }, 0);
+  ok(near(s1.t1, Math.sqrt(4 / 9.8)), 'released from 2 m, it reaches the ground at √(2h/g)');
+  const s2 = rebound(s1, 0.9, 0);
+  ok(s2.kind === 'rebound' && near(s2.u, 0.9 * Math.sqrt(2 * 9.8 * 2)) && near(s2.vIn, -Math.sqrt(2 * 9.8 * 2)), 'the rebound leaves at k times the speed it arrived with, the other way');
+  ok(near(s2.t1 - s2.t0, 2 * s2.u / 9.8), 'and is back at the ground after 2u/g');
+  const m = staged([s1, s2]);
+  const at1 = timesAt(m, 1);
+  ok(at1.length === 3 && at1[0].v < 0 && at1[1].v > 0 && at1[2].v < 0, 'a level is passed on the way down, and up and down again after the bounce');
+  ok(toLevel({ t0: 0, x0: 5, u: 1, a: 0 }, 0).t1 === Infinity, 'moving away with nothing to turn it, it never reaches the level');
+});
+
+group('Edexcel M1 Jun 2014 Q3: released from 2 m, rises to 1.5 m after the bounce', () => {
+  const r = solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down' });
+  ok(r.ok, 'it solves');
+  ok(r.impacts[0].vIn.toFixed(2) === '6.26', '(a) 6.26 m s⁻¹ just before it strikes the ground — as the mark scheme', r.impacts[0].vIn);
+  ok(r.impacts[0].vOut.toFixed(2) === '5.42', '(b) 5.42 m s⁻¹ just after — as the mark scheme', r.impacts[0].vOut);
+  ok(r.impacts.length === 2 && r.f.tMax.toFixed(2) === '1.75', '(e) 1.75 s from release to the second impact — as the mark scheme', r.f.tMax);
+  // (d) the sketch, down positive: up from 0 to +6.26, a jump to −5.42, then up to +5.42
+  const t1 = r.impacts[0].t, e = 1e-6;
+  ok(near(r.f.at(0).v, 0) && near(r.f.at(t1 - e).v, 6.26, 0.01) && near(r.f.at(t1 + e).v, -5.42, 0.01) && near(r.f.at(r.f.tMax).v, 5.42, 0.01),
+     '(d) the velocity–time graph down positive: 0 to 6.26, a jump to −5.42, then up to 5.42');
+  ok(r.f.jumps.length === 1 && near(r.f.jumps[0], t1), 'the graph is told where it jumps');
+  const spec = KITS.bounce.graphs(r.f, r.f.tMax, { mark: '#0f0', disp: '#0ff', vel: '#f80', acc: '#80f' })[1];
+  ok(spec.series[0].jumps === r.f.jumps && spec.series[0].dash === null, 'the velocity line jumps there, solid (vertical)');
+  ok(/down is positive/.test(spec.note), 'and says which way is positive');
+  ok(near(r.f.at(0.3).a, 9.8) && near(solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8 }).f.at(0.3).a, -9.8), 'a is +g down positive and −g up positive');
+});
+
+group('Edexcel M1 Jun 2018 Q4: thrown down from 2.5 m, rebounds at 10 m s⁻¹, to B 1 m up', () => {
+  for (const [what, k] of [['the throw speed, 24', { U: 24 }], ['the impact speed, 25', { V: 25 }]]) {
+    const r = solveBounce({ start: 'down', h: 2.5, ...k, w: 10, y: 1, stop: 'y', g: 9.8 });
+    ok(r.ok, `given ${what}, it solves`);
+    ok(near(r.params.U, 24) && near(r.params.V, 25), 'U = 24 and the impact speed 25 — the mark scheme’s (a), without the impulse');
+    ok(r.stopAt && r.stopAt.since.toFixed(2) === '0.11' && r.stopAt.dir === 'up' && r.stopAt.after === 1, '(b) 0.11 s from the impact to B — as the mark scheme', r.stopAt?.since);
+    ok(near(r.f.tMax, r.stopAt.t), '(c) the run, and its graph, end as it first passes B');
+  }
+  const r = solveBounce({ start: 'down', h: 2.5, U: 24, w: 10, y: 1, stop: 'y', g: 9.8, axis: 'down' });
+  const t1 = r.impacts[0].t;
+  ok(near(r.f.at(0).v, 24) && near(r.f.at(t1 - 1e-6).v, 25, 1e-4) && near(r.f.at(t1 + 1e-6).v, -10, 1e-4), '(c) the sketch down positive: from 24 up to 25, a jump to −10');
+});
+
+group('Bounce: the general case, and what it refuses', () => {
+  const up = solveBounce({ start: 'up', h: 10, U: 5, e: 0.5, n: 4, y: 3, g: 9.8 });
+  ok(up.ok && up.impacts.length === 4 && near(up.top0.H, 10 + 25 / 19.6), 'thrown up from 10 m: rises first, then four impacts');
+  ok(up.impacts.every((x, i) => i === 0 || near(x.vOut, 0.5 * x.vIn)) && near(up.impacts[1].vIn, up.impacts[0].vOut), 'each bounce keeps the same half; it lands as fast as it left');
+  ok(near(up.impacts[1].t - up.impacts[0].t, 2 * up.impacts[0].vOut / 9.8), 'the time between bounces is 2u/g');
+  const sum = up.impacts[0].t + up.impacts.slice(0, -1).reduce((a, x) => a + x.gap, 0);
+  ok(near(sum, up.f.tMax), 'the total is the fall and every flight between impacts');
+  const ground = solveBounce({ start: 'up', h: 0, U: 9.8, w: 4.9, g: 9.8, n: 2 });
+  ok(ground.ok && near(ground.impacts[0].t, 2) && near(ground.impacts[1].t, 3), 'thrown up from the ground: back down at 2u/g, then again 1 s later');
+  const vh = solveBounce({ start: 'drop', V: 14, e: 0.5, g: 9.8 });
+  ok(vh.ok && near(vh.params.h, 10), 'released, and given only the impact speed: the height comes out');
+  const refuse = [
+    [{ start: 'drop', h: 2, H: 3, g: 9.8 }, /faster than it hit/],
+    [{ start: 'drop', h: 2, w: 0, g: 9.8 }, /stays on the ground/],
+    [{ start: 'down', h: 2, U: 5, V: 4, w: 2, g: 9.8 }, /do not agree/],
+    [{ start: 'down', U: 5, V: 4, w: 2, g: 9.8 }, /slower than it was thrown/],
+    [{ start: 'down', h: 20, V: 5, w: 2, g: 9.8 }, /cannot arrive at only/],
+    [{ start: 'drop', h: 2, w: 3, H: 0.1, g: 9.8 }, /do not agree/],
+    [{ start: 'drop', h: 2, w: 3, g: 0 }, /needs gravity/],
+    [{ start: 'drop', h: 2, w: 3, g: 9.8, n: 7 }, /Up to 6/],
+    [{ start: 'drop', h: 2, w: 3, g: 9.8, n: 1.5 }, /whole number/],
+    [{ start: 'drop', h: 2, w: 3, g: 9.8, y: 1, stop: 'y' }, /never .* up again|rises only/],
+    [{ start: 'drop', h: 2, w: 3, g: 9.8, stop: 'y' }, /Give the height/],
+    [{ start: 'drop', h: 0, w: 3, g: 9.8 }, /never leaves it/],
+    [{ start: 'drop', h: -1, w: 3, g: 9.8 }, /cannot be negative/],
+    [{ start: 'drop', h: 2, U: 3, w: 3, g: 9.8 }, /Released from rest/],
+    [{ h: 2, w: 3, g: 9.8 }, /how it sets off/],
+    [{ start: 'drop', h: 2, g: 9.8 }, /how it bounces/],
+  ];
+  for (const [k, re] of refuse) {
+    const r = solveBounce(k);
+    ok(!r.ok && re.test(strip(r.reason)), `refused: ${strip(r.reason || 'it solved').slice(0, 70)}`);
+  }
+  const nevr = solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8, y: 3 });
+  ok(nevr.ok && !nevr.crossings.length && nevr.notes.some((x) => /never/.test(strip(x))), 'a height it never reaches is said, not drawn');
+  const w = bounceWorking(solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down', y: 1 }));
+  ok(w.length === 5 && w.every((s) => s.rows.length), 'the working: the fall, the bounce, the flight, the total, the height');
+  const e = KITS.bounce.ending(solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8 }));
+  ok(e.title === 'It hits the ground the second time 1.75 s after it set off.', 'the ending headlines the paper’s answer', e.title);
 });
 
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }

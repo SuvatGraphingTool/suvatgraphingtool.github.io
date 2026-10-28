@@ -380,3 +380,47 @@ ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
 
+### `bounce` — A ball that bounces
+
+**Papers.** Edexcel M1 Jun 2014 Q3 (released from rest 2 m above horizontal
+ground, rises to 1.5 m after the bounce: 6.26 m s⁻¹ just before, 5.42 m s⁻¹
+just after, a velocity–time sketch down positive, 1.75 s to the second
+impact; the impulse in (c) is out). Edexcel M1 Jun 2018 Q4 (thrown down from
+A, 2.5 m up, rebounds at 10 m s⁻¹: 0.11 s from the impact to B, 1 m up, and a
+velocity–time sketch from A to B; part (a) finds the throw speed, 24 m s⁻¹,
+from an impulse — out of scope, so the student gives the throw speed or the
+impact speed, 25 m s⁻¹, instead).
+
+**Why the twelve cannot.** The stadium's bounce is a restitution slider on a
+projectile: it never takes a rebound speed or a rebound height, never says the
+speeds either side of an impact, never answers when the ball is at a height
+after a bounce, and its graphs join the impact with a line.
+
+**How it is solved.** A staged motion (js/core/stages.js): `toLevel` for the
+first flight, `rebound` for each one after it, the velocity jumping at each
+impact. The throw is any two of the height, the throw speed and the impact
+speed (v² = u² + 2as); the bounce is any one of the rebound speed, the height
+it rises to (0 = u² + 2as at the top) or the fraction it keeps. Times between
+impacts are 2u⁄g; a height is s = ut + ½at² in the flight it falls in, every
+root kept that is in the run.
+
+**The stage.** A balcony on a brick wall at the start height over a hard court;
+the ball at a real size sitting on the ground at impact, its shadow, a squash
+and a burst as it lands; the start height and each rebound height as
+displacement brackets; B as a lime line with its times ringed; each impact's
+speeds in and out; the sign convention stated with an arrow.
+
+**Graphs.** Height–time (arcs with cusps at the ground); velocity–time in the
+paper's convention, the line stopping at each impact and starting again on the
+other side of zero, a dashed upright between, as the mark schemes sketch it;
+acceleration ±g, broken at each impact.
+
+**What the student varies.** Released, thrown down or thrown up; height, throw
+speed, impact speed; rebound speed, rebound height or fraction; impacts to
+watch (1 to 6); a height to ask about, and whether the run stops the first
+time it is there after the bounce; up or down positive; g.
+
+**What makes it general.** Every one-ball vertical bounce question where the
+rebound is given. Not yet: a rebound found from a later event (OCR 4728 Jun
+2014 Q1, row 55: passes its start 0.87 s after the throw — the rebound speed is
+the unknown), or one found from an impulse (momentum: out).

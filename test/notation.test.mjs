@@ -33,6 +33,7 @@ import { solveJourney, journeyWorking } from '../js/core/journey.js';
 import { solveOvertake, overtakeWorking } from '../js/core/overtake.js';
 import { solvePlane, planeWorking } from '../js/core/plane.js';
 import { solveTarget, targetWorking } from '../js/core/target.js';
+import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { KITS } from '../js/kits/index.js';
 import { LIBRARY } from '../js/library.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
@@ -534,6 +535,50 @@ group('The Past-paper library: moving in a plane, everything it says', () => {
   for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 100, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: a ball that bounces, everything it says', () => {
+  const K = KITS.bounce;
+  const INPUTS = [
+    { start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down', y: 1 },
+    { start: 'down', h: 2.5, U: 24, w: 10, y: 1, stop: 'y', g: 9.8 },
+    { start: 'down', h: 2.5, V: 25, w: 10, y: 1, stop: 'y', g: 9.8, axis: 'down' },
+    { start: 'up', h: 10, U: 5, e: 0.5, n: 4, y: 3, g: 9.8 },
+    { start: 'up', h: 0, U: 9.8, w: 4.9, g: 9.8, n: 3, y: 4.9 },
+    { start: 'drop', V: 14, e: 1 / 3, g: 10, n: 6 },
+    { start: 'down', h: 2, U: 5, V: 7.2, w: 3, g: 9.81 },
+    { start: 'drop', h: 2, H: 3, g: 9.8 }, { start: 'down', U: 5, V: 4, w: 2, g: 9.8 },
+    { start: 'down', h: 20, V: 5, w: 2, g: 9.8 }, { start: 'drop', h: 2, w: 3, g: 9.8, y: 1, stop: 'y' },
+    { start: 'drop', h: 2, H: 1.5, g: 9.8, y: 3 }, { start: 'drop', h: 2, g: 9.8 },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveBounce(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.moment) { said++; check('moment', r.moment.text, bag); }
+    if (r.convention) check('convention', r.convention, bag);
+    for (const x of r.extras || []) check('extra', `${x.label} ${x.unit}`, bag);
+    for (const st of bounceWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 

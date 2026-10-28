@@ -126,3 +126,44 @@ export function quadRoots(c2, c1, c0) {
   const qq = -0.5 * (c1 + Math.sign(c1 || 1) * r);
   return [qq / c2, c0 / qq].sort((p, q) => p - q);
 }
+
+/* ── a level it stops at, and comes back off ────────────────────────────
+   A ball's flight ends at the ground; a bounce starts the next flight there,
+   going back the other way. Both are still stages of constant acceleration,
+   so a bouncing ball is a staged motion whose position is continuous and
+   whose velocity jumps at every impact — which staged() already allows,
+   because each stage carries its own u. Nothing here knows which way is up:
+   the level is a position, and the caller says what it is. */
+
+/**
+ * A stage that runs from t0 until the object first reaches `level` — the
+ * ground under a falling ball. t1 is the first root τ > 0 of
+ * x0 + uτ + ½aτ² = level; Infinity when it never gets there.
+ */
+export function toLevel({ t0, x0, u, a, kind = 'free' }, level) {
+  const roots = quadRoots(0.5 * a, u, x0 - level).filter((r) => r > 1e-12);
+  return { t0, t1: t0 + (roots.length ? roots[0] : Infinity), x0, u, a, kind };
+}
+
+/**
+ * The stage after an impact: from where and when `prev` ended, moving back
+ * the other way at `k` times the speed it arrived with, with the same
+ * acceleration, until it reaches the level again. k is the caller's — a
+ * fraction a paper gives, or a ratio of two speeds it gives. Its kind is
+ * 'rebound', and `vIn` is the velocity it arrived with.
+ */
+export function rebound(prev, k, level) {
+  if (!isFinite(prev.t1)) throw new Error('A stage that never ends cannot rebound.');
+  const vIn = at(prev, prev.t1).v;
+  return { ...toLevel({ t0: prev.t1, x0: level, u: -k * vIn, a: prev.a, kind: 'rebound' }, level), vIn };
+}
+
+/**
+ * Every moment in [from, to] that a staged motion is at position x: the
+ * meetings with something standing still there. Each is { t, v }, v the
+ * velocity it has then (arriving, at an instant where it jumps).
+ */
+export function timesAt(m, x, { from = m.start, to = m.end } = {}) {
+  const still = staged([{ t0: from, t1: to, x0: x, u: 0, a: 0, kind: 'level' }]);
+  return meetings(m, still, { from, to }).map((r) => ({ t: r.t, v: r.vA, ...(r.together ? { together: true, until: r.until } : {}) }));
+}
