@@ -18,6 +18,15 @@
         "4199"
       ],
       "port": 4199
+    },
+    {
+      "name": "suvat-library",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "dev-server.mjs",
+        "4231"
+      ],
+      "port": 4231
     }
   ]
 }
