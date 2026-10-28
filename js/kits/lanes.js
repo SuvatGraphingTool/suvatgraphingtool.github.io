@@ -8,7 +8,8 @@ import * as stage from '../render/lanes.js';
 import { timeLapse } from '../core/pace.js';
 import { M, num } from '../notation.js';
 
-const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 2), { trim: true });
+// the precision the working uses: three places, four for a rate under 1
+const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const KEYS = ['t0', 'x0', 'u', 'a', 'V', 'tau'];
 
 const one = (n) => [
@@ -125,8 +126,10 @@ export const lanes = {
         : 'They are never level after the start.';
     const at = main ? solved.f.at(main.t) : null;
     const cell = (x, p) => `<b>${tr(x, p)}</b>`;
+    // each one's own time, from the engine where it has it
+    const ownT = (p) => ex(`own${p.name}`) ?? (main.t - p.t0);
     const row = (p, s) => {
-      const moving = Math.max(0, main.t - p.t0);
+      const moving = Math.max(0, ownT(p));
       return `<div class="ph-row" role="row" data-key="${p.name === 'A' ? 'first' : 'second'}">
         <span class="ph-name" role="cell"><b>${p.name}</b><em>${p.t0 > 0 ? `set off at ${M`t = ${tr(p.t0)} [s]`}` : 'from the start'}</em></span>
         <span role="cell">${cell(p.u)}</span><span role="cell">${cell(s.v)}</span>

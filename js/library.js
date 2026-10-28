@@ -71,7 +71,7 @@ export const LIBRARY = [
   { id: 'two-on-a-road', group: 'library', kit: 'lanes',
     name: 'Two on one road',
     sub: 'one sets off later, or slows down — when is one level with the other?',
-    note: 'A car and a motorbike leave the lights ten seconds apart; a car slowing down is passed by a lorry going steadily; two children race and cross the line together. Each changes speed at a steady rate and then holds it, and they are level when the areas under their speed–time graphs are equal — so the moment, or the one number the paper hides, comes out of that.',
+    note: 'A car and a motorbike leave the lights ten seconds apart; a car slowing down is passed by a lorry going steadily; two children race and cross the line together. Each changes speed at a steady rate and then holds it. From the same start, they are level when the areas under their speed–time graphs are equal — so the moment, or the one number the paper hides, comes out of that.',
     params: { A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } },
     place: 'A straight road, two lanes',
     sources: [
@@ -80,7 +80,7 @@ export const LIBRARY = [
       { board: 'Edexcel', paper: '8MA0/22', session: 'Jun 2023', q: '1' },
       { board: 'Edexcel', paper: 'WME01', session: 'Jun 2022', q: '7' },
     ],
-    tags: ['overtake', 'overtakes', 'pass', 'passes', 'catch up', 'race', 'finish together', 'two cars', 'car', 'motorbike',
+    tags: ['overtake', 'overtakes', 'overtaken', 'overtaking', 'pass', 'passes', 'catch up', 'chase', 'pursuit', 'meet', 'velocity-time graph', 'race', 'finish together', 'two cars', 'car', 'motorbike',
            'motorcycle', 'lorry', 'runner', 'children', 'later', 'traffic lights', 'level', 'same time', 'speed-time graph',
            'two vehicles', 'mechanics', 'A level', 'AS level', 'M1', 'IAL'],
     ending: {

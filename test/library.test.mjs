@@ -321,13 +321,21 @@ group('Two on one road: four papers, each against its mark scheme', () => {
   const ial = O({ A: { a: 0.8, V: 4 }, B: { a: 1 }, find: 'B.tau', line: 100 });
   ok(ial.ok && near(ial.extras.find((x) => x.key === 'tA').value, 27.5) && near(ial.found.value, 3.915047, 1e-5)
      && near(ial.extras.find((x) => x.key === 'dv').value, 0.08495, 1e-4), 'Edexcel IAL WME01 J22 Q7: 27.5 s, T = 3.915, and the speeds differ by 0.085 m s⁻¹');
-  const as23 = O({ A: { V: 4, tau: 5 }, B: { a: 1 }, find: 'B.V', line: 100 });
-  ok(as23.ok && near(as23.A.a, 0.8) && as23.found.value.toFixed(2) === '3.92', 'Edexcel 8MA0/22 J23 Q1: Pat at 0.8 m s⁻², and X = 3.92');
-  const W = overtakeWorking(ial).map((st) => st.rows.map((r) => [strip(r.f), strip(r.s), strip(r.r)]));
-  ok(W[1][0][1] === '100=½tB×tB+tB(27.5−tB)' && W[1][0][2] === 'tB2−55tB+200=0', 'the race in the mark scheme’s own form: ½T × T + T(27.5 − T) = 100');
-  ok(/tB=51\.085 is longer than the 27\.5s there is/.test(strip(overtakeWorking(ial)[1].note)), 'the other root rejected, with the reason');
+  // as the paper gives it: both take 27.5 s; the 100 m is part (c)'s answer
+  const as23 = O({ A: { V: 4, tau: 5 }, B: { a: 1 }, find: 'B.V', at: 27.5 });
+  const W23 = overtakeWorking(as23).map((st) => st.rows.map((r) => strip(r.r)).join(' | '));
+  ok(as23.ok && near(as23.A.a, 0.8) && as23.found.value.toFixed(2) === '3.92' && W23.some((x) => /aA=0\.8m s−2/.test(x)) && W23.some((x) => /sA=100m/.test(x)),
+     'Edexcel 8MA0/22 J23 Q1: Pat at 0.8 m s⁻² and 100 m, both worked, and X = 3.92');
+  const Wi = overtakeWorking(ial).map((st) => ({ title: strip(st.title), rows: st.rows.map((r) => [strip(r.f), strip(r.s), strip(r.r)]), note: strip(st.note) }));
+  const fi = Wi.find((x) => /time spent changing speed, from that/.test(x.title));
+  ok(fi.rows[0][1] === '100=½tB×tB+tB(27.5−tB)' && fi.rows[0][2] === 'tB2−55tB+200=0', 'the race in the mark scheme’s own form: ½T × T + T(27.5 − T) = 100');
+  ok(/tB=51\.085 is longer than the 27\.5s there is/.test(fi.note), 'the other root rejected, with the reason');
+  ok(Wi.some((x) => x.rows.some((r) => r[1] === '|4−3.915|' && r[2] === '0.085m s−1')), 'IAL (d) worked: |4 − 3.915| = 0.085');
   const Wo = overtakeWorking(ocr).map((st) => st.rows.map((r) => strip(r.r)).join(' | '));
-  ok(/sA=180\+8t \| sB=12t \| 4t−180=0 \| t=45s/.test(Wo[0]), 'the overtaking: 180 + 8t = 12t, so t = 45 s');
+  ok(/aA=−0\.4m s−2/.test(Wo[0]) && Wo.some((x) => /sA=180\+8t \| sB=12t \| 4t−180=0 \| t=45s/.test(x)), 'OCR (a) and (b) worked: −0.4 m s⁻², then 180 + 8t = 12t, so t = 45 s');
+  const Wj = overtakeWorking(j13).map((st) => st.rows.map((r) => strip(r.f) + ' ' + strip(r.s) + ' ' + strip(r.r)).join(' | '));
+  ok(Wj.some((x) => /t−t0 60−10 50s/.test(x)) && /B’s a=0\.792/.test(strip(j13.derived.join(' '))) && /B has been moving 50s/.test(strip(j13.derived.join(' '))),
+     'J13: 60 − 10 = 50 s worked, and the Ready line says whose a and the 50 s');
 });
 
 group('Two on one road: what cannot happen, and the edges', () => {
@@ -344,6 +352,18 @@ group('Two on one road: what cannot happen, and the edges', () => {
   ok(head.ok && near(head.events.find((x) => x.kind === 'overtake').t, 30), 'a head start (B 50 m behind) is counted');
   const m = mover({ u: 3, a: 2, V: 7 }, 'A');
   ok(near(m.tau, 2) && near(timeAt(m, 10), 2) && near(m.pos(4), 10 + 14), 'a mover: changes for 2 s to 7 m s⁻¹, then holds it');
+  ok(/its acceleration is negative: −0\.4, not 0\.4/.test(strip(O({ A: { u: 20, a: 0.4, V: 8 }, B: { u: 12 } }).reason)), 'a deceleration typed as a size is refused, with the sign it needs');
+  ok(!O({ A: { u: 10, V: 20 }, B: { u: 5 } }).ok && !O({ A: { u: 10, tau: 5 }, B: { u: 5 } }).ok, 'a speed change with no rate or time, or a time with nothing to change: refused');
+  const keep = O({ A: { V: 22, tau: 30 }, B: { t0: 10, tau: 20 }, find: 'B.V', line: 990 });
+  ok(keep.ok && near(keep.found.value, 24.75) && near(keep.B.tau, 20) && near(timeAt(keep.B, 990), 60), 'finding V keeps the time that was given: B changes for 20 s, and reaches 990 m at 60 s');
+  const tau = O({ A: { V: 22, tau: 30 }, B: { t0: 10, V: 25 }, find: 'B.tau', line: 990 });
+  ok(tau.ok && near(tau.found.value, 20.8), 'and finding the time with V given: 20.8 s');
+  const before = O({ A: { u: 20, V: 8, tau: 30 }, B: { u: 12 }, line: 300 });
+  ok(/not level before the line: A is ahead\. They are level later, at t=45s/.test(strip(before.notes.join(' '))), 'a line before the overtaking: not level before it, level later — not “never”');
+  ok(O({ A: { u: 20 }, B: { t0: 5, a: 1, V: 15 } }).f.tMax >= 20, 'never level: watched long enough to see them part, not 2 s');
+  ok(/same motion twice/.test(O({ A: { u: 10 }, B: { u: 10 } }).reason), 'the same motion twice is refused, once, in one voice');
+  const twoLate = O({ A: { t0: 3, u: 10 }, B: { t0: 5, u: 15 } });
+  ok(!twoLate.events.some((e) => e.kind !== 'start' && e.t < 5), 'two waiting at the start are not “level” as one sets off');
   const K = KITS.lanes;
   const G = K.graphs(O({ A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } }).f, 10, { disp: 'd', vel: 'v', acc: 'a', second: 's', mark: 'm' });
   ok(G.every((sp) => sp.series.every((x) => x.dash && x.tag && Array.isArray(x.breaks))), 'every line dashed, lettered and broken at its changes');

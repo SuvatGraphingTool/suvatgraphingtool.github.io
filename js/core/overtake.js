@@ -33,7 +33,7 @@ const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const sgn = (x) => (x < 0 ? `(${d(x)})` : d(x));
 const NAMES = ['A', 'B'];
-export const FINDABLE = { a: 'acceleration', V: 'top speed', tau: 'time spent changing speed' };
+export const FINDABLE = { a: 'acceleration', V: 'speed it changes to', tau: 'time spent changing speed' };
 const UNIT_OF = { a: '[m s^-2]', V: '[m s^-1]', tau: '[s]' };
 
 /* ── one of the two ───────────────────────────────────────────────────── */
@@ -89,7 +89,7 @@ function reachRows(p, X) {
   } else if (ch) {
     const sCh = ch.u * (ch.t1 - ch.t0) + 0.5 * ch.a * (ch.t1 - ch.t0) ** 2;
     const z = Math.abs(p.u) < EPS;
-    rows.push({ f: M`t_${n} = (V - u)/a`, s: z ? M`${d(p.V)}/${sgn(p.a)}` : M`(${d(p.V)} - ${d(p.u)})/${sgn(p.a)}`, r: M`t_${n} = ${d(p.tau)} [s]` });
+    // (its time changing speed is in the step before, with the rest of its figures)
     rows.push({ f: M`s = ½(u + V)t_${n}`, s: z ? M`½ * ${d(p.V)} * ${d(p.tau)}` : M`½(${d(p.u)} + ${d(p.V)}) * ${d(p.tau)}`, r: M`s = ${d(sCh)} [m]` });
     rows.push({ f: M`t = ${late ? `${d(p.t0)} + ` : ''}t_${n} + (${d(X - p.x0)} - s)/V`,
                 s: M`${late ? `${d(p.t0)} + ` : ''}${d(p.tau)} + (${d(X - p.x0)} - ${d(sCh)})/${d(p.V)}`, r: M`t = ${d(t)} [s]` });
@@ -97,6 +97,51 @@ function reachRows(p, X) {
     rows.push({ f: M`t = ${late ? `${d(p.t0)} + ` : ''}s/u`, s: M`${late ? `${d(p.t0)} + ` : ''}${d(X - p.x0)}/${d(p.u)}`, r: M`t = ${d(t)} [s]` });
   }
   return { t, rows };
+}
+
+/** Where a mover is at a time, worked: the twin of reachRows. */
+function placeRows(p, t) {
+  const n = p.name, x = snap(p.pos(t)), te = t - p.t0;
+  const ch = p.stages.find((st) => st.kind === 'changing');
+  const z = Math.abs(p.u) < EPS;
+  if (te <= 0) return [{ f: M`s_${n} = 0`, s: '', r: M`s_${n} = 0 [m]` }];
+  if (ch && t <= ch.t1 + 1e-9) {
+    return [{ f: M`s_${n} = ut + ½at^2`, s: M`${z ? '' : `${sgn(p.u)} * ${d(te)} + `}½ * ${sgn(p.a)} * ${d(te)}^2`, r: M`s_${n} = ${d(x - p.x0)} [m]` }];
+  }
+  if (ch) {
+    return [{ f: M`s_${n} = ½(u + V)t_${n} + V(t - t_${n})`,
+              s: M`${z ? `½ * ${d(p.V)}` : `½(${d(p.u)} + ${d(p.V)})`} * ${d(p.tau)} + ${d(p.V)}(${d(te)} - ${d(p.tau)})`, r: M`s_${n} = ${d(x - p.x0)} [m]` }];
+  }
+  return [{ f: M`s_${n} = ut`, s: M`${d(p.u)} * ${d(te)}`, r: M`s_${n} = ${d(x - p.x0)} [m]` }];
+}
+
+/** A mover's change of speed, from the two of a, V and its time that are
+    given: the third, worked — so a paper's "find the deceleration" is a row. */
+function changeRows(q, p) {
+  const n = p.name, z = Math.abs(p.u) < EPS;
+  if (p.forever || !(p.tau > EPS)) return [];
+  if (!have(q.a)) return [{ f: M`a_${n} = (V - u)/t_${n}`, s: z ? M`${d(p.V)}/${d(p.tau)}` : M`(${d(p.V)} - ${d(p.u)})/${d(p.tau)}`, r: M`a_${n} = ${d(p.a)} [m s^-2]` }];
+  if (!have(q.tau)) return [{ f: M`t_${n} = (V - u)/a`, s: z ? M`${d(p.V)}/${sgn(p.a)}` : M`(${d(p.V)} - ${d(p.u)})/${sgn(p.a)}`, r: M`t_${n} = ${d(p.tau)} [s]` }];
+  if (!have(q.V)) return [{ f: M`V_${n} = u + at_${n}`, s: M`${d(p.u)} + ${sgn(p.a)} * ${d(p.tau)}`, r: M`V_${n} = ${d(p.V)} [m s^-1]` }];
+  return [];
+}
+
+/** What is wrong with one mover's figures, or null. */
+function whatsWrong(q, n) {
+  const u = have(q.u) ? q.u : 0;
+  if (have(q.a) && have(q.V)) {
+    if (Math.abs(q.a) < EPS && Math.abs(q.V - u) > EPS) return `${n} cannot change from ${M`${d(u)}`} to ${M`${d(q.V)} [m s^-1]`} with no acceleration.`;
+    if (q.a * (q.V - u) < -EPS) {
+      return q.V < u
+        ? `${n} slows from ${M`${d(u)}`} to ${M`${d(q.V)} [m s^-1]`}, so its acceleration is negative: ${M`${d(-Math.abs(q.a))}`}, not ${M`${d(Math.abs(q.a))}`}.`
+        : `${n} speeds up from ${M`${d(u)}`} to ${M`${d(q.V)} [m s^-1]`}, so its acceleration is positive: ${M`${d(Math.abs(q.a))}`}, not ${M`${d(-Math.abs(q.a))}`}.`;
+    }
+  }
+  if (have(q.a) && have(q.tau) && u + q.a * q.tau < -1e-9) return `${n} would be going backwards by the end of those ${M`${d(q.tau)} [s]`}: it stops after ${M`${d(u / -q.a)} [s]`}.`;
+  if (have(q.V) && !have(q.a) && !have(q.tau) && Math.abs(q.V - u) > EPS) return `${n} changes speed to ${M`${d(q.V)} [m s^-1]`}: give the rate or how long it takes.`;
+  if (have(q.tau) && !have(q.a) && !have(q.V) && q.tau > EPS) return `${n} changes speed for ${M`${d(q.tau)} [s]`}: give the rate or the speed it changes to.`;
+  if (have(q.V) && have(q.tau) && q.tau < EPS && Math.abs(q.V - u) > EPS) return `${n} cannot change speed in no time at all.`;
+  return null;
 }
 
 /**
@@ -115,6 +160,15 @@ export function solveOvertake(k = {}) {
     if (have(q.u) && q.u < 0 || have(q.V) && q.V < 0) return fail('Speeds along the road are sizes: give them as positive numbers.');
     const n3 = ['a', 'V', 'tau'].filter((x) => have(q[x]) && !(find && find.who === n && find.what === x)).length;
     if (n3 > 2) return fail(`${n} has an acceleration, a speed to reach and a time to reach it — two of those fix the third. Clear one.`);
+  }
+  for (const n of NAMES) {
+    const q = { ...(k[n] || {}) };
+    if (find && find.who === n) delete q[find.what];
+    const wrong = whatsWrong(q, n);
+    if (wrong && !(find && find.who === n)) return fail(wrong);
+    if (!['u', 'a', 'V', 'tau'].some((x) => have(q[x])) && !(find && find.who === n)) {
+      return fail(`Still needed: how ${n} moves — its speed, or its acceleration.`);
+    }
   }
   if (find) {
     if (!have(k.line) && !have(k.at)) return fail('To find an unknown, say where they are level (a line along the road) or when.');
@@ -142,7 +196,7 @@ export function solveOvertake(k = {}) {
       X = k.line; tt = r.t; refRows = r.rows;
     } else {
       tt = k.at; X = snap(R.pos(tt));
-      refRows = [{ f: M`s_${other}`, s: '', r: M`s = ${d(X)} [m]` }];
+      refRows = placeRows(R, tt);
     }
     tLevel = tt;
     // the unknown one: one equation in the unknown, by the regime it is in at tt
@@ -196,9 +250,9 @@ export function solveOvertake(k = {}) {
         // V written in the unknown: t_B itself when a = 1 from rest, as the papers have it
         const Vraw = inTau ? `${Math.abs(u) > EPS ? `${d(u)} + ` : ''}${Math.abs(a - 1) > EPS ? d(a) : ''}${ts}` : 'V';
         const Vt = /[+-]/.test(Vraw) ? `(${Vraw})` : Vraw;
-        const tauS = inTau ? ts : (Math.abs(u) > EPS ? `(V - ${d(u)})/${d(a)}` : Math.abs(a - 1) > EPS ? `V/${d(a)}` : 'V');
+        const tauS = inTau ? ts : (Math.abs(u) > EPS ? `(V - ${d(u)})/${sgn(a)}` : Math.abs(a - 1) > EPS ? `V/${sgn(a)}` : 'V');
         const tauB = /[+/-]/.test(tauS) && !inTau ? `(${tauS})` : tauS;
-        const half = Math.abs(u) > EPS ? `½(${d(u)} + ${Vraw})` : `½${Vt}`;
+        const half = Math.abs(u) > EPS ? `½(${d(u)} + ${Vraw})` : /^\d/.test(Vraw) ? `½ * ${Vraw}` : `½${Vt}`;
         findRows = [
           { f: inTau ? M`s = ½(u + V)${ts} + V(t - ${ts})` : M`s = ½(u + V)${ts} + V(t - ${ts})`,
             s: M`${d(S)} = ${half} * ${tauB} + ${Vt}(${T} - ${tauS})`,
@@ -226,7 +280,8 @@ export function solveOvertake(k = {}) {
     const pick = good.sort((x, y) => Math.abs(x.value) - Math.abs(y.value))[0];
     found = { who, what: find.what, sym, value: pick.value, rows: pick.rows.length ? pick.rows : findRows };
     spec[who] = { ...q, [find.what]: pick.value };
-    if (find.what === 'V' || find.what === 'tau') { delete spec[who].tau; delete spec[who].V; spec[who][find.what] = pick.value; }
+    const wrong = whatsWrong(spec[who], who);
+    if (wrong) return fail(`That ${FINDABLE[find.what]} does not work: ${wrong}`);
   }
 
   const A = mover(spec.A, 'A'), B = mover(spec.B, 'B');
@@ -235,30 +290,44 @@ export function solveOvertake(k = {}) {
     if ((p.V ?? 1) < -1e-9 || (p.forever && p.a < 0)) return fail(`${p.name} would slow to a stop and go backwards: give it a speed to slow to, and the road ahead does the rest.`);
   }
 
-  // How long to watch: until both pass the line, or a little past the last
-  // time they are level, or long enough to show that they never are.
-  const horizon = have(k.line) ? Math.max(timeAt(A, k.line) ?? 0, timeAt(B, k.line) ?? 0) * 1.01 + 1
-    : have(k.at) ? k.at * 1.01 + 1 : 1e4;
-  const all = meetings(A, B, { from: 0, to: horizon }).filter((m) => !m.together);
-  const levelAt = all.filter((m) => m.t > 1e-7 || (Math.abs(A.u - B.u) > EPS));
+  // When they are level, looked for well beyond what is shown, so that
+  // "never level again" is a fact and not the edge of the search.
+  const all = meetings(A, B, { from: 0, to: 1e4 });
+  if (all.some((m) => m.together && m.until - m.t > 1e-6 && m.t >= Math.max(A.t0, B.t0) - 1e-9)) {
+    return fail('Those are the same motion twice: they set off together and never part.');
+  }
+  // Both still at the start line is the start, whoever has set off: two that
+  // wait there are not "level" with each other in any way a paper means.
+  const atStart = (m) => Math.abs(m.x - A.x0) < 1e-9 && Math.abs(m.x - B.x0) < 1e-9 && m.t <= Math.max(A.t0, B.t0) + 1e-9;
+  const later = all.filter((m) => !m.together && !atStart(m) && m.t > 1e-7);
+  // How long to watch: until both pass the line, or the time asked about, or
+  // a little past the last time they are level, or long enough to see them
+  // part when they never are.
   let tMax;
-  if (have(k.line)) tMax = Math.max(timeAt(A, k.line) ?? 0, timeAt(B, k.line) ?? 0);
+  const tLine = have(k.line) ? Math.max(timeAt(A, k.line) ?? 0, timeAt(B, k.line) ?? 0) : null;
+  if (have(k.line)) tMax = tLine;
   else if (have(k.at)) tMax = k.at;
-  else tMax = levelAt.length ? levelAt[levelAt.length - 1].t * 1.2 + 2 : Math.max(A.t0, B.t0) + Math.max(A.tau, B.tau, 0) + 10;
+  else if (later.length) tMax = later[later.length - 1].t * 1.2 + 2;
+  else tMax = Math.max(A.t0, B.t0) + Math.max(...[A.tau, B.tau].filter(isFinite), 0) + 15;
   if (!isFinite(tMax) || tMax <= 0) tMax = Math.max(A.t0, B.t0) + 20;
-  tMax = Math.min(tMax, Math.max(levelAt.length ? levelAt[levelAt.length - 1].t * 1.5 : 0, 600, tMax));
-  const shown = levelAt.filter((m) => m.t <= tMax * (1 + 1e-9) + 1e-9).map((m) => ({ ...m, t: snap(m.t), x: snap(m.x) }));
+  const inRun = (m) => m.t <= tMax * (1 + 1e-9) + 1e-9;
+  const shown = [...all.filter((m) => !m.together && atStart(m)).slice(0, 1).map((m) => ({ ...m, t: 0, x: m.x, start: true })),
+                 ...later.filter(inRun)].map((m) => ({ ...m, t: snap(m.t), x: snap(m.x) }));
+  const after = later.filter((m) => !inRun(m));
 
   // Who is ahead just after each crossing: that is who has overtaken.
   const lead = (t) => (A.pos(t) > B.pos(t) + 1e-9 ? 'A' : B.pos(t) > A.pos(t) + 1e-9 ? 'B' : null);
   const events = shown.map((m) => {
-    const after = lead(m.t + 1e-4), before = m.t > 1e-6 ? lead(m.t - 1e-4) : null;
+    const ahead = lead(m.t + 1e-4), before = m.t > 1e-6 ? lead(m.t - 1e-4) : null;
     const atLine = have(k.line) && Math.abs(m.x - k.line) < 1e-6 * Math.max(1, k.line);
-    const kind = !before && m.t <= 1e-6 ? 'start' : atLine ? 'line' : after && before && after !== before ? 'overtake' : 'level';
-    return { ...m, kind, ahead: after,
-      text: kind === 'start' ? `They start level, and ${after} draws ahead.`
+    const atTime = have(k.at) && Math.abs(m.t - k.at) < 1e-6 * Math.max(1, k.at);
+    const kind = m.start ? 'start' : atLine ? 'line' : atTime ? 'time' : ahead && before && ahead !== before ? 'overtake' : 'level';
+    const first = A.t0 < B.t0 ? 'A' : B.t0 < A.t0 ? 'B' : ahead;
+    return { ...m, kind, ahead,
+      text: kind === 'start' ? (first ? `They start level, and ${first} draws ahead.` : 'They start level.')
         : kind === 'line' ? `They are level at the line, ${M`${d(m.x)} [m]`} from the start, at ${M`t = ${d(m.t)} [s]`}.`
-        : kind === 'overtake' ? `${after} overtakes ${after === 'A' ? 'B' : 'A'} at ${M`t = ${d(m.t)} [s]`}, ${M`${d(m.x)} [m]`} from the start.`
+        : kind === 'time' ? `They are level at ${M`t = ${d(m.t)} [s]`}, ${M`${d(m.x)} [m]`} from the start.`
+        : kind === 'overtake' ? `${ahead} overtakes ${ahead === 'A' ? 'B' : 'A'} at ${M`t = ${d(m.t)} [s]`}, ${M`${d(m.x)} [m]`} from the start.`
           : `They are level at ${M`t = ${d(m.t)} [s]`}, ${M`${d(m.x)} [m]`} from the start.` };
   });
 
@@ -268,7 +337,9 @@ export function solveOvertake(k = {}) {
   for (const e of events) notes.push(e.text);
   if (!events.filter((e) => e.kind !== 'start').length) {
     const ah = lead(tMax);
-    notes.push(ah ? `They are never level again: ${ah} stays ahead.` : 'They are never apart: the same motion twice.');
+    if (after.length) {
+      notes.push(`They are not level ${have(k.line) ? 'before the line' : 'by then'}: ${ah} is ahead. They are level later, at ${M`t = ${d(after[0].t)} [s]`}, ${M`${d(after[0].x)} [m]`} from the start.`);
+    } else if (ah) notes.push(`They are never level again: ${ah} stays ahead.`);
   }
 
   // Answers at the line or the time.
@@ -289,19 +360,19 @@ export function solveOvertake(k = {}) {
       if (Math.abs(ta - tb) > 1e-6) notes.push(`${ta < tb ? 'A' : 'B'} reaches ${M`${d(k.line)} [m]`} first, by ${M`${d(Math.abs(ta - tb))} [s]`}.`);
     }
   }
-  for (const p of [A, B]) {
-    if (p.t0 > EPS && p.name === 'B' && !find) { /* said in the working */ }
-  }
 
   const f = overtakeMotion(A, B, tMax, events, k.line);
+  const own = extras.filter((x) => x.key.startsWith('own'));
   const derived = [
-    ...(found ? [M`${found.sym} = ${d(found.value)}`] : []),
+    ...(found ? [`${found.who}\u2019s ${M`${found.sym} = ${d(found.value)}`}`] : []),
+    ...own.map((x) => `${x.key.slice(3)} has been moving ${M`${d(x.value)} [s]`}`),
     ...events.filter((e) => e.kind !== 'start').map((e) => `${e.kind === 'overtake' ? `${e.ahead} passes` : 'level'} at ${M`t = ${d(e.t)} [s]`}`),
   ];
-  if (!derived.length) derived.push('never level after the start');
+  if (!derived.length) derived.push(after.length ? `level later, at ${M`t = ${d(after[0].t)} [s]`}` : 'never level after the start');
 
   return {
     ok: true, mode: 'overtake', axis: 'along', A, B, events, found, rejected, refRows, tLevel, line: have(k.line) ? k.line : null,
+    change: [changeRows(spec.A, A), changeRows(spec.B, B)], given: spec,
     f, extras, notes, derived,
     convention: 'Along the road from the start is positive, on one clock.',
   };
@@ -334,21 +405,29 @@ function overtakeMotion(A, B, tMax, events, line) {
 /* ── the working ──────────────────────────────────────────────────────── */
 export function overtakeWorking(solved) {
   if (!solved?.ok) return [];
-  const { A, B, events, found, refRows, tLevel, rejected, line } = solved;
+  const { A, B, events, found, refRows, tLevel, rejected, line, extras, change } = solved;
   const out = [];
+  // the one whose number is found has its other figures worked after it
+  const first = found ? change[found.who === 'A' ? 1 : 0] : change.flat();
+  const then = found ? change[found.who === 'A' ? 0 : 1] : [];
+  if (first.length) {
+    out.push({ title: found ? `${found.who === 'A' ? 'B' : 'A'}\u2019s change of speed` : 'Each one\u2019s change of speed', rows: first,
+      note: 'Of a rate, the speed it changes to and how long that takes, any two give the third.' });
+  }
   if (found) {
     const other = found.who === 'A' ? 'B' : 'A';
     out.push({ title: line != null ? `When ${other} reaches the line` : `Where ${other} is then`, rows: refRows,
       note: line != null ? `They are level at the line, so ${found.who} must reach it at the same time: ${M`t = ${d(tLevel)} [s]`}.` : '' });
     out.push({ title: `${found.who}’s ${FINDABLE[found.what]}, from that`, rows: found.rows,
       note: [
-        found.what !== 'a' ? `${found.who} changes speed for ${M`t_${found.who}`} seconds and then holds its speed: the area under its speed–time graph, a trapezium on a triangle, is the distance.` : '',
+        found.what !== 'a' ? `${found.who} changes speed for ${M`t_${found.who}`} seconds and then holds its speed: the area under its speed–time graph — a triangle or trapezium while it changes speed, then a rectangle — is the distance.` : '',
         ...rejected.map((c) => `${M`${found.sym} = ${d(c.value)}`} ${c.why}, so it is rejected.`),
       ].filter(Boolean).join(' ') });
+    if (then.length) out.push({ title: `And so ${found.who}\u2019s change of speed`, rows: then });
   }
   // Each crossing after the start: both positions as polynomials in t in the
   // stages they are in, set equal.
-  for (const e of events.filter((x) => x.kind !== 'start' && !(found && x.kind === 'line'))) {
+  for (const e of events.filter((x) => x.kind !== 'start' && !(found && (x.kind === 'line' || x.kind === 'time')))) {
     const form = (p) => {
       const st = p.stageAt(e.t);
       if (!st || st.kind === 'waiting') return [p.x0, 0, 0];
@@ -367,6 +446,22 @@ export function overtakeWorking(solved) {
     ];
     out.push({ title: e.kind === 'overtake' ? `${e.ahead} overtakes` : 'They are level',
       rows, note: `Each position written for the stage it is in at that moment, multiplied out in ${M`t`}, the one clock. ${e.text}` });
+  }
+  // the times and speeds at the line the papers ask for, worked
+  const ex = (key) => extras.find((x) => x.key === key)?.value;
+  const rows = [];
+  for (const p of [A, B]) {
+    const own = ex(`own${p.name}`), tl = ex(`t${p.name}`);
+    if (own != null) rows.push({ f: M`t - t_0`, s: M`${d(tl)} - ${d(p.t0)}`, r: M`${d(own)} [s]` });
+  }
+  if (ex('dv') != null) {
+    const va = ex('vA'), vb = ex('vB');
+    rows.push({ f: M`abs(v_A - v_B)`, s: M`abs(${d(va)} - ${d(vb)})`, r: M`${d(ex('dv'))} [m s^-1]` });
+  }
+  if (rows.length) {
+    out.push({ title: 'At the line', rows,
+      note: `${rows.length > 1 || ex('dv') == null ? 'The time on a late starter\u2019s own clock is the one papers ask for. ' : ''}`
+        + (ex('dv') != null ? `Their speeds there are ${M`${d(ex('vA'))}`} and ${M`${d(ex('vB'))} [m s^-1]`}.` : '') });
   }
   return out;
 }

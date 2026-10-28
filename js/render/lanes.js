@@ -53,7 +53,8 @@ export function render(canvas, cam, o) {
   const passed = events.filter((e) => e.kind !== 'start' && t >= e.t - 1e-9);
 
   // ── both speed–time graphs, above
-  const gx0 = 250, gx1 = w - 60, gy0 = 64, gy1 = Math.round(h * 0.5);
+  // clear of the readouts: the four boxes on the left, the clock top right
+  const gx0 = 270, gx1 = w - 60, gy0 = 100, gy1 = Math.round(h * 0.52);
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0);
   const vTop = f.vMax * 1.22;
   const Y = (v) => gy1 - (v / vTop) * (gy1 - gy0);
@@ -65,6 +66,12 @@ export function render(canvas, cam, o) {
   for (let v = vstep; v < vTop; v += vstep) {
     stroke(g, [{ x: gx0 - 5, y: Y(v) }, { x: gx0, y: Y(v) }], { color: P.faint, width: 1.4 });
     L.add(fmt(v, vstep < 1 ? 1 : 0), gx0 - 9, Y(v), { color: P.faint, align: 'right', pri: 1, size: 14, bg: false });
+  }
+  // the time axis, numbered, so the times a paper asks about can be read off
+  const tstep = niceStep(f.tMax, 6);
+  for (let tt = tstep; tt <= f.tMax + 1e-9; tt += tstep) {
+    stroke(g, [{ x: X(tt), y: gy1 }, { x: X(tt), y: gy1 + 5 }], { color: P.faint, width: 1.4 });
+    L.add(fmt(tt, tstep < 1 ? 1 : 0), X(tt), gy1 + 14, { color: P.faint, align: 'center', pri: 1, size: 13, bg: false });
   }
   const line = (p, t0, t1) => {
     const out = [];
@@ -85,7 +92,7 @@ export function render(canvas, cam, o) {
   for (const e of passed) {
     stroke(g, [{ x: X(e.t), y: gy1 + 8 }, { x: X(e.t), y: gy0 - 4 }], { color: P.mark, width: 1.6, dash: [4, 4] });
     // under the axis, clear of the readouts in the top corners
-    L.add(`level at ${T`t = ${tr(e.t, 3)} [s]`}`, X(e.t), gy1 + 20, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700 });
+    L.add(`level at ${T`t = ${tr(e.t, 3)} [s]`}`, X(e.t), gy1 + 32, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700 });
   }
   stroke(g, [{ x: X(t), y: gy1 }, { x: X(t), y: gy0 - 8 }], { color: P.muted, width: 1.6, dash: [5, 5] });
   dot(g, X(t), Y(A.vel(t)), 4.5, { fill: P.surface, stroke: P.vel, width: 2.2 });
@@ -103,10 +110,10 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: 0, y: yB + 6 }, { x: w, y: yB + 6 }], { color: P.axis, width: 1.6 });
   // the start, and the line the question names
   stroke(g, [{ x: S(0), y: yA - 26 }, { x: S(0), y: yB + 14 }], { color: P.ink, width: 2 });
-  L.add('start', S(0), yB + 30, { color: P.muted, align: 'center', pri: 5, size: 14, bg: false });
+  L.add('start', S(0), yA - 40, { color: P.muted, align: 'center', pri: 5, size: 14, bg: false });
   if (f.line != null) {
     stroke(g, [{ x: S(f.line), y: yA - 30 }, { x: S(f.line), y: yB + 14 }], { color: P.mark, width: 2.4 });
-    L.add(T`${tr(f.line)} [m]`, S(f.line), yB + 30, { color: P.mark, align: 'center', pri: 7, size: 14, weight: 700, bg: false });
+    L.add(T`${tr(f.line)} [m]`, S(f.line), yA - 40, { color: P.mark, align: 'center', pri: 7, size: 14, weight: 700, bg: false });
   }
   // each meeting, across both lanes
   for (const e of passed) {
@@ -146,10 +153,11 @@ export function render(canvas, cam, o) {
   // the gap between their fronts
   const xa = S(A.pos(t)), xb = S(B.pos(t));
   if (Math.abs(xa - xb) > 12 && !passed.some((e) => Math.abs(e.t - t) < 1e-6)) {
-    const by = (yA + yB) / 2 + 2;
+    // under the road, clear of both cars and their arrows
+    const by = yB + 26;
     stroke(g, [{ x: Math.min(xa, xb), y: by }, { x: Math.max(xa, xb), y: by }], { color: P.disp, width: 2.4, dash: [7, 5] });
     for (const x of [xa, xb]) stroke(g, [{ x, y: by - 7 }, { x, y: by + 7 }], { color: P.disp, width: 2 });
-    L.add(`${A.pos(t) > B.pos(t) ? 'A' : 'B'} ahead by ${T`${fmt(Math.abs(f.gap(t)), 1)} [m]`}`, (xa + xb) / 2, by - 14,
+    L.add(`${A.pos(t) > B.pos(t) ? 'A' : 'B'} ahead by ${T`${fmt(Math.abs(f.gap(t)), 1)} [m]`}`, (xa + xb) / 2, by + 16,
       { color: P.disp, align: 'center', pri: 8, size: 14, weight: 700 });
   }
 
