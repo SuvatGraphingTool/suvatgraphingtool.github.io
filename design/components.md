@@ -386,12 +386,17 @@ scenario:
 
 - **series `tag`** — a letter (A, B) drawn at the start of the line, in its
   colour, for graphs with one line per object.
-- **spec `points`** — `[{ t, y, color, label?, dy? }]`: an event the engine found
+- **spec `points`** — `[{ t, y, color, label?, dx?, dy? }]`: an event the engine found
   (where two lines cross), drawn as a ring once the time cursor reaches it;
-  its label goes below-left, or `dy` px down (negative: above).
+  its label goes below-left, or `dx`, `dy` px from the ring (a positive `dx`
+  puts it on the right).
+- **spec `notePri`** — the note's priority (default 4): a note the graph cannot be
+  read without, such as a sign convention, outranks the other labels.
 - **series `jumps`** — times where the value itself jumps in an instant (a
   velocity at a bounce): drawn as separate pieces with a thin dashed upright
-  between the value before and after, as the mark schemes sketch it.
+  between the value before and after, in the neutral axis colour (a jump is not a
+  quantity, and a dashed line in a quantity's hue reads as horizontal), as the
+  mark schemes sketch it.
 - **series `breaks`** — times where the series jumps (an acceleration changing
   from one constant to the next, a particle let go): drawn as separate pieces,
   with no vertical line joining them.

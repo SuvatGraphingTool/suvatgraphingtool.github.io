@@ -161,8 +161,8 @@ export const LIBRARY = [
     name: 'A ball that bounces',
     sub: 'down to the ground, a jump in velocity, and up again',
     note: 'A ball is released, thrown down or thrown up from a height, hits horizontal ground and rebounds — given as the speed it leaves at, the height it rises to, or the fraction of its speed it keeps. Each flight is SUVAT with g alone; the impact is an instant, where the velocity jumps from one side of zero to the other. How fast just before and just after, when it passes a height, how long between bounces, and the time to the second impact.',
-    params: { start: 'drop', h: 2, H: 1.5, g: 9.8, n: 3 },
-    place: 'A balcony over horizontal ground',
+    params: { start: 'drop', h: 2, H: 1.5, g: 9.8, n: 2, axis: 'down' },
+    place: 'A ball over horizontal ground',
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2014', q: '3', part: 'all but the impulse' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2018', q: '4', part: '(b) and (c); the impact speed given instead of found from the impulse' },

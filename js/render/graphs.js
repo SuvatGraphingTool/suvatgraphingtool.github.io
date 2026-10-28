@@ -121,12 +121,13 @@ export function drawGraph(canvas, spec) {
     const cuts = [0, ...[...(s.breaks || []), ...(s.jumps || [])].filter((b) => b > 1e-9 && b < tMax - 1e-9).sort((p, q) => p - q), tMax];
     // A series with `jumps` changes value in an instant there — a velocity at
     // a bounce — and is shown as the papers sketch it: a thin dashed upright
-    // from the value before to the value after, lighter than the line, so it
-    // reads as a jump and never as a stretch of time.
+    // from the value before to the value after, in the neutral axis colour —
+    // it is a jump, not a quantity, and a dashed line in a quantity's hue
+    // would read as a horizontal component (rule 2).
     for (const j of s.jumps || []) {
       if (!(j > 1e-9 && j < tMax - 1e-9)) continue;
       const e = tMax * 1e-6, y0 = s.fn(j - e), y1 = s.fn(j + e);
-      if (isFinite(y0) && isFinite(y1)) stroke(ctx, [{ x: X(j), y: Y(y0) }, { x: X(j), y: Y(y1) }], { color: s.color, width: 1.4, dash: [3, 4], alpha: 0.7 });
+      if (isFinite(y0) && isFinite(y1)) stroke(ctx, [{ x: X(j), y: Y(y0) }, { x: X(j), y: Y(y1) }], { color: P.axis, width: 1.4, dash: [3, 4] });
     }
     for (let k = 0; k < cuts.length - 1; k++) {
       const a = cuts[k], b = cuts[k + 1], e = (b - a) * 1e-6, pts = [];
@@ -161,14 +162,19 @@ export function drawGraph(canvas, spec) {
       ctx.restore();
     }
   }
-  if (spec.note) L.add(spec.note, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: 4, size: 14 });
+  // a note the graph cannot be read without (a sign convention) says so with `notePri`
+  if (spec.note) L.add(spec.note, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: spec.notePri ?? 4, size: 14 });
   // EVENTS the engine found — where two lines cross, say — as a ring on the
   // line at that instant, drawn once the cursor has reached it.
   for (const p of spec.points || []) {
     if (!(t >= p.t - 1e-9) || !isFinite(p.y)) continue;
     dot(ctx, X(p.t), Y(p.y), 6.5, { stroke: p.color, width: 2.4 });
-    // a label goes below-left of its ring, or above-left when it says so (`dy`)
-    if (p.label) L.add(p.label, X(p.t) - 12, Y(p.y) + (p.dy ?? 16), { color: p.color, align: 'right', pri: 6, size: 14, weight: 700, maxPush: 20 });
+    // a label goes below-left of its ring, or where `dx`, `dy` say (a
+    // positive dx puts it to the right)
+    if (p.label) {
+      const dx = p.dx ?? -12;
+      L.add(p.label, X(p.t) + dx, Y(p.y) + (p.dy ?? 16), { color: p.color, align: dx < 0 ? 'right' : 'left', pri: 6, size: 14, weight: 700, maxPush: 20 });
+    }
   }
 
   // time cursor

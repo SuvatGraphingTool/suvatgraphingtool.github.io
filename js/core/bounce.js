@@ -31,19 +31,27 @@
 
 import { staged, toLevel, rebound, timesAt, quadRoots } from './stages.js';
 import { snap } from './numeric.js';
-import { M, num, signed } from '../notation.js';
+import { M, num } from '../notation.js';
 
 const EPS = 1e-9;
 export const MAX_IMPACTS = 6;
 const TOL = 0.01;                // two given numbers that should agree, to 1 %
 const have = (x) => typeof x === 'number' && isFinite(x);
-// three significant figures, as a paper with g = 9.8 asks for its answers
-const sf = (x) => num(x, x === 0 || !isFinite(x) ? 0 : Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x)) + 1e-9)), { trim: true });
+/** Three significant figures, as a paper with g = 9.8 asks for its answers —
+    24.0, 5.10, 0.105, 3.49 × 10⁵ — the one rule for every bounce figure on
+    screen (the kit and the stage import it). */
+export function sf(x, { trim = false } = {}) {
+  if (!isFinite(x) || x === 0) return num(x, 0);
+  const r = Number(x.toPrecision(3));
+  if (Math.abs(r) >= 1e5 || Math.abs(r) < 1e-4) return num(r, 0, { trim: true });
+  return num(r, Math.max(0, 2 - Math.floor(Math.log10(Math.abs(r)) + 1e-9)), { trim });
+}
 // a given number as it was given; a small one keeps its figures
 const d = (x, p = 2) => num(x, x !== 0 && Math.abs(x) < 0.1 ? Math.max(p, 2 - Math.floor(Math.log10(Math.abs(x)))) : p, { trim: true });
-const sb = (x, p = 3) => signed(x, p, { trim: true });
-// a worked result: a minus sign, never a bracket
-const nm = (x, p = 3) => num(x, p, { trim: true });
+// a worked result: a minus sign, never a bracket; and the same, bracketed to substitute
+// — to three figures with the trailing zeros off, so a given 9.8 stays 9.8
+const nm = (x) => sf(x, { trim: true });
+const sbs = (x) => (x < 0 ? `(${nm(x)})` : nm(x));
 const agree = (a, b) => Math.abs(a - b) <= TOL * Math.max(Math.abs(a), Math.abs(b), 1e-6);
 const ORD = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh'];
 export const ordinal = (k) => ORD[k - 1] || `${k}th`;
@@ -147,10 +155,18 @@ export function solveBounce(k = {}) {
       return fail(`Those do not agree: a ball that ${asked[0].say} leaves the ground at ${M`${sf(asked[0].w)} [m s^-1]`}, but one that ${q.say} leaves it at ${M`${sf(q.w)} [m s^-1]`}. Give one of them.`);
     }
   }
-  const w = snap(asked[0].w), e = snap(w / V), by = asked[0].key;
+  let w = snap(asked[0].w), e = snap(w / V);
+  const by = asked[0].key;
   if (!(w > EPS)) return fail('With no rebound it stays on the ground: there is no bounce to show. Give the speed it rebounds with, or the height it rises to.');
-  if (e > 1 + TOL) {
-    return fail(`It would leave the ground faster than it hit it: it arrives at ${M`${sf(V)} [m s^-1]`} and leaves at ${M`${sf(w)} [m s^-1]`}. A bounce keeps some of the speed; it cannot add to it.`);
+  // A bounce cannot add speed. A rebound a whisker faster than the impact is
+  // rounding in the paper's figures, and is taken as losing none; any more is
+  // refused, never run.
+  if (e > 1 + 1e-9) {
+    if (e > 1 + TOL) {
+      return fail(`It would leave the ground faster than it hit it: it arrives at ${M`${sf(V)} [m s^-1]`} and leaves at ${M`${sf(w)} [m s^-1]`}. A bounce keeps some of the speed; it cannot add to it.`);
+    }
+    w = V; e = 1;
+    notes.push(`That rebound is a fraction faster than the impact, which only rounding can do: it is taken as losing no speed at all, ${M`${sf(V)} [m s^-1]`} out as in.`);
   }
 
   /* ── how far to watch ────────────────────────────────────────────────── */
@@ -158,6 +174,7 @@ export function solveBounce(k = {}) {
   if (y != null && y < 0) return fail('A height is measured up from the ground, so the one asked about cannot be below it.');
   const stopAtY = k.stop === 'y';
   if (stopAtY && y == null) return fail('Give the height to stop at: the run stops the first time the ball is there after the bounce.');
+  if (stopAtY && y < EPS) return fail('Back at the ground after the bounce is the next impact: leave the stop off and watch to that impact instead.');
   let n = have(k.n) ? k.n : 2;
   if (have(k.n) && (Math.abs(n - Math.round(n)) > 1e-9 || n < 1)) return fail('The number of impacts is a whole number: 1 for the first time it hits the ground, 2 for the second.');
   n = Math.round(n);
@@ -172,7 +189,7 @@ export function solveBounce(k = {}) {
   const impacts = m.stages.map((st, i) => {
     const vIn = -m.state(st.t1).v;                        // a size: it arrives going down
     const out = snap(i === 0 ? w : e * vIn);
-    return { k: i + 1, t: snap(st.t1), vIn: snap(vIn), vOut: out, H: snap(out * out / (2 * g)),
+    return { k: i + 1, t: snap(st.t1), vIn: snap(vIn), vOut: out, H: snap(out * out / (2 * g)), tTop: snap(st.t1 + out / g),
              gap: i + 1 < m.stages.length ? snap(m.stages[i + 1].t1 - st.t1) : snap(2 * out / g) };
   });
 
@@ -199,10 +216,10 @@ export function solveBounce(k = {}) {
 
   const say = (c) => c.after === 0 ? `${M`${sf(c.t)} [s]`} after it sets off`
     : `${M`${sf(c.since)} [s]`} after the ${ordinal(c.after)} impact (${M`t = ${sf(c.t)} [s]`})`;
-  const watched = stopAt ? `Stopped as it first passes ${M`${d(y)} [m]`} up after the bounce`
+  const watched = stopAt ? `Stopped as it first reaches ${M`${d(y)} [m]`} up after the bounce`
     : `Watched to the ${ordinal(n)} impact`;
   const moment = stopAt
-    ? { t: stopAt.t, text: `It first passes ${M`${d(y)} [m]`} up after the bounce ${say(stopAt)}.` }
+    ? { t: stopAt.t, text: `It first reaches ${M`${d(y)} [m]`} up after the bounce ${say(stopAt)}.` }
     : { t: last.t, text: `It hits the ground the ${ordinal(last.k)} time at ${M`t = ${sf(last.t)} [s]`}.` };
 
   const derived = [
@@ -261,7 +278,7 @@ function motion(m, o) {
   // or where it is when the run ends — and the height asked about. Not a
   // top it would have reached had the run gone on.
   const tops = [o.top0 && o.top0.t <= tMax ? o.top0.H : 0,
-    ...o.impacts.filter((x) => x.t + x.vOut / g <= tMax + 1e-9).map((x) => x.H)];
+    ...o.impacts.filter((x) => x.tTop <= tMax + 1e-9).map((x) => x.H)];
   const top = Math.max(o.h, ...tops, Math.max(0, m.state(tMax).x), o.y ?? 0);
   const flightAt = (t) => m.stages.findIndex((st) => t <= st.t1 + 1e-12);
   const at = (t) => {
@@ -306,18 +323,19 @@ export function bounceWorking(solved) {
   const u1 = s * u, v1 = -s * V, s1 = -s * h;
   const rows = [];
   if (found.h) {
-    rows.push({ f: M`v^2 = u^2 + 2as`, s: M`${sb(v1)}^2 = ${sb(u1)}^2 + 2 * ${sb(a)} * s`,
+    rows.push({ f: M`v^2 = u^2 + 2as`, s: M`${sbs(v1)}^2 = ${sbs(u1)}^2 + 2 * ${sbs(a)} * s`,
                 r: M`s = ${nm(s1)} [m]` });
   } else if (found.U) {
-    rows.push({ f: M`u^2 = v^2 - 2as`, s: M`u^2 = ${sb(v1)}^2 - 2 * ${sb(a)} * ${sb(s1)}`,
+    rows.push({ f: M`u^2 = v^2 - 2as`, s: M`u^2 = ${sbs(v1)}^2 - 2 * ${sbs(a)} * ${sbs(s1)}`,
                 r: M`u = ${nm(u1)} [m s^-1]` });
   } else {
-    rows.push({ f: M`v^2 = u^2 + 2as`, s: M`v^2 = ${sb(u1)}^2 + 2 * ${sb(a)} * ${sb(s1)}`,
+    rows.push({ f: M`v^2 = u^2 + 2as`, s: M`v^2 = ${sbs(u1)}^2 + 2 * ${sbs(a)} * ${sbs(s1)}`,
                 r: M`v^2 = ${sf(V * V)}` });
     rows.push({ f: M`v = ${s > 0 ? '-' : ''}sqrt(${sf(V * V)})`, s: '', r: M`v = ${nm(v1)} [m s^-1]` });
   }
   const t1 = impacts[0].t;
-  rows.push({ f: M`v = u + at`, s: M`t = (${sb(v1)} - ${sb(u1)})/(${sb(a)})`, r: M`t = ${sf(t1)} [s]` });
+  rows.push({ f: M`v = u + at`, s: Math.abs(u1) < 1e-12 ? M`t_1 = ${sbs(v1)}/${sbs(a)}` : M`t_1 = (${sbs(v1)} - ${sbs(u1)})/(${sbs(a)})`,
+              r: M`t_1 = ${sf(t1)} [s]` });
   const how = u > 1e-9 ? 'Thrown up, it rises, stops and comes back down' : u < -1e-9 ? 'Thrown down, it speeds up all the way' : 'Released from rest, it speeds up all the way';
   out.push({
     title: 'Down to the ground, the first time',
@@ -329,7 +347,7 @@ export function bounceWorking(solved) {
   // 2 — the bounce
   const u2 = s * w;
   const brow = by === 'w' ? { f: M`u = ${nm(u2)} [m s^-1]`, s: '', r: '' }
-    : by === 'H' ? { f: M`v^2 = u^2 + 2as`, s: M`0 = u^2 + 2 * ${sb(a)} * ${sb(s * P.H1)}`, r: M`u = ${nm(u2)} [m s^-1]` }
+    : by === 'H' ? { f: M`v^2 = u^2 + 2as`, s: M`0 = u^2 + 2 * ${sbs(a)} * ${sbs(s * P.H1)}`, r: M`u = ${nm(u2)} [m s^-1]` }
     : { f: M`u = e * v`, s: M`${d(e, 3)} * ${sf(V)}`, r: M`u = ${nm(u2)} [m s^-1]` };
   out.push({
     title: 'The bounce',
@@ -346,13 +364,13 @@ export function bounceWorking(solved) {
   if (flights.length) {
     const fr = flights.map((_, i) => {
       const uk = s * impacts[i].vOut;
-      return { f: i === 0 ? M`s = ut + ½at^2` : M`u = ${nm(uk)} [m s^-1]`,
-               s: M`0 = ${sb(uk)}t + ½ * ${sb(a)}t^2`, r: M`t = ${sf(impacts[i].gap)} [s]` };
+      return { f: M`s = ut + ½at^2`,
+               s: M`0 = ${sbs(uk)}t_${i + 2} + ½ * ${sbs(a)}t_${i + 2}^2`, r: M`t_${i + 2} = ${sf(impacts[i].gap)} [s]` };
     });
     out.push({
       title: flights.length > 1 ? 'Up and down again, bounce by bounce' : 'Up and down again, to the second impact',
       rows: fr,
-      note: `Back at the ground the displacement is ${M`s = 0`}, so ${M`t = 0`} or ${M`t = -2u/a`}. `
+      note: `Each row is one flight, from an impact to the next, with ${M`u`} the speed it left at (${M`${sf(impacts[0].vOut)} [m s^-1]`} first). Back at the ground the displacement is ${M`s = 0`}, so ${M`t = 0`} or ${M`t = -2u/a`}. `
         + (flights.length > 1 ? `It lands as fast as it left, and each bounce keeps ${M`${sf(e)}`} of that, so the next rebound speed is ${M`${sf(e)}`} times the last.` : 'It lands again as fast as it left.'),
     });
   }
@@ -365,7 +383,7 @@ export function bounceWorking(solved) {
       title: `From the start to the ${ordinal(impacts.length)} impact`,
       rows: [{ f: M`T = ${terms.map((_, i) => `t_${i + 1}`).join(' + ')}`, s: M`${terms.join(' + ')}`,
                r: M`T = ${sf(impacts[impacts.length - 1].t)} [s]` }],
-      note: `The time down to the first impact, then each flight between impacts. (Each is rounded here; the total is worked from the exact values.)`,
+      note: `${M`t_1`} is the time down to the first impact, and each ${M`t`} after it a flight from one impact to the next. (Each is rounded here; the total is worked from the exact values.)`,
     });
   }
 
@@ -384,8 +402,8 @@ export function bounceWorking(solved) {
       // ½a t² + u t − s = 0, both roots, the ones in this flight kept
       const roots = quadRoots(0.5 * a, uk, -sk).filter((r) => r > -1e-9).map(snap);
       yr.push({
-        f: k === 0 ? M`s = ut + ½at^2` : M`u = ${nm(uk)} [m s^-1]`,
-        s: M`${sb(sk)} = ${sb(uk)}t + ½ * ${sb(a)}t^2`,
+        f: M`s = ut + ½at^2`,
+        s: M`${sbs(sk)} = ${sbs(uk)}t + ½ * ${sbs(a)}t^2`,
         r: roots.length > 1 ? M`t = ${sf(roots[0])} "or" ${sf(roots[1])} [s]` : M`t = ${sf(roots[0] ?? cs[0].since)} [s]`,
       });
     }
@@ -396,7 +414,7 @@ export function bounceWorking(solved) {
       title: `When it is ${d(y)} m up`,
       rows: yr,
       note: yr.length
-        ? `Each ${M`t`} is timed from the start of that flight: from when it set off, or from the impact before. `
+        ? `One row for each flight it is there in. Each ${M`t`} is timed from the start of that flight: from when it set off, or from the impact before, with ${M`u`} the speed it left that impact at. `
           + `A negative root is before that flight began, and is dropped. It is there: ${lines.join('; ')}.`
           + (stopAt ? ` The run stops at the first time after the bounce, ${M`${sf(stopAt.since)} [s]`} after the impact — the time the paper asks for.` : '')
         : `It is never ${M`${d(y)} [m]`} up in this run.`,

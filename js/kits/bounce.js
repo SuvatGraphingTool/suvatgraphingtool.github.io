@@ -3,13 +3,12 @@
 // this file says which boxes to show, reads them, and lays out what the
 // engine answered (rule 4). See design/components.md.
 
-import { solveBounce, bounceWorking, ordinal, MAX_IMPACTS } from '../core/bounce.js';
+import { solveBounce, bounceWorking, ordinal, sf, MAX_IMPACTS } from '../core/bounce.js';
 import * as stage from '../render/bounce.js';
 import { M, num } from '../notation.js';
 
 const fmt = (x, dp = 2) => num(x, dp);
 const tr = (x, p = 2) => num(x, p, { trim: true });
-const sf = (x) => num(x, x === 0 ? 0 : Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x)) + 1e-9)), { trim: true });
 
 /** The throw in one column, the bounce in the other; then what to watch. */
 const FIELDS = [
@@ -40,8 +39,8 @@ export const bounce = {
         { key: 'n', label: 'Impacts to watch', placeholder: '2', hint: `“Until it hits the ground for the second time” is 2. Up to ${MAX_IMPACTS}.` },
         { key: 'y', label: 'A height to ask about (m)', placeholder: '—', hint: 'Every time it is there: B in the paper. Optional.' },
         { key: 'stop', type: 'choice', label: 'Stop the run',
-          options: [{ v: 'y', label: 'the first time it is at that height after the bounce' }],
-          hint: 'For a sketch “until it first passes B”. Otherwise it stops at the last impact.' },
+          options: [{ v: 'y', label: 'there, after the bounce' }],
+          hint: 'The first time it reaches that height after the first impact: for a sketch “until it first passes B”. Otherwise it stops at the last impact.' },
       ] },
     { title: 'Which way is positive',
       fields: [
@@ -79,8 +78,11 @@ export const bounce = {
 
   /* The three graphs. Everything is vertical, so every line is solid (rule 2).
      The velocity jumps at each impact — drawn as the papers sketch it, the
-     line stopping and starting again with a dashed upright between — and
-     the acceleration is g throughout, broken only at the instants of impact,
+     line stopping and starting again with an upright between in the neutral
+     axis colour (a jump, not a horizontal velocity, so not the velocity hue);
+     the convention is a note that outranks every label on it but the title; the value
+     at the start, either side of the first impact and at the end are named.
+     The acceleration is g throughout, broken only at the instants of impact,
      where the model says nothing. */
   graphs(f, t, P) {
     const tMax = f.tMax, J = f.jumps, pos = f.sign > 0 ? 'up' : 'down';
@@ -94,12 +96,16 @@ export const bounce = {
       vPts.push({ t: x.t, y: before, color: P.mark, ...lab(before, after) },
                 { t: x.t, y: after, color: P.mark, ...lab(after, before) });
     }
+    // the value it starts at and the value it ends at, named as the sketches name them
+    const v0 = f.at(0).v, vEnd = f.at(tMax).v;
+    if (Math.abs(v0) > 1e-9) vPts.push({ t: 0, y: v0, color: P.mark, label: tr(v0), dx: 12, dy: v0 > 0 ? -14 : 14 });
+    vPts.push({ t: tMax, y: vEnd, color: P.mark, label: tr(vEnd), dy: vEnd > 0 ? 16 : -16 });
     const cross = (fn) => f.crossings.filter((c) => c.dir !== 'start').map((c) => ({ t: c.t, y: fn(c.t), color: P.mark }));
     return [
       { canvas: 'g-s', title: 'Height–time', unit: 'm', tMax, t,
         series: [{ label: 'height', fn: (tt) => f.at(tt).y, color: P.disp, dash: null }],
         points: cross((tt) => f.at(tt).y) },
-      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax, t, note: `${pos} is positive`,
+      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax, t, note: `${pos} is positive`, notePri: 8,
         series: [{ label: 'velocity', fn: (tt) => f.at(tt).v, color: P.vel, dash: null, jumps: J }],
         points: [...vPts, ...cross((tt) => f.at(tt).v)] },
       { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,
@@ -117,7 +123,7 @@ export const bounce = {
 
   /** The end of the run: each impact in a row, and what was assumed. */
   ending(solved) {
-    const { impacts, stopAt, params: { y }, sign } = solved;
+    const { impacts, stopAt, crossings, params: { y }, sign } = solved;
     const last = impacts[impacts.length - 1];
     const cell = (x) => `<b>${sf(x)}</b>`;
     const rows = impacts.map((x, i) => {
@@ -143,14 +149,20 @@ export const bounce = {
           ${M`[m]`}; “to next” is the time in the air until the next impact, in ${M`[s]`}. All to three significant figures.</p>
       </div>`;
     const conv = sign > 0 ? 'up' : 'down';
+    // every time it is at the height asked about, said in full
+    const way = { up: 'going up', down: 'coming down', top: 'at the top' };
+    const at = crossings.filter((c) => c.dir !== 'start').map((c) => (c.after === 0
+      ? `${sf(c.t)} <span class="u">s</span> after it set off, ${way[c.dir]}`
+      : `${sf(c.since)} <span class="u">s</span> after the ${ordinal(c.after)} impact, ${way[c.dir]}`));
+    const atB = y == null ? '' : `<p>At ${tr(y)} <span class="u">m</span> up: ${at.length ? at.join('; ') : 'never, in this run'}.</p>`;
     // the eyebrow is set in capitals, so its unit is wrapped to stay a unit
     if (stopAt) {
       return {
-        eyebrow: `Stopped as it first passes ${tr(y)} <span class="u">m</span> up after the bounce`,
+        eyebrow: `Stopped as it first reaches ${tr(y)} <span class="u">m</span> up after the bounce`,
         title: `${tr(y)} m up again, ${sf(stopAt.since)} s after the bounce.`,
         body: `<p>Each flight is SUVAT with the one acceleration ${M`g`}; the bounce is what you gave it, and takes
             no time. On the velocity–time graph, with ${conv} positive, the line stops at the impact and starts again on the
-            other side of zero — a jump, not a slope.</p>${table}`,
+            other side of zero — a jump, not a slope.</p>${atB}${table}`,
         real: true,
       };
     }
@@ -159,7 +171,7 @@ export const bounce = {
       title: `It hits the ground the ${ordinal(last.k)} time ${sf(last.t)} s after it set off.`,
       body: `<p>Each flight is SUVAT with the one acceleration ${M`g`}; the bounce is what you gave it, and takes
           no time. On the velocity–time graph, with ${conv} positive, every impact is a jump from one side of zero
-          to the other, and every flight between is a straight line of gradient ${M`${conv === 'up' ? '-' : ''}g`}.</p>${table}`,
+          to the other, and every flight between is a straight line of gradient ${M`${conv === 'up' ? '-' : ''}g`}.</p>${atB}${table}`,
       real: true,
     };
   },

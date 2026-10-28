@@ -25,13 +25,12 @@
 
 import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep, cssVar, ballSprite } from './util.js';
 import { T, num } from '../notation.js';
+import { sf } from '../core/bounce.js';
 
 const HUD = 250;             // the readouts' column, top left
 const LABELS = 170;          // room for the labels right of the marks
 const LANE = { arrow: 16, down: 34, up: 50, acc: 66, dim: 128, label: 140 };
 const tr = (x, p = 2) => num(x, p, { trim: true });
-// three significant figures, as the engine's answers are given
-const sf = (x) => num(x, x === 0 ? 0 : Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x)) + 1e-9)), { trim: true });
 const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 
 /** Hard, horizontal ground seen edge-on: paving slabs on earth, in the
@@ -142,7 +141,7 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: rx, y: Y(0) }, { x: rx, y: Y(top * 1.06) }], { color: P.faint, width: 1.4 });
   for (let m = 0; m <= top * 1.06 + 1e-9; m += step) {
     stroke(g, [{ x: rx - 7, y: Y(m) }, { x: rx, y: Y(m) }], { color: P.faint, width: 1.4 });
-    L.add(`${fmt(m, step < 1 ? 1 : 0)} m`, rx - 12, Y(m), { color: P.muted, align: 'right', pri: 1, bg: false, size: 15 });
+    L.add(`${num(m, step < 1 ? 1 : 0, { trim: m >= 1e5 })} m`, rx - 12, Y(m), { color: P.muted, align: 'right', pri: 1, bg: false, size: 15 });
     if (show.grid && m > 0) stroke(g, [{ x: rx, y: Y(m) }, { x: w - 20, y: Y(m) }], { color: P.grid, width: 1 });
   }
 
@@ -152,7 +151,7 @@ export function render(canvas, cam, o) {
     const x1 = cx - 28 * k - R, x0 = x1 - wallW * k;
     balcony(g, x0, x1, edge, Y(f.h), groundY, ky, P);
   }
-  L.add('A', edge - 12, Y(f.h) - 16, { color: P.ink, align: 'right', pri: 9, size: 16, weight: 700 });
+  if (f.h > 1e-6) L.add('A', edge - 12, Y(f.h) - 16, { color: P.ink, align: 'right', pri: 9, size: 16, weight: 700 });
 
   // ── the line it moves along
   stroke(g, [{ x: cx, y: groundY }, { x: cx, y: topY - 14 }], { color: P.faint, width: 1.2, dash: [4, 6] });
@@ -169,8 +168,7 @@ export function render(canvas, cam, o) {
   const tops = [];
   if (f.top0 && t >= f.top0.t - 1e-9) tops.push({ H: f.top0.H, t: f.top0.t, first: true });
   f.impacts.forEach((x) => {
-    const tt = x.t + x.vOut / f.g;
-    if (tt < f.tMax - 1e-9 && t >= tt - 1e-9) tops.push({ H: x.H, t: tt, k: x.k });
+    if (x.tTop < f.tMax - 1e-9 && t >= x.tTop - 1e-9) tops.push({ H: x.H, t: x.tTop, k: x.k });
   });
   if (show.apex !== false) {
     tops.forEach((q, i) => {
@@ -191,14 +189,23 @@ export function render(canvas, cam, o) {
     const yy = Y(f.y);
     stroke(g, [{ x: rx, y: yy }, { x: w - 24, y: yy }], { color: P.mark, width: 1.6, dash: [8, 6], alpha: 0.85 });
     L.add(`B, ${T`${tr(f.y)} [m]`} up`, w - 28, yy - 14, { color: P.mark, align: 'right', pri: 9, size: 15, weight: 700 });
-    let row = 0;
-    for (const c of f.crossings) {
-      if (c.dir === 'start' || t < c.t - 1e-9) continue;
+    // Every instant it has been there is ringed, in the lane of the way it
+    // was going; the latest is named beside its ring, with which way and
+    // when, and the earlier ones fade. The whole list is in the working and
+    // on the ending card: a stack of them here lost labels to the ground.
+    const seen = f.crossings.filter((c) => c.dir !== 'start' && t >= c.t - 1e-9);
+    seen.forEach((c, i) => {
+      const last = i === seen.length - 1;
       const side = c.dir === 'up' ? lane('up') : lane('down');
+      g.save(); g.globalAlpha = last ? 1 : 0.4;
       dot(g, side, yy, 7, { stroke: P.mark, width: 2.4 });
+      g.restore();
+      if (!last) return;
+      const way = c.dir === 'up' ? 'going up' : c.dir === 'down' ? 'coming down' : 'at the top';
       const when = c.after === 0 ? T`t = ${sf(c.t)} [s]` : `${T`${sf(c.since)} [s]`} after the ${ORD[c.after - 1] || `${c.after}th`} impact`;
-      L.add(when, lane('label') + 30, yy + 18 + 20 * row++, { color: P.mark, align: 'left', pri: 7, size: 14, weight: 700, maxPush: 20 });
-    }
+      const below = yy + 20 < groundY - 12;
+      L.add(`${when}, ${way}`, lane('dim') + 14, below ? yy + 18 : yy - 34, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });
+    });
   }
 
   // ── the history: a mark at equal steps of time, the way down in one lane
@@ -221,7 +228,8 @@ export function render(canvas, cam, o) {
   // ── the impacts so far: a burst at the ground, and the latest one's speeds
   const hit = f.impacts.filter((x) => t >= x.t - 1e-9);
   for (const x of hit) {
-    const age = t - x.t, fresh = clamp(1 - age / 0.35, 0, 1);
+    // a burst for a moment: a fixed share of the run, so a short run is not all burst
+    const age = t - x.t, fresh = clamp(1 - age / clamp(f.tMax * 0.06, 0.02, 0.35), 0, 1);
     if (fresh > 0) {
       for (let i = 0; i < 7; i++) {
         const an = Math.PI + (i / 6) * Math.PI;
@@ -269,10 +277,15 @@ export function render(canvas, cam, o) {
   if (show.velocity !== false && Math.abs(now.vUp) > 1e-6) {
     const vMax = Math.max(1e-6, ...f.impacts.map((x) => x.vIn), Math.abs(f.u));
     const len = clamp(Math.abs(now.vUp) / vMax * clamp(h * 0.18, 50, 120), 14, 140) * Math.sign(now.vUp);
-    const ax = lane('arrow') - 2, ay = yb - R;
-    arrow(g, ax, ay, ax, ay - len, { color: P.velVec, width: 3, head: 11 });
-    let ly = ay - len - Math.sign(len) * 12;
-    if (ly > groundY - 10) ly = groundY - 12;
+    // From the ball, the way it is going — but never through the ground: a
+    // downward arrow that would reach it is lifted so its tip stops at the
+    // paving, still beside the ball.
+    const ax = lane('arrow') - 2;
+    let y0 = yb - R, y1 = y0 - len;
+    if (y1 > groundY - 3) { y0 -= y1 - (groundY - 3); y1 = groundY - 3; }
+    arrow(g, ax, y0, ax, y1, { color: P.velVec, width: 3, head: 11 });
+    // the label at the arrow's tail end when it points down, its tip when up
+    const ly = len > 0 ? y1 - 12 : y0 - 14;
     L.add(T`v = ${fmt(now.v, 2)} [m s^-1]`, ax + 8, ly, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700 });
   }
   if (show.acceleration && t < f.tMax - 1e-9) {

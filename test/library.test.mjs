@@ -777,7 +777,7 @@ group('Edexcel M1 Jun 2014 Q3: released from 2 m, rises to 1.5 m after the bounc
   ok(r.f.jumps.length === 1 && near(r.f.jumps[0], t1), 'the graph is told where it jumps');
   const spec = KITS.bounce.graphs(r.f, r.f.tMax, { mark: '#0f0', disp: '#0ff', vel: '#f80', acc: '#80f' })[1];
   ok(spec.series[0].jumps === r.f.jumps && spec.series[0].dash === null, 'the velocity line jumps there, solid (vertical)');
-  ok(/down is positive/.test(spec.note), 'and says which way is positive');
+  ok(/down is positive/.test(spec.note) && spec.notePri >= 8, 'and says which way is positive, ahead of every label but the title');
   ok(near(r.f.at(0.3).a, 9.8) && near(solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8 }).f.at(0.3).a, -9.8), 'a is +g down positive and −g up positive');
 });
 
@@ -827,6 +827,12 @@ group('Bounce: the general case, and what it refuses', () => {
     const r = solveBounce(k);
     ok(!r.ok && re.test(strip(r.reason)), `refused: ${strip(r.reason || 'it solved').slice(0, 70)}`);
   }
+  const whisker = solveBounce({ start: 'drop', h: 2, H: 2.02, g: 9.8, n: 4 });
+  ok(whisker.ok && whisker.params.e === 1 && whisker.impacts.every((x) => near(x.vOut, x.vIn)), 'a rebound a rounding faster than the impact is taken as e = 1, never as gaining speed');
+  ok(!solveBounce({ start: 'drop', h: 2, H: 2.2, g: 9.8 }).ok, 'and one clearly faster is refused');
+  ok(!solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8, y: 0, stop: 'y' }).ok, 'stopping “at the ground after the bounce” is the next impact, and says so');
+  const q6 = solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8 });
+  ok(near(q6.impacts[0].tTop, q6.impacts[0].t + q6.impacts[0].vOut / 9.8), 'the engine gives the time of each top; the stage only reads it');
   const nevr = solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8, y: 3 });
   ok(nevr.ok && !nevr.crossings.length && nevr.notes.some((x) => /never/.test(strip(x))), 'a height it never reaches is said, not drawn');
   const w = bounceWorking(solveBounce({ start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down', y: 1 }));
