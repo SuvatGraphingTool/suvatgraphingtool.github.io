@@ -837,11 +837,13 @@ function buildKitScreen() {
   // A choice is one of its chips, or none: press the pressed one to clear it.
   // A choice whose values name boxes (the number to find) locks the box it
   // names and says so, rather than leaving it asking to be filled in.
-  const markFound = (key) => {
-    const chosen = state.kit[key];
+  // Every naming choice at once: pressing any other chip never unlocks the
+  // box that one of them has locked.
+  const markFound = () => {
+    const locked = new Set([...K.fields, ...(K.rows || []).flatMap((r) => r.fields)].filter((f) => f.type === 'choice' && f.names).map((f) => state.kit[f.key]).filter(Boolean));
     for (const inp of $('extra').querySelectorAll('input[data-k]')) {
       const f = fieldOf(inp.dataset.k);
-      const isIt = fieldOf(key)?.names && inp.dataset.k === chosen;
+      const isIt = locked.has(inp.dataset.k);
       inp.readOnly = !!isIt;
       inp.dataset.found = String(!!isIt);
       if (isIt) { inp.value = ''; delete state.kit[inp.dataset.k]; }
@@ -856,11 +858,11 @@ function buildKitScreen() {
         if (on) state.kit[key] = c.dataset.v; else delete state.kit[key];
         const cur = state.kit[key] ?? fieldOf(key)?.default;
         for (const x of group.children) x.setAttribute('aria-pressed', String(x.dataset.v === cur));
-        markFound(key);
+        markFound();
         recompute();
       });
     }
-    markFound(group.dataset.choice);
+    markFound();
   }
   for (const c of ($('k-g-chips')?.children || [])) {
     c.addEventListener('click', () => {

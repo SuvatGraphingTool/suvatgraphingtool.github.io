@@ -589,6 +589,26 @@ group('Over the wall: the critic’s round 4', () => {
   ok(/below the horizontal/.test(KITS.target.ending(solveTarget({ g: 9.8, d: 10, H: 0, h0: 20, T: 0.5, find: 'time', kind: 'point' })).title), 'a downward launch is headlined without a minus');
 });
 
+group('Over the wall: the critic’s round 5', () => {
+  for (const kind of ['tree', 'point', 'face']) {
+    const r = solveTarget({ g: 9.8, d: 10, H: 3.5, top: 3.5, kind, find: 'apex' });
+    const w = targetWorking(r).flatMap((x) => x.rows).map((x) => strip(x.r));
+    ok(r.ok && r.flights.length === 1 && !r.rejected.length && w.includes('t=0.8452s'), `the point at the top of the path is one moment, not two (${kind})`, w.join(' | '));
+  }
+  let split = 0;
+  for (const g of [9.8, 9.81, 10]) for (let h0 = 0; h0 <= 3; h0 += 0.5) for (let top = h0 + 0.5; top <= 8; top += 0.5) for (const d of [5, 10, 20, 50]) {
+    const r = solveTarget({ g, h0, d, H: top, top, kind: 'point', find: 'apex' });
+    if (!r.ok || r.flights.length !== 1) split++;
+  }
+  ok(split === 0, `a sweep of round numbers: the top of the path is never two answers (${split} were)`);
+  ok(solveTarget({ g: 10, ux: 5, uy: 1, h0: 2, H: 2.05, kind: 'wall' }).shown.span == null, 'a wall exactly as high as the top is not “cleared from 0.5 to 0.5 m”');
+  const huge = solveTarget({ g: 9.8, u: 1e5, d: 10, H: 3, kind: 'wall', find: 'theta' });
+  ok(huge.ok && huge.flights.every((f) => Math.abs(f.at.clear) < 1e-6) && huge.rejected.some((x) => /straight up/.test(strip(x.text))), 'a near-vertical root that cannot reach the point is left out, and said');
+  ok(/reach the ground before/.test(strip(solveTarget({ g: 9.8, h0: 2, d: 20, H: 1, theta: -40, find: 'u' }).reason)), 'no height under the ground in the find-u refusal');
+  const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  ok(/const locked = new Set/.test(app) && !/markFound\(key\)/.test(app), 'pressing another chip never unlocks the box being found');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

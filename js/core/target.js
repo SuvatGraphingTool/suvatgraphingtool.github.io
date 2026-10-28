@@ -39,6 +39,15 @@ export const KINDS = {
 };
 export const FINDS = { theta: 'the angle', u: 'the speed', time: 'the speed and angle, from the time', apex: 'the speed and angle, from its greatest height' };
 
+/** The roots of a quadratic, with two that differ only by rounding taken as
+    the one double root they are: a point at the very top of the path is one
+    moment, never two a hundred-millionth of a second apart. */
+function roots(a, b, c) {
+  const rs = quadRoots(a, b, c).map(snap).sort((p, q) => p - q);
+  if (rs.length === 2 && Math.abs(rs[1] - rs[0]) <= 1e-6 * Math.max(1, Math.abs(rs[0]), Math.abs(rs[1]))) return [snap((rs[0] + rs[1]) / 2)];
+  return rs;
+}
+
 /* ── one flight ─────────────────────────────────────────────────────────── */
 /**
  * The projectile from (0, h0) with velocity (ux, uy), read at the point P
@@ -75,7 +84,7 @@ export function flight({ ux, uy, h0, g }, P, kind = 'point') {
   // Where a wall of height H would be cleared: between the two places the
   // path is at that height (from the launch, if it starts above it).
   if (P && have(P.H)) {
-    const ts = quadRoots(0.5 * g, -uy, P.H - h0).map(snap).filter((t) => t >= -1e-9 && t <= tGround + 1e-9).sort((a, b) => a - b);
+    const ts = roots(0.5 * g, -uy, P.H - h0).filter((t) => t >= -1e-9 && t <= tGround + 1e-9);
     if (h0 > P.H + 1e-9) fl.span = ts.length ? { from: 0, to: snap(ux * ts[ts.length - 1]), down: ts[ts.length - 1] } : null;
     else if (ts.length === 2 && ts[1] - ts[0] > 1e-9) fl.span = { from: snap(ux * ts[0]), to: snap(ux * ts[1]), up: ts[0], down: ts[1] };
     else fl.span = null;
@@ -271,7 +280,7 @@ export function solveTarget(k = {}) {
       const [a2, a1, a0] = [kk, -P.d, kk + rise];
       const w = whole(a2, a1, a0);
       const [b2, b1, b0] = w || [1, a1 / a2, a0 / a2];
-      const roots = quadRoots(a2, a1, a0).map(snap).sort((p, q) => q - p);
+      const tans = roots(a2, a1, a0).reverse();
       findTitle = 'The angle, from the point';
       findRows = [
         { f: M`y = h_0 + x tan theta - (gx^2)/(2u^2)(1 + tan^2 theta)`,
@@ -279,7 +288,7 @@ export function solveTarget(k = {}) {
           r: M`${tanQuad(a2, a1, a0)} = 0` },
         { f: '', s: M`"dividing by" ${d(a2 / b2)}`, r: M`${tanQuad(b2, b1, b0)} = 0` },
       ].filter((row, i) => i === 0 || Math.abs(a2 / b2 - 1) > 1e-9);
-      if (!roots.length) {
+      if (!tans.length) {
         // the highest it can be at that distance, at the best angle
         const best = h0 + P.d * P.d / (4 * kk) - kk;
         if (best < 0) return fail(`At ${M`${d(k.u)} [m s^-1]`} it cannot even get ${M`${d(P.d)} [m]`} out: at every angle it lands before then.`);
@@ -290,13 +299,21 @@ export function solveTarget(k = {}) {
         return fail(`At ${M`${d(k.u)} [m s^-1]`} no angle takes it through that point: the highest it can be ${M`${d(P.d)} [m]`} out is ${M`${fig(best, dp)} [m]`}, at an angle of ${M`${ang(Math.atan(P.d / (2 * kk)) / DEG)}°`}, below the ${M`${fig(P.H, dp)} [m]`} it needs.`);
       }
       findRows.push({ f: M`tan theta = (-b +- sqrt(b^2 - 4ac))/(2a)`, s: M`(${d(-b1)} +- sqrt(${sgn(b1)}^2 - 4 * ${d(b2)} * ${sgn(b0)}))/(2 * ${d(b2)})`,
-        r: roots.length > 1 ? M`tan theta = ${d(roots[1])} "or" ${d(roots[0])}` : M`tan theta = ${d(roots[0])}` });
-      const th = roots.map((r) => snap(Math.atan(r) / DEG));
-      findRows.push({ f: '', s: M`${roots.slice().reverse().map((r) => `tan^-1 ${sgn(r)}`).join(', ')}`, r: th.length > 1 ? M`theta = ${ang(th[1])}° "or" ${ang(th[0])}°` : M`theta = ${ang(th[0])}°` });
-      for (const r of roots) {
-        const c = 1 / Math.sqrt(1 + r * r);
-        flights.push({ ux: snap(k.u * c), uy: snap(k.u * r * c), given: 'found' });
+        r: tans.length > 1 ? M`tan theta = ${d(tans[1])} "or" ${d(tans[0])}` : M`tan theta = ${d(tans[0])}` });
+      const th = tans.map((r) => snap(Math.atan(r) / DEG));
+      findRows.push({ f: '', s: M`${tans.slice().reverse().map((r) => `tan^-1 ${sgn(r)}`).join(', ')}`, r: th.length > 1 ? M`theta = ${ang(th[1])}° "or" ${ang(th[0])}°` : M`theta = ${ang(th[0])}°` });
+      for (const r of tans) {
+        const c = 1 / Math.sqrt(1 + r * r), ux = snap(k.u * c), uy = snap(k.u * r * c);
+        // a root so near vertical that the arithmetic cannot carry it to the
+        // point is left out and said, rather than flown into the wall
+        const tP = P.d / ux, yP = h0 + uy * tP - 0.5 * g * tP * tP;
+        if (!(Math.abs(yP - P.H) <= 1e-6 * Math.max(1, Math.abs(P.H), P.d))) {
+          rejected.push({ text: `${M`theta = ${ang(Math.atan(r) / DEG)}°`} is so close to straight up that it cannot be carried to the point with any accuracy, so it is left out.` });
+          continue;
+        }
+        flights.push({ ux, uy, given: 'found' });
       }
+      if (!flights.length) return fail('Both angles are too close to straight up to carry to the point with any accuracy.');
       found = { what: 'theta', values: th };
     } else if (find === 'u') {
       if (!have(k.theta)) return fail('To find the speed, give the angle it is launched at.');
@@ -304,7 +321,7 @@ export function solveTarget(k = {}) {
       const tan = Math.tan(k.theta * DEG), cos = Math.cos(k.theta * DEG);
       const lift = h0 + P.d * tan - P.H;
       if (!(lift > 1e-9)) {
-        return fail(`At ${M`${ang(k.theta)}°`} no speed takes it through that point: aimed in a straight line it would be at ${M`${d(snap(h0 + P.d * tan))} [m]`} there, and gravity only pulls it lower — the point at ${M`${d(P.H)} [m]`} is ${lift < -1e-9 ? 'above' : 'on'} that line.`);
+        return fail(`At ${M`${ang(k.theta)}°`} no speed takes it through that point: ${h0 + P.d * tan < 0 ? `aimed in a straight line at that angle it would reach the ground before it got ${M`${d(P.d)} [m]`} out` : `aimed in a straight line it would be at ${M`${d(snap(h0 + P.d * tan))} [m]`} there`}, and gravity only pulls it lower — the point at ${M`${d(P.H)} [m]`} is ${lift < -1e-9 ? 'above' : 'on'} that line.`);
       }
       const u2 = g * P.d * P.d / (2 * cos * cos * lift), u = Math.sqrt(u2);
       findTitle = 'The speed, from the point';
@@ -336,23 +353,23 @@ export function solveTarget(k = {}) {
       if (P.H > k.top + 1e-9) return fail(`The point, ${M`${d(P.H)} [m]`} up, is higher than its greatest height of ${M`${d(k.top)} [m]`}: it never gets there.`);
       const uy = snap(Math.sqrt(2 * g * (k.top - h0)));
       // the times it is at the point's height: on the way up and on the way down
-      let ts = quadRoots(0.5 * g, -uy, rise).map(snap).filter((t) => t > 1e-9).sort((p, q) => p - q);
+      let ts = roots(0.5 * g, -uy, rise).filter((t) => t > 1e-9);
       // a wall it hits on the way up stops it before its greatest height, so
       // that root is not a launch with that greatest height
       const tTop = uy / g;
       if (K.hits) {
-        for (const t of ts.filter((x) => x < tTop - 1e-9)) rejected.push({ text: `${M`t = ${d(t)} [s]`} would have it hit the wall on its way up, before it reaches its greatest height, so it is rejected.` });
-        ts = ts.filter((x) => x >= tTop - 1e-9);
+        for (const t of ts.filter((x) => x < tTop * (1 - 1e-6) - 1e-9)) rejected.push({ text: `${M`t = ${d(t)} [s]`} would have it hit the wall on its way up, before it reaches its greatest height, so it is rejected.` });
+        ts = ts.filter((x) => x >= tTop * (1 - 1e-6) - 1e-9);
       }
       if (!ts.length) return fail(K.hits ? 'Every launch with that greatest height would hit the wall on its way up, before reaching it.' : 'It is never at the point’s height after it is launched.');
       findTitle = 'The speed and angle, from its greatest height';
       findRows = [
         { f: M`v_y^2 = u_y^2 - 2gs`, s: M`0 = u_y^2 - 2 * ${d(g)} * ${paren2(k.top, h0)}`, r: M`u_y = ${d(uy)} [m s^-1]` },
         { f: M`H - h_0 = u_y t - ½gt^2`, s: M`${d(P.H)}${Math.abs(h0) > EPS ? ` - ${d(h0)}` : ''} = ${heightSrc(0, uy, g)}`,
-          r: M`t = ${quadRoots(0.5 * g, -uy, rise).map(snap).sort((p, q) => p - q).map((t) => d(t)).join(' "or" ')} [s]` },
+          r: M`t = ${roots(0.5 * g, -uy, rise).map((t) => d(t)).join(' "or" ')} [s]` },
       ];
       // a root at or before the launch is the start, not a moment on the way
-      const all = quadRoots(0.5 * g, -uy, rise).map(snap).sort((p, q) => p - q);
+      const all = roots(0.5 * g, -uy, rise);
       for (const t of all) if (!(t > 1e-9)) rejected.push({ text: `${M`t = ${d(t)} [s]`} is ${t < -1e-9 ? 'before it is launched' : 'the moment it is launched'}, so it is rejected.` });
       for (const t of ts) {
         const ux = snap(P.d / t);
@@ -492,7 +509,7 @@ export function targetWorking(solved) {
   }
   if (solved.flag != null && solved.flagGap != null) {
     out.push({ title: 'The mark on the ground', rows: [
-      { f: M`"mark" - x`, s: M`${d(solved.flag)} - ${d(S.R)}`, r: M`${d(solved.flagGap)} [m]` },
+      { f: M`"mark" - x`, s: M`${d(solved.flag)} - ${d(S.R)}`, r: M`"mark" - x = ${d(solved.flagGap)} [m]` },
     ], note: solved.other && !solved.other.hits ? `At the other angle it lands ${M`${d(solved.other.R)} [m]`} out.` : '' });
   }
   if (S.span && kind !== 'point' && !K.hits && P && P.H != null) {
