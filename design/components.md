@@ -274,7 +274,7 @@ car(g, X, Y, L, P, { dir, phase, ring });
 
 | piece | what it is |
 |---|---|
-| `lorry`, `car`, `cyclist`, `motorcycle`, `train`, `runner` | the six travellers, in `FIGURES` with `label`, `noun`, `verb`, `size` (drawn length beside a lorry of 1), `top`/`mid` (where the acceleration and velocity arrows go), `ground` |
+| `lorry`, `car`, `cyclist`, `motorcycle`, `train`, `runner` | the six travellers, in `FIGURES` with `label`, `noun`, `verb`, `size` (drawn length beside a lorry of 1), `top`/`mid` (where the acceleration and velocity arrows go; every `top` is the lorry's, under the posts' letter plates), `ground`, `brakes` (false for the runner: she slows down), `min` (least px, so a person stays readable on a phone), `cars` (the train's carriages) |
 | `ball`, `particle` | the stadium's ball (`ballSprite`), and a plain bead for "particle P" (centred on X, Y) |
 | `drawFigure(g, kind, X, Y, L, P, opts)` | any of them by name |
 | `post(g, labels, X, Y, letter, color, P, { dashed, height })` | a roadside or trackside post with its letter on a plate — A, B, X, Y, the mid-point M; `labels` is the stage's `labels()` queue |
@@ -285,8 +285,17 @@ Not to scale with one another — a real cyclist is a seventh of a lorry and
 would vanish — so `FIGURES[kind].size` keeps one stage's traveller the same
 visual weight whichever it is.
 
+The runner's planted foot stays planted (her stride is matched to the sweep of
+her leg; a test traces it), and every wheel turns forwards. Drive the phase from
+the distance travelled, not the displacement, so it keeps rolling forwards
+after a turn-round.
+
+`travellerIn(text)` in `js/core/question.js` — the traveller a question names
+first (a key of `FIGURES`), so a read question draws its own object.
+
 Used by: `road` (Along a straight road: the six, chosen on its values screen;
-the lorry is pixel-identical to the drawing it replaced).
+the lorry is pixel-identical to the drawing it replaced), `two-on-a-road`
+(cars, trains, rails, posts).
 
 ### Two lanes under two speed–time graphs — `js/render/lanes.js`
 
