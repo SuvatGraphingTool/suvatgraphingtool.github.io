@@ -609,6 +609,23 @@ group('Over the wall: the critic’s round 5', () => {
   ok(/const locked = new Set/.test(app) && !/markFound\(key\)/.test(app), 'pressing another chip never unlocks the box being found');
 });
 
+group('Over the wall: the critic’s round 6', () => {
+  for (const k of [{ g: 9.81, h0: 0.894, d: 20, H: 22.773, top: 22.773, kind: 'point', find: 'apex' }, { g: 9.81, h0: 0.954, d: 20, H: 5.171, top: 5.171, kind: 'point', find: 'apex' },
+    { g: 10, h0: 0, d: 181.6, H: 0.613, top: 0.613, kind: 'wall', find: 'apex' }, { g: 10, h0: 5.08, d: 106.5, H: 17.287, top: 17.287, kind: 'point', find: 'apex' },
+    { g: 10, h0: 9.95, d: 141.7, H: 33.629, top: 33.629, kind: 'net', find: 'apex' }]) {
+    const r = solveTarget(k);
+    ok(r.ok && r.flights.length === 1 && !r.shown.span, `three-place inputs, point at the top: one launch, never refused (${JSON.stringify(k)})`, r.reason && strip(r.reason));
+  }
+  let bad = 0;
+  for (let i = 0; i < 4000; i++) {
+    const g = [9.8, 9.81, 10][i % 3], h0 = +((i * 0.37) % 10).toFixed(3), top = +(h0 + 0.01 + ((i * 7.13) % 40)).toFixed(3), d = +(0.5 + ((i * 13.7) % 200)).toFixed(1);
+    const r = solveTarget({ g, h0, d, H: top, top, kind: 'point', find: 'apex' });
+    if (!r.ok || r.flights.length !== 1) bad++;
+  }
+  ok(bad === 0, `4000 three-place cases with the point at the top: none split or refused (${bad})`);
+  ok(/never leaves the ground/.test(strip(solveTarget({ g: 9.8, d: 50, H: 0, top: 0, kind: 'point', find: 'apex' }).reason)), 'a greatest height of 0 from the ground: said plainly');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

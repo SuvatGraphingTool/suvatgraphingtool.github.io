@@ -48,6 +48,18 @@ function roots(a, b, c) {
   return rs;
 }
 
+/** The times it is at height H, given the top of its path (tTop, yTop): the
+    discriminant is exactly 2g(yTop − H), so it is taken from that difference
+    and never from u_y² − 2g(H − h₀), whose rounding can push a point at the
+    very top just below zero or split it in two. */
+function timesAt(H, tTop, yTop, g) {
+  const gap = yTop - H;
+  if (Math.abs(gap) <= 1e-7 * Math.max(1, Math.abs(H), Math.abs(yTop))) return [snap(tTop)];
+  if (gap < 0) return [];
+  const w = Math.sqrt(2 * gap / g);
+  return [snap(tTop - w), snap(tTop + w)];
+}
+
 /* ── one flight ─────────────────────────────────────────────────────────── */
 /**
  * The projectile from (0, h0) with velocity (ux, uy), read at the point P
@@ -84,7 +96,9 @@ export function flight({ ux, uy, h0, g }, P, kind = 'point') {
   // Where a wall of height H would be cleared: between the two places the
   // path is at that height (from the launch, if it starts above it).
   if (P && have(P.H)) {
-    const ts = roots(0.5 * g, -uy, P.H - h0).filter((t) => t >= -1e-9 && t <= tGround + 1e-9);
+    // from the top of its path, or (thrown level or down) from the start
+    const ts = (apex ? timesAt(P.H, apex.t, apex.y, g) : timesAt(P.H, uy / g, h0 + uy * uy / (2 * g), g))
+      .filter((t) => t >= -1e-9 && t <= tGround + 1e-9);
     if (h0 > P.H + 1e-9) fl.span = ts.length ? { from: 0, to: snap(ux * ts[ts.length - 1]), down: ts[ts.length - 1] } : null;
     else if (ts.length === 2 && ts[1] - ts[0] > 1e-9) fl.span = { from: snap(ux * ts[0]), to: snap(ux * ts[1]), up: ts[0], down: ts[1] };
     else fl.span = null;
@@ -280,7 +294,11 @@ export function solveTarget(k = {}) {
       const [a2, a1, a0] = [kk, -P.d, kk + rise];
       const w = whole(a2, a1, a0);
       const [b2, b1, b0] = w || [1, a1 / a2, a0 / a2];
-      const tans = roots(a2, a1, a0).reverse();
+      // a speed within rounding of the least that reaches the point is one
+      // angle, the tangent, not two a hair apart
+      const disc = a1 * a1 - 4 * a2 * a0, tol = 1e-7 * a1 * a1;
+      const tans = disc < -tol ? [] : disc <= tol ? [snap(-a1 / (2 * a2))]
+        : [snap((-a1 + Math.sqrt(disc)) / (2 * a2)), snap((-a1 - Math.sqrt(disc)) / (2 * a2))];
       findTitle = 'The angle, from the point';
       findRows = [
         { f: M`y = h_0 + x tan theta - (gx^2)/(2u^2)(1 + tan^2 theta)`,
@@ -351,12 +369,13 @@ export function solveTarget(k = {}) {
       if (!have(k.top)) return fail('To find the speed and angle from its greatest height, give that height above the ground.');
       if (k.top < h0 - 1e-9) return fail(`Its greatest height is at least the ${M`${d(h0)} [m]`} it leaves from.`);
       if (P.H > k.top + 1e-9) return fail(`The point, ${M`${d(P.H)} [m]`} up, is higher than its greatest height of ${M`${d(k.top)} [m]`}: it never gets there.`);
+      if (!(h0 > EPS) && !(k.top > EPS)) return fail('A greatest height of 0, launched from the ground, means it never leaves the ground.');
       const uy = snap(Math.sqrt(2 * g * (k.top - h0)));
       // the times it is at the point's height: on the way up and on the way down
-      let ts = roots(0.5 * g, -uy, rise).filter((t) => t > 1e-9);
+      const tTop = uy / g, all = timesAt(P.H, tTop, k.top, g);
+      let ts = all.filter((t) => t > 1e-9);
       // a wall it hits on the way up stops it before its greatest height, so
       // that root is not a launch with that greatest height
-      const tTop = uy / g;
       if (K.hits) {
         for (const t of ts.filter((x) => x < tTop * (1 - 1e-6) - 1e-9)) rejected.push({ text: `${M`t = ${d(t)} [s]`} would have it hit the wall on its way up, before it reaches its greatest height, so it is rejected.` });
         ts = ts.filter((x) => x >= tTop * (1 - 1e-6) - 1e-9);
@@ -366,10 +385,9 @@ export function solveTarget(k = {}) {
       findRows = [
         { f: M`v_y^2 = u_y^2 - 2gs`, s: M`0 = u_y^2 - 2 * ${d(g)} * ${paren2(k.top, h0)}`, r: M`u_y = ${d(uy)} [m s^-1]` },
         { f: M`H - h_0 = u_y t - ½gt^2`, s: M`${d(P.H)}${Math.abs(h0) > EPS ? ` - ${d(h0)}` : ''} = ${heightSrc(0, uy, g)}`,
-          r: M`t = ${roots(0.5 * g, -uy, rise).map((t) => d(t)).join(' "or" ')} [s]` },
+          r: M`t = ${all.map((t) => d(t)).join(' "or" ')} [s]` },
       ];
       // a root at or before the launch is the start, not a moment on the way
-      const all = roots(0.5 * g, -uy, rise);
       for (const t of all) if (!(t > 1e-9)) rejected.push({ text: `${M`t = ${d(t)} [s]`} is ${t < -1e-9 ? 'before it is launched' : 'the moment it is launched'}, so it is rejected.` });
       for (const t of ts) {
         const ux = snap(P.d / t);
