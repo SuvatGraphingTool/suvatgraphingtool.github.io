@@ -209,6 +209,22 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
  *   items   [{ k, value, how: 'given'|'worked'|'assumed', ratio? }] for the readout
  */
 export function toApp(x) {
+  const r = read(x);
+  // A value carried from an earlier part's answer (js/core/parts.js) is
+  // shown as that, not as one the question gave.
+  const marks = r.ok && x.carried && typeof x.carried === 'object' ? x.carried : null;
+  if (marks) {
+    for (const it of r.items) {
+      const m = marks[ITEM_FIELD[it.k] || it.k];
+      if (m && it.how === 'given') Object.assign(it, { how: 'carried', from: m.from, take: m.take });
+    }
+  }
+  return r;
+}
+// An item's key, as the reading's field it came from.
+const ITEM_FIELD = { line: 'heightLine' };
+
+function read(x) {
   if (!x || typeof x !== 'object') return { ok: false, error: 'Nothing came back from the reader.' };
   if (x.understood === false) {
     // Not a question — often just "hello". The reader's note is its answer,

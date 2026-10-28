@@ -281,7 +281,8 @@ export function render(canvas, cam, o) {
   // the cache and repainting the identical frame.
   const key = [w, h, document.documentElement.dataset.theme, cam.scale.toFixed(4),
                cam.cx.toFixed(2), cam.cy.toFixed(2), scenario?.id].join('|');
-  const bg = W2.layer('section', w, h, key, (g) => {
+  // A stage of its own — the parts side by side — keeps its own backdrop.
+  const bg = W2.layer(o.layer || 'section', w, h, key, (g) => {
     W2.drawSection({ ctx: g, w, h, span, scale: cam.scale, sx: su, sy, px: pu, py,
                      section, tn, L: null });
   });

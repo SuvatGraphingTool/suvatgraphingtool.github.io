@@ -26,9 +26,10 @@ const TXT_MAX = 2_000;
  * @param o.apply(extraction) → { ok, html?, runnable?, error? }
  * @param o.run()   show the flight
  * @param o.edit()  go to the values screen instead
+ * @param o.compare()  a question in parts: the parts side by side, on the stage
  * @param o.show(step)  go to a screen — 'chat' is this one's
  */
-export function createAsk({ apply, run, edit, show }) {
+export function createAsk({ apply, run, edit, compare, show }) {
   const form = $('ask-form'), text = $('ask-text'), send = $('ask-send');
   const thread = $('ask-thread'), scroller = $('chat-scroll');
   const composer = $('ask-composer');
@@ -283,17 +284,25 @@ export function createAsk({ apply, run, edit, show }) {
 
     // Typeset maths arrives as markup, so it goes in with innerHTML (rule 1).
     // With Graph off it is a conversation, so there is nothing to open.
-    const acts = modes.graph
-      ? `<div class="ask-acts">
+    // A question in parts is a card per part, and the flight starts on the
+    // first; the stage moves on to the next part, or shows them side by side.
+    const html = r.parts ? r.parts.map((p) => `<section class="ro-part">${p.html}</section>`).join('') : r.html;
+    const first = r.parts?.find((p) => p.runnable)?.name;
+    const acts = !modes.graph ? ''
+      : r.parts ? `<div class="ask-acts">
+        <button type="button" class="fire sm ask-run"${r.runnable ? '' : ' disabled'}>${first ? `Show me part ${esc(first)}` : 'Show me the flight'}</button>
+        ${r.compare ? '<button type="button" class="ghost sm ask-compare">See the parts side by side</button>' : ''}
+      </div>`
+      : `<div class="ask-acts">
         <button type="button" class="fire sm ask-run"${r.runnable ? '' : ' disabled'}>Show me the flight</button>
         <button type="button" class="ghost sm ask-edit">${r.runnable ? 'Check the values' : 'Add the missing values'}</button>
-      </div>`
-      : '';
+      </div>`;
     // The box keeps the focus, as in any chat: the next question is the
     // likelier next thing than the flight.
-    reply(r.html, { acts, before(node) {
-      node.querySelector('.ask-run')?.addEventListener('click', run);
-      node.querySelector('.ask-edit')?.addEventListener('click', edit);
+    reply(html, { acts, before(node) {
+      node.querySelector('.ask-run')?.addEventListener('click', () => run());
+      node.querySelector('.ask-edit')?.addEventListener('click', () => edit());
+      node.querySelector('.ask-compare')?.addEventListener('click', () => compare?.());
     } });
   }
 

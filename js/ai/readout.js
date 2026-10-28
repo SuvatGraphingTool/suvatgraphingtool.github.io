@@ -16,7 +16,7 @@ export function esc(s) {
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-const HOW = { given: 'in the question', worked: 'worked out', assumed: 'assumed' };
+const HOW = { given: 'in the question', worked: 'worked out', assumed: 'assumed', carried: 'carried' };
 
 /** One value, as maths. */
 function valueHTML(it) {
@@ -51,6 +51,7 @@ function fromHTML(it) {
   if (it.vertical) return 'thrown straight up';
   if (it.k === 'line') return 'how long it spends above it';
   if (it.how === 'assumed' && it.k === 'g') return 'on Earth';
+  if (it.how === 'carried') return `the engine's answer to (${esc(it.from)})`;
   if (it.how === 'assumed' && it.k === 'h') return 'it starts on the ground';
   return '';
 }
@@ -60,8 +61,9 @@ function fromHTML(it) {
  * @param o.name   the scenario's name, from js/scenarios.js
  * @param o.solved the engine's answer for those values, or null
  * @param o.above  the engine's timeAbove() for a line, with `line`, or null
+ * @param o.part   for a question in parts, which part this is: "(b)"
  */
-export function readoutHTML(reading, { name, solved, above } = {}) {
+export function readoutHTML(reading, { name, solved, above, part } = {}) {
   const rows = reading.items.map((it) => {
     const from = fromHTML(it);
     return `<li class="ro-row" data-how="${it.how}">
@@ -94,7 +96,7 @@ export function readoutHTML(reading, { name, solved, above } = {}) {
     engine = `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved.reason || ''}</div>`;
   }
 
-  return `<p class="ro-eyebrow">Read as</p>
+  return `<p class="ro-eyebrow">${part ? `Part ${esc(part)} · read as` : 'Read as'}</p>
     <h3 class="ro-name">${esc(name)}</h3>
     ${reading.summary ? `<p class="ro-sum">${esc(reading.summary)}</p>` : ''}
     <ul class="ro-list">${rows}</ul>

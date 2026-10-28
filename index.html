@@ -36,6 +36,7 @@
 <link rel="modulepreload" href="./js/render/util.js">
 <link rel="modulepreload" href="./js/notation.js">
 <link rel="modulepreload" href="./js/core/question.js">
+<link rel="modulepreload" href="./js/core/parts.js">
 <link rel="modulepreload" href="./js/ai/ask.js">
 <link rel="modulepreload" href="./js/board/board.js">
 <link rel="modulepreload" href="./js/ai/readout.js">
@@ -55,6 +56,7 @@
 <link rel="stylesheet" href="./css/math.css">
 <link rel="stylesheet" href="./css/ask.css">
 <link rel="stylesheet" href="./css/board.css">
+<link rel="stylesheet" href="./css/parts.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path d='M3 26 Q15 -8 27 26' fill='none' stroke='%23c2410c' stroke-width='3' stroke-linecap='round'/></svg>">
 </head>
 <body>
@@ -205,6 +207,15 @@
                back — same thing a double-click on the canvas does. -->
           <button class="tbtn sm" id="fit-btn" aria-pressed="true"
                   aria-label="Frame the whole flight">Whole flight</button>
+          <!-- A question in parts that are different motions (js/core/parts.js):
+               which part is on the stage, the next one, and all of them side
+               by side. Only there while such a question is. -->
+          <div class="parts-nav" id="parts-nav" role="group" aria-label="The parts of the question" hidden>
+            <span class="pn-k" aria-hidden="true">Part</span>
+            <span class="pn-chips" id="pn-chips"></span>
+            <button type="button" class="fire sm pn-next" id="pn-next" hidden>Show me part (b)</button>
+            <button type="button" class="tbtn sm" id="pn-compare" aria-pressed="false">Side by side</button>
+          </div>
           <!-- Playback speed used to sit here, as a readout and a slider,
                on every flight. It is a SETTING — you pick it once and then
                watch — and it was taking permanent room in the bar next to
@@ -223,6 +234,10 @@
 
         <div class="canvas-wrap" id="canvas-wrap" data-resolve="off" data-ask="off" data-panes="off">
           <canvas id="scene" aria-label="Projectile motion"></canvas>
+          <!-- the parts side by side, each on a stage of its own, one clock -->
+          <div class="compare" id="compare" hidden>
+            <div class="cmp-grid" id="cmp-grid"></div>
+          </div>
           <!-- THE WINDOW, for a motion that needs more than one picture of
                itself. One scenario uses it: a parachute drop is three phases
                with three accelerations, and that is a sky and three graphs

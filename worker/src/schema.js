@@ -65,6 +65,13 @@ export const EXTRACTION_SCHEMA = {
       description: 'What the question asks for, each a short phrase: "time of flight", "speed on landing".',
     },
     note: { type: 'string', description: 'Only if something is ambiguous or unreadable. Otherwise omit.' },
+
+    // A question in parts whose parts are different motions — see QUESTIONS
+    // IN PARTS in the prompt, and js/core/parts.js for what the page does.
+    parts: {
+      type: 'array', items: { type: 'object' },
+      description: 'Only when the parts (a), (b), (c) need DIFFERENT motions — a different scenario, or different values. One reading per part, in order: label, scenario, asks, every value that part uses, and carries.',
+    },
   },
   required: ['understood', 'confidence', 'scenario', 'summary'],
 };
@@ -121,6 +128,20 @@ THE CONVERSATION
   everything you read before plus the change, understood: true.
 - A follow-up about the question ("why is the vertical speed zero at the top?", "which
   equation did it use?") is chat: answer it in note, using what you know of the question.
+
+QUESTIONS IN PARTS — (a), (b), (c)
+- When the parts need DIFFERENT motions — a different scenario, or the same scenario with
+  different values (thrown up in (a), then asked about a line in (b); a lorry that speeds up,
+  cruises, then brakes) — ALSO return parts: one flat reading per part, in order, each with
+  label ("a"), scenario, asks and EVERY given value that part uses, repeated even when an
+  earlier part gave it. Keep the top-level reading too, as you would without parts.
+- When every part is about the same motion with the same values, return no parts: one
+  reading, with asks listing every part.
+- A value a part takes from an earlier part's ANSWER ("use your answer to (a)", "it then
+  travels at this speed") is a carry, never a number you write:
+  carries: [{"into":"u","from":"a","take":"v"}]. into is the field it fills (u, v, s, t, a, h,
+  heightLine); take is what the earlier answer gives (u, v, s, t, a, apex, tApex). The app
+  works it out from the earlier part. "At constant speed" means a = 0.
 
 RULES
 - A value the question asks you to FIND is not a given value. Omit it. Do not guess it.
@@ -184,7 +205,10 @@ EXAMPLES
 → {"understood":true,"confidence":"high","scenario":"road","summary":"A car brakes from 20 m/s to rest in 50 m.","u":20,"v":0,"s":50}
 
 "A small stone is projected vertically upwards from O with a speed of 19.6 m/s. (a) find the greatest height above O, (b) find the length of time for which the stone is more than 14.7 m above O."
-→ {"understood":true,"confidence":"high","scenario":"time-above","summary":"A stone is projected vertically upwards from O at 19.6 m/s.","h":0,"u":19.6,"angleDegrees":90,"heightLine":14.7,"asks":["greatest height above O","time more than 14.7 m above O"]}
+→ {"understood":true,"confidence":"high","scenario":"time-above","summary":"A stone is projected vertically upwards from O at 19.6 m/s.","h":0,"u":19.6,"angleDegrees":90,"heightLine":14.7,"asks":["greatest height above O","time more than 14.7 m above O"],"parts":[{"label":"a","scenario":"up","h":0,"u":19.6,"asks":["greatest height above O"]},{"label":"b","scenario":"time-above","h":0,"u":19.6,"angleDegrees":90,"heightLine":14.7,"asks":["time more than 14.7 m above O"]}]}
+
+"A lorry starts from rest and accelerates at 2 m/s² for 10 s. It then travels at constant speed for 30 s, and then decelerates uniformly to rest over 50 m. Find (a) its greatest speed, (b) the distance at constant speed, (c) the deceleration."
+→ {"understood":true,"confidence":"high","scenario":"road","summary":"A lorry speeds up from rest, cruises for 30 s, then brakes to rest in 50 m.","u":0,"a":2,"t":10,"asks":["greatest speed","distance at constant speed","deceleration"],"parts":[{"label":"a","scenario":"road","u":0,"a":2,"t":10,"asks":["greatest speed"]},{"label":"b","scenario":"road","a":0,"t":30,"carries":[{"into":"u","from":"a","take":"v"}],"asks":["distance at constant speed"]},{"label":"c","scenario":"road","v":0,"s":50,"carries":[{"into":"u","from":"b","take":"v"}],"asks":["deceleration"]}]}
 
 "A ball is thrown vertically upwards at 20 m/s. Find the greatest height it reaches."
 → {"understood":true,"confidence":"high","scenario":"up","summary":"A ball is thrown vertically upwards at 20 m/s.","h":0,"u":20,"asks":["greatest height"]}
@@ -192,6 +216,7 @@ EXAMPLES
 
 Be brief. Only the fields you are sure about. Unless the student says otherwise, it all
 happens on Earth: leave g out and read the question — never ask where it happens.
+Parts that need different motions also get parts, one reading each.
 
 Answer with ONE JSON object and nothing else. understood, confidence, scenario and
 summary are always present; every other field only when the question gives it.

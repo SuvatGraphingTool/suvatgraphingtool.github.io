@@ -69,6 +69,7 @@ js/core/projectile.js   the idealised projectile model
 js/core/descent.js      a parachute drop: three phases, each one of them SUVAT
 js/core/road.js         a vehicle along a straight road: the five, with no gravity in them
 js/core/question.js     exam question -> engine parameters
+js/core/parts.js        a question in parts -> one motion per part, carries from the engine
 js/board/               the whiteboard: describe a motion, get a board of the app's own pieces
 js/compose/             the composer: every piece a scenario is made of, and recipes assembled from them
 js/render/              the scene, the graphs, canvas helpers
@@ -83,6 +84,7 @@ design/                 tokens, notation, scenario research, preset list
 node test/engine.test.mjs       # the physics
 node test/solve.test.mjs        # what the engine does with partial information
 node test/question.test.mjs     # the question reader
+node test/parts.test.mjs        # a question in parts, and what one part carries to the next
 node test/pace.test.mjs         # how fast a flight should be played back
 node test/scenarios.test.mjs    # the scenarios, as data
 node test/preload.test.mjs      # the modulepreload hints match the real graph
