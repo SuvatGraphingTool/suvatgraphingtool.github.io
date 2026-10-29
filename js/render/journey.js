@@ -136,9 +136,13 @@ export function render(canvas, cam, o) {
   // way, and over it the card beside the readouts, clear of the lights
   const ground = fig.ground;
   const tapeY = h - 34, bracketY = tapeY - 12;
-  const d = ground === 'rail' ? 30 : clamp(Math.min(tall, 46) * 1.2, 34, 56);
+  // a road with a narrow far lane, so the vehicle stands wholly in the near
+  // one, its centre line clear above the roof
+  const CENTRE = 0.4;
+  const d = ground === 'rail' ? 30 : ground === 'track' ? clamp(Math.min(tall, 46) * 1.2, 34, 56)
+    : clamp((Math.min(tall, 46) + 12) / (1 - CENTRE), 40, 84);
   const R = Math.round(bracketY - 28 - d - 7);
-  const yw = ground === 'rail' ? R + 10 : ground === 'track' ? R + d * 0.78 : R + d * 0.88;
+  const yw = ground === 'rail' ? R + 10 : ground === 'track' ? R + d * 0.78 : R + d - 6;
   // past B, room for the velocity arrow it arrives with, head and all
   const vScale = clamp(w * 0.12, 54, 140), wTop = Math.max(...J.w) || 1;
   const sx0 = figLen + (phone ? 18 : 30), sx1 = w - Math.max(phone ? 30 : 60, (Math.abs(f.vel(f.tMax).x) / wTop) * vScale + 24);
@@ -157,13 +161,16 @@ export function render(canvas, cam, o) {
     track(g, 0, w, R, d);
   } else {
     verge(g, 0, w, R - 11, { seed: 51, scale: phone ? 0.75 : 0.9, keep });
-    road(g, 0, w, R, d, { seed: 29 });
+    road(g, 0, w, R, d, { seed: 29, centre: CENTRE });
   }
-  // lights and posts as tall as a car's, whoever travels
-  const lmTall = ground === 'rail' ? tall : Math.min(tall, 44);
+  // lights and posts kept low, whoever travels, so the card above has room
+  const lmTall = ground === 'rail' ? tall : Math.min(tall, 22);
   const moving = fired && t > 0;
   const topA = landmark(g, L, S(0), yw, 'A', J.w[0] === 0, ground, P, { len: figLen, tall: lmTall, R, d, lit: moving ? 'green' : 'red' });
   const topB = landmark(g, L, S(J.D), yw, 'B', J.w[J.n] === 0, ground, P, { finish: true, len: figLen, tall: lmTall, R, d, lit: 'red' });
+  // the card's place, clear of the lights or the stations; no label goes under it
+  const box = { x0: sc.cardX0, y0: sc.cardY0, x1: sc.cardX1, y1: Math.max(sc.cardY0 + 110, Math.min(horizon - 6, Math.min(topA, topB) - 8, sc.cardY0 + h * 0.6)) };
+  L.reserve({ x: box.x0, y: box.y0, w: box.x1 - box.x0, h: box.y1 - box.y0 });
 
   // where each stage happens: dashed displacement brackets on the verge in front
   for (let i = 1; i <= J.n; i++) {
@@ -197,16 +204,16 @@ export function render(canvas, cam, o) {
     brake: acc < -1e-9 && v > 1e-6 && t < f.tMax - 1e-9 });
   L.reserve({ x: xs - figLen - 2, y: yw - tall - 4, w: figLen + 4, h: tall + 4 });
   if (show.velocity !== false && v > 1e-6) {
-    // from its front forwards, dashed; its value after the head, or over the
-    // arrow where the head is near the edge
+    // over the vehicle, clear of the road's own dashes: from its middle
+    // forwards; its value after the head, or before the tail near the edge
     const len = (v / wTop) * vScale;
-    const vy = yw - (bd ? figPx * bd.vy : lorryPx * fig.mid), x0 = xs + 5, x1 = x0 + len;
+    const vy = yw - tall - 10, x0 = xs - figLen / 2, x1 = x0 + len;
     arrow(g, x0, vy, x1, vy, { color: P.velVec, width: 2.8, head: 11, dash: [7, 5] });
     const text = T`v = ${s3(v)} [m s^-1]`, room = x1 + 10 + (phone ? 92 : 110) < w;
-    L.add(text, room ? x1 + 9 : xs - figLen - 8, vy, { color: P.vel, align: room ? 'left' : 'right', pri: 8, size: 14, weight: 700, maxPush: 20 });
+    L.add(text, room ? x1 + 9 : x0 - 8, vy, { color: P.vel, align: room ? 'left' : 'right', pri: 8, size: 14, weight: 700, maxPush: 20 });
   }
   if (show.acceleration !== false && t < f.tMax - 1e-9) {
-    const mid = xs - figLen / 2, ay = yw - tall - 16;
+    const mid = xs - figLen / 2, ay = yw - tall - 34;
     if (Math.abs(acc) > 1e-9) {
       const len = Math.sign(acc) * 40;
       arrow(g, mid - len / 2, ay, mid + len / 2, ay, { color: P.acc, width: 2.6, head: 10, dash: [5, 4] });
@@ -221,8 +228,6 @@ export function render(canvas, cam, o) {
 
   // ── the card, on the screen, clear of the lights or the stations
   unview(g);
-  const top = Math.min(topA, topB) - 10;
-  const box = { x0: sc.cardX0, y0: sc.cardY0, x1: sc.cardX1, y1: Math.max(sc.cardY0 + 150, Math.min(horizon - 6, top, sc.cardY0 + h * 0.6)) };
   graph(g, f, t, ends, box, P, phone, life);
   return null;
 }

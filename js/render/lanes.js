@@ -63,7 +63,7 @@ export function screen(w, h, n, wide = 146, wideL = 196) {
     velocity arrow rides. */
 export const BODY = {
   car: { h: 0.46, bx: 0.62, by: 0.22, vy: 0.2 },
-  lorry: { h: 0.45, bx: 0.5, by: 0.25, vy: 0.2 },
+  lorry: { h: 0.5, bx: 0.5, by: 0.25, vy: 0.2 },
   cyclist: { h: 0.97, bx: 0.46, by: 0.43, vy: 0.32 },
   motorcycle: { h: 0.82, bx: 0.5, by: 0.4, vy: 0.3 },
   runner: { h: 0.97, bx: 0.2, by: 0.62, vy: 0.45 },
@@ -130,7 +130,7 @@ export function lampPost(g, x, Y, hh, dir = 1) {
     below: a footway and kerb behind it, tarmac with its centre line and edge
     lines, a kerb in front. Returns where wheels stand in the far lane and in
     the near one — inside each lane, not on its lines. */
-export function road(g, x0, x1, top, d, { seed = 11 } = {}) {
+export function road(g, x0, x1, top, d, { seed = 11, centre = 0.55 } = {}) {
   const E = env(), r = rng(seed);
   g.save();
   // the footway: paving slabs, and the kerb's lit face
@@ -139,7 +139,22 @@ export function road(g, x0, x1, top, d, { seed = 11 } = {}) {
   for (let x = x0 + r() * 20; x < x1; x += 22) { g.beginPath(); g.moveTo(x, top - 11); g.lineTo(x - 3, top - 3); g.stroke(); }
   g.fillStyle = E.night ? '#5a4f54' : '#ddd4cf'; g.fillRect(x0, top - 4, x1 - x0, 4);
   g.restore();
-  tarmac(g, x0, x1, top, { depth: d, verge: false, seed });
+  if (Math.abs(centre - 0.55) < 1e-9) tarmac(g, x0, x1, top, { depth: d, verge: false, seed });
+  else {
+    // the same tarmac, its centre line where this road wants it: a narrow far
+    // lane behind, so a vehicle in the near one is wholly inside it
+    g.save();
+    const gr = g.createLinearGradient(0, top, 0, top + d);
+    gr.addColorStop(0, E.night ? '#3a3236' : '#7d7477'); gr.addColorStop(1, E.night ? '#241e21' : '#5f575a');
+    g.fillStyle = gr; g.fillRect(x0, top, x1 - x0, d);
+    g.fillStyle = withAlpha(E.night ? '#ffffff' : '#000000', 0.07);
+    for (let i = 0; i < (x1 - x0) * d / 90; i++) g.fillRect(x0 + r() * (x1 - x0), top + r() * d, 1.2, 1.2);
+    g.strokeStyle = withAlpha(E.line, 0.8); g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(x0, top + 2.5); g.lineTo(x1, top + 2.5); g.stroke();
+    g.setLineDash([22, 18]); g.lineWidth = 2; g.beginPath(); g.moveTo(x0, top + d * centre); g.lineTo(x1, top + d * centre); g.stroke(); g.setLineDash([]);
+    g.fillStyle = E.night ? '#4a4044' : '#b8aeae'; g.fillRect(x0, top + d, x1 - x0, 4);
+    g.restore();
+  }
   // the near edge line, and the kerb's face in shadow under the kerb
   g.save();
   g.strokeStyle = withAlpha(E.line, 0.8); g.lineWidth = 1.6;
@@ -237,7 +252,7 @@ export function render(canvas, cam, o) {
   // the readouts, the start clear of them
   // the road deep enough that B, in the near lane, stands clear of A's feet
   const lane = Math.max(phone ? 30 : 36, tall * 1.08);
-  const d = rail ? 2 * (tall + 18) : Math.max(2 * lane, tallOf(A) + tallOf(B) + 12);
+  const d = rail ? 2 * (tall + 18) : Math.max(2 * lane, tallOf(A) * 0.75 + tallOf(B) + 22);
   const below = phone ? 66 : 54;
   const R = Math.round(h - below - d - 4);               // the road's far edge
   const horizon = R - (rail ? 24 : 30);
@@ -273,14 +288,17 @@ export function render(canvas, cam, o) {
     // each in its own lane: B's feet near the kerb, A's in the far lane,
     // above the centre line and above B's head
     yB = R + d - 6;
-    yA = Math.min(R + d * 0.55 - 4, yB - tallOf(B) - 2);
+    yA = Math.min(R + d * 0.55 - 4, yB - tallOf(B) - 16);
   }
 
   // the start: a stop line across both lanes, and the lights when it leaves them
   if (rail) post(g, L, startX, yB + 12, 'X', P.strong, P, { dashed: true, height: yB + 12 - (R - 2) });
   else {
     g.save(); g.fillStyle = withAlpha(env().line, 0.9); g.fillRect(startX - 2, R + 3, 4, d - 7); g.restore();
-    if (f.lights) trafficLights(g, startX - 18, R - 10, Math.min(tall, base * 0.46) + 6, P, { lit: (fired && tRaw > 0) || (A.u > 0 && B.u > 0 && A.t0 <= 1e-9 && B.t0 <= 1e-9) ? 'green' : 'red' });
+    // green whenever anyone is moving; red only while both stand at rest
+    // before they set off
+    const going = (fired && tRaw > 0) || Math.abs(A.vel(t)) > 1e-9 || Math.abs(B.vel(t)) > 1e-9;
+    if (f.lights) trafficLights(g, startX - 18, R - 10, Math.min(tall, base * 0.46) + 6, P, { lit: going ? 'green' : 'red' });
     else L.add('start', startX, R - 22, { color: P.ink, align: 'center', pri: 5, size: 13 });
   }
   // the line the question names: chequered across the road, or the post Y
