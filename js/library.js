@@ -438,4 +438,25 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: the acceleration or starting velocity from the two moments, the change, and the answers asked for.',
     } },
+  { id: 'xt-graph', group: 'library', kit: 'xtgraph',
+    name: 'Read the displacement–time graph',
+    sub: 'flat is at rest, a slope is a steady velocity — a corner time from the speed, then a formula after it',
+    note: 'A particle on a line whose displacement–time graph is straight pieces: at rest where it is flat, at a steady velocity where it slopes, going back where it slopes down. A corner time left blank is found from the speed; the velocity anywhere is the gradient; the distance travelled counts every piece, the displacement only where it ends. After the graph the motion may be a constant acceleration given as a formula in t.',
+    params: { x0: 5, speed: 4, pts: [{ x: 5 }, { t: 3, x: 0 }, { t: 5, x: 0 }, { t: 7, x: -8 }, { t: 10, x: 4 }], tail: { c0: -96, c1: 20, c2: -1, speed: 4 }, ask: { ts: [2, 8, 9] } },
+    place: 'A (t, x) graph above, the line with A and the particle below',
+    sources: [
+      { board: 'OCR', paper: '4728 M1', session: 'Jun 2014', q: '5' },
+    ],
+    tags: ['displacement-time graph', 'x-t graph', 'gradient', 'at rest', 'velocity', 'distance travelled', 'displacement', 'corner', 'quadratic', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['A particle on a line', 'it has no size, and moves only along the line through A.'],
+        ['Corners', 'its velocity changes in an instant at each corner; a real particle needs time to change speed.'],
+        ['A formula after it', 'after the last corner its displacement is the given quadratic in t, a constant acceleration.'],
+      ],
+      caveat: 'What the engine did compute is above: the corner left blank, each velocity, the distance travelled, and the time after the graph.',
+    } },
 ];

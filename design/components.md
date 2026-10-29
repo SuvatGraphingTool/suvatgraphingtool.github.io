@@ -364,6 +364,16 @@ that position and velocity. Asks: velocity, speed and position at a time; when
 it is moving in a compass direction (one linear relation, checked for the
 right way). Each stage is `planeMotion`. Used by: `two-moments`.
 
+### A displacement–time graph — `js/core/xtgraph.js`
+
+`solveXt({ x0, pts: [{ t, x }], speed, ask: { ts }, tail: { c0, c1, c2, speed } })`
+— straight pieces between corners: one corner time may be blank, found from
+the speed of the sloping piece next to it (and every sloping piece checked
+against the speed); the velocity in a piece is its gradient; distance is the
+sum of each piece's size, displacement where it ends. After the last corner,
+x = c₀ + c₁t + c₂t² (checked to join): v = c₁ + 2c₂t, and when its speed is
+given. Used by: `xt-graph`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -433,6 +443,14 @@ displacement hue, faint in full and strong so far; the second moment marked
 (and "the acceleration changes" there); each asked moment ringed; the puck
 (`puck` from collide.js) with its velocity and acceleration. Kit `snapshots`.
 Used by: `two-moments`.
+
+### A displacement–time graph, and the line — `js/render/xtgraph.js`
+
+Above, the (t, x) graph as the paper draws it (the blank corner marked T, the
+formula part curving, the time now a dashed upright, asked velocities and
+times ringed); below, the line at one scale with A, the particle and its
+velocity (dashed), "at rest" on the flat pieces. Kit `xtgraph`. Used by:
+`xt-graph`.
 
 
 ### A parachute jump — `js/render/jump.js`

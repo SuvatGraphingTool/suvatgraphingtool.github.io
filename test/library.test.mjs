@@ -994,6 +994,19 @@ group('Known from two moments (9MA0/03 J18 Q8, WME01 J22 Q6)', () => {
   const f = a.f; ok(Math.abs(f.pos(2).x - 7) < 1e-12 && Math.abs(f.vel(4.5).x - f.vel(4.5).y) < 1e-12, 'the motion passes the second moment and turns north-east');
 });
 
+group('Read the displacement–time graph (4728 J14 Q5)', () => {
+  const K = KITS.xtgraph;
+  const r = K.solve({ x0: 5, speed: 4, pts: [{ x: 5 }, { t: 3, x: 0 }, { t: 5, x: 0 }, { t: 7, x: -8 }, { t: 10, x: 4 }], tail: { c0: -96, c1: 20, c2: -1, speed: 4 }, ask: { ts: [2, 8, 9] } });
+  ok(r.ok && r.blankT === 1.75, 'T = 1.75 (MS)', r.reason);
+  ok(r.f.asked.map((a) => a.v).join() === '-4,4,4', 'velocities −4, 4, 4 at t = 2, 8, 9 (MS)');
+  ok(r.dist === 25 && r.tail.ts[0] === 12, '25 m travelled; speed 4 again at t = 12 (MS)');
+  ok(!K.solve({ x0: 5, speed: 3, pts: [{ x: 5 }, { t: 3, x: 0 }, { t: 5, x: 0 }, { t: 7, x: -8 }] }).ok, 'a piece at another speed than the one given is refused');
+  ok(!K.solve({ x0: 0, pts: [{ t: 2, x: 4 }], tail: { c0: 0, c1: 1, c2: 0 } }).ok, 'a formula that does not join the graph is refused');
+  ok(!K.solve({ x0: 0, pts: [{ t: 2, x: 4 }, { t: 1, x: 0 }] }).ok, 'corners out of time order are refused');
+  const corner = K.solve({ x0: 0, pts: [{ t: 2, x: 4 }, { t: 4, x: 0 }], ask: { ts: [2] } });
+  ok(corner.ok && corner.f.asked[0].v === null, 'at a corner the velocity changes: said, not guessed');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

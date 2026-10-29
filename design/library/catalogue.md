@@ -89,7 +89,7 @@ this library: *covered* names the one of the twelve that does it.
 | 53 | OCR A | H240/03 | Jun 2023 | 12 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | 39 m/s from 20 m up, sin θ = 5/13; max height; time to land (part (d) out of scope) | 10 | **covered** by `platform-angle` |
 | 54 | OCR | 4728 M1 (legacy) | Jun 2011 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202011%20QP%20-%20M1%20OCR.pdf) | Driver's v-t graph: car trip, then walks back to a shop, later jogs to the car; time in shop | – | **built**: `there-and-back` (2.5 and 7.5 m s⁻²; 225 m; 13 s in the shop) |
 | 55 | OCR | 4728 M1 | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | Thrown down at 3.5 from 5 m; rebounds and passes start 0.87 s later; rebound speed | 9.8 | **candidate**: a bounce mid-question (rebound speed found from a later time); trajectory has restitution but not a found rebound |
-| 56 | OCR | 4728 M1 | Jun 2014 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | x-t graph with speed 4 or rest; show T = 1.75; velocities; distance in 10 s | – | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
+| 56 | OCR | 4728 M1 | Jun 2014 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | x-t graph with speed 4 or rest; show T = 1.75; velocities; distance in 10 s | – | **built**: `xt-graph` (T = 1.75; −4, 4, 4; 25 m; t = 12 after it) |
 | 57 | OCR MEI | H640/01 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | Thrown horizontally at 14 m/s from a 5 m window over a 2 m fence; trajectory; range of d | 9.8 | **built**: `over-the-wall` (1.01 s; y = 5 − 0.025x²; clears for d up to 10.95 m) |
 | 58 | OCR MEI | H640/01 | Jun 2018 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | 5 to 11.4 m/s in 4 s, uniform, then steady at 17.8; displacement in 20 s | – | **candidate**: several stages along a line, one after another |
 | 59 | OCR MEI | H640/01 | Jun 2019 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202019%20QP.pdf) | Cannonball 100 m/s at 25°; greatest height; range | 9.8 | **covered** by `arc` |
@@ -671,3 +671,21 @@ change; the asked moments ringed; the puck with its velocity and acceleration.
 **What the student varies.** The start, a velocity (at any time), the
 acceleration or not; the second moment (a position or a velocity, and when);
 a new acceleration; a time to ask about; a compass direction.
+
+### `xt-graph` — Read the displacement–time graph
+
+**Papers.** OCR 4728 M1 Jun 2014 Q5 (a (t, x) graph of straight pieces, the
+speed 4 m s⁻¹ or at rest: from 5 m to 0 by t = 3, so T = 1.75; velocities −4, 4
+and 4 at t = 2, 8, 9; 25 m travelled in 10 s; after t = 10, x = 20t − t² − 96, so
+the speed is 4 again at t = 12).
+
+**Why it is built.** `there-and-back` reads a velocity–time graph; nothing
+reads a displacement–time graph, where a velocity is a gradient and a flat
+piece is standing still, nor joins one to a motion given as a formula.
+
+**The stage.** The (t, x) graph above as the paper draws it, the line below
+with A and the particle moving on it, one clock.
+
+**What the student varies.** The start and up to six corners, one time
+blank; the speed of the moving pieces; velocities at three times; the
+formula after the graph and a speed to find.
