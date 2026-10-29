@@ -793,7 +793,7 @@ export function render(canvas, cam, o) {
   let bs = 0;
   if (place === 'balloon') {
     bs = Math.max(26, 7.5 * k);
-    balloon(g, x0 + bs * 0.12, Y(H0 + f.uy * t), bs, P, { groundY: oy });
+    balloon(g, x0 + bs * 0.12, Y(f.carrier ? f.carrier(t) : H0), bs, P, { groundY: oy });
   } else thrower(g, feet, top, TH, P, { dir: 1, pose, aim: place === 'well' ? -30 : aim });
 
   // ── the height it starts at, as a dimension line beside the place

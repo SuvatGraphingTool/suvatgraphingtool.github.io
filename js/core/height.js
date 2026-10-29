@@ -119,6 +119,9 @@ export function solveHeight(k0 = {}) {
   const derived = [...found, ...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
   if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}`);
   f.place = place; f.level = level; f.vertical = straight;
+  // a balloon carries on at the speed it gave the stone (rising or falling at
+  // u, unaccelerated): where the basket is at t, for the stage to draw
+  if (Pl.carried) f.carrier = (t) => f.params.h + f.uy * t;
   return {
     ok: true, mode: 'height', axis: straight ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical: straight, topRows, foundH: !have(k0.h),
     // the height, worked from the time in the air: s = u_y t − ½gt², and h = −s
