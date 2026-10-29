@@ -1412,6 +1412,8 @@ group('Back past the start: OCR 4728 M1 Jun 2014 Q1', () => {
   { const d2 = solveBounce({ start: 'down', h: 5, U: 3.5, y: 1, T: 1.94, stop: 'y', g: 9.8 });
     ok(d2.ok && near(d2.stopAt.since, 1.94, 1e-9) && d2.stopAt.dir === 'down', 'a time on the way down stops the run at that time, not the first pass', d2.stopAt && d2.stopAt.since); }
   ok(!solveBounce({ start: 'down', h: 5, U: 3.5, T: 0.87, g: 9.8 }).ok, 'a time after the bounce with no height is refused');
+  { const r = solveBounce({ start: 'down', h: 5, U: 3.5, y: 5, T: 1.429, stop: 'y', g: 9.8 });
+    ok(r.ok && r.params.by === 'same' && near(r.stopAt.since, 1.429, 0.01), 'a time that needs a rebound a rounding faster than the impact: no speed lost, stopped at that time', r.reason || (r.stopAt && r.stopAt.since)); }
   ok(!solveBounce({ start: 'down', h: 5, U: 3.5, y: 5, T: 0.3, g: 9.8 }).ok, 'back at 5 m only 0.3 s after the bounce needs a faster rebound than the impact: refused');
 });
 

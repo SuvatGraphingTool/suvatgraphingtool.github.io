@@ -38,7 +38,7 @@ export const bounce = {
     { title: 'What to watch, and what to ask',
       fields: [
         { key: 'n', label: 'Impacts to watch', placeholder: '2', hint: `“Until it hits the ground for the second time” is 2. Up to ${MAX_IMPACTS}.` },
-        { key: 'y', label: 'A height to ask about (m)', placeholder: '—', hint: 'Every time it is there: B in the paper. Optional, but needed with the time after the bounce.' },
+        { key: 'y', label: 'A height to ask about (m)', placeholder: '—', hint: 'Every time it is there: B in some papers. Optional, but needed with the time after the bounce.' },
         { key: 'stop', type: 'choice', label: 'Stop the run',
           options: [{ v: 'y', label: 'there, after the bounce' }],
           hint: 'The first time it reaches that height after the first impact: for a sketch “until it first passes B”. Otherwise it stops at the last impact.' },
@@ -164,8 +164,8 @@ export const bounce = {
     if (stopAt) {
       return {
         eyebrow: `Stopped as it first reaches ${tr(y)} <span class="u">m</span> up after the bounce`,
-        title: `${tr(y)} m up again, ${sf(stopAt.since)} s after the bounce.`,
-        body: `<p>Each flight is SUVAT with the one acceleration ${M`g`}; the bounce is what you gave it, and takes
+        title: solved.params.fromT ? `It rebounds at ${sf(solved.params.w)} m s⁻¹, keeping ${sf(solved.params.e)} of its speed.` : `${tr(y)} m up again, ${sf(stopAt.since)} s after the bounce.`,
+        body: `<p>Each flight is SUVAT with the one acceleration ${M`g`}; ${solved.params.fromT ? 'the bounce was found from when it is back at that height, and takes' : 'the bounce is what you gave it, and takes'}
             no time. On the velocity–time graph, with ${conv} positive, the line stops at the impact and starts again on the
             other side of zero — a jump, not a slope.</p>${atB}${table}`,
         real: true,
@@ -174,7 +174,7 @@ export const bounce = {
     return {
       eyebrow: `Watched to the ${ordinal(last.k)} impact`,
       title: `It hits the ground the ${ordinal(last.k)} time ${sf(last.t)} s after it set off.`,
-      body: `<p>Each flight is SUVAT with the one acceleration ${M`g`}; the bounce is what you gave it, and takes
+      body: `<p>Each flight is SUVAT with the one acceleration ${M`g`}; ${solved.params.fromT ? 'the bounce was found from when it is back at that height, and takes' : 'the bounce is what you gave it, and takes'}
           no time. On the velocity–time graph, with ${conv} positive, every impact is a jump from one side of zero
           to the other, and every flight between is a straight line of gradient ${M`${conv === 'up' ? '-' : ''}g`}.</p>${atB}${table}`,
       real: true,

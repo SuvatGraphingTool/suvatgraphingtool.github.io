@@ -43,6 +43,7 @@ export function solveFlightTime(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   const g = k.g;
   if (!have(g)) return fail('Choose the value of g the paper uses.');
+  if (!(g > 0)) return fail('It comes back down because of gravity: give g as a size, such as 9.8.');
   if (!have(k.T)) return fail('Still needed: how long it is in the air.');
   if (!(k.T > 0)) return fail('The time in the air is a positive number of seconds.');
   if (!have(k.kx)) return fail(`Still needed: its horizontal velocity, as a multiple of ${M`d`} (type 5/3 for ${M`(5/3)d`}).`);
@@ -88,14 +89,14 @@ export function solveFlightTime(k = {}) {
   const theta = snap(Math.atan2(V0, U) * DEG), u = snap(Math.hypot(U, V0));
   const Hmax = snap(V0 * V0 / (2 * g));
   notes.push(`With ${M`d = ${d3(dd)} [m]`}: across it moves at ${M`${d3(U)} [m s^-1]`}, the wall is ${M`${d3(m * dd)} [m]`} from O, and it lands ${M`${d3(R * dd)} [m]`} from O.`);
-  notes.push(`It was projected at ${M`${d3(u)} [m s^-1]`}, ${M`${d3(theta)}°`} above the horizontal, and rises to ${M`${d3(Hmax)} [m]`}.`);
+  notes.push(`It was projected at ${M`${d3(u)} [m s^-1]`}, ${M`${num(theta, 1)}°`} above the horizontal, and rises to ${M`${d3(Hmax)} [m]`}.`);
   const derived = [`${M`h = ${d3(H)} [m]`}`, have(k.V) ? `${M`d = ${d3(dd)} [m]`}` : `${M`v = ${d3(Vw)} [m s^-1]`}`];
 
   // the twelve's own projectile, and the wall-in-a-letter stage reading it
   // in the letter d, with the wall's height in metres
   const f0 = flight({ u, theta, h: 0, g });
   const f = { ...f0, kind: 'clears', letter: 'd', heightMetres: true, a: dd, P: m, Q: H / dd, R, wall: { x: m * dd, H }, Hmax, tWall: tw };
-  return { ok: true, mode: 'flighttime', given: have(k.V) ? 'V' : 'd', T, kx, m, R, V0, tw, H, vyw, U, d: dd, Vw, u, theta, Hmax,
+  return { ok: true, mode: 'flighttime', given: have(k.V) ? 'V' : 'd', T, kx, m, R, V0, tw, H, vyw, U, d: dd, Vw, u, theta, Hmax, xLand: snap(R * dd),
     rangeRows, wallRows, fixRows, notes, derived, f };
 }
 

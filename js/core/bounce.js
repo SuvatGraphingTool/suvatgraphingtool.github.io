@@ -155,7 +155,7 @@ export function solveBounce(k = {}) {
     // at height y a time T after the bounce: y = wT − ½gT², so w = (y + ½gT²)/T
     if (!have(k.y)) return fail('A time after the bounce needs the height it is at then: give the height to ask about (the height it started from, if it passes its start).');
     if (!(k.T > EPS)) return fail('The time after the bounce is after it, so it must be more than 0.');
-    asked.push({ key: 'T', w: (k.y + 0.5 * g * k.T * k.T) / k.T, say: `is ${M`${d(k.y)} [m]`} up ${M`${d(k.T)} [s]`} after the bounce` });
+    asked.push({ key: 'T', w: (k.y + 0.5 * g * k.T * k.T) / k.T, say: `being ${M`${d(k.y)} [m]`} up ${M`${d(k.T)} [s]`} after the bounce` });
   }
   if (!asked.length) return fail('Still needed: how it bounces — the speed it rebounds with, the greatest height it rises to after the bounce, the fraction of its speed it keeps, or when it is at a height after it.');
   for (const q of asked.slice(1)) {
@@ -206,7 +206,7 @@ export function solveBounce(k = {}) {
   if (stopAtY) {
     // with the bounce found from a time at y, the run stops at THAT time,
     // which may be the second pass (on the way down), not the first
-    stopAt = by === 'T' ? allY.find((c) => c.after === 1 && Math.abs(c.since - k.T) < 1e-6)
+    stopAt = have(k.T) ? allY.filter((c) => c.after === 1).sort((p, q) => Math.abs(p.since - k.T) - Math.abs(q.since - k.T))[0]
       : allY.find((c) => c.after >= 1 && c.t > impacts[0].t + 1e-9);
     tMax = stopAt.t;
   }
@@ -266,7 +266,7 @@ export function solveBounce(k = {}) {
   const f = motion(m, { h, u, g, e, w, V, sg, impacts: shown, crossings, y, top0, tMax, stopAt });
   return {
     ok: true, mode: 'bounce', axis, sign: sg,
-    params: { g, h, u, U, V, w, e, H1, n, y, start, by, stopAtY, found, T: have(k.T) ? k.T : null },
+    params: { g, h, u, U, V, w, e, H1, n, y, start, by, stopAtY, found, T: have(k.T) ? k.T : null, fromT: have(k.T) },
     f, m, impacts: shown, crossings, top0, stopAt, moment, derived, notes, extras, convention, watched,
     say: moment.text,
   };
@@ -419,11 +419,13 @@ export function bounceWorking(solved) {
     for (const [k, cs] of byFlight) {
       const uk = k === 0 ? s * u : s * impacts[k - 1].vOut;
       const sk = k === 0 ? s * (y - h) : s * y;
+      // a rebound the engine found is substituted to four figures, so the row's roots follow from what it shows
+      const su = (x) => (P.fromT && k >= 1 ? (x < 0 ? `(${num(Number(x.toPrecision(4)), 3 - Math.floor(Math.log10(Math.abs(x))))})` : num(Number(x.toPrecision(4)), 3 - Math.floor(Math.log10(Math.abs(x))))) : sbs(x));
       // ½a t² + u t − s = 0, both roots, the ones in this flight kept
       const roots = quadRoots(0.5 * a, uk, -sk).filter((r) => r > -1e-9).map(snap);
       yr.push({
         f: M`s = ut + ½at^2`,
-        s: M`${sbs(sk)} = ${sbs(uk)}t + ½ * ${sbs(a)}t^2`,
+        s: M`${sbs(sk)} = ${su(uk)}t + ½ * ${sbs(a)}t^2`,
         r: roots.length > 1 ? M`t = ${sf(roots[0])} "or" ${sf(roots[1])} [s]` : M`t = ${sf(roots[0] ?? cs[0].since)} [s]`,
       });
     }
@@ -436,7 +438,7 @@ export function bounceWorking(solved) {
       note: yr.length
         ? `One row for each flight it is there in. Each ${M`t`} is timed from the start of that flight: from when it set off, or from the impact before, with ${M`u`} the speed it left that impact at. `
           + `A negative root is before that flight began, and is dropped. It is there: ${lines.join('; ')}.`
-          + (stopAt ? ` The run stops at the first time after the bounce, ${M`${sf(stopAt.since)} [s]`} after the impact — the time the paper asks for.` : '')
+          + (stopAt ? (P.fromT ? ` The run stops ${M`${sf(stopAt.since)} [s]`} after the impact: the time the paper gives, which found the rebound.` : ` The run stops at the first time after the bounce, ${M`${sf(stopAt.since)} [s]`} after the impact — the time the paper asks for.`) : '')
         : `It is never ${M`${d(y)} [m]`} up in this run.`,
     });
   }

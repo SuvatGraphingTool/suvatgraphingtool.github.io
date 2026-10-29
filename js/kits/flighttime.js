@@ -4,7 +4,7 @@
 // are the wall-in-a-letter's (js/kits/clears.js), reading the same shape of
 // motion in the letter d. See design/components.md.
 
-import { solveFlightTime, flightTimeWorking, kd } from '../core/flighttime.js';
+import { solveFlightTime, flightTimeWorking } from '../core/flighttime.js';
 import { clears } from './clears.js';
 import { M, num } from '../notation.js';
 
@@ -34,7 +34,9 @@ export const flighttime = {
   hides: clears.hides,
 
   read(vals) {
-    return { T: vals.T, kx: vals.kx, m: vals.m, V: vals.V, d: vals.d, g: vals.g };
+    // the example keeps 5/3 as it is written, so its box shows a fraction
+    const frac = (v) => { const m = typeof v === 'string' && v.match(/^\s*(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*$/); return m ? Number(m[1]) / Number(m[2]) : v; };
+    return { T: vals.T, kx: frac(vals.kx), m: frac(vals.m), V: vals.V, d: vals.d, g: vals.g };
   },
   solve: solveFlightTime,
   working: (solved) => flightTimeWorking(solved),
@@ -46,8 +48,8 @@ export const flighttime = {
   ending(s) {
     return {
       eyebrow: 'Over the wall, then down',
-      title: `The wall is ${tr(s.H)} m high whatever d is; here d = ${tr(s.d)} m.`,
-      body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}<p>It lands ${M`${kd(s.R)}`} from O, ${M`${tr(s.R * s.d)} [m]`}.</p>`,
+      title: s.given === 'V' ? `d = ${tr(s.d)} m.` : `Over the wall at ${tr(s.Vw)} m s⁻¹.`,
+      body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}`,
       real: true,
     };
   },
