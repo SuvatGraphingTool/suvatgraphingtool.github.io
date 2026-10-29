@@ -270,7 +270,7 @@ export function render(canvas, cam, o) {
   let F = null;
   for (let it = 0, k = 20; it < 4; it++) {
     const { TH, back } = sizes(k);
-    const pl = back + TH * 0.2 + (phone ? 22 : 64), pr = phone ? 34 : 96, pt = phone ? 22 : 34;
+    const pl = back + TH * 0.2 + (phone ? 22 : 64), pr = phone ? 52 : 96, pt = phone ? 22 : 34;
     const box = { xLo: -pl / k, xHi: xEnd + pr / k, yLo: 0, yHi: f.apex.y + pt / k };
     const inHud = (x, y) => x < HUD + 8 && y < HUD_H + 8;
     F = fitClear(box, w, h, phone, phone ? 0.92 : 0.3, (fs) => !path.some((q) => inHud(fs.X(q.x) + 8, fs.Y(q.y) - 8))
@@ -303,12 +303,13 @@ export function render(canvas, cam, o) {
 
   // ── the thrower: the hand lets go where the engine starts the ball
   // the hand is at the engine's launch point; the engine starts the dog
-  // beside the thrower, at x = 0 too, so the dog sits there a step nearer
-  // the viewer — a few px lower and drawn in front — and the two read side
-  // by side; it comes onto the line of the run as it sets off
+  // beside the thrower, at x = 0 too, so the dog lies there in a lane nearer
+  // the viewer — lower by its own height, so its back is below his feet and
+  // the two are separate figures — and comes up onto the line of the run in
+  // the first moment after it sets off
   const hand = throwerHand(TH, aim);
   const feet = X(0) - hand.x;
-  const NEAR = clamp(TH * 0.14, 6, 12), lane = NEAR * (1 - clamp((t - f.dog.t0) / 0.3, 0, 1));
+  const NEAR = dogL * 0.4 + 6, lane = NEAR * (1 - clamp((t - f.dog.t0) / 0.3, 0, 1));
   // the arm is through, at the release: the ball starts in the hand
   const pose = 1;
 
@@ -346,14 +347,16 @@ export function render(canvas, cam, o) {
   const sitting = t < f.dog.t0 - 1e-9 && dx < 1e-9;
   const drawDog = () => (sitting ? sittingDog(g, X(dx), oy + lane, dogL)
     : retriever(g, X(dx), oy + lane, dogL, { phase: gait, still: dv < 1e-9, lift, pitch: lift > 0 ? 0.06 * e : 0, head, wag: t >= C.t - 1e-9 && caught ? 1 : 0 }));
-  L.reserve({ x: X(dx) - dogL, y: oy - mouthUp - lift - dogL * 0.12, w: dogL * 1.05, h: mouthUp + lift + dogL * 0.12 });
+  if (sitting) L.reserve({ x: X(dx) - dogL, y: oy + lane - dogL * 0.42, w: dogL * 1.05, h: dogL * 0.46 });
+  else L.reserve({ x: X(dx) - dogL, y: oy + lane - mouthUp - lift - dogL * 0.12, w: dogL * 1.05, h: mouthUp + lift + dogL * 0.12 });
   if (show.velocity !== false && dv > 1e-6) {
     const vl = clamp(w * 0.06, 34, 80) / Math.max(f.dog.vel(f.tMax), 1e-6), ay = oy - mouthUp - lift - 14;
     arrow(g, X(dx) + 4, ay, X(dx) + 4 + dv * vl, ay, { color: P.velVec, width: 2.4, head: 9, dash: [5, 4] });
   }
   if (t < f.dog.t0 - 1e-9) {
     if (phone) caps.push(['the dog sets off at ' + T`t = ${given(f.dog.t0)} [s]`, P.ink]);
-    else L.add('sets off at ' + T`t = ${given(f.dog.t0)} [s]`, X(0) + dogL * 0.2, oy - mouthUp - 26, { color: P.ink, align: 'left', pri: 5, size: 13 });
+    // by the dog, under it, so it is read as the dog's time and not the ball's
+    else L.add('the dog sets off at ' + T`t = ${given(f.dog.t0)} [s]`, X(0) - dogL * 0.45, oy + lane + 16, { color: P.ink, align: 'center', pri: 6, size: 13, push: 'down' });
   }
 
   // the thrower behind; the dog, nearer the viewer, in front
@@ -363,7 +366,7 @@ export function render(canvas, cam, o) {
   // ── the catch, once it happens: a pulse, ringed, its height and its distance
   if (done) {
     const cx = X(C.x), cy = Y(C.y);
-    if (caught) { const { age, life } = ageOf(t, C.t, f.tMax, Math.max(0.3, f.tMax / 6)); pulse(g, cx, cy, age, life, P.mark, { radius: 46 }); }
+    if (caught) { const { age, life } = ageOf(t, C.t, f.tMax, Math.max(0.3, f.tMax / 6)); pulse(g, cx, cy, age, life, P.mark, { radius: phone ? 30 : 46 }); }
     dot(g, cx, cy, br + 9, { stroke: P.mark, width: 2.2 });
     const said = T`${caught ? '"caught"' : '"at the catch height"'}, t = ${sig3(C.t)} [s]`;
     if (phone) caps.unshift([said, P.mark]);
