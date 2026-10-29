@@ -439,6 +439,14 @@ each one's height then; they collide when the heights agree within a
 millimetre and both are in the air, else pass (the gap said) or never meet
 (one landed first, or A past before B is thrown). Used by: `thrown-towards`.
 
+### Under the ceiling — `js/core/ceiling.js`
+
+`solveCeiling({ g, h, u, top, C })` — straight up from h above the floor:
+the speed given or found from the greatest height (v² = u² + 2as at the top);
+under a ceiling C, whether it reaches it — if so, the speed there and the first
+time (`quadRoots`), the run ending there; if not, the gap below; else the time
+back to the floor. The motion is `flight` at 90°. Used by: `under-the-ceiling`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -780,3 +788,10 @@ the other, each path faint in full and strong so far (A in the quantity's hue,
 B in stone), each ball's velocity; where they are level across, ringed with the
 time and height when they collide, or the gap between them when they pass.
 Kit `towards`. Used by: `thrown-towards`.
+
+### A sports hall, side on — `js/render/ceiling.js`
+
+The floor, `hallCeiling(g, x0, x1, Y, P)` (exported — a slab with beams), the
+kicker (`runner`); the ball up one line and down beside it, its velocity solid;
+the greatest height marked; the moment it meets the ceiling ringed with the
+time and speed. Kit `ceiling`. Used by: `under-the-ceiling`.

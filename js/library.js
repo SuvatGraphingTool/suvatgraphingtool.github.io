@@ -618,4 +618,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: A’s range when AB is it, the moment they are level across, and each one’s height then.',
     } },
+  { id: 'under-the-ceiling', group: 'library', kit: 'ceiling',
+    name: 'Under the ceiling',
+    sub: 'a ball kicked straight up in a sports hall — does it reach the ceiling?',
+    note: 'A ball kicked or thrown straight up from just above the floor, indoors. Its greatest height comes from v² = u² + 2as at the top, or its speed from the greatest height it reached outside. Under a ceiling: if it gets that high, when and how fast it meets the ceiling; if not, how far below it turns.',
+    params: { g: 9.8, h: 0.9, u: 14, C: 11.5 },
+    place: 'Side on: a sports hall, its floor and ceiling, the kicker',
+    sources: [
+      { board: 'WJEC', paper: '2300U20-1 Unit 2', session: 'Jun 2019', q: '8' },
+    ],
+    tags: ['vertically upwards', 'ceiling', 'sports hall', 'indoors', 'greatest height', 'kicks', 'football', 'does it hit', 'lighter ball',
+           'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['No air resistance', 'gravity alone acts; so a lighter ball, kicked at the same speed, goes exactly as high.'],
+        ['Straight up', 'it rises and falls on one vertical line, missing anything on the ceiling but the ceiling itself.'],
+        ['A particle', 'the ball has no size: it reaches the ceiling when its centre does.'],
+      ],
+      caveat: 'What the engine did compute is above: the speed or greatest height, whether it reaches the ceiling, and when and how fast if it does.',
+    } },
 ];

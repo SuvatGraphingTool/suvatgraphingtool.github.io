@@ -122,6 +122,7 @@ this library: *covered* names the one of the twelve that does it.
 | 86 | WJEC | 1300U40-1 Unit 4 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202018%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | P from A, AB its range; Q from B a second later, same speed and angle; height where they collide | 9.8 | **built**: `thrown-towards` (53.0 m; 6.43 m at t = 1.75 s) |
 | 87 | WJEC | 1300U40-1 Unit 4 | Jun 2023 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202023%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Kicked at 23 m/s, 18° at a wall 8 m away with a window 1.1–2.2 m up; does it strike it, does it break at 21 m/s? | 9.8 | **built**: `over-the-wall`, a wall it hits with a window (1.94 m up, 22.2 m s⁻¹: strikes it and breaks it) |
 | 88 | WJEC | 2300U20-1 Unit 2 (AS) | Jun 2018 | 11 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-2/June%202018%20QP%20-%20Unit%202%20WJEC%20Maths%20AS-level.pdf) | Steady 15 m/s for 2 min, rest at B in 12 s; reverses 2 m/s² for 8 s then slows at 1.6 to rest at C | – | **built**: `stage-by-stage` (AB = 1890 m; B to C in 18 s) |
+| 89 | WJEC | 2300U20-1 Unit 2 (AS) | Jun 2019 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-2/June%202019%20QP%20-%20Unit%202%20WJEC%20Maths%20AS-level.pdf) | Kicked up from 0.9 m to 10.9 m: u = 14; time to the ground; in an 11.5 m sports hall, does a lighter ball hit the ceiling? | 9.8 | **built**: `under-the-ceiling` (u = 14; 2.9 s; turns 0.6 m below the ceiling) |
 
 ## Built, and why it is built the way it is
 
@@ -825,3 +826,19 @@ collision ringed (or the gap when they pass).
 
 **What the student varies.** Each one's speed, angle and height; when B is
 thrown; AB, or AB as A's range.
+
+### `under-the-ceiling` — Under the ceiling
+
+**Papers.** WJEC AS Unit 2 Jun 2019 Q8 (kicked straight up from 0.9 m, its
+greatest height 10.9 m: u = 14 m s⁻¹, 2.9 s to the ground; in a sports hall with
+an 11.5 m ceiling, a lighter ball at the same speed rises the same 10.9 m and
+does not reach it).
+
+**Why it is built.** The twelve throw up outdoors; nothing has a ceiling to
+reach, or asks when and how fast it is met.
+
+**The stage.** A sports hall side on: the floor, the ceiling with its beams,
+the kicker, the ball up and down, the ceiling moment ringed.
+
+**What the student varies.** The height it leaves from; its speed or its
+greatest height; the ceiling's height.

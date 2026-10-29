@@ -25,5 +25,6 @@ import { posts } from './posts.js';
 import { vtgraph } from './vtgraph.js';
 import { marks } from './marks.js';
 import { towards } from './towards.js';
+import { ceiling } from './ceiling.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling };

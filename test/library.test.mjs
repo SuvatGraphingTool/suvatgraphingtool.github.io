@@ -1157,6 +1157,17 @@ group('A window in the wall (WJEC Unit 4 J23 Q8)', () => {
   ok(!K.solve({ g: 9.8, u: 23, theta: 18, d: 8, kind: 'wall', winLo: 1.1, winHi: 2.2 }).ok, 'a window in a wall it clears is refused');
 });
 
+group('Under the ceiling (WJEC AS Unit 2 J19 Q8)', () => {
+  const K = KITS.ceiling;
+  const r = K.solve(K.read({ g: 9.8, h: 0.9, top: 10.9 }));
+  ok(r.ok && r.u === 14 && /2\.92/.test(r.notes.join(' ').replace(/<[^>]+>/g, '')), 'u = 14; 2.9 s to the ground (MS)', r.reason);
+  const hall = K.solve({ g: 9.8, h: 0.9, u: 14, C: 11.5 });
+  ok(hall.ok && hall.hit === null && /0\.6/.test(K.ending(hall).title), 'under 11.5 m it turns 0.6 m below the ceiling (MS)');
+  const hit = K.solve({ g: 9.8, h: 0.9, u: 16, C: 11.5 });
+  ok(hit.ok && hit.hit && Math.abs(hit.hit.v - Math.sqrt(256 - 2 * 9.8 * 10.6)) < 1e-6 && /would rise/.test(hit.notes.join(' ')), 'faster: it reaches the ceiling, and its outdoor height is said as would-be');
+  ok(!K.solve({ g: 9.8, u: 14, top: 10 }).ok, 'speed and greatest height together are refused');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
