@@ -10,7 +10,7 @@
 // the harness under a ram-air canopy from the moment it opens. Where each
 // stage begins is a marker line: its height on the ruler, its time beside
 // the column. The velocity is a vertical arrow, solid (rule 2), and the fall
-// is drawn in the path colour.
+// so far is a dimension beside the jumper, in the displacement hue.
 //
 // The jumper and the canopy are drawn at a readable size, not to the
 // drop's scale (at 550 m on one canvas a person is under a pixel) — the
@@ -22,7 +22,7 @@
 //
 // Backdrop pieces `aircraft` and `fields` are exported here.
 
-import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep, cssVar, withAlpha } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep, cssVar } from './util.js';
 import { skyscape, env, rng, softShadow } from './scenery.js';
 import { dust, ageOf } from './effects.js';
 import { T, num } from '../notation.js';
@@ -494,7 +494,9 @@ export function render(canvas, cam, o) {
   if (pu < 1.8) {
     const want = (AL * 0.55 + 70 * sz) * ease(Math.min(1, pu));
     const room = rx - 16 - cx - 0.68 * AL * ps;            // the nose and the propeller stop short of the ruler
-    aircraft(g, cx + Math.max(0, Math.min(want, room)), Y(D) - 34 * sz * ease(pu / 1.8), AL * ps, P);
+    const px = cx + Math.max(0, Math.min(want, room)), py = Y(D) - 34 * sz * ease(pu / 1.8), pl = AL * ps;
+    aircraft(g, px, py, pl, P);
+    L.reserve({ x: px - pl * 0.46, y: py - pl * 0.34, w: pl * 1.16, h: pl * 0.42 });   // labels keep off the plane
   }
 
   // the height ruler down the right: a white staff with ticks
@@ -515,43 +517,39 @@ export function render(canvas, cam, o) {
     if (rulerTags.some((r) => Math.abs(r.ly - Y(hh)) < 25)) continue;
     L.add(T`${s3(hh)} [m]`, rx + 10, Y(hh), { color: P.ink, align: 'left', pri: 1, size: 13, maxPush: 0 });
   }
-  const x0m = cx - (phone ? 46 : 60), tags = marks.map((m) => ({ y: Y(m.hh), m }));
+  const x0m = cx - (phone ? 42 : 60), tags = marks.map((m) => ({ y: Y(m.hh), m }));
   spread(tags, 25, 12, h - 12);
   for (const { y, ly, m } of tags) {
     stroke(g, [{ x: x0m, y }, { x: rx, y }], { color: P.surface, width: 3.4 });
     stroke(g, [{ x: x0m, y }, { x: rx, y }], { color: P.mark, width: 1.6 });
     const tag = phone ? T`t = ${s3(m.t)} [s]` : T`${m.name}, t = ${s3(m.t)} [s]`;
-    // keep other labels off the line; on a phone its time sits on its far end
+    // its time sits on the line's far end, by the ruler; other labels keep off the rest of it
     g.save(); g.font = `700 13px ${cssVar('--font', 'system-ui, sans-serif')}`; const tw = g.measureText(tag).width; g.restore();
-    L.reserve({ x: x0m, y: y - 3, w: (phone ? rx - 16 - tw - 8 : rx) - x0m, h: 6 });
-    if (phone) {
-      if (Math.abs(ly - y) > 1) stroke(g, [{ x: rx - 6, y }, { x: rx - 11, y: ly }], { color: P.mark, width: 1.4 });
-      L.add(tag, rx - 16, ly, { color: P.mark, align: 'right', pri: 8, size: 13, weight: 700, maxPush: 0 });
-    } else {
-      if (Math.abs(ly - y) > 1) stroke(g, [{ x: x0m, y }, { x: x0m - 5, y: ly }], { color: P.mark, width: 1.4 });
-      L.add(tag, x0m - 7, ly, { color: P.mark, align: 'right', pri: 8, size: 13, weight: 700, maxPush: 0 });
-    }
+    L.reserve({ x: x0m, y: y - 3, w: rx - 16 - tw - 8 - x0m, h: 6 });
+    if (Math.abs(ly - y) > 1) stroke(g, [{ x: rx - 6, y }, { x: rx - 11, y: ly }], { color: P.mark, width: 1.4 });
+    L.add(tag, rx - 16, ly, { color: P.mark, align: 'right', pri: 8, size: 13, weight: 700, maxPush: 0 });
   }
   for (const r of rulerTags) {
     if (Math.abs(r.ly - r.y) > 1) stroke(g, [{ x: rx + 5, y: r.y }, { x: rx + 10, y: r.ly }], { color: r.color, width: 1.4 });
     L.add(r.text, rx + 12, r.ly, { color: r.color, align: 'left', pri: r.pri, size: 13, weight: 700, maxPush: 0 });
   }
 
-  // the fall so far, from the door: a displacement, so in its hue (rule 2),
-  // stopping short of the jumper (or the canopy over them) and fading in
+  // the fall so far: a dimension beside the jumper, from the door's height
+  // down to where it is now, with end ticks and its length. A displacement,
+  // so in its hue (rule 2); never on the jumper's own vertical.
   const hNow = D - fallen(t), yNow = Y(hNow);
-  const fallLine = (yEnd) => {
-    const y0 = Y(D), y1 = Math.min(yEnd, yNow);
-    if (y1 - y0 < 4) return;
-    const fadeFrom = Math.max(y0, y1 - 34);
-    stroke(g, [{ x: cx, y: y0 }, { x: cx, y: fadeFrom }], { color: P.surface, width: 5 });
-    const gr = g.createLinearGradient(0, fadeFrom, 0, y1);
-    gr.addColorStop(0, P.disp); gr.addColorStop(1, withAlpha(P.disp, 0));
-    g.save(); g.lineCap = 'butt';
-    g.strokeStyle = P.disp; g.lineWidth = 2.6; g.beginPath(); g.moveTo(cx, y0); g.lineTo(cx, fadeFrom); g.stroke();
-    g.strokeStyle = gr; g.beginPath(); g.moveTo(cx, fadeFrom); g.lineTo(cx, y1); g.stroke();
-    g.restore();
-  };
+  const bx = cx - (phone ? 50 : 70);
+  if (yNow - Y(D) > 6) {
+    const dim = [{ x: bx, y: Y(D) }, { x: bx, y: yNow }];
+    stroke(g, dim, { color: P.surface, width: 4.5 });
+    stroke(g, dim, { color: P.disp, width: 1.8 });
+    for (const yy of [Y(D), yNow]) {
+      stroke(g, [{ x: bx - 6, y: yy }, { x: bx + 6, y: yy }], { color: P.surface, width: 4.5 });
+      stroke(g, [{ x: bx - 6, y: yy }, { x: bx + 6, y: yy }], { color: P.disp, width: 1.8 });
+    }
+    L.reserve({ x: bx - 7, y: Y(D) - 2, w: 14, h: yNow - Y(D) + 4 });
+    if (yNow - Y(D) > 26) L.add(T`s = ${s3(fallen(t))} [m]`, bx - 14, (Y(D) + yNow) / 2, { color: P.disp, align: 'right', pri: 7, size: 13, weight: 700, push: 'down' });
+  }
 
   // its shadow on the field, darkening as it comes down
   const near = clamp(1 - (ground - yNow) / 140, 0, 1);
@@ -567,7 +565,6 @@ export function render(canvas, cam, o) {
   let figBox;
   if (!open) {
     const S = 62 * sz;
-    fallLine(yNow - S * 0.24);
     skydiver(g, cx, yNow, S, K);
     figBox = { x: cx - S * 0.52, y: yNow - S * 0.28, w: S * 1.0, h: S * 0.42 };
   } else {
@@ -581,9 +578,6 @@ export function render(canvas, cam, o) {
     const fly = { x: cx, y: riserY - lines - th * 0.5 };
     const down = { x: cx + Wc * 0.62, y: ground - H * 0.09 - 1 };
     const c = { x: lerp(fly.x, down.x, fold), y: lerp(fly.y, down.y, fold) };
-    // the line ends above the canopy, or above the helmet once it has fallen aside
-    const thNow = lerp(th, H * 0.18, fold);
-    fallLine(fold < 0.4 ? c.y - thNow / 2 - 4 : yNow - H * 1.05);
     // risers up from the harness
     g.strokeStyle = K.strap; g.lineWidth = 2;
     g.beginPath(); g.moveTo(cx - H * 0.08, yNow - H * 0.76); g.lineTo(rl.x, rl.y); g.moveTo(cx + H * 0.08, yNow - H * 0.76); g.lineTo(rr.x, rr.y); g.stroke();
@@ -610,7 +604,7 @@ export function render(canvas, cam, o) {
   // the acceleration, beside it
   const a = f.accel(t);
   if (show.acceleration && Math.abs(a) > 1e-9 && !landed) {
-    const ax = cx - (open ? 52 : 40) * sz, ay = open ? yNow - 23 * sz : yNow;
+    const ax = cx - (phone ? 36 : open ? 52 : 40), ay = open ? yNow - 23 * sz : yNow;
     arrow(g, ax, ay, ax, ay + Math.sign(a) * 40 * sz, { color: P.acc, width: 2.4, head: 10 });
     L.reserve({ x: ax - 7, y: Math.min(ay, ay + Math.sign(a) * 40 * sz), w: 14, h: 40 * sz });
   }
