@@ -1058,6 +1058,12 @@ group('Two trains, one journey (WME01 Jan14 Q8)', () => {
   ok(!K.solve({ A: { stages: [{ kind: 'up', t: 30, a: 1 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 20, a: 1 }, { kind: 'down', t: 20, v: 0 }] } }).ok, 'B fully given but a different distance: refused');
   ok(!K.solve({ A: { stages: [{ kind: 'up', t: 30, a: 1 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] } }).ok, 'arriving at different times: refused');
   ok(!K.solve({ A: { stages: [{ kind: 'up', t: 30, a: 2 / 3 }, { kind: 'hold', t: 120 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] }, ask: { t: 400 } }).ok, 'a time after they arrive is refused');
+  const PA = { stages: [{ kind: 'up', t: 30, a: 2 / 3 }, { kind: 'hold', t: 120 }, { kind: 'down', t: 30, v: 0 }] };
+  const sp = K.solve({ A: PA, B: { stages: [{ kind: 'up', t: 50 }, { kind: 'down', t: 130, v: 0 }] } });
+  ok(sp.spans.length === 1 && sp.spans[0][1] === 30 && sp.eq.includes(102), 'B also at 2/3 for the first 30 s: equal throughout that stretch, then once more at 102 s');
+  const same = K.solve({ A: PA, B: PA, ask: { t: 96 } });
+  ok(same.ok && same.spans.length && /whole time/.test(K.ending(same).title), 'identical trains: the same speed the whole time, not never');
+  ok(!K.solve({ A: PA, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'hold', t: 90 }] } }).ok, 'a train that does not come to rest at the station is refused');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

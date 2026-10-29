@@ -16,7 +16,7 @@ const stageRow = (n, i) => ({
     { key: `${n}${i}.kind`, type: 'choice', label: 'It', default: n === 'A' ? ['up', 'hold', 'down'][i - 1] : ['up', 'down', ''][i - 1], hint: '', options: KIND },
     { key: `${n}${i}.t`, label: 'For (s)', aria: `Train ${n}, stage ${i}: how long (s)`, placeholder: '—', hint: '' },
     { key: `${n}${i}.a`, label: 'Rate (m s⁻²)', aria: `Train ${n}, stage ${i}: the rate it speeds up or slows down (m s⁻²)`, placeholder: '—', hint: 'A size; blank to find it.' },
-    { key: `${n}${i}.v`, label: 'Ends at (m s⁻¹)', aria: `Train ${n}, stage ${i}: the speed it ends at (m s⁻¹)`, placeholder: '—', hint: i === 1 ? 'Blank to find it.' : '' },
+    { key: `${n}${i}.v`, label: 'Ends at (m s⁻¹)', aria: `Train ${n}, stage ${i}: the speed it ends at (m s⁻¹)`, placeholder: '—', hint: i === 1 ? 'Blank to find it.' : 'The last stage, blank: it comes to rest.' },
   ],
 });
 
@@ -78,7 +78,9 @@ export const twotrains = {
   },
 
   ending(s) {
-    const title = s.eq.length ? `Same speed at t = ${s.eq.map((x) => tr(x)).join(' s and ')} s${s.gap != null ? `; ${tr(s.gap)} m apart at ${tr(s.f.ask)} s` : ''}.` : `${tr(s.f.D)} m in ${tr(s.T)} s, never at the same speed between.`;
+    const gapSay = s.gap != null ? `; ${tr(s.gap)} m apart at ${tr(s.f.ask)} s` : '';
+    const title = s.spans.length ? `Same speed the whole time from t = ${tr(s.spans[0][0])} s to ${tr(s.spans[0][1])} s${gapSay}.`
+      : s.eq.length ? `Same speed at t = ${s.eq.map((x) => tr(x)).join(' s and ')} s${gapSay}.` : `${tr(s.f.D)} m in ${tr(s.T)} s, never at the same speed between${gapSay}.`;
     return { eyebrow: 'Two trains, one journey', title, body: s.notes.map((x) => `<p>${x}</p>`).join(''), real: true };
   },
 };

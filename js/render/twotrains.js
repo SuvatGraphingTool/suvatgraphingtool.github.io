@@ -4,7 +4,7 @@
 // board), and each train (`train` from figures.js) where it is now — A on the
 // near track in the quantity's hue, B on the far one in stone. The gap
 // between them is a dimension line with its length; at a time asked it is
-// ringed; each moment they move at the same speed is marked as it passes.
+// written out; each moment they move at the same speed is marked as it passes.
 // Velocities along the track are dashed (rule 2).
 //
 // Everything drawn is read from js/core/twotrains.js (rule 4).
@@ -61,7 +61,7 @@ export function render(canvas, cam, o) {
   if (gx1 - gx0 > 2) {
     stroke(g, [{ x: gx0, y: gy }, { x: gx1, y: gy }], { color: P.mark, width: 1.6 });
     for (const xx of [gx0, gx1]) stroke(g, [{ x: xx, y: gy - 5 }, { x: xx, y: gy + 5 }], { color: P.mark, width: 1.6 });
-    L.add(T`${tr(Math.abs(xa - xb), 3)} [m] "apart"`, (gx0 + gx1) / 2, gy + 16, { color: P.mark, align: 'center', pri: 8, size: 13, weight: 700 });
+    L.add(T`${tr(f.gapAt(t), 3)} [m] "apart"`, (gx0 + gx1) / 2, gy + 16, { color: P.mark, align: 'center', pri: 8, size: 13, weight: 700 });
   }
   const passed = f.eq.filter((te) => t >= te - 1e-9);
   if (passed.length) L.add(`same speed at ${passed.map((te) => T`t = ${tr(te)} [s]`).join(', ')}`, w / 2, yB - 120, { color: P.mark, align: 'center', pri: 6, size: 13, weight: 700 });

@@ -503,7 +503,7 @@ Side on at one scale: two `rails`, `station(g, L, x, top, bottom, name, P)`
 (exported) at each end spanning both — a platform under a canopy and its name;
 each `train` with its front at its position, A near and B far, velocities
 dashed; the gap between their fronts as a dimension line; the same-speed
-moments and the asked gap written as they pass. Kit `twotrains`. Used by:
+moments and the asked gap written as they pass (no ring: a dimension line and its length). Kit `twotrains`. Used by:
 `two-trains`.
 
 
