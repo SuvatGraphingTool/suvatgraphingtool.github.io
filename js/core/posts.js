@@ -13,13 +13,15 @@
 //
 // THE ENGINE CALCULATES (CLAUDE.md rule 4).
 
-import { snap, rat } from './numeric.js';
+import { snap } from './numeric.js';
 import { M, num } from '../notation.js';
 
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const NAMES = ['P', 'Q', 'R', 'S'];
 const sgn = (x) => (x < 0 ? `- ${d(-x)}` : `+ ${d(x)}`);
+// a coefficient of a: 2a, a, −a; more figures where a rounded one would not multiply out
+const ca = (x, p) => (Math.abs(Math.abs(x) - 1) < 1e-12 ? (x < 0 ? '- a' : '+ a') : `${sgn(snap(x)).replace(/[\d.]+$/, (m) => d(Math.abs(snap(x)), p))}a`);
 
 /**
  * @param k { gaps: [{ s, t }], u, a, look }
@@ -28,7 +30,10 @@ const sgn = (x) => (x < 0 ? `- ${d(-x)}` : `+ ${d(x)}`);
  */
 export function solvePosts(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
-  const gaps = (k.gaps || []).filter((g) => g && (have(g.s) || have(g.t)));
+  const all = (k.gaps || []).map((g) => g && (have(g.s) || have(g.t)));
+  const last = all.lastIndexOf(true);
+  if (all.slice(0, last + 1).some((x) => !x)) return fail('Fill the stretches in order, P to Q first: a stretch left blank before a later one leaves the posts after it unplaced.');
+  const gaps = (k.gaps || []).slice(0, last + 1);
   if (gaps.some((g) => !have(g.s) || !have(g.t))) return fail('Give each stretch both its distance and its time.');
   if (gaps.some((g) => !(g.t > 0))) return fail('Each stretch takes a positive time.');
   const n = gaps.length, gu = have(k.u), ga = have(k.a);
@@ -55,10 +60,13 @@ export function solvePosts(k = {}) {
     rows.push(eqRow(c1, 0), eqRow(c2, 1));
     // eliminate u: the first equation for u, into the second
     const p = snap(c1.S / A1), q = snap(B1 / A1);
-    rows.push({ f: M`"from the first"`, s: M`u = ${d(p)} ${sgn(-q)}a`, r: '' });
-    rows.push({ f: M`"into the second"`, s: M`${d(c2.S)} = ${d(A2)}(${d(p)} ${sgn(-q)}a) + ${d(snap(B2))}a`, r: M`a = ${d(a)} [m s^-2]` });
-    rows.push({ f: M`u = ${d(p)} ${sgn(-q)}a`, s: M`${d(p)} ${sgn(-q)} * ${a < 0 ? `(${d(a)})` : d(a)}`, r: M`u = ${d(u)} [m s^-1]` });
+    const P6 = (x) => d(snap(x), 6);
+    rows.push({ f: M`"from the first"`, s: M`u = ${P6(p)} ${ca(-q, 6)}`, r: '' });
+    rows.push({ f: M`"into the second"`, s: M`${d(c2.S)} = ${d(A2)}(${P6(p)} ${ca(-q, 6)}) + ${d(snap(B2))}a`, r: M`a = ${P6(a)} [m s^-2]` });
+    rows.push({ f: M`u = ${P6(p)} ${ca(-q, 6)}`, s: M`${P6(p)} ${sgn(-q).replace(/[\d.]+$/, (m) => P6(Math.abs(q)))} * ${a < 0 ? `(${P6(a)})` : P6(a)}`, r: M`u = ${P6(u)} [m s^-1]` });
   }
+  if (u < -1e-9) return fail(`Those stretches need it moving backwards at P (${M`u = ${d(u)} [m s^-1]`}): the posts are passed going forwards.`);
+  if (gu && ga) rows.push(...cum.map((c, j) => ({ f: M`s = ut + ½at^2`, s: M`${d(u)} * ${d(c.T)} + ½ * ${a < 0 ? `(${d(a)})` : d(a)} * ${d(c.T)}^2`, r: M`${d(snap(u * c.T + 0.5 * a * c.T * c.T))} [m]` })));
   // a further stretch must agree
   for (let j = 0; j < n; j++) {
     const c = cum[j], want = u * c.T + 0.5 * a * c.T * c.T;
@@ -78,8 +86,7 @@ export function solvePosts(k = {}) {
   const pos = (t) => u * t + 0.5 * a * t * t, vel = (t) => u + a * t;
   const f = { kind: 'chain', look: k.look || 'car', S: St, tMax: t0, D: x0, pos, vel, acc: () => a, names: NAMES.slice(0, n + 1), at };
   const notes = [`One constant acceleration all the way: ${M`a = ${d(a)} [m s^-2]`}, and it passes P at ${M`${d(u)} [m s^-1]`}.`, `Its speed at each post: ${vs.map((v, j) => `${NAMES[j]} ${M`${d(v)} [m s^-1]`}`).join(', ')}.`];
-  const r = rat(a, 12);
-  const derived = [`${M`u = ${d(u)} [m s^-1]`}`, `${M`a = ${d(a)} [m s^-2]`}${r && r.q > 1 ? '' : ''}`];
+  const derived = [`${M`u = ${d(u)} [m s^-1]`}`, `${M`a = ${d(a)} [m s^-2]`}`];
   return { ok: true, mode: 'posts', u, a, vs, St, rows, speedRows, notes, derived, f, given: { u: gu, a: ga } };
 }
 
@@ -87,7 +94,7 @@ export function solvePosts(k = {}) {
 export function postsWorking(s) {
   if (!s?.ok) return [];
   const out = [];
-  if (s.rows.length) out.push({ title: 'From P to each post, one acceleration', rows: s.rows,
+  if (s.rows.length) out.push({ title: s.given.u && s.given.a ? 'Each post, checked against the speed and acceleration given' : 'From P to each post, one acceleration', rows: s.rows,
     note: 'Measured from P, every equation has the same u and a: two of them are a pair of simultaneous equations.' });
   out.push({ title: 'Its speed at each post', rows: s.speedRows, note: 'Timed from P.' });
   return out;

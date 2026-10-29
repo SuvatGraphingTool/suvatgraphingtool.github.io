@@ -1078,6 +1078,9 @@ group('Past the posts (WME01 Jun16 Q1)', () => {
   ok(ua.ok && ua.a === 3.5, 'given u, one stretch finds a');
   ok(!K.solve({ gaps: [{ s: 76, t: 4 }] }).ok, 'one stretch and nothing else is not enough, and says so');
   ok(!K.solve({ gaps: [{ s: 10, t: 4 }, { s: 1, t: 6 }] }).ok, 'an acceleration that would turn it back is refused');
+  ok(!K.solve(K.read({ s1: 76, t1: 4, s3: 219, t3: 6 })).ok, 'a blank stretch before a later one is refused, not shifted up');
+  const odd = K.solve({ gaps: [{ s: 50, t: 4 }, { s: 120, t: 8 }] });
+  ok(odd.ok && !/1a/.test(odd.rows.map((r) => r.s.replace(/<[^>]+>/g, '')).join(' ')), 'no coefficient of 1 written before a');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
