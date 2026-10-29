@@ -56,7 +56,11 @@ export function solveRobots(k = {}) {
   const D0 = { x: R.r0.x - S.r0.x, y: R.r0.y - S.r0.y }, Dv = { x: R.v.x - S.v.x, y: R.v.y - S.v.y };
   const part = (c) => poly([snap(D0[c]), snap(Dv[c]), 0]);
   const both = `(${part('x')})vec(i) + (${part('y')})vec(j)`;
-  const rOf = (p) => `(${poly([snap(p.r0.x), snap(p.v.x), 0])})vec(i) + (${poly([snap(p.r0.y), snap(p.v.y), 0])})vec(j)`;
+  // a part that is 0 for all t is left out
+  const rOf = (p) => {
+    const ps = [['x', 'i'], ['y', 'j']].map(([c, e]) => [poly([snap(p.r0[c]), snap(p.v[c]), 0]), e]).filter(([q]) => q !== '0');
+    return ps.length ? ps.map(([q, e]) => `(${q})vec(${e})`).join(' + ') : '0';
+  };
   const posRows = [
     { f: M`vec r = vec r_0 + vec(v)t`, s: M`vec r_R = ${vsrc(R.r0)} + t${vb(R.v)}`, r: M`vec r_R = ${rOf(R)}` },
     { f: M`vec r = vec r_0 + vec(v)t`, s: M`vec r_S = ${vsrc(S.r0)} + t${vb(S.v)}`, r: M`vec r_S = ${rOf(S)}` },
