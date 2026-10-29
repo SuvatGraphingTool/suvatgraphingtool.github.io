@@ -37,8 +37,8 @@
 // surfaces a figure stands on — a road, a railway track, a running track —
 // so two parallel tracks are two calls to rails().
 
-import { stroke, dot, ballSprite, withAlpha } from './util.js';
-import { env, softShadow, tarmac, railBed } from './scenery.js';
+import { stroke, dot, ballSprite, withAlpha, cssVar } from './util.js';
+import { env, rng, softShadow, tarmac, railBed } from './scenery.js';
 
 const TAU = Math.PI * 2;
 
@@ -202,9 +202,13 @@ export function car(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, brake = fa
 }
 
 /** A train on rails: `cars` carriages (default 1) in length L, the front one
-    with a cab and a sloped nose, the rest with a row of windows; two bogies
-    under each. Its wheels sit on y = Y, the top of the rail — draw rails()
-    under it. */
+    with a cab, a sloped nose and its yellow warning panel, the rest with rows
+    of windows and doors; two bogies under each, an equipment skirt between
+    them, a gangway between carriages, kit on the roofs. A pantograph on the
+    roof reaches `panto` px above it (to touch a catenary's contact wire,
+    trainRoof() says where the roof is). The headlamp glows at dusk; the tail
+    lamps glow red when `brake` (the stage says when it is slowing). Its
+    wheels sit on y = Y, the top of the rail — draw rails() under it. */
 function trainSize(L, cars) {
   const n = Math.max(1, Math.round(cars));
   const gap = n > 1 ? Math.max(3, L * 0.025) : 0;
@@ -213,18 +217,26 @@ function trainSize(L, cars) {
   return { n, gap, c, H, wr: Math.max(2.4, H * 0.16) };
 }
 const trainWheel = (L, cars) => trainSize(L, cars).wr;
-export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1, brake = false } = {}) {
+/** How high a train's roof stands above its rail, px, and its body height. */
+export function trainRoof(L, cars = 1) { const { H, wr } = trainSize(L, cars); return { roof: wr * 1.75 + H, H }; }
+export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1, brake = false, panto = null } = {}) {
   const { n, gap, c, H, wr } = trainSize(L, cars), E = env();
+  const reach = panto ?? H * 0.35;
   softShadow(g, X - L * 0.5 * dir, Y + 2, L * 0.52, Math.max(3, H * 0.12), 0.8);
   at(g, X, Y, dir, () => {
-    const base = -wr * 1.75;
-    for (let i = 0; i < n; i++) {
+    const base = -wr * 1.75, roofY = base - H;
+    const pc = Math.min(1, n - 1);                 // the carriage with the pantograph
+    for (let i = n - 1; i >= 0; i--) {
       const front = -i * (c + gap), back = front - c;
+      // the gangway to the one in front, a dark bellows
+      if (i > 0) { g.fillStyle = '#2b2628'; g.beginPath(); g.roundRect(front - 1, base - H * 0.86, gap + 2, H * 0.78, 1.5); g.fill(); }
       // the bogies first, so the body sits over their tops
       for (const bx of [back + c * 0.16, front - c * 0.16]) {
         g.fillStyle = '#2e292b'; g.beginPath(); g.roundRect(bx - wr * 2.4, base - wr * 0.2, wr * 4.8, wr * 0.95, wr * 0.3); g.fill();
         for (const k of [-1, 1]) roadWheel(g, bx + k * wr * 1.15, -wr, wr, phase * TAU);
       }
+      // the equipment skirt between the bogies
+      g.fillStyle = '#3a3436'; g.beginPath(); g.roundRect(back + c * 0.3, base - 1, c * 0.4, wr * 0.95, 2); g.fill();
       const shape = () => {
         g.beginPath();
         if (i === 0) {
@@ -240,9 +252,10 @@ export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1
       shape(); g.fillStyle = gr; g.fill();
       g.strokeStyle = ring || 'rgba(30,26,28,0.55)'; g.lineWidth = ring ? 2.4 : 1.2; g.stroke();
       g.save(); shape(); g.clip();
-      // a livery stripe low along the body, and the roof darker
+      // a livery stripe low along the body, a thin one above the windows, the roof darker
       g.fillStyle = E.night ? '#5d6f86' : '#6f8199'; g.fillRect(back, base - H * 0.3, c + 2, H * 0.1);
-      g.fillStyle = 'rgba(40,36,38,0.25)'; g.fillRect(back, base - H, c + 2, H * 0.1);
+      g.fillStyle = E.night ? '#4d5d72' : '#5d6e85'; g.fillRect(back, base - H * 0.86, c + 2, H * 0.035);
+      g.fillStyle = 'rgba(40,36,38,0.28)'; g.fillRect(back, base - H, c + 2, H * 0.1);
       // windows with glass and a glint, doors between them
       const glass = g.createLinearGradient(0, base - H * 0.78, 0, base - H * 0.44);
       glass.addColorStop(0, E.night ? withAlpha(E.window, 0.85) : '#c9d6e2'); glass.addColorStop(1, E.night ? withAlpha(E.window, 0.5) : '#7f93a6');
@@ -250,20 +263,42 @@ export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1
       const ww = Math.max(3, c * 0.075), step = Math.max(ww + 2, c * 0.12);
       let k = 0;
       for (let wx = back + c * 0.06; wx + ww <= wEnd; wx += step, k++) {
-        if (k % 4 === 2) { g.strokeStyle = 'rgba(30,26,28,0.45)'; g.lineWidth = 1; g.strokeRect(wx, base - H * 0.82, ww, H * 0.74); continue; }
+        if (k % 4 === 2) {
+          g.fillStyle = 'rgba(30,26,28,0.12)'; g.fillRect(wx, base - H * 0.82, ww, H * 0.74);
+          g.strokeStyle = 'rgba(30,26,28,0.5)'; g.lineWidth = 1; g.strokeRect(wx, base - H * 0.82, ww, H * 0.74);
+          g.fillStyle = glass; g.fillRect(wx + ww * 0.2, base - H * 0.74, ww * 0.6, H * 0.24);
+          continue;
+        }
         g.fillStyle = glass; g.beginPath(); g.roundRect(wx, base - H * 0.78, ww, H * 0.34, Math.min(2, ww * 0.25)); g.fill();
+        if (!E.night) { g.fillStyle = 'rgba(255,255,255,0.45)'; g.fillRect(wx + ww * 0.15, base - H * 0.76, Math.max(1, ww * 0.18), H * 0.3); }
       }
       if (i === 0) {
         g.fillStyle = glass; g.beginPath(); g.moveTo(front - c * 0.2, base - H * 0.84); g.lineTo(front - c * 0.07, base - H * 0.84);
         g.quadraticCurveTo(front - c * 0.02, base - H * 0.7, front - c * 0.015, base - H * 0.5); g.lineTo(front - c * 0.2, base - H * 0.5); g.closePath(); g.fill();
+        // the yellow warning panel on the nose
+        g.fillStyle = '#e8b730'; g.beginPath(); g.moveTo(front - c * 0.06, base); g.lineTo(front - c * 0.035, base - H * 0.46); g.lineTo(front + 2, base - H * 0.46); g.lineTo(front + 2, base); g.closePath(); g.fill();
         g.fillStyle = '#fff6dc'; g.beginPath(); g.arc(front - c * 0.02, base - H * 0.22, Math.max(1.5, H * 0.05), 0, TAU); g.fill();
       }
       g.restore();
-      if (brake && i === n - 1) { g.fillStyle = '#ff3b30'; g.fillRect(back - 1, base - H * 0.3, 2.5, H * 0.1); }
-      // a pantograph on the leading car's roof
-      if (i === 0 && H > 10) { g.strokeStyle = E.night ? '#9a9096' : '#5e5157'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(back + c * 0.45, base - H); g.lineTo(back + c * 0.52, base - H - H * 0.35); g.lineTo(back + c * 0.6, base - H); g.moveTo(back + c * 0.45, base - H - H * 0.35); g.lineTo(back + c * 0.6, base - H - H * 0.35); g.stroke(); }
-      // the coupling to the one in front
-      if (i > 0) stroke(g, [{ x: front, y: base - H * 0.2 }, { x: front + gap, y: base - H * 0.2 }], { color: '#2e292b', width: 2 });
+      // kit on the roof: a box or two
+      if (i !== pc || n === 1) { g.fillStyle = E.night ? '#6a6064' : '#8c8482'; g.beginPath(); g.roundRect(back + c * 0.3, roofY - H * 0.08, c * 0.2, H * 0.09, 1.5); g.fill(); }
+      // the tail lamps on the last carriage: dim red, and glowing when braking
+      if (i === n - 1) {
+        const ty = base - H * 0.24, tx = back + 1.2;
+        g.fillStyle = brake ? '#ff3b30' : '#8c2f2a'; g.beginPath(); g.ellipse(tx, ty, 1.6, Math.max(1.6, H * 0.06), 0, 0, TAU); g.fill();
+        if (brake) { const R = Math.max(10, H * 0.7), bl = g.createRadialGradient(tx, ty, 0, tx, ty, R); bl.addColorStop(0, 'rgba(255,70,50,0.6)'); bl.addColorStop(1, 'rgba(255,70,50,0)'); g.fillStyle = bl; g.beginPath(); g.arc(tx, ty, R, 0, TAU); g.fill(); }
+      }
+      // the headlamp's beam at dusk
+      if (i === 0 && E.night) { const hy = base - H * 0.22, hl = g.createRadialGradient(front, hy, 0, front, hy, c * 0.5); hl.addColorStop(0, 'rgba(255,240,200,0.35)'); hl.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = hl; g.beginPath(); g.moveTo(front, hy); g.lineTo(front + c * 0.5, hy - H * 0.3); g.lineTo(front + c * 0.5, hy + H * 0.3); g.closePath(); g.fill(); }
+      // a pantograph, folded arms up to a collector head
+      if (i === pc && H > 10) {
+        const bx = back + c * 0.42, kx = bx + c * 0.17, hx = bx + c * 0.03, hy = roofY - reach;
+        g.fillStyle = E.night ? '#4a4044' : '#4f4848'; g.fillRect(bx - c * 0.05, roofY - 2.5, c * 0.16, 2.5);
+        g.strokeStyle = E.night ? '#a89ea3' : '#4f4848'; g.lineWidth = 1.6; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(bx, roofY - 2); g.lineTo(kx, roofY - reach * 0.5); g.lineTo(hx, hy); g.stroke();
+        g.lineWidth = 2; g.beginPath(); g.moveTo(hx - c * 0.08, hy); g.lineTo(hx + c * 0.08, hy); g.stroke();
+        g.lineWidth = 1.2; g.beginPath(); g.moveTo(hx - c * 0.08, hy); g.lineTo(hx - c * 0.1, hy + 2.5); g.moveTo(hx + c * 0.08, hy); g.lineTo(hx + c * 0.1, hy + 2.5); g.stroke();
+      }
     }
   });
 }
@@ -608,16 +643,206 @@ export function drawFigure(g, kind, X, Y, L, P, opts = {}) {
 
 /**
  * A roadside or trackside post with its letter on a plate: A, B, X, Y, the
- * mid-point M. Moved here from js/render/road.js, unchanged. `labels` is the
- * stage's label queue (labels() from ./util.js), so the letter is placed with
- * everything else and keeps the 13px floor.
+ * mid-point M — or a stage's number, or a word ("End"). A real sign: a
+ * galvanised pole on a concrete footing, lit from the left, capped above a
+ * printed plate — a face in `color`, a border printed in the letter's colour,
+ * a dark edge and a drop shadow, sized to what it says. `dashed` keeps the
+ * pole a dashed marker line instead (a point marked across the road, not a
+ * thing standing there). `labels` is the stage's label queue (labels() from
+ * ./util.js), so the letter is placed with everything else and keeps the 13px
+ * floor. The plate sits where it always has (centred on X, its top
+ * height + 26 px above Y), so every stage's layout holds.
  */
 export function post(g, labels, X, Y, letter, color, P, { dashed = false, height = 92 } = {}) {
-  stroke(g, [{ x: X, y: Y + 6 }, { x: X, y: Y - height }], { color, width: 2.4, dash: dashed ? [6, 5] : null });
+  const E = env();
+  const text = String(letter);
   g.save();
-  g.fillStyle = color; g.beginPath(); g.roundRect(X - 15, Y - height - 26, 30, 28, 6); g.fill();
+  let font = 'system-ui, sans-serif';
+  try { font = cssVar('--font', font); } catch { /* outside a page: the default */ }
+  g.font = `700 17px ${font}`;
+  const mw = Number(g.measureText?.(text)?.width), tw = isFinite(mw) ? mw : text.length * 10;
+  const pw = Math.max(30, Math.ceil(tw) + 16), ph = 28;
+  const px = X - pw / 2, py = Y - height - 26;
+  if (dashed) stroke(g, [{ x: X, y: Y + 6 }, { x: X, y: Y - height }], { color, width: 2.4, dash: [6, 5] });
+  else {
+    softShadow(g, X + 5, Y + 1, 11, 2.6, 0.85);
+    // the footing, a little concrete collar
+    g.fillStyle = E.night ? '#5d5357' : '#aaa09c';
+    g.beginPath(); g.moveTo(X - 5.5, Y + 2); g.lineTo(X - 3.8, Y - 5); g.lineTo(X + 3.8, Y - 5); g.lineTo(X + 5.5, Y + 2); g.closePath(); g.fill();
+    // the pole, galvanised, rounded by its shading, up past the plate to a cap
+    const pg = g.createLinearGradient(X - 2.3, 0, X + 2.3, 0);
+    pg.addColorStop(0, E.night ? '#b8afb3' : '#f1ece9'); pg.addColorStop(0.45, E.night ? '#877c81' : '#b9b1ae'); pg.addColorStop(1, E.night ? '#3f363a' : '#6f6766');
+    g.fillStyle = pg; g.fillRect(X - 2.3, py - 4, 4.6, Y - 4 - (py - 4));
+    g.fillStyle = E.night ? '#3f363a' : '#6f6766'; g.beginPath(); g.ellipse(X, py - 4, 3, 1.6, 0, 0, TAU); g.fill();
+  }
+  // the plate's drop shadow, then the plate: a face, a sheen, an edge, a printed border
+  g.fillStyle = 'rgba(0,0,0,0.28)'; g.beginPath(); g.roundRect(px + 2.5, py + 3, pw, ph, 6); g.fill();
+  g.fillStyle = color; g.beginPath(); g.roundRect(px, py, pw, ph, 6); g.fill();
+  const sh = g.createLinearGradient(0, py, 0, py + ph);
+  sh.addColorStop(0, 'rgba(255,255,255,0.28)'); sh.addColorStop(0.5, 'rgba(255,255,255,0.04)'); sh.addColorStop(1, 'rgba(0,0,0,0.16)');
+  g.fillStyle = sh; g.fill();
+  g.strokeStyle = 'rgba(15,12,14,0.55)'; g.lineWidth = 1.2; g.stroke();
+  g.strokeStyle = withAlpha(P.surface, 0.85); g.lineWidth = 1.4;
+  g.beginPath(); g.roundRect(px + 3, py + 3, pw - 6, ph - 6, 4); g.stroke();
   g.restore();
-  labels.add(letter, X, Y - height - 12, { color: P.surface, align: 'center', pri: 10, size: 17, weight: 700, bg: false });
+  labels.add(text, X, Y - height - 12, { color: P.surface, align: 'center', pri: 10, size: 17, weight: 700, bg: false });
+}
+
+/* ── street furniture: what stands beside a road or a line ─────────────── */
+
+/** A street lamp standing on y = Y at x, H tall: a tapered pole, an arm
+    reaching out over the road (towards +x, or −x when dir is −1), a lamp
+    head; lit at dusk (the dark theme), with a soft pool of light. */
+export function lampPost(g, x, Y, H, { dir = 1 } = {}) {
+  const E = env(), top = Y - H, reach = H * 0.22 * dir;
+  g.save();
+  softShadow(g, x + 4, Y + 1, 8, 2, 0.7);
+  if (E.night) {
+    const cx = x + reach, cy = top + H * 0.05;
+    const gl = g.createRadialGradient(cx, cy, 0, cx, cy, H * 0.5);
+    gl.addColorStop(0, withAlpha(E.window, 0.32)); gl.addColorStop(1, withAlpha(E.window, 0));
+    g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, H * 0.5, 0, TAU); g.fill();
+  }
+  const pg = g.createLinearGradient(x - 2.5, 0, x + 2.5, 0);
+  pg.addColorStop(0, E.night ? '#6c6166' : '#8d8583'); pg.addColorStop(1, E.night ? '#2c2427' : '#4d4646');
+  g.fillStyle = pg;
+  g.beginPath(); g.moveTo(x - 3, Y); g.lineTo(x - 1.6, top); g.lineTo(x + 1.6, top); g.lineTo(x + 3, Y); g.closePath(); g.fill();
+  g.fillRect(x - 4, Y - 7, 8, 7);                                   // the base
+  g.strokeStyle = E.night ? '#4a4044' : '#5d5655'; g.lineWidth = 2.4; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(x, top + 3); g.quadraticCurveTo(x, top - H * 0.04, x + reach * 0.6, top - H * 0.02); g.lineTo(x + reach, top); g.stroke();
+  g.fillStyle = E.night ? '#3a3236' : '#4d4646';
+  g.beginPath(); g.ellipse(x + reach, top + 2, Math.max(5, H * 0.06), Math.max(2.2, H * 0.022), 0, Math.PI, TAU); g.fill();
+  g.fillStyle = E.night ? '#fff1cf' : '#f4efe4';
+  g.beginPath(); g.ellipse(x + reach, top + 2.5, Math.max(4, H * 0.045), Math.max(1.6, H * 0.014), 0, 0, Math.PI); g.fill();
+  g.restore();
+}
+
+/** A clipped hedge along y = Y from x0 to x1, h tall: rounded clumps, lit
+    from the upper left, darker at the root. */
+export function hedge(g, x0, x1, Y, h, { seed = 17 } = {}) {
+  const E = env(), r = rng(seed);
+  g.save();
+  const base = g.createLinearGradient(0, Y - h, 0, Y);
+  base.addColorStop(0, E.grass); base.addColorStop(1, E.night ? '#1d2214' : '#3f4a28');
+  g.fillStyle = base; g.fillRect(x0, Y - h * 0.6, x1 - x0, h * 0.6);
+  for (let x = x0 - 6; x < x1 + 8; x += h * (0.5 + r() * 0.35)) {
+    const rr = h * (0.45 + r() * 0.2), cy = Y - h * 0.55 - r() * h * 0.12;
+    const gr = g.createRadialGradient(x - rr * 0.35, cy - rr * 0.4, rr * 0.1, x, cy, rr);
+    gr.addColorStop(0, E.night ? '#6c7748' : '#8a9a5c'); gr.addColorStop(1, E.night ? '#2b321d' : '#4b5830');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, cy, rr, 0, TAU); g.fill();
+  }
+  g.restore();
+}
+
+/** A tree standing on y = Y at x, H tall: a trunk and a canopy of clumps,
+    lit from the upper left. */
+export function tree(g, x, Y, H, { seed = 5 } = {}) {
+  const E = env(), r = rng(seed);
+  g.save();
+  softShadow(g, x + H * 0.08, Y + 1, H * 0.22, H * 0.04, 0.6);
+  g.fillStyle = E.night ? '#3b2c26' : '#6a4f3c';
+  g.beginPath(); g.moveTo(x - H * 0.04, Y); g.lineTo(x - H * 0.02, Y - H * 0.5); g.lineTo(x + H * 0.02, Y - H * 0.5); g.lineTo(x + H * 0.045, Y); g.closePath(); g.fill();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * TAU, rr = H * (0.17 + r() * 0.08);
+    const cx = x + Math.cos(a) * H * 0.14, cy = Y - H * 0.66 + Math.sin(a) * H * 0.12;
+    const gr = g.createRadialGradient(cx - rr * 0.4, cy - rr * 0.45, rr * 0.1, cx, cy, rr);
+    gr.addColorStop(0, E.night ? '#66714a' : '#8d9d5f'); gr.addColorStop(1, E.night ? '#262c1a' : '#4a572f');
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, rr, 0, TAU); g.fill();
+  }
+  g.restore();
+}
+
+/** A low bush on y = Y at x, r across its widest: three clumps, lit from the left. */
+export function bush(g, x, Y, rr, { seed = 3 } = {}) {
+  const E = env(), q = rng(seed);
+  g.save();
+  softShadow(g, x + rr * 0.2, Y + 1, rr * 1.2, rr * 0.25, 0.6);
+  for (const [dx, k] of [[-0.55, 0.65], [0.5, 0.7], [0, 0.9]]) {
+    const R = rr * k * (0.9 + q() * 0.2), cx = x + dx * rr, cy = Y - R * 0.8;
+    const gr = g.createRadialGradient(cx - R * 0.4, cy - R * 0.45, R * 0.1, cx, cy, R);
+    gr.addColorStop(0, E.night ? '#6f7b4b' : '#93a463'); gr.addColorStop(1, E.night ? '#29301c' : '#4c5a30');
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fill();
+  }
+  g.restore();
+}
+
+/** A pavement along the near side of a road, from y = Y down `depth` px:
+    concrete slabs with their joints, a shadow under the kerb. */
+export function pavement(g, x0, x1, Y, depth = 10) {
+  const E = env();
+  g.save();
+  const gr = g.createLinearGradient(0, Y, 0, Y + depth);
+  gr.addColorStop(0, E.night ? '#4f4549' : '#c4bab5'); gr.addColorStop(1, E.night ? '#3d3438' : '#a99f9b');
+  g.fillStyle = gr; g.fillRect(x0, Y, x1 - x0, depth);
+  g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(x0, Y, x1 - x0, 1.5);
+  g.strokeStyle = withAlpha(E.night ? '#000000' : '#7d7470', 0.35); g.lineWidth = 1;
+  g.beginPath(); for (let x = x0 + 4; x < x1; x += 26) { g.moveTo(x, Y + 1.5); g.lineTo(x - 2, Y + depth); } g.stroke();
+  g.restore();
+}
+
+/** A post-and-rail fence along y = Y from x0 to x1, h tall: timber posts
+    every `gap` px, two rails, lit from the left. */
+export function fence(g, x0, x1, Y, h, { gap = 46 } = {}) {
+  const E = env(), wood = E.night ? '#5a463b' : '#8a6a52', dark = E.night ? '#3a2c25' : '#634a39';
+  g.save();
+  for (const k of [0.3, 0.68]) {
+    const y = Y - h * k;
+    g.fillStyle = 'rgba(0,0,0,0.2)'; g.fillRect(x0, y + 3, x1 - x0, 2);
+    g.fillStyle = wood; g.fillRect(x0, y - 2, x1 - x0, 4);
+    g.fillStyle = dark; g.fillRect(x0, y + 1, x1 - x0, 1);
+  }
+  for (let x = x0 + gap * 0.3; x < x1; x += gap) {
+    const pg = g.createLinearGradient(x - 2.5, 0, x + 2.5, 0); pg.addColorStop(0, wood); pg.addColorStop(1, dark);
+    g.fillStyle = pg; g.fillRect(x - 2.5, Y - h, 5, h);
+    g.fillStyle = dark; g.beginPath(); g.moveTo(x - 2.5, Y - h); g.lineTo(x, Y - h - 2.5); g.lineTo(x + 2.5, Y - h); g.closePath(); g.fill();
+  }
+  g.restore();
+}
+
+/**
+ * Overhead line equipment along a railway: steel masts standing on y = Y
+ * (just behind the track), `spacing` px apart starting at `from`, each with
+ * a cantilever arm; the contact wire at y = wireY, the catenary wire above
+ * it sagging between the masts, and droppers between the two. A pantograph
+ * reaching up to wireY touches the contact wire. `avoid` lists [x0, x1]
+ * spans (a platform) where no mast stands; the wires run on over them.
+ */
+export function catenary(g, x0, x1, Y, wireY, { spacing = 160, from = null, avoid = [] } = {}) {
+  const E = env();
+  const top = wireY - 16, start = from ?? x0 + spacing * 0.35;
+  const masts = [];
+  for (let x = start - Math.ceil((start - x0) / spacing) * spacing; x <= x1 + spacing; x += spacing) masts.push(x);
+  g.save();
+  const steel = E.night ? '#6f6569' : '#7d7574', steelDark = E.night ? '#3a3135' : '#4e4847';
+  // the catenary wire, sagging between masts, and its droppers
+  g.strokeStyle = withAlpha(steelDark, 0.95); g.lineWidth = 1.1;
+  g.beginPath();
+  for (let i = 0; i + 1 < masts.length; i++) {
+    const a = masts[i], b = masts[i + 1];
+    g.moveTo(a, top + 3); g.quadraticCurveTo((a + b) / 2, top + 3 + 14, b, top + 3);
+  }
+  g.stroke();
+  g.lineWidth = 0.9; g.beginPath();
+  for (let i = 0; i + 1 < masts.length; i++) {
+    const a = masts[i], b = masts[i + 1];
+    for (let k = 1; k < 6; k++) { const u = k / 6, xx = a + (b - a) * u, yy = top + 3 + 28 * u * (1 - u); g.moveTo(xx, yy); g.lineTo(xx, wireY); }
+  }
+  g.stroke();
+  // the contact wire
+  g.strokeStyle = E.night ? '#8e8287' : '#3f3a3a'; g.lineWidth = 1.4;
+  g.beginPath(); g.moveTo(x0, wireY); g.lineTo(x1, wireY); g.stroke();
+  // the masts: an H-section, lit from the left, a cantilever arm and a brace
+  for (const x of masts) {
+    if (x < x0 - 10 || x > x1 + 10 || avoid.some(([a, b]) => x > a - 8 && x < b + 8)) continue;
+    const mg = g.createLinearGradient(x - 3, 0, x + 3, 0);
+    mg.addColorStop(0, steel); mg.addColorStop(1, steelDark);
+    g.fillStyle = mg; g.fillRect(x - 3, top - 6, 6, Y - top + 6);
+    g.fillStyle = steelDark; g.fillRect(x - 4.5, Y - 4, 9, 4);
+    g.strokeStyle = steelDark; g.lineWidth = 2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x, top + 3); g.lineTo(x + 18, top + 3); g.moveTo(x, top + 12); g.lineTo(x + 16, top + 4); g.moveTo(x + 12, top + 3); g.lineTo(x + 12, wireY); g.stroke();
+    g.fillStyle = E.night ? '#b9aab0' : '#d8d0cc'; g.fillRect(x + 1, top + 1, 4, 4);   // an insulator
+  }
+  g.restore();
 }
 
 /** Traffic lights: a post H tall standing on y = Y at x, a head of three
