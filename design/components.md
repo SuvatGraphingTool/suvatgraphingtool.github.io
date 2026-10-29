@@ -60,7 +60,7 @@ A kit is an object with:
 | kit | used by |
 |---|---|
 | `pair` — `js/kits/pair.js` | `pair-vertical` |
-| `journey` — `js/kits/journey.js` | `journey-3` |
+| `journey` — `js/kits/journey.js` | `journey-stages` |
 | `lanes` — `js/kits/lanes.js` | `two-on-a-road` |
 | `plane` — `js/kits/plane.js` | `vectors-ij` |
 | `target` — `js/kits/target.js` | `over-the-wall` |
@@ -106,7 +106,7 @@ it reaches the level again (kind `'rebound'`, with `vIn`). A bouncing ball is
 velocity jumping at every impact. `timesAt(m, x, { from, to })` — every
 moment a staged motion is at position x, each `{ t, v }`.
 
-Used by: `pair-vertical`, `journey-3`, `two-on-a-road`, `bounce`.
+Used by: `pair-vertical`, `journey-stages`, `two-on-a-road`, `bounce`.
 
 ### Two particles in one vertical line — `js/core/pair.js`
 
@@ -131,22 +131,34 @@ the way a student writes it.
 
 Used by: `pair-vertical`.
 
-### A journey in three stages — `js/core/journey.js`
+### A journey in stages — `js/core/journey.js`
 
-`solveJourney({ V, t1, t2, t3, a1, a3, T, D, rel, at })` — any four of the
-eight (more are cross-checked), from rest to rest, with an optional relation
-`rel: { kind, k }` from `RELATIONS` (`t3=k*t1`, `a3=k*a1`, `t1=k*t2`) and
-questions `at: { t, s, v }`. Writes every time as `c0 + c1·x` in the one
-unknown x (V, or the time the paper names), solves the equation left over —
-usually the area D = ½(T + t₂)V, linear or quadratic — rejects roots that
-make a time negative and says why. Gives `J` (all eight plus s₁, s₂, s₃),
-`rows` (each stage in terms of the unknown), `answers`, and `f`, a staged
-motion with `stageAt(t)`.
+`solveJourney({ u, stages: [{ kind, v, t, a }], T, D, rel, at })` — any number
+of stages (up to `MAX_STAGES`), each `kind` one of `KINDS`: `up` and `down`
+change speed at a steady rate `a` (a size) to `v` in time `t`; `hold` holds the
+speed for `t`. `u` is the speed at A; any of it may be left out. `rel: { kind:
+'t' | 'a', x, y, k }` says stage x's time (or rate) is k × stage y's. Questions
+`at: { t, s, v }`. Every speed and time is written as `c0 + c1·x` in the one
+unknown x — the speed the paper leaves out (V), or else the time it names —
+from each stage's own v = u ± at, the relation and the whole time; then the
+equation left over, usually the area (each stage's piece, ½(u + v)t or ut,
+added up), is solved for it, linear or quadratic, and roots that make a time
+negative, a speed negative, or a stage go the wrong way are rejected with the
+reason. Anything given and not needed is cross-checked. Gives `J` (`w`
+boundary speeds, `t`, `a`, `s` per stage, `T`, `D`, and `v1…`, `t1…`,
+`a1…`, `s1…`), `rows`, `steps`, `answers`, and `f`, a staged motion with
+`stageAt(t)` and `startOf(i)`.
 
-`journeyMotion(J)` — the three stages as a motion. `askAt(f, J, at)` — the
-speed at a time, the time at a distance, the times at a speed, with working.
+The three-stage trapezium, rest to rest, is still asked in its own names:
+`solveJourney({ V, t1, t2, t3, a1, a3, T, D, rel: { kind: 't3=k*t1' | 'a3=k*a1'
+| 't1=k*t2', k } })` (`threeStages()` turns it into stages), and its working
+keeps the mark schemes' D = ½(T + t₂)V.
 
-Used by: `journey-3`.
+`journeyMotion(J)` — the stages as a motion. `askAt(f, J, at)` — the speed and
+the distance gone at a time, the time at a distance, every time at a speed,
+each worked inside its own stage and added on to the stages before.
+
+Used by: `journey-stages`.
 
 ### Two on one road (or two tracks) — `js/core/overtake.js`
 
@@ -337,16 +349,21 @@ each meeting across both lanes.
 
 Used by: `two-on-a-road`.
 
-### The speed–time trapezium over the track — `js/render/journey.js`
+### The speed–time graph over the way from A to B — `js/render/journey.js`
 
-`render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'journey'`.
-Above: the trapezium (dashed, horizontal motion), its area filling in the
-displacement colour to the cursor, each stage's area named once passed, V on
-the axis, the three times bracketed below it, the instants a question named
-ringed. Below: the track A to B, the three stretches as dashed displacement
-brackets, the train, equal-time marks, the velocity and acceleration arrows.
+`render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'journey'`
+and `traj.who` a traveller from `FIGURES`. Above: the speed–time graph as the
+paper sketches it (dashed, horizontal motion) — each speed at a stage change on
+the speed axis with a dashed line to its corner (the unknown named V), each
+time it changes on the time axis, each stage bracketed with its time — the area
+filling in the displacement colour to the cursor, each stage's piece named once
+passed, the instants a question named ringed. Below: the way from A to B on the
+traveller's own surface — traffic lights where a car or bike starts or stops,
+a station platform for a train, start and finish lines on a running track —
+the stages as dashed displacement brackets, the traveller, equal-time marks,
+the velocity and acceleration arrows.
 
-Used by: `journey-3`.
+Used by: `journey-stages`.
 
 
 ### The vertical line — `js/render/column.js`
@@ -405,7 +422,7 @@ scenario:
 - **`yScale(series, tMax)`** — the pure range and ticks every graph uses: the
   step from the data, room below and more above so a top line clears the title.
 
-Used by: `pair-vertical` (tags, points), `journey-3` (points: the instants asked about), `bounce` (jumps, points with `dy`).
+Used by: `pair-vertical` (tags, points), `journey-stages` (points: the instants asked about), `bounce` (jumps, points with `dy`).
 
 ## Home screen
 

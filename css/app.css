@@ -1174,6 +1174,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 /* a narrow box beside a group of chips, rather than a card of its own */
 .krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr) 200px; }
 .krow-in > .xrow.wide.choice { grid-column: auto; }
+.krow-in > .xrow.wide.choice.full { grid-column: 1 / -1; }
 @media (max-width: 560px) { .krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr); } }
 
 /* The second row of boxes in a kit's columns starts level: every hint keeps

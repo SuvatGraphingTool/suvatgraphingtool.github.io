@@ -190,7 +190,102 @@ group('The kit: graphs from the engine, a sketch, an ending', () => {
 });
 
 
-/* ── journey-3: the papers it names ─────────────────────────────────── */
+/* ── journey-stages: the papers it names ──────────────────────────────── */
+group('A journey in stages: the two that are not rest to rest, against their mark schemes', () => {
+  const W = (r) => journeyWorking(r).map((st) => ({ title: strip(st.title), rows: st.rows.map((x) => [strip(x.f), strip(x.s), strip(x.r)]), note: strip(st.note) }));
+  // Edexcel M1 Jun 2012 Q4: 20 for 25 s, brake at 0.4 to 8, 8 for 60 s, up to 20 at B; 1960 m
+  const car = solveJourney({ u: 20, stages: [{ kind: 'hold', t: 25 }, { kind: 'down', v: 8, a: 0.4 }, { kind: 'hold', t: 60 }, { kind: 'up', v: 20 }], D: 1960 });
+  ok(car.ok && near(car.J.t2, 30) && near(car.J.T, 155) && car.unknown === 't4' && near(car.J.t4, 40),
+     'Edexcel M1 J12 Q4: braking for 30 s, and 155 s from A to B');
+  const cw = W(car);
+  ok(cw[0].rows[0][1] === '8=20−0.4t2' && cw[0].rows[0][2] === 't2=30s', 'the braking time from v = u − at: 8 = 20 − 0.4t₂, so 30 s');
+  const area = cw.find((x) => /area/.test(x.title));
+  ok(area && area.rows.some((x) => x[1] === '1960=500+420+480+14t4' && x[2] === '14t4=560') && area.rows.some((x) => x[2] === 't4=40s'),
+     'the area, a piece per stage: 1960 = 500 + 420 + 480 + 14t₄, so t₄ = 40');
+  ok(near(car.f.vel(0).x, 20) && near(car.f.vel(155).x, 20) && near(car.f.pos(155).x, 1960) && near(car.f.vel(40).x, 14),
+     'the motion: 20 m s⁻¹ passing A, 20 m s⁻¹ passing B, 14 m s⁻¹ halfway through the braking');
+  // Edexcel M1 Jun 2011 Q4: from rest, 4 s to 5, 60 s at 5, 20 s slowing to V; 400 m in 84 s
+  const girl = solveJourney({ u: 0, stages: [{ kind: 'up', v: 5, t: 4 }, { kind: 'hold', t: 60 }, { kind: 'down', t: 20 }], T: 84, D: 400, at: { t: 64 } });
+  ok(girl.ok && girl.unknown === 'V' && near(girl.x, 4) && near(girl.J.a3, 0.05) && near(girl.answers[0].s, 310),
+     'Edexcel M1 J11 Q4: 310 m in the first 64 s, V = 4, decelerating at 0.05 m s⁻²');
+  const gw = W(girl);
+  ok(gw.find((x) => /area/.test(x.title)).rows.some((x) => x[1] === '400=10+300+(10V+50)' && x[2] === '10V=40'), 'the area: 400 = 10 + 300 + (10V + 50), so V = 4');
+  ok(gw.find((x) => /64/.test(x.title)).rows.some((x) => x[0] === 's=s1+s2' && x[2] === 's=310m'), 'the distance at 64 s is the first two pieces of the area');
+  ok(/V=4m s−1/.test(strip(girl.derived.join(' '))) && /a3=0\.05/.test(strip(girl.derived.join(' '))), 'V and the deceleration are what comes out');
+  // the same two through the kit, as the boxes are filled in
+  const K = KITS.journey;
+  const vals = { n: '4', u: 20, k1: 'hold', t1: 25, k2: 'down', v2: 8, a2: 0.4, k3: 'hold', t3: 60, k4: 'up', v4: 20, D: 1960, who: 'car' };
+  const viaKit = K.solve(K.read(vals));
+  ok(viaKit.ok && near(viaKit.J.T, 155) && viaKit.f.who === 'car', 'through the kit\u2019s boxes, the car gives 155 s');
+  const rows = K.rows({ ...vals });
+  ok(rows.filter((r) => /^Stage \d$/.test(r.title)).length === 4 && rows[2].fields.length === 4 && rows[1].fields.length === 2,
+     'four stage rows: a changing stage has its speed, rate and time; a steady one its time');
+  ok(K.rows({ n: '3' }).filter((r) => /^Stage/.test(r.title)).every((r) => r.fields.length === 1 && r.fields[0].rebuild),
+     'a stage says nothing but its choice until the student says what it does, and that choice redraws the screen');
+  const noKind = K.solve(K.read({ n: '2', u: 0, k1: 'up' }));
+  ok(!noKind.ok && /Say what stage 2 does/.test(strip(noKind.reason)), 'a stage with no kind is asked about, by number');
+  const runner = K.solve(K.read({ n: '3', u: 0, k1: 'up', v1: 5, t1: 4, k2: 'hold', t2: 60, k3: 'down', t3: 20, T: 84, D: 400, who: 'runner', 'at.t': 64 }));
+  ok(runner.ok && runner.f.who === 'runner' && near(runner.x, 4), 'the race, with the runner on the stage');
+  const end = K.ending(runner);
+  ok((end.body.match(/data-key="stage"/g) || []).length === 3 && /Slowing down/.test(end.body) && /at up to 5 m s⁻¹/.test(end.title), 'the ending: a row per stage, named by what it does');
+  const G = K.graphs(car.f, 50, { disp: 'd', vel: 'v', acc: 'a', mark: 'm' });
+  ok(G[2].series[0].breaks.length === 3, 'the acceleration graph breaks at each of the three changes');
+  ok(/<path/.test(K.thumb(byId('journey-stages'))) && /stroke-dasharray="2 2"/.test(K.thumb(byId('journey-stages'))), 'the card sketches the car\u2019s own graph, corners marked');
+  const hud = K.hud(car.f, 155);
+  ok(hud.left[1].v === '20.00' || hud.left[1].v === '20', 'at B the car is still doing 20 m s⁻¹, and the readout says so');
+  ok(/stage 2/.test(K.hud(car.f, 40).left[2].k), 'the readout says which stage the acceleration belongs to');
+});
+
+group('A journey in stages: what cannot be, refused with the reason', () => {
+  const J = (k) => solveJourney(k);
+  const up = J({ u: 20, stages: [{ kind: 'up', v: 8, t: 4 }] });
+  ok(!up.ok && /speeds up/.test(strip(up.reason)), 'a stage that speeds up cannot end slower');
+  const two = J({ u: 0, stages: [{ kind: 'up', a: 2 }, { kind: 'down', v: 0 }], D: 100 });
+  ok(!two.ok && /still open/.test(strip(two.reason)), 'two things unknown and one equation: says what is still open');
+  const rel = J({ u: 0, stages: [{ kind: 'up', t: 10 }, { kind: 'down', v: 0, t: 30 }], D: 400, rel: { kind: 'a', x: 1, y: 2, k: 3 } });
+  ok(rel.ok && near(rel.x, 20) && near(rel.J.a1, 3 * rel.J.a2), 'a relation between rates is checked, and agrees');
+  const relBad = J({ u: 0, stages: [{ kind: 'up', t: 10 }, { kind: 'down', v: 0, t: 30 }], D: 400, rel: { kind: 'a', x: 1, y: 2, k: 2 } });
+  ok(!relBad.ok && /relation/.test(strip(relBad.reason)), 'and one that disagrees is refused');
+  ok(!J({ u: 0, stages: [{ kind: 'up', v: 10, t: 5 }, { kind: 'hold', t: 1 }], rel: { kind: 't', x: 1, y: 1, k: 2 } }).ok, 'a relation of a stage with itself is refused');
+  ok(!J({ u: 0, stages: [{ kind: 'up', a: 0, t: 5 }] }).ok, 'a rate of zero is not a change of speed');
+  const four = J({ u: 0, stages: [{ kind: 'up', a: 2 }, { kind: 'hold', t: 10 }, { kind: 'up', a: 1, t: 5 }, { kind: 'down', v: 0, a: 3 }], D: 500 });
+  ok(four.ok && four.unknown === 'V' && four.f.vel(four.J.T).x === 0 && near(four.J.D, 500), 'four stages with V hidden in the first: a quadratic, and at rest at B');
+  let bad = 0;
+  for (let i = 0; i < 300; i++) {
+    const u = (i * 3.7) % 25, v1 = u + 1 + (i * 5.3) % 20, v3 = (i * 1.9) % v1;
+    const r = J({ u, stages: [{ kind: 'up', v: v1, t: 1 + (i * 7.1) % 40 }, { kind: 'hold', t: (i * 2.3) % 60 }, { kind: 'down', v: v3, t: 1 + (i * 4.4) % 30 }] });
+    if (!r.ok) { bad++; continue; }
+    const back = J({ u, stages: [{ kind: 'up', v: v1 }, { kind: 'hold', t: r.J.t2 }, { kind: 'down', v: v3, t: r.J.t3 }], D: r.J.D });
+    if (!back.ok || !near(back.J.t1, r.J.t1, 1e-6) || back.f.pos(back.J.T).x !== back.J.D || ![0, 0.3, 0.7, 1].every((q) => isFinite(back.f.vel(q * back.J.T).x))) bad++;
+  }
+  ok(bad === 0, 'three hundred journeys, each found again from its own distance');
+});
+
+group('A journey in stages: what critic round 1 found, kept found', () => {
+  const J = (k) => solveJourney(k);
+  const W = (r) => journeyWorking(r).map((st) => ({ title: strip(st.title), rows: st.rows.map((x) => [strip(x.f), strip(x.s), strip(x.r)]), note: strip(st.note) }));
+  const two = J({ u: 0, stages: [{ kind: 'up' }, { kind: 'hold', t: 50 }, { kind: 'down', v: 0 }], rel: { kind: 't', x: 3, y: 1, k: 4 }, T: 100, D: 1500 });
+  ok(two.ok && two.steps.length === 2 && near(two.J.t1, 10) && near(two.J.V, 20), 'a relation and the speed both open: t₁ from the whole time first, then V from the area');
+  ok(W(two).some((x) => x.title === 'The whole time') && /First t1 came from the whole time/.test(strip(KITS.journey.ending(two).body)), 'the working and the ending say it in that order');
+  const rr = J({ u: 0, stages: [{ kind: 'up' }, { kind: 'down', v: 0 }], rel: { kind: 'a', x: 2, y: 1, k: 2 }, T: 30, D: 300 });
+  ok(rr.ok && near(rr.J.V, 20) && near(rr.J.t1, 20), 'a relation between rates with V open: the same change of speed makes it one between times');
+  const sq = W(J({ u: 0, stages: [{ kind: 'up', a: 2 }, { kind: 'down', v: 0, a: 1 }], D: 1200 })).find((x) => /area/.test(x.title));
+  ok(sq.rows.some((x) => x[1] === '×4') && sq.rows.some((x) => x[1] === 'V2=1600') && !sq.rows.some((x) => /−0|02/.test(x[1])), 'no middle term: decimals cleared, then a square root — never −0 ± √0²');
+  ok(sq.rows[0][2] === 's1=¼V2' && !sq.rows.some((x) => /\(¼V2\)/.test(x[1])), 'a coefficient the working finds is ¼, not 0.25, and one term is never bracketed');
+  const u = J({ stages: [{ kind: 'up', a: 1, t: 10 }, { kind: 'hold', t: 10 }], D: 300 });
+  ok(u.ok && u.sym === 'u' && near(u.J.u, 7.5) && /u=7\.5/.test(strip(u.derived.join(' '))) && u.f.named[0] === 'u', 'a blank speed at A is found as u, and named u');
+  const six = J({ u: 0, stages: [{ kind: 'up', v: 10, a: 1 }, { kind: 'hold', t: 20 }, { kind: 'up', v: 20, a: 0.5 }, { kind: 'hold', t: 30 }, { kind: 'down', v: 5, a: 1 }, { kind: 'down', v: 0 }], D: 2000, at: { v: 10 } });
+  ok(/twice: from t=10s to t=30s, holding it/.test(strip(six.answers[0].text)), 'reaching a speed and holding it is one occasion, not two');
+  const rest = J({ u: 0, stages: [{ kind: 'up', v: 10, t: 5 }, { kind: 'down', v: 0, t: 5 }], at: { v: 0 } });
+  ok(/at t=0, at A, at rest/.test(strip(rest.answers[0].text)) && !/speeding up/.test(strip(rest.answers[0].text)), 'at rest at A is not speeding up');
+  ok(/does not add up/.test(strip(J({ u: 0, stages: [{ kind: 'up', v: 5, t: 2, a: 3 }, { kind: 'hold' }] }).reason)), 'a stage that does not add up is refused at once, not as not enough');
+  ok(/speeds up, but it goes from 0 to 0/.test(strip(J({ u: 0, stages: [{ kind: 'up', v: 0 }, { kind: 'hold' }] }).reason)), 'and so is a stage said to speed up that does not');
+  const area = journeyWorking(J({ u: 20, stages: [{ kind: 'hold', t: 25 }, { kind: 'down', v: 8, a: 0.4 }, { kind: 'hold', t: 60 }, { kind: 'up', v: 20 }], D: 1960 })).find((x) => /area/.test(x.title));
+  ok(/<span class="m/.test(area.note) || /class=/.test(area.note), 'the formulas in the area note are set as maths');
+  const hud = KITS.journey.hud(J({ u: 0, stages: [{ kind: 'up', v: 22, t: 30 }, { kind: 'hold' }, { kind: 'down', v: 0 }], T: 120, D: 2145 }).f, 110);
+  ok(hud.left[2].v === '−1.467', 'one rule for a rate on every screen: 1.467, as in the working');
+});
+
 group('A journey in three stages: seven papers, each against its mark scheme', () => {
   const J = (k) => solveJourney(k);
   const e = J({ a1: 0.5, a3: 0.25, T: 300, D: 6300 });
@@ -243,7 +338,7 @@ group('A journey: the working is the mark scheme’s', () => {
   const G = K.graphs(e30().f, 100, { disp: 'd', vel: 'v', acc: 'a', mark: 'm' });
   ok(G.every((sp) => sp.series.every((x) => x.dash)), 'every line dashed: motion along a track is horizontal');
   ok(G.every((sp) => yScale(sp.series, sp.tMax).ticks.length >= 2), 'every graph has a scale');
-  ok(/<path/.test(K.thumb(byId('journey-3'))), 'the card has a sketch from its own numbers');
+  ok(/<path/.test(K.thumb(byId('journey-stages'))), 'the card has a sketch from its own numbers');
   const end = K.ending(e30());
   ok(/6300/.test(end.title) && /ph-tab/.test(end.body) && (end.body.match(/ph-row/g) || []).length >= 4, 'the ending: a row of five per stage, and the total');
 });
@@ -252,9 +347,9 @@ group('A journey: what critic round 1 found, kept found', () => {
   const W = (k) => journeyWorking(J(k)).map((st) => ({ title: strip(st.title), rows: st.rows.map((r) => [strip(r.f), strip(r.s), strip(r.r)]), note: strip(st.note) }));
   const as22 = W({ V: 25, T: 700, D: 15000, rel: { kind: 't3=k*t1', k: 4 }, at: { t: 572 } });
   const at = as22.find((x) => /572/.test(x.title));
-  ok(at && at.rows[0][1] === '25×128160' && at.rows[0][2] === 'v=20m s−1', 'the speed at 572 s from exact numbers: 25 × 128⁄160 = 20, no rounded rate');
+  ok(at && at.rows[0][1] === '25−0.15625×32' && at.rows[0][2] === 'v=20m s−1', 'the speed at 572 s from exact numbers: 25 − 0.15625 × 32 = 20, no rounded rate');
   const ial = W({ t1: 60, t3: 30, T: 270, D: 4500, at: { v: 5 } }).find((x) => /doing/.test(x.title));
-  ok(ial.rows[0][1] === '5×6020' && ial.rows[1][1] === '270−5×3020', 'the times at a speed from V, t₁, t₃ and T, exactly');
+  ok(ial.rows[0][1] === '5=0+⅓t' && ial.rows[1][1] === '5=20−⅔t' && ial.rows[2][2] === 't=262.5s', 'the times at a speed from each stage\u2019s exact rate: ⅓ and ⅔, never 0.3333');
   const j12 = W({ V: 15, a3: 2.5, D: 885, rel: { kind: 't1=k*t2', k: 1 / 3 } });
   ok(j12[0].rows.some((r) => r[2] === 't1=⅓t2') && /4t23/.test(j12[1].rows[0][1]), 'a third is ⅓ and four thirds a fraction, never 0.3333');
   const e = W({ a1: 0.5, a3: 0.25, T: 300, D: 6300 });
@@ -275,7 +370,7 @@ group('A journey: what critic round 1 found, kept found', () => {
   ok(KITS.journey.lapse(e30().f) === 20 && KITS.journey.lapse({ tMax: 8 }) === 1, 'five minutes plays as a 20× time-lapse; a short one in real time');
   ok(KITS.journey.lapse({ tMax: 700 }) === 50 && KITS.journey.lapse({ tMax: 270 }) === 20, 'every journey inside about fifteen seconds of watching');
   const known = J({ t1: 60, t3: 30, T: 270, D: 4500 });
-  ok(!known.dependsOn && /Every time followed from what was given/.test(strip(KITS.journey.ending(known).body))
+  ok(!known.dependsOn && /Everything else followed from what was given/.test(strip(KITS.journey.ending(known).body))
      && /Every other time follows from what is given/.test(strip(journeyWorking(known)[0].note)), 'when no time depends on the unknown, neither the working nor the ending says it did');
   ok(/which is the whole distance, fixed it/.test(strip(KITS.journey.ending(e30()).body)), 'the ending\u2019s sentence about the area is whole');
   const hud = KITS.journey.hud(e30().f, 300);
@@ -301,7 +396,7 @@ group('The audit after two scenarios: what it found, kept found', () => {
   ok(!solvePair({ A: { h: 0, u: 0 }, B: { h: 5, u: 1 }, g: 0 }).ok, 'with no gravity, a particle on the ground and not thrown up never leaves it');
   ok(/0\.00373m above the ground/.test(strip(solvePair({ A: { h: 0, u: 0.3 }, B: { h: 0.004, u: 0, t0: 0.01 }, g: 9.81 }).say)), 'a meeting 4 mm up is not 0 m up');
   const neg = journeyWorking(solveJourney({ a1: 1, a3: 0.5, D: 2000, rel: { kind: 't1=k*t2', k: 0.25 } }))[1].note;
-  ok(/is negative, and a top speed cannot be/.test(strip(neg)), 'a negative root for V is called negative, not circularly');
+  ok(/is negative, and a speed cannot be/.test(strip(neg)), 'a negative root for V is called negative, not circularly');
   const PP = { disp: 'd', vel: 'v', acc: 'a', second: 's', mark: 'm' };
   const pg = KITS.pair.graphs(solvePair({ A: { h: 0, u: 20 }, B: { h: 40, u: 0, t0: 1 }, g: 10 }).f, 1, PP);
   ok(pg.every((sp) => sp.series.every((x) => Array.isArray(x.breaks) && x.breaks.length)), 'the pair’s lines break at release and landing: no vertical lines');

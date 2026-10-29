@@ -401,7 +401,7 @@ group('The Past-paper library: two in one vertical line, everything it says', ()
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
-group('The Past-paper library: a journey in three stages, everything it says', () => {
+group('The Past-paper library: a journey in stages, everything it says', () => {
   const K = KITS.journey;
   const INPUTS = [
     { a1: 0.5, a3: 0.25, T: 300, D: 6300, at: { t: 250, s: 3150, v: 10 } },
@@ -417,6 +417,15 @@ group('The Past-paper library: a journey in three stages, everything it says', (
     { a1: 0.5, a3: 0.25, T: 100, D: 6300 },
     { V: 10, T: 20 },
     { a1: 0.5, a3: 0.25, T: 300, D: 6300, at: { t: 400, s: 9000, v: 40 } },
+    // in stages, starting and ending at speed
+    { u: 20, stages: [{ kind: 'hold', t: 25 }, { kind: 'down', v: 8, a: 0.4 }, { kind: 'hold', t: 60 }, { kind: 'up', v: 20 }], D: 1960, at: { t: 100, s: 1000, v: 10 } },
+    { u: 0, stages: [{ kind: 'up', v: 5, t: 4 }, { kind: 'hold', t: 60 }, { kind: 'down', t: 20 }], T: 84, D: 400, at: { t: 64, s: 400, v: 4.5 } },
+    { u: 10, stages: [{ kind: 'up', a: 0.5, t: 20 }, { kind: 'down', v: 0, a: 1 }], at: { t: 30 } },
+    { u: 0, stages: [{ kind: 'up', a: 2 }, { kind: 'hold', t: 10 }, { kind: 'up', a: 1, t: 5 }, { kind: 'down', v: 0, a: 3 }], D: 500 },
+    { u: 0, stages: [{ kind: 'up', t: 10 }, { kind: 'down', v: 0, t: 30 }], D: 400, rel: { kind: 'a', x: 1, y: 2, k: 3 } },
+    { u: 5, stages: [{ kind: 'down', v: 8, t: 4 }] },
+    { stages: [{ kind: 'up' }, { kind: 'hold' }] },
+    { u: 0, stages: [{ kind: 'up', v: 10, t: 5 }, { kind: 'hold', t: 1 }], rel: { kind: 't', x: 1, y: 1, k: 2 } },
   ];
   const bag = [];
   let said = 0;
@@ -439,7 +448,9 @@ group('The Past-paper library: a journey in three stages, everything it says', (
       }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  const vals = { n: '4', k1: 'up', k2: 'hold', k3: 'down', k4: 'up' };
+  for (const f of [...K.fields, ...K.rows(vals).flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${f.aria || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const r of K.rows(vals)) check('row', `${r.title} ${r.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));

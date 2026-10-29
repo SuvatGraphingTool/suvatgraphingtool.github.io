@@ -430,12 +430,15 @@ const MIN_SIZE = 13;
 const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 export function labels() {
-  const q = [];
+  const q = [], held = [];
   return {
     add(text, x, y, o = {}) { q.push({ text, x, y, o, pri: o.pri ?? 0 }); },
+    /** Keep labels off a drawn thing — a figure, a post — as if it were a
+        label already placed: { x, y, w, h }, top-left and size. */
+    reserve(box) { held.push(box); },
     draw(ctx, w, h) {
       q.sort((a, b) => b.pri - a.pri);
-      const placed = [];
+      const placed = [...held];
       for (const it of q) {
         const o = it.o;
         const size = Math.max(MIN_SIZE, o.size ?? MIN_SIZE);

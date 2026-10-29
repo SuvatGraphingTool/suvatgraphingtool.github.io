@@ -774,7 +774,7 @@ function buildKitScreen() {
     const id = `k-${f.key.replace('.', '-')}`;
     if (f.type === 'choice') {
       // a choice with a default shows it pressed: what the engine assumes is on screen
-      return `<div class="xrow wide choice" data-x="${f.key}"><span class="xlabel" id="${id}-l">${f.label}</span>
+      return `<div class="xrow wide choice${f.full ? ' full' : ''}" data-x="${f.key}"><span class="xlabel" id="${id}-l">${f.label}</span>
         <div class="chips" role="group" aria-labelledby="${id}-l"${f.hint ? ` aria-describedby="${id}-h"` : ''} data-choice="${f.key}">${f.options.map((o) =>
           `<button class="chip" data-v="${o.v}" aria-pressed="${(val(f.key) ?? f.default) === o.v}">${o.label}</button>`).join('')}</div>
         ${f.hint ? `<p class="xhint" id="${id}-h">${f.hint}</p>` : ''}</div>`;
@@ -795,7 +795,10 @@ function buildKitScreen() {
     <fieldset class="kcol" data-col="${c}"><legend>${name}</legend>
       ${K.fields.filter((f) => f.col === c).map(box).join('')}</fieldset>`).join('');
   // Rows below the columns, each a group of its own across the full width.
-  const rows = (K.rows || []).map((r) => `
+  // A kit whose boxes depend on its choices (how many stages) gives them as a
+  // function of what is chosen so far.
+  const kRows = typeof K.rows === 'function' ? K.rows(state.kit) : (K.rows || []);
+  const rows = kRows.map((r) => `
     <fieldset class="krow"><legend>${r.title}</legend>
       <div class="krow-in">${r.fields.map(box).join('')}</div>
       ${r.hint ? `<p class="xhint">${r.hint}</p>` : ''}</fieldset>`).join('');
@@ -807,7 +810,7 @@ function buildKitScreen() {
         `<button class="chip" data-g="${x}" aria-pressed="${g === x}">${x}</button>`).join('')}</div>
       <p class="xhint">Use the value the paper gives: answers depend on it.</p></div>` : '');
 
-  const fieldOf = (key) => [...K.fields, ...(K.rows || []).flatMap((r) => r.fields)].find((x) => x.key === key);
+  const fieldOf = (key) => [...K.fields, ...kRows.flatMap((r) => r.fields)].find((x) => x.key === key);
   const sayDir = (inp) => {
     const hint = inp.parentElement.querySelector('.xhint');
     if (!hint || hint.dataset.say !== 'dir' || hint.dataset.bad === 'true') return;
@@ -844,7 +847,7 @@ function buildKitScreen() {
   // Every naming choice at once: pressing any other chip never unlocks the
   // box that one of them has locked.
   const markFound = () => {
-    const locked = new Set([...K.fields, ...(K.rows || []).flatMap((r) => r.fields)].filter((f) => f.type === 'choice' && f.names).map((f) => state.kit[f.key]).filter(Boolean));
+    const locked = new Set([...K.fields, ...kRows.flatMap((r) => r.fields)].filter((f) => f.type === 'choice' && f.names).map((f) => state.kit[f.key]).filter(Boolean));
     for (const inp of $('extra').querySelectorAll('input[data-k]')) {
       const f = fieldOf(inp.dataset.k);
       const isIt = locked.has(inp.dataset.k);
@@ -860,6 +863,13 @@ function buildKitScreen() {
         const key = group.dataset.choice;
         const on = state.kit[key] !== c.dataset.v;
         if (on) state.kit[key] = c.dataset.v; else delete state.kit[key];
+        // a choice that changes which boxes there are draws the screen again,
+        // keeping everything typed, and the focus where it was
+        if (fieldOf(key)?.rebuild) {
+          buildKitScreen();
+          $('extra').querySelector(`[data-choice="${key}"] [data-v="${c.dataset.v}"]`)?.focus();
+          return;
+        }
         const cur = state.kit[key] ?? fieldOf(key)?.default;
         for (const x of group.children) x.setAttribute('aria-pressed', String(x.dataset.v === cur));
         markFound();
