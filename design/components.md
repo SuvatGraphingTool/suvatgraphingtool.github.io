@@ -64,6 +64,7 @@ A kit is an object with:
 | `lanes` — `js/kits/lanes.js` | `two-on-a-road` |
 | `plane` — `js/kits/plane.js` | `vectors-ij` |
 | `target` — `js/kits/target.js` | `over-the-wall` |
+| `height` — `js/kits/height.js` | `from-a-height` |
 | `bounce` — `js/kits/bounce.js` | `bounce` |
 
 ## Engine models — `js/core/`
@@ -257,6 +258,18 @@ e, impacts })` — the bare staged motion, up positive.
 
 Used by: `bounce`.
 
+### A throw from a height — `js/core/height.js`
+
+No new physics: `solveHeight({ place, h, theta, u, v, s, t, g, level })` hands the
+launch to the twelve's `solveLaunch` and reads the flight with `timeAbove`
+(js/core/projectile.js). It adds what a cliff or tower question asks: the
+greatest height above the sea or ground, the time in the air, the landing
+speed, and the times at a height above the throw (`level`). `levelRows` writes
+that last as working; the rest of the working is the twelve's `buildWorking`.
+`PLACES` — cliff (over the sea), tower (over the ground).
+
+Used by: `from-a-height`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -269,6 +282,17 @@ its top level, so it can go into a product or after a minus as it stands
 built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
+
+### A cliff or a tower — `js/render/heights.js`
+
+`render(canvas, cam, { traj, t, show, fired })` for a flight with `traj.place`.
+One scale both ways, the drop drawn to scale. Reusable backdrop pieces:
+`sky(g, x0, y0, x1, horizon)`, `sea(g, x0, x1, Y, bottom)` (grey-blue, never the
+displacement hue), `seaCliff(g, x0, edge, top, Y)` (strata, grass cap, a face
+that leans back), `tower(g, edge, top, Y, width)` (stone courses, battlements),
+`groundStrip(g, x0, x1, Y, bottom)`. The thrower is `figures.js`'s `runner`,
+standing still. Used by: `from-a-height`.
+
 
 ### Side on, past one point — `js/render/target.js`
 

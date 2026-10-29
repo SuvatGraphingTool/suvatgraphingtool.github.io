@@ -15,6 +15,7 @@ import { solveJourney, journeyWorking } from '../js/core/journey.js';
 import { solveOvertake, overtakeWorking, mover, timeAt } from '../js/core/overtake.js';
 import { solvePlane, planeWorking } from '../js/core/plane.js';
 import { solveTarget, targetWorking, flight } from '../js/core/target.js';
+import { solveHeight, levelRows } from '../js/core/height.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { toLevel, rebound, timesAt } from '../js/core/stages.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
@@ -721,6 +722,28 @@ group('Over the wall: the critic’s round 6', () => {
   }
   ok(bad === 0, `4000 three-place cases with the point at the top: none split or refused (${bad})`);
   ok(/never leaves the ground/.test(strip(solveTarget({ g: 9.8, d: 50, H: 0, top: 0, kind: 'point', find: 'apex' }).reason)), 'a greatest height of 0 from the ground: said plainly');
+});
+
+group('From a cliff or a tower: each paper against its mark scheme', () => {
+  const j10 = solveHeight({ place: 'tower', h: 49, u: 14.7, theta: 90, g: 9.8 });
+  ok(j10.ok && near(j10.top, 60.025) && near(j10.vL, 34.3) && near(j10.T, 5), 'M1 J10 Q6: greatest height 60.0 m, 34.3 m s⁻¹, 5 s');
+  const j12 = solveHeight({ place: 'tower', h: 17.5, v: 28, theta: 90, g: 9.8, level: 19 });
+  ok(j12.ok && near(j12.f.params.u, 21) && near(j12.level.times[0], 1.30, 0.005) && near(j12.level.times[1], 2.99, 0.005), 'M1 J12 Q5: U = 21; 19 m above the start at 1.30 s and 2.99 s');
+  ok(strip(levelRows(j12)[0].s) === '19=21t−½×9.8t2', 'M1 J12 Q5: the equation for the times, substituted');
+  const o20 = solveHeight({ place: 'cliff', h: 25, s: 100, theta: 45, g: 9.8 });
+  ok(o20.ok && near(o20.f.params.u, 28) && near(o20.top, 45), 'E 9MA0/32 Oct20 Q5: U = 28, greatest height 45 m');
+  ok(!j10.notes.some((n) => /more than enough/.test(strip(n))), 'straight up: the angle is not called a spare value');
+  for (const k of [{ g: 9.8, h: 0, u: 5, theta: 0 }, { g: 9.8, h: 10, u: 5, theta: 90, s: 3 }, { g: 9.8, h: 10, u: 5, theta: 120 }, { h: 10, u: 5, theta: 0 }, { g: 9.8, h: 10, u: 5, theta: 0, level: -20 }]) {
+    ok(!solveHeight(k).ok && solveHeight(k).reason, `refused with a reason: ${JSON.stringify(k)}`);
+  }
+  for (const k of [{ place: 'cliff', h: 40, u: 15, theta: 0, g: 9.8 }, { place: 'cliff', h: 40, u: 15, theta: -30, g: 9.8 }, { place: 'tower', h: 30, u: 0, theta: -90, g: 9.8 }]) {
+    const r = solveHeight(k);
+    ok(r.ok && near(r.f.pos(r.T).y, 0, 1e-6) && r.T > 0, `lands on the sea or ground: ${JSON.stringify(k)}`);
+  }
+  const g = KITS.height.graphs(j10.f, 0, new Proxy({}, { get: () => '#000' }));
+  ok(g.every((x) => x.series.length === 1 && !x.series[0].dash), 'straight up: one solid line on each graph, no empty across line');
+  const g2 = KITS.height.graphs(o20.f, 0, new Proxy({}, { get: () => '#000' }));
+  ok(g2.every((x) => x.series.length === 2 && x.series[0].dash && !x.series[1].dash), 'at an angle: across dashed, up solid');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

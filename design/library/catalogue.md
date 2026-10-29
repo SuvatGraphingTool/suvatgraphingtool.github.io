@@ -61,7 +61,7 @@ this library: *covered* names the one of the twelve that does it.
 | 25 | Edexcel | 9MA0/03 | Jun 2018 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Constant a found from two positions; at A the acceleration switches; time until moving north-east | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 26 | Edexcel | 9MA0/03 | Jun 2018 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Ball thrown from 2 m, apex 3 m, hits target 20 m away at 0.75 m; find angle, time | 9.8 | **built**: `over-the-wall` (α = 14.0°, 1.13 s to T) |
 | 27 | Edexcel | 9MA0/32 | Oct 2020 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | a = 4i−5j, u = −2i+2j from O; velocity at t = 2; when it passes (λ, −4.5) | – | **built**: `vectors-ij` (v = 6i − 8j; λ = 2.88) |
-| 28 | Edexcel | 9MA0/32 | Oct 2020 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | From a 25 m cliff at 45°, lands 100 m out; show U = 28; greatest height | 9.8 | **covered** by `platform-angle` |
+| 28 | Edexcel | 9MA0/32 | Oct 2020 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | From a 25 m cliff at 45°, lands 100 m out; show U = 28; greatest height | 9.8 | **built**: `from-a-height` (a setting scene: the cliff over the sea; U = 28, greatest height 45 m) |
 | 29 | Edexcel | 9MA0/32 | Jun 2022 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202022%20QP%20(Mech).pdf) | Golf ball range 120 m, max height 10 m; show U² sin α cos α = 588 and U² = 1960 | 9.8 | **covered**: arc, but range and greatest height are given and neither is a box |
 | 30 | Edexcel | 9MA0/32 | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | From rest at 3.2 m/s² for 5 s; speed and distance | – | **covered** by `road` |
 | 31 | Edexcel | 9MA0/32 | Jun 2023 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | a = 2.4i+j, passes A then B 5 s later; when it reaches C(4, c) | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
@@ -437,3 +437,34 @@ time it is there after the bounce; up or down positive; g.
 rebound is given. Not yet: a rebound found from a later event (OCR 4728 Jun
 2014 Q1, row 55: passes its start 0.87 s after the throw — the rebound speed is
 the unknown), or one found from an impulse (momentum: out).
+
+### `from-a-height` — From a cliff or a tower
+
+**Papers.** Edexcel M1 Jun 2010 Q6 (thrown up at 14.7 m s⁻¹ from 49 m above the
+ground: greatest height 60.0 m, lands at 34.3 m s⁻¹ after 5 s). Edexcel M1 Jun
+2012 Q5 (thrown up from 17.5 m, lands at 28 m s⁻¹: U = 21, and 19 m above the
+start at 1.30 s and 2.99 s; the part in the water is another topic). Edexcel
+9MA0/32 Oct 2020 Q5 (from a 25 m cliff at 45°, lands 100 m out: U = 28,
+greatest height 45 m).
+
+**Why it is built.** A SETTING scene: the twelve's engine already solves these
+(`solveLaunch`), but none of the twelve shows a cliff over the sea or a tower,
+so the throw started floating in the air with nothing under it. The user's
+standard is that the scene looks like the place in the question.
+
+**How it is solved.** By the twelve's own solver and flight; the times at a
+height are `timeAbove`. No physics is new.
+
+**The stage.** Side on at one scale both ways: sky, a rock cliff with strata
+and grass over the sea's swell, or a stone tower on level ground; the thrower
+at the edge; the height and the landing distance as dimension lines; a height
+asked about as a marker line, ringed where it is crossed; velocity with its
+components (across dashed, up solid), acceleration, greatest height when asked.
+
+**What the student varies.** Cliff or tower, its height, the angle (90 up, 0
+across, −90 down) and the speed — or instead the landing speed, how far out,
+or the time; and a height above the throw to ask about.
+
+**What makes it general.** Every throw from a height onto level sea or ground.
+Not yet: a well (dropped into it), a bridge over a river, a table edge.
+
