@@ -117,34 +117,83 @@ function limb(g, pts, color, width) {
 
 /* ── vehicles ──────────────────────────────────────────────────────────── */
 
-/** The lorry: a cab and a box trailer. Moved here from js/render/road.js,
-    unchanged, pixel for pixel. Its hubs are round, so it shows no turning. */
-export function lorry(g, X, Y, L, P, { dir = 1, ring = null } = {}) {
-  const H = L * 0.36, cabW = L * 0.26, wheel = L * 0.075;
-  // Facing right it is drawn where it stands, with no transform, so it is
-  // the road's lorry to the pixel (arcs through a transform anti-alias
-  // differently); facing left it goes through at() like every other figure.
-  const draw = (X, Y) => {
-    const back = X - L;
-    // the box
-    g.fillStyle = P.card; g.strokeStyle = ring || P.strong; g.lineWidth = ring ? 2.4 : 1.6;
-    g.beginPath(); g.roundRect(back, Y - wheel - H, L - cabW - 4, H, 3); g.fill(); g.stroke();
-    // the cab
-    g.beginPath();
-    g.moveTo(X - cabW, Y - wheel); g.lineTo(X - cabW, Y - wheel - H * 0.82);
-    g.lineTo(X - cabW * 0.35, Y - wheel - H * 0.82); g.lineTo(X, Y - wheel - H * 0.38);
-    g.lineTo(X, Y - wheel); g.closePath(); g.fill(); g.stroke();
-    // the window
-    g.fillStyle = P.faint;
-    g.beginPath();
-    g.moveTo(X - cabW * 0.82, Y - wheel - H * 0.72); g.lineTo(X - cabW * 0.4, Y - wheel - H * 0.72);
-    g.lineTo(X - cabW * 0.1, Y - wheel - H * 0.44); g.lineTo(X - cabW * 0.82, Y - wheel - H * 0.44);
-    g.closePath(); g.fill();
-    // wheels
-    for (const wx of [back + L * 0.14, back + L * 0.3, X - cabW * 0.5]) solidWheel(g, wx, Y - wheel, wheel, P, 0, false);
-  };
-  if (dir === -1) at(g, X, Y, dir, () => draw(0, 0));
-  else { g.save(); draw(X, Y); g.restore(); }
+/** The lorry, side on: a box trailer with ribbed panels, rails and a rear
+    door; a painted cab with a roof deflector, glass with a glint, a door,
+    a mirror, a grille, a headlamp and a bumper; a fuel tank and side guard
+    on the chassis; wheels in their arches turning with the distance (phase);
+    a tail lamp that glows when `brake`. A soft shadow under it. `ring`
+    outlines it in a hue when it must be told apart. */
+export function lorry(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, brake = false } = {}) {
+  const H = L * 0.36, cabW = L * 0.26, wr = L * 0.075, E = env();
+  softShadow(g, X - L * 0.5 * dir, Y + 1, L * 0.55, Math.max(2, L * 0.06), 0.9);
+  at(g, X, Y, dir, () => {
+    const back = -L, boxB = -wr * 1.75, boxT = boxB - H * 1.02, boxR = -cabW - Math.max(2, L * 0.02);
+    const edge = ring || 'rgba(20,18,22,0.55)', lw = ring ? 2.4 : 1.1;
+    // the chassis rail
+    g.fillStyle = '#2b2628'; g.fillRect(back + L * 0.03, -wr * 1.95, L * 0.95, wr * 0.6);
+    // the box: panels lit from above, ribs, top and bottom rails, the rear door
+    const bg = g.createLinearGradient(0, boxT, 0, boxB);
+    bg.addColorStop(0, E.night ? '#d3cac2' : '#f4eee7'); bg.addColorStop(0.7, E.night ? '#b2a89f' : '#ddd4ca'); bg.addColorStop(1, E.night ? '#857b74' : '#b7ada3');
+    g.fillStyle = bg; g.beginPath(); g.roundRect(back, boxT, boxR - back, boxB - boxT, Math.min(3, L * 0.015)); g.fill();
+    g.save(); g.beginPath(); g.rect(back, boxT, boxR - back, boxB - boxT); g.clip();
+    g.lineWidth = Math.max(0.8, L * 0.006);
+    for (let x = back + L * 0.06; x < boxR - L * 0.02; x += L * 0.065) {
+      g.strokeStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.moveTo(x - 0.8, boxT); g.lineTo(x - 0.8, boxB); g.stroke();
+      g.strokeStyle = 'rgba(40,34,36,0.22)'; g.beginPath(); g.moveTo(x + 0.6, boxT); g.lineTo(x + 0.6, boxB); g.stroke();
+    }
+    g.fillStyle = E.night ? '#6c6267' : '#8f8785'; g.fillRect(back, boxT, boxR - back, H * 0.06); g.fillRect(back, boxB - H * 0.08, boxR - back, H * 0.08);
+    g.fillStyle = E.night ? '#5d6f86' : '#6f8199'; g.fillRect(back, boxB - H * 0.3, boxR - back, H * 0.07);
+    g.strokeStyle = 'rgba(40,34,36,0.5)'; g.lineWidth = 1; g.beginPath(); g.moveTo(back + L * 0.025, boxT + H * 0.06); g.lineTo(back + L * 0.025, boxB - H * 0.08); g.stroke();
+    g.fillStyle = 'rgba(40,34,36,0.6)'; for (const k of [0.25, 0.75]) g.fillRect(back + L * 0.012, boxT + H * k, Math.max(1.5, L * 0.012), Math.max(1.5, H * 0.04));
+    g.restore();
+    g.beginPath(); g.roundRect(back, boxT, boxR - back, boxB - boxT, Math.min(3, L * 0.015)); g.strokeStyle = edge; g.lineWidth = lw; g.stroke();
+    // the tail lamp
+    g.fillStyle = brake ? '#ff3b30' : '#8c2f2a'; g.fillRect(back - 1, boxB - H * 0.2, Math.max(2, L * 0.012), H * 0.09);
+    if (brake) { const bl = g.createRadialGradient(back, boxB - H * 0.16, 0, back, boxB - H * 0.16, L * 0.14); bl.addColorStop(0, 'rgba(255,70,50,0.55)'); bl.addColorStop(1, 'rgba(255,70,50,0)'); g.fillStyle = bl; g.beginPath(); g.arc(back, boxB - H * 0.16, L * 0.14, 0, TAU); g.fill(); }
+    // the side guard and the fuel tank on the chassis
+    g.fillStyle = E.night ? '#4a4246' : '#77706f'; g.fillRect(back + L * 0.38, -wr * 1.45, L * 0.2, Math.max(1.5, wr * 0.22));
+    const tank = g.createLinearGradient(0, -wr * 1.9, 0, -wr * 0.75);
+    tank.addColorStop(0, '#e9e6e3'); tank.addColorStop(0.5, '#a9a3a1'); tank.addColorStop(1, '#5f5a59');
+    g.fillStyle = tank; g.beginPath(); g.roundRect(-cabW - L * 0.17, -wr * 1.9, L * 0.13, wr * 1.15, wr * 0.4); g.fill();
+    // the cab: a roof deflector, the painted body, glass, door, mirror, grille, lamp, bumper
+    const cB = -wr * 1.2, cT = boxT + H * 0.12;
+    const paint = E.night ? '#6b7f99' : '#5f7696';
+    g.fillStyle = E.night ? '#55667c' : '#4d6280';
+    g.beginPath(); g.moveTo(-cabW + 1, cT); g.lineTo(-cabW + 1, boxT + 1); g.lineTo(-cabW * 0.62, boxT + 1); g.lineTo(-cabW * 0.25, cT); g.closePath(); g.fill();
+    const cab = () => {
+      g.beginPath();
+      g.moveTo(-cabW, cB); g.lineTo(-cabW, cT + 3); g.quadraticCurveTo(-cabW, cT, -cabW + 3, cT);
+      g.lineTo(-cabW * 0.22, cT); g.quadraticCurveTo(-cabW * 0.08, cT + 1, -cabW * 0.04, cT + H * 0.38);
+      g.lineTo(0, cT + H * 0.5); g.lineTo(0, cB); g.closePath();
+    };
+    const cg = g.createLinearGradient(0, cT, 0, cB);
+    cg.addColorStop(0, paint); cg.addColorStop(0.6, paint); cg.addColorStop(1, '#353c48');
+    cab(); g.fillStyle = cg; g.fill(); g.strokeStyle = edge; g.lineWidth = lw; g.stroke();
+    g.save(); cab(); g.clip();
+    g.fillStyle = 'rgba(255,255,255,0.16)'; g.fillRect(-cabW, cT + H * 0.42, cabW, H * 0.05);
+    const glass = g.createLinearGradient(0, cT + H * 0.06, 0, cT + H * 0.4);
+    glass.addColorStop(0, E.night ? '#5f6a7a' : '#c9d6e2'); glass.addColorStop(1, E.night ? '#2c323c' : '#7f93a6');
+    g.fillStyle = glass;
+    g.beginPath(); g.moveTo(-cabW * 0.86, cT + H * 0.08); g.lineTo(-cabW * 0.24, cT + H * 0.08); g.quadraticCurveTo(-cabW * 0.11, cT + H * 0.1, -cabW * 0.07, cT + H * 0.38); g.lineTo(-cabW * 0.86, cT + H * 0.38); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = Math.max(1, L * 0.008); g.beginPath(); g.moveTo(-cabW * 0.6, cT + H * 0.12); g.lineTo(-cabW * 0.68, cT + H * 0.34); g.stroke();
+    g.strokeStyle = 'rgba(20,18,22,0.4)'; g.lineWidth = 1; g.beginPath(); g.moveTo(-cabW * 0.9, cT + H * 0.06); g.lineTo(-cabW * 0.9, cB - wr * 0.3); g.lineTo(-cabW * 0.3, cB - wr * 0.3); g.stroke();
+    g.fillStyle = 'rgba(20,18,22,0.5)'; g.fillRect(-cabW * 0.82, cT + H * 0.48, cabW * 0.14, Math.max(1.4, H * 0.03));
+    // the grille and headlamp, the bumper
+    g.fillStyle = '#2b2628'; g.fillRect(-cabW * 0.08, cT + H * 0.56, cabW * 0.1, H * 0.26);
+    g.strokeStyle = 'rgba(255,255,255,0.2)'; g.lineWidth = 0.8; for (let k = 1; k < 4; k++) { const y = cT + H * (0.56 + 0.065 * k); g.beginPath(); g.moveTo(-cabW * 0.08, y); g.lineTo(0, y); g.stroke(); }
+    g.restore();
+    g.fillStyle = E.night ? '#fff3cf' : '#fff8e2'; g.beginPath(); g.ellipse(-L * 0.006, cB - H * 0.12, Math.max(1.2, L * 0.012), Math.max(1.4, H * 0.05), 0, 0, TAU); g.fill();
+    if (E.night) { const hy = cB - H * 0.12, hl = g.createRadialGradient(0, hy, 0, 0, hy, L * 0.3); hl.addColorStop(0, 'rgba(255,240,200,0.35)'); hl.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = hl; g.beginPath(); g.moveTo(0, hy); g.lineTo(L * 0.3, hy - H * 0.2); g.lineTo(L * 0.3, hy + H * 0.2); g.closePath(); g.fill(); }
+    g.fillStyle = '#3a3436'; g.beginPath(); g.roundRect(-cabW * 0.25, cB - wr * 0.1, cabW * 0.25 + L * 0.008, wr * 0.55, 1.5); g.fill();
+    // the mirror on its arm
+    g.strokeStyle = '#2b2628'; g.lineWidth = Math.max(1, L * 0.008); g.beginPath(); g.moveTo(-cabW * 0.12, cT + H * 0.2); g.lineTo(L * 0.012, cT + H * 0.16); g.stroke();
+    g.fillStyle = '#2b2628'; g.fillRect(L * 0.008, cT + H * 0.08, Math.max(1.5, L * 0.012), H * 0.16);
+    // wheels in their arches: the tandem at the back, one under the cab
+    for (const wx of [back + L * 0.14, back + L * 0.3, -cabW * 0.5]) {
+      g.fillStyle = 'rgba(15,13,15,0.7)'; g.beginPath(); g.arc(wx, -wr, wr * 1.25, Math.PI, 0); g.fill();
+      roadWheel(g, wx, -wr, wr, phase * TAU);
+    }
+  });
 }
 
 /** A car: a saloon, side on — painted body with a sheen, glass with a
@@ -303,13 +352,29 @@ export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1
   });
 }
 
-/** A cyclist: a diamond-framed bicycle, spoked wheels, a rider whose legs go
-    round with the cranks. phase is a turn of the cranks; the wheels turn
-    GEAR times for each. */
+/** A cyclist: a road bike — a painted diamond frame with a highlight,
+    spoked wheels with silver rims, a chainring and chain, a saddle and drop
+    bars — and a rider dressed like the runner (jersey, shorts, a helmet)
+    whose legs go round with the cranks. phase is a turn of the cranks; the
+    wheels turn GEAR times for each. `ring` dresses the jersey in a second
+    colour to tell B from A. */
 const GEAR = 2.5;
+function bikeWheel(g, cx, cy, r, angle) {
+  const E = env();
+  g.save();
+  g.strokeStyle = E.night ? 'rgba(220,214,210,0.55)' : 'rgba(90,84,86,0.6)'; g.lineWidth = Math.max(0.6, r * 0.025);
+  for (let k = 0; k < 8; k++) { const a = angle + (k * Math.PI) / 8, c = Math.cos(a) * r * 0.86, s = Math.sin(a) * r * 0.86; g.beginPath(); g.moveTo(cx - c, cy - s); g.lineTo(cx + c, cy + s); g.stroke(); }
+  g.strokeStyle = '#1d1a1b'; g.lineWidth = Math.max(1.6, r * 0.14); g.beginPath(); g.arc(cx, cy, r - g.lineWidth / 2, 0, TAU); g.stroke();
+  g.strokeStyle = E.night ? '#b8b0b3' : '#c9c3c1'; g.lineWidth = Math.max(0.8, r * 0.06); g.beginPath(); g.arc(cx, cy, r * 0.83, 0, TAU); g.stroke();
+  g.fillStyle = '#4a4446'; g.beginPath(); g.arc(cx, cy, Math.max(1.4, r * 0.1), 0, TAU); g.fill();
+  g.restore();
+}
 export function cyclist(g, X, Y, L, P, { dir = 1, ring = null, phase = 0 } = {}) {
-  const r = L * 0.2;
-  const ink = ring || P.strong;
+  const r = L * 0.2, E = env();
+  const skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
+  const shirt = ring || (E.night ? '#6c7f9a' : '#5f7392'), shorts = '#2f3340';
+  const paint = E.night ? '#8a4b55' : '#7d3e48', paintHi = 'rgba(255,255,255,0.35)';
+  softShadow(g, X - L * 0.5 * dir, Y + 1, L * 0.5, Math.max(2, L * 0.05), 0.8);
   at(g, X, Y, dir, () => {
     const RH = { x: -L + r, y: -r }, FH = { x: -r, y: -r };
     const BB = { x: -L * 0.5, y: -r * 0.95 };
@@ -321,81 +386,113 @@ export function cyclist(g, X, Y, L, P, { dir = 1, ring = null, phase = 0 } = {})
     const SH = { x: -L * 0.34, y: -r - L * 0.62 };
     const thigh = L * 0.27, shin = L * 0.27;
     const foot = (a) => ({ x: BB.x + crank * Math.cos(a), y: BB.y + crank * Math.sin(a) });
-    const lw = Math.max(2.2, L * 0.045);
-    // the far leg, behind the frame
+    const lw = Math.max(2.2, L * 0.05), tube = Math.max(1.8, L * 0.032);
+    // the far leg and arm, in shade, behind the frame
     const F2 = foot(ca + Math.PI);
-    limb(g, [HIP, joint(HIP, F2, thigh, shin, 1), F2], P.faint, lw);
+    const far = [HIP, joint(HIP, F2, thigh, shin, 1), F2];
+    limb(g, far, skinFar, lw); limb(g, far.slice(0, 2), withAlpha(shorts, 0.85), lw * 1.15);
+    g.fillStyle = '#2b2628'; g.beginPath(); g.ellipse(F2.x + lw * 0.3, F2.y, lw * 0.7, lw * 0.38, 0, 0, TAU); g.fill();
     // clockwise on the canvas is rolling forward, as for every wheel here
-    spokedWheel(g, RH.x, RH.y, r, P, ca * GEAR);
-    spokedWheel(g, FH.x, FH.y, r, P, ca * GEAR);
-    // the frame
-    g.strokeStyle = ink; g.lineWidth = Math.max(1.8, L * 0.03); g.lineCap = 'round'; g.lineJoin = 'round';
-    g.beginPath();
-    g.moveTo(RH.x, RH.y); g.lineTo(BB.x, BB.y); g.lineTo(SEAT.x, SEAT.y); g.lineTo(RH.x, RH.y);
-    g.moveTo(SEAT.x, SEAT.y); g.lineTo(HT.x, HT.y); g.lineTo(HB.x, HB.y); g.lineTo(BB.x, BB.y);
-    g.moveTo(HT.x, HT.y); g.lineTo(FH.x, FH.y);
-    g.moveTo(HT.x, HT.y); g.lineTo(BAR.x, BAR.y);
-    g.stroke();
-    // the saddle
-    limb(g, [{ x: SEAT.x - L * 0.05, y: SEAT.y - 1 }, { x: SEAT.x + L * 0.05, y: SEAT.y - 1 }], ink, Math.max(2.4, L * 0.04));
-    // the rider: trunk, arm to the bars, head
-    limb(g, [HIP, SH], ink, lw * 1.5);
-    limb(g, [SH, joint(SH, BAR, L * 0.16, L * 0.16, -1), BAR], ink, lw);
-    g.fillStyle = ink; g.beginPath(); g.arc(SH.x + L * 0.045, SH.y - L * 0.075, L * 0.068, 0, TAU); g.fill();
-    // the near leg, and its crank
+    bikeWheel(g, RH.x, RH.y, r, ca * GEAR);
+    bikeWheel(g, FH.x, FH.y, r, ca * GEAR);
+    // the chain and chainring
+    g.strokeStyle = '#3a3436'; g.lineWidth = Math.max(0.8, L * 0.01);
+    g.beginPath(); g.moveTo(RH.x, RH.y - r * 0.18); g.lineTo(BB.x, BB.y - crank * 0.8); g.moveTo(RH.x, RH.y + r * 0.18); g.lineTo(BB.x, BB.y + crank * 0.8); g.stroke();
+    g.fillStyle = '#6a6466'; g.beginPath(); g.arc(BB.x, BB.y, crank * 0.85, 0, TAU); g.fill();
+    g.fillStyle = '#3a3436'; g.beginPath(); g.arc(BB.x, BB.y, crank * 0.35, 0, TAU); g.fill();
+    // the frame, painted, a highlight along its top edges; the fork darker
+    const tubes = [[RH, BB], [BB, SEAT], [SEAT, RH], [SEAT, HT], [HB, BB], [HT, HB]];
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.strokeStyle = paint; g.lineWidth = tube; g.beginPath(); for (const [p, q] of tubes) { g.moveTo(p.x, p.y); g.lineTo(q.x, q.y); } g.stroke();
+    g.strokeStyle = paintHi; g.lineWidth = Math.max(0.6, tube * 0.3); g.beginPath(); for (const [p, q] of tubes) { g.moveTo(p.x, p.y - tube * 0.25); g.lineTo(q.x, q.y - tube * 0.25); } g.stroke();
+    g.strokeStyle = '#3a3436'; g.lineWidth = tube * 0.9; g.beginPath(); g.moveTo(HB.x, HB.y); g.lineTo(FH.x, FH.y); g.moveTo(HT.x, HT.y); g.lineTo(BAR.x, BAR.y); g.stroke();
+    // drop bars and the saddle
+    g.strokeStyle = '#2b2628'; g.lineWidth = Math.max(1.4, L * 0.022);
+    g.beginPath(); g.moveTo(BAR.x - L * 0.02, BAR.y); g.lineTo(BAR.x + L * 0.04, BAR.y); g.quadraticCurveTo(BAR.x + L * 0.07, BAR.y + L * 0.03, BAR.x + L * 0.03, BAR.y + L * 0.06); g.stroke();
+    g.fillStyle = '#2b2628'; g.beginPath(); g.moveTo(SEAT.x - L * 0.06, SEAT.y - L * 0.012); g.quadraticCurveTo(SEAT.x, SEAT.y - L * 0.035, SEAT.x + L * 0.06, SEAT.y - L * 0.015); g.lineTo(SEAT.x + L * 0.05, SEAT.y + L * 0.005); g.lineTo(SEAT.x - L * 0.05, SEAT.y + L * 0.008); g.closePath(); g.fill();
+    // the rider: jersey, arm to the bars, the head under a helmet
+    limb(g, [HIP, SH], shirt, lw * 1.9);
+    limb(g, [HIP, { x: HIP.x + (SH.x - HIP.x) * 0.15, y: HIP.y + (SH.y - HIP.y) * 0.15 }], shorts, lw * 1.95);
+    const EL = joint(SH, BAR, L * 0.16, L * 0.16, -1);
+    limb(g, [SH, EL, BAR], skin, lw * 0.8); limb(g, [SH, EL], shirt, lw * 0.95);
+    const hx = SH.x + L * 0.05, hy = SH.y - L * 0.07, hr = L * 0.062;
+    const hg = g.createRadialGradient(hx - hr * 0.3, hy - hr * 0.3, hr * 0.1, hx, hy, hr); hg.addColorStop(0, skin); hg.addColorStop(1, skinFar);
+    g.fillStyle = hg; g.beginPath(); g.arc(hx, hy, hr, 0, TAU); g.fill();
+    const hel = g.createLinearGradient(0, hy - hr * 1.3, 0, hy); hel.addColorStop(0, E.night ? '#e4ded8' : '#f5f1ec'); hel.addColorStop(1, E.night ? '#9a9195' : '#b9b1ad');
+    g.fillStyle = hel; g.beginPath(); g.ellipse(hx - hr * 0.15, hy - hr * 0.25, hr * 1.2, hr * 0.85, -0.15, Math.PI, TAU); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(20,18,22,0.4)'; g.lineWidth = 0.8; g.stroke();
+    // the near leg, its crank and shoe
     const F1 = foot(ca);
-    stroke(g, [BB, F1], { color: ink, width: Math.max(1.6, L * 0.025) });
-    limb(g, [HIP, joint(HIP, F1, thigh, shin, 1), F1], ink, lw);
+    stroke(g, [BB, F1], { color: '#4a4446', width: Math.max(1.6, L * 0.025) });
+    const near = [HIP, joint(HIP, F1, thigh, shin, 1), F1];
+    limb(g, near, skin, lw); limb(g, near.slice(0, 2), shorts, lw * 1.15);
+    g.fillStyle = '#2b2628'; g.beginPath(); g.ellipse(F1.x + lw * 0.3, F1.y, lw * 0.75, lw * 0.4, 0, 0, TAU); g.fill();
   });
 }
 
-/** A motorcycle and its rider: heavy wheels, a tank and seat, the rider
-    tucked forward in a helmet. */
-export function motorcycle(g, X, Y, L, P, { dir = 1, ring = null, phase = 0 } = {}) {
-  const r = L * 0.19;
-  const ink = ring || P.strong;
+/** A motorcycle and its rider: fat tyres on alloy wheels turning with the
+    distance, a painted tank and tail with a sheen, a fairing with a tinted
+    screen, a finned engine, a chrome exhaust, a headlamp; the rider tucked
+    forward in leathers, boots and gloves, a helmet with a visor's glint.
+    `ring` paints the helmet in a second colour to tell B from A. */
+export function motorcycle(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, brake = false } = {}) {
+  const r = L * 0.19, E = env();
+  const paint = E.night ? '#4d6280' : '#3f5578', leather = '#2a2c33', leatherHi = '#4a4d57';
+  softShadow(g, X - L * 0.5 * dir, Y + 1, L * 0.5, Math.max(2, L * 0.05), 0.85);
   at(g, X, Y, dir, () => {
     const RH = { x: -L + r, y: -r }, FH = { x: -r, y: -r };
-    const wheel = (c) => {
-      // a fat tyre as a ring, so it reads as a wheel and not a disc
-      const tw = r * 0.34;
-      g.strokeStyle = P.strong; g.lineWidth = tw;
-      g.beginPath(); g.arc(c.x, c.y, r - tw / 2, 0, TAU); g.stroke();
-      g.strokeStyle = P.faint; g.lineWidth = Math.max(1, r * 0.08);
-      for (let k = 0; k < 3; k++) {
-        const a = phase * TAU + (k * Math.PI) / 3, cx = Math.cos(a) * (r - tw), sy = Math.sin(a) * (r - tw);
-        g.beginPath(); g.moveTo(c.x - cx, c.y - sy); g.lineTo(c.x + cx, c.y + sy); g.stroke();
-      }
-      g.fillStyle = P.strong; g.beginPath(); g.arc(c.x, c.y, r * 0.16, 0, TAU); g.fill();
+    // the swing arm, the wheels
+    stroke(g, [RH, { x: -L * 0.5, y: -r * 1.2 }], { color: '#2b2628', width: Math.max(2, L * 0.035) });
+    roadWheel(g, RH.x, RH.y, r, phase * TAU);
+    roadWheel(g, FH.x, FH.y, r, phase * TAU);
+    // the fork, chrome; the front mudguard
+    stroke(g, [{ x: -L * 0.24, y: -r * 2.8 }, FH], { color: E.night ? '#b8b0b3' : '#9d9693', width: Math.max(2.2, L * 0.035) });
+    g.fillStyle = paint; g.beginPath(); g.arc(FH.x, FH.y, r * 1.12, Math.PI * 1.1, Math.PI * 1.75); g.arc(FH.x, FH.y, r * 0.98, Math.PI * 1.75, Math.PI * 1.1, true); g.closePath(); g.fill();
+    // the engine: a finned block, and the exhaust low along the side to the back
+    const eg = g.createLinearGradient(0, -r * 1.8, 0, -r * 1.0); eg.addColorStop(0, '#a19a98'); eg.addColorStop(1, '#4a4446');
+    g.fillStyle = eg; g.beginPath(); g.roundRect(-L * 0.62, -r * 1.8, L * 0.24, r * 0.78, r * 0.12); g.fill();
+    g.strokeStyle = 'rgba(30,26,28,0.5)'; g.lineWidth = Math.max(0.7, L * 0.006); for (let k = 1; k < 5; k++) { const y = -r * 1.8 + (r * 0.78 * k) / 5; g.beginPath(); g.moveTo(-L * 0.6, y); g.lineTo(-L * 0.4, y); g.stroke(); }
+    const pw = Math.max(2.4, r * 0.24);
+    stroke(g, [{ x: -L * 0.46, y: -r * 1.08 }, { x: -L * 0.88, y: -r * 1.32 }], { color: '#6a6466', width: pw });
+    stroke(g, [{ x: -L * 0.46, y: -r * 1.08 - pw * 0.25 }, { x: -L * 0.88, y: -r * 1.32 - pw * 0.25 }], { color: '#e9e6e3', width: pw * 0.35 });
+    // the body: tail, seat, tank and a front fairing, painted, with a sheen
+    const body = () => {
+      g.beginPath();
+      g.moveTo(-L * 0.92, -r * 1.8); g.lineTo(-L * 0.86, -r * 2.25);
+      g.lineTo(-L * 0.56, -r * 2.2); g.lineTo(-L * 0.5, -r * 2.65);
+      g.quadraticCurveTo(-L * 0.42, -r * 2.85, -L * 0.34, -r * 2.7); g.lineTo(-L * 0.2, -r * 2.95);
+      g.quadraticCurveTo(-L * 0.12, -r * 2.6, -L * 0.16, -r * 2.2); g.lineTo(-L * 0.3, -r * 1.7);
+      g.lineTo(-L * 0.38, -r * 1.75); g.lineTo(-L * 0.64, -r * 1.85);
+      g.lineTo(-L * 0.7, -r * 1.7); g.closePath();
     };
-    wheel(RH); wheel(FH);
-    // the fork, and the swing arm
-    stroke(g, [{ x: -L * 0.24, y: -r * 2.8 }, FH], { color: ink, width: Math.max(2.4, L * 0.04) });
-    stroke(g, [RH, { x: -L * 0.5, y: -r * 1.2 }], { color: ink, width: Math.max(2, L * 0.03) });
-    // the exhaust, low along the side to the back
-    stroke(g, [{ x: -L * 0.48, y: -r * 1.1 }, { x: -L * 0.86, y: -r * 1.35 }], { color: P.faint, width: Math.max(2.4, r * 0.22) });
-    // the body: tail, seat, tank and a front fairing, down to the engine
-    g.fillStyle = P.card; g.strokeStyle = ink; g.lineWidth = ring ? 2.4 : 1.6; g.lineJoin = 'round';
-    g.beginPath();
-    g.moveTo(-L * 0.92, -r * 1.8); g.lineTo(-L * 0.86, -r * 2.25);
-    g.lineTo(-L * 0.56, -r * 2.2); g.lineTo(-L * 0.5, -r * 2.65);
-    g.lineTo(-L * 0.34, -r * 2.7); g.lineTo(-L * 0.2, -r * 2.95);
-    g.lineTo(-L * 0.16, -r * 2.2); g.lineTo(-L * 0.3, -r * 1.7);
-    g.lineTo(-L * 0.4, -r * 1.0); g.lineTo(-L * 0.64, -r * 1.0);
-    g.lineTo(-L * 0.7, -r * 1.7); g.closePath(); g.fill(); g.stroke();
-    // the engine, a block under the tank, and the headlamp
-    g.fillStyle = P.faint; g.fillRect(-L * 0.6, -r * 1.75, L * 0.2, r * 0.65);
-    g.beginPath(); g.arc(-L * 0.165, -r * 2.45, Math.max(1.6, r * 0.18), 0, TAU); g.fill();
-    // the rider, leaning into it
+    const bg = g.createLinearGradient(0, -r * 2.95, 0, -r * 1.7);
+    bg.addColorStop(0, paint); bg.addColorStop(0.5, paint); bg.addColorStop(1, '#232a36');
+    body(); g.fillStyle = bg; g.fill(); g.strokeStyle = 'rgba(20,18,22,0.55)'; g.lineWidth = 1; g.stroke();
+    g.save(); body(); g.clip(); g.fillStyle = 'rgba(255,255,255,0.22)'; g.fillRect(-L, -r * 2.6, L, r * 0.12); g.restore();
+    // the seat, the screen, the headlamp and tail lamp
+    g.fillStyle = '#1f1c1e'; g.beginPath(); g.moveTo(-L * 0.8, -r * 2.24); g.quadraticCurveTo(-L * 0.68, -r * 2.42, -L * 0.53, -r * 2.24); g.lineTo(-L * 0.55, -r * 2.15); g.lineTo(-L * 0.8, -r * 2.17); g.closePath(); g.fill();
+    g.fillStyle = E.night ? 'rgba(160,180,200,0.55)' : 'rgba(120,145,170,0.7)'; g.beginPath(); g.moveTo(-L * 0.2, -r * 2.95); g.lineTo(-L * 0.25, -r * 3.35); g.lineTo(-L * 0.17, -r * 3.0); g.closePath(); g.fill();
+    g.fillStyle = E.night ? '#fff3cf' : '#fff8e2'; g.beginPath(); g.ellipse(-L * 0.14, -r * 2.45, Math.max(1.4, r * 0.12), Math.max(1.6, r * 0.18), 0, 0, TAU); g.fill();
+    g.fillStyle = brake ? '#ff3b30' : '#8c2f2a'; g.fillRect(-L * 0.93, -r * 2.15, Math.max(1.6, L * 0.02), Math.max(1.4, r * 0.15));
+    if (brake) { const bl = g.createRadialGradient(-L * 0.93, -r * 2.08, 0, -L * 0.93, -r * 2.08, L * 0.15); bl.addColorStop(0, 'rgba(255,70,50,0.55)'); bl.addColorStop(1, 'rgba(255,70,50,0)'); g.fillStyle = bl; g.beginPath(); g.arc(-L * 0.93, -r * 2.08, L * 0.15, 0, TAU); g.fill(); }
+    // the rider, leaning into it: leathers with a highlight, boots, gloves, helmet
     const HIP = { x: -L * 0.64, y: -r * 2.45 }, KNEE = { x: -L * 0.44, y: -r * 2.2 }, FOOT = { x: -L * 0.54, y: -r * 1.25 };
     const SH = { x: -L * 0.45, y: -r * 3.45 }, BAR = { x: -L * 0.25, y: -r * 3.0 };
-    const lw = Math.max(2.8, L * 0.055);
-    limb(g, [HIP, KNEE, FOOT], ink, lw * 1.2);
-    limb(g, [HIP, SH], ink, lw * 1.5);
-    limb(g, [SH, joint(SH, BAR, L * 0.13, L * 0.13, -1), BAR], ink, lw);
-    const hx = SH.x + L * 0.05, hy = SH.y - L * 0.075, hr = L * 0.075;
-    g.fillStyle = ink; g.beginPath(); g.arc(hx, hy, hr, 0, TAU); g.fill();
-    g.fillStyle = P.faint; g.beginPath(); g.arc(hx, hy, hr * 0.7, -0.6, 0.5); g.lineTo(hx, hy); g.closePath(); g.fill();
+    const lw = Math.max(2.8, L * 0.06);
+    limb(g, [HIP, KNEE, FOOT], leather, lw * 1.2);
+    limb(g, [HIP, KNEE], leatherHi, lw * 0.35);
+    g.fillStyle = '#151314'; g.beginPath(); g.ellipse(FOOT.x + lw * 0.3, FOOT.y, lw * 0.7, lw * 0.45, 0, 0, TAU); g.fill();
+    limb(g, [HIP, SH], leather, lw * 1.6);
+    limb(g, [{ x: HIP.x + 1, y: HIP.y - lw * 0.4 }, { x: SH.x + 1, y: SH.y - lw * 0.4 }], leatherHi, lw * 0.4);
+    const EL = joint(SH, BAR, L * 0.13, L * 0.13, -1);
+    limb(g, [SH, EL, BAR], leather, lw);
+    g.fillStyle = '#151314'; g.beginPath(); g.arc(BAR.x, BAR.y, lw * 0.55, 0, TAU); g.fill();
+    const hx = SH.x + L * 0.05, hy = SH.y - L * 0.075, hr = L * 0.078;
+    const hel = g.createRadialGradient(hx - hr * 0.35, hy - hr * 0.4, hr * 0.1, hx, hy, hr);
+    hel.addColorStop(0, ring ? '#ffffff' : (E.night ? '#e4ded8' : '#f5f1ec')); hel.addColorStop(1, ring || (E.night ? '#8f878b' : '#a9a19d'));
+    g.fillStyle = hel; g.beginPath(); g.arc(hx, hy, hr, 0, TAU); g.fill();
+    g.fillStyle = '#1f2630'; g.beginPath(); g.arc(hx, hy, hr * 0.72, -0.55, 0.45); g.lineTo(hx + hr * 0.1, hy); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = Math.max(0.8, hr * 0.12); g.beginPath(); g.arc(hx, hy, hr * 0.6, -0.4, -0.05); g.stroke();
   });
 }
 

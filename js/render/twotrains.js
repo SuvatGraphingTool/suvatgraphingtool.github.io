@@ -1,8 +1,9 @@
 // twotrains.js — the stage for two trains on parallel tracks between the same
 // two stations: side on at one scale, as a railway. Two tracks (`rails`),
 // each under its own overhead wire on steel masts (`catenary`); a station at
-// each end (`station`, exported: a platform behind the far track with its
-// yellow edge line, a canopy on columns, a lamp under it, the name board);
+// each end (`station`, exported: an island platform between the tracks with
+// yellow edge lines, a canopy on columns, a lamp, a bench, passengers, the
+// name board on its roof);
 // and each train (`train` from figures.js), three carriages long, where it is
 // now — A on the near track, B on the far one outlined in the second object's
 // colour, each with its letter on a disc on its side. The gap between their
@@ -16,9 +17,9 @@
 //
 // Everything drawn is read from js/core/twotrains.js (rule 4).
 
-import { landscape, env, rng, softShadow } from './scenery.js';
+import { landscape, env, rng, stone } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, withAlpha } from './util.js';
-import { rails, train, phaseFor, catenary, trainRoof, tree, fence, bush, pavement } from './figures.js';
+import { rails, train, phaseFor, catenary, trainRoof, tree, bush, pavement, runner } from './figures.js';
 import { pulse, ageOf } from './effects.js';
 import { T, num } from '../notation.js';
 
@@ -29,38 +30,53 @@ const q = (x) => {
 };
 
 /**
- * A station at x, where the trains' fronts stand: a platform behind the far
- * track (rail head at `top`) reaching back `length` px from x, its brick face,
- * its coping with the yellow line, a canopy on columns with a lamp under it,
- * and the name board standing on the canopy. A dashed stop line runs across
- * both tracks down to the near rail at `bottom`. `floor` is the height of a
- * train's floor above the rail, `roof` the canopy's underside.
+ * A station at x, where the trains' fronts stand: an island platform between
+ * the two tracks, reaching back `length` px from x — its paved top seen from
+ * a little above, from the far track's edge (rail head at `top`) to the near
+ * track's (at `bottom`), a yellow line and coping along both edges, the brick
+ * face over the near track, a canopy on columns down its middle with a lamp
+ * under it, the name board standing on the canopy, a bench and passengers
+ * waiting. A dashed stop line runs across both tracks. `floor` is the height
+ * of a train's floor above the rail, `roof` the canopy's underside. Draw it
+ * after the far track's train (the platform edge hides that train's wheels)
+ * and before the near track.
  */
-export function station(g, L, x, top, bottom, name, P, { length = 120, floor = 8, roof = top - 60 } = {}) {
-  const E = env(), x0 = x - length, x1 = x + 12, pTop = top - floor, depth = 7;
+export function station(g, L, x, top, bottom, name, P, { length = 120, floor = 8, roof = top - 60, seed = 1 } = {}) {
+  const E = env(), x0 = x - length, x1 = x + 12, far = top - floor, near = bottom - floor, midY = (far + near) / 2;
+  const q = rng(seed);
   g.save();
-  // the platform's surface, seen just from above, and its brick face
-  g.fillStyle = E.night ? '#5b5155' : '#c8bdb7'; g.fillRect(x0, pTop - depth, x1 - x0, depth);
-  const face = g.createLinearGradient(0, pTop, 0, top + 4);
-  face.addColorStop(0, E.night ? '#6a4a40' : '#a8705a'); face.addColorStop(1, E.night ? '#4a332d' : '#86563f');
-  g.fillStyle = face; g.fillRect(x0, pTop, x1 - x0, top + 4 - pTop);
-  g.strokeStyle = withAlpha(E.night ? '#000000' : '#5d3a2b', 0.35); g.lineWidth = 1;
+  // the paved top, darker towards the far edge; slab joints
+  const pv = g.createLinearGradient(0, far, 0, near);
+  pv.addColorStop(0, E.night ? '#4a4044' : '#b4aaa5'); pv.addColorStop(1, E.night ? '#5f5559' : '#cfc5bf');
+  g.fillStyle = pv; g.fillRect(x0, far, x1 - x0, near - far);
+  g.strokeStyle = withAlpha(E.night ? '#000000' : '#7d7470', 0.25); g.lineWidth = 1;
   g.beginPath();
-  for (let y = pTop + 3.5, row = 0; y < top + 4; y += 3.5, row++) { g.moveTo(x0, y); g.lineTo(x1, y); for (let bx = x0 + (row % 2) * 5; bx < x1; bx += 10) { g.moveTo(bx, y - 3.5); g.lineTo(bx, y); } }
+  for (let y = far + 9; y < near - 4; y += 9) { g.moveTo(x0, y); g.lineTo(x1, y); }
+  for (let xx = x0 + 14; xx < x1; xx += 22) { g.moveTo(xx, far + 4); g.lineTo(xx - 3, near - 4); }
   g.stroke();
-  // the coping and its yellow line
-  g.fillStyle = E.night ? '#8d8287' : '#e7e0da'; g.fillRect(x0 - 1, pTop - 2, x1 - x0 + 2, 3);
-  g.fillStyle = '#e8b730'; g.fillRect(x0, pTop - depth + 1.2, x1 - x0, 1.8);
-  // the canopy: columns, a roof with its fascia, lit underneath at dusk
-  const cTop = roof - 9, cols = Math.max(2, Math.round((x1 - x0) / 40));
-  for (let i = 0; i <= cols; i++) {
-    const cx = x0 + 8 + ((x1 - x0 - 16) * i) / cols;
-    const cg = g.createLinearGradient(cx - 2, 0, cx + 2, 0); cg.addColorStop(0, E.night ? '#7a6f74' : '#6f8199'); cg.addColorStop(1, E.night ? '#3d3438' : '#46546a');
-    g.fillStyle = cg; g.fillRect(cx - 2, roof, 4, pTop - depth - roof);
-    g.fillStyle = E.night ? '#3d3438' : '#46546a'; g.fillRect(cx - 3.5, pTop - depth - 2, 7, 2);
+  // both edges: coping, and the yellow line just inside it
+  for (const [y, yl] of [[far, far + 3], [near - 3, near - 6]]) {
+    g.fillStyle = E.night ? '#8d8287' : '#e7e0da'; g.fillRect(x0 - 1, y, x1 - x0 + 2, 3);
+    g.fillStyle = '#e8b730'; g.fillRect(x0, yl, x1 - x0, 1.8);
   }
-  softShadow(g, (x0 + x1) / 2, pTop - depth / 2, (x1 - x0) * 0.5, 4, 0.5);
-  if (E.night) { const lg = g.createLinearGradient(0, roof, 0, pTop); lg.addColorStop(0, withAlpha(E.window, 0.22)); lg.addColorStop(1, withAlpha(E.window, 0)); g.fillStyle = lg; g.fillRect(x0 + 2, roof, x1 - x0 - 4, pTop - depth - roof); }
+  // the brick face over the near track
+  const face = g.createLinearGradient(0, near, 0, bottom + 4);
+  face.addColorStop(0, E.night ? '#6a4a40' : '#a8705a'); face.addColorStop(1, E.night ? '#4a332d' : '#86563f');
+  g.fillStyle = face; g.fillRect(x0, near, x1 - x0, bottom + 4 - near);
+  g.strokeStyle = withAlpha(E.night ? '#000000' : '#5d3a2b', 0.35);
+  g.beginPath();
+  for (let y = near + 3.5, row = 0; y < bottom + 4; y += 3.5, row++) { g.moveTo(x0, y); g.lineTo(x1, y); for (let bx = x0 + (row % 2) * 5; bx < x1; bx += 10) { g.moveTo(bx, y - 3.5); g.lineTo(bx, y); } }
+  g.stroke();
+  g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x0, near, x1 - x0, 1.5);
+  // the canopy's columns down the middle
+  const cTop = roof - 9, cols = Math.max(2, Math.round((x1 - x0) / 50));
+  for (let i = 0; i <= cols; i++) {
+    const cx = x0 + 10 + ((x1 - x0 - 20) * i) / cols;
+    const cg = g.createLinearGradient(cx - 2, 0, cx + 2, 0); cg.addColorStop(0, E.night ? '#7a6f74' : '#6f8199'); cg.addColorStop(1, E.night ? '#3d3438' : '#46546a');
+    g.fillStyle = cg; g.fillRect(cx - 2, roof, 4, midY - roof);
+    g.fillStyle = E.night ? '#3d3438' : '#46546a'; g.fillRect(cx - 3.5, midY - 2, 7, 2.5);
+  }
+  if (E.night) { const lg = g.createLinearGradient(0, roof, 0, midY); lg.addColorStop(0, withAlpha(E.window, 0.2)); lg.addColorStop(1, withAlpha(E.window, 0)); g.fillStyle = lg; g.fillRect(x0 + 2, roof, x1 - x0 - 4, midY - roof); }
   g.fillStyle = E.night ? '#4a4044' : '#55627a';
   g.beginPath(); g.moveTo(x0 - 8, roof); g.lineTo(x0 - 2, cTop); g.lineTo(x1 + 2, cTop); g.lineTo(x1 + 8, roof); g.closePath(); g.fill();
   g.fillStyle = E.night ? '#8d8287' : '#e7e0da'; g.fillRect(x0 - 8, roof, x1 - x0 + 16, 3);
@@ -69,6 +85,13 @@ export function station(g, L, x, top, bottom, name, P, { length = 120, floor = 8
   g.strokeStyle = E.night ? '#3d3438' : '#46546a'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(lx, roof + 3); g.lineTo(lx, roof + 9); g.stroke();
   g.fillStyle = E.night ? '#fff1cf' : '#f4efe4'; g.beginPath(); g.arc(lx, roof + 11, 2.6, 0, Math.PI * 2); g.fill();
   if (E.night) { const gl = g.createRadialGradient(lx, roof + 11, 0, lx, roof + 11, 22); gl.addColorStop(0, withAlpha(E.window, 0.45)); gl.addColorStop(1, withAlpha(E.window, 0)); g.fillStyle = gl; g.beginPath(); g.arc(lx, roof + 11, 22, 0, Math.PI * 2); g.fill(); }
+  // a bench, and passengers waiting
+  const bx0 = x0 + (x1 - x0) * 0.55;
+  g.fillStyle = E.night ? '#5a463b' : '#8a6a52'; g.fillRect(bx0, midY + 4, 22, 3); g.fillRect(bx0, midY - 3, 22, 2.5);
+  g.fillStyle = '#2b2628'; g.fillRect(bx0 + 2, midY + 7, 2, 4); g.fillRect(bx0 + 18, midY + 7, 2, 4);
+  const ph = clamp((near - far) * 0.6, 24, 40);
+  runner(g, x0 + (x1 - x0) * (0.3 + q() * 0.1), midY + 10, ph, P, { still: true, dir: -1 });
+  runner(g, x0 + (x1 - x0) * (0.8 + q() * 0.08), midY + 14, ph * 0.95, P, { still: true, ring: E.night ? '#8a6f62' : '#9c7b6a' });
   // the name board, standing on the canopy on two legs
   g.font = '700 13px system-ui, sans-serif';
   const mw = Number(g.measureText?.(name)?.width), bw = (isFinite(mw) ? mw : name.length * 8) + 16, bx = (x0 + x1) / 2 - bw / 2, by = cTop - 26;
@@ -80,7 +103,7 @@ export function station(g, L, x, top, bottom, name, P, { length = 120, floor = 8
   g.restore();
   L.add(name, bx + bw / 2, by + 10, { color: '#ffffff', align: 'center', pri: 9, size: 13, weight: 700, bg: false });
   // the stop line, across both tracks
-  stroke(g, [{ x, y: pTop - depth }, { x, y: bottom + 16 }], { color: P.ink, width: 1.4, dash: [4, 4], alpha: 0.8 });
+  stroke(g, [{ x, y: far - 6 }, { x, y: bottom + 16 }], { color: P.ink, width: 1.4, dash: [4, 4], alpha: 0.8 });
 }
 
 export function render(canvas, cam, o) {
@@ -99,7 +122,7 @@ export function render(canvas, cam, o) {
   const left = 18 + trainL, right = w - 40;
   const k = (right - left) / f.D, X = (x) => left + x * k;
   // the far track at half the height, the near one below it, its wire clear of the far ballast
-  const yB = Math.round(Math.min(h * 0.55, h - 210)), yA = Math.round(yB + wire + 34);
+  const yB = Math.round(Math.min(h * 0.6, h - 200)), yA = Math.round(yB + wire + 34);
   const hz = yB - Math.max(40, h * 0.09);
 
   // ── the place
@@ -108,14 +131,9 @@ export function render(canvas, cam, o) {
   for (let x = 40 + r() * 90; x < w; x += 140 + r() * 170) tree(g, x, hz + 6, clamp(h * 0.16, 56, 90), { seed: Math.floor(x) });
   const plat = [[X(0) - trainL - 8, X(0) + 12], [X(f.D) - trainL - 8, X(f.D) + 12]];
   const floorH = trainRoof(trainL, cars).roof - H + 2;
-  for (const [x, name] of [[X(0), 'Station 1'], [X(f.D), 'Station 2']]) station(g, L, x, yB, yA, name, P, { length: trainL + 8, floor: floorH, roof: yB - wire - 12 });
-  catenary(g, 0, w, yB - 3, yB - wire, { spacing: clamp(w * 0.22, 120, 200), avoid: plat });
+  const sp = clamp(w * 0.22, 120, 200);
+  catenary(g, 0, w, yB - 3, yB - wire, { spacing: sp, avoid: plat });
   rails(g, 0, w, yB, P);
-  catenary(g, 0, w, yA - 3, yA - wire, { spacing: clamp(w * 0.22, 120, 200), from: clamp(w * 0.22, 120, 200) * 0.6 });
-  rails(g, 0, w, yA, P);
-  pavement(g, 0, w, yA + 22, 6);                       // the lineside cable trough
-  fence(g, 0, w, h - 6, clamp(h * 0.05, 18, 28));
-  for (let x = 20 + r() * 60; x < w; x += 110 + r() * 120) bush(g, x, h + 2, clamp(h * 0.035, 11, 20), { seed: Math.floor(x) });
 
   // ── each train, its front at its position; its letter on a disc on its side
   const xa = f.posA(t), xb = f.posB(t);
@@ -124,7 +142,8 @@ export function render(canvas, cam, o) {
     { n: 'B', x: xb, y: yB, v: f.velB(t), a: f.accB(t), ring: P.second, disc: P.second },
     { n: 'A', x: xa, y: yA, v: f.velA(t), a: f.accA(t), ring: null, disc: '#24364f' },
   ];
-  for (const s of rows) {
+  // the far train, then the island platforms in front of it, then the near track and train
+  const drawTrain = (s) => {
     const fx = X(s.x);
     train(g, fx, s.y, trainL, P, { dir: 1, cars, panto, ring: s.ring, phase: phaseFor('train', trainL, fx - X(0), { cars }), brake: s.v > 1e-6 && s.a < -1e-9 });
     const c = (trainL - (cars - 1) * Math.max(3, trainL * 0.025)) / cars;
@@ -140,7 +159,17 @@ export function render(canvas, cam, o) {
       arrow(g, fx + 6, ay, fx + 6 + len, ay, { color: P.velVec, width: 2.6, head: 9, dash: [6, 4] });
       L.add(T`${q(s.v)} [m s^-1]`, fx + 14 + len, ay, { color: P.vel, align: 'left', pri: 7, size: 13, weight: 700 });
     }
-  }
+  };
+  drawTrain(rows[0]);
+  [[X(0), 'Station 1'], [X(f.D), 'Station 2']].forEach(([x, name], i) => station(g, L, x, yB, yA, name, P, { length: trainL + 8, floor: floorH, roof: yB - wire - 12, seed: 3 + i }));
+  catenary(g, 0, w, yA - 3, yA - wire, { spacing: sp, from: sp * 0.6, avoid: plat });
+  rails(g, 0, w, yA, P);
+  pavement(g, 0, w, yA + 22, 6);                       // the lineside cable trough
+  // the near ground: a low stone wall along the bottom, bushes before it
+  const wallH = clamp(h * 0.07, 22, 38);
+  stone(g, 0, h - wallH, w, wallH + 2, { course: 9, seed: 5 });
+  for (let x = 20 + r() * 60; x < w; x += 90 + r() * 110) bush(g, x, h - wallH + 5, clamp(h * 0.03, 10, 16), { seed: Math.floor(x) });
+  drawTrain(rows[1]);
 
   // ── the moments: the same speed, the time asked, the arrival
   const life = f.tMax / 9;
