@@ -40,12 +40,14 @@ export const PLACES = {
  *          t the time in the air — any of these may stand in for u
  *   level  a height above where it is thrown from: when is it there?
  */
-export function solveHeight(k = {}) {
+export function solveHeight(k0 = {}) {
+  let k = k0;
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   const place = PLACES[k.place] ? k.place : 'cliff', Pl = PLACES[place];
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
-  if (!have(k.h)) return fail(`Still needed: how high ${Pl.top} is above ${Pl.below}.`);
-  if (!(k.h > 0)) return fail(`${Pl.top.replace(/^./, (c) => c.toUpperCase())} is above ${Pl.below}: give its height as a positive number.`);
+  // the height may be left for the engine when the time in the air is given
+  if (!have(k.h) && !have(k.t)) return fail(`Still needed: how high ${Pl.top} is above ${Pl.below} — or the time it takes to land, to find that height.`);
+  if (have(k.h) && !(k.h > 0)) return fail(`${Pl.top.replace(/^./, (c) => c.toUpperCase())} is above ${Pl.below}: give its height as a positive number.`);
   if (!have(k.theta)) return fail('Still needed: the angle it is thrown at — 90 straight up, 0 across, −90 straight down.');
   if (!(k.theta >= -90 && k.theta <= 90)) return fail('The angle is between −90° (straight down) and 90° (straight up).');
   const steep = Math.abs(Math.abs(k.theta) - 90) < 1e-9;
@@ -54,10 +56,24 @@ export function solveHeight(k = {}) {
   if (Pl.vertical && !vertical) return fail(`From ${Pl.top} it moves straight up or down: give the angle as 90 (up) or −90 (down)${Pl.carried ? ' — a balloon rising carries it up at its own speed' : ''}.`);
   if (vertical && have(k.s)) return fail('Thrown straight up or down it lands at the foot: there is no distance out to give.');
 
+  // the time to the top of its path fixes the speed: there the vertical
+  // velocity is zero, so u sin θ = g t
+  let u = k.u;
+  const topRows = [];
+  if (have(k.tTop)) {
+    if (have(k.u)) return fail('Give the speed or the time to the top, not both: the time to the top fixes the speed.');
+    if (!(k.tTop > 0)) return fail('The time to the top is after it is thrown: give it as a positive number.');
+    if (!(k.theta > 0)) return fail('It only has a top to reach if it is thrown upwards: give an angle above the horizontal.');
+    u = snap(k.g * k.tTop / Math.sin(k.theta * Math.PI / 180));
+    topRows.push({ f: M`0 = u sin theta - gt`, s: M`0 = u sin ${d(k.theta)}° - ${d(k.g)} * ${d(k.tTop)}`, r: M`u = ${d(u)} [m s^-1]` });
+  }
   // the twelve's solver, as the twelve use it: s is how far out it lands
   // (thrown at an angle), or nothing when it is straight up or down
-  const r = solveLaunch({ u: k.u, v: k.v, t: k.t, s: k.s, g: k.g, theta: k.theta, h: k.h });
+  const r = solveLaunch({ u, v: k.v, t: k.t, s: k.s, g: k.g, theta: k.theta, h: k.h });
   if (!r.ok) return fail(r.reason);
+  const hh = have(k.h) ? k.h : snap(r.f.params.h);
+  if (!(hh > 0)) return fail(`Landing then, it would have started at or below ${Pl.below}: that time is too short for a fall from ${Pl.top}.`);
+  k = { ...k, h: hh };
   const f = r.f;
   if (!(f.tFlight > 0) || !isFinite(f.tFlight)) return fail(`It never comes down to ${Pl.below}.`);
   // with no speed across (dropped, or straight up or down) it lands at the foot
@@ -92,12 +108,14 @@ export function solveHeight(k = {}) {
         : times.length === 1 ? `It is ${at} once, at ${M`t = ${d(times[0])} [s]`}.`
           : `It is never ${at}.`);
   }
+  if (!have(k0.h)) lines.unshift(`Landing after ${M`${d(T)} [s]`}, it started ${M`${d(k.h)} [m]`} above ${Pl.below}.`);
+  if (have(k0.tTop)) lines.unshift(`Stopping rising after ${M`${d(k0.tTop)} [s]`}, it was thrown at ${M`${d(snap(f.params.u))} [m s^-1]`}.`);
   notes.push(...lines);
   const derived = [...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
   if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}`);
   f.place = place; f.level = level; f.vertical = straight;
   return {
-    ok: true, mode: 'height', axis: straight ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical: straight,
+    ok: true, mode: 'height', axis: straight ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical: straight, topRows, foundH: !have(k0.h),
     T, top, out, vL, h: k.h, g: k.g, notes, derived,
     params: r.params, convention: `Up and away from the ${Pl.word} are positive; heights are above ${Pl.below}.`,
   };

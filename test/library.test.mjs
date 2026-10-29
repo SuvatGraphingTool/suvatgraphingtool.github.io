@@ -824,6 +824,17 @@ group('From a height: the bridge, the board, the well and the balloon', () => {
   ok(/at the bottom of the well/.test(strip(solveHeight({ place: 'well', h: 20, u: 0, theta: -90, g: 9.8 }).notes.join(' '))), 'the well says where it lands as a well');
 });
 
+group('From a height: the time to the top', () => {
+  const ial = solveHeight({ place: 'tower', theta: 90, tTop: 2.5, t: 7, g: 9.8 });
+  ok(ial.ok && near(ial.f.params.u, 24.5) && near(ial.h, 68.6), 'IAL WME01 Oct21 Q6: u = 24.5, the start 68.6 m up');
+  const aqa = solveHeight({ place: 'cliff', h: 10, theta: 35, tTop: 1.5, g: 9.8 });
+  ok(aqa.ok && near(aqa.f.params.u, 25.63, 0.01) && near(aqa.T, 3.571, 1e-3), 'AQA 7357/2 J18 Q16: u = 25.6, 3.57 s in the air');
+  ok(/not both/.test(strip(solveHeight({ place: 'cliff', h: 10, theta: 35, tTop: 1.5, u: 3, g: 9.8 }).reason)), 'speed and time to the top together: refused');
+  ok(/upwards/.test(strip(solveHeight({ place: 'cliff', h: 10, theta: -20, tTop: 1.5, g: 9.8 }).reason)), 'a time to the top when thrown down: refused');
+  ok(/too short/.test(strip(solveHeight({ place: 'tower', theta: 90, u: 20, t: 2, g: 9.8 }).reason)), 'a landing time too short to have started above the ground: refused');
+  ok(KITS.height.working(ial, 1)[0].title === 'The speed, from the time to the top', 'the working starts from the time to the top');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

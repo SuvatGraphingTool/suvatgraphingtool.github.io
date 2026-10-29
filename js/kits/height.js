@@ -12,7 +12,7 @@ import { M, T, num } from '../notation.js';
 const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 
 const FIELDS = [
-  { key: 'h', col: 'place', label: 'Height it starts at (m)', placeholder: '—', hint: 'Above what it lands on: the sea, the river, the pool, the water in the well, the ground.' },
+  { key: 'h', col: 'place', label: 'Height it starts at (m)', placeholder: '—', hint: 'Above what it lands on. Blank, with the time in the air, and it is found.' },
   { key: 'theta', col: 'throw', label: `Angle ${M`theta`} (°)`, placeholder: '—', hint: '90 straight up, 0 across, −90 straight down.' },
   { key: 'u', col: 'throw', label: `Speed ${M`u`} (m s⁻¹)`, placeholder: '—', hint: 'Or leave it blank and give one below.' },
 ];
@@ -36,7 +36,8 @@ export const height = {
     { title: 'Or, in place of the speed', fields: [
       { key: 'v', label: 'Speed it lands at (m s⁻¹)', aria: 'In place of the speed: the speed it lands at (m s⁻¹)', placeholder: '—', hint: 'How fast it hits what is below.' },
       { key: 's', label: 'How far out it lands (m)', aria: 'In place of the speed: how far out it lands (m)', placeholder: '—', hint: 'Thrown at an angle only.' },
-      { key: 't', label: 'Time in the air (s)', aria: 'In place of the speed: the time in the air (s)', placeholder: '—', hint: 'From the throw to landing.' },
+      { key: 't', label: 'Time in the air (s)', aria: 'In place of the speed: the time in the air (s)', placeholder: '—', hint: 'From the throw to landing. With the speed, it can find the height instead.' },
+      { key: 'tTop', label: 'Time to the top (s)', aria: 'In place of the speed: the time to the top of its path (s)', placeholder: '—', hint: 'When it stops rising: that fixes the speed.' },
     ] },
     { title: 'What the paper asks', fields: [
       { key: 'level', label: 'When is it this high above the throw? (m)', aria: 'When is it this height above where it was thrown from (m)', placeholder: '—', hint: 'Negative for below it.' },
@@ -46,7 +47,7 @@ export const height = {
   hides: { shows: ['ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
   read(vals) {
-    return { place: vals.place, h: vals.h, theta: vals.theta, u: vals.u, v: vals.v, s: vals.s, t: vals.t, level: vals.level, g: vals.g };
+    return { place: vals.place, h: vals.h, theta: vals.theta, u: vals.u, v: vals.v, s: vals.s, t: vals.t, tTop: vals.tTop, level: vals.level, g: vals.g };
   },
   solve: solveHeight,
   working: (solved, t) => {
@@ -57,6 +58,8 @@ export const height = {
     const say = (x) => (typeof x === 'string' ? x.replace(/\bthe launch point\b/g, from).replace(/\bthe ground\b/g, Pl.below) : x);
     const out = buildWorking(solved.f, t).map((sec) => ({ ...sec, title: say(sec.title), note: say(sec.note),
       rows: sec.rows.map((r) => ({ ...r, f: say(r.f), s: say(r.s), r: say(r.r) })) }));
+    if (solved.topRows.length) out.unshift({ title: 'The speed, from the time to the top', rows: solved.topRows,
+      note: `At the top of its path it has stopped rising: the vertical part of its velocity is zero.` });
     const rows = levelRows(solved);
     if (rows.length) out.push({ title: `When it is ${M`${tr(Math.abs(solved.level.rel))} [m]`} ${solved.level.rel >= 0 ? 'above' : 'below'} the throw`, rows,
       note: `Measured from ${Pl.from || 'where it was thrown from'}, up positive: ${M`s`} is that height. ${solved.level.atTop ? 'It is there once, at the top of its path.'

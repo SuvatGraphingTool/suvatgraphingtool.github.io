@@ -301,6 +301,7 @@ group('The Past-paper library: from a cliff or a tower, everything it says', () 
     { place: 'cliff', h: 25, s: 100, theta: 45, g: 9.8 }, { place: 'cliff', h: 40, u: 15, theta: 0, g: 9.81, level: -10 },
     { place: 'cliff', h: 40, u: 15, theta: -30, g: 10 }, { place: 'tower', h: 30, u: 0, theta: -90, g: 9.8, level: 5 },
     { place: 'cliff', h: 60, t: 5, theta: 20, g: 9.8 }, { g: 9.8, h: 0, u: 5, theta: 0 }, {},
+    { place: 'tower', theta: 90, tTop: 2.5, t: 7, g: 9.8 }, { place: 'cliff', h: 10, theta: 35, tTop: 1.5, g: 9.8, level: 3 },
   ];
   const bag = [];
   let said = 0;

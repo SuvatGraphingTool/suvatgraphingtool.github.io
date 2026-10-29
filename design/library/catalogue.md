@@ -43,7 +43,7 @@ this library: *covered* names the one of the twelve that does it.
 | 7 | AQA | MM1B | Jan 2013 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Decelerate 20→12 m/s over 640 m, then accelerate 1820 m in 70 s; times, a, final speed, average speed | – | **candidate**: several stages along a line, one after another |
 | 8 | AQA | MM1B | Jan 2013 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Starts at 13.6i, u = 6i+2.4j, a = −0.8i+0.1j; distance from O when moving north-west | – | **built**: `vectors-ij` (north-west at 12 s, 45.6 m from O) |
 | 9 | AQA | MM1B | Jan 2013 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Golf ball hits a wall 38.4 m away at 3 m height after 2.4 s; find V and angle | 9.8 | **built**: `over-the-wall` (uₓ = 16, V = 20.6, α = 39.1°) |
-| 10 | AQA | 7357/2 | Jun 2018 | 16 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202018%20QP.pdf) | 35° launch lands 10 m below start; 1.5 s to apex; find u and flight time | 9.81 | **covered**: up and off a platform, but the paper gives the time to the top, which no box takes |
+| 10 | AQA | 7357/2 | Jun 2018 | 16 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202018%20QP.pdf) | 35° launch lands 10 m below start; 1.5 s to apex; find u and flight time | 9.81 | **built**: `from-a-height`, with the time to the top (u = 25.6, 3.57 s) |
 | 11 | AQA | 7357/2 | Jun 2019 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202019%20QP.pdf) | Dropped from h; show v = √(2gh); h = 18 m but measured v = 20, so is the sensor faulty? | 9.8 | **covered** by `dropped` |
 | 12 | AQA | 7357/2 | Jun 2022 | 12 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202022%20QP.pdf) | MCQ: speed u becomes 4u in 5 s; a in terms of u | – | **covered**: multiple choice in terms of u, no numbers to type |
 | 13 | AQA | 7357/2 | Jun 2022 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202022%20QP.pdf) | 7 m/s at θ; show h = 2.5 sin²θ; max h for θ ≤ 60° | 9.8 | **covered**: symbolic in θ; arc shows any one θ |
@@ -76,7 +76,7 @@ this library: *covered* names the one of the twelve that does it.
 | 40 | Edexcel | IAL WME01 | Jan 2019 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Two birds leave nests; B is south-west of A at t = 4; find B's speed | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 41 | Edexcel | IAL WME01 | Jan 2019 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Train 270 s, 4.5 km, accelerates 60 s, brakes 30 s; V; halfway time; times at V/4 | – | **built**: `journey-stages` (V = 20, 142.5 s, 15 s and 262.5 s) |
 | 42 | Edexcel | IAL WME01 | Oct 2021 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Car at 25 m/s, sign 48 m ahead; three braking models, one with a 0.2 s reaction delay | – | **candidate**: several stages along a line, one after another |
-| 43 | Edexcel | IAL WME01 | Oct 2021 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ball up from A above ground; v-t graph zero at 2.5 s; lands at 7 s; speed and height | 9.8 | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
+| 43 | Edexcel | IAL WME01 | Oct 2021 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ball up from A above ground; v-t graph zero at 2.5 s; lands at 7 s; speed and height | 9.8 | **built**: `from-a-height`, the time to the top and the time to land (u = 24.5, h = 68.6 m) |
 | 44 | Edexcel | IAL WME01 | Oct 2021 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ship leaves port at 7:00; lighthouse due east at 8:48, north-east at 9:00; find it | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 45 | Edexcel | IAL WME01 | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Passes P, Q 10 s later at 28 m/s, PQ = 220; a; distance in the 5th second | – | **covered** by `road` |
 | 46 | Edexcel | IAL WME01 | Jun 2022 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Velocity known at t = 1 and t = 4; speed at t = 3.5 | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
@@ -461,9 +461,13 @@ at the edge; the height and the landing distance as dimension lines; a height
 asked about as a marker line, ringed where it is crossed; velocity with its
 components (across dashed, up solid), acceleration, greatest height when asked.
 
-**What the student varies.** Cliff or tower, its height, the angle (90 up, 0
+**What the student varies.** The place, its height, the angle (90 up, 0
 across, −90 down) and the speed — or instead the landing speed, how far out,
-or the time; and a height above the throw to ask about.
+the time, or the time to the top (u sin θ = gt); the height may be left blank
+when the time in the air is given; and a height above the throw to ask about.
+Also: Edexcel IAL WME01 Oct 2021 Q6 (v = 0 at 2.5 s, lands at 7 s: u = 24.5,
+the start 68.6 m up) and AQA 7357/2 Jun 2018 Q16 (35°, top after 1.5 s, lands
+10 m below: u = 25.6, 3.57 s).
 
 **What makes it general.** Every throw from a height onto level sea or ground —
 and the same scene as a bridge over a river, a diving board over a pool, a
