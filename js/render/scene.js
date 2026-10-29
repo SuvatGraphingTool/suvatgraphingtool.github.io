@@ -14,7 +14,7 @@
 // placed in section u. Nothing is ever converted twice.
 
 import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar } from './util.js';
-import { timeAbove } from '../core/projectile.js';
+import { timeAbove, lineFacts } from '../core/projectile.js';
 import { T, num } from '../notation.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
@@ -369,10 +369,10 @@ export function render(canvas, cam, o) {
     const snapped = snapName(markers.heightLine);
     // from a height, also how far above (or below) the start it is: papers
     // give the line that way ("19 m above A")
-    const h0 = f.params.h || 0, dh = markers.heightLine - h0;
-    const rel = Math.abs(h0) < 1e-9 ? ''
-      : Math.abs(dh) < 1e-9 ? 'the height it starts from'
-      : `${T`${num(Math.abs(dh), 2, { trim: true })} [m]`} ${dh > 0 ? 'above' : 'below'} the start`;
+    const lf = lineFacts(f, markers.heightLine);              // js/core: rule 4
+    const rel = !(Math.abs(f.params.h || 0) > 1e-9) ? ''
+      : lf.atStart ? 'the height it starts from'
+      : `${T`${num(Math.abs(lf.rel), 2, { trim: true })} [m]`} ${lf.rel > 0 ? 'above' : 'below'} the start`;
     const also = [snapped, rel].filter(Boolean).join(', ');
     L.add(`${fmt(markers.heightLine, 1)} m${also ? ` — ${also}` : ''}`,
           w - 12, Y, { color: P.mark, align: 'right', pri: 6, size: 17 });

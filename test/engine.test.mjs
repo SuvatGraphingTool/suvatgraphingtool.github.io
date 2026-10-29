@@ -5,7 +5,7 @@
 // or the interface is at fault.
 
 import { solve } from '../js/core/suvat.js';
-import { flight, optimumAngle, timeAbove, heightForTime } from '../js/core/projectile.js';
+import { flight, optimumAngle, timeAbove, heightForTime, lineFacts } from '../js/core/projectile.js';
 import { intercept, corners } from '../js/core/intercept.js';
 
 let pass = 0, fail = 0;
@@ -262,6 +262,20 @@ group('Too fast hides the very thing it is demonstrating', () => {
   ok(!corners(same, g, true, lowM).includes('fast'),
      `the same ${same.fall.toFixed(2)} m under one at ${lowM.y} m reads perfectly well`);
   ok(!corners(easy, g, true, m).includes('fast'), 'and needs no explaining');
+});
+
+group('lineFacts: what the screen may say about a height line', () => {
+  const up = flight({ u: 28, theta: 90, h: 0, g: 9.8 });           // M1 J11 Q1
+  const top = lineFacts(up, 40);
+  ok(top.atTop && top.above === 0, 'a line at the greatest height is reached, never exceeded');
+  near(top.tTop, 28 / 9.8, 1e-9, 'reached once, at the top');
+  const l = lineFacts(up, 33.6);
+  near(l.t1, 12 / 7, 1e-9, 'at 33.6 m going up'); near(l.t2, 4, 1e-9, 'and coming down');
+  const a = flight({ u: 21, theta: 90, h: 17.5, g: 9.8 });         // M1 J12 Q5
+  near(lineFacts(a, 36.5).rel, 19, 1e-9, 'the line 19 m above the start');
+  ok(lineFacts(a, 17.5).atStart, 'a line at the start height is the start');
+  ok(lineFacts(a, 0).lands, 'a line at the ground ends at the landing');
+  ok(lineFacts(flight({ u: 5, theta: 90, h: 0, g: 0 }), 0).noGravity, 'no gravity is said, not timed');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

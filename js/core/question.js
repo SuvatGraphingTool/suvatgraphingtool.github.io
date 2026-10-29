@@ -14,8 +14,8 @@ const DEG = 180 / Math.PI;
 // one the question names first wins ("a car … a motorcycle leaves later" is
 // the car's question); a person is a runner only when nothing else is named.
 const TRAVELLERS = [
-  ['motorcycle', /\b(motor ?cycle|motorbike|motor bike|moped|scooter)s?\b/],
-  ['cyclist', /\b(cyclist|bicycle|bike|cycling)s?\b/],
+  ['motorcycle', /\b(motor ?cycl(e|ist)|motorbike|motor bike|moped|scooter)s?\b/],
+  ['cyclist', /\b(cyclist|bicycle|bike|cycles|cycling)s?\b/],
   ['train', /\b(train|locomotive|tram)s?\b/],
   ['runner', /\b(runner|running|sprinter|athlete|jogger)s?\b/],
   ['lorry', /\b(lorry|lorries|truck|van|bus)s?\b/],

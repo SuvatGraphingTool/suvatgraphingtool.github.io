@@ -395,14 +395,17 @@ export function particle(g, X, Y, L, P, { ring = null } = {}) {
  *   brakes    whether slowing down is "braking" (a runner just slows down)
  *   min       the least drawn size, px, so a person stays readable on a phone
  *   cars      carriages, for the train
+ *   turns     it turns round to go back (a runner, a bike); the rest reverse
+ *   tall      taller than the lorry's arrow height: its acceleration arrow
+ *             goes behind it, not over its head
  */
 export const FIGURES = {
   lorry:      { draw: lorry,      label: 'Lorry',      noun: 'lorry',      verb: 'Drive', size: 1,    top: 0.36, mid: 0.2,  ground: 'road',  cycle: TAU * 0.075, brakes: true },
   car:        { draw: car,        label: 'Car',        noun: 'car',        verb: 'Drive', size: 0.8,  top: 0.36, mid: 0.18, ground: 'road',  cycle: TAU * 0.1, brakes: true },
-  cyclist:    { draw: cyclist,    label: 'Cyclist',    noun: 'cyclist',    verb: 'Ride',  size: 0.6,  top: 0.36, mid: 0.12, ground: 'road',  cycle: TAU * 0.2 * GEAR, brakes: true, min: 52 },
-  motorcycle: { draw: motorcycle, label: 'Motorcycle', noun: 'motorcycle', verb: 'Ride',  size: 0.7,  top: 0.36, mid: 0.13, ground: 'road',  cycle: TAU * 0.19, brakes: true, min: 52 },
+  cyclist:    { draw: cyclist,    label: 'Cyclist',    noun: 'cyclist',    verb: 'Ride',  size: 0.6,  top: 0.36, mid: 0.12, ground: 'road',  cycle: TAU * 0.2 * GEAR, brakes: true, min: 52, turns: true, tall: true },
+  motorcycle: { draw: motorcycle, label: 'Motorcycle', noun: 'motorcycle', verb: 'Ride',  size: 0.7,  top: 0.36, mid: 0.13, ground: 'road',  cycle: TAU * 0.19, brakes: true, min: 52, turns: true, tall: true },
   train:      { draw: train,      label: 'Train',      noun: 'train',      verb: 'Drive', size: 1.6,  top: 0.36, mid: 0.16, ground: 'rail',  cycle: TAU * 0.3 * 0.16, brakes: true, cars: 2 },
-  runner:     { draw: runner,     label: 'Runner',     noun: 'runner',     verb: 'Run',   size: 0.62, top: 0.36, mid: 0.3,  ground: 'track', cycle: STRIDE, brakes: false, min: 52 },
+  runner:     { draw: runner,     label: 'Runner',     noun: 'runner',     verb: 'Run',   size: 0.62, top: 0.36, mid: 0.3,  ground: 'track', cycle: STRIDE, brakes: false, min: 52, turns: true, tall: true },
 };
 
 /** The phase for a figure of drawn size L that has travelled `px` pixels:

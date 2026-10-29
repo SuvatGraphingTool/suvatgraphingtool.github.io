@@ -242,6 +242,8 @@ group('Ask Suvat — the lorry question, read and then SOLVED BY THE ENGINE', ()
   ok(said('A motorbike passes A') === 'motorcycle' && said('a train between two stations') === 'train', 'a motorbike, and a train');
   ok(said('A girl runs a 400 m race') === 'runner' && said('a girl rides her bicycle') === 'cyclist', 'a person runs unless she rides');
   ok(said('A lorry passes a car') === 'lorry', 'a lorry named first is the lorry');
+  ok(said('A girl cycles along a straight road') === 'cyclist' && said('A motorcyclist starts from rest') === 'motorcycle',
+     'a girl who cycles is a cyclist, a motorcyclist rides a motorcycle');
 });
 
 group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', () => {

@@ -6,7 +6,7 @@
 
 import { solveLaunch } from './core/solve.js';
 import { trajectory } from './core/trajectory.js';
-import { flight, timeAbove, heightForTime, timeAtSpeed } from './core/projectile.js';
+import { flight, timeAbove, lineFacts, heightForTime, timeAtSpeed } from './core/projectile.js';
 import { descent, solveDescent, descentWorking, resolveDescent } from './core/descent.js';
 import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
@@ -630,7 +630,7 @@ function valuesVoice(descentMode) {
     const fig = FIGURES[state.who] || FIGURES.lorry;
     const whose = state.who === 'runner' ? 'runner' : state.who === 'cyclist' ? 'cyclist' : 'vehicle';
     VOICE.el.sub.innerHTML = 'Any three of the five give you the other two. Here <b>a</b> is the '
-      + `${whose}\u2019s own acceleration, not g — and ${fig.brakes ? 'braking' : 'slowing down'} is a negative one.`;
+      + `${whose}\u2019s own acceleration, not g — and towards A is negative, so ${fig.brakes ? 'braking' : 'slowing down'} on the way to B is a negative one.`;
     return;
   }
   VOICE.el.sub.innerHTML = descentMode
@@ -1032,7 +1032,7 @@ function recompute() {
 function recomputeRoad() {
   const g = state.given;
   const fig = FIGURES[state.who] || FIGURES.lorry;
-  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, who: fig.noun, brakes: fig.brakes });
+  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, who: fig.noun, brakes: fig.brakes, turns: !!fig.turns });
   const msg = $('solve-msg'), btn = $('launch');
   if (!solved.ok) {
     if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
@@ -1806,28 +1806,29 @@ function wireLineBoxes() {
 function showAbove() {
   const hint = $('x-line-hint');
   if (!hint || !traj || state.markers?.heightLine == null) return;
-  const line = state.markers.heightLine;
-  const r = timeAbove(traj, line);
+  const r = lineFacts(traj, state.markers.heightLine);       // js/core: rule 4
   const ts = (x) => M`t = ${num(x, 2)} [s]`;
   const secs = (x) => M`${num(x, 2)} [s]`;
-  const lands = (x) => x >= traj.tMax - 1e-9;
-  const top = traj.apexHeight, tTop = traj.tApex;
   let at;
-  if (traj.bounces > 0) {
-    // timeAbove follows the first arc; a bounce crosses the line again
-    at = r.above > 1e-9 ? `Before its first bounce it is above that for ${secs(r.above)}.` : 'It never gets that high before it first bounces.';
-  } else if (r.above <= 1e-9) {
-    // a line exactly at the greatest height is reached, once, at the top
-    at = Math.abs(line - top) <= 1e-6 * Math.max(1, Math.abs(top)) && tTop > 0
-      ? `That is its greatest height: it just reaches it, at ${ts(tTop)}, and is never above it.`
+  if (r.above <= 1e-9) {
+    at = r.atTop ? `That is its greatest height: it just reaches it, at ${ts(r.tTop)}, and is never above it.`
+      : r.atStart ? 'It starts on it, and only goes down from there.'
+      : traj.bounces > 0 ? 'It never gets that high before it first bounces.'
       : 'It never gets that high.';
+  } else if (traj.bounces > 0) {
+    // timeAbove follows the first arc; a bounce crosses the line again
+    at = `Before its first bounce it is above that for ${secs(r.above)}.`;
+  } else if (r.noGravity) {
+    // with nothing to bring it down, "how long above" has no end
+    at = r.t1 > 1e-9 ? `It passes it at ${ts(r.t1)} and, with no gravity, never comes back down.`
+      : 'With no gravity it never comes back down: it stays above it.';
   } else if (r.crosses === 2 && r.t1 > 1e-9) {
     at = `It passes it at ${ts(r.t1)} going up and ${ts(r.t2)} coming down, so it is above it for ${secs(r.above)}.`;
   } else if (r.crosses === 2) {
-    at = lands(r.t2) ? `It starts on it and comes back down to it when it lands, at ${ts(r.t2)}.`
+    at = r.lands ? `It starts on it and comes back down to it when it lands, at ${ts(r.t2)}.`
       : `It starts on it, and comes back down through it at ${ts(r.t2)}: above it for ${secs(r.above)}.`;
   } else if (r.crosses === 1 && r.t1 < 1e-9) {
-    at = lands(r.t2) ? `It is above it until it lands, at ${ts(r.t2)}.`
+    at = r.lands ? `It is above it until it lands, at ${ts(r.t2)}.`
       : `It starts above it and passes it at ${ts(r.t2)} on the way down: above it for ${secs(r.above)}.`;
   } else if (r.crosses === 1) {
     at = `It passes it at ${ts(r.t1)} on the way up.`;
@@ -1836,10 +1837,9 @@ function showAbove() {
   }
   // a paper launching from a height measures the line from the start, the
   // box from the ground: say both
-  const h0 = traj.params.h || 0, dh = line - h0;
-  const rel = Math.abs(h0) < 1e-9 ? ''
-    : Math.abs(dh) < 1e-9 ? ' The line is measured from the ground: it is at the height it starts from.'
-    : ` The line is measured from the ground: that is ${M`${num(Math.abs(dh), 2, { trim: true })} [m]`} ${dh > 0 ? 'above' : 'below'} where it starts.`;
+  const rel = !(Math.abs(traj.params.h || 0) > 1e-9) ? ''
+    : r.atStart ? ' The line is measured from the ground: it is at the height it starts from.'
+    : ` The line is measured from the ground: that is ${M`${num(Math.abs(r.rel), 2, { trim: true })} [m]`} ${r.rel > 0 ? 'above' : 'below'} where it starts.`;
   say(hint, false, `${at}${rel} A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.`);
 }
 
@@ -2451,7 +2451,8 @@ function showDone() {
 function title(r) {
   if (r.mode === 'road') {
     const fig = FIGURES[state.who] || FIGURES.lorry;
-    return r.params.a < 0 && r.params.u > 0 ? `It ${fig.brakes ? 'braked' : 'slowed down'} from A to B` : 'It reached B';
+    // braked all the way only if it never stopped and came back
+    return r.params.a < 0 && r.params.u > 0 && r.params.v >= 0 ? `It ${fig.brakes ? 'braked' : 'slowed down'} from A to B` : 'It reached B';
   }
   if (traj?.bounces > 0) return 'It finished bouncing';
   if (r.mode === '1d' && Math.abs(r.params.u) < 1e-9) return 'It hit the ground';

@@ -44,10 +44,10 @@ export function render(canvas, cam, o) {
   const lorryPx = clamp(w * 0.085, 64, 118);
   const figPx = Math.max(lorryPx * fig.size, fig.min || 0);
   const figLen = who === 'runner' ? figPx * 0.5 : figPx;
-  // room behind A for it, and — for anything that turns round and faces
-  // left (everything but the lorry, which backs up) — room beyond the far
-  // end too, since its body is then to the right of its front
-  const turns = who !== 'lorry' && (u < 0 || v < 0);
+  // room behind A for it, and — for a runner or a bike, which turn round
+  // and face left (a lorry, car or train reverses instead) — room beyond the
+  // far end too, since its body is then to the right of its front
+  const turns = !!fig.turns && (u < 0 || v < 0);
   const left = Math.max(lorryPx, figLen) + 40, right = 64 + (turns ? figLen : 0);
   const sx = (x) => left + ((x - lo) / span) * (w - left - right);
   const roadY = Math.round(h * 0.6);
@@ -109,12 +109,13 @@ export function render(canvas, cam, o) {
   const vNow = f.vel(t).x;
   // at rest it faces the way it is about to go (or last went)
   const vDir = Math.abs(vNow) > 1e-6 ? vNow : t < 1e-6 ? a : f.vel(t - 1e-3).x;
-  const dir = who === 'lorry' || vDir >= 0 ? 1 : -1;
-  // the wheels and legs go by distance travelled, not displacement: after a
-  // turn-round they keep rolling forwards
+  const dir = !fig.turns || vDir >= 0 ? 1 : -1;
+  // a figure that turns round goes by distance travelled, so its legs and
+  // wheels keep going forwards; one that reverses goes by displacement, so
+  // its wheels turn backwards as it backs up
   const tStop = Math.abs(a) > 1e-12 ? -u / a : NaN;
   const pxPerM = (w - left - right) / span;
-  const dist = tStop > 0 && tStop < t
+  const dist = !fig.turns ? p.x : tStop > 0 && tStop < t
     ? Math.abs(f.pos(tStop).x) + Math.abs(p.x - f.pos(tStop).x) : Math.abs(p.x);
   fig.draw(g, Xp, roadY - 3, figPx, P, { dir, cars: fig.cars, still: Math.abs(vNow) < 1e-6,
     phase: phaseFor(who, figPx, dist * pxPerM, { cars: fig.cars }) });
@@ -129,13 +130,17 @@ export function render(canvas, cam, o) {
     L.add(T`v = ${fmt(vNow, 1)} [m s^-1]`, Xp + 6 * dir + len + (len >= 0 ? 10 : -10), vy, {
       color: P.vel, align: len >= 0 ? 'left' : 'right', pri: 7, size: 16, weight: 700 });
   }
-  const mid = Xp - (dir * figLen) / 2;
+  // over a vehicle; behind a person or a bike, at half its height, since
+  // over its head is where the posts' letter plates are
+  const alen = clamp(w * 0.07, 40, 90);
+  const mid = fig.tall ? Xp - dir * (figLen + 18 + alen / 2) : Xp - (dir * figLen) / 2;
+  const ay = fig.tall ? roadY - 3 - figPx * 0.5 : aY;
   if (show.acceleration !== false && Math.abs(a) > 1e-9) {
-    const len = Math.sign(a) * clamp(w * 0.07, 40, 90);
-    arrow(g, mid - len / 2, aY, mid + len / 2, aY, { color: P.acc, width: 2.8, head: 12 });
-    L.add(T`a = ${fmt(a, 2)} [m s^-2]`, mid, aY - 20, { color: P.acc, align: 'center', pri: 6, size: 15, weight: 700 });
+    const len = Math.sign(a) * alen;
+    arrow(g, mid - len / 2, ay, mid + len / 2, ay, { color: P.acc, width: 2.8, head: 12 });
+    L.add(T`a = ${fmt(a, 2)} [m s^-2]`, mid, ay - 20, { color: P.acc, align: 'center', pri: 6, size: 15, weight: 700 });
   } else if (show.acceleration !== false) {
-    L.add('no acceleration: constant velocity', mid, aY, { color: P.acc, align: 'center', pri: 6, size: 15 });
+    L.add('no acceleration: constant velocity', mid, ay - (fig.tall ? 20 : 0), { color: P.acc, align: 'center', pri: 6, size: 15 });
   }
 
   L.draw(g, w, h);
