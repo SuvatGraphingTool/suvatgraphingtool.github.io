@@ -316,6 +316,15 @@ in stages. When the numbers will not let a model do what it says, it does what
 it can and says so: it stops short of the sign, reaches it still above the
 limit, or passes it during the reaction time. Used by: `three-models`.
 
+### Off the edge, across — `js/core/bench.js`
+
+`solveBench({ look, g, u, d, tGap, drop, H, R })` — the twelve's `flight` at
+θ = 0, measured from the edge: the speed given, or from two strips `d` apart
+broken `tGap` apart (u = s/t), or from the edge's height and how far out it
+lands; how far it has dropped at the second strip, and whether a strip set
+`drop` lower is broken at its centre (within half a millimetre); the floor,
+when the height is given. `benchWorking` writes each. Used by: `off-the-bench`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -342,6 +351,16 @@ journey in stages, once per model. Used by: `three-models`.
 A map from above at one scale (sea for ships, sky for birds), both tracks, the
 vector from B to A, each asked moment ringed; `shipTop(g, x, y, s, a, color, P)`
 and `birdTop(g, x, y, s, a, color)` (exported). Used by: `two-in-a-plane`.
+
+### A bench or a table, side on — `js/render/bench.js`
+
+Measured from the edge at one scale both ways: `labWall`, `labBench` (the end
+of a laboratory bench), `table` (a top and two legs), `foilStrip(g, x, y, half,
+P, { torn })` (a strip on a clamp stand, its centre marked, torn where the ball
+went through) and `launcher` (magnets and ball bearings) — all exported. The
+gap between the strips and how much lower the second is as dimension lines;
+where the second is broken ringed, with how far from its centre. With a table,
+the floor and how far out it lands. Kit `bench`. Used by: `off-the-bench`.
 
 
 ### A parachute jump — `js/render/jump.js`

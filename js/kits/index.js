@@ -12,5 +12,6 @@ import { trip } from './trip.js';
 import { jump } from './jump.js';
 import { twoplane } from './twoplane.js';
 import { models } from './models.js';
+import { bench } from './bench.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench };

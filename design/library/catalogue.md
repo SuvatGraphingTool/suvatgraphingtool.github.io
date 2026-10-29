@@ -105,7 +105,7 @@ this library: *covered* names the one of the twelve that does it.
 | 69 | AQA Physics | 7408/1 | Jun 2019 | 04.3 | [paper](https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2019/june/AQA-74081-QP-JUN19.PDF) | Catapult releases a rock horizontally at 18 m/s from 7.5 m; range | 9.81 | **covered** by `platform` |
 | 70 | OCR A Physics | H556/01 | Jun 2019 | 19(a) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/OCR-A/Paper-1/QP/June%202019%20QP.pdf) | 18 m/s, 0.50 s reaction, stops in 38 m; deceleration | – | **candidate**: several stages along a line, one after another |
 | 71 | CIE Physics | 9702/22 | Oct/Nov 2018 | 1 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Physics%20(9702)/9702_w18_qp_22.pdf) | Golf ball 6.0 m/s with vertical component 4.8, apex at 0.49 s; component-time sketches; max height | 9.81 | **candidate**: component–time sketches of a projectile; the graphs show them, but the question gives a component, not a speed |
-| 72 | Edexcel Physics | 9PH0/01 | Jun 2018 | 18(b) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/Edexcel/Paper-1/QP/June%202018%20QP.pdf) | Ball bearing rolls off a bench through two foil strips 0.50 m apart, 0.14 s; speed; is a strip 8 cm lower hit at its centre? | 9.81 | **candidate**: timing between two strips, then a projectile off a bench: two stages of different kinds |
+| 72 | Edexcel Physics | 9PH0/01 | Jun 2018 | 18(b) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/Edexcel/Paper-1/QP/June%202018%20QP.pdf) | Ball bearing rolls off a bench through two foil strips 0.50 m apart, 0.14 s; speed; is a strip 8 cm lower hit at its centre? | 9.81 | **built**: `off-the-bench` (3.57 m s⁻¹; drops 0.0961 m, so 0.0161 m below the centre) |
 | 73 | Edexcel | 6677/01 M1 | Jun 2015 | 8 | [paper](see) | 4 kg on a rough incline with a pulley to a hanging 0.5 kg | 9.8 | **out**: connected particles, friction on an incline |
 | 74 | Edexcel | 6677/01 M1 | Jun 2013 | 8 | — | 2m on a smooth table, 3m hanging over a pulley | 9.8 | **out**: connected particles over a pulley |
 | 75 | Edexcel | 6677/01 M1 | Jan 2012 | 8 | — | 4 kg pushed up a rough 30° slope at 16 m/s; R, μ; distance after the force is removed | 9.8 | **out**: forces on a rough slope |
@@ -472,7 +472,7 @@ the start 68.6 m up) and AQA 7357/2 Jun 2018 Q16 (35°, top after 1.5 s, lands
 **What makes it general.** Every throw from a height onto level sea or ground —
 and the same scene as a bridge over a river, a diving board over a pool, a
 well (straight down to its water) and a rising balloon that lets a stone go
-(it starts moving up at the balloon's speed). Not yet: a table edge.
+(it starts moving up at the balloon's speed). A table edge is `off-the-bench`.
 
 ### `catch-it` — Thrown, chased and caught
 
@@ -570,3 +570,25 @@ under several models side by side, which is what the paper is about.
 **The stage.** Three lanes of one road, the same car in each, the same
 speed-limit sign; one clock; each car's time and speed at the sign.
 
+
+### `off-the-bench` — Off the bench, through the foil
+
+**Papers.** Edexcel 9PH0/01 Jun 2018 Q18(b)(iii)(iv) (a ball bearing leaves a
+bench and breaks two foil strips 0.50 m apart, 0.14 s apart: 3.6 m s⁻¹; the
+second strip's centre is 8.0 cm lower, but it has dropped about 9.6 cm there,
+so it is not broken at its centre). Parts (i)(ii), the capacitor, are out.
+
+**Why it is built.** The speed comes from a timing between two strips, then
+the drop at the second is compared with where a strip was set: no scenario
+times a speed between two gates or asks whether a point is hit at its centre,
+and none is set at a bench or a table.
+
+**The stage.** Side on, measured from the edge: the end of a laboratory bench
+with the launcher on it, each strip on a clamp stand with its centre marked and
+torn where the ball goes through; the gap and how much lower as dimension
+lines; where it breaks the second ringed, with how far from the centre. As a
+table: a table, the floor, the height and how far out it lands.
+
+**What the student varies.** Bench or table; the speed, or the strips' gap and
+time, or the height and how far out it lands; how much lower the second strip
+is; the height of the edge; g.

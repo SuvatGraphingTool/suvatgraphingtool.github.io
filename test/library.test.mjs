@@ -905,6 +905,20 @@ group('Audit 8', () => {
   ok(!/which with no|which no/.test(KITS.models.solve({ u: 25, D: 48, a: 6, limit: 13 }).notes.join(' ')), 'no reaction time reads cleanly');
 });
 
+group('Off the bench (9PH0/01 J18 Q18b)', () => {
+  const r = KITS.bench.solve({ look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 });
+  ok(r.ok && Math.abs(r.u - 3.5714) < 1e-3, 'speed 0.50 / 0.14 = 3.57 m s⁻¹ (MS 3.6)', r.reason);
+  ok(Math.abs(r.fall - 0.0961) < 1e-4 && r.atCentre === false && r.miss > 0, 'drops 9.6 cm at the second strip: not at its centre (MS)');
+  ok(/below the centre/.test(KITS.bench.ending(r).title), 'the ending says below the centre');
+  const c = KITS.bench.solve({ g: 9.81, d: 0.5, tGap: 0.14, drop: 0.0961 });
+  ok(c.ok && c.atCentre, 'a strip set at the drop is broken at its centre');
+  const tb = KITS.bench.solve({ look: 'table', g: 9.8, H: 0.8, R: 1.2 });
+  ok(tb.ok && Math.abs(tb.u - 2.97) < 0.01 && tb.floorRows.length === 1, 'off a table: the speed from the height and how far out, no row twice');
+  ok(!KITS.bench.solve({ g: 9.81, u: 2, tGap: 0.1, d: 0.2 }).ok, 'the speed and the time together are refused');
+  ok(!KITS.bench.solve({ g: 9.81, u: 1, H: 0.1, d: 2 }).ok, 'a strip past where it lands is refused');
+  ok(!KITS.bench.solve({ g: 9.81, d: 0.5 }).ok, 'no speed and no time: it says what is needed');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

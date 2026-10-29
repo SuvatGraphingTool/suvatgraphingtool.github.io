@@ -443,6 +443,23 @@ group('The Past-paper library: three models, everything it says', () => {
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
+group('The Past-paper library: off the bench, everything it says', () => {
+  const K = KITS.bench;
+  const bag = [];
+  for (const k of [{ look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 }, { g: 9.81, d: 0.5, tGap: 0.14, drop: 0.0961 }, { g: 9.81, d: 0.5, u: 3 }, { look: 'table', g: 9.8, H: 0.8, R: 1.2 },
+    { look: 'table', g: 9.8, H: 0.8, u: 2 }, { g: 9.81, u: 1, H: 0.1, d: 2 }, { g: 9.81, d: 0.5 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('What Ask Suvat says it read, and what the engine made of it', () => {
   const READINGS = [
     { scenario: 'platform-angle', h: 25, s: 100, g: 9.8, angle: { degrees: 45 }, asks: ['speed of projection'] },

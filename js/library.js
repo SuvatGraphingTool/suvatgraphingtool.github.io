@@ -325,4 +325,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each model as stages of constant acceleration, and when and how fast each reaches the sign.',
     } },
+  { id: 'off-the-bench', group: 'library', kit: 'bench',
+    name: 'Off the bench, through the foil',
+    sub: 'a ball bearing fired off a bench through two strips of foil — is the lower one broken at its centre?',
+    note: 'A ball bearing leaves the end of a laboratory bench moving across and breaks two strips of foil: the time between them and the distance between them give its speed, and from there it falls freely. How far it has dropped at the second strip says whether a strip set a little lower is broken at its centre. The same scene is a ball rolled off a table to the floor: the height and how far out it lands give the speed it left at.',
+    params: { look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 },
+    place: 'Side on: a laboratory bench, two strips of foil on clamp stands',
+    sources: [
+      { board: 'Edexcel', paper: '9PH0/01', session: 'Jun 2018', q: '18(b)(iii)(iv)' },
+    ],
+    tags: ['bench', 'table', 'table edge', 'rolls off', 'foil', 'strips', 'ball bearing', 'Gauss gun', 'horizontal', 'across', 'projectile',
+           'timing', 'physics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['It leaves the edge moving across', 'the paper says to assume it is travelling horizontally as it breaks the first strip.'],
+        ['Gravity alone after the edge', 'no air resistance and no spin; across, its speed between the strips never changes.'],
+        ['The strips do not slow it', 'breaking the foil takes nothing from its speed, and it breaks the first exactly at the edge.'],
+      ],
+      caveat: 'What the engine did compute is above: the speed from the strips, the time to the second, how far it has dropped there, and how far from the centre it breaks it.',
+    } },
 ];
