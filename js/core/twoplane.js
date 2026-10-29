@@ -23,6 +23,8 @@ const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const EPS = 1e-9;
 const tiny = (x) => Math.abs(x) < 1e-9;
+/** A part to square: bracketed when it has two terms or a minus. */
+const sq = (s) => (/^-|\s[+-]\s/.test(s) ? `(${s})` : s);
 const sgn = (x) => (d(x).startsWith('−') ? `(${d(x)})` : d(x));
 export const UNITS = { km: { len: 'km', time: 'h', speed: 'km h^-1', speedText: 'km h⁻¹' }, m: { len: 'm', time: 's', speed: 'm s^-1', speedText: 'm s⁻¹' } };
 
@@ -98,6 +100,7 @@ export function solveTwoPlane(k = {}) {
     if (tiny(den)) return fail(`Whatever p is, B moves along that same line: the direction from B to A cannot fix it.`);
     p = snap(-(c.x * D.y - c.y * D.x) / den);
     const dl = { x: c.x + m.x * p, y: c.y + m.y * p };
+    if (Math.hypot(dl.x, dl.y) < 1e-9 * Math.max(1, Math.hypot(c.x, c.y))) return fail(`The only p that puts them on that line puts them at the same place at that time: they would meet, with no direction between them.`);
     if (dl.x * D.x + dl.y * D.y <= EPS) return fail(`The only p that puts them on that line has them the other way round: not “${say(D)}”.`);
     B.v = { x: snap(p * w.x), y: snap(p * w.y) };
     const rel = D.x === 0 ? M`x_A = x_B` : D.y === 0 ? M`y_A = y_B` : D.x === D.y ? M`x_A - x_B = y_A - y_B` : M`x_A - x_B = -(y_A - y_B)`;
@@ -140,11 +143,21 @@ export function solveTwoPlane(k = {}) {
     // (c + m t) × D = 0
     const a0 = c.x * D.y - c.y * D.x, a1 = m.x * D.y - m.y * D.x;
     const rel = D.x === 0 ? M`x_A = x_B` : D.y === 0 ? M`y_A = y_B` : D.x === D.y ? M`x_A - x_B = y_A - y_B` : M`x_A - x_B = -(y_A - y_B)`;
-    if (tiny(a1)) {
-      notes.push(tiny(a0) ? `They stay on one ${D.word} line the whole time.` : `Never “${say(D)}”: the line between them never turns that way.`);
+    if (tiny(a1) && tiny(a0)) {
+      // always on one line in that direction: which way round, and when, is
+      // the sign of Δ·D = q0 + q1 t; where it is zero they are at one place
+      const q0 = c.x * D.x + c.y * D.y, q1 = m.x * D.x + m.y * D.y;
+      const tz = tiny(q1) ? null : snap(-q0 / q1);
+      notes.push(tiny(q0) && tiny(q1) ? 'They are at the same place the whole time: there is no direction between them.'
+        : tz == null ? (q0 > 0 ? `“${say(D)}” the whole time: they move along that line together.` : `Never “${say(D)}”: they stay on that line the other way round.`)
+          : q0 > 0 ? (tz > 0 ? `“${say(D)}” from the start until ${M`t = ${d(tz)} [${U.time}]`}, when they are at the same place; after that, the other way round.` : `“${say(D)}” the whole time.`)
+            : (tz > 0 ? `“${say(D)}” from ${M`t = ${d(tz)} [${U.time}]`} on, when they pass the same place; before that, the other way round.` : `Never “${say(D)}”.`));
+    } else if (tiny(a1)) {
+      notes.push(`Never “${say(D)}”: the line between them never turns that way.`);
     } else {
       const t = snap(-a0 / a1), dl = { x: c.x + m.x * t, y: c.y + m.y * t };
       if (t < -1e-9) notes.push(`“${say(D)}” only before the start, at ${M`t = ${d(t)} [${U.time}]`}.`);
+      else if (Math.hypot(dl.x, dl.y) < 1e-9 * Math.max(1, Math.hypot(c.x, c.y))) notes.push(`At ${M`t = ${d(t)} [${U.time}]`} they are at the same place: they meet, and there is no direction between them.`);
       else if (dl.x * D.x + dl.y * D.y <= EPS) notes.push(`At ${M`t = ${d(t)} [${U.time}]`} they line up the other way round: never “${say(D)}”.`);
       else {
         const dist = snap(Math.hypot(dl.x, dl.y));
@@ -162,7 +175,7 @@ export function solveTwoPlane(k = {}) {
     if (!(at.apart >= 0)) return fail('A distance apart is a size: give it as 0 or more.');
     const q2 = m.x * m.x + m.y * m.y, q1 = 2 * (c.x * m.x + c.y * m.y), q0 = c.x * c.x + c.y * c.y - at.apart * at.apart;
     const ts = tiny(q2) ? (tiny(q0) ? [0] : []) : quadRoots(q2, q1, q0).map(snap).filter((t) => t >= -1e-9);
-    apartRows.push({ f: M`(abs(vec r_A - vec r_B))^2 = d^2`, s: M`(${lin(c.x, m.x)})^2 + (${lin(c.y, m.y)})^2 = ${d(at.apart)}^2`,
+    apartRows.push({ f: M`(abs(vec r_A - vec r_B))^2 = d^2`, s: M`${sq(lin(c.x, m.x))}^2 + ${sq(lin(c.y, m.y))}^2 = ${d(at.apart)}^2`,
       r: ts.length ? M`t = ${ts.map((t) => d(t)).join(' "or" ')} [${U.time}]` : M`"no time from the start"` });
     notes.push(ts.length ? `They are ${M`${d(at.apart)} [${U.len}]`} apart at ${ts.map((t) => M`t = ${d(t)} [${U.time}]`).join(' and ')}.` : `They are never ${M`${d(at.apart)} [${U.len}]`} apart after the start.`);
     if (ts.length) derived.push(`${M`${d(at.apart)} [${U.len}]`} apart at ${M`t = ${ts.map((t) => d(t)).join(', ')} [${U.time}]`}`);
@@ -171,7 +184,8 @@ export function solveTwoPlane(k = {}) {
   if (!derived.length) derived.push(`A at ${M`${d(heads.find((h) => h.who === 'A')?.sp ?? 0)} [${U.speed}]`}`);
 
   const times = answers.flatMap((a) => a.times || [a.t]).filter((t) => have(t) && t >= 0);
-  const tMax = Math.max(1, ...times.map((t) => t * 1.3 + 0.2));
+  // long enough to show every moment asked about, and a little after
+  const tMax = times.length ? Math.max(0.2, ...times.map((t) => t * 1.4 + 0.05)) : 1;
   const f = {
     kind: 'twoplane', tMax, tFlight: tMax, A, B, U, answers, due: dueKey ? COMPASS[dueKey] : null,
     posA: (t) => pos(A, t), posB: (t) => pos(B, t), gap: (t) => snap(Math.hypot(c.x + m.x * t, c.y + m.y * t)),

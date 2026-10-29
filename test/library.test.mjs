@@ -851,6 +851,13 @@ group('Two ships, in i and j: the papers', () => {
   ok(g[0].series.every((s, i) => (i % 2 === 0) === !!s.dash), 'i parts dashed, j parts solid');
 });
 
+group('Two ships: the critic’s round 1', () => {
+  const note = (k) => strip(solveTwoPlane(k).notes.slice(-1)[0]);
+  ok(/Never/.test(note({ A: { r0: { x: 5, y: 0 }, v: { x: 1, y: 0 } }, B: { r0: { x: 0, y: 0 }, v: { x: 1, y: 0 } }, at: { due: 'W' } })), 'on one line, the wrong way round: never, not "the whole time"');
+  ok(/until t=4/.test(note({ A: { r0: { x: -4, y: 0 }, v: { x: 1, y: 0 } }, B: { r0: { x: 4, y: 0 }, v: { x: -1, y: 0 } }, at: { due: 'W' } }).replace(/\s/g, '')), 'passing through each other on one line: until they meet');
+  ok(/same place/.test(note({ A: { r0: { x: -4, y: 0 }, v: { x: 1, y: 0 } }, B: { r0: { x: 0, y: -4 }, v: { x: 0, y: 1 } }, at: { due: 'NE' } })), 'meeting exactly: no direction, said so');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
