@@ -50,12 +50,12 @@ export function solveModels(k = {}) {
       `Braking from the moment it is seen, it is still above the limit when it reaches the sign: it needs ${M`${d(snap(toLimit))} [m]`} to slow to it.`)
     : lane({ u, D, stages: [{ kind: 'down', a, v: limit }, { kind: 'hold' }] }, 'slows to the limit, then holds it', null));
   // model 3: reacts first
-  const say3 = react > 0 ? 'reacts, slows to the limit, holds it' : 'slows to the limit, then holds it (no reaction time)';
+  const say3 = react > 0 ? 'reacts, slows to the limit, holds it' : 'no reaction time: as model 2';
   if (thinking >= D - 1e-9) {
     models.push(lane({ u, D, stages: [{ kind: 'hold' }] }, say3, `It passes the sign during the reaction time: in ${M`${d(react)} [s]`} at ${M`${d(u)} [m s^-1]`} it covers ${M`${d(snap(thinking))} [m]`}.`));
   } else if (thinking + toLimit > D + 1e-9) {
     models.push(lane({ u, D, stages: [...(react > 0 ? [{ kind: 'hold', t: react }] : []), { kind: 'down', a }] }, say3,
-      `After reacting it is still above the limit when it reaches the sign: it needs ${M`${d(snap(thinking + toLimit))} [m]`} in all.`));
+      `${react > 0 ? 'After reacting it' : 'It'} is still above the limit when it reaches the sign: it needs ${M`${d(snap(thinking + toLimit))} [m]`} in all.`));
   } else {
     models.push(lane({ u, D, stages: [...(react > 0 ? [{ kind: 'hold', t: react }] : []), { kind: 'down', a, v: limit }, { kind: 'hold' }] }, say3, null));
   }
