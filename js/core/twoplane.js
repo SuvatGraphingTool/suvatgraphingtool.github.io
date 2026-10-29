@@ -24,7 +24,7 @@ const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: tr
 const EPS = 1e-9;
 const tiny = (x) => Math.abs(x) < 1e-9;
 /** A part to square: bracketed when it has two terms or a minus. */
-const sq = (s) => (/^-|\s[+-]\s/.test(s) ? `(${s})` : s);
+const sq = (s) => (/^[-−]|\s[+\-−]\s/.test(s) ? `(${s})` : s);
 const sgn = (x) => (d(x).startsWith('−') ? `(${d(x)})` : d(x));
 export const UNITS = { km: { len: 'km', time: 'h', speed: 'km h^-1', speedText: 'km h⁻¹' }, m: { len: 'm', time: 's', speed: 'm s^-1', speedText: 'm s⁻¹' } };
 
@@ -149,6 +149,7 @@ export function solveTwoPlane(k = {}) {
       const q0 = c.x * D.x + c.y * D.y, q1 = m.x * D.x + m.y * D.y;
       const tz = tiny(q1) ? null : snap(-q0 / q1);
       notes.push(tiny(q0) && tiny(q1) ? 'They are at the same place the whole time: there is no direction between them.'
+        : tiny(q0) ? (q1 > 0 ? `“${say(D)}” from the start on: they set off from the same place.` : `Never “${say(D)}”: they set off from the same place and part the other way.`)
         : tz == null ? (q0 > 0 ? `“${say(D)}” the whole time: they move along that line together.` : `Never “${say(D)}”: they stay on that line the other way round.`)
           : q0 > 0 ? (tz > 0 ? `“${say(D)}” from the start until ${M`t = ${d(tz)} [${U.time}]`}, when they are at the same place; after that, the other way round.` : `“${say(D)}” the whole time.`)
             : (tz > 0 ? `“${say(D)}” from ${M`t = ${d(tz)} [${U.time}]`} on, when they pass the same place; before that, the other way round.` : `Never “${say(D)}”.`));

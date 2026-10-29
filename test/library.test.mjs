@@ -856,6 +856,9 @@ group('Two ships: the critic’s round 1', () => {
   ok(/Never/.test(note({ A: { r0: { x: 5, y: 0 }, v: { x: 1, y: 0 } }, B: { r0: { x: 0, y: 0 }, v: { x: 1, y: 0 } }, at: { due: 'W' } })), 'on one line, the wrong way round: never, not "the whole time"');
   ok(/untilt=4/.test(note({ A: { r0: { x: -4, y: 0 }, v: { x: 1, y: 0 } }, B: { r0: { x: 4, y: 0 }, v: { x: -1, y: 0 } }, at: { due: 'W' } }).replace(/\s/g, '')), 'passing through each other on one line: until they meet');
   ok(/same place/.test(note({ A: { r0: { x: -4, y: 0 }, v: { x: 1, y: 0 } }, B: { r0: { x: 0, y: -4 }, v: { x: 0, y: 1 } }, at: { due: 'NE' } })), 'meeting exactly: no direction, said so');
+  ok(/from the start on/.test(note({ A: { v: { x: -1, y: 0 } }, B: { v: { x: 0, y: 0 } }, at: { due: 'W' } })), 'setting off from the same place: from the start on, not never');
+  const sqRow = strip(twoPlaneWorking(solveTwoPlane({ units: 'm', A: { r0: { x: -4, y: 0 }, v: { x: 0, y: 0 } }, B: { v: { x: 0, y: 3 } }, at: { apart: 5 } })).slice(-1)[0].rows[0].s);
+  ok(sqRow.startsWith('(−4)2'), 'a negative number squared is bracketed', sqRow);
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
