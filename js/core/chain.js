@@ -118,7 +118,7 @@ export function solveChain(k = {}) {
       const D = x.u * x.u + 2 * x.a * x.s;
       if (D > 1e-12) { const r = [(-x.u - Math.sqrt(D)) / x.a, (-x.u + Math.sqrt(D)) / x.a].sort((p, q) => p - q); if (r[0] > 1e-9) twoRoots = r; }
     }
-    const out = { i: i + 1, ...x, travelled, does, twoRoots, t0, x0, t1: t0 + x.t, x1: x0 + x.s, how: how[i], steps: solved[i].steps, pick: solved[i].pick }; t0 += x.t; x0 += x.s; return out; });
+    const out = { i: i + 1, ...x, travelled, turns, sTurn, xTurn: turns ? x0 + sTurn : null, does, twoRoots, t0, x0, t1: t0 + x.t, x1: x0 + x.s, how: how[i], steps: solved[i].steps, pick: solved[i].pick }; t0 += x.t; x0 += x.s; return out; });
   const Ttot = t0, Stot = x0, dist = S.reduce((a, x) => a + x.travelled, 0), back = Math.abs(dist - Math.abs(Stot)) > 1e-9;
   const avg = dist / Ttot, avgV = Stot / Ttot;
   const at = (t) => S.find((x) => t <= x.t1 + 1e-12) || S[S.length - 1];
@@ -151,7 +151,7 @@ export function chainWorking(solved) {
   out.push({ title: 'The whole', rows: [
     { f: M`s = ${terms('s')}`, s: M`${sum('s')}`, r: M`s = ${d(snap(solved.Stot))} [m]` },
     { f: M`t = ${terms('t')}`, s: M`${sum('t')}`, r: M`t = ${d(snap(solved.Ttot))} [s]` },
-    ...(solved.back ? [{ f: M`"distance travelled"`, s: M`${solved.S.map((x) => d(snap(x.travelled))).join(' + ')}`, r: M`${d(snap(solved.dist))} [m]` }] : []),
+    ...(solved.back ? [{ f: M`"distance travelled"`, s: M`${solved.S.map((x) => (x.turns ? `${d(snap(Math.abs(x.sTurn)))} + ${d(snap(Math.abs(x.s - x.sTurn)))}` : d(snap(x.travelled)))).join(' + ')}`, r: M`${d(snap(solved.dist))} [m]` }] : []),
     { f: M`"average speed" = "distance"/t`, s: M`${d(snap(solved.dist))}/${d(snap(solved.Ttot))}`, r: M`${d(snap(solved.avg))} [m s^-1]` },
   ], note: 'The stages run one after another on one clock.' });
   return out;

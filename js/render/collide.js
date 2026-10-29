@@ -68,7 +68,7 @@ export function render(canvas, cam, o) {
     const so = []; for (let i = 0; i <= 60; i++) so.push(pos((i / 60) * t));
     stroke(g, so.map((p) => ({ x: X(p.x), y: Y(p.y) })), { color, width: 2.8 });
   };
-  track(pb, f.posB, P.second); track(pa, f.posA, P.vel);
+  track(pb, f.posB, P.second); track(pa, f.posA, P.disp);
   if (f.at != null && t >= f.at - 1e-9) for (const [pos, c] of [[f.posA, P.vel], [f.posB, P.second]]) {
     const q = pos(f.at); dot(g, X(q.x), Y(q.y), 5, { fill: P.card, stroke: c, width: 2 });
     L.add(T`t = ${tr(f.at)} [s]`, X(q.x) + 10, Y(q.y) + 14, { color: c, align: 'left', pri: 6, size: 13, weight: 700 });

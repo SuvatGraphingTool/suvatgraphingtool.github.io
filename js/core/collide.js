@@ -104,15 +104,17 @@ export function solveCollide(k = {}) {
   // ── where each is at the asked time
   const atRows = [];
   // a collision ends the run; with none, a little past every moment asked about
-  const tMax = tc != null ? Math.max(tc, have(k.at) ? k.at : 0) : Math.max(have(k.at) ? k.at : 0, ...rf, 1) * 1.15;
+  const tMax = tc != null ? tc : Math.max(have(k.at) ? k.at : 0, ...rf, 1) * 1.15;
   const mA = planeMotion(A, tMax), mB = planeMotion(B, tMax);
   if (have(k.at)) for (const [n, m, p] of [['A', mA, A], ['B', mB, B]]) {
     const r = m.pos(k.at);
     atRows.push({ f: M`vec r_${n} = ${rOf(p)}`, s: M`t = ${d(k.at)}`, r: M`vec r_${n} = ${vb(r)} [m]` });
   }
+  if (have(k.at) && tc != null && k.at > tc + 1e-9) notes.push(`They have collided by ${M`t = ${d(k.at)} [s]`}: the positions at that time are where the model would put them had they not.`);
   if (have(k.at)) notes.unshift(`At ${M`t = ${d(k.at)} [s]`}, A is at ${M`${vb(mA.pos(k.at))} [m]`} and B at ${M`${vb(mB.pos(k.at))} [m]`}.`);
 
   const f = { kind: 'collide', tMax, tFlight: tMax, A: { ...A, m: mA }, B: { ...B, m: mB }, posA: mA.pos, posB: mB.pos, velA: mA.vel, velB: mB.vel,
+    apart: (t) => { const a = mA.pos(t), b = mB.pos(t); return snap(Math.hypot(a.x - b.x, a.y - b.y)); },
     tc, where, at: have(k.at) ? k.at : null, params: { u: 0, g: 0, h: 0, theta: 0 } };
   return { ok: true, mode: 'collide', A, B, tc, where, rows, collideRows, atRows, notes, derived, f };
 }

@@ -27,7 +27,7 @@ export function render(canvas, cam, o) {
 
   // ── one scale for the whole line, displacements forwards and back
   const xs = [0, ...f.S.flatMap((x) => [x.x0, x.x1])];
-  for (const x of f.S) if (x.a !== 0) { const tv = -x.u / x.a; if (tv > 0 && tv < x.t) xs.push(x.x0 + x.u * tv + 0.5 * x.a * tv * tv); }
+  for (const x of f.S) if (x.xTurn != null) xs.push(x.xTurn);
   const lo = Math.min(...xs), hi = Math.max(...xs);
   // the road low, clear of the readouts top left
   const left = 40, right = w - 50, Y = Math.max(h * 0.5, h - 140);

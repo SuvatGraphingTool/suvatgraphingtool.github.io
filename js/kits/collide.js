@@ -49,7 +49,7 @@ export const collide = {
       left: [
         { k: 'A at', v: T`${vsrc(a, 2)}`, unit: 'm', hue: 'disp' },
         { k: 'B at', v: T`${vsrc(b, 2)}`, unit: 'm', hue: 'disp' },
-        { k: 'Apart', v: num(Math.hypot(a.x - b.x, a.y - b.y), 2), unit: 'm', hue: 'disp' },
+        { k: 'Apart', v: num(f.apart(t), 2), unit: 'm', hue: 'disp' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };
