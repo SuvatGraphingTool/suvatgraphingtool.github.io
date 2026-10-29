@@ -269,7 +269,7 @@ launch to the twelve's `solveLaunch` and reads the flight with `timeAbove`
 greatest height above the sea or ground, the time in the air, the landing
 speed, and the times at a height above the throw (`level`). `levelRows` writes
 that last as working; the rest of the working is the twelve's `buildWorking`.
-`PLACES` — cliff (over the sea), tower (over the ground).
+`PLACES` — cliff (over the sea), tower (over the ground), bridge (over a river), diving board (over a pool), well (straight down to its water), balloon (rising; what it lets go moves up at its speed).
 
 Used by: `from-a-height`.
 
@@ -344,7 +344,8 @@ One scale both ways, the drop drawn to scale. Reusable backdrop pieces:
 `sky(g, x0, y0, x1, horizon)`, `sea(g, x0, x1, Y, bottom)` (grey-blue, never the
 displacement hue), `seaCliff(g, x0, edge, top, Y)` (strata, grass cap, a face
 that leans back), `tower(g, edge, top, Y, width)` (stone courses, battlements),
-`groundStrip(g, x0, x1, Y, bottom)`. The thrower is `figures.js`'s `runner`,
+`groundStrip(g, x0, x1, Y, bottom)`, `bridge(g, x0, edge, top, Y)`, `well(g, x0, x1, cx, half, top, Y, bottom)`,
+`divingBoard(g, x0, edge, top, Y, bottom)`, `balloon(g, x, y, s, P)`. The thrower is `figures.js`'s `runner`,
 standing still. Used by: `from-a-height`.
 
 

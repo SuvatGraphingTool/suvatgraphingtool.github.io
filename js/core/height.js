@@ -25,8 +25,12 @@ const z = (x) => (Math.abs(x) < 1e-9 ? 0 : x);
 
 /** Where it is thrown from, and what is below it. */
 export const PLACES = {
-  cliff: { word: 'cliff', top: 'the top of the cliff', below: 'the sea', lands: 'hits the sea' },
-  tower: { word: 'tower', top: 'the top of the tower', below: 'the ground', lands: 'hits the ground' },
+  cliff:   { word: 'cliff', top: 'the top of the cliff', below: 'the sea', lands: 'hits the sea', foot: 'at the foot of the cliff' },
+  tower:   { word: 'tower', top: 'the top of the tower', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the tower' },
+  bridge:  { word: 'bridge', top: 'the bridge', below: 'the river', lands: 'hits the water', foot: 'just below the bridge' },
+  board:   { word: 'diving board', top: 'the diving board', below: 'the water', lands: 'enters the water', foot: 'below the end of the board' },
+  well:    { word: 'well', top: 'the top of the well', below: 'the water in the well', lands: 'hits the water', foot: 'at the bottom of the well', vertical: true },
+  balloon: { word: 'balloon', top: 'the balloon', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', vertical: true, carried: true },
 };
 
 /**
@@ -45,6 +49,8 @@ export function solveHeight(k = {}) {
   if (!have(k.theta)) return fail('Still needed: the angle it is thrown at — 90 straight up, 0 across, −90 straight down.');
   if (!(k.theta >= -90 && k.theta <= 90)) return fail('The angle is between −90° (straight down) and 90° (straight up).');
   const vertical = Math.abs(Math.abs(k.theta) - 90) < 1e-9;
+  // down a well, or let go from a balloon, it moves straight up or down
+  if (Pl.vertical && !vertical) return fail(`From ${Pl.top} it moves straight up or down: give the angle as 90 (up) or −90 (down)${Pl.carried ? ' — a balloon rising carries it up at its own speed' : ''}.`);
   if (vertical && have(k.s)) return fail('Thrown straight up or down it lands at the foot: there is no distance out to give.');
 
   // the twelve's solver, as the twelve use it: s is how far out it lands
@@ -62,7 +68,7 @@ export function solveHeight(k = {}) {
   const T = snap(f.tFlight), top = snap(f.apexHeight), out = snap(z(f.range)), vL = snap(Math.abs(f.vLanding));
   const lines = [];
   if (f.uy > 1e-9) lines.push(`It rises to ${M`${d(top)} [m]`} above ${Pl.below}, ${M`${d(snap(top - k.h))} [m]`} above where it was thrown from, at ${M`t = ${d(snap(f.tApex))} [s]`}.`);
-  lines.push(`It ${Pl.lands} ${vertical ? `at the foot of the ${Pl.word}` : `${M`${d(out)} [m]`} out from the ${Pl.word}`} at ${M`t = ${d(T)} [s]`}, at ${M`${d(vL)} [m s^-1]`}.`);
+  lines.push(`It ${Pl.lands} ${vertical ? Pl.foot : `${M`${d(out)} [m]`} out from the ${Pl.word}`} at ${M`t = ${d(T)} [s]`}, at ${M`${d(vL)} [m s^-1]`}.`);
 
   // when is it a given height above the throw?
   let level = null;

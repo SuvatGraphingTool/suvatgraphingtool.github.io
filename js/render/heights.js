@@ -24,6 +24,7 @@ import { T, num } from '../notation.js';
 
 const tr = (x, p = 3) => num(x, p, { trim: true });
 const HUD = 250, HUD_H = 290;
+const EARTH = '#7d6a55', TILE = '#b9c3c8', TIMBER = '#8a6d4c';
 const ROCK = '#8b8073', ROCK_D = '#5f574e', SEA = '#6f8796', SEA_D = '#4f6572', STONE = '#a59d92', STONE_D = '#6e675e';
 
 /* ── backdrop pieces ─────────────────────────────────────────────────── */
@@ -97,6 +98,53 @@ export function groundStrip(g, x0, x1, Y, bottom) {
   g.strokeStyle = cssVar('--axis', 'rgba(0,0,0,0.4)'); g.lineWidth = 1.6; g.beginPath(); g.moveTo(x0, Y); g.lineTo(x1, Y); g.stroke(); g.restore();
 }
 
+/** A bridge whose deck edge is at (edge, top), over water at Y: a deck with a
+    railing reaching back to x0, and a stone pier standing in the river. */
+export function bridge(g, x0, edge, top, Y) {
+  g.save();
+  g.fillStyle = withAlpha(STONE_D, 0.95); g.fillRect(x0, top, edge - x0, 9);
+  g.fillStyle = withAlpha(STONE, 0.9);
+  const pier = Math.max(14, (edge - x0) * 0.18), px = x0 + (edge - x0) * 0.45;
+  g.fillRect(px - pier / 2, top + 9, pier, Y - top - 9);
+  g.strokeStyle = withAlpha(STONE_D, 0.9); g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(x0, top - 14); g.lineTo(edge, top - 14); g.stroke();
+  for (let x = x0 + 6; x < edge; x += 10) { g.beginPath(); g.moveTo(x, top - 14); g.lineTo(x, top); g.stroke(); }
+  g.restore();
+}
+/** A well: level ground at y = top with a shaft down to its water at Y,
+    the shaft centred on cx and `half` wide each side; earth around it. */
+export function well(g, x0, x1, cx, half, top, Y, bottom) {
+  g.save();
+  g.fillStyle = withAlpha(EARTH, 0.85);
+  g.fillRect(x0, top, cx - half - x0, bottom - top); g.fillRect(cx + half, top, x1 - cx - half, bottom - top);
+  g.fillStyle = withAlpha(EARTH, 0.35); g.fillRect(cx - half, top, half * 2, Y - top);
+  g.fillStyle = withAlpha(SEA_D, 0.85); g.fillRect(cx - half, Y, half * 2, bottom - Y);
+  g.strokeStyle = withAlpha(STONE_D, 0.9); g.lineWidth = 3;
+  g.beginPath(); g.moveTo(cx - half, top); g.lineTo(cx - half, bottom); g.moveTo(cx + half, top); g.lineTo(cx + half, bottom); g.stroke();
+  g.fillStyle = cssVar('--grass', '#7c9a63'); g.fillRect(x0, top - 3, cx - half - x0, 4); g.fillRect(cx + half, top - 3, x1 - cx - half, 4);
+  // the low wall round the top
+  g.fillStyle = withAlpha(STONE, 0.95); g.fillRect(cx - half - 10, top - 12, 10, 12); g.fillRect(cx + half, top - 12, 10, 12);
+  g.restore();
+}
+/** A diving board whose tip is at (edge, top), on a stand reaching back to
+    x0, over a pool whose water is at Y, with a tiled edge. */
+export function divingBoard(g, x0, edge, top, Y, bottom) {
+  g.save();
+  g.fillStyle = withAlpha(TILE, 0.9); g.fillRect(0, Y - 2, edge - (edge - x0) * 0.2, bottom - Y + 2);
+  g.fillStyle = withAlpha(STONE_D, 0.9); g.fillRect(x0, top + 6, 12, Y - top - 6);
+  g.fillStyle = withAlpha(TIMBER, 0.95); g.fillRect(x0, top, edge - x0, 6);
+  g.restore();
+}
+/** A hot-air balloon whose basket floor is at (x, y). */
+export function balloon(g, x, y, s, P) {
+  g.save(); g.strokeStyle = P.strong; g.lineWidth = 1.4;
+  g.fillStyle = withAlpha(TIMBER, 0.95); g.fillRect(x - s * 0.25, y - s * 0.3, s * 0.5, s * 0.3); g.strokeRect(x - s * 0.25, y - s * 0.3, s * 0.5, s * 0.3);
+  g.beginPath(); g.moveTo(x - s * 0.25, y - s * 0.3); g.lineTo(x - s * 0.55, y - s * 1.1); g.moveTo(x + s * 0.25, y - s * 0.3); g.lineTo(x + s * 0.55, y - s * 1.1); g.stroke();
+  g.fillStyle = P.card; g.beginPath(); g.ellipse(x, y - s * 1.7, s * 0.8, s * 0.9, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(x, y - s * 2.6); g.lineTo(x, y - s * 0.8); g.stroke();
+  g.restore();
+}
+
 /* ── the stage ───────────────────────────────────────────────────────── */
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
@@ -105,7 +153,8 @@ export function render(canvas, cam, o) {
   const P = palette();
   const L = labels();
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  const H0 = f.params.h, cliff = f.place === 'cliff';
+  const H0 = f.params.h, place = f.place, cliff = place === 'cliff';
+  const wet = ['cliff', 'bridge', 'board'].includes(place);
   const apex = f.uy > 0 ? f.apexHeight : H0;
 
   // ── the frame: the place, the whole path, one scale both ways
@@ -113,7 +162,8 @@ export function render(canvas, cam, o) {
   for (let i = 0; i <= n; i++) { const tt = (i / n) * f.tMax; pts.push({ t: tt, ...f.pos(tt) }); }
   const back = Math.max(H0 * 0.45, 6);
   const xLo = -back, xHi = Math.max(...pts.map((p) => p.x), H0 * 0.4, 4) * 1.08;
-  const yHi = Math.max(apex, H0) * 1.14 + 1;
+  // a balloon goes on rising, and its envelope is above it
+  const yHi = Math.max(Math.max(apex, H0) * 1.14 + 1, f.place === 'balloon' ? (H0 + Math.max(f.uy, 0) * f.tMax) * 1.12 + 8 : 0);
   const bottom = h - 54;
   const frames = w < 520 ? [{ left: 16, right: w - 16, top: 60 }]
     : [{ left: HUD + 30, right: w - 90, top: 60 }, { left: 30, right: w - 90, top: Math.min(HUD_H, bottom - 140) }];
@@ -129,9 +179,17 @@ export function render(canvas, cam, o) {
   // ── the place
   sky(g, 0, 0, w, oy);
   if (cliff) { sea(g, 0, w, oy, h); seaCliff(g, 0, X(0), Y(H0), oy); }
+  else if (place === 'bridge') { sea(g, 0, w, oy, h); bridge(g, 0, X(0), Y(H0), oy); }
+  else if (place === 'board') { sea(g, 0, w, oy, h); divingBoard(g, X(xLo) + 10, X(0), Y(H0), oy, h); }
+  else if (place === 'well') { well(g, 0, w, X(0) + 7, 22, Y(H0), oy, h); }
+  else if (place === 'balloon') groundStrip(g, 0, w, oy, h);
   else { groundStrip(g, 0, w, oy, h); tower(g, X(0), Y(H0), oy, Math.max(26, Math.min(70, H0 * 0.22 * k))); }
-  // the person who throws, at the edge, facing out
-  runner(g, X(0) - 4, Y(H0), Math.max(24, 1.7 * k), P, { dir: 1, still: true });
+  // the person who throws, at the edge, facing out; a balloon carries its own
+  if (place === 'balloon') {
+    // the balloon goes on rising at the speed it had when it let go
+    const rise = Math.max(f.uy, 0);
+    balloon(g, X(0) - 6, Y(H0 + rise * t), 26, P);
+  } else runner(g, X(0) - (place === 'well' ? 26 : 4), Y(H0), Math.max(24, 1.7 * k), P, { dir: 1, still: true });
 
   // ── its height, as a dimension line just inside the edge
   const dx = X(0) - Math.max(34, (cliff ? 0.2 : 0.4) * back * k);
@@ -169,7 +227,7 @@ export function render(canvas, cam, o) {
   // ── where it lands, once it has
   if (t >= f.tMax - 1e-9) {
     const lx = X(f.pos(f.tMax).x) + (f.vertical ? side : 0);
-    if (cliff) { g.save(); g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(lx, oy, 12, 3.5, 0, 0, Math.PI * 2); g.stroke(); g.restore(); }
+    if (wet || place === 'well') { g.save(); g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(lx, oy, 12, 3.5, 0, 0, Math.PI * 2); g.stroke(); g.restore(); }
     if (!f.vertical) {
       stroke(g, [{ x: X(0), y: oy + 22 }, { x: lx, y: oy + 22 }], { color: P.ink, width: 1.2, alpha: 0.8 });
       for (const xx of [X(0), lx]) stroke(g, [{ x: xx, y: oy + 17 }, { x: xx, y: oy + 27 }], { color: P.ink, width: 1.2, alpha: 0.8 });
@@ -195,7 +253,7 @@ export function render(canvas, cam, o) {
   }
   if (show.acceleration) arrow(g, bx, by, bx, by + 40, { color: P.acc, width: 2.4, head: 10 });
   dot(g, bx, by, 6, { fill: P.card, stroke: P.ink, width: 2.2 });
-  L.add(cliff ? 'sea level' : 'ground', 10, oy + 14, { color: P.ink, align: 'left', pri: 3, size: 13, bg: true });
+  L.add({ cliff: 'sea level', bridge: 'the river', board: 'the water', well: 'the water' }[place] || 'ground', 10, oy + 14, { color: P.ink, align: 'left', pri: 3, size: 13, bg: true });
 
   L.draw(g, w, h);
   return null;

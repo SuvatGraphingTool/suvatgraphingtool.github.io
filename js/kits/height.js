@@ -29,8 +29,9 @@ export const height = {
   cols: { place: 'Where from', throw: 'The throw' },
   rows: [
     { title: 'Where it is thrown from', fields: [
-      { key: 'place', type: 'choice', label: 'It is', default: 'cliff', hint: 'A cliff stands over the sea; a tower over level ground.',
-        options: [{ v: 'cliff', label: 'A cliff over the sea' }, { v: 'tower', label: 'A tower' }] },
+      { key: 'place', type: 'choice', label: 'It is', default: 'cliff', hint: 'Let go from a rising balloon, it starts moving up at the balloon\u2019s speed: angle 90, that speed.',
+        options: [{ v: 'cliff', label: 'A cliff over the sea' }, { v: 'tower', label: 'A tower' }, { v: 'bridge', label: 'A bridge over a river' },
+          { v: 'board', label: 'A diving board' }, { v: 'well', label: 'Down a well' }, { v: 'balloon', label: 'A rising balloon' }] },
     ] },
     { title: 'Or, in place of the speed', fields: [
       { key: 'v', label: 'Speed it lands at (m s⁻¹)', aria: 'In place of the speed: the speed it lands at (m s⁻¹)', placeholder: '—', hint: 'How fast it hits the sea or the ground.' },
@@ -59,7 +60,7 @@ export const height = {
   render: stage.render,
 
   hud(f, t) {
-    const r = f.pos(t), v = f.vel(t), below = f.place === 'cliff' ? 'the sea' : 'the ground';
+    const r = f.pos(t), v = f.vel(t), below = PLACES[f.place].below;
     return {
       left: [
         { k: `Height above ${below}`, v: num(r.y, 2), unit: 'm', hue: 'disp' },
@@ -108,7 +109,7 @@ export const height = {
 
   ending(solved) {
     const { Pl, T: tt, vL, out, top, h, vertical } = solved;
-    const title = `${Pl.lands.replace(/^./, (c) => c.toUpperCase())} ${vertical ? 'at the foot' : `${tr(out)} m out`}, at ${tr(vL)} m s⁻¹.`;
+    const title = `${Pl.lands.replace(/^./, (c) => c.toUpperCase())} ${vertical ? Pl.foot : `${tr(out)} m out`}, at ${tr(vL)} m s⁻¹.`;
     const cell = (x) => `<b>${tr(x)}</b>`;
     const table = `
       <div class="ph-tab" role="table" aria-label="The throw, from the top to where it lands">

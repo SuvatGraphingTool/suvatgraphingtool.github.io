@@ -465,8 +465,10 @@ components (across dashed, up solid), acceleration, greatest height when asked.
 across, −90 down) and the speed — or instead the landing speed, how far out,
 or the time; and a height above the throw to ask about.
 
-**What makes it general.** Every throw from a height onto level sea or ground.
-Not yet: a well (dropped into it), a bridge over a river, a table edge.
+**What makes it general.** Every throw from a height onto level sea or ground —
+and the same scene as a bridge over a river, a diving board over a pool, a
+well (straight down to its water) and a rising balloon that lets a stone go
+(it starts moving up at the balloon's speed). Not yet: a table edge.
 
 ### `catch-it` — Thrown, chased and caught
 

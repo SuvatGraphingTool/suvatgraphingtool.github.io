@@ -814,6 +814,16 @@ group('A parachute jump in stages: the paper', () => {
   ok(g.every((x) => x.series.every((sr) => !sr.dash)), 'vertical: solid on every graph');
 });
 
+group('From a height: the bridge, the board, the well and the balloon', () => {
+  for (const place of ['bridge', 'board', 'well', 'balloon']) {
+    const r = solveHeight({ place, h: 20, u: 5, theta: place === 'well' ? -90 : 90, g: 9.8 });
+    ok(r.ok && near(r.f.pos(r.T).y, 0, 1e-6) && /hits|enters/.test(strip(r.notes.join(' '))), `${place}: it comes down to the water or the ground`);
+  }
+  ok(/straight up or down/.test(strip(solveHeight({ place: 'well', h: 20, u: 5, theta: 30, g: 9.8 }).reason)), 'down a well at an angle: refused');
+  ok(/balloon/.test(strip(solveHeight({ place: 'balloon', h: 20, u: 5, theta: 30, g: 9.8 }).reason)), 'from a balloon at an angle: refused, saying why');
+  ok(/at the bottom of the well/.test(strip(solveHeight({ place: 'well', h: 20, u: 0, theta: -90, g: 9.8 }).notes.join(' '))), 'the well says where it lands as a well');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
