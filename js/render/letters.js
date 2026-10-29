@@ -58,7 +58,7 @@ export function render(canvas, cam, o) {
   // the collision
   if (f.tc != null && t >= f.tc - 1e-9) {
     dot(g, cx, Y(f.yc), 12, { stroke: P.mark, width: 2.6 });
-    const tau = (f.tc - f.t0) / (f.U / f.g), yl = f.yc / Lu;
+    const tau = f.tau, yl = f.ycL;
     L.add(T`"collide," tau = ${inLetters(tau, 'U', 'g')}`, cx + 22, Y(f.yc) - 30, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });
     L.add(Math.abs(yl) < 1e-9 ? 'at O' : T`${inLetters(Math.abs(yl), 'U^2', 'g')} ${yl > 0 ? '"above O"' : '"below O"'}`, cx + 22, Y(f.yc) - 12, { color: P.mark, align: 'left', pri: 8, size: 13, weight: 700 });
   }

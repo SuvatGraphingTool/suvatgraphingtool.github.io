@@ -67,7 +67,7 @@ export function render(canvas, cam, o) {
     arrow(g, X(s.x), Y(s.y), X(r.x), Y(r.y), { color: P.mark, width: 1.6, head: 9, alpha: 0.85 });
     L.add(T`${tr(f.gap(t), 2)} [m]`, (X(r.x) + X(s.x)) / 2 + 8, (Y(r.y) + Y(s.y)) / 2 - 10, { color: P.mark, align: 'left', pri: 6, size: 13, weight: 700 });
   }
-  if (f.tc != null && f.tc <= f.tMax + 1e-9 && t >= f.tc - 1e-9) {
+  if (!f.same && f.tc != null && f.tc <= f.tMax + 1e-9 && t >= f.tc - 1e-9) {
     const a = f.posA(f.tc), b = f.posB(f.tc);
     for (const q of [a, b]) dot(g, X(q.x), Y(q.y), 9, { stroke: P.mark, width: 2.2 });
     stroke(g, [{ x: X(a.x), y: Y(a.y) }, { x: X(b.x), y: Y(b.y) }], { color: P.mark, width: 1.4 });

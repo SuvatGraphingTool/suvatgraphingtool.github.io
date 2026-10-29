@@ -88,14 +88,14 @@ export function solveRobots(k = {}) {
   if (apart === null) notes.push(`They move with the same velocity: the distance between them never changes, ${M`${d(dmin)} [m]`}.`);
   else if (apart) notes.push(`They are moving apart from the start: they are closest at ${M`t = 0`}, ${M`${d(dmin)} [m]`} apart.`);
   else notes.push(`They are closest at ${M`t = ${d(tc)} [s]`}, ${M`${d(dmin)} [m]`} apart.`);
-  const off = [['R', lR], ['S', lS]].filter(([, l]) => l != null && tc != null && l < tc - 1e-9);
+  const off = [['R', lR], ['S', lS]].filter(([, l]) => l != null && tc != null && l < tc - 1e-9).sort((p, q) => p[1] - q[1]);
   if (off.length) notes.push(`But ${off.map(([n, l]) => `${n} reaches the edge of the floor at ${M`t = ${d(l)} [s]`}`).join(' and ')}: on this floor they would never get that close.`);
   const offFloor = off.map(([n, l]) => ({ n, t: l }));
   const derived = [`closest at ${M`t = ${d(tc ?? 0)} [s]`}`, `${M`${d(dmin)} [m]`} apart`];
 
   const ends = [lR, lS].filter((l) => l != null);
   const tMax = snap(Math.max(Math.min(ends.length ? Math.min(...ends) : Infinity, Math.max((tc || 0) * 1.4, 4)), 1));
-  const f = { ...tp.f, kind: 'robots', tMax, tFlight: tMax, side, tc, dmin, leaves: { R: lR, S: lS },
+  const f = { ...tp.f, kind: 'robots', same: apart === null, tMax, tFlight: tMax, side, tc, dmin, leaves: { R: lR, S: lS },
     gap: (t) => snap(Math.hypot(D0.x + Dv.x * t, D0.y + Dv.y * t)) };
   return { ok: true, mode: 'robots', R, S, tp, offFloor, same: apart === null, posRows, rows, closeRows, tc, dmin, apart, side, notes, derived, f };
 }

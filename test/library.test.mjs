@@ -1028,6 +1028,8 @@ group('Two robots on a floor (WME01 J23 Q8)', () => {
   const same = K.solve({ R: { r0: { x: 0, y: 0 }, v: { x: 1, y: 1 } }, S: { r0: { x: 3, y: 0 }, v: { x: 1, y: 1 } } });
   ok(same.ok && /never changes/.test(same.notes.join(' ')), 'equal velocities: the gap never changes');
   ok(!K.solve({ R: { r0: { x: 30, y: 0 }, v: { x: 1 } }, S: { r0: {}, v: {} }, side: 50 }).ok, 'starting off the floor is refused');
+  const twoOff = K.solve({ R: { r0: { x: -20, y: 0 }, v: { x: 1, y: 0 } }, S: { r0: { x: 24, y: 24 }, v: { x: 0.3, y: 0.1 } } });
+  ok(twoOff.ok && /^On this floor never that close: S/.test(K.ending(twoOff).title), 'both leave the floor: the headline names the first to go');
   ok(!K.solve(K.read({ 'R.v.x': 5, 'R.r1.x': 9, 'R.r1.y': 23, 'R.t1': 11, 'S.r0.x': 25, 'S.r0.y': 25, 'S.v.x': -1, 'S.v.y': -1 })).ok, 'a velocity and a later position for R together are refused');
   ok(K.solve(K.read({ 'S.r0.x': 10, 'S.v.x': -1 })).ok, 'R with nothing given is at rest');
   const late = K.solve({ R: { r0: { x: 20, y: 0 }, v: { x: 1, y: 0 } }, S: { r0: { x: -20, y: 10 }, v: { x: 2, y: 0 } }, side: 50 });

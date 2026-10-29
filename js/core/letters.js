@@ -68,7 +68,7 @@ export function solveLetters(k0 = {}) {
     { f: M`s = ut + ½at^2`, s: M`s_P = ${top ? 'H' : len(y0)} ${v0 ? `+ ${spd(v0).startsWith('-') ? `(${spd(v0)})` : spd(v0)} tau` : ''} - ½g tau^2`, r: M`s_Q = ${spd(kq)} tau - ½g tau^2` },
   ];
   let tau = null, yc = null;
-  if (Math.abs(y0) < EPS) return fail('P is back at O just as Q is projected: they are together at that instant, not a collision afterwards.');
+  if (Math.abs(c - 2) < 1e-9) return fail('At that time P is back at O just as Q is projected: they are together at that instant. Choose another time.');
   if (Math.abs(rel) < EPS) {
     meetRows.push({ f: M`s_P - s_Q`, s: M`${top ? 'H' : len(y0)}`, r: M`"the gap never changes"` });
   } else {
@@ -76,7 +76,7 @@ export function solveLetters(k0 = {}) {
     meetRows.push({ f: M`s_P = s_Q`, s: M`${top ? 'H' : len(y0)} = ${spd(rel)} tau`, r: tau > EPS ? M`tau = ${tim(tau)}` : M`tau = ${tim(tau)} "(before Q is projected)"` });
     if (tau > EPS) {
       yc = snap(kq * tau - tau * tau / 2);
-      meetRows.push({ f: M`s_Q = ${spd(kq)} tau - ½g tau^2`, s: M`tau = ${tim(tau)}`, r: M`s_Q = ${len(yc)}` });
+      meetRows.push({ f: M`s_Q = ${spd(kq)} tau - ½g tau^2`, s: M`${spd(kq)}(${tim(tau)}) - ½g(${tim(tau)})^2`, r: M`s_Q = ${len(yc)}` });
     }
   }
   const met = tau != null && tau > EPS;
@@ -93,7 +93,7 @@ export function solveLetters(k0 = {}) {
   const t0 = c * T, tMax = met ? t0 + tau * T : Math.max(2 * T, t0 + 2 * T);
   const yP = (t) => U * t - 0.5 * g * t * t, vP = (t) => U - g * t;
   const yQ = (t) => (t < t0 ? 0 : kq * U * (t - t0) - 0.5 * g * (t - t0) ** 2), vQ = (t) => (t < t0 ? 0 : kq * U - g * (t - t0));
-  const f = { kind: 'letters', tMax, t0, tc: met ? t0 + tau * T : null, yc: met ? yc * Lu : null, H: 0.5 * Lu, top, num: num2, U, g, yP, vP, yQ, vQ, kq, cLaunch: c };
+  const f = { kind: 'letters', tau: met ? tau : null, ycL: met ? yc : null, tMax, t0, tc: met ? t0 + tau * T : null, yc: met ? yc * Lu : null, H: 0.5 * Lu, top, num: num2, U, g, yP, vP, yQ, vQ, kq, cLaunch: c };
   return { ok: true, mode: 'letters', kq, c, top, tau, yc, met, where, rows, meetRows, notes, derived, f };
 }
 

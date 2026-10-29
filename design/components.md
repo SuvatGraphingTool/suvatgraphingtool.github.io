@@ -476,7 +476,7 @@ velocity (dashed), "at rest" on the flat pieces. Kit `xtgraph`. Used by:
 
 The floor at one scale both ways, tiled, its corners A, B, C, D and centre O;
 `robotTop(g, x, y, s, a, color, P)` (exported) — a robot from above, turned the
-way it goes; each track to the floor's edge; the vector from S to R now with
+way it goes; each track over the run (to the earlier of the floor's edge and a little past the closest moment); the vector from S to R now with
 its length; the closest moment ringed with its time and distance. Kit
 `robots`. Used by: `robots-closest`.
 

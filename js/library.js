@@ -486,7 +486,7 @@ export const LIBRARY = [
   { id: 'two-up-letters', group: 'library', kit: 'letters',
     name: 'Two thrown up, in letters',
     sub: 'P goes up at U; at the top, Q follows at ½U — when and where do they collide, in terms of U and g?',
-    note: 'Two particles projected straight up from the same point O, the first with speed U and the second a moment later with a multiple of U. Every answer is in letters: the greatest height in U² over g, the time in U over g. Both fall with the same g, so once both are moving the gap closes at a steady rate. O is a point, not the ground: they may meet at it or below it.',
+    note: 'Two particles projected straight up from the same point O, the first with speed U and the second a moment later with a multiple of U. Every answer is in letters: the greatest height in U² over g, the time in U over g. Both fall with the same g, so once both are moving the gap closes at a steady rate. O is a point, not the ground: they may meet at it, above it or below it.',
     params: { k: 0.5, when: 'top' },
     place: 'One vertical line through O, the two particles side by side',
     sources: [
