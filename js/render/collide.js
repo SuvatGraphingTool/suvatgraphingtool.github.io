@@ -42,18 +42,70 @@ const r3 = (x) => (Math.abs(x) < 1e-12 ? 0 : Number(x.toPrecision(3)));
 
 /* ── the rink ──────────────────────────────────────────────────────────── */
 
-function rink(g, w, h) {
+/** The arena round the rink, from above: a dark concourse, tiers of seats
+    stepping up and away from the boards with aisles of steps through them,
+    the two benches along one side, and the lights' glow falling off. */
+function stands(g, w, h, bx, by, bwid, bht, brad) {
+  const E = env(), night = E.night, R = rng(83);
+  g.fillStyle = night ? '#141317' : '#8f8a86'; g.fillRect(0, 0, w, h);
+  const rows = Math.ceil(Math.max(bx, by, w - bx - bwid, h - by - bht) / 11) + 1;
+  const seatA = night ? '#3b3440' : '#9c8f99', seatB = night ? '#332d37' : '#8d808a';
+  for (let i = rows; i >= 0; i--) {
+    const d = 16 + i * 11, x = bx - d, y = by - d, ww = bwid + 2 * d, hh = bht + 2 * d, rr = brad + d;
+    // the riser behind the row, then the row of seats on it
+    g.strokeStyle = night ? '#1b181d' : '#7b7470'; g.lineWidth = 11; g.setLineDash([]);
+    g.beginPath(); g.roundRect(x, y, ww, hh, rr); g.stroke();
+    g.strokeStyle = i % 2 ? seatA : seatB; g.lineWidth = 6; g.setLineDash([7, 2.5]); g.lineDashOffset = i * 3;
+    g.beginPath(); g.roundRect(x, y, ww, hh, rr); g.stroke();
+    g.strokeStyle = night ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.25)'; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.roundRect(x - 3.5, y - 3.5, ww + 7, hh + 7, rr + 3.5); g.stroke();
+  }
+  g.setLineDash([]);
+  // the crowd: a scatter of heads and shoulders in the seats, lit from above
+  const coats = night ? ['#5a4a52', '#4a5560', '#625a48', '#3f4d48', '#6a5560', '#55505e'] : ['#7d6872', '#6a7886', '#8e8160', '#5f7068', '#9a7d88', '#7a7488'];
+  for (let i = 0; i < (w * h) / 700; i++) {
+    const x = R() * w, y = R() * h;
+    if (x > bx - 14 && x < bx + bwid + 14 && y > by - 14 && y < by + bht + 14) continue;
+    g.fillStyle = coats[Math.floor(R() * coats.length)]; g.beginPath(); g.ellipse(x, y, 4.2, 3.2, 0, 0, TAU); g.fill();
+    g.fillStyle = night ? '#7d675c' : '#cfae94'; g.beginPath(); g.arc(x + 0.3, y - 1.4, 2.1, 0, TAU); g.fill();
+  }
+  // aisles: steps cut through the tiers, square to the boards
+  g.fillStyle = night ? '#221e24' : '#a49d97';
+  for (let x = bx + brad + 40; x < bx + bwid - brad - 20; x += 120) for (const [y0, y1] of [[0, by - 12], [by + bht + 12, h]]) {
+    g.fillRect(x, y0, 9, y1 - y0);
+    for (let y = y0; y < y1; y += 5.5) { g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x, y, 9, 1); g.fillStyle = night ? '#221e24' : '#a49d97'; }
+  }
+  for (let y = by + brad + 30; y < by + bht - brad - 20; y += 110) for (const [x0, x1] of [[0, bx - 12], [bx + bwid + 12, w]]) {
+    g.fillRect(x0, y, x1 - x0, 9);
+    for (let x = x0; x < x1; x += 5.5) { g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x, y, 1, 9); g.fillStyle = night ? '#221e24' : '#a49d97'; }
+  }
+  // the benches along the near side, behind the boards
+  for (const u of [0.32, 0.62]) {
+    const x = bx + bwid * u - 30, y = by + bht + 2;
+    if (y + 14 > h) continue;
+    g.fillStyle = night ? '#2b2b33' : '#6f6c72'; g.fillRect(x, y, 60, 13);
+    g.fillStyle = night ? '#4d4a55' : '#bdb6b0'; for (let k = 0; k < 6; k++) g.fillRect(x + 3 + k * 9.5, y + 3, 7, 7);
+  }
+  // the lights' glow, falling off into the stands
+  const cx = bx + bwid / 2, cy = by + bht / 2, gl = g.createRadialGradient(cx, cy, Math.min(bwid, bht) * 0.4, cx, cy, Math.max(w, h) * 0.75);
+  gl.addColorStop(0, 'rgba(0,0,0,0)'); gl.addColorStop(1, `rgba(0,0,0,${night ? 0.45 : 0.25})`);
+  g.fillStyle = gl; g.fillRect(0, 0, w, h);
+  void R;
+}
+
+/** The rink: boards round the ice box (ix, iy, iw, ih), the ice inside with
+    scratches, depth, the lights' reflections, the boards' shadow and snow. */
+function rink(g, w, h, ix, iy, iw, ih) {
   const E = env(), night = E.night, R = rng(41);
-  // the arena floor beyond the boards
-  g.fillStyle = night ? '#141317' : '#8d8a87'; g.fillRect(0, 0, w, h);
-  const m = 7, rad = Math.min(64, Math.min(w, h) * 0.14), bw = 9;
-  const ix = m + bw, iy = m + bw, iw = w - 2 * (m + bw), ih = h - 2 * (m + bw);
+  const rad = Math.min(40, Math.min(iw, ih) * 0.14), bw = 9, m = 0;
+  stands(g, w, h, ix - bw, iy - bw, iw + 2 * bw, ih + 2 * bw, rad + bw);
   // the boards: a cream cap with a darker outer lip, seen from above
   g.save();
-  g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 8; g.shadowOffsetY = 2;
-  g.fillStyle = night ? '#7d7672' : '#f1ebe2'; g.beginPath(); g.roundRect(m, m, w - 2 * m, h - 2 * m, rad + bw); g.fill();
+  g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 10; g.shadowOffsetY = 3;
+  g.fillStyle = night ? '#7d7672' : '#f1ebe2'; g.beginPath(); g.roundRect(ix - bw, iy - bw, iw + 2 * bw, ih + 2 * bw, rad + bw); g.fill();
   g.restore();
-  g.strokeStyle = night ? '#57504d' : '#c9bfb2'; g.lineWidth = 1.5; g.beginPath(); g.roundRect(m + 0.75, m + 0.75, w - 2 * m - 1.5, h - 2 * m - 1.5, rad + bw); g.stroke();
+  g.strokeStyle = night ? '#57504d' : '#c9bfb2'; g.lineWidth = 1.5; g.beginPath(); g.roundRect(ix - bw + 0.75, iy - bw + 0.75, iw + 2 * bw - 1.5, ih + 2 * bw - 1.5, rad + bw); g.stroke();
+  void m;
   // the ice
   g.save(); g.beginPath(); g.roundRect(ix, iy, iw, ih, rad); g.clip();
   const base = g.createLinearGradient(0, iy, 0, iy + ih);
@@ -77,9 +129,9 @@ function rink(g, w, h) {
     g.beginPath(); g.moveTo(cx - dx, cy - dy); g.quadraticCurveTo(cx - dy * bend * 2, cy + dx * bend * 2, cx + dx, cy + dy); g.stroke();
   }
   // the arena lights, reflected: soft bright pools in a row
-  const n = Math.max(2, Math.round(iw / 300));
+  const n = Math.max(2, Math.round(Math.max(iw, ih) / 260)), tall = ih > iw;
   for (let i = 0; i < n; i++) {
-    const cx = ix + iw * (i + 0.5) / n + (R() - 0.5) * 40, cy = iy + ih * (0.28 + R() * 0.12);
+    const cx = tall ? ix + iw * (0.35 + R() * 0.3) : ix + iw * (i + 0.5) / n + (R() - 0.5) * 40, cy = tall ? iy + ih * (i + 0.5) / n : iy + ih * (0.28 + R() * 0.12);
     g.save(); g.translate(cx, cy); g.scale(1, 0.55);
     const gr = g.createRadialGradient(0, 0, 0, 0, 0, 120);
     gr.addColorStop(0, night ? 'rgba(255,240,222,0.22)' : 'rgba(255,255,255,0.7)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
@@ -107,8 +159,8 @@ function rink(g, w, h) {
   g.beginPath(); g.roundRect(ix, iy, iw, ih, rad); g.stroke();
   // the stanchions of the glass along the boards
   g.fillStyle = night ? '#48423f' : '#b2a797';
-  for (let x = ix + rad; x < ix + iw - rad; x += 84) for (const y of [m + 2, h - m - 6]) g.fillRect(x, y, 3, 4);
-  for (let y = iy + rad; y < iy + ih - rad; y += 84) for (const x of [m + 2, w - m - 6]) g.fillRect(x, y, 4, 3);
+  for (let x = ix + rad; x < ix + iw - rad; x += 70) for (const y of [iy - bw + 2, iy + ih + bw - 6]) g.fillRect(x, y, 3, 4);
+  for (let y = iy + rad; y < iy + ih - rad; y += 70) for (const x of [ix - bw + 2, ix + iw + bw - 6]) g.fillRect(x, y, 4, 3);
   return { ix, iy, iw, ih, rad };
 }
 
@@ -204,34 +256,50 @@ export function render(canvas, cam, o) {
   const all = [...pa, ...pb, { x: 0, y: 0 }];
   let x0 = Math.min(...all.map((p) => p.x)), x1 = Math.max(...all.map((p) => p.x)), y0 = Math.min(...all.map((p) => p.y)), y1 = Math.max(...all.map((p) => p.y));
   const span = Math.max(x1 - x0, y1 - y0, 1);
-  x0 -= span * 0.08; x1 += span * 0.08; y0 -= span * 0.08; y1 += span * 0.08;
-  const left = phone ? 34 : HUD + 40, right = w - (phone ? 34 : 60), top = phone ? 112 : 64, bottom = h - (phone ? (f.at != null ? 72 : 40) : 46);
-  const k = Math.min((right - left) / (x1 - x0), (bottom - top) / (y1 - y0));
-  const ox = left + ((right - left) - (x1 - x0) * k) / 2, oy = top + ((bottom - top) - (y1 - y0) * k) / 2;
+  x0 -= span * 0.06; x1 += span * 0.06; y0 -= span * 0.06; y1 += span * 0.06;
+  // the rink is fitted to the motion's own box (O in it, not centred on it),
+  // with a strip inside its left and bottom edges for the scales
+  const PADL = 34, PADB = 26, PAD = 12;
+  const left = phone ? 12 : HUD + 24, right = w - (phone ? 12 : 24), bottom = h - (phone ? (f.at != null ? 66 : 16) : 18);
+  const fit = (top) => {
+    const k = Math.min((right - left - PADL - PAD - 18) / (x1 - x0), (bottom - top - PADB - PAD - 18) / (y1 - y0));
+    const bw = (x1 - x0) * k, bh = (y1 - y0) * k;
+    return { k, bw, bh, ox: left + 9 + PADL + ((right - left - 18 - PADL - PAD) - bw) / 2, oy: top + 9 + PAD + ((bottom - top - 18 - PAD - PADB) - bh) / 2 };
+  };
+  // as tall as it can be, unless that puts its corner under the clock (top right)
+  let F = fit(phone ? 108 : 22);
+  if (!phone && F.oy - PAD - 9 < 70 && F.ox + F.bw + PAD + 9 > w - 170) F = fit(72);
+  const { k, bw, bh, ox, oy } = F;
   const X = (x) => ox + (x - x0) * k, Y = (y) => oy + (y1 - y) * k;
   const Xi = (px) => x0 + (px - ox) / k, Yi = (py) => y1 - (py - oy) / k;
 
-  // ── the rink fills the stage; the grid is etched into it, the axes lie on top
-  const ice = rink(g, w, h);
+  // ── the rink round the motion, the stands round the rink; the grid etched in the ice, the axes on top
+  const ice = rink(g, w, h, ox - PADL, oy - PAD, bw + PADL + PAD, bh + PAD + PADB);
   const step = niceStep(Math.max(x1 - x0, y1 - y0), 8);
   const gx0 = Xi(ice.ix), gx1 = Xi(ice.ix + ice.iw), gy0 = Yi(ice.iy + ice.ih), gy1 = Yi(ice.iy);
   const etch = E.night ? 'rgba(200,225,240,0.13)' : 'rgba(70,105,130,0.17)';
   g.save(); g.beginPath(); g.roundRect(ice.ix, ice.iy, ice.iw, ice.ih, ice.rad); g.clip();
   for (let x = Math.ceil(gx0 / step) * step; x <= gx1; x += step) stroke(g, [{ x: X(x), y: ice.iy }, { x: X(x), y: ice.iy + ice.ih }], { color: etch, width: 1 });
   for (let y = Math.ceil(gy0 / step) * step; y <= gy1; y += step) stroke(g, [{ x: ice.ix, y: Y(y) }, { x: ice.ix + ice.iw, y: Y(y) }], { color: etch, width: 1 });
-  stroke(g, [{ x: ice.ix, y: Y(0) }, { x: ice.ix + ice.iw, y: Y(0) }], { color: P.axis, width: 1.8 });
-  stroke(g, [{ x: X(0), y: ice.iy }, { x: X(0), y: ice.iy + ice.ih }], { color: P.axis, width: 1.8 });
+  if (Y(0) > ice.iy && Y(0) < ice.iy + ice.ih) stroke(g, [{ x: ice.ix, y: Y(0) }, { x: ice.ix + ice.iw, y: Y(0) }], { color: P.axis, width: 1.8 });
+  if (X(0) > ice.ix && X(0) < ice.ix + ice.iw) stroke(g, [{ x: X(0), y: ice.iy }, { x: X(0), y: ice.iy + ice.ih }], { color: P.axis, width: 1.8 });
+  // the scales, painted along the bottom and left edges of the ice, off every path
+  const sc = E.night ? 'rgba(230,240,246,0.55)' : 'rgba(50,80,100,0.55)';
+  for (let x = Math.ceil(gx0 / step) * step; x <= gx1 + 1e-9; x += step) if (X(x) > ice.ix + PADL - 4 && X(x) < ice.ix + ice.iw - 12) stroke(g, [{ x: X(x), y: ice.iy + ice.ih }, { x: X(x), y: ice.iy + ice.ih - 6 }], { color: sc, width: 1.4 });
+  for (let y = Math.ceil(gy0 / step) * step; y <= gy1 + 1e-9; y += step) if (Y(y) < ice.iy + ice.ih - PADB + 4 && Y(y) > ice.iy + 12) stroke(g, [{ x: ice.ix, y: Y(y) }, { x: ice.ix + 6, y: Y(y) }], { color: sc, width: 1.4 });
   g.restore();
   // keep labels off the readouts
   if (phone) reserve({ x: 0, y: 0, w, h: 100 });
   else { reserve({ x: 0, y: 0, w: HUD, h: HUD_H }); reserve({ x: w - 160, y: 0, w: 160, h: 64 }); }
-  for (let x = Math.ceil(x0 / step) * step; x <= x1 + 1e-9; x += step)
-    if (Math.abs(x) > 1e-9) L.add(fmt(x, step < 1 ? 1 : 0), X(x), Y(0) + 15, { color: P.muted, align: 'center', pri: 1, size: 13, maxPush: 0 });
-  for (let y = Math.ceil(y0 / step) * step; y <= y1 + 1e-9; y += step)
-    if (Math.abs(y) > 1e-9) L.add(fmt(y, step < 1 ? 1 : 0), X(0) - 9, Y(y), { color: P.muted, align: 'right', pri: 1, size: 13, maxPush: 0 });
-  L.add('O', X(0) - 9, Y(0) + 15, { color: P.ink, align: 'right', pri: 6, size: 15, weight: 700 });
-  L.add(T`vec(i) [m]`, ice.ix + ice.iw - 14, Y(0) - 15, { color: P.strong, align: 'right', pri: 5, size: 14, weight: 700, maxPush: 40 });
-  L.add(T`vec(j) [m]`, X(0) + 10, Math.max(ice.iy + 16, phone ? 110 : 20), { color: P.strong, align: 'left', pri: 5, size: 14, weight: 700, maxPush: 40 });
+  const tick = { color: P.strong, pri: 7, size: 13, weight: 700, maxPush: 0 };
+  const iLab = T`vec(i) [m]`, jLab = T`vec(j) [m]`;
+  for (let x = Math.ceil(gx0 / step) * step; x <= gx1 + 1e-9; x += step)
+    if (Math.abs(x) > 1e-9 && X(x) > ice.ix + PADL && X(x) < ice.ix + ice.iw - 46) L.add(fmt(x, step < 1 ? 1 : 0), X(x), ice.iy + ice.ih - PADB / 2 - 2, { ...tick, align: 'center' });
+  for (let y = Math.ceil(gy0 / step) * step; y <= gy1 + 1e-9; y += step)
+    if (Math.abs(y) > 1e-9 && Y(y) < ice.iy + ice.ih - PADB && Y(y) > ice.iy + 34) L.add(fmt(y, step < 1 ? 1 : 0), ice.ix + PADL - 8, Y(y), { ...tick, align: 'right' });
+  L.add(iLab, ice.ix + ice.iw - 10, ice.iy + ice.ih - PADB / 2 - 2, { ...tick, color: P.ink, align: 'right', size: 14, maxPush: 20 });
+  L.add(jLab, clamp(X(0), ice.ix + PADL, ice.ix + ice.iw - 60) + 8, ice.iy + 16, { ...tick, color: P.ink, align: 'left', size: 14, maxPush: 20 });
+  if (X(0) > ice.ix && Y(0) < ice.iy + ice.ih) L.add('O', X(0) - 7, Y(0) + 13, { color: P.ink, align: 'right', pri: 8, size: 15, weight: 800 });
 
   // ── each path, faint in full and strong to now
   const PX = (p) => ({ x: X(p.x), y: Y(p.y) });
@@ -311,13 +379,14 @@ export function render(canvas, cam, o) {
     const blocked = phone ? [{ x: 0, y: 0, w, h: 100 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 160, y: 0, w: 160, h: 64 }];
     const a0 = Math.atan2(dy, dx), rr = r * 2.6 + 14;
     let best = null;
-    for (const ext of [0, 26, 52]) for (const da of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.2, -2.2, Math.PI]) {
+    for (const inside of [true, false]) for (const ext of [0, 26, 52]) for (const da of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.2, -2.2, Math.PI]) {
       if (best) break;
       const ux = Math.cos(a0 + da), uy = Math.sin(a0 + da);
       const al = ux < -0.35 ? 'right' : ux > 0.35 ? 'left' : 'center';
       const ax = cx + ux * (rr + ext), ay = cy + uy * (rr + ext + 10);
       const bx = al === 'left' ? ax : al === 'right' ? ax - tw : ax - tw / 2, box = { x: bx - 8, y: ay - 24, w: tw + 16, h: 48 };
       if (box.x < 8 || box.y < 8 || box.x + box.w > w - 8 || box.y + box.h > h - 8) continue;
+      if (inside && (box.x < ice.ix || box.y < ice.iy || box.x + box.w > ice.ix + ice.iw || box.y + box.h > ice.iy + ice.ih)) continue;
       if ([...blocked, ...held].some((q) => box.x < q.x + q.w && box.x + box.w > q.x && box.y < q.y + q.h && box.y + box.h > q.y)) continue;
       best = { ax, ay, al };
     }

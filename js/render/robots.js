@@ -25,7 +25,7 @@
 //
 // Everything drawn is read from js/core/robots.js (rule 4).
 
-import { pulse, ageOf } from './effects.js';
+import { pulse, dust, ageOf } from './effects.js';
 import { env, rng, softShadow } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep } from './util.js';
 import { T, num } from '../notation.js';
@@ -162,6 +162,116 @@ function centreMark(g, x, y, r) {
   g.restore();
 }
 
+
+/* ── the warehouse round the floor ─────────────────────────────────────── */
+
+/** A box of cardboard from above at (x, y), w × h: shaded, a strip of tape. */
+function box(g, x, y, w, h, R) {
+  const c = ['#b08a5c', '#a07d52', '#bb9767', '#9a7a55'][Math.floor(R() * 4)];
+  const gr = g.createLinearGradient(x, y, x + w, y + h); gr.addColorStop(0, c); gr.addColorStop(1, '#7f6240');
+  g.fillStyle = gr; g.fillRect(x, y, w, h);
+  g.fillStyle = 'rgba(255,240,210,0.35)'; g.fillRect(x, y, w, 1.2); g.fillRect(x, y, 1.2, h);
+  g.fillStyle = 'rgba(205,190,160,0.75)'; if (w > h) g.fillRect(x + w / 2 - 1.5, y, 3, h); else g.fillRect(x, y + h / 2 - 1.5, w, 3);
+  g.strokeStyle = 'rgba(40,25,10,0.5)'; g.lineWidth = 1; g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+}
+
+/** Pallet racking from above in the box: two steel beams down its length,
+    uprights at every bay, and a pallet of boxes in most bays. */
+function rack(g, x, y, w, h, seed) {
+  const R = rng(seed), along = w >= h, len = along ? w : h, dep = along ? h : w;
+  g.save(); g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 10; g.shadowOffsetX = 5; g.shadowOffsetY = 6;
+  g.fillStyle = 'rgba(40,36,38,0.9)'; g.fillRect(x, y, w, h); g.restore();
+  const bay = Math.max(44, Math.min(70, dep * 1.3)), nb = Math.max(1, Math.floor(len / bay)), bl = len / nb;
+  const at = (u, v, a, b) => (along ? [x + u, y + v, a, b] : [x + v, y + u, b, a]);
+  for (let i = 0; i < nb; i++) {
+    if (R() < 0.18) continue;
+    // the pallet: slats of pale wood, then boxes on it
+    const [px, py, pw, ph] = at(i * bl + 4, 4, bl - 8, dep - 8);
+    g.fillStyle = '#9b8466'; g.fillRect(px, py, pw, ph);
+    g.fillStyle = 'rgba(60,40,20,0.35)'; for (let k = 1; k < 5; k++) { if (along) g.fillRect(px, py + (ph * k) / 5, pw, 1); else g.fillRect(px + (pw * k) / 5, py, 1, ph); }
+    const cols = R() < 0.5 ? 2 : 3, rows = 2;
+    for (let a = 0; a < cols; a++) for (let b = 0; b < rows; b++) {
+      if (R() < 0.12) continue;
+      const bw = (pw - 4) / (along ? cols : rows), bh = (ph - 4) / (along ? rows : cols);
+      const bx = px + 2 + (along ? a : b) * bw, by = py + 2 + (along ? b : a) * bh;
+      box(g, bx + 1, by + 1, bw - 2, bh - 2, R);
+    }
+  }
+  // the beams and uprights: steel, lit from above left
+  g.fillStyle = '#56606a';
+  for (const v of [0, dep - 4]) { const [bx, by, bw, bh] = at(0, v, len, 4); g.fillRect(bx, by, bw, bh); }
+  g.fillStyle = 'rgba(255,255,255,0.25)';
+  for (const v of [0, dep - 4]) { const [bx, by, bw, bh] = at(0, v, len, 1.2); g.fillRect(bx, by, bw, bh); }
+  g.fillStyle = '#2d3238';
+  for (let i = 0; i <= nb; i++) for (const v of [0, dep - 6]) { const [bx, by, bw, bh] = at(Math.min(len - 6, i * bl), v, 6, 6); g.fillRect(bx, by, bw, bh); }
+}
+
+/** Hazard stripes painted on the floor in the box: ochre and black, diagonal. */
+function hazard(g, x, y, w, h) {
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  g.fillStyle = '#b9984a'; g.fillRect(x, y, w, h);
+  g.fillStyle = '#26221f';
+  for (let d = -h; d < w + h; d += 14) { g.beginPath(); g.moveTo(x + d, y); g.lineTo(x + d + 7, y); g.lineTo(x + d + 7 - h, y + h); g.lineTo(x + d - h, y + h); g.closePath(); g.fill(); }
+  g.restore();
+}
+
+/** A charging dock from above, its back to the top of the box: a painted bay,
+    the charger with its lamp and contacts, a cable to the wall. */
+function dock(g, x, y, w, h, E) {
+  g.strokeStyle = 'rgba(196,170,110,0.75)'; g.lineWidth = 2.5; g.strokeRect(x, y, w, h);
+  hazard(g, x, y + h - 9, w, 9);
+  softShadow(g, x + w / 2 + 4, y + 20, w * 0.4, 12, 0.7);
+  const ux = x + w / 2 - w * 0.3, uw = w * 0.6;
+  const gr = g.createLinearGradient(0, y + 4, 0, y + 26); gr.addColorStop(0, '#6b6870'); gr.addColorStop(1, '#3a373e');
+  g.fillStyle = gr; g.beginPath(); g.roundRect(ux, y + 4, uw, 22, 5); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 1; g.stroke();
+  g.fillStyle = '#ffd88a'; g.beginPath(); g.roundRect(ux + uw * 0.2, y + 9, uw * 0.6, 4, 2); g.fill();
+  g.fillStyle = 'rgba(255,216,138,0.25)'; g.beginPath(); g.ellipse(x + w / 2, y + 11, uw * 0.45, 8, 0, 0, TAU); g.fill();
+  g.fillStyle = '#c8b27c'; for (const s of [-1, 1]) g.fillRect(x + w / 2 + s * 8 - 2, y + 26, 4, 8);
+  g.strokeStyle = '#1d1b1f'; g.lineWidth = 3; g.beginPath(); g.moveTo(ux + 6, y + 6); g.bezierCurveTo(ux - 12, y - 6, ux - 6, y - 14, ux - 18, y - 22); g.stroke();
+  void E;
+}
+
+/** A traffic cone from above: a square rubber base, the cone in rings, a reflective band. */
+function cone(g, x, y, r) {
+  softShadow(g, x + r * 0.5, y + r * 0.6, r * 1.5, r * 1.1, 0.8);
+  g.fillStyle = '#2a2427'; g.beginPath(); g.roundRect(x - r, y - r, 2 * r, 2 * r, r * 0.3); g.fill();
+  const gr = g.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r * 0.85);
+  gr.addColorStop(0, '#d98a6a'); gr.addColorStop(1, '#8f4a35');
+  g.fillStyle = gr; g.beginPath(); g.arc(x, y, r * 0.8, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(245,240,230,0.9)'; g.lineWidth = r * 0.18; g.beginPath(); g.arc(x, y, r * 0.48, 0, TAU); g.stroke();
+  g.fillStyle = '#b45f45'; g.beginPath(); g.arc(x, y, r * 0.2, 0, TAU); g.fill();
+}
+
+/** The props in the warehouse round the floor, kept to the free space:
+    left of the floor (under the readouts and beside them) and right of it. */
+function warehouse(g, w, h, fx, fy, S, wall, phone, E) {
+  if (phone) return;
+  const outL = fx - wall - 22, outR = fx + S + wall + 22;
+  // beside the readouts, between them and the floor: a run of racking
+  if (outL - (HUD + 10) >= 40) rack(g, HUD + 10, 14, Math.min(54, outL - HUD - 10), HUD_H - 24, 7);
+  // under the readouts: racking along the bottom, a charging dock and a row of cones
+  const lw = outL - 14;
+  if (lw >= 120) {
+    rack(g, 14, h - 64, lw - 6, 50, 11);
+    const dw = Math.min(110, lw * 0.45), dx = 18, dy = HUD_H + 16, dh = Math.max(60, h - 64 - dy - 22);
+    if (dh >= 60) {
+      dock(g, dx, dy, dw, Math.min(dh, 90), E);
+      hazard(g, dx + dw + 16, dy, 10, Math.min(dh, 120));
+      for (let i = 0; i < 3; i++) cone(g, dx + dw + 46 + (i % 2) * 22, dy + 16 + i * 30, 10);
+    }
+  }
+  // right of the floor: a run of racking below the clock, and a pallet waiting
+  if (w - 12 - outR >= 48) {
+    const rw = Math.min(56, w - 12 - outR);
+    rack(g, w - 12 - rw, 78, rw, h - 78 - 110, 13);
+    const R = rng(29), px = w - 12 - rw, py = h - 92;
+    g.fillStyle = '#9b8466'; g.fillRect(px, py, rw, 40);
+    for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) box(g, px + 2 + a * (rw - 4) / 2, py + 2 + b * 18, (rw - 4) / 2 - 2, 16, R);
+    cone(g, px - 20, py + 20, 10);
+  }
+}
+
 /* ── the robot ─────────────────────────────────────────────────────────── */
 
 /** A robot from above at (x, y), facing angle a (radians, screen), s px
@@ -232,9 +342,14 @@ export function render(canvas, cam, o) {
   // `dir` (radians, screen), then turning away from it either way, nearest first
   const place = (x, y, tw, hh, radii, dir = -Math.PI / 2) => {
     for (const d of radii) for (const da of [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6, -1.6, 2.0, -2.0, 2.5, -2.5, Math.PI]) {
-      const ux = Math.cos(dir + da), uy = Math.sin(dir + da), al = ux < -0.35 ? 'right' : ux > 0.35 ? 'left' : 'center';
-      const ax = x + ux * d, ay = y + uy * d, bx = al === 'left' ? ax : al === 'right' ? ax - tw : ax - tw / 2;
-      if (free({ x: bx - 8, y: ay - hh / 2 - 2, w: tw + 16, h: hh + 4 })) return { ax, ay, al };
+      const ux = Math.cos(dir + da), uy = Math.sin(dir + da), al0 = ux < -0.35 ? 'right' : ux > 0.35 ? 'left' : 'center';
+      const ax = x + ux * d, ay = y + uy * d;
+      // the natural alignment first; squeezed for room (a phone), the others
+      for (const al of phone ? [al0, ...['center', 'right', 'left'].filter((a) => a !== al0)] : [al0]) {
+        const bx = al === 'left' ? ax : al === 'right' ? ax - tw : ax - tw / 2;
+        if (al !== al0 && Math.abs(ux) > 0.35 && ((ux > 0) !== (al === 'left'))) continue;   // never back over the thing named
+        if (free({ x: bx - 8, y: ay - hh / 2 - 2, w: tw + 16, h: hh + 4 })) return { ax, ay, al };
+      }
     }
     return null;
   };
@@ -253,14 +368,18 @@ export function render(canvas, cam, o) {
   concrete(g, w, h, E);
   let step = niceStep(f.side, 10); if (step * k < 16) step *= 2; else if (step * k > 64) step /= 2;
   const wall = clamp(S * 0.018, 5, 9);
+  warehouse(g, w, h, fx, fy, S, wall, phone, E);
   skirting(g, fx, fy, S, wall, E);
+  // the walls are kept clear of labels
+  for (const b of [[fx - wall - 3, fy - wall - 3, S + 2 * wall + 6, wall + 6], [fx - wall - 3, fy + S - 3, S + 2 * wall + 6, wall + 6],
+    [fx - wall - 3, fy - wall - 3, wall + 6, S + 2 * wall + 6], [fx + S - 3, fy - wall - 3, wall + 6, S + 2 * wall + 6]]) reserve({ x: b[0], y: b[1], w: b[2], h: b[3] });
   tiles(g, fx, fy, S, step * k, E);
   const br = clamp(S * 0.026, 8, 12);
   for (const [n, x, y, ax, ay] of [['A', -half, -half, -1, 1], ['B', half, -half, 1, 1], ['C', half, half, 1, -1], ['D', -half, half, -1, -1]]) {
     const px = X(x) + ax * wall * 0.5, py = Y(y) + ay * wall * 0.5;
     bollard(g, px, py, br);
     reserve({ x: px - br - 2, y: py - br - 2, w: 2 * br + 4, h: 2 * br + 4 });
-    L.add(n, px + ax * (br + 7), py + ay * (br + 6), { color: P.ink, align: 'center', pri: 7, size: 16, weight: 800 });
+    L.add(n, px + ax * (br + 17), py + ay * 4, { color: P.ink, align: 'center', pri: 7, size: 16, weight: 800 });
   }
   centreMark(g, X(0), Y(0), 7);
   reserve({ x: X(0) - 9, y: Y(0) - 9, w: 18, h: 18 });
@@ -295,7 +414,7 @@ export function render(canvas, cam, o) {
   // at the engine's points)
   let pr = PX(f.posA(t)), ps = PX(f.posB(t));
   {
-    const m = size * 0.82, rv = { x: f.A.v.x - f.B.v.x, y: -(f.A.v.y - f.B.v.y) }, rl = Math.hypot(rv.x, rv.y);
+    const m = size * 1.04, rv = { x: f.A.v.x - f.B.v.x, y: -(f.A.v.y - f.B.v.y) }, rl = Math.hypot(rv.x, rv.y);
     const dx = pr.x - ps.x, dy = pr.y - ps.y;
     if (Math.hypot(dx, dy) < m) {
       let nx, ny;
@@ -305,6 +424,10 @@ export function render(canvas, cam, o) {
       pr = { x: pr.x + nx * push, y: pr.y + ny * push }; ps = { x: ps.x - nx * push, y: ps.y - ny * push };
     }
   }
+  // and a robot's body stays on the floor: its centre may reach the wall (the
+  // engine's floor edge), its body is drawn against the wall, nose to it
+  const lo = size * 0.5 + 1, inside = (q) => ({ x: clamp(q.x, fx + lo, fx + S - lo), y: clamp(q.y, fy + lo, fy + S - lo) });
+  pr = inside(pr); ps = inside(ps);
   const drawn = { R: pr, S: ps };
   for (const q of [pr, ps]) reserve({ x: q.x - size * 0.55, y: q.y - size * 0.55, w: size * 1.1, h: size * 1.1 });
   const along = (a0, a1, n, r) => { for (let i = 0; i <= n; i++) { const v = i / n; reserve({ x: a0.x + (a1.x - a0.x) * v - r, y: a0.y + (a1.y - a0.y) * v - r, w: 2 * r, h: 2 * r }); } };
@@ -348,7 +471,7 @@ export function render(canvas, cam, o) {
       // first choice: square off the gap, on the side away from the floor's centre
       let dir = Math.atan2(a.x - b.x, -(a.y - b.y));
       if (Math.cos(dir) * (mx - X(0)) + Math.sin(dir) * (my - Y(0)) < 0) dir += Math.PI;
-      let best = place(mx, my, tw, 44, [34, 54, 80, 110, 150], dir);
+      let best = place(mx, my, tw, 44, [34, 54, 80, 110, 150, 190], dir);
       best ??= { ax: mx, ay: my + 40, al: 'center' };
       L.add(l1, best.ax, best.ay - 10, { color: P.mark, align: best.al, pri: 9, size: 14, weight: 700, maxPush: 20 });
       L.add(l2, best.ax, best.ay + 10, { color: P.mark, align: best.al, pri: 8, size: 14, weight: 700, maxPush: 20 });
@@ -368,13 +491,14 @@ export function render(canvas, cam, o) {
   // ── a bump where a robot reaches the floor's edge; each one's velocity
   for (const r of each) if (r.leaves != null && r.leaves <= f.tMax + 1e-9 && t >= r.leaves - 1e-9) {
     const { age, life } = ageOf(t, r.leaves, f.tMax);
-    const e = PX(r.pos(r.leaves)); pulse(g, e.x, e.y, age, life, P.strong, { radius: 30 });
+    const e = PX(r.pos(r.leaves)); pulse(g, e.x, e.y, age, life, P.strong, { radius: 30 }); dust(g, e.x, e.y, age, life, { size: 0.7, n: 10 });
   }
-  for (const [a, b] of vArrows) arrow(g, a.x, a.y, b.x, b.y, { color: P.vel, width: 2.8, head: 11 });
   for (const r of each) {
     const q = drawn[r.n], now = PX(r.pos(t)), p0 = PX(r.pos(0)), still = Math.hypot(r.v.x, r.v.y) < 1e-9;
     robotTop(g, q.x, q.y, size, still ? 0 : Math.atan2(-r.v.y, r.v.x), r.c, P, { letter: r.n, phase: Math.hypot(now.x - p0.x, now.y - p0.y) });
   }
+  // the velocity arrows over the robots, so neither robot hides the other's
+  for (const [a, b] of vArrows) arrow(g, a.x, a.y, b.x, b.y, { color: P.vel, width: 2.8, head: 11 });
   L.draw(g, w, h);
   return null;
 }
