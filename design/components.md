@@ -460,6 +460,48 @@ built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
 
+### Scenery — `js/render/scenery.js` (every library stage stands on these)
+
+The places, drawn as places, in the stadium's colours (`env()` reads the
+theme's sky, haze, sun, grass, earth, concrete, window and shadow tokens; all
+under about 35% saturation, away from the physics hues). Seeded (`rng`), so a
+scene draws the same every frame.
+- `skyscape(g, x0, y0, x1, horizon, { seed, sun, clouds, far })` — the sky in
+  the theme's three bands, the sun's glow low on the left, soft clouds, and a
+  far layer: `'hills'` (two misted ridges), `'skyline'` (low blocks, lit
+  windows at night), `'trees'` (a tree line), or `'none'`; haze at the horizon.
+- `grass`, `sandGround`, `tarmac` (grain, edge line, dashed centre, kerb,
+  verge), `railBed` (ballast, sleepers end on, a rail with a bright head),
+  `floorboards`, `water` (crests drifting with `phase`), `stone` (courses lit
+  from the left), `interior` (a wall, high windows with light falling, a dado
+  and panels), `softShadow(g, x, y, rx, ry)`.
+- From above: `seaFromAbove`, `floorFromAbove` (tiles, grout, a sheen),
+  `fieldFromAbove` (mown stripes), `skyFromAbove` (cloud shadows).
+- `paper(g, x, y, w, h)` — a sheet with a shadow and a fine grid: a graph drawn
+  over a scene sits on it, so it reads.
+- `landscape(g, w, h, Y, o)` — a whole outdoor scene: `skyscape` down to the
+  ground at Y, grass (or sand or water) below.
+
+### Effects — `js/render/effects.js`
+
+The moments a motion has: `dust`, `splash`, `pulse` (two meet; a mark
+passed), `flash` (a collision), `squash(age, life)` (a bounce),
+`speedLines`. Each takes `age` — the time since the ENGINE's event — and a
+`life`; `ageOf(t, tEvent, tMax)` gives both (an event at the very end, where
+playback stops, shows a third of the way through, so the impact still reads).
+The engine says when; the art only shows it (rule 4).
+
+### Figures, detailed — `js/render/figures.js`
+
+`car` — a painted body with a sheen, glass with a highlight, a door seam,
+`roadWheel`s in their arches turning with the distance, a headlight and a tail
+light that glows when `brake` (slowing: v·a < 0), a soft shadow. `train` —
+cream carriages with a livery stripe, glazed windows and doors, bogies with
+road wheels, a headlight, a pantograph, a soft shadow. `runner` — dressed (a
+shirt, shorts, skin lit from the left, hair, shoes), the far limbs in shade, a
+soft shadow; the stride is unchanged. The surfaces `roadway`, `rails` and
+`runningTrack` draw the scenery's tarmac, railway bed and a red running track.
+
 ### One question, three models — `js/render/models.js`
 
 Three lanes of one road, the same `car` in each, `speedSign(g, x, Y, limit, P)`

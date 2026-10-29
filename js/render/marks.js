@@ -8,6 +8,8 @@
 //
 // Everything drawn is read from js/core/marks.js (rule 4).
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
+import { skyscape, grass } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha } from './util.js';
 import { inLetters } from '../core/letters.js';
 import { T, num } from '../notation.js';
@@ -38,10 +40,11 @@ export function render(canvas, cam, o) {
   const Y = (y) => top + y * k;
   const edge = w < 520 ? w * 0.45 : Math.max(HUD + 140, w * 0.45), bx = edge + 30;
   const roof = Y(0) - 10, floor = f.ground != null ? Y(f.ground) : bottom;
+  skyscape(g, 0, 0, w, floor, { far: 'skyline', seed: 27 });
   if (f.look === 'cliff') {
     g.save(); g.fillStyle = withAlpha('#8b8073', 0.75); g.beginPath(); g.moveTo(edge - 160, roof); g.lineTo(edge, roof); g.lineTo(edge - 8, floor); g.lineTo(edge - 160, floor); g.closePath(); g.fill(); g.restore();
   } else buildingWall(g, edge - 150, edge, roof, floor, Y(f.yM), Y(f.yN), P);
-  if (f.ground != null) { g.save(); g.fillStyle = withAlpha('#7c9a63', 0.55); g.fillRect(0, floor, w, h - floor); g.restore(); stroke(g, [{ x: 0, y: floor }, { x: w, y: floor }], { color: P.axis, width: 1.6 }); }
+  if (f.ground != null) grass(g, 0, w, floor, h);
 
   // the release point and the two marks, as level lines with their distances
   const lab = (c) => (f.letters ? T`${inLetters(c, 'u^2', 'g')}` : T`${tr(c)} [m]`);
@@ -62,6 +65,7 @@ export function render(canvas, cam, o) {
   const y = f.pos(t), v = f.vel(t);
   stroke(g, [{ x: bx, y: Y(0) }, { x: bx, y: Y(y) }], { color: P.disp, width: 2.4, alpha: 0.6 });
   for (const [tm, ym] of [[f.tM, f.yM], [f.tN, f.yN]]) if (t >= tm - 1e-9) {
+    { const { age, life } = ageOf(t, tm, f.tMax); pulse(g, bx, Y(ym), age, life, P.mark); }
     dot(g, bx, Y(ym), 8, { stroke: P.mark, width: 2.2 });
     L.add(f.letters ? T`v = ${tm === f.tM ? f.vLabel.M : f.vLabel.N}` : T`${tr(f.vel(tm), 3)} [m s^-1]`, bx - 14, Y(ym) - 12, { color: P.vel, align: 'right', pri: 7, size: 13, weight: 700 });
   }

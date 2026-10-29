@@ -14,6 +14,7 @@
 // Backdrop pieces exported: labWall, labBench, table, foilStrip, launcher.
 // Everything drawn is read from js/core/bench.js (rule 4).
 
+import { interior, floorboards } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, cssVar } from './util.js';
 import { T, num } from '../notation.js';
 
@@ -23,10 +24,8 @@ const wood = () => cssVar('--wood', '#a0764e');
 
 /** The laboratory wall behind it, and the floor line at Y (if any). */
 export function labWall(g, w, Y, h) {
-  g.save(); g.fillStyle = withAlpha('#c9ced3', 0.28); g.fillRect(0, 0, w, Y ?? h);
-  if (Y != null) { g.fillStyle = withAlpha('#8d8f91', 0.35); g.fillRect(0, Y, w, h - Y);
-    g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(0, Y); g.lineTo(w, Y); g.stroke(); }
-  g.restore();
+  interior(g, 0, 0, w, Y ?? h);
+  if (Y != null) floorboards(g, 0, w, Y, h);
 }
 /** A laboratory bench whose top's end is at (edge, top), reaching back to x0, a leg under its end. */
 export function labBench(g, x0, edge, top, bottom) {

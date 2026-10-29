@@ -7,6 +7,8 @@
 //
 // Everything drawn is read from js/core/letters.js (rule 4).
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
+import { skyscape, grass } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot } from './util.js';
 import { inLetters } from '../core/letters.js';
 import { T, num } from '../notation.js';
@@ -29,6 +31,9 @@ export function render(canvas, cam, o) {
   const top = 60, bottom = h - 50, k = (bottom - top) / (span * 1.2);
   const Y = (y) => bottom - (y - lo + span * 0.1) * k;
   const cx = w < 520 ? w * 0.5 : Math.max(HUD + 140, w * 0.5), xP = cx - 26, xQ = cx + 26;
+  // open sky, and the ground well below O (O is a point, not the ground)
+  skyscape(g, 0, 0, w, h - 14, { far: 'hills', seed: 29 });
+  grass(g, 0, w, h - 14, h);
 
   // the vertical through O, O itself, and the level of O across
   stroke(g, [{ x: cx, y: Y(hi) - 20 }, { x: cx, y: Y(lo) + 20 }], { color: P.grid, width: 1.4, dash: [3, 5] });
@@ -57,6 +62,7 @@ export function render(canvas, cam, o) {
   if (t < f.t0) L.add(`Q waits at O until ${f.top ? 'P is at the top' : 'it is projected'}`, xQ + 30, Y(0) + 22, { color: P.second, align: 'left', pri: 5, size: 13 });
   // the collision
   if (f.tc != null && t >= f.tc - 1e-9) {
+    { const { age, life } = ageOf(t, f.tc, f.tMax); flash(g, cx, Y(f.yc), age, life); }
     dot(g, cx, Y(f.yc), 12, { stroke: P.mark, width: 2.6 });
     const tau = f.tau, yl = f.ycL;
     L.add(T`"collide," tau = ${inLetters(tau, 'U', 'g')}`, cx + 22, Y(f.yc) - 30, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });

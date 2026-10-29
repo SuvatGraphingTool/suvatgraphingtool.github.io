@@ -13,6 +13,7 @@
 
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, fmt, withAlpha, cssVar } from './util.js';
 import { sky } from './heights.js';
+import { grass } from './scenery.js';
 import { T, num } from '../notation.js';
 
 const tr = (x, p = 3) => num(x, p, { trim: true });
@@ -29,12 +30,9 @@ export function aircraft(g, x, y, L, P) {
 }
 /** Fields from their surface at y = Y down: two greens in strips, a hedge line. */
 export function fields(g, x0, x1, Y, bottom) {
-  const gr = cssVar('--grass', '#7c9a63');
-  g.save();
-  g.fillStyle = withAlpha(gr, 0.75); g.fillRect(x0, Y, x1 - x0, bottom - Y);
-  g.fillStyle = withAlpha(gr, 0.45);
-  for (let x = x0; x < x1; x += 120) g.fillRect(x, Y + 3, 60, bottom - Y - 3);
-  g.strokeStyle = 'rgba(0,0,0,0.25)'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x0, Y); g.lineTo(x1, Y); g.stroke();
+  grass(g, x0, x1, Y, bottom);
+  g.save(); g.fillStyle = withAlpha(cssVar('--terrain', '#cfc6a2'), 0.35);
+  for (let x = x0 + 40; x < x1; x += 150) g.fillRect(x, Y + 4, 70, bottom - Y - 4);
   g.restore();
 }
 /** The jumper at (x, y): arms and legs out in free fall, or hanging under a canopy. */

@@ -11,6 +11,8 @@
 //
 // Everything drawn is read from js/core/robots.js (rule 4).
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
+import { floorFromAbove } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha } from './util.js';
 import { T, num } from '../notation.js';
 
@@ -41,7 +43,7 @@ export function render(canvas, cam, o) {
   const k = Math.min((right - left) / (f.side * 1.16), (bottom - top) / (f.side * 1.16));
   const cx = (left + right) / 2, cy = (top + bottom) / 2;
   const X = (x) => cx + x * k, Y = (y) => cy - y * k;
-  g.save(); g.fillStyle = withAlpha('#c8bfae', 0.28); g.fillRect(X(-half), Y(half), f.side * k, f.side * k); g.restore();
+  floorFromAbove(g, X(-half), Y(half), f.side * k, f.side * k, Math.max(12, (f.side / 10) * k));
   const step = niceStep(f.side, 10);
   for (let v = -half + step; v < half - 1e-9; v += step) {
     stroke(g, [{ x: X(v), y: Y(-half) }, { x: X(v), y: Y(half) }], { color: P.grid, width: 1 });
@@ -69,6 +71,7 @@ export function render(canvas, cam, o) {
   }
   if (!f.same && f.tc != null && f.tc <= f.tMax + 1e-9 && t >= f.tc - 1e-9) {
     const a = f.posA(f.tc), b = f.posB(f.tc);
+    { const { age, life } = ageOf(t, f.tc, f.tMax); pulse(g, (X(a.x) + X(b.x)) / 2, (Y(a.y) + Y(b.y)) / 2, age, life, P.mark, { radius: 46 }); }
     for (const q of [a, b]) dot(g, X(q.x), Y(q.y), 9, { stroke: P.mark, width: 2.2 });
     stroke(g, [{ x: X(a.x), y: Y(a.y) }, { x: X(b.x), y: Y(b.y) }], { color: P.mark, width: 1.4 });
     L.add(T`"closest," t = ${tr(f.tc)} [s], ${tr(f.dmin)} [m]`, (X(a.x) + X(b.x)) / 2 + 14, (Y(a.y) + Y(b.y)) / 2 + 18, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });

@@ -9,6 +9,7 @@
 //
 // Everything drawn is read from js/core/twoplane.js (rule 4).
 
+import { seaFromAbove, skyFromAbove } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, fmt, withAlpha } from './util.js';
 import { T, num } from '../notation.js';
 
@@ -64,7 +65,7 @@ export function render(canvas, cam, o) {
   const X = (x) => ox + (x - x0) * k, Y = (y) => oy + (y1 - y) * k;
 
   // ── the sea (or the sky), the grid, the axes through O
-  g.save(); g.fillStyle = birds ? withAlpha('#9fb6c8', 0.18) : withAlpha('#6f8796', 0.18); g.fillRect(X(x0), Y(y1), (x1 - x0) * k, (y1 - y0) * k); g.restore();
+  if (birds) skyFromAbove(g, X(x0), Y(y1), (x1 - x0) * k, (y1 - y0) * k); else seaFromAbove(g, X(x0), Y(y1), (x1 - x0) * k, (y1 - y0) * k, { phase: t });
   const step = niceStep(Math.max(x1 - x0, y1 - y0), 8);
   for (let x = Math.ceil(x0 / step) * step; x <= x1; x += step) {
     stroke(g, [{ x: X(x), y: Y(y0) }, { x: X(x), y: Y(y1) }], { color: P.grid, width: 1 });

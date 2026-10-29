@@ -7,6 +7,8 @@
 //
 // Everything drawn is read from js/core/ceiling.js (rule 4).
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
+import { interior, floorboards } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha } from './util.js';
 import { runner } from './figures.js';
 import { T, num } from '../notation.js';
@@ -35,8 +37,8 @@ export function render(canvas, cam, o) {
   const top = 50, bottom = h - 40, k = (bottom - top) / yTop, Y = (y) => bottom - y * k;
   const cx = w < 520 ? w * 0.55 : Math.max(HUD + 160, w * 0.5);
   // the hall: floor, the back wall, the ceiling
-  g.save(); g.fillStyle = withAlpha('#c8b48a', 0.45); g.fillRect(0, bottom, w, h - bottom); g.restore();
-  stroke(g, [{ x: 0, y: bottom }, { x: w, y: bottom }], { color: P.axis, width: 2 });
+  interior(g, 0, 0, w, bottom);
+  floorboards(g, 0, w, bottom, h);
   if (f.C != null) hallCeiling(g, cx - 220, cx + 220, Y(f.C), P);
   runner(g, cx - 34, bottom, Math.max(28, 1.7 * k), P, { dir: 1, still: true });
   // the heights: where it leaves, the ceiling, its greatest height
@@ -53,6 +55,7 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: cx, y: Y(f.h) }, { x: cx, y: Y(down ? f.Hmax : y) }], { color: P.disp, width: 2, alpha: 0.5 });
   if (down) stroke(g, [{ x: cx + 10, y: Y(f.Hmax) }, { x: cx + 10, y: Y(y) }], { color: P.disp, width: 2, alpha: 0.5 });
   if (f.hit && t >= f.hit.t - 1e-9) {
+    { const { age, life } = ageOf(t, f.hit.t, f.tMax); flash(g, cx, Y(f.C), age, life, { radius: 20 }); }
     dot(g, cx, Y(f.C), 9, { stroke: P.mark, width: 2.4 });
     L.add(T`t = ${tr(f.hit.t)} [s], ${tr(f.hit.v)} [m s^-1]`, cx - 16, Y(f.C) + 22, { color: P.mark, align: 'right', pri: 9, size: 13, weight: 700 });
   }

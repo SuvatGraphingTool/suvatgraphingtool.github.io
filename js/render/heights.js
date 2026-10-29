@@ -18,9 +18,11 @@
 // Everything drawn is read from js/core/height.js and js/core/projectile.js
 // (rule 4).
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, cssVar } from './util.js';
 import { runner } from './figures.js';
 import { T, num } from '../notation.js';
+import { skyscape, water, grass } from './scenery.js';
 
 const tr = (x, p = 3) => num(x, p, { trim: true });
 const HUD = 250, HUD_H = 290;
@@ -28,27 +30,11 @@ const EARTH = '#7d6a55', TILE = '#b9c3c8', TIMBER = '#8a6d4c';
 const ROCK = '#8b8073', ROCK_D = '#5f574e', SEA = '#6f8796', SEA_D = '#4f6572', STONE = '#a59d92', STONE_D = '#6e675e';
 
 /* ── backdrop pieces ─────────────────────────────────────────────────── */
-/** Sky from the top of the box down to the horizon. */
-export function sky(g, x0, y0, x1, horizon) {
-  const gr = g.createLinearGradient(0, y0, 0, horizon);
-  gr.addColorStop(0, cssVar('--sky-top', '#dfe8ee')); gr.addColorStop(1, cssVar('--sky-bottom', '#f4efe6'));
-  g.fillStyle = gr; g.fillRect(x0, y0, x1 - x0, horizon - y0);
-}
-/** The sea from its surface at y = Y down, with a few lines of swell. */
-export function sea(g, x0, x1, Y, bottom) {
-  const gr = g.createLinearGradient(0, Y, 0, bottom);
-  gr.addColorStop(0, withAlpha(SEA, 0.75)); gr.addColorStop(1, withAlpha(SEA_D, 0.9));
-  g.fillStyle = gr; g.fillRect(x0, Y, x1 - x0, bottom - Y);
-  g.save(); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 1.2;
-  for (let row = 0; row < 3; row++) {
-    const yy = Y + 6 + row * 9;
-    if (yy > bottom - 2) break;
-    g.beginPath();
-    for (let x = x0 + (row * 23) % 40; x < x1; x += 40) { g.moveTo(x, yy); g.quadraticCurveTo(x + 7, yy - 3, x + 14, yy); }
-    g.stroke();
-  }
-  g.restore();
-}
+/** Sky from the top of the box down to the horizon: the shared layered sky
+    (gradient, the sun's glow, soft clouds, far hills) from ./scenery.js. */
+export function sky(g, x0, y0, x1, horizon, o = {}) { skyscape(g, x0, y0, x1, horizon, { far: 'hills', ...o }); }
+/** The sea from its surface at y = Y down: the shared water, crests drifting with `phase`. */
+export function sea(g, x0, x1, Y, bottom, phase = 0) { water(g, x0, x1, Y, bottom, { phase }); }
 /** A rock cliff whose top edge is at (edge, top), standing on the sea at Y,
     reaching back to x0: strata across it, a grass cap, a face that leans
     back a little so a stone dropped from the edge falls clear of it. */
@@ -93,10 +79,7 @@ export function tower(g, edge, top, Y, width) {
   g.restore();
 }
 /** Level ground from its surface at Y down. */
-export function groundStrip(g, x0, x1, Y, bottom) {
-  g.save(); g.fillStyle = withAlpha(cssVar('--grass', '#7c9a63'), 0.55); g.fillRect(x0, Y, x1 - x0, bottom - Y);
-  g.strokeStyle = cssVar('--axis', 'rgba(0,0,0,0.4)'); g.lineWidth = 1.6; g.beginPath(); g.moveTo(x0, Y); g.lineTo(x1, Y); g.stroke(); g.restore();
-}
+export function groundStrip(g, x0, x1, Y, bottom) { grass(g, x0, x1, Y, bottom); }
 
 /** A bridge whose deck edge is at (edge, top), over water at Y: a deck with a
     railing reaching back to x0, and a stone pier standing in the river. */
@@ -229,6 +212,7 @@ export function render(canvas, cam, o) {
   // ── where it lands, once it has
   if (t >= f.tMax - 1e-9) {
     const lx = X(f.pos(f.tMax).x) + (f.vertical ? side : 0);
+    { const { age, life } = ageOf(t, f.tMax, f.tMax); if (wet || place === 'well') splash(g, lx, oy, age, life); else dust(g, lx, oy, age, life); }
     if (wet || place === 'well') { g.save(); g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(lx, oy, 12, 3.5, 0, 0, Math.PI * 2); g.stroke(); g.restore(); }
     if (!f.vertical) {
       stroke(g, [{ x: X(0), y: oy + 22 }, { x: lx, y: oy + 22 }], { color: P.ink, width: 1.2, alpha: 0.8 });

@@ -23,6 +23,7 @@
 // Everything drawn is read from js/core/overtake.js (rule 4). The view frames
 // the whole run and does not pan.
 
+import { landscape, paper } from './scenery.js';
 import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep, cssVar, withAlpha } from './util.js';
 import { T, num } from '../notation.js';
 import { drawFigure, train, rails, post, phaseFor, trafficLights, FIGURES } from './figures.js';
@@ -43,7 +44,9 @@ export function render(canvas, cam, o) {
   // clear of the readouts: the four boxes on the left, the clock top right
   // on the tracks the graph gives up a little height to the trackside posts
   const rail = f.where === 'rail', low = rail || f.lights;
+  landscape(g, w, h, Math.round(h * (low ? 0.72 : 0.68)) - 50, { far: rail ? 'hills' : 'trees', seed: 39 });
   const gx0 = 270, gx1 = w - 60, gy0 = 100, gy1 = Math.round(h * (low ? 0.47 : 0.52));
+  paper(g, gx0 - 56, gy0 - 34, gx1 - gx0 + 76, gy1 - gy0 + 72);   // the graph on its sheet, clear of the scene behind
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0);
   const vTop = f.vMax * 1.22;
   const Y = (v) => gy1 - (v / vTop) * (gy1 - gy0);

@@ -17,20 +17,14 @@ import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, niceS
 import { runner, dog } from './figures.js';
 import { sky, sea } from './heights.js';
 import { T, num } from '../notation.js';
+import { sandGround } from './scenery.js';
 
 const tr = (x, p = 3) => num(x, p, { trim: true });
 const HUD = 250, HUD_H = 290;
 const SAND = '#cdbb94', SAND_D = '#a8956c';
 
 /** Level sand from its surface at Y down, a little darker where it is wet. */
-export function sand(g, x0, x1, Y, bottom) {
-  const gr = g.createLinearGradient(0, Y, 0, bottom);
-  gr.addColorStop(0, withAlpha(SAND, 0.9)); gr.addColorStop(1, withAlpha(SAND_D, 0.9));
-  g.fillStyle = gr; g.fillRect(x0, Y, x1 - x0, bottom - Y);
-  g.save(); g.fillStyle = 'rgba(0,0,0,0.06)';
-  for (let i = 0; i < 40; i++) { const x = x0 + ((i * 97) % (x1 - x0)), y = Y + 4 + ((i * 37) % Math.max(1, bottom - Y - 6)); g.fillRect(x, y, 2, 1); }
-  g.restore();
-}
+export function sand(g, x0, x1, Y, bottom) { sandGround(g, x0, x1, Y, bottom); }
 
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;

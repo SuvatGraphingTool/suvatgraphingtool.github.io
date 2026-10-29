@@ -9,6 +9,7 @@
 // Velocity along the road is dashed (rule 2). Everything is read from the
 // library's journey engine, js/core/journey.js (rule 4).
 
+import { landscape } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep, fmt, withAlpha } from './util.js';
 import { car, roadway, phaseFor } from './figures.js';
 import { T, num } from '../notation.js';
@@ -50,13 +51,14 @@ export function render(canvas, cam, o) {
     stroke(g, [{ x: X(x), y: lastY + 20 }, { x: X(x), y: lastY + 26 }], { color: P.axis, width: 1.2 });
     L.add(`${fmt(x, 0)} m`, X(x), lastY + 38, { color: P.faint, align: 'center', pri: 1, size: 13, bg: false, maxPush: 0 });
   }
+  landscape(g, w, h, top - 46, { far: 'trees', seed: 9 });
   f.models.forEach((m, i) => {
     const Y = top + gap * i;
     roadway(g, 0, w, Y, P);
     speedSign(g, X(D), Y, f.limit, P);
     stroke(g, [{ x: X(0), y: Y - 4 }, { x: X(0), y: Y + 20 }], { color: P.mark, width: 2 });
     const x = m.pos(t), v = m.vel(t), L0 = 56;
-    car(g, X(x), Y, L0, P, { dir: 1, ring: i ? colors[i] : null, phase: phaseFor('car', L0, X(x) - X(0)) });
+    car(g, X(x), Y, L0, P, { dir: 1, ring: i ? colors[i] : null, phase: phaseFor('car', L0, X(x) - X(0)), brake: m.acc ? m.acc(t) < -1e-9 : false });
     // its name under its own lane, clear of the readouts and of the car
     L.add(`Model ${i + 1}: ${m.does}`, X(0), Y + 30, { color: colors[i], align: 'left', pri: 7, size: 13, weight: 700 });
     if (show.velocity !== false && v > 1e-6) {

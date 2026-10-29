@@ -9,6 +9,7 @@
 //
 // Everything drawn is read from js/core/twotrains.js (rule 4).
 
+import { landscape } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, withAlpha } from './util.js';
 import { rails, train, phaseFor } from './figures.js';
 import { T, num } from '../notation.js';
@@ -39,6 +40,7 @@ export function render(canvas, cam, o) {
   // the tracks low, the stations' canopies clear of the readouts; room for station 2's platform
   const left = 40 + trainL, right = w - 110, yB = Math.max(h * 0.6, 290), yA = yB + 80;
   const k = (right - left) / f.D, X = (x) => left + x * k;
+  landscape(g, w, h, yB - 60, { far: 'hills', seed: 13 });
   rails(g, 0, w, yB, P); rails(g, 0, w, yA, P);
   station(g, L, X(0), yB - 40, yA, 'Station 1', P, { side: -1 });
   station(g, L, X(f.D), yB - 40, yA, 'Station 2', P, { side: 1 });

@@ -13,6 +13,8 @@
 //
 // Everything drawn is read from js/core/target.js (rule 4).
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
+import { landscape } from './scenery.js';
 import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep, withAlpha } from './util.js';
 import { T, num } from '../notation.js';
 
@@ -93,8 +95,7 @@ export function render(canvas, cam, o) {
   const X = (x) => ox + x * k, Y = (y) => oy - y * k;
 
   // ── the ground, with distances along it
-  g.save(); g.fillStyle = withAlpha(P.grid, 0.6); g.fillRect(0, oy, w, h - oy); g.restore();
-  stroke(g, [{ x: 0, y: oy }, { x: w, y: oy }], { color: P.axis, width: 2 });
+  landscape(g, w, h, oy, { far: 'trees', seed: 21 });
   const step = niceStep(xMax, 7);
   for (let x = step; x <= xMax; x += step) {
     stroke(g, [{ x: X(x), y: oy }, { x: X(x), y: oy + 6 }], { color: P.axis, width: 1.4 });
@@ -244,6 +245,7 @@ export function render(canvas, cam, o) {
   }
   // ── where it lands, once it has
   if (!F.hits && t >= F.tGround - 1e-9) {
+    { const { age, life } = ageOf(t, F.tGround, f.tMax); dust(g, X(F.R), oy, age, life); }
     L.add(T`${tr(F.R)} [m]`, X(F.R), oy - 14, { color: P.vel, align: 'center', pri: 7, size: 14, weight: 700 });
     // how far short of the mark, or past it, as a bracket along the ground
     if (f.flag != null && Math.abs(f.flagGap) > 1e-6) {

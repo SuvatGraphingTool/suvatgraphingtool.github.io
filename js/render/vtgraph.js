@@ -11,6 +11,7 @@
 //
 // Everything drawn is read from js/core/vtgraph.js (rule 4).
 
+import { landscape, paper, tarmac } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, fmt, withAlpha } from './util.js';
 import { T, num } from '../notation.js';
 
@@ -27,7 +28,9 @@ export function render(canvas, cam, o) {
 
   // ── the graph, right of the readouts
   const vs = f.P.map((p) => p.v), vHi = Math.max(...vs, 0), vLo = Math.min(...vs, 0), pad = (vHi - vLo || 1) * 0.15;
+  landscape(g, w, h, h - 100, { far: 'trees', seed: 31 });
   const gx0 = w < 520 ? 40 : HUD + 50, gx1 = w - 30, gy0 = 50, gy1 = Math.max(gy0 + 140, h * 0.56);
+  paper(g, gx0 - 56, gy0 - 34, gx1 - gx0 + 76, gy1 - gy0 + 72);   // the graph on its sheet, clear of the scene behind
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0), V = (v) => gy1 - ((v - (vLo - pad)) / (vHi - vLo + 2 * pad)) * (gy1 - gy0);
   // the area to now, each piece split where it crosses the axis: forwards stronger than back
   const shade = (ta, tb, va, vb) => { g.save(); g.fillStyle = withAlpha(P.disp, va + vb >= 0 ? 0.24 : 0.12);
@@ -58,7 +61,7 @@ export function render(canvas, cam, o) {
   const xsAt = [0, ...f.S.flatMap((s) => [s.x0, s.x1, ...(Math.abs(s.a) > 1e-12 && -s.v0 / s.a > 0 && -s.v0 / s.a < s.t1 - s.t0 ? [f.pos(s.t0 - s.v0 / s.a)] : [])])];
   let xLo = Math.min(...xsAt), xHi = Math.max(...xsAt); if (xHi - xLo < 1e-9) { xLo -= 1; xHi += 1; }
   const ly = h - 60, ll = 40, lr = w - 40, k = (lr - ll) / ((xHi - xLo) || 1), R = (x) => ll + (x - xLo) * k;
-  stroke(g, [{ x: 0, y: ly }, { x: w, y: ly }], { color: P.axis, width: 2 });
+  tarmac(g, 0, w, ly, { depth: 14, verge: false });
   const step = niceStep(xHi - xLo, 8);
   for (let x = Math.ceil(xLo / step) * step; x <= xHi + 1e-9; x += step) {
     stroke(g, [{ x: R(x), y: ly - 4 }, { x: R(x), y: ly + 4 }], { color: P.faint, width: 1 });

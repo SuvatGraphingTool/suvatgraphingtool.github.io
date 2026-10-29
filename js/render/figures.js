@@ -37,7 +37,8 @@
 // surfaces a figure stands on — a road, a railway track, a running track —
 // so two parallel tracks are two calls to rails().
 
-import { stroke, dot, ballSprite } from './util.js';
+import { stroke, dot, ballSprite, withAlpha } from './util.js';
+import { env, softShadow, tarmac, railBed } from './scenery.js';
 
 const TAU = Math.PI * 2;
 
@@ -61,6 +62,23 @@ function solidWheel(g, cx, cy, r, P, angle, bar = true) {
     g.strokeStyle = P.strong; g.lineWidth = Math.max(1.2, r * 0.14); g.lineCap = 'round';
     g.beginPath(); g.moveTo(cx - c, cy - s); g.lineTo(cx + c, cy + s); g.stroke();
   }
+}
+
+
+/** A road wheel: a dark tyre with a sidewall, a bright rim, five spokes that
+    turn with `angle`, a hub. Detailed enough to read as a wheel at any size. */
+function roadWheel(g, cx, cy, r, angle) {
+  const E = env();
+  g.fillStyle = '#1d1a1b'; g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,0.10)'; g.lineWidth = Math.max(1, r * 0.12); g.beginPath(); g.arc(cx, cy, r * 0.84, 0, TAU); g.stroke();
+  const rim = g.createRadialGradient(cx - r * 0.2, cy - r * 0.2, 0, cx, cy, r * 0.62);
+  rim.addColorStop(0, '#f2eee9'); rim.addColorStop(1, E.night ? '#7d7478' : '#a59c98');
+  g.fillStyle = rim; g.beginPath(); g.arc(cx, cy, r * 0.6, 0, TAU); g.fill();
+  if (r >= 3.5) {
+    g.strokeStyle = 'rgba(40,34,36,0.75)'; g.lineWidth = Math.max(1, r * 0.11); g.lineCap = 'round';
+    for (let k = 0; k < 5; k++) { const a = angle + (k * TAU) / 5; g.beginPath(); g.moveTo(cx + Math.cos(a) * r * 0.16, cy + Math.sin(a) * r * 0.16); g.lineTo(cx + Math.cos(a) * r * 0.52, cy + Math.sin(a) * r * 0.52); g.stroke(); }
+  }
+  g.fillStyle = '#3a3436'; g.beginPath(); g.arc(cx, cy, r * 0.15, 0, TAU); g.fill();
 }
 
 /** A spoked wheel: a rim, eight spokes, a hub. The bicycle's. */
@@ -129,21 +147,57 @@ export function lorry(g, X, Y, L, P, { dir = 1, ring = null } = {}) {
   else { g.save(); draw(X, Y); g.restore(); }
 }
 
-/** A car: a saloon, side on, the shape js/render/lanes.js draws. */
-export function car(g, X, Y, L, P, { dir = 1, ring = null, phase = 0 } = {}) {
-  const H = L * 0.34, wheel = L * 0.1;
+/** A car: a saloon, side on — painted body with a sheen, glass with a
+    highlight, a door seam, wheels in their arches turning with the distance,
+    a headlight at the front and a tail light that glows when `brake` (the
+    stage says when it is slowing). A soft shadow under it. `ring` outlines it
+    in a hue when it must be told apart. */
+export function car(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, brake = false, paint = null } = {}) {
+  const H = L * 0.34, wheel = L * 0.1, E = env();
+  softShadow(g, X - L * 0.5 * dir, Y + 1, L * 0.55, L * 0.07, 0.9);
   at(g, X, Y, dir, () => {
-    const X = 0, Y = 0, back = -L;
-    g.fillStyle = P.card; g.strokeStyle = ring || P.strong; g.lineWidth = ring ? 2.4 : 1.6;
-    g.beginPath();
-    g.moveTo(back, Y - wheel); g.lineTo(back, Y - wheel - H * 0.55);
-    g.lineTo(back + L * 0.24, Y - wheel - H * 0.6); g.lineTo(back + L * 0.38, Y - wheel - H);
-    g.lineTo(X - L * 0.3, Y - wheel - H); g.lineTo(X - L * 0.14, Y - wheel - H * 0.58);
-    g.lineTo(X, Y - wheel - H * 0.5); g.lineTo(X, Y - wheel); g.closePath(); g.fill(); g.stroke();
-    g.fillStyle = P.faint;
-    g.beginPath(); g.moveTo(back + L * 0.42, Y - wheel - H * 0.9); g.lineTo(X - L * 0.33, Y - wheel - H * 0.9);
-    g.lineTo(X - L * 0.2, Y - wheel - H * 0.62); g.lineTo(back + L * 0.32, Y - wheel - H * 0.62); g.closePath(); g.fill();
-    for (const wx of [back + L * 0.22, X - L * 0.22]) solidWheel(g, wx, Y - wheel, wheel, P, phase * TAU);
+    const X = 0, Y = 0, back = -L, base = Y - wheel * 0.55;
+    const body = () => {
+      g.beginPath();
+      g.moveTo(back + L * 0.02, base); g.lineTo(back, base - H * 0.18);
+      g.quadraticCurveTo(back - L * 0.005, base - H * 0.55, back + L * 0.06, base - H * 0.6);
+      g.lineTo(back + L * 0.24, base - H * 0.62);
+      g.quadraticCurveTo(back + L * 0.32, base - H * 1.02, back + L * 0.42, base - H * 1.02);
+      g.lineTo(X - L * 0.33, base - H * 1.02);
+      g.quadraticCurveTo(X - L * 0.24, base - H * 1.0, X - L * 0.15, base - H * 0.62);
+      g.quadraticCurveTo(X - L * 0.02, base - H * 0.56, X, base - H * 0.32);
+      g.lineTo(X, base - H * 0.1); g.quadraticCurveTo(X, base, X - L * 0.03, base); g.closePath();
+    };
+    const c = paint || (E.night ? '#7d8796' : '#7f90a6');
+    const gr = g.createLinearGradient(0, base - H, 0, base);
+    gr.addColorStop(0, withAlpha('#ffffff', 0.0)); gr.addColorStop(0, c); gr.addColorStop(0.55, c); gr.addColorStop(1, '#3d4350');
+    body(); g.fillStyle = gr; g.fill();
+    g.strokeStyle = ring || 'rgba(20,18,22,0.55)'; g.lineWidth = ring ? 2.4 : 1.2; g.stroke();
+    // a sheen along the shoulder
+    g.save(); body(); g.clip();
+    g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(back, base - H * 0.62, L, H * 0.08);
+    g.restore();
+    // glass: one shape split by a pillar, with a highlight
+    const glass = g.createLinearGradient(0, base - H * 0.98, 0, base - H * 0.62);
+    glass.addColorStop(0, E.night ? '#5f6a7a' : '#c9d6e2'); glass.addColorStop(1, E.night ? '#2c323c' : '#7f93a6');
+    g.fillStyle = glass;
+    g.beginPath(); g.moveTo(back + L * 0.27, base - H * 0.64); g.quadraticCurveTo(back + L * 0.34, base - H * 0.95, back + L * 0.43, base - H * 0.95);
+    g.lineTo(X - L * 0.34, base - H * 0.95); g.quadraticCurveTo(X - L * 0.27, base - H * 0.93, X - L * 0.19, base - H * 0.64); g.closePath(); g.fill();
+    g.fillStyle = c; g.fillRect(back + L * 0.55, base - H * 0.96, L * 0.035, H * 0.33);
+    g.strokeStyle = 'rgba(255,255,255,0.45)'; g.lineWidth = Math.max(1, L * 0.01); g.beginPath(); g.moveTo(back + L * 0.45, base - H * 0.9); g.lineTo(back + L * 0.4, base - H * 0.7); g.stroke();
+    // the door seam and handle
+    g.strokeStyle = 'rgba(20,18,22,0.35)'; g.lineWidth = 1; g.beginPath(); g.moveTo(back + L * 0.56, base - H * 0.62); g.lineTo(back + L * 0.55, base - H * 0.12); g.stroke();
+    g.fillStyle = 'rgba(20,18,22,0.45)'; g.fillRect(back + L * 0.6, base - H * 0.5, L * 0.05, Math.max(1.5, H * 0.04));
+    // lights: the headlight at the front, the tail light at the back
+    g.fillStyle = E.night ? '#fff3cf' : '#fff8e2'; g.beginPath(); g.ellipse(X - L * 0.02, base - H * 0.36, L * 0.018, H * 0.07, 0, 0, TAU); g.fill();
+    if (E.night) { const hl = g.createRadialGradient(X, base - H * 0.36, 0, X, base - H * 0.36, L * 0.3); hl.addColorStop(0, 'rgba(255,240,200,0.35)'); hl.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = hl; g.beginPath(); g.moveTo(X, base - H * 0.36); g.lineTo(X + L * 0.3, base - H * 0.55); g.lineTo(X + L * 0.3, base - H * 0.05); g.closePath(); g.fill(); }
+    g.fillStyle = brake ? '#ff3b30' : '#8c2f2a'; g.beginPath(); g.ellipse(back + L * 0.012, base - H * 0.4, L * 0.014, H * 0.08, 0, 0, TAU); g.fill();
+    if (brake) { const bl = g.createRadialGradient(back, base - H * 0.4, 0, back, base - H * 0.4, L * 0.16); bl.addColorStop(0, 'rgba(255,70,50,0.55)'); bl.addColorStop(1, 'rgba(255,70,50,0)'); g.fillStyle = bl; g.beginPath(); g.arc(back, base - H * 0.4, L * 0.16, 0, TAU); g.fill(); }
+    // wheels in their arches
+    for (const wx of [back + L * 0.21, X - L * 0.21]) {
+      g.fillStyle = 'rgba(15,13,15,0.65)'; g.beginPath(); g.arc(wx, base, wheel * 1.18, Math.PI, 0); g.fill();
+      roadWheel(g, wx, Y - wheel, wheel, phase * TAU);
+    }
   });
 }
 
@@ -159,42 +213,57 @@ function trainSize(L, cars) {
   return { n, gap, c, H, wr: Math.max(2.4, H * 0.16) };
 }
 const trainWheel = (L, cars) => trainSize(L, cars).wr;
-export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1 } = {}) {
-  const { n, gap, c, H, wr } = trainSize(L, cars);
+export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1, brake = false } = {}) {
+  const { n, gap, c, H, wr } = trainSize(L, cars), E = env();
+  softShadow(g, X - L * 0.5 * dir, Y + 2, L * 0.52, Math.max(3, H * 0.12), 0.8);
   at(g, X, Y, dir, () => {
     const base = -wr * 1.75;
     for (let i = 0; i < n; i++) {
       const front = -i * (c + gap), back = front - c;
       // the bogies first, so the body sits over their tops
       for (const bx of [back + c * 0.16, front - c * 0.16]) {
-        g.fillStyle = P.strong; g.fillRect(bx - wr * 2.3, base - wr * 0.1, wr * 4.6, wr * 0.75);
-        for (const k of [-1, 1]) solidWheel(g, bx + k * wr * 1.15, -wr, wr, P, phase * TAU, wr >= 4);
+        g.fillStyle = '#2e292b'; g.beginPath(); g.roundRect(bx - wr * 2.4, base - wr * 0.2, wr * 4.8, wr * 0.95, wr * 0.3); g.fill();
+        for (const k of [-1, 1]) roadWheel(g, bx + k * wr * 1.15, -wr, wr, phase * TAU);
       }
-      g.fillStyle = P.card; g.strokeStyle = ring || P.strong; g.lineWidth = ring ? 2.4 : 1.6;
-      g.beginPath();
-      if (i === 0) {
-        g.moveTo(back, base); g.lineTo(back, base - H);
-        g.lineTo(front - c * 0.16, base - H);
-        g.quadraticCurveTo(front, base - H, front, base - H * 0.38);
-        g.lineTo(front, base);
-      } else {
-        g.roundRect(back, base - H, c, H, Math.min(4, H * 0.15));
-      }
-      g.closePath(); g.fill(); g.stroke();
-      // a line along the body, under the windows
-      stroke(g, [{ x: back + 2, y: base - H * 0.3 }, { x: front - (i === 0 ? c * 0.02 : 2), y: base - H * 0.3 }],
-        { color: P.faint, width: Math.max(1, H * 0.05) });
-      // the windows, and the cab's windscreen on the front one
-      g.fillStyle = P.faint;
-      const wEnd = i === 0 ? front - c * 0.24 : front - c * 0.06;
+      const shape = () => {
+        g.beginPath();
+        if (i === 0) {
+          g.moveTo(back, base); g.lineTo(back, base - H + 3); g.quadraticCurveTo(back, base - H, back + 3, base - H);
+          g.lineTo(front - c * 0.2, base - H);
+          g.bezierCurveTo(front - c * 0.02, base - H, front, base - H * 0.55, front, base - H * 0.3);
+          g.lineTo(front, base);
+        } else g.roundRect(back, base - H, c, H, Math.min(5, H * 0.15));
+        g.closePath();
+      };
+      const gr = g.createLinearGradient(0, base - H, 0, base);
+      gr.addColorStop(0, E.night ? '#d9d0c6' : '#f3ece2'); gr.addColorStop(0.75, E.night ? '#b8ada3' : '#dcd2c6'); gr.addColorStop(1, E.night ? '#7d736c' : '#a99d92');
+      shape(); g.fillStyle = gr; g.fill();
+      g.strokeStyle = ring || 'rgba(30,26,28,0.55)'; g.lineWidth = ring ? 2.4 : 1.2; g.stroke();
+      g.save(); shape(); g.clip();
+      // a livery stripe low along the body, and the roof darker
+      g.fillStyle = E.night ? '#5d6f86' : '#6f8199'; g.fillRect(back, base - H * 0.3, c + 2, H * 0.1);
+      g.fillStyle = 'rgba(40,36,38,0.25)'; g.fillRect(back, base - H, c + 2, H * 0.1);
+      // windows with glass and a glint, doors between them
+      const glass = g.createLinearGradient(0, base - H * 0.78, 0, base - H * 0.44);
+      glass.addColorStop(0, E.night ? withAlpha(E.window, 0.85) : '#c9d6e2'); glass.addColorStop(1, E.night ? withAlpha(E.window, 0.5) : '#7f93a6');
+      const wEnd = i === 0 ? front - c * 0.26 : front - c * 0.06;
       const ww = Math.max(3, c * 0.075), step = Math.max(ww + 2, c * 0.12);
-      for (let wx = back + c * 0.06; wx + ww <= wEnd; wx += step) g.fillRect(wx, base - H * 0.8, ww, H * 0.34);
-      if (i === 0) {
-        g.beginPath(); g.moveTo(front - c * 0.17, base - H * 0.8); g.lineTo(front - c * 0.065, base - H * 0.8);
-        g.lineTo(front - c * 0.02, base - H * 0.46); g.lineTo(front - c * 0.17, base - H * 0.46); g.closePath(); g.fill();
+      let k = 0;
+      for (let wx = back + c * 0.06; wx + ww <= wEnd; wx += step, k++) {
+        if (k % 4 === 2) { g.strokeStyle = 'rgba(30,26,28,0.45)'; g.lineWidth = 1; g.strokeRect(wx, base - H * 0.82, ww, H * 0.74); continue; }
+        g.fillStyle = glass; g.beginPath(); g.roundRect(wx, base - H * 0.78, ww, H * 0.34, Math.min(2, ww * 0.25)); g.fill();
       }
+      if (i === 0) {
+        g.fillStyle = glass; g.beginPath(); g.moveTo(front - c * 0.2, base - H * 0.84); g.lineTo(front - c * 0.07, base - H * 0.84);
+        g.quadraticCurveTo(front - c * 0.02, base - H * 0.7, front - c * 0.015, base - H * 0.5); g.lineTo(front - c * 0.2, base - H * 0.5); g.closePath(); g.fill();
+        g.fillStyle = '#fff6dc'; g.beginPath(); g.arc(front - c * 0.02, base - H * 0.22, Math.max(1.5, H * 0.05), 0, TAU); g.fill();
+      }
+      g.restore();
+      if (brake && i === n - 1) { g.fillStyle = '#ff3b30'; g.fillRect(back - 1, base - H * 0.3, 2.5, H * 0.1); }
+      // a pantograph on the leading car's roof
+      if (i === 0 && H > 10) { g.strokeStyle = E.night ? '#9a9096' : '#5e5157'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(back + c * 0.45, base - H); g.lineTo(back + c * 0.52, base - H - H * 0.35); g.lineTo(back + c * 0.6, base - H); g.moveTo(back + c * 0.45, base - H - H * 0.35); g.lineTo(back + c * 0.6, base - H - H * 0.35); g.stroke(); }
       // the coupling to the one in front
-      if (i > 0) stroke(g, [{ x: front, y: base - H * 0.2 }, { x: front + gap, y: base - H * 0.2 }], { color: P.strong, width: 2 });
+      if (i > 0) stroke(g, [{ x: front, y: base - H * 0.2 }, { x: front + gap, y: base - H * 0.2 }], { color: '#2e292b', width: 2 });
     }
   });
 }
@@ -345,14 +414,26 @@ export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still =
   const lw = Math.max(3, L * 0.075);
   // a foot coming through never goes into the ground
   const onTop = ([H, K, F]) => [H, K, { x: F.x, y: Math.min(F.y, 0) }];
+  // dressed: a shirt, shorts, skin; the far limbs in shade; a soft shadow
+  const E = env(), skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
+  const shirt = ring || (E.night ? '#6c7f9a' : '#5f7392'), shorts = '#2f3340';
+  softShadow(g, X + hx * dir, Y + 1, L * 0.22, L * 0.04, 0.8);
   at(g, X, Y, dir, () => {
-    limb(g, onTop(pose(a + Math.PI, HIP)), P.faint, lw);
-    limb(g, arm(a + Math.PI, -1), P.faint, lw * 0.85);
-    limb(g, [HIP, SH], ink, lw * 1.9);
-    limb(g, onTop(pose(a, HIP)), ink, lw);
-    limb(g, arm(a, 1), ink, lw * 0.85);
-    g.fillStyle = ink; g.beginPath();
-    g.arc(SH.x + Math.sin(lean) * L * 0.1, SH.y - L * 0.095, L * 0.08, 0, TAU); g.fill();
+    const far = onTop(pose(a + Math.PI, HIP)), near = onTop(pose(a, HIP));
+    limb(g, far, skinFar, lw); limb(g, far.slice(0, 2), withAlpha(shorts, 0.85), lw * 1.15);
+    limb(g, arm(a + Math.PI, -1), skinFar, lw * 0.8);
+    limb(g, [HIP, SH], shirt, lw * 2.1);
+    limb(g, [HIP, { x: HIP.x + (SH.x - HIP.x) * 0.18, y: HIP.y + (SH.y - HIP.y) * 0.18 }], shorts, lw * 2.15);
+    limb(g, near, skin, lw); limb(g, near.slice(0, 2), shorts, lw * 1.15);
+    const A = arm(a, 1); limb(g, A, skin, lw * 0.8); limb(g, A.slice(0, 2), shirt, lw * 0.95);
+    // shoes
+    for (const leg of [far, near]) { g.fillStyle = '#2b2628'; g.beginPath(); g.ellipse(leg[2].x + lw * 0.4, leg[2].y - lw * 0.2, lw * 0.75, lw * 0.4, 0, 0, TAU); g.fill(); }
+    // the head, lit from the left, with hair
+    const hx2 = SH.x + Math.sin(lean) * L * 0.1, hy2 = SH.y - L * 0.095, hr = L * 0.08;
+    const hg = g.createRadialGradient(hx2 - hr * 0.3, hy2 - hr * 0.3, hr * 0.1, hx2, hy2, hr); hg.addColorStop(0, skin); hg.addColorStop(1, skinFar);
+    g.fillStyle = hg; g.beginPath(); g.arc(hx2, hy2, hr, 0, TAU); g.fill();
+    g.fillStyle = '#3a2c26'; g.beginPath(); g.arc(hx2 - hr * 0.15, hy2 - hr * 0.25, hr * 0.85, Math.PI * 1.05, Math.PI * 1.95); g.fill();
+    if (ring) { g.strokeStyle = ring; g.lineWidth = 1.5; g.beginPath(); g.arc(hx2, hy2, hr + 1, 0, TAU); g.stroke(); }
   });
 }
 const SWING = 0.5, STANCE_BEND = 0.1;
@@ -499,39 +580,23 @@ export function trafficLights(g, x, Y, H, P, { lit = 'red' } = {}) {
 /** A road, side on, between x0 and x1: its surface is y = Y (where the
     wheels stand), 16 px deep, with a dashed centre line. The road stage's own
     road, moved here unchanged. */
-export function roadway(g, x0, x1, Y, P) {
-  g.save(); g.fillStyle = P.grid; g.fillRect(x0, Y, x1 - x0, 16); g.restore();
-  stroke(g, [{ x: x0, y: Y }, { x: x1, y: Y }], { color: P.axis, width: 2 });
-  stroke(g, [{ x: x0, y: Y + 16 }, { x: x1, y: Y + 16 }], { color: P.axis, width: 1.4 });
-  stroke(g, [{ x: x0, y: Y + 8 }, { x: x1, y: Y + 8 }], { color: P.faint, width: 1.6, dash: [18, 16] });
-}
+export function roadway(g, x0, x1, Y, P) { tarmac(g, x0, x1, Y, { depth: 16, verge: false }); }
 
 /** A railway track, side on, between x0 and x1: the rail head at y = Y
     (where a train's wheels stand), sleepers under it, ballast under them.
     Two parallel tracks are two calls at two heights. */
-export function rails(g, x0, x1, Y, P, { sleeper = 15 } = {}) {
-  g.save();
-  // the ballast, sloping out at the ends
-  g.fillStyle = P.grid;
-  g.beginPath(); g.moveTo(x0, Y + 5); g.lineTo(x1, Y + 5); g.lineTo(x1, Y + 14); g.lineTo(x0, Y + 14); g.closePath(); g.fill();
-  // the sleepers, end on
-  g.fillStyle = P.faint;
-  for (let x = x0 + sleeper / 2; x < x1; x += sleeper) g.fillRect(x - 4, Y + 3, 8, 5);
-  // the rail: head, web, foot
-  g.fillStyle = P.axis;
-  g.fillRect(x0, Y, x1 - x0, 2.4);
-  g.restore();
-  stroke(g, [{ x: x0, y: Y }, { x: x1, y: Y }], { color: P.strong, width: 2 });
-  stroke(g, [{ x: x0, y: Y + 14 }, { x: x1, y: Y + 14 }], { color: P.axis, width: 1.2 });
-}
+export function rails(g, x0, x1, Y, P, { sleeper = 15 } = {}) { railBed(g, x0, x1, Y); }
 
 /** A running track, side on: its surface at y = Y, 16 px deep like the
     road, with solid lane lines rather than a dashed centre line. */
 export function runningTrack(g, x0, x1, Y, P) {
-  g.save(); g.fillStyle = P.grid; g.fillRect(x0, Y, x1 - x0, 16); g.restore();
-  stroke(g, [{ x: x0, y: Y }, { x: x1, y: Y }], { color: P.axis, width: 2 });
-  stroke(g, [{ x: x0, y: Y + 16 }, { x: x1, y: Y + 16 }], { color: P.axis, width: 1.4 });
-  for (const dy of [5.5, 10.5]) stroke(g, [{ x: x0, y: Y + dy }, { x: x1, y: Y + dy }], { color: P.faint, width: 1.2 });
+  const E = env();
+  const gr = g.createLinearGradient(0, Y, 0, Y + 16);
+  gr.addColorStop(0, E.night ? '#6a4038' : '#b9705e'); gr.addColorStop(1, E.night ? '#4a2c27' : '#94584a');
+  g.fillStyle = gr; g.fillRect(x0, Y, x1 - x0, 16);
+  g.save(); g.strokeStyle = 'rgba(255,255,255,0.7)'; g.lineWidth = 1.2;
+  for (const dy of [0.5, 8, 15.5]) { g.beginPath(); g.moveTo(x0, Y + dy); g.lineTo(x1, Y + dy); g.stroke(); }
+  g.restore();
 }
 
 /** Whichever surface a figure stands on (FIGURES[kind].ground). */

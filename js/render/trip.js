@@ -12,6 +12,7 @@
 //
 // Everything drawn is read from js/core/trip.js (rule 4).
 
+import { landscape, paper } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, fmt, withAlpha } from './util.js';
 import { car, runner, roadway, phaseFor } from './figures.js';
 import { T, num } from '../notation.js';
@@ -41,7 +42,9 @@ export function render(canvas, cam, o) {
   const S = f.S;
 
   // ── the graph, top right of the readouts
+  landscape(g, w, h, h - 112, { far: 'skyline', seed: 33 });
   const gx0 = Math.min(w * 0.5, HUD + 40), gx1 = w - 30, gy0 = 50, gy1 = Math.max(gy0 + 120, h * 0.48);
+  paper(g, gx0 - 56, gy0 - 34, gx1 - gx0 + 76, gy1 - gy0 + 72);   // the graph on its sheet, clear of the scene behind
   const vs = S.flatMap((s) => [s.v0, s.v1, 0]);
   const vHi = Math.max(...vs) * 1.15 + 0.5, vLo = Math.min(...vs) * 1.15 - (Math.min(...vs) < 0 ? 0.5 : 0);
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0), V = (v) => gy1 - ((v - vLo) / (vHi - vLo)) * (gy1 - gy0);

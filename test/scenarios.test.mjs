@@ -503,10 +503,13 @@ group('The figures: every traveller draws, with no NaN, either way round, at any
       const ph = (i / 18) * 0.45, X = ph * per;
       let tx = 0, strokes = [], cur = [];
       const rec = new Proxy({}, { get(t, k) { if (k in t) return t[k];
+        if (String(k).startsWith('create')) return () => ({ addColorStop() {} });
         return (...a) => { if (k === 'translate') tx = a[0]; if (k === 'beginPath') cur = []; if (k === 'moveTo' || k === 'lineTo') cur.push(a); if (k === 'stroke') strokes.push(cur); }; },
         set(t, k, v) { t[k] = v; return true; } });
       FIG.runner(rec, X, 0, L, P, { phase: ph });
-      const foot = strokes[3][2];
+      // the near leg: of the three-point limbs drawn, the stance one is the one whose foot is on the ground
+      const legs = strokes.filter((st) => st.length === 3 && Math.abs(st[2][1]) < 1e-6);
+      const foot = legs[legs.length - 1][2];
       xs.push({ x: tx + foot[0], y: foot[1] });
     }
     const drift = Math.max(...xs.map((p) => p.x)) - Math.min(...xs.map((p) => p.x));

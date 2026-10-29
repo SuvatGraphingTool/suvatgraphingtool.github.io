@@ -8,6 +8,7 @@
 //
 // Everything drawn is read from js/core/towards.js (rule 4).
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha } from './util.js';
 import { runner } from './figures.js';
 import { groundStrip, sky } from './heights.js';
@@ -60,6 +61,7 @@ export function render(canvas, cam, o) {
   if (t >= f.t - 1e-9 && f.outcome !== 'before') {
     const a = f.posA(f.t), b = f.posB(f.t);
     if (f.outcome === 'collide') {
+      { const { age, life } = ageOf(t, f.t, f.tMax); flash(g, X(a.x), Y(a.y), age, life); }
       dot(g, X(a.x), Y(a.y), 11, { stroke: P.mark, width: 2.6 });
       L.add(T`"collide," t = ${tr(f.t)} [s]`, X(a.x) + 16, Y(a.y) - 22, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });
       L.add(T`${tr(f.yA)} [m] "up"`, X(a.x) + 16, Y(a.y) - 4, { color: P.mark, align: 'left', pri: 8, size: 13, weight: 700 });

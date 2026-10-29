@@ -23,6 +23,7 @@
 // Reusable: `court()` (the ground) and `balcony()` (a wall with a ledge at a
 // height) take a canvas and pixel geometry, and know nothing about balls.
 
+import { skyscape } from './scenery.js';
 import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep, cssVar, ballSprite } from './util.js';
 import { T, num } from '../notation.js';
 import { sf } from '../core/bounce.js';
@@ -134,6 +135,7 @@ export function render(canvas, cam, o) {
   const rx = Math.max(HUD - 20, cx - leftRaw * k - 46);
   const R = clamp(0.11 * ky, 7, 14);                   // a ball you can see; real size when the frame allows
 
+  skyscape(g, 0, 0, w, groundY, { far: 'skyline', seed: 25 });
   court(g, 0, w, groundY, groundY + 34, P, ky);
 
   // ── the height scale, on the left

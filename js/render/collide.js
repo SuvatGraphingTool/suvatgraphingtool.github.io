@@ -10,6 +10,8 @@
 //
 // Everything drawn is read from js/core/collide.js (rule 4).
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
+import { floorFromAbove } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, fmt, withAlpha } from './util.js';
 import { vsrc } from '../core/plane.js';
 import { T, num } from '../notation.js';
@@ -46,7 +48,7 @@ export function render(canvas, cam, o) {
   const X = (x) => ox + (x - x0) * k, Y = (y) => oy + (y1 - y) * k;
 
   // ── the surface, its grid and the axes through O
-  g.save(); g.fillStyle = withAlpha('#b9c7d1', 0.16); g.fillRect(X(x0), Y(y1), (x1 - x0) * k, (y1 - y0) * k); g.restore();
+  floorFromAbove(g, X(x0), Y(y1), (x1 - x0) * k, (y1 - y0) * k, Math.max(18, niceStep(Math.max(x1 - x0, y1 - y0), 8) * k));
   const step = niceStep(Math.max(x1 - x0, y1 - y0), 8);
   for (let x = Math.ceil(x0 / step) * step; x <= x1; x += step) {
     stroke(g, [{ x: X(x), y: Y(y0) }, { x: X(x), y: Y(y1) }], { color: P.grid, width: 1 });
@@ -74,6 +76,7 @@ export function render(canvas, cam, o) {
     L.add(T`t = ${tr(f.at)} [s]`, X(q.x) + 10, Y(q.y) + 14, { color: c, align: 'left', pri: 6, size: 13, weight: 700 });
   }
   if (f.tc != null && t >= f.tc - 1e-9) {
+    { const { age, life } = ageOf(t, f.tc, f.tMax); flash(g, X(f.where.x), Y(f.where.y), age, life); }
     dot(g, X(f.where.x), Y(f.where.y), 11, { stroke: P.mark, width: 2.6 });
     L.add(T`"collide," t = ${tr(f.tc)} [s]`, X(f.where.x) + 16, Y(f.where.y) - 22, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });
     L.add(T`(${vsrc(f.where)}) [m]`, X(f.where.x) + 16, Y(f.where.y) - 4, { color: P.mark, align: 'left', pri: 8, size: 13, weight: 700 });

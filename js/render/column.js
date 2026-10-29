@@ -25,6 +25,8 @@
 // narrow canvas everything beside the line closes up together rather than
 // running under the readouts or off the edge.
 
+import { dust, splash, pulse, flash, ageOf } from './effects.js';
+import { landscape } from './scenery.js';
 import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep, cssVar, ballSprite } from './util.js';
 import { T, num } from '../notation.js';
 
@@ -80,11 +82,7 @@ export function render(canvas, cam, o) {
   const lane = (name) => LANE[name] * k;
 
   // ── ground
-  g.save();
-  g.fillStyle = cssVar('--hover', 'rgba(255,255,255,.06)');
-  g.fillRect(0, groundY, w, h - groundY);
-  g.restore();
-  stroke(g, [{ x: 0, y: groundY }, { x: w, y: groundY }], { color: P.axis, width: 2 });
+  landscape(g, w, h, groundY, { far: 'hills', seed: 23 });
 
   // ── the height scale, on the left
   const step = niceStep(top * 1.08, 6);
@@ -110,6 +108,7 @@ export function render(canvas, cam, o) {
   const met = meet && t >= meet.t - 1e-9;
   if (met) {
     const my = Y(meet.x);
+    { const { age, life } = ageOf(t, meet.t, f.tMax); pulse(g, (rx + w - 24) / 2, my, age, life, P.mark); }
     stroke(g, [{ x: rx, y: my }, { x: w - 24, y: my }], { color: P.mark, width: 1.8, dash: [7, 5] });
     for (let i = 0; i < 8; i++) {
       const an = (i / 8) * Math.PI * 2;

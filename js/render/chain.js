@@ -10,6 +10,7 @@
 //
 // Everything drawn is read from js/core/chain.js (rule 4).
 
+import { landscape } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow } from './util.js';
 import { drawFigure, phaseFor, post, surface, FIGURES } from './figures.js';
 import { T, num } from '../notation.js';
@@ -33,6 +34,7 @@ export function render(canvas, cam, o) {
   const left = 40, right = w - 50, Y = Math.max(h * 0.5, h - 140);
   const k = (right - left) / ((hi - lo) || 1);
   const X = (x) => left + (x - lo) * k;
+  landscape(g, w, h, Y - 34, { far: K.ground === 'rail' ? 'trees' : 'hills', seed: 5 });
   surface(g, K.ground, 0, w, Y, P);
 
   // ── a post where each stage begins, and its distance under the road
@@ -57,7 +59,7 @@ export function render(canvas, cam, o) {
   const x = f.pos(t), v = f.vel(t), a = f.acc(t);
   const size = Math.max(K.min || 40, Math.min(90, w * 0.07));
   const dir = v < -1e-9 ? -1 : 1;
-  drawFigure(g, kind, X(x), Y, size, P, { dir, phase: phaseFor(kind, size, Math.abs(X(x) - X(0))) });
+  drawFigure(g, kind, X(x), Y, size, P, { dir, phase: phaseFor(kind, size, Math.abs(X(x) - X(0))), brake: v * a < -1e-9 });
   const vMax = Math.max(...f.S.flatMap((s) => [Math.abs(s.u), Math.abs(s.v)]), 1e-6);
   if (show.velocity !== false && Math.abs(v) > 1e-6) {
     const len = Math.max(0, Math.min(80, v > 0 ? w - 90 - X(x) : X(x) - 20)) * Math.sign(v) * Math.min(1, Math.abs(v) / vMax);

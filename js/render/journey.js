@@ -22,6 +22,7 @@
 // Everything drawn is read from js/core/journey.js (rule 4). The view frames
 // the whole journey and does not pan.
 
+import { landscape, paper } from './scenery.js';
 import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep, cssVar, fade } from './util.js';
 import { FIGURES, post, surface, phaseFor, trafficLights } from './figures.js';
 import { T, num } from '../notation.js';
@@ -92,7 +93,9 @@ export function render(canvas, cam, o) {
   const top = Math.max(...J.w) || 1;
 
   // ── the graph, above
+  landscape(g, w, h, Math.round(h * 0.84) - 70, { far: 'hills', seed: 35 });
   const gx0 = 250, gx1 = w - 60, gy0 = 60, gy1 = Math.round(h * 0.46);
+  paper(g, gx0 - 56, gy0 - 34, gx1 - gx0 + 76, gy1 - gy0 + 72);   // the graph on its sheet, clear of the scene behind
   const X = (tt) => gx0 + (tt / J.T) * (gx1 - gx0);
   const vTop = top * 1.22;
   const Y = (v) => gy1 - (v / vTop) * (gy1 - gy0);
@@ -183,7 +186,6 @@ export function render(canvas, cam, o) {
   const figLen = who === 'runner' ? figPx * 0.5 : figPx;
   const sx0 = Math.max(gx0, figLen + 36), sx1 = w - 60;
   const S = (s) => sx0 + (s / J.D) * (sx1 - sx0);
-  g.save(); g.fillStyle = cssVar('--hover', 'rgba(255,255,255,.06)'); g.fillRect(0, ty, w, h - ty); g.restore();
   surface(g, fig.ground, 0, w, ty - 3, P);
   const tall = lorryPx * fig.top + 6;
   landmark(g, L, S(0), ty - 3, 'A', J.w[0] === 0, fig.ground, P, { len: figLen, tall });

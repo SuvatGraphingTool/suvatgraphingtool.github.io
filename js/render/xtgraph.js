@@ -11,6 +11,7 @@
 //
 // Everything drawn is read from js/core/xtgraph.js (rule 4).
 
+import { landscape, paper, tarmac } from './scenery.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, fmt } from './util.js';
 import { T, num } from '../notation.js';
 
@@ -29,7 +30,9 @@ export function render(canvas, cam, o) {
   const n = 200, xs = [];
   for (let i = 0; i <= n; i++) xs.push(f.pos((i / n) * f.tMax));
   const xHi = Math.max(...xs, 0), xLo = Math.min(...xs, 0), pad = (xHi - xLo || 1) * 0.12;
+  landscape(g, w, h, h - 100, { far: 'trees', seed: 31 });
   const gx0 = Math.min(w * 0.45, HUD + 50), gx1 = w - 30, gy0 = 50, gy1 = Math.max(gy0 + 140, h * 0.56);
+  paper(g, gx0 - 56, gy0 - 34, gx1 - gx0 + 76, gy1 - gy0 + 72);   // the graph on its sheet, clear of the scene behind
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0), V = (x) => gy1 - ((x - (xLo - pad)) / (xHi - xLo + 2 * pad)) * (gy1 - gy0);
   stroke(g, [{ x: gx0, y: V(0) }, { x: gx1, y: V(0) }], { color: P.axis, width: 1.8 });
   stroke(g, [{ x: gx0, y: gy0 }, { x: gx0, y: gy1 }], { color: P.axis, width: 1.8 });
@@ -56,7 +59,7 @@ export function render(canvas, cam, o) {
 
   // ── the line below, at one scale, with A and the particle
   const ly = h - 60, ll = 40, lr = w - 40, k = (lr - ll) / ((xHi - xLo) || 1), R = (x) => ll + (x - xLo) * k;
-  stroke(g, [{ x: 0, y: ly }, { x: w, y: ly }], { color: P.axis, width: 2 });
+  tarmac(g, 0, w, ly, { depth: 14, verge: false });
   const step = niceStep(xHi - xLo, 8);
   for (let x = Math.ceil(xLo / step) * step; x <= xHi + 1e-9; x += step) {
     stroke(g, [{ x: R(x), y: ly - 4 }, { x: R(x), y: ly + 4 }], { color: P.faint, width: 1 });

@@ -11,6 +11,7 @@
 //
 // Everything drawn is read from js/core/plane.js (rule 4).
 
+import { fieldFromAbove } from './scenery.js';
 import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep } from './util.js';
 import { T, num } from '../notation.js';
 import { vsrc } from '../core/plane.js';
@@ -38,7 +39,8 @@ export function render(canvas, cam, o) {
   const ox = left + ((right - left) - (x1 - x0) * k) / 2, oy = top + ((bottom - top) - (y1 - y0) * k) / 2;
   const X = (x) => ox + (x - x0) * k, Y = (y) => oy + (y1 - y) * k;
 
-  // ── the grid, the axes through O, and north
+  // ── the field it moves on, from above; the grid, the axes through O, and north
+  fieldFromAbove(g, X(x0), Y(y1), (x1 - x0) * k, (y1 - y0) * k);
   const step = niceStep(Math.max(x1 - x0, y1 - y0), 8);
   for (let x = Math.ceil(x0 / step) * step; x <= x1; x += step) {
     stroke(g, [{ x: X(x), y: Y(y0) }, { x: X(x), y: Y(y1) }], { color: P.grid, width: 1 });
