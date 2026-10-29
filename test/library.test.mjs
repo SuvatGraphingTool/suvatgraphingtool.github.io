@@ -869,6 +869,14 @@ group('Audit 7', () => {
   ok(!/ground/.test(strip(solveHeight({ place: 'cliff', h: 0.5, u: 20, theta: 60, s: 30, t: 2, g: 9.8 }).reason || '')), 'a cliff’s refusal never says the ground');
 });
 
+group('Two ships: the lighthouse', () => {
+  const r = solveTwoPlane({ units: 'km', A: { r0: { x: -2, y: 9 }, r1: { x: 4, y: 6 }, t1: 0.6 }, find: 'B', at: { sights: [{ due: 'E', t: 1.8 }, { due: 'NE', t: 2 }], due: 'S' } });
+  ok(r.ok && near(r.A.v.x, 10) && near(r.A.v.y, -5) && near(r.B.r0.x, 19) && near(r.B.r0.y, 0), 'IAL Oct21 Q8: v = 10i − 5j, the lighthouse at 19i');
+  ok(near(r.answers[0].t, 2.1) && /19i−1\.5j/.test(strip(r.notes.join(' ')).replace(/\s/g, '')), 'IAL Oct21 Q8(d): due south of it at 19i − 1.5j');
+  ok(/same line/.test(strip(solveTwoPlane({ A: { v: { x: 1, y: 0 } }, find: 'B', at: { sights: [{ due: 'E', t: 1 }, { due: 'W', t: 2 }] } }).reason)), 'two sightings along one line: refused');
+  ok(/behind/.test(strip(solveTwoPlane({ A: { v: { x: 1, y: 0 } }, find: 'B', at: { sights: [{ due: 'NE', t: 2 }, { due: 'N', t: 1 }] } }).reason)), 'lines of sight that cross behind: refused');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

@@ -34,8 +34,19 @@ export const twoplane = {
       { key: 'units', type: 'choice', label: 'Units', default: 'km', hint: '', options: [{ v: 'km', label: 'km and hours' }, { v: 'm', label: 'metres and seconds' }] },
       { key: 'look', type: 'choice', label: 'They are', default: 'ships', hint: '', options: [{ v: 'ships', label: 'ships or boats' }, { v: 'birds', label: 'birds' }] },
     ] },
-    { title: 'Or B’s velocity is p times a vector, with p to find', fields: [
-      { key: 'find', type: 'choice', label: 'Find', hint: 'Then leave B’s velocity above blank.', options: [{ v: 'p', label: 'p' }] },
+    { title: 'Or A’s velocity from where it is later', fields: [
+      { key: 'A.r1.x', label: `${M`vec i`} part`, aria: 'A’s later position: its i part', placeholder: '—', hint: 'Leave A’s velocity blank.' },
+      { key: 'A.r1.y', label: `${M`vec j`} part`, aria: 'A’s later position: its j part', placeholder: '—', hint: '' },
+      { key: 'A.t1', label: 'At time', aria: 'The time A is at that later position', placeholder: '—', hint: '“At 7.36 am”, from 7 am, is 0.6 h.' },
+    ] },
+    { title: 'Or find something about B', fields: [
+      { key: 'find', type: 'choice', label: 'Find', hint: 'Then leave B’s velocity above blank.', options: [{ v: 'p', label: 'p, in B’s velocity' }, { v: 'B', label: 'where B is, from two sightings' }] },
+      { key: 's1due', type: 'choice', label: 'B is first seen …', hint: '', options: compass },
+      { key: 's1t', label: 'of A, at time', aria: 'The time of the first sighting', placeholder: '—', hint: '' },
+      { key: 's2due', type: 'choice', label: 'then …', hint: '', options: compass },
+      { key: 's2t', label: 'of A, at time', aria: 'The time of the second sighting', placeholder: '—', hint: 'B stays put: a lighthouse, a buoy.' },
+    ] },
+    { title: 'B’s velocity as p times a vector, when finding p', fields: [
       { key: 'B.w.x', label: `${M`vec i`} part`, aria: 'B’s velocity is p times a vector: its i part', placeholder: '—', hint: `For ${M`p(vec(i) + 2vec(j))`}, 1 here …` },
       { key: 'B.w.y', label: `${M`vec j`} part`, aria: 'B’s velocity is p times a vector: its j part', placeholder: '—', hint: '… and 2 here.' },
     ] },
@@ -51,8 +62,9 @@ export const twoplane = {
   read(vals) {
     const v2 = (p) => ({ x: vals[`${p}.x`], y: vals[`${p}.y`] });
     return { units: vals.units || 'km', look: vals.look || 'ships', find: vals.find || null,
-      A: { r0: v2('A.r0'), v: v2('A.v') }, B: { r0: v2('B.r0'), v: v2('B.v'), w: v2('B.w') },
-      at: { due: vals.due, bOfA: vals.bOfA === 'BofA', dueT: vals.dueT, apart: vals.apart } };
+      A: { r0: v2('A.r0'), v: v2('A.v'), r1: v2('A.r1'), t1: vals['A.t1'] }, B: { r0: v2('B.r0'), v: v2('B.v'), w: v2('B.w') },
+      at: { due: vals.due, bOfA: vals.bOfA === 'BofA', dueT: vals.dueT, apart: vals.apart,
+            sights: [{ due: vals.s1due, t: vals.s1t }, { due: vals.s2due, t: vals.s2t }] } };
   },
   solve(k) {
     const r = solveTwoPlane(k);

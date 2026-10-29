@@ -71,7 +71,8 @@ export function bearing(v) {
  *   at.due — a compass key: when is A that way of B? (with find 'p': at time at.dueT)
  *   at.apart — a distance: when are they that far apart?
  */
-export function solveTwoPlane(k = {}) {
+export function solveTwoPlane(k0 = {}) {
+  let k = k0;
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   const U = UNITS[k.units] || UNITS.km;
   const vec = (o) => ({ x: have(o?.x) ? o.x : 0, y: have(o?.y) ? o.y : 0 });
@@ -82,13 +83,44 @@ export function solveTwoPlane(k = {}) {
   const OPP = { N: 'S', S: 'N', E: 'W', W: 'E', NE: 'SW', SW: 'NE', NW: 'SE', SE: 'NW' };
   const dueKey = COMPASS[at.due] ? (at.bOfA ? OPP[at.due] : at.due) : null;
   const say = (D) => (at.bOfA ? `B is ${COMPASS[at.due].word} of A` : `A is ${D.word} of B`);
-  if (!given(k.A?.v)) return fail('Give A’s velocity, as its two parts.');
+  const pre = [];
+  // A's velocity from a second position at a later time: (r₁ − r₀)/t₁
+  if (!given(k.A?.v) && given(k.A?.r1) && have(k.A?.t1)) {
+    if (!(k.A.t1 > 0)) return fail('The later time is after the start: give it as a positive number.');
+    const r1 = vec(k.A.r1);
+    A.v = { x: snap((r1.x - A.r0.x) / k.A.t1), y: snap((r1.y - A.r0.y) / k.A.t1) };
+    pre.push({ f: M`vec v = (vec r_1 - vec r_0)/t`, s: M`((${vsrc(r1)}) - (${vsrc(A.r0)}))/${d(k.A.t1)}`, r: M`vec v = ${vsrc(A.v)} [${U.speed}]` });
+  } else if (!given(k.A?.v)) return fail('Give A’s velocity, as its two parts — or a later position and the time it is there.');
+  // B a fixed point found from two sightings: B is D₁ of A at t₁ and D₂ of A at t₂
+  const sights = (at.sights || []).filter((x) => x && COMPASS[x.due] && have(x.t));
+  if (k.find === 'B') {
+    if (sights.length !== 2) return fail('To find where B is, give two sightings: the direction B is from A, and the time, twice.');
+    const [s1, s2] = sights, D1 = COMPASS[s1.due], D2 = COMPASS[s2.due];
+    if (Math.abs(s1.t - s2.t) < 1e-12) return fail('The two sightings must be at different times.');
+    // r_A(t₁) + λD₁ = r_A(t₂) + μD₂  →  λD₁ − μD₂ = v(t₂ − t₁)
+    const R = { x: A.v.x * (s2.t - s1.t), y: A.v.y * (s2.t - s1.t) };
+    const det = D1.x * -D2.y - D1.y * -D2.x;
+    if (tiny(det)) return fail('The two directions are the same line: two sightings that way cannot fix where B is.');
+    const lam = (R.x * -D2.y - R.y * -D2.x) / det, mu = (D1.x * R.y - D1.y * R.x) / det;
+    if (!(lam > 1e-9) || !(mu > 1e-9)) return fail('No point is in both those directions from A at those times: the two lines of sight cross behind it.');
+    const p1 = { x: A.r0.x + A.v.x * s1.t, y: A.r0.y + A.v.y * s1.t };
+    B.r0 = { x: snap(p1.x + lam * D1.x), y: snap(p1.y + lam * D1.y) };
+    B.v = { x: 0, y: 0 };
+    const p2 = { x: A.r0.x + A.v.x * s2.t, y: A.r0.y + A.v.y * s2.t };
+    const along = (D, p) => (D.x === 0 ? M`x_B = ${d(snap(p.x))}` : D.y === 0 ? M`y_B = ${d(snap(p.y))}` : D.x === D.y ? M`x_B - ${sgn(snap(p.x))} = y_B - ${sgn(snap(p.y))}` : M`x_B - ${sgn(snap(p.x))} = -(y_B - ${sgn(snap(p.y))})`);
+    pre.push({ f: M`vec r_A = vec r_0 + vec(v)t`, s: M`"at" t = ${d(s1.t)}`, r: M`vec r_A = ${vsrc(p1)}` });
+    pre.push({ f: M`"B is ${D1.word} of A"`, s: '', r: along(D1, p1) });
+    pre.push({ f: M`vec r_A = vec r_0 + vec(v)t`, s: M`"at" t = ${d(s2.t)}`, r: M`vec r_A = ${vsrc(p2)}` });
+    pre.push({ f: M`"B is ${D2.word} of A"`, s: '', r: along(D2, p2) });
+    pre.push({ f: M`"both together"`, s: '', r: M`vec r_B = ${vsrc(B.r0)} [${U.len}]` });
+    k = { ...k, B: { r0: B.r0, v: B.v } };
+  }
   if (findP) {
     if (given(k.B?.v)) return fail('With p to find, leave B\u2019s velocity blank: it is p times the vector below.');
     if (!given(k.B?.w)) return fail('To find p, give B’s velocity as p times a vector: that vector’s two parts.');
     if (!dueKey || !have(at.dueT)) return fail('To find p, say where A is from B, and at what time.');
     if (!(at.dueT > 0)) return fail('The time is after the start: give it as a positive number.');
-  } else if (!given(k.B?.v)) return fail('Give B’s velocity, as its two parts (0 and 0 for something that stays still).');
+  } else if (k.find !== 'B' && !given(k.B?.v)) return fail('Give B’s velocity, as its two parts (0 and 0 for something that stays still).');
   const rows = [], notes = [], derived = [], answers = [];
   let p = null;
   if (findP) {
@@ -164,7 +196,8 @@ export function solveTwoPlane(k = {}) {
         const dist = snap(Math.hypot(dl.x, dl.y));
         dueRows.push({ f: rel, s: M`${relSub(D, c, m, 't')}`, r: M`t = ${d(t)} [${U.time}]` });
         dueRows.push({ f: M`abs(vec r_A - vec r_B)`, s: M`sqrt(${sgn(snap(dl.x))}^2 + ${sgn(snap(dl.y))}^2)`, r: M`${d(dist)} [${U.len}]` });
-        notes.push(`${say(D)} at ${M`t = ${d(t)} [${U.time}]`}, ${M`${d(dist)} [${U.len}]`} apart.`);
+        const pa = pos(A, t), pb = pos(B, t);
+        notes.push(`${say(D)} at ${M`t = ${d(t)} [${U.time}]`}, ${M`${d(dist)} [${U.len}]`} apart: A is at ${M`${vsrc({ x: snap(pa.x), y: snap(pa.y) })}`}, B at ${M`${vsrc({ x: snap(pb.x), y: snap(pb.y) })}`}.`);
         derived.push(`${at.bOfA ? COMPASS[at.due].word : D.word} at ${M`t = ${d(t)} [${U.time}]`}, ${M`${d(dist)} [${U.len}]`} apart`);
         answers.push({ kind: 'due', t, dist });
       }
@@ -198,13 +231,17 @@ export function solveTwoPlane(k = {}) {
     params: { u: 0, theta: 0, h: 0, g: 0 }, bounces: 0, segments: [], horiz: null, kineticEnergy: () => 0, momentum: () => 0,
     path(n = 200, tEnd = tMax) { const o = []; for (let i = 0; i <= n; i++) { const t = (i / n) * tEnd; o.push({ t, ...pos(A, t) }); } return o; },
   };
-  return { ok: true, mode: 'twoplane', axis: 'plane', A, B, U, p, f, heads, rows, motion, dueRows, apartRows, notes, derived, answers,
+  if (k.find === 'B') { notes.unshift(`From the two sightings, B is at ${M`${vsrc(B.r0)} [${U.len}]`}.`); derived.unshift(M`vec r_B = ${vsrc(B.r0)}`); }
+  if (pre.length && !k.find) notes.unshift(`A’s velocity is ${M`(${vsrc(A.v)}) [${U.speed}]`}.`);
+  return { ok: true, mode: 'twoplane', axis: 'plane', A, B, U, p, f, heads, rows, motion, pre, dueRows, apartRows, notes, derived, answers,
     params: f.params, convention: `East is ${M`vec i`} and north is ${M`vec j`}; bearings are measured clockwise from north.` };
 }
 
 export function twoPlaneWorking(solved) {
   if (!solved?.ok) return [];
   const out = [];
+  if (solved.pre.length) out.push({ title: 'From what the paper gives', rows: solved.pre,
+    note: 'A velocity from two positions is the change in position over the time; a point seen in two directions is where the two lines of sight cross.' });
   if (solved.rows.length) out.push({ title: 'p, from where A is at that time', rows: solved.rows,
     note: 'B’s velocity is p times a known vector, so its position is linear in p; one direction between them at one time fixes it.' });
   out.push({ title: 'Where each is', rows: solved.motion, note: 'Each moves at a constant velocity: position = start + velocity × time.' });

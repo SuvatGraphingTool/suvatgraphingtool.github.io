@@ -24,6 +24,15 @@ export function shipTop(g, x, y, s, a, color, P) {
   g.fillStyle = withAlpha(color, 0.35); g.fillRect(-s * 0.7, -s * 0.1, s * 0.3, s * 0.2);
   g.restore();
 }
+/** A lighthouse on the map, standing at (x, y): a tower with its light. */
+export function lighthouse(g, x, y, color, P) {
+  g.save(); g.fillStyle = P.card; g.strokeStyle = color; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(x - 6, y + 4); g.lineTo(x - 3.5, y - 16); g.lineTo(x + 3.5, y - 16); g.lineTo(x + 6, y + 4); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = withAlpha('#f5c542', 0.9); g.beginPath(); g.arc(x, y - 19, 3.5, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.strokeStyle = withAlpha('#f5c542', 0.6); g.lineWidth = 1.4;
+  for (const a of [-0.5, 0.5, Math.PI - 0.5, Math.PI + 0.5]) { g.beginPath(); g.moveTo(x + Math.cos(a) * 6, y - 19 - Math.sin(a) * 6); g.lineTo(x + Math.cos(a) * 13, y - 19 - Math.sin(a) * 13); g.stroke(); }
+  g.restore();
+}
 /** A bird seen from above, its head at (x, y), flying at angle a. */
 export function birdTop(g, x, y, s, a, color) {
   g.save(); g.translate(x, y); g.rotate(a);
@@ -80,7 +89,8 @@ export function render(canvas, cam, o) {
     const so = []; for (let i = 0; i <= 60; i++) { const tt = (i / 60) * t; so.push(pos(tt)); }
     stroke(g, so.map((p) => ({ x: X(p.x), y: Y(p.y) })), { color, width: 2.8 });
     const r = pos(t), a = Math.atan2(-v.y, v.x), still = Math.hypot(v.x, v.y) < 1e-9;
-    if (still) dot(g, X(r.x), Y(r.y), 6, { fill: P.card, stroke: color, width: 2.4 });
+    if (still && !birds) lighthouse(g, X(r.x), Y(r.y), color, P);
+    else if (still) dot(g, X(r.x), Y(r.y), 6, { fill: P.card, stroke: color, width: 2.4 });
     else if (birds) birdTop(g, X(r.x), Y(r.y), 18, a, color); else shipTop(g, X(r.x), Y(r.y), 26, a, color, P);
     L.add(name, X(r.x) + 12, Y(r.y) - 16, { color, align: 'left', pri: 8, size: 15, weight: 700 });
   };

@@ -77,7 +77,7 @@ this library: *covered* names the one of the twelve that does it.
 | 41 | Edexcel | IAL WME01 | Jan 2019 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Train 270 s, 4.5 km, accelerates 60 s, brakes 30 s; V; halfway time; times at V/4 | – | **built**: `journey-stages` (V = 20, 142.5 s, 15 s and 262.5 s) |
 | 42 | Edexcel | IAL WME01 | Oct 2021 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Car at 25 m/s, sign 48 m ahead; three braking models, one with a 0.2 s reaction delay | – | **candidate**: several stages along a line, one after another |
 | 43 | Edexcel | IAL WME01 | Oct 2021 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ball up from A above ground; v-t graph zero at 2.5 s; lands at 7 s; speed and height | 9.8 | **built**: `from-a-height`, the time to the top and the time to land (u = 24.5, h = 68.6 m) |
-| 44 | Edexcel | IAL WME01 | Oct 2021 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ship leaves port at 7:00; lighthouse due east at 8:48, north-east at 9:00; find it | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 44 | Edexcel | IAL WME01 | Oct 2021 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ship leaves port at 7:00; lighthouse due east at 8:48, north-east at 9:00; find it | – | **built**: `two-in-a-plane` (v = 10i − 5j; lighthouse 19i; due south at 19i − 1.5j) |
 | 45 | Edexcel | IAL WME01 | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Passes P, Q 10 s later at 28 m/s, PQ = 220; a; distance in the 5th second | – | **covered** by `road` |
 | 46 | Edexcel | IAL WME01 | Jun 2022 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Velocity known at t = 1 and t = 4; speed at t = 3.5 | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 47 | Edexcel | IAL WME01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | 100 m race, finish together; Ajaz's time; Beth's T; difference in finishing speed | – | **built**: `two-on-a-road` (27.5 s, T = 3.915, speeds differ by 0.085) |
@@ -542,8 +542,13 @@ bearing 103°, 10 km apart at t = 0 and 0.32 h). Edexcel IAL WME01 Jan 2019 Q2
 (birds from 20i − 17j at −6i + 7j and from −8i + 9j at p(i + 2j); B south-west
 of A at t = 4: bearing 319°, p = −0.5, B at 1.12 m s⁻¹).
 
+Edexcel IAL WME01 Oct 2021 Q8 (a ship from −2i + 9j at 7 am, at 4i + 6j at
+7.36: v = 10i − 5j; a lighthouse due east at 8.48 and north-east at 9: at 19i;
+the ship due south of it at 19i − 1.5j).
+
 **Why the twelve cannot.** None has two objects in a plane; the library's
-"Moving in a plane" has one.
+"Moving in a plane" has one. A velocity can come from two positions, and a fixed point (a
+lighthouse) from two sightings: where the two lines of sight cross.
 
 **How it is solved.** Δ = r_A − r_B is linear in t: a compass direction is one
 relation between its parts (linear), a distance is |Δ|² = d² (quadratic), and p

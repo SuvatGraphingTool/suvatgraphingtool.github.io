@@ -288,8 +288,9 @@ export const LIBRARY = [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jan 2012', q: '7' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2017', q: '7' },
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2019', q: '2' },
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Oct 2021', q: '8' },
     ],
-    tags: ['two ships', 'ships', 'boats', 'birds', 'two particles', 'vectors', 'i and j', 'due west', 'due east', 'south-west', 'bearing',
+    tags: ['lighthouse', 'sightings', 'two ships', 'ships', 'boats', 'birds', 'two particles', 'vectors', 'i and j', 'due west', 'due east', 'south-west', 'bearing',
            'apart', 'distance apart', 'constant velocity', 'position vector', 'mechanics', 'M1', 'IAL'],
     ending: {
       close: 'See the diagram',
