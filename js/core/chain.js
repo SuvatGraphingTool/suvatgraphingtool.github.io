@@ -110,7 +110,14 @@ export function solveChain(k = {}) {
     const sTurn = turns ? x.u * tv + 0.5 * x.a * tv * tv : 0;
     const travelled = turns ? Math.abs(sTurn) + Math.abs(x.s - sTurn) : Math.abs(x.s);
     const does = Math.abs(x.a) < 1e-12 ? (Math.abs(x.u) < 1e-12 ? 'at rest' : 'steady') : turns ? 'slows, stops and turns back' : (x.a > 0) === (x.u + x.v >= 0) ? 'speeding up' : 'slowing down';
-    const twoRoots = solved[i].steps.some((sp) => sp.roots && sp.roots.length === 2);
+    // two moments it is at that displacement: both forwards in time, and different
+    // given neither its time nor its end speed, ½at² + ut − s = 0 can have two such times
+    let twoRoots = null;
+    const pk = solved[i].pick;
+    if (!pk.includes('t') && !pk.includes('v') && Math.abs(x.a) > 1e-12) {
+      const D = x.u * x.u + 2 * x.a * x.s;
+      if (D > 1e-12) { const r = [(-x.u - Math.sqrt(D)) / x.a, (-x.u + Math.sqrt(D)) / x.a].sort((p, q) => p - q); if (r[0] > 1e-9) twoRoots = r; }
+    }
     const out = { i: i + 1, ...x, travelled, does, twoRoots, t0, x0, t1: t0 + x.t, x1: x0 + x.s, how: how[i], steps: solved[i].steps, pick: solved[i].pick }; t0 += x.t; x0 += x.s; return out; });
   const Ttot = t0, Stot = x0, dist = S.reduce((a, x) => a + x.travelled, 0), back = Math.abs(dist - Math.abs(Stot)) > 1e-9;
   const avg = dist / Ttot, avgV = Stot / Ttot;
@@ -123,7 +130,7 @@ export function solveChain(k = {}) {
   const notes = [back
     ? `It turns back, so the displacement is ${M`${d(snap(Stot))} [m]`} but the distance travelled is ${M`${d(snap(dist))} [m]`}, in ${M`${d(snap(Ttot))} [s]`}: an average speed of ${M`${d(snap(avg))} [m s^-1]`}, an average velocity of ${M`${d(snap(avgV))} [m s^-1]`}.`
     : `In all: ${M`${d(snap(Stot))} [m]`} in ${M`${d(snap(Ttot))} [s]`}, an average speed of ${M`${d(snap(avg))} [m s^-1]`}.`];
-  for (const x of S) if (x.twoRoots) notes.push(`Stage ${x.i} has two roots; the first time it reaches that displacement is taken.`);
+  for (const x of S) if (x.twoRoots) notes.push(`Stage ${x.i} is at that displacement twice, at ${M`t = ${d(snap(x.twoRoots[0]))} [s]`} and ${M`t = ${d(snap(x.twoRoots[1]))} [s]`}; ${M`t = ${d(snap(x.t))} [s]`} is taken.`);
   const derived = S.map((x) => `stage ${x.i}: ${M`a = ${d(snap(x.a))} [m s^-2]`}, ${M`t = ${d(snap(x.t))} [s]`}`);
   return { ok: true, mode: 'chain', S, Stot, Ttot, dist, back, avg, avgV, f, notes, derived };
 }
