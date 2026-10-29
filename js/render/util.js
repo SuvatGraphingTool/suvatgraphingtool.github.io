@@ -548,3 +548,16 @@ export function sig3(x) {
   const dp = Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x))));
   return num(x, dp);
 }
+
+/** Where the app's readouts sit over the stage, in canvas pixels, for
+    labels().reserve and for keeping key art clear: the left column of
+    `rows` boxes (a kit's hud(...).left.length) and the clock top right.
+    Measured from css/app.css (.hud-l, .hud-r): 218 × 64 boxes every 72 px
+    on a laptop, 182 × 55 every 63 px under 520 px wide, 16 px in. */
+export function hudBoxes(w, rows = 3) {
+  const phone = w < 520, bw = phone ? 182 : 218, step = phone ? 63 : 72;
+  return [
+    { x: 0, y: 0, w: 16 + bw + 8, h: 16 + step * Math.max(1, rows) },
+    { x: w - 148, y: 0, w: 148, h: 88 },
+  ];
+}

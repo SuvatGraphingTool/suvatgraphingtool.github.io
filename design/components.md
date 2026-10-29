@@ -676,6 +676,9 @@ Used by: `vectors-ij`.
   release. Every launch with a person behind it uses it.
 - `ballAt(g, x, y, r, color)` — the stadium's shaded ball, with a ring in
   `color` when there are two to tell apart. Never a hollow ring or a dot.
+- `hudBoxes(w, rows)` (in `util.js`) — the readouts' boxes over the stage, at
+  laptop and phone sizes, for `labels().reserve` and for keeping key art out
+  from under them. Every stage uses it rather than its own guess.
 - `sig3(x)` (in `util.js`) — a ruler's or a tag's number to three significant
   figures, as a paper answers.
 
