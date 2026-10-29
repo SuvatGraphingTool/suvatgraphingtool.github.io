@@ -960,6 +960,19 @@ group('Stage by stage (MM1B Jan13 Q1, H240/03 J19 Q7, H556/01 J19 Q19a)', () => 
   const f = r.f; ok(Math.abs(f.pos(40) - 640) < 1e-9 && Math.abs(f.pos(110) - 2460) < 1e-9 && Math.abs(f.vel(40) - 12) < 1e-9, 'the motion passes the join and ends at 2460 m');
 });
 
+group('Do they collide? (MM1B J14 Q7)', () => {
+  const K = KITS.collide;
+  const r = K.solve({ A: { u: { x: 4, y: 2 }, a: { x: -0.4 } }, B: { r0: { x: 11.2 }, u: { x: 0.4, y: 0.6 }, a: { y: 0.2 } }, at: 10 });
+  ok(r.ok && r.tc === 14 && r.where.x === 16.8 && r.where.y === 28, 'they collide at t = 14, at 16.8i + 28j', r.reason);
+  ok(r.f.posA(10).x === 20 && r.f.posA(10).y === 20, 'A at 20i + 20j after 10 s');
+  const miss = K.solve({ A: { u: { x: 4, y: 2 }, a: { x: -0.4 } }, B: { r0: { x: 11 }, u: { x: 0.4, y: 0.6 }, a: { y: 0.2 } } });
+  ok(miss.ok && miss.tc === null && /never collide/.test(miss.notes.join(' ')), 'moved a little, they never collide');
+  ok(!K.solve({ A: { u: { x: 1 } }, B: { u: { x: 1 } } }).ok, 'together the whole time is said, not solved');
+  ok(!K.solve({ A: { u: { x: 1 } } }).ok, 'B missing says what is needed');
+  const line = K.solve({ A: { u: { x: 2 } }, B: { r0: { x: 10 }, a: { x: -1 } } });
+  ok(line.ok && Math.abs(line.tc - (-2 + Math.sqrt(24))) < 1e-9, 'j parts always equal: the i parts alone decide');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

@@ -345,6 +345,14 @@ the one stage missing it; a stage given four or five is checked. Then the
 whole: distance, time, average speed. `chainWorking` writes each stage as the
 solver did. Used by: `stage-by-stage`.
 
+### Do they collide? — `js/core/collide.js`
+
+`solveCollide({ A: { r0, u, a }, B: { r0, u, a }, at })` — two particles, each
+the library's `planeMotion`; each position written as a quadratic in t part by
+part; the part with fewest roots solved (`quadRoots`) and the other checked at
+each root: they collide only where both agree. `at` gives each position at a
+time. `collideWorking` writes it the paper's way. Used by: `do-they-collide`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -398,6 +406,14 @@ begins, each stage's distance and time as a dimension line under the road,
 what it does over each (speeding up, slowing down, steady, with a), the speed
 at each post once passed, and the car, cyclist or train where it is now with
 its velocity (dashed). Kit `chain`. Used by: `stage-by-stage`.
+
+### Two on a surface, from above — `js/render/collide.js`
+
+The surface at one scale both ways, grid, O, i and j; each path a faint curve
+and the part travelled strong, A in the quantity's hue and B in stone; `puck(g,
+x, y, r, color, P)` (exported) with its letter and its velocity now; the
+collision ringed with its time and position vector; an asked time marked on
+both paths. Kit `collide`. Used by: `do-they-collide`.
 
 
 ### A parachute jump — `js/render/jump.js`

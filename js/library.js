@@ -393,4 +393,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each stage by the five equations, the joins, and the whole distance, time and average speed.',
     } },
+  { id: 'do-they-collide', group: 'library', kit: 'collide',
+    name: 'Two on a surface: do they collide?',
+    sub: 'two particles, each with its own constant acceleration in i and j — same place, same moment?',
+    note: 'Two particles on a horizontal surface, each starting with its own velocity and each with its own constant acceleration, all in i and j. Each position is a quadratic in t, part by part. To collide they must be at the same place at the same moment: solve for when one part is equal, then check the other part at that time.',
+    params: { A: { u: { x: 4, y: 2 }, a: { x: -0.4 } }, B: { r0: { x: 11.2 }, u: { x: 0.4, y: 0.6 }, a: { y: 0.2 } }, at: 10 },
+    place: 'From above: a horizontal surface, i across and j up',
+    sources: [
+      { board: 'AQA', paper: 'MM1B', session: 'Jun 2014', q: '7' },
+    ],
+    tags: ['collide', 'collision', 'two particles', 'vectors', 'i and j', 'constant acceleration', 'position vector', 'same place same time',
+           'horizontal surface', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Particles', 'each has no size: they collide only if their points meet exactly, where real objects would touch a little earlier.'],
+        ['Constant accelerations', 'each acceleration keeps the same size and direction the whole time.'],
+        ['A horizontal surface', 'everything happens in the one plane of the surface; nothing leaves it.'],
+      ],
+      caveat: 'What the engine did compute is above: each position in t, when each part is equal, and whether those moments agree.',
+    } },
 ];

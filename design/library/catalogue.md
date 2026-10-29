@@ -36,7 +36,7 @@ this library: *covered* names the one of the twelve that does it.
 |---|---|---|---|---|---|---|---|---|
 | 1 | AQA | MM1B (legacy M1) | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202014%20QP%20-%20M1%20AQA.PDF) | Car at 14 m/s accelerates 0.8 m/s² for 12 s; find final speed, distance (then a force part) | 9.8 | **covered** by `road` |
 | 2 | AQA | MM1B | Jun 2014 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202014%20QP%20-%20M1%20AQA.PDF) | Bullet fired 2° above horizontal at target 420 m away, hits after 1.8 s; find V and drop below centre | 9.8 | **covered**: arc, but the target is reached at a stated time, not on landing: needs a "where is it at t" readout |
-| 3 | AQA | MM1B | Jun 2014 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202014%20QP%20-%20M1%20AQA.PDF) | Two particles with different constant accelerations start apart; show they collide, find where | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 3 | AQA | MM1B | Jun 2014 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202014%20QP%20-%20M1%20AQA.PDF) | Two particles with different constant accelerations start apart; show they collide, find where | – | **built**: `do-they-collide` (A at 20i + 20j after 10 s; collide at t = 14, at 16.8i + 28j) |
 | 4 | AQA | MM1B | Jun 2012 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | Car braking from 20 m/s, at 10 m/s after 75 m; find a, stopping time (then force parts) | 9.8 | **covered** by `road` |
 | 5 | AQA | MM1B | Jun 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | a = 0.1i−0.2j from origin with u = −i+3j; when due east; speed when heading south-east | – | **built**: `vectors-ij` (due east at 30 s; south-east at 20 s, 1.41 m s⁻¹) |
 | 6 | AQA | MM1B | Jun 2012 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | 22.4 m/s launch, apex after 2 s; angle, max height, range, time above 5 m, min speed | 9.8 | **covered**: time-above, once θ is worked from the 2 s to the top (sin θ = 0.875); no box takes a time to the top |
@@ -633,3 +633,21 @@ it, what it does over each, the speeds at the posts, the vehicle moving.
 **What the student varies.** Car, cyclist or train; up to four stages, any
 three of s, u, v, a, t each (a start left blank carries the last end); the
 whole distance or time.
+
+### `do-they-collide` — Two on a surface: do they collide?
+
+**Papers.** AQA MM1B Jun 2014 Q7 (A from O with velocity 4i + 2j and
+acceleration −0.4i; B from 11.2i with 0.4i + 0.6j and 0.2j: A is at 20i + 20j
+after 10 s; the j parts are equal at t = 0 and 14, the i parts at t = 14 too, so
+they collide there, at 16.8i + 28j).
+
+**Why it is built.** `vectors-ij` is one particle; `two-in-a-plane` is two at
+constant velocities. Two with accelerations make each part a quadratic, and a
+collision needs the two parts' roots to agree.
+
+**The stage.** From above at one scale both ways: the surface, grid and axes,
+both curved paths, a puck for each with its velocity, the collision ringed with
+its time and position.
+
+**What the student varies.** Each particle's start, velocity and acceleration
+in i and j; a time to give both positions at.
