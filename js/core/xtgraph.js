@@ -73,7 +73,7 @@ export function solveXt(k = {}) {
   }
   const tEnd = P[P.length - 1].t, xEnd = P[P.length - 1].x;
   const dist = S.reduce((s, x) => s + Math.abs(x.x1 - x.x0), 0), disp = xEnd - k.x0;
-  const distRows = [{ f: M`"distance" = sum abs(Delta x)`, s: M`${S.filter((x) => Math.abs(x.x1 - x.x0) > EPS).map((x) => d(Math.abs(snap(x.x1 - x.x0)))).join(' + ')}`, r: M`${d(snap(dist))} [m]` }];
+  const distRows = [{ f: M`"distance" = sum abs(Delta x)`, s: M`${S.filter((x) => Math.abs(x.x1 - x.x0) > EPS).map((x) => d(Math.abs(snap(x.x1 - x.x0)))).join(' + ') || '0'}`, r: M`${d(snap(dist))} [m]` }];
 
   // ── the tail: constant acceleration after the last corner
   let tail = null;
@@ -87,21 +87,31 @@ export function solveXt(k = {}) {
     tail = { c, a: snap(2 * c[2]) };
     tailRows.push({ f: M`v = (dx)/(dt)`, s: M`x = ${poly(c)}`, r: M`v = ${poly([c[1], 2 * c[2], 0])}` });
     if (have(tk.speed)) {
-      const S2 = tk.speed;
-      const ts = [S2, -S2].map((v) => (Math.abs(c[2]) > EPS ? snap((v - c[1]) / (2 * c[2])) : null)).filter((t) => t != null && t > tEnd + EPS);
-      for (const v of [S2, -S2]) {
-        const t = Math.abs(c[2]) > EPS ? snap((v - c[1]) / (2 * c[2])) : null;
-        tailRows.push({ f: M`v = ${d(v)}`, s: M`${poly([c[1], 2 * c[2], 0])} = ${d(v)}`, r: t == null ? M`"never"` : M`t = ${d(t)}${t > tEnd + EPS ? '' : ` "(before" t = ${d(tEnd)}")"`}` });
+      const S2 = Math.abs(tk.speed), vs = S2 < EPS ? [0] : [S2, -S2], vEq = poly([c[1], 2 * c[2], 0]);
+      const ts = [];
+      let always = false;
+      for (const v of vs) {
+        if (Math.abs(c[2]) < EPS) {
+          const same = Math.abs(c[1] - v) < EPS;
+          if (same) always = true;
+          tailRows.push({ f: M`v = ${d(v)}`, s: M`${vEq} = ${d(v)}`, r: same ? M`"always"` : M`"never"` });
+          continue;
+        }
+        const t = snap((v - c[1]) / (2 * c[2]));
+        if (t > tEnd + EPS) ts.push(t);
+        tailRows.push({ f: M`v = ${d(v)}`, s: M`${vEq} = ${d(v)}`, r: M`t = ${d(t)}${t > tEnd + EPS ? '' : ` "(before" t = ${d(tEnd)}")"`}` });
       }
-      tail.speed = S2; tail.ts = ts.sort((p, q) => p - q);
+      tail.speed = S2; tail.ts = ts.sort((p, q) => p - q); tail.always = always;
     }
-  }
+  } else if (have(tk.speed)) return fail('A speed is asked after the graph, but there is no formula for after it: give c₀, c₁ and c₂, or clear the speed.');
 
   // ── velocities asked for
   const askRows = [], asked = [];
   for (const t of (k.ask?.ts || []).filter(have)) {
     if (t < 0) return fail('A time asked about is 0 or later.');
     if (t > tEnd + EPS && !tail) return fail(`${M`t = ${d(t)}`} is after the graph ends at ${M`t = ${d(tEnd)}`}.`);
+    // at the last corner the formula takes over: the velocity may change there
+    if (tail && Math.abs(t - tEnd) < EPS && Math.abs(S[S.length - 1].v - (tail.c[1] + 2 * tail.c[2] * t)) > EPS) { askRows.push({ f: M`t = ${d(t)}`, s: M`"the last corner"`, r: M`"the velocity changes there"` }); asked.push({ t, v: null }); continue; }
     if (t > tEnd + EPS) { const v = snap(tail.c[1] + 2 * tail.c[2] * t); askRows.push({ f: M`v = ${poly([tail.c[1], 2 * tail.c[2], 0])}`, s: M`t = ${d(t)}`, r: M`v = ${d(v)} [m s^-1]` }); asked.push({ t, v }); continue; }
     const at = S.filter((x) => t >= x.t0 - EPS && t <= x.t1 + EPS);
     if (at.length > 1 && Math.abs(at[0].v - at[1].v) > EPS) { askRows.push({ f: M`t = ${d(t)}`, s: M`"a corner"`, r: M`"the velocity changes there"` }); asked.push({ t, v: null }); continue; }
@@ -110,9 +120,11 @@ export function solveXt(k = {}) {
     asked.push({ t, v: x.v });
   }
 
-  const notes = [`From ${M`t = 0`} to ${M`t = ${d(tEnd)}`} it travels ${M`${d(snap(dist))} [m]`} in all, but ends ${M`${d(snap(Math.abs(disp)))} [m]`} ${disp >= 0 ? 'on' : 'back'} from where it started: distance counts every piece, displacement only where it ends.`];
+  const notes = [`From ${M`t = 0`} to ${M`t = ${d(tEnd)}`} it travels ${M`${d(snap(dist))} [m]`} in all, but ${Math.abs(disp) < EPS ? 'ends where it started' : `ends ${M`${d(snap(Math.abs(disp)))} [m]`} ${disp > 0 ? 'on' : 'back'} from where it started`}: distance counts every piece, displacement only where it ends.`];
   if (blank.length) notes.unshift(`The corner left blank is at ${M`t = ${d(P[blank[0]].t)} [s]`}.`);
-  if (tail?.ts) notes.push(tail.ts.length ? `After the graph its velocity is ${M`v = ${poly([tail.c[1], 2 * tail.c[2], 0])}`}: its speed is ${M`${d(tail.speed)} [m s^-1]`} at ${M`t = ${d(tail.ts[0])} [s]`}.` : `After the graph its speed is never ${M`${d(tail.speed)} [m s^-1]`}.`);
+  if (tail?.ts) notes.push(tail.always ? `After the graph its velocity is ${M`v = ${poly([tail.c[1], 2 * tail.c[2], 0])}`}: its speed is ${M`${d(tail.speed)} [m s^-1]`} the whole time.`
+    : tail.ts.length ? `After the graph its velocity is ${M`v = ${poly([tail.c[1], 2 * tail.c[2], 0])}`}: its speed is ${M`${d(tail.speed)} [m s^-1]`} at ${tail.ts.map((t) => M`t = ${d(t)} [s]`).join(' and at ')}.`
+      : `After the graph its speed is never ${M`${d(tail.speed)} [m s^-1]`}.`);
   const derived = [`${M`${d(snap(dist))} [m]`} travelled`];
 
   const tMax = tail ? Math.max(tEnd * 1.25, ...(tail.ts || []).map((t) => t * 1.05)) : tEnd;

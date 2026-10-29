@@ -1003,6 +1003,10 @@ group('Read the displacement–time graph (4728 J14 Q5)', () => {
   ok(!K.solve({ x0: 5, speed: 3, pts: [{ x: 5 }, { t: 3, x: 0 }, { t: 5, x: 0 }, { t: 7, x: -8 }] }).ok, 'a piece at another speed than the one given is refused');
   ok(!K.solve({ x0: 0, pts: [{ t: 2, x: 4 }], tail: { c0: 0, c1: 1, c2: 0 } }).ok, 'a formula that does not join the graph is refused');
   ok(!K.solve({ x0: 0, pts: [{ t: 2, x: 4 }, { t: 1, x: 0 }] }).ok, 'corners out of time order are refused');
+  const steady = K.solve({ x0: 0, pts: [{ t: 2, x: 4 }], tail: { c0: 0, c1: 2, c2: 0, speed: 2 } });
+  ok(steady.ok && steady.tail.always && /whole time/.test(steady.notes.join(' ')), 'a steady formula at that speed: always, not never');
+  ok(r.f.asked.length === 3 && K.solve({ x0: 5, speed: 4, pts: [{ x: 5 }, { t: 3, x: 0 }, { t: 5, x: 0 }, { t: 7, x: -8 }, { t: 10, x: 4 }], tail: { c0: -96, c1: 20, c2: -1 }, ask: { ts: [10] } }).f.asked[0].v === null, 'at the last corner the formula takes over: the velocity changes there');
+  ok(!K.solve({ x0: 0, pts: [{ t: 2, x: 4 }], tail: { speed: 2 } }).ok, 'a speed after the graph with no formula is refused');
   const corner = K.solve({ x0: 0, pts: [{ t: 2, x: 4 }, { t: 4, x: 0 }], ask: { ts: [2] } });
   ok(corner.ok && corner.f.asked[0].v === null, 'at a corner the velocity changes: said, not guessed');
 });

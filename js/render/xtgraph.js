@@ -2,7 +2,7 @@
 //
 // Two pictures on one clock, as for the trip:
 //   · ABOVE, the (t, x) graph itself, as the paper draws it — the pieces in
-//     the displacement hue, the corners dotted, the corner found from the
+//     the displacement hue and dashed (along the line, rule 2), the corners dotted, the corner found from the
 //     speed marked T, the part after the last corner curving; the piece the
 //     clock is in drawn strongly, and the time now a dashed upright.
 //   · BELOW, the line the particle moves on at one scale, the fixed point A,
@@ -39,7 +39,7 @@ export function render(canvas, cam, o) {
   for (let x = Math.ceil((xLo - pad) / xstep) * xstep; x <= xHi + pad; x += xstep) if (Math.abs(x) > 1e-9) L.add(fmt(x, xstep < 1 ? 1 : 0), gx0 - 8, V(x), { color: P.faint, align: 'right', pri: 1, size: 13, bg: false, maxPush: 0 });
   for (const s of f.S) {
     const on = t >= s.t0 - 1e-9 && t <= s.t1 + 1e-9;
-    stroke(g, [{ x: X(s.t0), y: V(s.x0) }, { x: X(s.t1), y: V(s.x1) }], { color: P.disp, width: on ? 3 : 2, alpha: t >= s.t0 ? 1 : 0.4 });
+    stroke(g, [{ x: X(s.t0), y: V(s.x0) }, { x: X(s.t1), y: V(s.x1) }], { color: P.disp, width: on ? 3 : 2, alpha: t >= s.t0 ? 1 : 0.4, dash: [6, 4] });
   }
   for (const p of f.P.slice(1)) {
     dot(g, X(p.t), V(p.x), 3.5, { fill: P.card, stroke: P.disp, width: 1.8 });
@@ -47,7 +47,7 @@ export function render(canvas, cam, o) {
   }
   if (f.tail) {
     const pts = []; for (let i = 0; i <= 60; i++) { const tt = f.tEnd + (i / 60) * (f.tMax - f.tEnd); pts.push({ x: X(tt), y: V(f.pos(tt)) }); }
-    stroke(g, pts, { color: P.disp, width: 2, alpha: t > f.tEnd ? 1 : 0.4 });
+    stroke(g, pts, { color: P.disp, width: 2, alpha: t > f.tEnd ? 1 : 0.4, dash: [6, 4] });
     for (const ts of f.tail.ts || []) if (t >= ts - 1e-9) { dot(g, X(ts), V(f.pos(ts)), 7, { stroke: P.mark, width: 2.2 }); L.add(T`t = ${tr(ts)} [s]`, X(ts), V(f.pos(ts)) - 16, { color: P.mark, align: 'center', pri: 8, size: 13, weight: 700 }); }
   }
   for (const a of f.asked) if (a.v != null && t >= a.t - 1e-9) { dot(g, X(a.t), V(f.pos(a.t)), 6, { stroke: P.mark, width: 2 }); L.add(T`v = ${tr(a.v)}`, X(a.t) + 8, V(f.pos(a.t)) - 14, { color: P.vel, align: 'left', pri: 6, size: 13, weight: 700 }); }
