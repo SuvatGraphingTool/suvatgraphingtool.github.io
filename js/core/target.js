@@ -198,6 +198,12 @@ function atRows(F, P, K) {
     { f: M`y = h_0 + u_y t - ½gt^2`, s: M`${heightSrc(F.h0, F.uy, F.g, d(a.t))}`, r: M`y = ${d(a.y)} [m]` },
   ];
   if (a.clear != null && K.hits !== true) rows.push({ f: M`y - H`, s: M`${d(a.y)} - ${d(P.H)}`, r: M`y - H = ${d(a.clear)} [m]` });
+  // where it hits, its speed: what a window in the wall is broken by
+  if (K.hits === true && a.speed != null) {
+    const vy = snap(F.uy - F.g * a.t);
+    rows.push({ f: M`v_y = u_y - gt`, s: M`${d(F.uy)} - ${d(F.g)} * ${d(a.t)}`, r: M`v_y = ${d(vy)} [m s^-1]` });
+    rows.push({ f: M`v = sqrt(u_x^2 + v_y^2)`, s: M`sqrt(${d(F.ux)}^2 + ${vy < 0 ? `(${d(vy)})` : d(vy)}^2)`, r: M`v = ${d(a.speed)} [m s^-1]` });
+  }
   return rows;
 }
 
@@ -273,7 +279,8 @@ export function solveTarget(k = {}) {
       const tP = P.d / ux, yP = h0 + uy * tP - 0.5 * g * tP * tP;
       const tDown = (uy + Math.sqrt(uy * uy + 2 * g * h0)) / g;
       if (tP > tDown + 1e-9) return fail(`With that launch it lands ${M`${d(snap(ux * tDown))} [m]`} out, at ${M`t = ${d(snap(tDown))} [s]`}, before it reaches the wall at ${M`${d(P.d)} [m]`}: it never hits it.`);
-      if (Math.abs(yP - P.H) > 1e-6 * Math.max(1, Math.abs(P.H))) {
+      // a height given rounded (to the half millimetre) is the same height
+      if (Math.abs(yP - P.H) > 5e-4 * Math.max(1, Math.abs(P.H))) {
         return fail(`With that launch it is ${M`${d(snap(yP))} [m]`} up when it is ${M`${d(P.d)} [m]`} out, not the ${M`${d(P.H)} [m]`} given. Leave the height blank to see where it hits the wall, or choose “A wall” to see whether it goes over one that high.`);
       }
     }

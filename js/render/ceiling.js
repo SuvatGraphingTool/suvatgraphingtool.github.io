@@ -30,7 +30,8 @@ export function render(canvas, cam, o) {
   const L = labels();
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
 
-  const yTop = Math.max(f.Hmax, f.C ?? 0) * 1.12;
+  // when it reaches the ceiling, the ceiling is the top of the picture
+  const yTop = (f.hit ? f.C : Math.max(f.Hmax, f.C ?? 0)) * 1.12;
   const top = 50, bottom = h - 40, k = (bottom - top) / yTop, Y = (y) => bottom - y * k;
   const cx = w < 520 ? w * 0.55 : Math.max(HUD + 160, w * 0.5);
   // the hall: floor, the back wall, the ceiling

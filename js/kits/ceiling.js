@@ -20,7 +20,7 @@ export const ceiling = {
   fields: [
     { key: 'h', col: 'kick', label: 'Leaves from (m above the floor)', placeholder: '0', hint: 'Blank: the floor.' },
     { key: 'u', col: 'kick', label: 'Speed up (m s⁻¹)', placeholder: '—', hint: 'Or give the greatest height instead.' },
-    { key: 'top', col: 'kick', label: 'Or its greatest height (m above the floor)', placeholder: '—', hint: 'Outdoors, with no ceiling.' },
+    { key: 'top', col: 'kick', label: 'Or its greatest height (m above the floor)', placeholder: '—', hint: 'As it would rise with no ceiling.' },
     { key: 'C', col: 'hall', label: 'Ceiling height (m)', placeholder: '—', hint: 'Above the floor. Blank: outdoors.' },
   ],
   cols: { kick: 'The kick', hall: 'The hall' },
@@ -55,7 +55,7 @@ export const ceiling = {
   },
 
   ending(s) {
-    const title = s.hit ? `It reaches the ceiling at t = ${tr(s.hit.t)} s, at ${tr(s.hit.v)} m s⁻¹.` : s.f.C != null ? `It turns ${tr(s.f.C - s.Hmax)} m below the ceiling.` : `It rises to ${tr(s.Hmax)} m.`;
+    const title = s.hit ? `It reaches the ceiling at t = ${tr(s.hit.t)} s, at ${tr(s.hit.v)} m s⁻¹.` : s.f.C != null ? `It turns ${tr(s.f.gap)} m below the ceiling.` : `It rises to ${tr(s.Hmax)} m.`;
     return { eyebrow: 'Under the ceiling', title, body: s.notes.map((x) => `<p>${x}</p>`).join(''), real: true };
   },
 };

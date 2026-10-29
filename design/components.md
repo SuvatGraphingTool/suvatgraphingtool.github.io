@@ -233,7 +233,7 @@ rising, the greatest height before it, where it lands (or that it hits a solid
 `kind` it does not clear), and `span`, where a wall of height H would be
 cleared. `KINDS` — wall, net, tree, face (a wall it hits), point.
 
-`solveTarget({ g, h0, u, theta, ux, uy, d, H, tAt, kind, find, T, top, flag, pick })`
+`solveTarget({ g, h0, u, theta, ux, uy, d, H, tAt, kind, find, T, top, flag, pick, from, winLo, winHi, winBreak })` — kind is wall, fence, net, tree, face (a wall it hits, perhaps with a window) or point;
 — given the launch, what happens at the point; or, with `find`, the angle
 (`theta`: a quadratic in tan θ, two roots), the speed (`u`), or both from the
 time to the point (`time`, with `T`) or from the greatest height (`apex`). `flights` holds
