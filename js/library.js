@@ -303,4 +303,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each one\u2019s position, speed and bearing, the vector between them, and each moment the paper asked about.',
     } },
+  { id: 'three-models', group: 'library', kit: 'models',
+    name: 'Braking for a sign: three models',
+    sub: 'one car, one sign, three ways to model the driver — which reaches it when?',
+    note: 'A car at speed and a speed-limit sign ahead, modelled three ways side by side: braking all the way to the sign, braking to the limit and holding it, and the same after a reaction time. Three lanes of one road on one clock, so the difference a model makes is seen as well as worked out.',
+    params: { u: 25, D: 48, a: 6, limit: 13, react: 0.2 },
+    place: 'Three lanes of one road, a speed-limit sign ahead',
+    sources: [
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Oct 2021', q: '3' },
+    ],
+    tags: ['braking', 'brakes', 'road sign', 'speed limit', 'reaction time', 'thinking distance', 'models', 'modelling', 'car',
+           'decelerates', 'stopping', 'mechanics', 'M1', 'IAL'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers\u2019 model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Three models, not one car', 'each lane is the same car under a different assumption about the driver; a real driver does something in between.'],
+        ['Constant deceleration', 'the brakes slow it at one steady rate; real braking builds up and fades.'],
+        ['A particle', 'the car has no length: it reaches the sign when its point does.'],
+      ],
+      caveat: 'What the engine did compute is above: each model as stages of constant acceleration, and when and how fast each reaches the sign.',
+    } },
 ];

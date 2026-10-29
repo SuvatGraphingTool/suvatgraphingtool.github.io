@@ -69,6 +69,7 @@ A kit is an object with:
 | `trip` — `js/kits/trip.js` | `there-and-back` |
 | `jump` — `js/kits/jump.js` (engine: journey) | `parachute-stages` |
 | `twoplane` — `js/kits/twoplane.js` | `two-in-a-plane` |
+| `models` — `js/kits/models.js` (engine: journey) | `three-models` |
 | `bounce` — `js/kits/bounce.js` | `bounce` |
 
 ## Engine models — `js/core/`
@@ -319,6 +320,14 @@ its top level, so it can go into a product or after a minus as it stands
 built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
+
+### One question, three models — `js/render/models.js`
+
+Three lanes of one road, the same `car` in each, `speedSign(g, x, Y, limit, P)`
+(exported) at the same distance: model 1 brakes to the sign, model 2 to the
+limit and holds, model 3 after a reaction time. Kit `models`, engine: the
+journey in stages, once per model. Used by: `three-models`.
+
 
 ### Two on a map — `js/render/twoplane.js`
 

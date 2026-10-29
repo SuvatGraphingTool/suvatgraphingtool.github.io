@@ -11,5 +11,6 @@ import { catcher } from './catcher.js';
 import { trip } from './trip.js';
 import { jump } from './jump.js';
 import { twoplane } from './twoplane.js';
+import { models } from './models.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models };

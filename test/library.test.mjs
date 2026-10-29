@@ -880,6 +880,15 @@ group('Two ships: the lighthouse', () => {
   ok(/A itself/.test(strip(solveTwoPlane({ A: { v: { x: 0, y: 0 }, r1: undefined }, find: 'B', at: { sights: [{ due: 'N', t: 1 }, { due: 'E', t: 2 }] } }).reason || '')) || !solveTwoPlane({ A: { v: { x: 0, y: 0 } }, find: 'B', at: { sights: [{ due: 'N', t: 1 }, { due: 'E', t: 2 }] } }).ok, 'A at rest, two directions: no false "behind"');
 });
 
+group('Braking for a sign: three models', () => {
+  const r = KITS.models.solve({ u: 25, D: 48, a: 6, limit: 13, react: 0.2 });
+  ok(r.ok && near(r.models[0].vSign, 7) && near(r.models[1].tSign, 2.769, 1e-3) && near(r.models[2].tSign, 2.585, 1e-3), 'IAL Oct21 Q3: 7 m s⁻¹; 2.77 s; 2.58 s');
+  ok(!KITS.models.solve({ u: 25, D: 48, a: 6, limit: 30, react: 0.2 }).ok, 'a limit above the speed: refused');
+  ok(!KITS.models.solve({ u: 25, D: 10, a: 6, limit: 13, react: 0.2 }).ok, 'a sign too close to brake to the limit: refused');
+  const g = KITS.models.graphs(r.f, 0, new Proxy({}, { get: () => '#000' }));
+  ok(g.every((x) => x.series.length === 3 && x.series.every((s) => s.dash)), 'three models on each graph, dashed along the road');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

@@ -75,7 +75,7 @@ this library: *covered* names the one of the twelve that does it.
 | 39 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Up at 39.2 m/s, hits ground 10 s later; height of O; time with speed ≤ 24.5 | 9.8 | **covered** by `up` |
 | 40 | Edexcel | IAL WME01 | Jan 2019 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Two birds leave nests; B is south-west of A at t = 4; find B's speed | – | **built**: `two-in-a-plane` (bearing 319°; p = −0.5, B at 1.12 m s⁻¹) |
 | 41 | Edexcel | IAL WME01 | Jan 2019 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Train 270 s, 4.5 km, accelerates 60 s, brakes 30 s; V; halfway time; times at V/4 | – | **built**: `journey-stages` (V = 20, 142.5 s, 15 s and 262.5 s) |
-| 42 | Edexcel | IAL WME01 | Oct 2021 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Car at 25 m/s, sign 48 m ahead; three braking models, one with a 0.2 s reaction delay | – | **candidate**: several stages along a line, one after another |
+| 42 | Edexcel | IAL WME01 | Oct 2021 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Car at 25 m/s, sign 48 m ahead; three braking models, one with a 0.2 s reaction delay | – | **built**: `three-models` (7 m s⁻¹; 2.77 s; 2.58 s) |
 | 43 | Edexcel | IAL WME01 | Oct 2021 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ball up from A above ground; v-t graph zero at 2.5 s; lands at 7 s; speed and height | 9.8 | **built**: `from-a-height`, the time to the top and the time to land (u = 24.5, h = 68.6 m) |
 | 44 | Edexcel | IAL WME01 | Oct 2021 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ship leaves port at 7:00; lighthouse due east at 8:48, north-east at 9:00; find it | – | **built**: `two-in-a-plane` (v = 10i − 5j; lighthouse 19i; due south at 19i − 1.5j) |
 | 45 | Edexcel | IAL WME01 | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Passes P, Q 10 s later at 28 m/s, PQ = 220; a; distance in the 5th second | – | **covered** by `road` |
@@ -556,4 +556,17 @@ enters linearly at the given time. Bearings from tan⁻¹ by quadrant.
 
 **The stage.** A map from above at one scale: sea (or sky), both tracks, ships
 or birds pointing their way, the vector from B to A, each moment ringed, north.
+
+### `three-models` — Braking for a sign: three models
+
+**Papers.** Edexcel IAL WME01 Oct 2021 Q3 (25 m s⁻¹, a sign 48 m ahead,
+braking at 6 m s⁻²: model 1 reaches it at 7 m s⁻¹; model 2, braking to 13 and
+holding, at t = 2.77 s; model 3, after 0.2 s at full speed, at t = 2.58 s).
+
+**Why it is built.** Each model is three stages of constant acceleration — the
+library's journey engine solves each — but no scenario shows one question
+under several models side by side, which is what the paper is about.
+
+**The stage.** Three lanes of one road, the same car in each, the same
+speed-limit sign; one clock; each car's time and speed at the sign.
 
