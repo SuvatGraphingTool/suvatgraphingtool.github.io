@@ -991,6 +991,9 @@ group('Known from two moments (9MA0/03 J18 Q8, WME01 J22 Q6)', () => {
   const along = K.solve({ u: { x: 0, y: -2 }, a: { x: 0, y: 1 }, ask: { dir: 'N' } });
   ok(along.ok && along.tDir === 2, 'always along the line: north from when it turns, t = 2');
   ok(!K.solve({ u: { x: 1 }, a: { x: 1 }, at2: { kind: 'r', t: 2, v: {} } }).ok, 'a second-moment time with no vector is refused');
+  const fused = K.solve({ u: { x: 3, y: 0 }, a: { x: 0, y: 2 }, ask: { t: 2 } });
+  ok(/3i\+2\(2j\)/.test(fused.askRows.map((r) => r.s.replace(/<[^>]+>/g, '').replace(/\s/g, '')).join(' ')), 'a time times a one-part vector never fuses into one number');
+  ok(/2\.5 s after the change/.test(K.ending(a).title), 'the headline gives the time after the change, as the paper asks');
   const f = a.f; ok(Math.abs(f.pos(2).x - 7) < 1e-12 && Math.abs(f.vel(4.5).x - f.vel(4.5).y) < 1e-12, 'the motion passes the second moment and turns north-east');
 });
 

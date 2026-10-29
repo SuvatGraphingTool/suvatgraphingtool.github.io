@@ -68,7 +68,7 @@ export function solveXt(k = {}) {
   for (let i = 1; i < P.length; i++) {
     const a = P[i - 1], b = P[i], v = snap((b.x - a.x) / (b.t - a.t));
     if (sp != null && Math.abs(v) > EPS && Math.abs(Math.abs(v) - sp) > 1e-6 * sp)
-      return fail(`The piece from ${M`t = ${d(a.t)}`} to ${M`t = ${d(b.t)}`} has speed ${M`${d(Math.abs(v))} [m s^-1]`}, not the ${M`${d(sp)} [m s^-1]`} given.`);
+      return fail(`The piece from ${M`t = ${d(a.t)}`} to ${M`t = ${d(b.t)}`} has speed ${M`${d(Math.abs(v))} [m s^-1]`}, not the ${M`${d(sp)} [m s^-1]`} given${blank.length && (a.t === P[blank[0]].t || b.t === P[blank[0]].t) ? ', with the blank corner placed by the speed of the piece on its other side' : ''}: check the corners, or clear the speed to let the pieces differ.`);
     S.push({ i, t0: a.t, t1: b.t, x0: a.x, x1: b.x, v });
   }
   const tEnd = P[P.length - 1].t, xEnd = P[P.length - 1].x;
@@ -99,7 +99,7 @@ export function solveXt(k = {}) {
         }
         const t = snap((v - c[1]) / (2 * c[2]));
         if (t > tEnd + EPS) ts.push(t);
-        tailRows.push({ f: M`v = ${d(v)}`, s: M`${vEq} = ${d(v)}`, r: M`t = ${d(t)}${t > tEnd + EPS ? '' : ` "(before" t = ${d(tEnd)}")"`}` });
+        tailRows.push({ f: M`v = ${d(v)}`, s: M`${vEq} = ${d(v)}`, r: M`t = ${d(t)}${t > tEnd + EPS ? '' : ` "(not after" t = ${d(tEnd)}")"`}` });
       }
       tail.speed = S2; tail.ts = ts.sort((p, q) => p - q); tail.always = always;
     }

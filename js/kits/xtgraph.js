@@ -75,6 +75,7 @@ export const xtgraph = {
 
   ending(s) {
     const title = s.blankT != null ? `T = ${tr(s.blankT)} s; ${tr(s.dist)} m travelled.` : `${tr(s.dist)} m travelled, ${tr(Math.abs(s.disp))} m from where it started.`;
+    const after = s.tail?.ts?.length ? ` Speed ${tr(s.tail.speed)} m s⁻¹ at t = ${tr(s.tail.ts[0])} s.` : '';
     const rows = s.S.map((x) => `<div class="ph-row" role="row" data-key="${x.i % 2 ? 'first' : 'second'}">
         <span class="ph-name" role="cell"><b>${x.i}</b><em>${Math.abs(x.v) < 1e-9 ? 'at rest' : x.v > 0 ? 'forwards' : 'back'}</em></span>
         <span role="cell"><b>${tr(x.t0)}</b></span><span role="cell"><b>${tr(x.t1)}</b></span><span role="cell"><b>${tr(x.v)}</b></span><span role="cell"><b>${tr(Math.abs(x.x1 - x.x0))}</b></span></div>`).join('');
@@ -82,6 +83,6 @@ export const xtgraph = {
         <div class="ph-head" role="row"><span role="columnheader">Piece</span><span role="columnheader">from</span><span role="columnheader">to</span>
           <span role="columnheader">${M`v`}</span><span role="columnheader">distance</span></div>${rows}
         <p class="ph-units">Times in ${M`[s]`}; ${M`v`} in ${M`[m s^-1]`}, away from A positive; distance in ${M`[m]`}.</p></div>`;
-    return { eyebrow: 'A displacement–time graph', title, body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}${table}`, real: true };
+    return { eyebrow: 'A displacement–time graph', title: title + after, body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}${table}`, real: true };
   },
 };

@@ -26,6 +26,8 @@ const have = (x) => typeof x === 'number' && isFinite(x);
 const hasV = (o) => o && (have(o.x) || have(o.y));
 const vec = (o) => ({ x: snap(o?.x ?? 0), y: snap(o?.y ?? 0) });
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
+// a vector after a number is always bracketed, so 2(2j) never reads as 22j
+const pv = (v) => `(${vsrc(v)})`;
 const vb = (v) => { const s = vsrc(v); return / /.test(s) || s.startsWith('-') ? `(${s})` : s; };
 const add = (p, q, k = 1) => ({ x: snap(p.x + k * q.x), y: snap(p.y + k * q.y) });
 const mag = (v) => snap(Math.hypot(v.x, v.y));
@@ -46,8 +48,8 @@ export function solveSnapshots(k = {}) {
   const r0 = vec(k.r0), tu = have(k.tu) ? k.tu : 0;
   const second = k.at2 && have(k.at2.t) && hasV(k.at2.v) ? { kind: k.at2.kind === 'v' ? 'v' : 'r', t: k.at2.t, v: vec(k.at2.v) } : null;
   if (k.at2 && have(k.at2.t) !== hasV(k.at2.v)) return fail(have(k.at2.t) ? 'The second moment has a time but no position or velocity: give its i and j parts, or clear the time.' : 'The second moment has a position or velocity but no time: give when it is.');
-  if (second && !(second.t > 0)) return fail('The second moment is at a time after t = 0.');
-  if (tu < 0) return fail('The time its velocity is known at is 0 or later.');
+  if (second && !(second.t > 0)) return fail('Give the second moment at a time after t = 0.');
+  if (tu < 0) return fail('Give the time its velocity is known at as 0 or later.');
   const T = second?.t;
   const rows = [];
   let u, a;
@@ -62,7 +64,7 @@ export function solveSnapshots(k = {}) {
     a = { x: snap((second.v.x - v1.x) / (T - tu)), y: snap((second.v.y - v1.y) / (T - tu)) };
     rows.push({ f: M`vec(a) = (vec v_2 - vec v_1)/(t_2 - t_1)`, s: M`(${vb(second.v)} - ${vb(v1)})/(${d(T)} - ${d(tu)})`, r: M`vec(a) = ${vb(a)} [m s^-2]` });
     u = add(v1, a, -tu);
-    if (tu > 0) rows.push({ f: M`vec(u) = vec v_1 - vec(a)t_1`, s: M`${vb(v1)} - ${d(tu)}${vb(a)}`, r: M`vec(u) = ${vb(u)} [m s^-1]` });
+    if (tu > 0) rows.push({ f: M`vec(u) = vec v_1 - vec(a)t_1`, s: M`${vb(v1)} - ${d(tu)}${pv(a)}`, r: M`vec(u) = ${vb(u)} [m s^-1]` });
   } else if (second?.kind === 'r') {
     if (tu !== 0) return fail('With two positions, give the velocity at t = 0.');
     if (gotU && gotA) return fail('Give the velocity or the acceleration, not both: with two positions, one fixes the other.');
@@ -71,16 +73,16 @@ export function solveSnapshots(k = {}) {
     if (gotU) {
       u = vec(k.u);
       a = { x: snap(2 * (dr.x - u.x * T) / (T * T)), y: snap(2 * (dr.y - u.y * T) / (T * T)) };
-      rows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: M`${vb(rT)} = ${vb(r0)} + ${d(T)}${vb(u)} + ½ * ${d(T)}^2 vec(a)`, r: M`vec(a) = ${vb(a)} [m s^-2]` });
+      rows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: M`${vb(rT)} = ${vb(r0)} + ${d(T)}${pv(u)} + ½ * ${d(T)}^2 vec(a)`, r: M`vec(a) = ${vb(a)} [m s^-2]` });
     } else {
       a = vec(k.a);
       u = { x: snap((dr.x - 0.5 * a.x * T * T) / T), y: snap((dr.y - 0.5 * a.y * T * T) / T) };
-      rows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: M`${vb(rT)} = ${vb(r0)} + ${d(T)}vec(u) + ½ * ${d(T)}^2 ${vb(a)}`, r: M`vec(u) = ${vb(u)} [m s^-1]` });
+      rows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: M`${vb(rT)} = ${vb(r0)} + ${d(T)}vec(u) + ½ * ${d(T)}^2 ${pv(a)}`, r: M`vec(u) = ${vb(u)} [m s^-1]` });
     }
   } else {
     if (!gotU || !gotA) return fail('Still needed: its velocity and its acceleration — or a second moment (a velocity or a position at a later time) to find one of them.');
     a = vec(k.a); u = add(vec(k.u), a, -tu);
-    if (tu > 0) rows.push({ f: M`vec(u) = vec(v) - vec(a)t`, s: M`${vb(vec(k.u))} - ${d(tu)}${vb(a)}`, r: M`vec(u) = ${vb(u)} [m s^-1]` });
+    if (tu > 0) rows.push({ f: M`vec(u) = vec(v) - vec(a)t`, s: M`${vb(vec(k.u))} - ${d(tu)}${pv(a)}`, r: M`vec(u) = ${vb(u)} [m s^-1]` });
   }
   const derived = [`${M`vec(a) = ${vb(a)}`}, ${M`abs(vec a) = ${d(mag(a))} [m s^-2]`}`];
   rows.push({ f: M`abs(vec a) = sqrt(a_x^2 + a_y^2)`, s: M`sqrt(${sq(a.x)}^2 + ${sq(a.y)}^2)`, r: M`abs(vec a) = ${d(mag(a))} [m s^-2]` });
@@ -92,8 +94,8 @@ export function solveSnapshots(k = {}) {
   if (hasV(k.a2)) {
     if (!second) return fail('A new acceleration starts at the second moment: give that moment.');
     const a2 = vec(k.a2), rS = m1.pos(T), vS = m1.vel(T);
-    switchRows.push({ f: M`vec(v) = vec(u) + vec(a)t`, s: M`${vb(u)} + ${d(T)}${vb(a)}`, r: M`vec(v) = ${vb(vS)} [m s^-1]` });
-    if (second.kind !== 'r') switchRows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: M`${vb(r0)} + ${d(T)}${vb(u)} + ½ * ${d(T)}^2 ${vb(a)}`, r: M`vec r = ${vb(rS)} [m]` });
+    switchRows.push({ f: M`vec(v) = vec(u) + vec(a)t`, s: M`${vb(u)} + ${d(T)}${pv(a)}`, r: M`vec(v) = ${vb(vS)} [m s^-1]` });
+    if (second.kind !== 'r') switchRows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: M`${vb(r0)} + ${d(T)}${pv(u)} + ½ * ${d(T)}^2 ${pv(a)}`, r: M`vec r = ${vb(rS)} [m]` });
     stage2 = { t0: T, r0: rS, u: vS, a: a2, m: planeMotion({ r0: rS, u: vS, a: a2 }, Infinity) };
   }
   const pos = (t) => (stage2 && t > T ? stage2.m.pos(t - T) : m1.pos(t));
@@ -104,11 +106,11 @@ export function solveSnapshots(k = {}) {
   const askRows = [], notes = [], marks = [];
   if (have(k.ask?.t)) {
     const t = k.ask.t;
-    if (!(t >= 0)) return fail('The time asked about is 0 or later.');
+    if (!(t >= 0)) return fail('Give the time asked about as 0 or later.');
     const v = vel(t), r = pos(t), inTwo = stage2 && t > T, tt = inTwo ? t - T : t, base = inTwo ? stage2 : { u, a, r0 };
-    askRows.push({ f: M`vec(v) = vec(u) + vec(a)t`, s: M`${vb(base.u)} + ${d(snap(tt))}${vb(base.a)}`, r: M`vec(v) = ${vb(v)} [m s^-1]` });
+    askRows.push({ f: M`vec(v) = vec(u) + vec(a)t`, s: M`${vb(base.u)} + ${d(snap(tt))}${pv(base.a)}`, r: M`vec(v) = ${vb(v)} [m s^-1]` });
     askRows.push({ f: M`abs(vec v) = sqrt(v_x^2 + v_y^2)`, s: M`sqrt(${sq(v.x)}^2 + ${sq(v.y)}^2)`, r: M`abs(vec v) = ${d(mag(v))} [m s^-1]` });
-    askRows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: M`${vb(base.r0)} + ${d(snap(tt))}${vb(base.u)} + ½ * ${d(snap(tt))}^2 ${vb(base.a)}`, r: M`vec r = ${vb(r)} [m]` });
+    askRows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: M`${vb(base.r0)} + ${d(snap(tt))}${pv(base.u)} + ½ * ${d(snap(tt))}^2 ${pv(base.a)}`, r: M`vec r = ${vb(r)} [m]` });
     notes.push(`At ${M`t = ${d(t)} [s]`} its speed is ${M`${d(mag(v))} [m s^-1]`}, at ${M`${vb(r)} [m]`}.`);
     marks.push({ t, what: 'asked' });
   }
@@ -135,7 +137,7 @@ export function solveSnapshots(k = {}) {
       r: tt != null && !from ? M`t = ${d(tt)} [s]` : from ? M`"always along it"` : M`"never"` });
     const when = (t) => (stage2 ? `${M`${d(t)} [s]`} after the acceleration changes, at ${M`t = ${d(snap(st.t0 + t))} [s]`}` : `at ${M`t = ${d(t)} [s]`}`);
     if (ok) {
-      tDir = snap(st.t0 + tt); dirFrom = from && tt > 0;
+      tDir = snap(st.t0 + tt); dirFrom = from && (tt > 0 || still);
       notes.push(from ? `Its velocity is always along that line; it is moving ${C.word} from the moment it starts to point that way, ${when(tt)}.`
         : `It is moving ${C.word} ${when(tt)}, with velocity ${M`${vb(vec(v))} [m s^-1]`}.`);
       marks.push({ t: tDir, what: C.word });
@@ -144,11 +146,11 @@ export function solveSnapshots(k = {}) {
         : `It is never moving ${C.word}${stage2 ? ' after the change' : ''}.`);
   }
 
-  const tEnd = Math.max(T ?? 0, have(k.ask?.t) ? k.ask.t : 0, tDir ?? 0, tu, 1);
+  const tEnd = Math.max(stage2 ? T * 2 : (T ?? 0), have(k.ask?.t) ? k.ask.t : 0, tDir ?? 0, tu, 1);
   const tMax = snap(tEnd * 1.15);
   const f = { kind: 'snapshots', tMax, tFlight: tMax, pos, vel, acc, T: T ?? null, second, switched: !!stage2, marks, r0,
     params: { u: mag(u), g: 0, h: 0, theta: 0 } };
-  return { ok: true, mode: 'snapshots', u, a, a2: stage2?.a ?? null, T, rows, switchRows, askRows, notes, derived, f, tDir, dirFrom, dirWord: tDir != null ? COMPASS[k.ask.dir].word : null, dirAsked: k.ask?.dir && COMPASS[k.ask.dir] ? COMPASS[k.ask.dir].word : null, found: second?.kind === 'r' && hasV(k.a) ? 'u' : 'a', askT: have(k.ask?.t) ? k.ask.t : null, askSpeed: have(k.ask?.t) ? mag(vel(k.ask.t)) : null };
+  return { ok: true, mode: 'snapshots', u, a, a2: stage2?.a ?? null, T, rows, switchRows, askRows, notes, derived, f, tDir, dirAfter: stage2 && tDir != null ? snap(tDir - T) : null, dirFrom, dirWord: tDir != null ? COMPASS[k.ask.dir].word : null, dirAsked: k.ask?.dir && COMPASS[k.ask.dir] ? COMPASS[k.ask.dir].word : null, found: second?.kind === 'r' && hasV(k.a) ? 'u' : 'a', askT: have(k.ask?.t) ? k.ask.t : null, askSpeed: have(k.ask?.t) ? mag(vel(k.ask.t)) : null };
 }
 
 /** The working: the first stage from the two moments, the change, the questions. */
