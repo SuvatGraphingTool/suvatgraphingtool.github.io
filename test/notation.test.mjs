@@ -34,6 +34,7 @@ import { solveOvertake, overtakeWorking } from '../js/core/overtake.js';
 import { solvePlane, planeWorking } from '../js/core/plane.js';
 import { solveTarget, targetWorking } from '../js/core/target.js';
 import { solveHeight } from '../js/core/height.js';
+import { solveCatch } from '../js/core/catch.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { KITS } from '../js/kits/index.js';
 import { LIBRARY } from '../js/library.js';
@@ -321,6 +322,33 @@ group('The Past-paper library: from a cliff or a tower, everything it says', () 
   for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 100, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: thrown, chased and caught, everything it says', () => {
+  const K = KITS.catcher;
+  const INPUTS = [
+    { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2 }, find: 'a' }, { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2, a: 6.34 } },
+    { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { a: 8 }, find: 't0' }, { g: 10, h: 0, u: 20, theta: 45, yc: 1, c: { a: 2, t0: 0.5 }, find: 'u' },
+    { g: 9.81, h: 2, u: 10, theta: 30, yc: 0.5, c: { t0: 0, u: 1, a: 1 } }, { g: 9.8, u: 14, theta: 60, yc: 30, find: 'a' }, {},
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveCatch(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); } if (st.note) check('note', st.note, bag); }
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 

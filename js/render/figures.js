@@ -365,6 +365,38 @@ const STRIDE = 2 * (sweep(SWING) - sweep(-SWING));
 
 /** A ball, L across, resting on y = Y with its front at X — the stadium's
     ball (ballSprite), so a ball looks the same everywhere. */
+/**
+ * A dog, side on, running (or standing, `still`): L is its length, nose to
+ * tail; its front (the nose) is at X. Four legs in a gallop — the front pair
+ * and the back pair reach and gather in turn — a long body, a head with an
+ * ear, and a tail out behind. Drawn in the page's ink like every figure here.
+ */
+export function dog(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still = false } = {}) {
+  const ink = ring || P.strong, w = Math.max(1.6, L * 0.045);
+  at(g, X, Y, dir, () => {
+    const hgt = L * 0.42, leg = hgt * 0.55, bodyY = -leg - L * 0.05;
+    const a = phase * TAU, spread = still ? 0.05 : 0.55;
+    // the legs: front pair at the shoulder, back pair at the hip; in a gallop
+    // the pairs swing out of step with each other
+    const legs = [[-L * 0.3, a, 1], [-L * 0.36, a + 0.6, 1], [-L * 0.74, a + Math.PI, -1], [-L * 0.8, a + Math.PI + 0.6, -1]];
+    for (const [hx, ph, side] of legs) {
+      const sw = Math.sin(ph) * spread;
+      const K = { x: hx + Math.sin(sw) * leg * 0.55, y: bodyY + leg * 0.5 };
+      const F = { x: hx + Math.sin(sw) * leg * 1.05 + side * (still ? 0 : leg * 0.08), y: still ? 0 : -Math.max(0, Math.cos(ph)) * leg * 0.18 };
+      limb(g, [{ x: hx, y: bodyY }, K, F], ink, w);
+    }
+    // the body, the neck and head, the ear, the tail
+    g.fillStyle = P.card; g.strokeStyle = ink; g.lineWidth = w; g.lineJoin = 'round';
+    g.beginPath(); g.ellipse(-L * 0.55, bodyY - L * 0.04, L * 0.3, L * 0.1, 0, 0, TAU); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(-L * 0.3, bodyY - L * 0.08); g.lineTo(-L * 0.16, bodyY - L * 0.2); g.stroke();
+    g.beginPath(); g.ellipse(-L * 0.1, bodyY - L * 0.22, L * 0.1, L * 0.065, 0.15, 0, TAU); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(-L * 0.01, bodyY - L * 0.2); g.lineTo(0, bodyY - L * 0.19); g.stroke();
+    g.beginPath(); g.moveTo(-L * 0.14, bodyY - L * 0.27); g.lineTo(-L * 0.18, bodyY - L * 0.16); g.stroke();
+    g.beginPath(); g.moveTo(-L * 0.84, bodyY - L * 0.06); g.quadraticCurveTo(-L * 0.95, bodyY - L * 0.12, -L * 1.0, bodyY - L * 0.2 + (still ? 0 : Math.sin(a) * L * 0.03)); g.stroke();
+    dot(g, -L * 0.07, bodyY - L * 0.24, Math.max(1, L * 0.012), { fill: ink });
+  });
+}
+
 export function ball(g, X, Y, L, P, { dir = 1, ring = null } = {}) {
   ballSprite(g, X - (dir * L) / 2, Y - L / 2, L / 2, { ring });
 }

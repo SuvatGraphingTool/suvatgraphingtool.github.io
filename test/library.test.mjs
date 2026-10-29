@@ -16,6 +16,7 @@ import { solveOvertake, overtakeWorking, mover, timeAt } from '../js/core/overta
 import { solvePlane, planeWorking } from '../js/core/plane.js';
 import { solveTarget, targetWorking, flight } from '../js/core/target.js';
 import { solveHeight, levelRows } from '../js/core/height.js';
+import { solveCatch, catchWorking } from '../js/core/catch.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { toLevel, rebound, timesAt } from '../js/core/stages.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
@@ -756,6 +757,24 @@ group('Audit 4: from a cliff or a tower', () => {
   ok(!solveHeight({ place: 'cliff', h: 30, theta: 90, u: 20, g: 10 }).derived.some((x) => /on the ground/.test(strip(x))), 'a cliff into the sea never says "on the ground"');
   const drop = solveHeight({ place: 'cliff', h: 30, theta: 30, u: 0, g: 9.8 });
   ok(drop.ok && /dropped/.test(strip(drop.notes.join(' '))) && !/more than enough/.test(strip(drop.notes.join(' '))), 'speed 0 at an angle: a drop, said so');
+});
+
+group('Thrown, chased and caught: the paper and its edges', () => {
+  const a23 = solveCatch({ g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2 }, find: 'a' });
+  ok(a23.ok && near(a23.tc, 2.5925, 1e-3) && near(a23.xc, 18.147, 1e-3) && near(a23.catcher.a, 6.34, 0.005), 'AQA 7357/2 J23 Q20: caught at 2.59 s, 18.15 m out, a = 6.34');
+  const back = solveCatch({ g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2, a: 6.34 } });
+  ok(back.ok && /catches it/.test(strip(back.notes.join(' '))), 'typed back at the rounded 6.34: it catches it, to the figures given');
+  const t0 = solveCatch({ g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { a: 8 }, find: 't0' });
+  ok(t0.ok && near(t0.f.dog.pos(t0.tc), t0.xc, 1e-6), 'finding the delay: the dog is at the ball then');
+  const u0 = solveCatch({ g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { a: 2, t0: 0.2 }, find: 'u' });
+  ok(u0.ok && near(u0.f.dog.pos(u0.tc), u0.xc, 1e-6), 'finding the starting speed: the dog is at the ball then');
+  for (const k of [{ g: 9.8, u: 14, theta: 60, yc: 30, find: 'a' }, { g: 9.8, u: 14, theta: 60, yc: 0.3, c: { t0: 5 }, find: 'a' }, { g: 9.8, u: 14, theta: 0, yc: 0, find: 'a' },
+    { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { a: 5 }, find: 't0' }, { u: 14, theta: 60, yc: 0.3 }]) {
+    ok(!solveCatch(k).ok && solveCatch(k).reason, `refused with a reason: ${JSON.stringify(k)}`);
+  }
+  for (const s of catchWorking(a23)) for (const r of s.rows) ok(!/NaN|undefined|Infinity/.test(r.f + r.s + r.r), 'no NaN in the working');
+  const g = KITS.catcher.graphs(a23.f, 0, new Proxy({}, { get: () => '#000' }));
+  ok(g.every((x) => x.series[0].dash && x.series[1].dash && !x.series[2].dash), 'across dashed, up solid, on every graph');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

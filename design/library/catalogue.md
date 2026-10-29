@@ -48,7 +48,7 @@ this library: *covered* names the one of the twelve that does it.
 | 12 | AQA | 7357/2 | Jun 2022 | 12 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202022%20QP.pdf) | MCQ: speed u becomes 4u in 5 s; a in terms of u | – | **covered**: multiple choice in terms of u, no numbers to type |
 | 13 | AQA | 7357/2 | Jun 2022 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202022%20QP.pdf) | 7 m/s at θ; show h = 2.5 sin²θ; max h for θ ≤ 60° | 9.8 | **covered**: symbolic in θ; arc shows any one θ |
 | 14 | AQA | 7357/2 | Jun 2023 | 13 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202023%20QP.pdf) | Falling ball passes M at u and N at 3u; time M to N; bound on height of M | g | **covered**: symbolic (M at u, N at 3u); dropped shows any one case |
-| 15 | AQA | 7357/2 | Jun 2023 | 20 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202023%20QP.pdf) | Ball thrown from 1.8 m at 14 m/s, 60°; dog starts 0.2 s later from rest, catches it at 0.3 m; find dog's acceleration | 9.8 | **candidate**: two objects meeting: a projectile caught by a dog that starts 0.2 s later |
+| 15 | AQA | 7357/2 | Jun 2023 | 20 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202023%20QP.pdf) | Ball thrown from 1.8 m at 14 m/s, 60°; dog starts 0.2 s later from rest, catches it at 0.3 m; find dog's acceleration | 9.8 | **built**: `catch-it` (caught at 2.59 s, 18.15 m out; a = 6.34) |
 | 16 | Edexcel | 6677/01 M1 | Jan 2012 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Stone up and back in 3 4/7 s; find u, max height, time at least 6.6 m above A | 9.8 | **covered** by `time-above` |
 | 17 | Edexcel | 6677/01 M1 | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | 885 m trip: accelerate over T/3 s to 15 m/s, steady T s, brake at 2.5 m/s²; find T, a | – | **built**: `journey-stages` (T = 48, a = 0.9375) |
 | 18 | Edexcel | 6677/01 M1 | Jan 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Two boats at constant velocity; when is P due west of Q, and how far apart then | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
@@ -467,4 +467,26 @@ or the time; and a height above the throw to ask about.
 
 **What makes it general.** Every throw from a height onto level sea or ground.
 Not yet: a well (dropped into it), a bridge over a river, a table edge.
+
+### `catch-it` — Thrown, chased and caught
+
+**Papers.** AQA 7357/2 Jun 2023 Q20 (a ball thrown from 1.8 m at 14 m s⁻¹, 60°;
+a dog sets off from rest 0.2 s later and catches it 0.3 m above the sand:
+caught at t = 2.59 s, 18.15 m out, so a = 6.34 m s⁻²).
+
+**Why the twelve cannot.** Each of the twelve is one object. None has a second
+moving along the ground after a projectile, starting later, to meet it.
+
+**How it is solved.** The twelve's `flight` for the ball; the later root of
+the vertical equation at the catch height gives the time; x = uₓt the place;
+the dog's one equation, over its own running time t − t₀, the hidden number.
+
+**The stage.** A beach: sky, a strip of sea, sand; the thrower standing with
+the launch height marked; the dog waiting, then galloping out with its
+velocity along the sand (dashed); the ball's arc with its velocity and
+components; the catch ringed with its time, height and distance.
+
+**What the student varies.** The throw (height, speed, angle), the catch
+height, and the dog's delay, starting speed and acceleration — any one of the
+three can be the number to find.
 

@@ -65,6 +65,7 @@ A kit is an object with:
 | `plane` — `js/kits/plane.js` | `vectors-ij` |
 | `target` — `js/kits/target.js` | `over-the-wall` |
 | `height` — `js/kits/height.js` | `from-a-height` |
+| `catcher` — `js/kits/catcher.js` | `catch-it` |
 | `bounce` — `js/kits/bounce.js` | `bounce` |
 
 ## Engine models — `js/core/`
@@ -270,6 +271,17 @@ that last as working; the rest of the working is the twelve's `buildWorking`.
 
 Used by: `from-a-height`.
 
+### Thrown and caught — `js/core/catch.js`
+
+`solveCatch({ g, h, u, theta, yc, c: { t0, u, a }, find })` — the twelve's
+projectile (`flight`) and one straight-line run along the ground: the ball's
+vertical motion gives when it is at the catch height (on the way down), its
+horizontal motion where; the catcher's s = u(t − t₀) + ½a(t − t₀)² gives the
+number the paper hides (`find`: 'a', 'u' or 't0'), or with all given, how far
+it is from the ball then. `catchWorking` lays the two out.
+
+Used by: `catch-it`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -282,6 +294,18 @@ its top level, so it can go into a product or after a minus as it stands
 built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
+
+### A beach — `js/render/beach.js`
+
+`render(canvas, cam, { traj, t, show, fired })` for `traj.kind === 'catch'`.
+One scale both ways; sky and a strip of sea from `heights.js`, `sand(g, x0,
+x1, Y, bottom)` (exported), the thrower (`runner`, standing) and the `dog`
+from `figures.js`, the catch ringed, launch and catch heights and the catch
+distance as dimension lines. Used by: `catch-it`.
+
+`figures.js` gained `dog(g, X, Y, L, P, { dir, phase, still })` — a dog side on,
+galloping; a standalone export, not one of the road's FIGURES.
+
 
 ### A cliff or a tower — `js/render/heights.js`
 

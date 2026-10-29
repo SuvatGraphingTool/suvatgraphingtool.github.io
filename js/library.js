@@ -210,4 +210,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: the launch from what you gave, its greatest height, the time in the air, the speed it lands at, and when it is at the height asked about.',
     } },
+  { id: 'catch-it', group: 'library', kit: 'catcher',
+    name: 'Thrown, chased and caught',
+    sub: 'a ball thrown on the beach, a dog that sets off after it — how fast must it speed up?',
+    note: 'A ball thrown forwards from someone\u2019s hand, and a dog that sets off along the sand a moment later with a constant acceleration and catches it on the way down. Two motions, one moment: the ball\u2019s vertical motion says when it is at the catch height, its horizontal motion where, and the dog\u2019s one equation the number the paper hides.',
+    params: { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2 }, find: 'a' },
+    place: 'Side on: a beach, the thrower, the dog and the ball',
+    sources: [
+      { board: 'AQA', paper: '7357/2', session: 'Jun 2023', q: '20' },
+    ],
+    tags: ['dog', 'catch', 'caught', 'chase', 'beach', 'thrown', 'projectile', 'two objects', 'meet', 'sets off later', 'acceleration',
+           'fielder', 'ball', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers\u2019 model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['The ball is a particle moving freely under gravity', 'no air resistance, no spin; only g acts on it.'],
+        ['The dog runs in a straight line with a constant acceleration', 'from beside the thrower, along level sand, from the moment it sets off; a real dog speeds up unevenly and swerves.'],
+        ['Caught at one height', 'the catch happens exactly when the ball comes down to that height above the sand, wherever the dog\u2019s mouth really is.'],
+      ],
+      caveat: 'What the engine did compute is above: when and where the ball is at the catch height, and the dog\u2019s number that puts it there then.',
+    } },
 ];

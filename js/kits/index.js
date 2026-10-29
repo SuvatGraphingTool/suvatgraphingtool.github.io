@@ -7,5 +7,6 @@ import { plane } from './plane.js';
 import { target } from './target.js';
 import { bounce } from './bounce.js';
 import { height } from './height.js';
+import { catcher } from './catcher.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher };
