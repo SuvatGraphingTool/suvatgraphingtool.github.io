@@ -70,7 +70,8 @@ export function solveHeight(k0 = {}) {
   // the twelve's solver, as the twelve use it: s is how far out it lands
   // (thrown at an angle), or nothing when it is straight up or down
   const r = solveLaunch({ u, v: k.v, t: k.t, s: k.s, g: k.g, theta: k.theta, h: k.h });
-  if (!r.ok) return fail(r.reason);
+  // the twelve's solver speaks of the ground; here it is the place's own
+  if (!r.ok) return fail(String(r.reason).replace(/\bthe ground\b/g, Pl.below).replace(/\bthe launch point\b/g, Pl.from || 'where it was thrown from'));
   const hh = have(k.h) ? k.h : snap(r.f.params.h);
   if (have(k0.tTop) && have(k.t) && k0.tTop >= k.t - 1e-9) return fail(`The time to the top, ${M`${d(k0.tTop)} [s]`}, is not before the ${M`${d(k.t)} [s]`} it takes to land: it must reach its top first.`);
   if (!(hh > 0)) return fail(`Landing then, it would have started at or below ${Pl.below}: that time is too short for a fall from ${Pl.top}.`);
@@ -83,7 +84,9 @@ export function solveHeight(k0 = {}) {
   // the angle is what makes it vertical, never a value it did not need
   // and the height is the place itself, never a value it did not need
   const drop = Math.hypot(f.ux, f.uy) < 1e-9;
-  const notes = r.notes.filter((n) => !(/more than enough/.test(n) && (vertical || drop || /launch height/.test(n))));
+  const notes = r.notes.filter((n) => !(/more than enough/.test(n) && (vertical || drop || /launch height/.test(n))))
+    // the found height is said below, in this scene's own words
+    .filter((n) => have(k0.h) || !/No launch height given/.test(n));
   if (drop && !vertical) notes.unshift('At no speed the angle does nothing: it is dropped, and falls straight down.');
   const T = snap(f.tFlight), top = snap(f.apexHeight), out = snap(z(f.range)), vL = snap(Math.abs(f.vLanding));
   const lines = [];

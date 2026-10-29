@@ -69,6 +69,8 @@ export const twoplane = {
         { k: 'A at', v: `(${num(a.x, 2)}, ${num(a.y, 2)})`, unit: U.len, hue: 'disp' },
         { k: 'B at', v: `(${num(b.x, 2)}, ${num(b.y, 2)})`, unit: U.len, hue: 'disp' },
         { k: 'Apart', v: num(f.gap(t), 2), unit: U.len, hue: 'disp' },
+        { k: 'A\u2019s speed', v: num(Math.hypot(f.A.v.x, f.A.v.y), 2), unit: U.speedText, hue: 'vel' },
+        { k: 'B\u2019s speed', v: num(Math.hypot(f.B.v.x, f.B.v.y), 2), unit: U.speedText, hue: 'vel' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: U.time }],
     };

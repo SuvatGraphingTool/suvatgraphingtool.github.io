@@ -861,6 +861,14 @@ group('Two ships: the critic’s round 1', () => {
   ok(sqRow.startsWith('(−4)2'), 'a negative number squared is bracketed', sqRow);
 });
 
+group('Audit 7', () => {
+  const same = solveTwoPlane({ A: { r0: { x: 0, y: 0 }, v: { x: 3, y: 4 } }, B: { r0: { x: 3, y: 4 }, v: { x: 3, y: 4 } }, at: { apart: 5 } });
+  ok(/the whole time/.test(strip(same.notes.slice(-1)[0])), 'the same velocity, 5 apart: the whole time');
+  ok(/neither moves/.test(strip(solveTwoPlane({ A: { v: { x: 0, y: 0 } }, B: { r0: { x: 5, y: 0 }, v: { x: 0, y: 0 } }, at: { due: 'W' } }).notes.slice(-1)[0])), 'both at rest: neither moves');
+  ok(!solveHeight({ place: 'cliff', theta: 90, tTop: 2.5, t: 7, g: 9.8 }).notes.some((n) => /No launch height given/.test(strip(n))), 'the found height is said once, in the scene’s words');
+  ok(!/ground/.test(strip(solveHeight({ place: 'cliff', h: 0.5, u: 20, theta: 60, s: 30, t: 2, g: 9.8 }).reason || '')), 'a cliff’s refusal never says the ground');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

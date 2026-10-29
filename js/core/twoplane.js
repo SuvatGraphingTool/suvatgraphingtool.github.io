@@ -150,7 +150,7 @@ export function solveTwoPlane(k = {}) {
       const tz = tiny(q1) ? null : snap(-q0 / q1);
       notes.push(tiny(q0) && tiny(q1) ? 'They are at the same place the whole time: there is no direction between them.'
         : tiny(q0) ? (q1 > 0 ? `“${say(D)}” from the start on: they set off from the same place.` : `Never “${say(D)}”: they set off from the same place and part the other way.`)
-        : tz == null ? (q0 > 0 ? `“${say(D)}” the whole time: they move along that line together.` : `Never “${say(D)}”: they stay on that line the other way round.`)
+        : tz == null ? (q0 > 0 ? `“${say(D)}” the whole time: ${tiny(Math.hypot(A.v.x, A.v.y)) && tiny(Math.hypot(B.v.x, B.v.y)) ? 'neither moves' : 'they move along that line together'}.` : `Never “${say(D)}”: they stay on that line the other way round.`)
           : q0 > 0 ? (tz > 0 ? `“${say(D)}” from the start until ${M`t = ${d(tz)} [${U.time}]`}, when they are at the same place; after that, the other way round.` : `“${say(D)}” the whole time.`)
             : (tz > 0 ? `“${say(D)}” from ${M`t = ${d(tz)} [${U.time}]`} on, when they pass the same place; before that, the other way round.` : `Never “${say(D)}”.`));
     } else if (tiny(a1)) {
@@ -175,10 +175,14 @@ export function solveTwoPlane(k = {}) {
   if (have(at.apart)) {
     if (!(at.apart >= 0)) return fail('A distance apart is a size: give it as 0 or more.');
     const q2 = m.x * m.x + m.y * m.y, q1 = 2 * (c.x * m.x + c.y * m.y), q0 = c.x * c.x + c.y * c.y - at.apart * at.apart;
+    // the same velocity: the gap never changes, so it is that far apart always or never
+    const always = tiny(q2) && tiny(q0);
     const ts = tiny(q2) ? (tiny(q0) ? [0] : []) : quadRoots(q2, q1, q0).map(snap).filter((t) => t >= -1e-9);
     apartRows.push({ f: M`(abs(vec r_A - vec r_B))^2 = d^2`, s: M`${sq(lin(c.x, m.x))}^2 + ${sq(lin(c.y, m.y))}^2 = ${d(at.apart)}^2`,
       r: ts.length ? M`t = ${ts.map((t) => d(t)).join(' "or" ')} [${U.time}]` : M`"no time from the start"` });
-    notes.push(ts.length ? `They are ${M`${d(at.apart)} [${U.len}]`} apart at ${ts.map((t) => M`t = ${d(t)} [${U.time}]`).join(' and ')}.` : `They are never ${M`${d(at.apart)} [${U.len}]`} apart after the start.`);
+    notes.push(always ? `They are ${M`${d(at.apart)} [${U.len}]`} apart the whole time: with the same velocity, the gap between them never changes.`
+      : ts.length ? `They are ${M`${d(at.apart)} [${U.len}]`} apart at ${ts.map((t) => M`t = ${d(t)} [${U.time}]`).join(' and ')}.`
+        : at.apart < 1e-12 ? 'They never meet.' : `They are never ${M`${d(at.apart)} [${U.len}]`} apart after the start.`);
     if (ts.length) derived.push(`${M`${d(at.apart)} [${U.len}]`} apart at ${M`t = ${ts.map((t) => d(t)).join(', ')} [${U.time}]`}`);
     answers.push({ kind: 'apart', times: ts });
   }
