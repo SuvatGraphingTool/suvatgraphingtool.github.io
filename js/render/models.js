@@ -58,8 +58,10 @@ export function render(canvas, cam, o) {
   // ── where things go: three carriageways stacked under the readouts, each
   // with its verge behind it, and the tape along the bottom
   const L0 = clamp(w * 0.095, 44, 92), tallCar = 0.45 * L0;
-  const top0 = sc.hudB + 6, tapeY = h - 36;
-  const pitch = clamp((tapeY - 26 - top0) / 3, 64, 140);
+  // the top carriageway's verge, where its name goes, starts clear of the
+  // readouts: R[0] ≥ hudB + 38, so the pitch is solved from that
+  const tapeY = h - 36;
+  const pitch = clamp((tapeY - 71 - sc.hudB) / 2.45, 56, 140);
   const d = clamp(pitch * 0.45, 30, 56), v = pitch - d - 4;
   const R = [0, 1, 2].map((i) => Math.round(tapeY - 26 - d - 7 - (2 - i) * pitch));
   const left = L0 + (phone ? 16 : 26), right = w - (phone ? 26 : 50);
@@ -79,16 +81,16 @@ export function render(canvas, cam, o) {
     g.save(); g.fillStyle = 'rgba(243,238,230,0.85)'; g.fillRect(X(0) - 1.5, Y + 3, 3, d - 7); g.restore();
     g.save(); g.fillStyle = 'rgba(243,238,230,0.55)'; for (let y = Y + 4; y < Y + d - 5; y += 7) g.fillRect(X(D) - 1.5, y, 3, 4); g.restore();
     speedSign(g, signX, Y - 11, s3(f.limit), P, rr);
-    L.reserve({ x: signX - rr, y: Y - 14 - 2 * rr, w: rr * 2 + 60, h: 2 * rr + 4 });
+    L.reserve({ x: signX - rr, y: Y - 12 - 2 * rr, w: rr * 2 + 60, h: 2 * rr });
 
     // the car, its brake lights on while it slows
     const x = m.pos(t), vel = m.vel(t), acc = m.acc ? m.acc(t) : 0;
     const xf = X(x), yw = wy.near;
+    // the moment it reaches its sign — or stops short of it: a ring behind it
+    const { age } = ageOf(t, m.tSign, f.tMax, life);
+    pulse(g, X(m.xEnd) - L0 / 2, yw - tallCar * 0.5, age, life, P.mark, { radius: Math.max(26, L0 * 0.55) });
     car(g, xf, yw, L0, P, { dir: 1, phase: phaseFor('car', L0, xf - X(0)), brake: acc < -1e-9 && vel > 1e-6 });
     L.reserve({ x: xf - L0, y: yw - tallCar, w: L0, h: tallCar });
-    // the moment it reaches its sign — or stops short of it
-    const { age } = ageOf(t, m.tSign, f.tMax, life);
-    pulse(g, X(m.xEnd), yw - tallCar * 0.45, age, life, P.mark, { radius: 26 });
 
     // its name, on the verge behind its own carriageway
     L.add(phone ? `Model ${i + 1}` : `Model ${i + 1}: ${m.does}`, X(0) + 8, Y - 24,

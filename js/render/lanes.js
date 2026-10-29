@@ -53,9 +53,24 @@ export function s3(x) {
     graph card. */
 export function screen(w, h, n, wide = 146, wideL = 196) {
   const phone = w < 520;
-  const hudR = 16 + (phone ? wide : wideL) + 4, hudB = 16 + n * (phone ? 55 : 64) + (n - 1) * 8 + 4;
+  const hudR = 16 + (phone ? wide : wideL) + 4, hudB = 16 + n * (phone ? 55 : 64) + (n - 1) * 8;
   return { phone, hudR, hudB, cardX0: hudR + (phone ? 4 : 44), cardY0: phone ? 80 : 90, cardX1: w - (phone ? 8 : 12) };
 }
+
+/** Each road figure's true shape, per px of its drawn size L: how tall it
+    stands (a rider or a runner is nearly L tall, a car under half), where a
+    badge sits on it (back from its front, up from the ground) and how high its
+    velocity arrow rides. */
+export const BODY = {
+  car: { h: 0.46, bx: 0.62, by: 0.22, vy: 0.2 },
+  lorry: { h: 0.45, bx: 0.5, by: 0.25, vy: 0.2 },
+  cyclist: { h: 0.97, bx: 0.46, by: 0.43, vy: 0.32 },
+  motorcycle: { h: 0.82, bx: 0.5, by: 0.4, vy: 0.3 },
+  runner: { h: 0.97, bx: 0.2, by: 0.62, vy: 0.45 },
+};
+
+/** The least height a person or a rider is drawn at, so it reads. */
+export const PERSON_MIN = (phone) => (phone ? 46 : 56);
 
 /** A sheet for a graph, in the screen's pixels: the scenery's paper card. */
 export function card(g, x0, y0, x1, y1) {
@@ -206,18 +221,30 @@ export function render(canvas, cam, o) {
   // tenth of the width; a train of three long enough to read as one
   const kind = (p) => (rail ? 'train' : FIGURES[f.figs?.[p.name]] ? f.figs[p.name] : 'car');
   const base = rail ? clamp(w * 0.24, 130, 230) : clamp(w * 0.1, 46, 100);
-  const lenOf = (p) => (rail ? base : Math.max(FIGURES[kind(p)].min || 0, base * FIGURES[kind(p)].size / FIGURES.car.size));
-  const tallOf = (p) => (rail ? Math.min(base / 3 * 0.42, base * 0.3) + 8 : FIGURES[kind(p)].top * lenOf(p) / FIGURES[kind(p)].size);
+  // a car at its length; a person or a rider at a height that reads, a little
+  // taller than the car, never under PERSON_MIN
+  const body = (p) => BODY[kind(p)] || BODY.car;
+  const lenOf = (p) => {
+    if (rail) return base;
+    const k = kind(p), b = body(p);
+    if (b.h < 0.6) return base * FIGURES[k].size / FIGURES.car.size;
+    return Math.max(PERSON_MIN(phone), base * 0.62) / b.h;
+  };
+  const tallOf = (p) => (rail ? Math.min(base / 3 * 0.42, base * 0.3) + 8 : body(p).h * lenOf(p));
   const tall = Math.max(tallOf(A), tallOf(B)), maxLen = Math.max(lenOf(A), lenOf(B));
 
   // ── where things go: the road along the bottom, the card above it beside
   // the readouts, the start clear of them
+  // the road deep enough that B, in the near lane, stands clear of A's feet
   const lane = Math.max(phone ? 30 : 36, tall * 1.08);
-  const d = rail ? 2 * (tall + 18) : 2 * lane;
+  const d = rail ? 2 * (tall + 18) : Math.max(2 * lane, tallOf(A) + tallOf(B) + 12);
   const below = phone ? 66 : 54;
   const R = Math.round(h - below - d - 4);               // the road's far edge
   const horizon = R - (rail ? 24 : 30);
-  const sx0 = maxLen + (phone ? 14 : 24), sx1 = w - (phone ? 30 : 60);
+  // room past the furthest point for its velocity arrow and its value, so
+  // neither is pushed back over the vehicle at the end
+  const vLen = clamp(w * 0.08, 34, 80), vText = phone ? 70 : 92;
+  const sx0 = maxLen + (phone ? 14 : 24), sx1 = w - vLen - vText - 18;
   const lo = Math.min(0, A.x0, B.x0), hi = Math.max(f.top, 1);
   const S = (s) => sx0 + ((s - lo) / (hi - lo)) * (sx1 - sx0);
   const cardY1 = Math.min(horizon - 8, sc.cardY0 + Math.max(170, h * 0.62));
@@ -242,15 +269,18 @@ export function render(canvas, cam, o) {
     for (const y of [yA, yB]) rails(g, 0, w, y, P);
   } else {
     verge(g, 0, w, R - 11, { seed: 41, scale: phone ? 0.8 : 1, keep });
-    const wy = road(g, 0, w, R, d, { seed: 23 });
-    yA = wy.far; yB = wy.near;
+    road(g, 0, w, R, d, { seed: 23 });
+    // each in its own lane: B's feet near the kerb, A's in the far lane,
+    // above the centre line and above B's head
+    yB = R + d - 6;
+    yA = Math.min(R + d * 0.55 - 4, yB - tallOf(B) - 2);
   }
 
   // the start: a stop line across both lanes, and the lights when it leaves them
   if (rail) post(g, L, startX, yB + 12, 'X', P.strong, P, { dashed: true, height: yB + 12 - (R - 2) });
   else {
     g.save(); g.fillStyle = withAlpha(env().line, 0.9); g.fillRect(startX - 2, R + 3, 4, d - 7); g.restore();
-    if (f.lights) trafficLights(g, startX - 18, R - 10, tall + 6, P, { lit: fired && tRaw > 0 ? 'green' : 'red' });
+    if (f.lights) trafficLights(g, startX - 18, R - 10, Math.min(tall, base * 0.46) + 6, P, { lit: (fired && tRaw > 0) || (A.u > 0 && B.u > 0 && A.t0 <= 1e-9 && B.t0 <= 1e-9) ? 'green' : 'red' });
     else L.add('start', startX, R - 22, { color: P.ink, align: 'center', pri: 5, size: 13 });
   }
   // the line the question names: chequered across the road, or the post Y
@@ -268,8 +298,8 @@ export function render(canvas, cam, o) {
   for (const e of passed) {
     stroke(g, [{ x: S(e.x), y: R - (rail ? 6 : 2) }, { x: S(e.x), y: R + d + 2 }], { color: P.mark, width: 2, dash: [5, 4] });
     const { age } = ageOf(t, e.t, f.tMax, life);
-    pulse(g, S(e.x), yA - tall * 0.4, age, life, P.mark, { radius: 30 });
-    pulse(g, S(e.x), yB - tall * 0.4, age, life, P.mark, { radius: 30 });
+    pulse(g, S(e.x), yA - tallOf(A) * 0.5, age, life, P.mark, { radius: Math.max(30, tallOf(A) * 0.7) });
+    pulse(g, S(e.x), yB - tallOf(B) * 0.5, age, life, P.mark, { radius: Math.max(30, tallOf(B) * 0.7) });
   }
   // equal-time marks, each along its own lane, under its wheels
   const dt = niceStep(f.tMax, 10);
@@ -284,29 +314,30 @@ export function render(canvas, cam, o) {
   }
   // the two of them: A in the far lane first, B in front of it
   for (const [p, y, ring] of [[A, yA, null], [B, yB, P.second]]) {
-    const xf = S(p.pos(t)), Lp = lenOf(p), k = kind(p), ht = tallOf(p);
+    const xf = S(p.pos(t)), Lp = lenOf(p), k = kind(p), ht = tallOf(p), bd = body(p);
     const v = p.vel(t), a = p.acc(t);
+    // it comes to rest: a pulse where it stops, behind it
+    const stop = p.stages.find((st) => st.kind === 'changing' && isFinite(st.t1) && Math.abs(p.vel(st.t1 + 1e-6)) < 1e-9);
+    if (stop) { const { age } = ageOf(t, stop.t1, f.tMax, life); pulse(g, xf - Lp / 2, y - ht * 0.5, age, life, P.muted, { radius: Math.max(26, ht * 0.7) }); }
     const opts = { ring, phase: phaseFor(k, Lp, xf - S(p.x0), rail ? { cars: 3 } : {}), brake: a < -1e-9 && v > 1e-6,
       paint: p === B ? (env().night ? '#9a8a74' : '#b8a27c') : null };
     if (rail) train(g, xf, y, Lp, P, { ...opts, cars: 3 }); else drawFigure(g, k, xf, y, Lp, P, opts);
-    badge(g, xf - Lp * (rail ? 0.2 : k === 'car' ? 0.62 : 0.5), y - ht * (rail ? 0.62 : 0.5), p.name, ring, clamp(Lp * 0.11, 7.5, 10));
-    L.reserve({ x: xf - Lp, y: y - ht, w: Lp, h: ht });
+    badge(g, xf - Lp * (rail ? 0.2 : bd.bx), y - (rail ? ht * 0.62 : Lp * bd.by), p.name, ring, clamp(Math.min(Lp, ht * 2) * 0.11, 7.5, 10));
+    const wide = k === 'runner' ? Lp * 0.55 : Lp;
+    L.reserve({ x: xf - wide, y: y - ht, w: wide, h: ht });
     // its velocity, from its front, dashed: along the road is horizontal
     if (show.velocity !== false && v > 1e-6) {
-      const len = (v / f.vMax) * clamp(w * 0.1, 46, 110), vy = y - ht * (rail ? 0.55 : 0.42);
+      const len = (v / f.vMax) * vLen, vy = y - (rail ? ht * 0.55 : Lp * bd.vy);
       const x0 = xf + 5, x1 = x0 + len;
       arrow(g, x0, vy, x1, vy, { color: P.velVec, width: 2.6, head: 10, dash: [6, 4] });
-      const text = T`${s3(v)} [m s^-1]`, room = x1 + 90 < w;
-      L.add(text, room ? x1 + 8 : xf - Lp - 8, vy, { color: P.vel, align: room ? 'left' : 'right', pri: 7, size: 14, weight: 700, maxPush: 20 });
+      const text = T`${s3(v)} [m s^-1]`, room = x1 + vText < w;
+      L.add(text, room ? x1 + 8 : xf - wide - 8, vy, { color: P.vel, align: room ? 'left' : 'right', pri: 7, size: 14, weight: 700, maxPush: 20 });
     }
     // its acceleration over its roof, dashed for the same reason
     if (show.acceleration && v > 1e-6 && Math.abs(a) > 1e-9) {
       const len = Math.sign(a) * 36, ay = y - ht - 10;
       arrow(g, xf - Lp / 2 - len / 2, ay, xf - Lp / 2 + len / 2, ay, { color: P.acc, width: 2.4, head: 9, dash: [5, 4] });
     }
-    // it comes to rest: a pulse where it stops
-    const stop = p.stages.find((st) => st.kind === 'changing' && isFinite(st.t1) && Math.abs(p.vel(st.t1 + 1e-6)) < 1e-9);
-    if (stop) { const { age } = ageOf(t, stop.t1, f.tMax, life); pulse(g, xf - Lp / 2, y - ht * 0.4, age, life, P.muted, { radius: 26 }); }
   }
   // the gap between their fronts, on the verge in front of the road
   const xa = S(A.pos(t)), xb = S(B.pos(t));

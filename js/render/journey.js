@@ -30,7 +30,7 @@ import { landscape, env } from './scenery.js';
 import { fitCanvas, unview, palette, clamp, labels, stroke, arrow, dot, niceStep, fade, withAlpha } from './util.js';
 import { FIGURES, post, phaseFor, trafficLights, rails } from './figures.js';
 import { pulse, ageOf } from './effects.js';
-import { road, verge, tape, card, screen, s3 } from './lanes.js';
+import { road, verge, tape, card, screen, s3, BODY, PERSON_MIN } from './lanes.js';
 import { T, num } from '../notation.js';
 
 /** A running track side on, from y = top down `d` px: two lanes of red-brown
@@ -125,19 +125,23 @@ export function render(canvas, cam, o) {
   // ── sizes: the traveller at least a tenth of the width (a person at least
   // the figure's own least size), its lane deep enough to stand in
   const lorryPx = clamp(w * (w < 520 ? 0.14 : 0.11), 52, 120);
-  const figPx = Math.max(fig.min || 0, lorryPx * fig.size);
-  const figLen = who === 'runner' ? figPx * 0.5 : figPx;
-  const tall = figPx * fig.top / fig.size;
+  // a person or a rider stands nearly its drawn size tall: at least PERSON_MIN
+  const bd = BODY[who];
+  const figPx = Math.max(fig.min || 0, lorryPx * fig.size, bd && bd.h > 0.6 ? PERSON_MIN(phone) / bd.h : 0);
+  const figLen = who === 'runner' ? figPx * 0.55 : figPx;
+  const tall = bd ? bd.h * figPx : figPx * fig.top / fig.size;
   const cars = fig.cars || 1;
 
   // ── where things go, from the bottom up: the tape, the stage brackets, the
   // way, and over it the card beside the readouts, clear of the lights
   const ground = fig.ground;
   const tapeY = h - 34, bracketY = tapeY - 12;
-  const d = ground === 'rail' ? 30 : clamp(tall * 1.2, 34, 62);
+  const d = ground === 'rail' ? 30 : clamp(Math.min(tall, 46) * 1.2, 34, 56);
   const R = Math.round(bracketY - 28 - d - 7);
   const yw = ground === 'rail' ? R + 10 : ground === 'track' ? R + d * 0.78 : R + d * 0.88;
-  const sx0 = figLen + (phone ? 18 : 30), sx1 = w - (phone ? 30 : 60);
+  // past B, room for the velocity arrow it arrives with, head and all
+  const vScale = clamp(w * 0.12, 54, 140), wTop = Math.max(...J.w) || 1;
+  const sx0 = figLen + (phone ? 18 : 30), sx1 = w - Math.max(phone ? 30 : 60, (Math.abs(f.vel(f.tMax).x) / wTop) * vScale + 24);
   const S = (s) => sx0 + (s / J.D) * (sx1 - sx0);
   L.reserve({ x: 0, y: 0, w: sc.hudR, h: sc.hudB });
 
@@ -155,9 +159,11 @@ export function render(canvas, cam, o) {
     verge(g, 0, w, R - 11, { seed: 51, scale: phone ? 0.75 : 0.9, keep });
     road(g, 0, w, R, d, { seed: 29 });
   }
+  // lights and posts as tall as a car's, whoever travels
+  const lmTall = ground === 'rail' ? tall : Math.min(tall, 44);
   const moving = fired && t > 0;
-  const topA = landmark(g, L, S(0), yw, 'A', J.w[0] === 0, ground, P, { len: figLen, tall, R, d, lit: moving ? 'green' : 'red' });
-  const topB = landmark(g, L, S(J.D), yw, 'B', J.w[J.n] === 0, ground, P, { finish: true, len: figLen, tall, R, d, lit: 'red' });
+  const topA = landmark(g, L, S(0), yw, 'A', J.w[0] === 0, ground, P, { len: figLen, tall: lmTall, R, d, lit: moving ? 'green' : 'red' });
+  const topB = landmark(g, L, S(J.D), yw, 'B', J.w[J.n] === 0, ground, P, { finish: true, len: figLen, tall: lmTall, R, d, lit: 'red' });
 
   // where each stage happens: dashed displacement brackets on the verge in front
   for (let i = 1; i <= J.n; i++) {
@@ -178,22 +184,23 @@ export function render(canvas, cam, o) {
     dot(g, x, my, 3.6, { fill: P.vel, stroke: '#f6f1e8', width: 1.2 });
     if (show.ticks) L.add(T`${num(i * dt, dt < 1 ? 2 : 1, { trim: true })} [s]`, x, my + 14, { color: P.vel, align: 'center', pri: 2, size: 13, maxPush: 0 });
   }
-  // the traveller, its brake lights on while it slows
+  // a pulse at each change of stage, where it happened, and at the end —
+  // behind the traveller and wider than it, so it rings round it
   const xs = S(f.pos(t).x), v = f.vel(t).x, acc = f.accel(t);
-  fig.draw(g, xs, yw, figPx, P, { phase: phaseFor(who, figPx, xs - S(0), { cars }), cars, still: who === 'runner' && v < 1e-6,
-    brake: acc < -1e-9 && v > 1e-6 && t < f.tMax - 1e-9 });
-  L.reserve({ x: xs - figLen - 2, y: yw - tall - 4, w: figLen + 4, h: tall + 4 });
-  // a pulse at each change of stage, where it happened, and at the end
   for (let i = 1; i <= J.n; i++) {
     if (J.t[i] < 1e-9) continue;
     const { age } = ageOf(t, ends[i], f.tMax, life);
-    pulse(g, S(f.pos(ends[i]).x), yw - tall * 0.45, age, life, P.mark, { radius: i === J.n ? 34 : 24 });
+    pulse(g, S(f.pos(ends[i]).x) - figLen / 2, yw - tall * 0.5, age, life, P.mark, { radius: Math.max(i === J.n ? 34 : 24, tall * 0.75) });
   }
+  // the traveller, its brake lights on while it slows
+  fig.draw(g, xs, yw, figPx, P, { phase: phaseFor(who, figPx, xs - S(0), { cars }), cars, still: who === 'runner' && v < 1e-6,
+    brake: acc < -1e-9 && v > 1e-6 && t < f.tMax - 1e-9 });
+  L.reserve({ x: xs - figLen - 2, y: yw - tall - 4, w: figLen + 4, h: tall + 4 });
   if (show.velocity !== false && v > 1e-6) {
     // from its front forwards, dashed; its value after the head, or over the
     // arrow where the head is near the edge
-    const len = (v / (Math.max(...J.w) || 1)) * clamp(w * 0.12, 54, 140);
-    const vy = yw - lorryPx * fig.mid, x0 = xs + 5, x1 = x0 + len;
+    const len = (v / wTop) * vScale;
+    const vy = yw - (bd ? figPx * bd.vy : lorryPx * fig.mid), x0 = xs + 5, x1 = x0 + len;
     arrow(g, x0, vy, x1, vy, { color: P.velVec, width: 2.8, head: 11, dash: [7, 5] });
     const text = T`v = ${s3(v)} [m s^-1]`, room = x1 + 10 + (phone ? 92 : 110) < w;
     L.add(text, room ? x1 + 9 : xs - figLen - 8, vy, { color: P.vel, align: room ? 'left' : 'right', pri: 8, size: 14, weight: 700, maxPush: 20 });
@@ -287,7 +294,7 @@ function graph(g, f, t, ends, box, P, phone, life) {
     const a = X(ends[i - 1]) + 2, b = X(ends[i]) - 2;
     stroke(g, [{ x: a, y: tb - 5 }, { x: a, y: tb }, { x: b, y: tb }, { x: b, y: tb - 5 }], { color: P.faint, width: 1.4 });
     // as much of its name as fits, never a bare number, always with its unit
-    const name = b - a > 150 ? `stage ${i}: ${T`t_${i} = ${s3(J.t[i])} [s]`}` : b - a > 76 ? T`t_${i} = ${s3(J.t[i])} [s]` : b - a > 22 ? T`t_${i}` : '';
+    const name = b - a > 76 ? T`t_${i} = ${s3(J.t[i])} [s]` : b - a > 22 ? T`t_${i}` : '';
     if (name) L.add(name, (a + b) / 2, tb + 11, { color: P.muted, align: 'center', pri: 5, size: 13, bg: false, maxPush: 0 });
   }
   // each stage's piece of the area, named once the clock has passed it, in
@@ -295,12 +302,15 @@ function graph(g, f, t, ends, box, P, phone, life) {
   for (let i = 1; i <= J.n; i++) {
     if (J.t[i] < 1e-9 || t < ends[i] - 1e-9) continue;
     const x0 = X(ends[i - 1]), x1 = X(ends[i]);
-    if (x1 - x0 < 100) continue;
+    const full = T`s_${i} = ${s3(J.s[i])} [m]`;
+    g.save(); g.font = `700 13px ${getComputedStyle(document.documentElement).getPropertyValue('--font') || 'system-ui'}`;
+    const fits = g.measureText(full).width + 10 < x1 - x0; g.restore();
+    if (x1 - x0 < 24) continue;
     const lowV = Math.min(J.w[i - 1], J.w[i]);
     const tri = lowV < top * 0.3 && J.kinds[i - 1] !== 'hold';
     const cx = tri ? x0 + (J.w[i] > J.w[i - 1] ? 0.62 : 0.38) * (x1 - x0) : (x0 + x1) / 2;
     const cy = Y(tri ? Math.max(J.w[i], J.w[i - 1]) * 0.26 : lowV * 0.5);
-    L.add(T`s_${i} = ${s3(J.s[i])} [m]`, cx, cy, { color: P.disp, align: 'center', pri: 7, size: 13, weight: 700, maxPush: 0 });
+    L.add(fits ? full : T`s_${i}`, cx, cy, { color: P.disp, align: 'center', pri: 7, size: 13, weight: 700, maxPush: 0 });
   }
   // each corner pulses as the clock reaches it
   for (let i = 1; i <= J.n; i++) {
