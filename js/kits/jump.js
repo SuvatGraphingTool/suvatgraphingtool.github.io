@@ -42,13 +42,16 @@ export const jump = {
     if (!(k.g > 0)) return fail('Choose the value of g the paper uses.');
     const r = solveJourney({ u: 0, D: k.D, T: k.T,
       stages: [{ kind: 'up', a: k.g, t: k.t1, v: k.v1 }, { kind: 'down', a: k.a2, t: k.t2, v: k.v2 }, { kind: 'hold' }] });
-    if (!r.ok) return r;
+    // the engine says 'journey'; this one is a jump
+    const word = (x) => String(x).replace(/\bjourney\b/g, 'jump').replace(/\bjourneys\b/g, 'jumps');
+    if (!r.ok) return { ...r, reason: word(r.reason) };
+    r.notes = r.notes.map(word);
     const D = r.f.pos(r.f.tMax).x;
     r.f.jump = { D };
     r.convention = 'Down is positive: every distance is how far it has fallen, every speed downwards.';
     return r;
   },
-  working: (solved) => journeyWorking(solved),
+  working: (solved) => journeyWorking(solved).map((s) => ({ ...s, title: String(s.title).replace(/\bjourney\b/g, 'jump') })),
   render: stage.render,
 
   hud(f, t) {

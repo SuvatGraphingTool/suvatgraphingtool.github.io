@@ -81,19 +81,31 @@ export function render(canvas, cam, o) {
   const rx = Math.min(w - 50, cx + 170);
   stroke(g, [{ x: rx, y: Y(0) }, { x: rx, y: Y(D) }], { color: P.ink, width: 1.2, alpha: 0.7 });
   const step = niceStep(D, 6);
+  L.add(T`${tr(D)} [m]`, rx + 8, Y(D), { color: P.ink, align: 'left', pri: 6, size: 13, weight: 700 });
   for (let hh = 0; hh <= D + 1e-9; hh += step) {
+    if (D - hh < step * 0.3 && hh > 0) continue;
     stroke(g, [{ x: rx - 4, y: Y(hh) }, { x: rx + 4, y: Y(hh) }], { color: P.ink, width: 1.2, alpha: 0.7 });
     L.add(`${fmt(hh, step < 1 ? 1 : 0)} m`, rx + 8, Y(hh), { color: P.ink, align: 'left', pri: 1, size: 13, bg: false, maxPush: 0 });
   }
 
   // where each stage begins: a marker across, with its height
   const fallen = (tt) => f.pos(tt).x;
+  // markers too close to label one each share one label, so none is detached
+  let lastY = -Infinity, group = [];
+  const flush = () => {
+    if (!group.length) return;
+    const text = group.map((m) => T`${tr(m.hh)} [m], t = ${tr(m.t)} [s]`).join(';  ');
+    L.add(`${group.length > 1 ? 'stages start at ' : ''}${text}`, cx - 74, (Y(group[0].hh) + Y(group[group.length - 1].hh)) / 2, { color: P.mark, align: 'right', pri: 6, size: 13, weight: 700 });
+    group = [];
+  };
   for (const s of st.slice(1)) {
     const hh = D - fallen(s.t0);
     if (hh <= 0) continue;
     stroke(g, [{ x: cx - 70, y: Y(hh) }, { x: rx - 6, y: Y(hh) }], { color: P.mark, width: 1.2, alpha: 0.7 });
-    L.add(T`${tr(hh)} [m] "up," t = ${tr(s.t0)} [s]`, cx - 74, Y(hh), { color: P.mark, align: 'right', pri: 6, size: 13, weight: 700 });
+    if (Y(hh) - lastY < 18) group.push({ hh, t: s.t0 }); else { flush(); group = [{ hh, t: s.t0 }]; }
+    lastY = Y(hh);
   }
+  flush();
 
   // the fall so far, and the jumper
   const hNow = D - fallen(t);

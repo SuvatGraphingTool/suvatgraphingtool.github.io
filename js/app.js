@@ -2028,7 +2028,8 @@ function runFlight() {
   closePace();
   closeIntro();
   closeResolve();
-  if (state.firedBefore) ghost = traj.path(260);
+  // a motion with no path (one of the older engines) simply leaves no ghost
+  if (state.firedBefore) ghost = typeof traj.path === 'function' ? traj.path(260) : null;
   state.firedBefore = true; state.launched = true;
   state.overview = false;               // every run starts from the panes
   state.t = 0; state.playing = true;

@@ -257,7 +257,7 @@ export const LIBRARY = [
   { id: 'parachute-stages', group: 'library', kit: 'jump',
     name: 'A parachute jump in stages',
     sub: 'free fall, the canopy brakes, then steady — how long to the ground?',
-    note: 'A parachutist steps out of an aircraft and falls freely, opens the canopy and slows down at a steady rate, then falls at a constant speed to the ground. Three stages of constant acceleration, read downwards, with the drop drawn to scale from the aircraft to the fields: give two numbers for each of the first two stages and the height (or the total time), and the engine finds the rest.',
+    note: 'A parachutist steps out of an aircraft and falls freely, opens the canopy and slows down at a steady rate, then falls at a constant speed to the ground. Three stages of constant acceleration, read downwards, with the drop from the aircraft to the fields drawn to scale (the jumper and the aircraft are enlarged to be seen): give two numbers for each of the first two stages and the height (or the total time), and the engine finds the rest.',
     params: { g: 10, D: 550, t1: 3, a2: 12, t2: 2 },
     place: 'A column of sky from the aircraft to the fields',
     sources: [
