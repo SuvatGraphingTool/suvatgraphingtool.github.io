@@ -113,6 +113,12 @@ export function solveCatch(k = {}) {
     catchAt: { t: tc, x: xc, y: k.yc }, apex: { t: f.tApex, y: f.apexHeight, x: ux * f.tApex }, h, gap,
     pos: (t) => f.pos(Math.min(t, tMax)), vel: (t) => f.vel(Math.min(t, tMax)),
     bounces: 0, segments: [], horiz: null, kineticEnergy: () => 0, momentum: () => 0,
+    /** The ball's path, for the app's ghost of the last flight. */
+    path(n = 200, tEnd = tMax) {
+      const out = [];
+      for (let i = 0; i <= n; i++) { const tt = (i / n) * tEnd; out.push({ t: tt, ...f.pos(Math.min(tt, tMax)) }); }
+      return out;
+    },
   };
   return {
     ok: true, mode: 'catch', axis: 'plane', f: motion, find, tc, xc, catcher: C, gap,

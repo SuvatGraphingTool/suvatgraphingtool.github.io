@@ -66,9 +66,9 @@ export function render(canvas, cam, o) {
     L.add(fmt(x, step < 1 ? 1 : 0), X(x), oy + 14, { color: P.ink, align: 'center', pri: 1, size: 13, bg: false, maxPush: 0 });
   }
 
-  // ── the thrower, and the height the ball leaves the hand at
-  const person = Math.max(30, 1.75 * k);
-  runner(g, X(0) - 2, oy, person, P, { dir: 1, still: true });
+  // ── the height the ball leaves the hand at; the thrower is drawn after the
+  // dog, in front of it, and to scale (the hand is at about that height)
+  const person = Math.max(16, Math.min(1.75, f.h || 1.75) * k);
   const dh = X(0) - person * 0.6 - 16;
   stroke(g, [{ x: dh, y: oy }, { x: dh, y: Y(f.h) }], { color: P.ink, width: 1.2, alpha: 0.8 });
   for (const yy of [oy, Y(f.h)]) stroke(g, [{ x: dh - 4, y: yy }, { x: dh + 4, y: yy }], { color: P.ink, width: 1.2, alpha: 0.8 });
@@ -89,6 +89,7 @@ export function render(canvas, cam, o) {
   const dogL = Math.max(26, 0.9 * k);
   const runPx = dx * k;
   dog(g, X(dx) + 4, oy, dogL, P, { dir: 1, phase: (((runPx / (dogL * 1.2)) % 1) + 1) % 1, still: dv < 1e-9 });
+  runner(g, X(0) - 2, oy, person, P, { dir: 1, still: true });
   if (show.velocity !== false && dv > 1e-6) {
     const vl = clamp(w * 0.06, 34, 80) / Math.max(f.dog.vel(f.tMax), 1e-6);
     arrow(g, X(dx) + 8, oy - dogL * 0.3, X(dx) + 8 + dv * vl, oy - dogL * 0.3, { color: P.velVec, width: 2.4, head: 9, dash: [5, 4] });

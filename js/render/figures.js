@@ -363,8 +363,6 @@ const STRIDE = 2 * (sweep(SWING) - sweep(-SWING));
 
 /* ── particles ─────────────────────────────────────────────────────────── */
 
-/** A ball, L across, resting on y = Y with its front at X — the stadium's
-    ball (ballSprite), so a ball looks the same everywhere. */
 /**
  * A dog, side on, running (or standing, `still`): L is its length, nose to
  * tail; its front (the nose) is at X. Four legs in a gallop — the front pair
@@ -397,6 +395,8 @@ export function dog(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still = fa
   });
 }
 
+/** A ball, L across, resting on y = Y with its front at X — the stadium's
+    ball (ballSprite), so a ball looks the same everywhere. */
 export function ball(g, X, Y, L, P, { dir = 1, ring = null } = {}) {
   ballSprite(g, X - (dir * L) / 2, Y - L / 2, L / 2, { ring });
 }

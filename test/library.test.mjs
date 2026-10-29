@@ -775,6 +775,7 @@ group('Thrown, chased and caught: the paper and its edges', () => {
   for (const s of catchWorking(a23)) for (const r of s.rows) ok(!/NaN|undefined|Infinity/.test(r.f + r.s + r.r), 'no NaN in the working');
   const g = KITS.catcher.graphs(a23.f, 0, new Proxy({}, { get: () => '#000' }));
   ok(g.every((x) => x.series[0].dash && x.series[1].dash && !x.series[2].dash), 'across dashed, up solid, on every graph');
+  ok(typeof a23.f.path === 'function' && a23.f.path(10).length === 11 && near(a23.f.path(10)[10].y, 0.3), 'the motion has a path, for the ghost of a second launch');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
