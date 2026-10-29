@@ -951,6 +951,11 @@ group('Stage by stage (MM1B Jan13 Q1, H240/03 J19 Q7, H556/01 J19 Q19a)', () => 
   ok(!K.solve({ stages: [{ u: 20, v: 12, s: 640, t: 30 }] }).ok, 'four numbers that disagree are refused');
   ok(!K.solve({ stages: [{ u: 5, v: 11.4, t: 4 }, { a: 0 }] }).ok, 'a stage short of a number says so');
   ok(!K.solve({ stages: [{ u: 0, a: 1, t: 4 }, { a: 0 }], T: 3 }).ok, 'a whole time shorter than the stages is refused');
+  const rev = K.solve({ stages: [{ u: 6, a: -2, t: 6 }] });
+  ok(rev.ok && rev.back && Math.abs(rev.avg - 3) < 1e-9 && rev.Stot === 0, 'turning back: an average speed of 3 from 18 m travelled, not 0');
+  ok(!K.solve({ stages: [{ u: 0, a: 2, t: 5 }, { u: 12, a: 0, t: 2 }] }).ok && !K.solve({ stages: [{ u: 0, v: 5, t: 2 }, { u: 9, a: 0, t: 2 }] }).ok, 'a start that is not where the last stage ended is refused');
+  ok(!K.solve({ stages: [{ u: 0, a: 1, t: 2 }, { a: 0, t: 2 }], T: 999 }).ok, 'a whole time the stages do not add up to is refused');
+  ok(/first time/.test(K.solve({ stages: [{ u: 10, a: -2, s: 21 }] }).notes.join(' ')), 'two roots: it says which is taken');
   const f = r.f; ok(Math.abs(f.pos(40) - 640) < 1e-9 && Math.abs(f.pos(110) - 2460) < 1e-9 && Math.abs(f.vel(40) - 12) < 1e-9, 'the motion passes the join and ends at 2460 m');
 });
 

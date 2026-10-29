@@ -44,8 +44,8 @@ export function render(canvas, cam, o) {
     stroke(g, [{ x: X(x.x0), y: dy }, { x: X(x.x1), y: dy }], { color: P.ink, width: 1.2, alpha: 0.8 });
     for (const xx of [X(x.x0), X(x.x1)]) stroke(g, [{ x: xx, y: dy - 5 }, { x: xx, y: dy + 5 }], { color: P.ink, width: 1.2, alpha: 0.8 });
     L.add(T`${tr(x.s)} [m], ${tr(x.t)} [s]`, (X(x.x0) + X(x.x1)) / 2, dy + 13, { color: P.ink, align: 'center', pri: 6, size: 13, weight: 700 });
-    const what = Math.abs(x.a) < 1e-12 ? 'steady' : (x.a > 0) === (x.u + x.v >= 0) ? 'speeding up' : 'slowing down';
-    L.add(`${what}, ${T`a = ${tr(x.a)} [m s^-2]`}`, (X(x.x0) + X(x.x1)) / 2, dy + 30, { color: P.acc, align: 'center', pri: 5, size: 13, weight: 700 });
+    const wide = X(x.x1) - X(x.x0) > 240;
+    L.add(`${wide ? `${x.does}, ` : ''}${T`a = ${tr(x.a)} [m s^-2]`}`, (X(x.x0) + X(x.x1)) / 2, dy + 30, { color: P.acc, align: 'center', pri: 5, size: 13, weight: 700 });
   });
   const end = f.S[f.S.length - 1];
   stroke(g, [{ x: X(end.x1), y: Y + 6 }, { x: X(end.x1), y: Y - 40 }], { color: P.mark, width: 2.4 });
@@ -58,8 +58,9 @@ export function render(canvas, cam, o) {
   drawFigure(g, kind, X(x), Y, size, P, { dir, phase: phaseFor(kind, size, Math.abs(X(x) - X(0))) });
   const vMax = Math.max(...f.S.flatMap((s) => [Math.abs(s.u), Math.abs(s.v)]), 1e-6);
   if (show.velocity !== false && Math.abs(v) > 1e-6) {
-    arrow(g, X(x), Y - size * 0.9, X(x) + (v / vMax) * 80, Y - size * 0.9, { color: P.velVec, width: 2.6, head: 10, dash: [6, 4] });
-    L.add(T`${tr(Math.abs(v), 2)} [m s^-1]`, X(x) + (v / vMax) * 80 + (v > 0 ? 8 : -8), Y - size * 0.9, { color: P.vel, align: v > 0 ? 'left' : 'right', pri: 8, size: 14, weight: 700 });
+    const len = Math.max(0, Math.min(80, v > 0 ? w - 90 - X(x) : X(x) - 20)) * Math.sign(v) * Math.min(1, Math.abs(v) / vMax);
+    arrow(g, X(x), Y - size * 0.9, X(x) + len, Y - size * 0.9, { color: P.velVec, width: 2.6, head: 10, dash: [6, 4] });
+    L.add(T`${tr(Math.abs(v), 2)} [m s^-1]`, X(x) + len + (v > 0 ? 8 : -8), Y - size * 0.9, { color: P.vel, align: v > 0 ? 'left' : 'right', pri: 8, size: 14, weight: 700 });
   }
   if (show.acceleration && Math.abs(a) > 1e-9) arrow(g, X(x), Y - size * 0.9 - 22, X(x) + Math.sign(a) * 40, Y - size * 0.9 - 22, { color: P.acc, width: 2.2, head: 9, dash: [6, 4] });
   L.draw(g, w, h);

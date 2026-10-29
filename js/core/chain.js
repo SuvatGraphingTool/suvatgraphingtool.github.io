@@ -43,6 +43,8 @@ export function solveChain(k = {}) {
     if (have(st[i].t) && !(st[i].t > 0)) return fail(`Stage ${i + 1}'s time is a positive number.`);
   }
   const how = st.map(() => ({}));              // where a number not typed came from
+  for (let i = 0; i < n - 1; i++) if (have(st[i].v) && have(st[i + 1].u) && Math.abs(st[i].v - st[i + 1].u) > TOL * Math.max(1, Math.abs(st[i].v)))
+    return fail(`Stage ${i + 1} ends at ${M`${d(st[i].v)} [m s^-1]`} but stage ${i + 2} is given to start at ${M`${d(st[i + 1].u)} [m s^-1]`}: one stage starts where the last ends.`);
   for (const [key, what] of [['S', 'distance'], ['T', 'time']]) if (have(k[key]) && !(k[key] > 0)) return fail(`The whole ${what} is a positive number.`);
 
   // ── fill across the joins and from the totals, solving each stage as soon as it can be
@@ -76,7 +78,7 @@ export function solveChain(k = {}) {
       const r = solve(Object.fromEntries(pick.map((x) => [x, st[i][x]])));
       if (!r.ok) return fail(`Stage ${i + 1}: ${r.error}`);
       for (const x of given) if (Math.abs(r.values[x] - st[i][x]) > TOL * Math.max(1, Math.abs(st[i][x])))
-        return fail(`Stage ${i + 1} is given more than it needs, and they disagree: from the other three, ${M`${x} = ${d(snap(r.values[x]))}`}, not ${M`${d(st[i][x])}`}.`);
+        return fail(`Stage ${i + 1} has more than it needs, and they disagree: from the other three, ${M`${x} = ${d(snap(r.values[x]))}`}, not ${M`${d(st[i][x])}`}${how[i][x] ? `, which came from ${how[i][x]}` : ''}.`);
       if (!(r.values.t > 0)) return fail(`Stage ${i + 1} would take no time, or negative time: check its numbers.`);
       solved[i] = { ...r, pick };
       for (const x of KEYS) st[i][x] = r.values[x];
@@ -92,20 +94,38 @@ export function solveChain(k = {}) {
     return fail(`Stage ${i + 1} has only ${given.length} of the five${given.length ? ` (${given.join(', ')})` : ''}: it needs three. Give another, or the whole distance or time.`);
   }
 
+  // ── every join meets, and a whole the paper gives is what the stages add to
+  for (let i = 0; i < n - 1; i++) if (Math.abs(st[i].v - st[i + 1].u) > TOL * Math.max(1, Math.abs(st[i].v)))
+    return fail(`Stage ${i + 1} ends at ${M`${d(snap(st[i].v))} [m s^-1]`} but stage ${i + 2} starts at ${M`${d(snap(st[i + 1].u))} [m s^-1]`}: one stage starts where the last ends.`);
+  for (const [key, tot, what, u] of [['s', k.S, 'distance', 'm'], ['t', k.T, 'time', 's']]) {
+    if (!have(tot)) continue;
+    const sum = st.reduce((a, x) => a + x[key], 0);
+    if (Math.abs(sum - tot) > TOL * Math.max(1, tot)) return fail(`The stages add up to ${M`${d(snap(sum))} [${u}]`}, not the whole ${what} of ${M`${d(tot)} [${u}]`}: leave one stage's ${what} blank for the whole to fill, or clear the whole.`);
+  }
   // ── the whole: one clock, positions added up
   let t0 = 0, x0 = 0;
-  const S = st.map((x, i) => { const out = { i: i + 1, ...x, t0, x0, t1: t0 + x.t, x1: x0 + x.s, how: how[i], steps: solved[i].steps, pick: solved[i].pick }; t0 += x.t; x0 += x.s; return out; });
-  const Ttot = t0, Stot = x0, avg = Stot / Ttot;
+  const S = st.map((x, i) => {
+    // what it does over the stage, and how far it travels (out and back, if it turns)
+    const tv = Math.abs(x.a) > 1e-12 ? -x.u / x.a : -1, turns = tv > 1e-9 && tv < x.t - 1e-9;
+    const sTurn = turns ? x.u * tv + 0.5 * x.a * tv * tv : 0;
+    const travelled = turns ? Math.abs(sTurn) + Math.abs(x.s - sTurn) : Math.abs(x.s);
+    const does = Math.abs(x.a) < 1e-12 ? (Math.abs(x.u) < 1e-12 ? 'at rest' : 'steady') : turns ? 'slows, stops and turns back' : (x.a > 0) === (x.u + x.v >= 0) ? 'speeding up' : 'slowing down';
+    const twoRoots = solved[i].steps.some((sp) => sp.roots && sp.roots.length === 2);
+    const out = { i: i + 1, ...x, travelled, does, twoRoots, t0, x0, t1: t0 + x.t, x1: x0 + x.s, how: how[i], steps: solved[i].steps, pick: solved[i].pick }; t0 += x.t; x0 += x.s; return out; });
+  const Ttot = t0, Stot = x0, dist = S.reduce((a, x) => a + x.travelled, 0), back = Math.abs(dist - Math.abs(Stot)) > 1e-9;
+  const avg = dist / Ttot, avgV = Stot / Ttot;
   const at = (t) => S.find((x) => t <= x.t1 + 1e-12) || S[S.length - 1];
   const pos = (t) => { const x = at(t), tt = Math.max(0, Math.min(t, x.t1) - x.t0); return x.x0 + x.u * tt + 0.5 * x.a * tt * tt; };
   const vel = (t) => { const x = at(t), tt = Math.max(0, Math.min(t, x.t1) - x.t0); return x.u + x.a * tt; };
   const acc = (t) => at(t).a;
   const f = { kind: 'chain', look: k.look || 'car', S, tMax: Ttot, D: Stot, pos, vel, acc };
 
-  const notes = [`In all: ${M`${d(snap(Stot))} [m]`} in ${M`${d(snap(Ttot))} [s]`}, an average speed of ${M`${d(snap(avg))} [m s^-1]`}.`];
-  if (S.some((x) => x.u < -1e-9 || x.v < -1e-9)) notes.push('A velocity below zero is going back the way it came; the distances above are displacements, forwards positive.');
+  const notes = [back
+    ? `It turns back, so the displacement is ${M`${d(snap(Stot))} [m]`} but the distance travelled is ${M`${d(snap(dist))} [m]`}, in ${M`${d(snap(Ttot))} [s]`}: an average speed of ${M`${d(snap(avg))} [m s^-1]`}, an average velocity of ${M`${d(snap(avgV))} [m s^-1]`}.`
+    : `In all: ${M`${d(snap(Stot))} [m]`} in ${M`${d(snap(Ttot))} [s]`}, an average speed of ${M`${d(snap(avg))} [m s^-1]`}.`];
+  for (const x of S) if (x.twoRoots) notes.push(`Stage ${x.i} has two roots; the first time it reaches that displacement is taken.`);
   const derived = S.map((x) => `stage ${x.i}: ${M`a = ${d(snap(x.a))} [m s^-2]`}, ${M`t = ${d(snap(x.t))} [s]`}`);
-  return { ok: true, mode: 'chain', S, Stot, Ttot, avg, f, notes, derived };
+  return { ok: true, mode: 'chain', S, Stot, Ttot, dist, back, avg, avgV, f, notes, derived };
 }
 
 /** The working: each stage as the five-equation solver wrote it, then the whole. */
@@ -124,7 +144,8 @@ export function chainWorking(solved) {
   out.push({ title: 'The whole', rows: [
     { f: M`s = ${terms('s')}`, s: M`${sum('s')}`, r: M`s = ${d(snap(solved.Stot))} [m]` },
     { f: M`t = ${terms('t')}`, s: M`${sum('t')}`, r: M`t = ${d(snap(solved.Ttot))} [s]` },
-    { f: M`"average speed" = s/t`, s: M`${d(snap(solved.Stot))}/${d(snap(solved.Ttot))}`, r: M`${d(snap(solved.avg))} [m s^-1]` },
+    ...(solved.back ? [{ f: M`"distance travelled"`, s: M`${solved.S.map((x) => d(snap(x.travelled))).join(' + ')}`, r: M`${d(snap(solved.dist))} [m]` }] : []),
+    { f: M`"average speed" = "distance"/t`, s: M`${d(snap(solved.dist))}/${d(snap(solved.Ttot))}`, r: M`${d(snap(solved.avg))} [m s^-1]` },
   ], note: 'The stages run one after another on one clock.' });
   return out;
 }

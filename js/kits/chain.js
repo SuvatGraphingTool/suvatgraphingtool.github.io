@@ -92,7 +92,7 @@ export const chain = {
         <p class="ph-units">Velocities in ${M`[m s^-1]`}, forwards positive; ${M`a`} in ${M`[m s^-2]`}; ${M`s`} in ${M`[m]`}; ${M`t`} in ${M`[s]`}.</p></div>`;
     return {
       eyebrow: `${solved.S.length} stages`,
-      title: `${tr(solved.Stot)} m in ${tr(solved.Ttot)} s: on average ${tr(solved.avg)} m s⁻¹.`,
+      title: `${tr(solved.dist)} m travelled in ${tr(solved.Ttot)} s: an average speed of ${tr(solved.avg)} m s⁻¹.`,
       body: `${solved.notes.map((x) => `<p>${x}</p>`).join('')}${table}`,
       real: true,
     };
