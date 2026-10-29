@@ -71,9 +71,10 @@ export const vtgraph = {
   },
 
   ending(s) {
-    const title = s.times.length ? `Back at the start at t = ${s.times.map((x) => tr(x)).join(' s and ')} s; greatest acceleration ${tr(s.aMax)} m s⁻².`
-      : `Greatest acceleration ${tr(s.aMax)} m s⁻²; never back at the start.`;
-    return { eyebrow: 'A velocity–time graph', title: Math.abs(s.target) > 1e-9 ? `${tr(s.target)} m from the start at ${s.times.map((x) => `t = ${tr(x)} s`).join(', ') || 'no time'}; greatest acceleration ${tr(s.aMax)} m s⁻².` : title,
+    const list = (ts) => ts.map((x) => `t = ${tr(x)} s`).join(ts.length > 2 ? ', ' : ' and ');
+    const where = Math.abs(s.target) < 1e-9 ? 'back at the start' : `${tr(s.target)} m from the start`;
+    const title = `${s.times.length ? `${where.replace(/^./, (c) => c.toUpperCase())} at ${list(s.times)}` : `Never ${where}${s.rests.length ? ' except at rest' : ''}`}; greatest acceleration ${tr(s.aMax)} m s⁻².`;
+    return { eyebrow: 'A velocity–time graph', title,
       body: s.notes.map((x) => `<p>${x}</p>`).join(''), real: true };
   },
 };

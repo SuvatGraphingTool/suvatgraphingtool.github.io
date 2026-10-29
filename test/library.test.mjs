@@ -1106,6 +1106,8 @@ group('Read the velocity–time graph (AQA 7357/2 J18 Q12)', () => {
   const at = K.solve({ v0: 0, pts: [{ t: 4, v: 4 }], ask: { t: 2 } });
   ok(at.ok && at.at.x === 2 && at.at.v === 2, 'at a time: its displacement and velocity');
   ok(K.solve({ v0: 2, pts: [{ t: 4, v: 2 }] }).times.length === 0, 'never back: said');
+  const rest = K.solve({ v0: 0, pts: [{ t: 3, v: 0 }, { t: 5, v: 2 }] });
+  ok(rest.ok && rest.times.length === 0 && /at rest at the start/.test(rest.notes.join(' ')) && !/^Back/.test(K.ending(rest).title), 'at rest at the start is not a return to it');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

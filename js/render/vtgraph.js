@@ -29,11 +29,13 @@ export function render(canvas, cam, o) {
   const vs = f.P.map((p) => p.v), vHi = Math.max(...vs, 0), vLo = Math.min(...vs, 0), pad = (vHi - vLo || 1) * 0.15;
   const gx0 = Math.min(w * 0.45, HUD + 50), gx1 = w - 30, gy0 = 50, gy1 = Math.max(gy0 + 140, h * 0.56);
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0), V = (v) => gy1 - ((v - (vLo - pad)) / (vHi - vLo + 2 * pad)) * (gy1 - gy0);
+  // the area to now, each piece split where it crosses the axis: forwards stronger than back
+  const shade = (ta, tb, va, vb) => { g.save(); g.fillStyle = withAlpha(P.disp, va + vb >= 0 ? 0.24 : 0.12);
+    g.beginPath(); g.moveTo(X(ta), V(0)); g.lineTo(X(ta), V(va)); g.lineTo(X(tb), V(vb)); g.lineTo(X(tb), V(0)); g.closePath(); g.fill(); g.restore(); };
   for (const s of f.S) {
     const b = Math.min(s.t1, t); if (b <= s.t0) continue;
-    const vb = s.v0 + s.a * (b - s.t0);
-    g.save(); g.fillStyle = withAlpha(P.disp, s.v0 + vb >= 0 ? 0.24 : 0.12);
-    g.beginPath(); g.moveTo(X(s.t0), V(0)); g.lineTo(X(s.t0), V(s.v0)); g.lineTo(X(b), V(vb)); g.lineTo(X(b), V(0)); g.closePath(); g.fill(); g.restore();
+    const vb = s.v0 + s.a * (b - s.t0), tz = Math.abs(s.a) > 1e-12 ? s.t0 - s.v0 / s.a : -1;
+    if (tz > s.t0 && tz < b) { shade(s.t0, tz, s.v0, 0); shade(tz, b, 0, vb); } else shade(s.t0, b, s.v0, vb);
   }
   stroke(g, [{ x: gx0, y: V(0) }, { x: gx1, y: V(0) }], { color: P.axis, width: 1.8 });
   stroke(g, [{ x: gx0, y: gy0 }, { x: gx0, y: gy1 }], { color: P.axis, width: 1.8 });
@@ -52,7 +54,9 @@ export function render(canvas, cam, o) {
   dot(g, X(t), V(f.vel(t)), 4.5, { fill: P.surface, stroke: P.vel, width: 2.2 });
 
   // ── the line below, at one scale, with O and the object
-  let xLo = 0, xHi = 0; for (let i = 0; i <= 200; i++) { const x = f.pos((i / 200) * f.tMax); xLo = Math.min(xLo, x); xHi = Math.max(xHi, x); }
+  // the line's extent: every corner and every turning point, exactly
+  const xsAt = [0, ...f.S.flatMap((s) => [s.x0, s.x1, ...(Math.abs(s.a) > 1e-12 && -s.v0 / s.a > 0 && -s.v0 / s.a < s.t1 - s.t0 ? [f.pos(s.t0 - s.v0 / s.a)] : [])])];
+  let xLo = Math.min(...xsAt), xHi = Math.max(...xsAt); if (xHi - xLo < 1e-9) { xLo -= 1; xHi += 1; }
   const ly = h - 60, ll = 40, lr = w - 40, k = (lr - ll) / ((xHi - xLo) || 1), R = (x) => ll + (x - xLo) * k;
   stroke(g, [{ x: 0, y: ly }, { x: w, y: ly }], { color: P.axis, width: 2 });
   const step = niceStep(xHi - xLo, 8);

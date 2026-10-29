@@ -51,6 +51,7 @@ export function solveVt(k = {}) {
   const aMax = Math.max(...S.map((s) => Math.abs(s.a)));
   const steep = S.filter((s) => Math.abs(Math.abs(s.a) - aMax) < EPS);
   const aRows = steep.map((s) => ({ f: M`a = (Delta v)/(Delta t)`, s: M`(${br(s.v1)} - ${br(s.v0)})/(${d(s.t1)} - ${d(s.t0)})`, r: M`a = ${d(s.a)} [m s^-2]` }));
+  aRows.push({ f: M`abs(a)`, s: '', r: M`${d(aMax)} [m s^-2]` });
 
   // ── the running area, corner by corner
   const areaRows = S.map((s) => ({ f: M`"area" ${d(s.t0)} "to" ${d(s.t1)}`, s: M`½(${br(s.v0)} + ${br(s.v1)}) * ${d(snap(s.t1 - s.t0))}`, r: M`${d(s.area)} [m], "so" x = ${d(s.x1)} [m]` }));
@@ -67,10 +68,21 @@ export function solveVt(k = {}) {
       if (times.some((q) => Math.abs(q - t) < 1e-6)) continue;
       // standing still at that displacement for a stretch: say the stretch's start only
       times.push(t);
-      findRows.push({ f: M`x = x_0 + ut + ½at^2`, s: M`${d(target)} = ${d(s.x0)} + ${br(s.v0)}tau${Math.abs(s.a) > EPS ? ` + ½ * ${br(s.a)}tau^2` : ''}`, r: M`tau = ${d(snap(t - s.t0))}, t = ${d(t)} [s]` });
+      findRows.push({ f: M`x = x_0 + u tau + ½a tau^2`, s: M`${d(target)} = ${d(s.x0)}${Math.abs(s.v0) > EPS ? ` + ${br(s.v0)} tau` : ''}${Math.abs(s.a) > EPS ? ` + ½ * ${br(s.a)} tau^2` : ''}`, r: M`tau = ${d(snap(t - s.t0))}, t = ${d(t)} [s]` });
     }
   }
-  const stillAt = S.filter((s) => Math.abs(s.v0) < EPS && Math.abs(s.v1) < EPS && Math.abs(s.x0 - target) < EPS);
+  // at rest at that displacement for a stretch: a stretch, not a moment it gets there;
+  // joined stretches are one, and the moments inside or at the ends of one are dropped
+  const rests = [];
+  for (const s of S) if (Math.abs(s.v0) < EPS && Math.abs(s.v1) < EPS && Math.abs(s.x0 - target) < EPS) {
+    const last = rests[rests.length - 1];
+    if (last && Math.abs(last[1] - s.t0) < EPS) last[1] = s.t1; else rests.push([s.t0, s.t1]);
+  }
+  const inRest = (t) => rests.some(([a, b]) => t >= a - 1e-9 && t <= b + 1e-9);
+  const keep = times.map((t) => !inRest(t));
+  const rowsKept = findRows.filter((_, i) => keep[i]); findRows.length = 0; findRows.push(...rowsKept);
+  const tKept = times.filter((t) => !inRest(t)); times.length = 0; times.push(...tKept);
+  for (const [a, b] of rests) findRows.push({ f: M`v = 0`, s: M`x = ${d(target)}`, r: M`"at rest there," ${d(a)} <= t <= ${d(b)}` });
 
   // ── a time asked
   let at = null;
@@ -93,17 +105,24 @@ export function solveVt(k = {}) {
   }
   dist = snap(dist);
   const notes = [`The greatest acceleration has size ${M`${d(aMax)} [m s^-2]`}, the steepest piece.`,
-    times.length ? `It is ${Math.abs(target) < EPS ? 'back where it started' : M`${d(target)} [m]` + ' from where it started'} at ${times.map((t) => M`t = ${d(t)} [s]`).join(', ')}${stillAt.length ? ', and stays there while it is at rest' : ''}.`
-      : `It is never ${Math.abs(target) < EPS ? 'back where it started' : M`${d(target)} [m]` + ' from where it started'} again.`,
-    `It travels ${M`${d(dist)} [m]`} in all and ends ${M`${d(Math.abs(snap(x)))} [m]`} ${x >= 0 ? 'ahead of' : 'behind'} where it started.`];
+    ...(() => {
+      const where = Math.abs(target) < EPS ? 'back where it started' : `${M`${d(target)} [m]`} from where it started`;
+      const restSay = rests.map(([a, b]) => `at rest ${Math.abs(target) < EPS ? 'at the start' : 'there'} from ${M`t = ${d(a)}`} to ${M`t = ${d(b)} [s]`}`);
+      const out = [];
+      if (times.length) out.push(`It is ${where} at ${times.map((t) => M`t = ${d(t)} [s]`).join(times.length > 2 ? ', ' : ' and ')}.`);
+      else out.push(`It is never ${where}${rests.length ? ', except while it is at rest there' : ''}.`);
+      if (rests.length) out.push(`It is ${restSay.join(' and ')}.`);
+      return out;
+    })(),
+    `It travels ${M`${d(dist)} [m]`} in all and ${Math.abs(x) < EPS ? 'ends where it started' : `ends ${M`${d(Math.abs(snap(x)))} [m]`} ${x > 0 ? 'ahead of' : 'behind'} where it started`}.`];
   if (at) notes.push(`At ${M`t = ${d(at.t)} [s]`}: ${M`v = ${d(at.v)} [m s^-1]`}, ${M`x = ${d(at.x)} [m]`}.`);
 
   const seg = (t) => S.find((q) => t <= q.t1 + 1e-12) || S[S.length - 1];
-  const f = { kind: 'vt', tMax: T, P, S, times, target, at, aMax, steep: steep.map((s) => s.i),
+  const f = { kind: 'vt', tMax: T, P, S, times, rests, target, at, aMax, steep: steep.map((s) => s.i),
     pos: (t) => { const s = seg(t), tau = Math.max(0, t - s.t0); return s.x0 + s.v0 * tau + 0.5 * s.a * tau * tau; },
     vel: (t) => { const s = seg(t); return s.v0 + s.a * Math.max(0, t - s.t0); }, acc: (t) => seg(t).a };
   const derived = [`greatest ${M`abs(a) = ${d(aMax)} [m s^-2]`}`, ...times.map((t) => M`t = ${d(t)} [s]`)];
-  return { ok: true, mode: 'vt', S, aMax, aRows, areaRows, times, findRows, at, atRows, dist, end: snap(x), notes, derived, f, target };
+  return { ok: true, mode: 'vt', rests, S, aMax, aRows, areaRows, times, findRows, at, atRows, dist, end: snap(x), notes, derived, f, target };
 }
 
 /** The working: the steepest gradient, the area piece by piece, the times asked. */
