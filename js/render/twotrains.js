@@ -181,10 +181,12 @@ export function render(canvas, cam, o) {
 
   // ── the gap between their fronts, and the moments asked about
   const gx0 = X(Math.min(xa, xb)), gx1 = X(Math.max(xa, xb)), gy = yA + 34;
+  // at the time asked, the line below says the gap: it is not written twice
+  const asked = f.ask != null && t >= f.ask - 1e-9 && Math.abs(f.gapAt(t) - f.gap) < 0.05;
   if (gx1 - gx0 > 2) {
     stroke(g, [{ x: gx0, y: gy }, { x: gx1, y: gy }], { color: P.mark, width: 1.6 });
     for (const xx of [gx0, gx1]) stroke(g, [{ x: xx, y: gy - 5 }, { x: xx, y: gy + 5 }], { color: P.mark, width: 1.6 });
-    L.add(T`${q(f.gapAt(t))} [m] "apart"`, (gx0 + gx1) / 2, gy + 16, { color: P.mark, align: 'center', pri: 8, size: 13, weight: 700 });
+    if (!asked) L.add(T`${q(f.gapAt(t))} [m] "apart"`, (gx0 + gx1) / 2, gy + 16, { color: P.mark, align: 'center', pri: 8, size: 13, weight: 700 });
   }
   if (f.ask != null) { const { age } = ageOf(t, f.ask, f.tMax, life); pulse(g, (gx0 + gx1) / 2, gy, age, life, P.mark, { radius: 40 }); }
   const passed = f.eq.filter((te) => t >= te - 1e-9);

@@ -100,10 +100,10 @@ export function render(canvas, cam, o) {
   signs.forEach((s, i) => {
     const passed = t >= s.t - 1e-9;
     // the speed there once it has passed; while the figure is at it, its own
-    // label says it. Beside the plate; on a phone, over it, every other one higher
+    // label says it. Beside the plate; on a phone, over one plate and under the next, in turn
     const here = Math.abs(X(x) - X(s.at)) < size * 0.6;
     if (passed && !here) {
-      if (narrow) L.add(T`${q(s.u)} [m s^-1]`, X(s.at), plateY - 28 - (i % 2) * 25, { color: P.vel, align: 'center', pri: 6, size: 13, weight: 700, maxPush: 20 });
+      if (narrow) L.add(T`${q(s.u)} [m s^-1]`, X(s.at), i % 2 ? plateY + 26 : plateY - 28, { color: P.vel, align: 'center', pri: 6, size: 13, weight: 700, maxPush: 20 });
       else L.add(T`${q(s.u)} [m s^-1]`, X(s.at) + 22, plateY, { color: P.vel, align: 'left', pri: 6, size: 13, weight: 700, maxPush: 20 });
     }
     if (s.t > 1e-9) { const { age, life } = ageOf(t, s.t, f.tMax, f.tMax / 8); pulse(g, X(s.at), plateY, age, life, P.mark, { radius: 30 }); }
