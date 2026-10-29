@@ -47,7 +47,7 @@ export function house(g, edge, sill, Y, w, from, P) {
 /** A garden fence at x, from the ground at Y up to top: posts and rails, solid boards. */
 export function fence(g, x, top, Y, P) {
   g.save(); g.fillStyle = withAlpha('#9a7b55', 0.8); g.strokeStyle = P.strong; g.lineWidth = 1.4;
-  g.fillRect(x - 4, top + 5, 8, Y - top - 5); g.strokeRect(x - 4, top + 5, 8, Y - top - 5);
+  const hb = Math.max(0, Y - top - 5); g.fillRect(x - 4, top + 5, 8, hb); g.strokeRect(x - 4, top + 5, 8, hb);
   // the boards' pointed tops reach exactly the fence's height
   g.beginPath(); g.moveTo(x - 4, top + 5); g.lineTo(x, top); g.lineTo(x + 4, top + 5); g.closePath(); g.fill(); g.stroke();
   for (const f of [0.3, 0.7]) { g.beginPath(); g.moveTo(x - 7, top + (Y - top) * f); g.lineTo(x + 7, top + (Y - top) * f); g.stroke(); }

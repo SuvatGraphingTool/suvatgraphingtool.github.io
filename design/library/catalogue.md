@@ -118,6 +118,7 @@ this library: *covered* names the one of the twelve that does it.
 | 82 | OCR A | H240/03 | Jun 2018 | 11 | — | v = kt + 0.03t² for 20 s, then constant 1.3 m/s² up to 25 m/s | – | **out**: variable acceleration, calculus |
 | 83 | Edexcel | 9MA0/32 | Jun 2023 | 3 | — | v = (t² − 3t + 7)i + (2t² − 3)j | – | **out**: variable acceleration in i and j, calculus |
 | 84 | OCR A Physics | H556/01 | Jun 2019 | 17 | — | Hollow ball falling with drag, v-t curve tangent | 9.81 | **out**: air resistance and a v–t curve |
+| 85 | AQA | 7357/2 | Jun 2018 | 12 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202018%20QP.pdf) | v–t graph of straight pieces above and below the axis; greatest acceleration; when back at the start | – | **built**: `vt-graph` (3 m s⁻²; t = 8 and 14) |
 
 ## Built, and why it is built the way it is
 
@@ -351,12 +352,9 @@ target 20 m out at 0.75 m: α = 14.0°, 1.13 s to the target). WJEC Unit 4 Jun
 2019 Q10 (served at 30i − 1.4j from 2.4 m: lands at 30.8 m s⁻¹; above the
 0.9 m net at 0.4 s, 12 m out, clearing it by 0.156 m). OCR MEI H640/01 Jun
 2018 Q9 (thrown horizontally at 14 m s⁻¹ from 5 m: down in 1.01 s; path
-y = 5 − 0.025x²; a 2 m fence is cleared anywhere up to 10.95 m out).
-
-Also OCR MEI H640/01 Jun 2018 Q9 (a pebble thrown horizontally at 14 m s⁻¹
-from a window 5 m up, over a 2 m fence d away: 1.01 s to the ground; the path
-y = 5 − 0.025x²; the fence is cleared for d up to 10.95 m), drawn as a house
-with a window and a garden fence.
+y = 5 − 0.025x²; a 2 m fence is cleared anywhere up to 10.95 m out); with
+"Thrown from" set to a window and the thing to clear a fence, it is drawn as
+a house with a window and a garden fence.
 
 **Why the twelve cannot.** The twelve launch a projectile and report where it
 lands and how high it goes. None has a point the flight must pass, so none can

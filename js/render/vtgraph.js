@@ -27,7 +27,7 @@ export function render(canvas, cam, o) {
 
   // ── the graph, right of the readouts
   const vs = f.P.map((p) => p.v), vHi = Math.max(...vs, 0), vLo = Math.min(...vs, 0), pad = (vHi - vLo || 1) * 0.15;
-  const gx0 = Math.min(w * 0.45, HUD + 50), gx1 = w - 30, gy0 = 50, gy1 = Math.max(gy0 + 140, h * 0.56);
+  const gx0 = w < 520 ? 40 : HUD + 50, gx1 = w - 30, gy0 = 50, gy1 = Math.max(gy0 + 140, h * 0.56);
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0), V = (v) => gy1 - ((v - (vLo - pad)) / (vHi - vLo + 2 * pad)) * (gy1 - gy0);
   // the area to now, each piece split where it crosses the axis: forwards stronger than back
   const shade = (ta, tb, va, vb) => { g.save(); g.fillStyle = withAlpha(P.disp, va + vb >= 0 ? 0.24 : 0.12);
@@ -40,7 +40,7 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: gx0, y: V(0) }, { x: gx1, y: V(0) }], { color: P.axis, width: 1.8 });
   stroke(g, [{ x: gx0, y: gy0 }, { x: gx0, y: gy1 }], { color: P.axis, width: 1.8 });
   L.add(T`v [m s^-1]`, gx0 - 8, gy0 - 12, { color: P.muted, align: 'left', pri: 4, size: 13, bg: false });
-  L.add(T`t [s]`, gx1, V(0) + 16, { color: P.muted, align: 'right', pri: 4, size: 13, bg: false });
+  L.add(T`t [s]`, gx1, V(0) + 32, { color: P.muted, align: 'right', pri: 4, size: 13, bg: false });
   const vstep = niceStep(vHi - vLo + 2 * pad, 6);
   for (let v = Math.ceil((vLo - pad) / vstep) * vstep; v <= vHi + pad; v += vstep) if (Math.abs(v) > 1e-9) L.add(fmt(v, vstep < 1 ? 1 : 0), gx0 - 8, V(v), { color: P.faint, align: 'right', pri: 1, size: 13, bg: false, maxPush: 0 });
   for (const s of f.S) {

@@ -94,7 +94,7 @@ export function solveVt(k = {}) {
     const v = snap(s.v0 + s.a * tau), xa = snap(s.x0 + s.v0 * tau + 0.5 * s.a * tau * tau);
     at = { t, v, x: xa };
     atRows.push({ f: M`v = u + at`, s: M`${br(s.v0)} + ${br(s.a)} * ${d(snap(tau))}`, r: M`v = ${d(v)} [m s^-1]` });
-    atRows.push({ f: M`x = x_0 + ut + ½at^2`, s: M`${d(s.x0)} + ${br(s.v0)} * ${d(snap(tau))} + ½ * ${br(s.a)} * ${d(snap(tau))}^2`, r: M`x = ${d(xa)} [m]` });
+    atRows.push({ f: M`x = x_0 + ut + ½at^2`, s: M`${d(s.x0)} + ${br(s.v0)} * ${d(snap(tau))}${Math.abs(s.a) > EPS ? ` + ½ * ${br(s.a)} * ${d(snap(tau))}^2` : ''}`, r: M`x = ${d(xa)} [m]` });
   }
 
   // distance travelled: each piece's area, split where it changes direction
@@ -104,7 +104,7 @@ export function solveVt(k = {}) {
     if (turn > EPS && turn < s.t1 - s.t0 - EPS) { const p1 = 0.5 * s.v0 * turn; dist += Math.abs(p1) + Math.abs(s.area - p1); } else dist += Math.abs(s.area);
   }
   dist = snap(dist);
-  const notes = [`The greatest acceleration has size ${M`${d(aMax)} [m s^-2]`}, the steepest piece.`,
+  const notes = [`The greatest acceleration has size ${M`${d(aMax)} [m s^-2]`}, ${steep.length > 1 ? 'the steepest pieces' : 'the steepest piece'}.`,
     ...(() => {
       const where = Math.abs(target) < EPS ? 'back where it started' : `${M`${d(target)} [m]`} from where it started`;
       const restSay = rests.map(([a, b]) => `at rest ${Math.abs(target) < EPS ? 'at the start' : 'there'} from ${M`t = ${d(a)}`} to ${M`t = ${d(b)} [s]`}`);

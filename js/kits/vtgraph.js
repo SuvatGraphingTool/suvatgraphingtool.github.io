@@ -29,7 +29,7 @@ export const vtgraph = {
       { key: `p${i + 1}.v`, label: 'v is (m s⁻¹)', aria: `Corner ${i + 1}: the velocity (m s⁻¹)`, optional: true, placeholder: '—', hint: i === 0 ? 'Below zero is going back.' : '' },
     ] })),
     { title: 'What the paper asks', fields: [
-      { key: 'askS', label: 'When is it this far from the start (m)', aria: 'When is it this displacement from the start (m)', placeholder: '0', hint: 'Blank: when it is back where it started.' },
+      { key: 'askS', label: 'When is it this far from the start (m)', aria: 'When is it this displacement from the start (m)', placeholder: '0', hint: 'Blank: when it is back where it started. Negative is behind the start.' },
       { key: 'askT', label: 'Displacement and velocity at time (s)', aria: 'The displacement and velocity at this time (s)', placeholder: '—', hint: '' },
     ] },
   ],
