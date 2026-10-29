@@ -963,6 +963,8 @@ group('Stage by stage (MM1B Jan13 Q1, H240/03 J19 Q7, H556/01 J19 Q19a)', () => 
   ok(at.ok && at.S[2].v === 18 && at.Stot === 184, 'WME01 Oct23 Q2: an a–t graph as stages; v = 18, AB = 184 m (MS)');
   const mei = K.solve({ stages: [{ u: 5, v: 11.4, t: 4 }, { v: 17.8, a: 1.6 }, { a: 0 }], T: 20 });
   ok(mei.ok && Math.abs(mei.Stot - 304.8) < 1e-9 && mei.S[2].t0 === 8, 'MEI H640/01 J18 Q14: steady from t = 8; 304.8 m in 20 s (MS)');
+  const wj = K.solve({ stages: [{ u: 15, a: 0, t: 120 }, { v: 0, t: 12 }, { u: 0, a: -2, t: 8 }, { a: 1.6, v: 0 }] });
+  ok(wj.ok && wj.S[0].s + wj.S[1].s === 1890 && wj.S[2].t + wj.S[3].t === 18, 'WJEC AS Unit 2 J18 Q11: AB = 1890 m; B to C in 18 s (MS)');
   const f = r.f; ok(Math.abs(f.pos(40) - 640) < 1e-9 && Math.abs(f.pos(110) - 2460) < 1e-9 && Math.abs(f.vel(40) - 12) < 1e-9, 'the motion passes the join and ends at 2460 m');
 });
 

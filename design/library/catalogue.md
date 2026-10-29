@@ -121,6 +121,7 @@ this library: *covered* names the one of the twelve that does it.
 | 85 | AQA | 7357/2 | Jun 2018 | 12 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202018%20QP.pdf) | v–t graph of straight pieces above and below the axis; greatest acceleration; when back at the start | – | **built**: `vt-graph` (3 m s⁻²; t = 8 and 14) |
 | 86 | WJEC | 1300U40-1 Unit 4 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202018%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | P from A, AB its range; Q from B a second later, same speed and angle; height where they collide | 9.8 | **built**: `thrown-towards` (53.0 m; 6.43 m at t = 1.75 s) |
 | 87 | WJEC | 1300U40-1 Unit 4 | Jun 2023 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202023%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Kicked at 23 m/s, 18° at a wall 8 m away with a window 1.1–2.2 m up; does it strike it, does it break at 21 m/s? | 9.8 | **built**: `over-the-wall`, a wall it hits with a window (1.94 m up, 22.2 m s⁻¹: strikes it and breaks it) |
+| 88 | WJEC | 2300U20-1 Unit 2 (AS) | Jun 2018 | 11 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-2/June%202018%20QP%20-%20Unit%202%20WJEC%20Maths%20AS-level.pdf) | Steady 15 m/s for 2 min, rest at B in 12 s; reverses 2 m/s² for 8 s then slows at 1.6 to rest at C | – | **built**: `stage-by-stage` (AB = 1890 m; B to C in 18 s) |
 
 ## Built, and why it is built the way it is
 
@@ -635,7 +636,9 @@ Q2 (an acceleration–time graph from A at 8 m s⁻¹: −0.5 for 4 s, 0 for 6 s
 10 s, each a stage of a and t: v = 18 at B; AB = 184 m). OCR MEI H640/01 Jun 2018
 Q14(i)–(iv) (from 5 to 11.4 m s⁻¹ in 4 s, uniform, until 17.8 m s⁻¹, then
 steady: a = 1.6, steady from t = 8, 304.8 m in 20 s with the whole time filling
-the steady stage).
+the steady stage). WJEC AS Unit 2 Jun 2018 Q11 (steady at 15 m s⁻¹ for 2
+minutes, to rest at B in 12 s: AB = 1890 m; then reversing at 2 m s⁻² for 8 s and
+slowing at 1.6 m s⁻² to rest at C: 18 s from B to C, the velocity below the axis).
 
 **Why it is built.** Each stage is a SUVAT question of its own, but the next
 one starts where the last ended, and a stage may be short of a number the
