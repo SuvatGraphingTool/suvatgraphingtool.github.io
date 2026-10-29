@@ -109,6 +109,11 @@ best of the hand-built scenes.
 - **The teaching layer stays clean on top.** Vectors, markers, labels and
   rulers keep the colour-is-quantity rule and the 13px floor, and stay readable
   over the richer art (halo or backing behind text where needed).
+- **Draggable and zoomable, like everything else.** Every library stage uses the
+  same camera as the hand-built scenes (drag to pan, wheel and pinch to zoom,
+  fit and reset). No stage is a fixed picture.
+- **Opens runnable.** Every scenario carries an `example` (its first paper's
+  numbers) that fills the values screen on click while `PREFILL` is on.
 - Build these as reusable pieces in `js/render/` (figures, backdrops, effects),
   listed in `design/components.md`, so every scenario and every future one
   gets them.
