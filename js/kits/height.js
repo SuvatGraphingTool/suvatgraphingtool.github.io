@@ -58,6 +58,12 @@ export const height = {
     const say = (x) => (typeof x === 'string' ? x.replace(/\bthe launch point\b/g, from).replace(/\bthe ground\b/g, Pl.below) : x);
     const out = buildWorking(solved.f, t).map((sec) => ({ ...sec, title: say(sec.title), note: say(sec.note),
       rows: sec.rows.map((r) => ({ ...r, f: say(r.f), s: say(r.s), r: say(r.r) })) }));
+    // the height found from the time in the air is worked here, and the time
+    // of flight is not then worked back from it
+    const kept = solved.foundH ? out.filter((x) => !/time of flight/i.test(String(x.title))) : out;
+    if (solved.foundH) kept.push({ title: `The height, from the time in the air`, rows: solved.hRows,
+      note: `Measured from where it was thrown, up positive, it ends ${M`${tr(solved.h)} [m]`} below that point: so it started that high above ${PLACES[solved.place].below}.` });
+    out.length = 0; out.push(...kept);
     if (solved.topRows.length) out.unshift({ title: 'The speed, from the time to the top', rows: solved.topRows,
       note: `At the top of its path it has stopped rising: the vertical part of its velocity is zero.` });
     const rows = levelRows(solved);

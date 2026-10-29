@@ -198,7 +198,7 @@ export const LIBRARY = [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Oct 2021', q: '6' },
       { board: 'AQA', paper: '7357/2', session: 'Jun 2018', q: '16' },
     ],
-    tags: ['time to the top', 'greatest height', 'cliff', 'sea', 'tower', 'building', 'from a height', 'thrown up', 'thrown down', 'thrown horizontally', 'projectile',
+    tags: ['time to the top', 'cliff', 'sea', 'tower', 'building', 'from a height', 'thrown up', 'thrown down', 'thrown horizontally', 'projectile',
            'vertical', 'greatest height', 'time of flight', 'speed of impact', 'hits the sea', 'hits the ground', 'stone', 'ball',
            'mechanics', 'A level', 'AS level', 'M1'],
     ending: {

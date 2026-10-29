@@ -72,6 +72,7 @@ export function solveHeight(k0 = {}) {
   const r = solveLaunch({ u, v: k.v, t: k.t, s: k.s, g: k.g, theta: k.theta, h: k.h });
   if (!r.ok) return fail(r.reason);
   const hh = have(k.h) ? k.h : snap(r.f.params.h);
+  if (have(k0.tTop) && have(k.t) && k0.tTop >= k.t - 1e-9) return fail(`The time to the top, ${M`${d(k0.tTop)} [s]`}, is not before the ${M`${d(k.t)} [s]`} it takes to land: it must reach its top first.`);
   if (!(hh > 0)) return fail(`Landing then, it would have started at or below ${Pl.below}: that time is too short for a fall from ${Pl.top}.`);
   k = { ...k, h: hh };
   const f = r.f;
@@ -111,11 +112,17 @@ export function solveHeight(k0 = {}) {
   if (!have(k0.h)) lines.unshift(`Landing after ${M`${d(T)} [s]`}, it started ${M`${d(k.h)} [m]`} above ${Pl.below}.`);
   if (have(k0.tTop)) lines.unshift(`Stopping rising after ${M`${d(k0.tTop)} [s]`}, it was thrown at ${M`${d(snap(f.params.u))} [m s^-1]`}.`);
   notes.push(...lines);
-  const derived = [...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
+  const found = [...(have(k0.tTop) ? [M`u = ${d(snap(f.params.u))} [m s^-1]`] : []), ...(!have(k0.h) ? [M`h = ${d(k.h)} [m]`] : [])];
+  const derived = [...found, ...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
   if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}`);
   f.place = place; f.level = level; f.vertical = straight;
   return {
     ok: true, mode: 'height', axis: straight ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical: straight, topRows, foundH: !have(k0.h),
+    // the height, worked from the time in the air: s = u_y t − ½gt², and h = −s
+    hRows: have(k0.h) ? [] : [
+      { f: M`s = u_y t - ½gt^2`, s: M`${d(snap(f.uy))} * ${d(k.t)} - ½ * ${d(k.g)} * ${d(k.t)}^2`, r: M`s = ${d(-k.h)} [m]` },
+      { f: M`h = -s`, s: '', r: M`h = ${d(k.h)} [m]` },
+    ],
     T, top, out, vL, h: k.h, g: k.g, notes, derived,
     params: r.params, convention: `Up and away from the ${Pl.word} are positive; heights are above ${Pl.below}.`,
   };
