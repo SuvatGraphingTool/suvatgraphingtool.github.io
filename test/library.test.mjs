@@ -18,6 +18,7 @@ import { solveTarget, targetWorking, flight } from '../js/core/target.js';
 import { solveHeight, levelRows } from '../js/core/height.js';
 import { solveCatch, catchWorking } from '../js/core/catch.js';
 import { solveTrip, tripWorking } from '../js/core/trip.js';
+import { solveTwoPlane, twoPlaneWorking } from '../js/core/twoplane.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { toLevel, rebound, timesAt } from '../js/core/stages.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
@@ -833,6 +834,21 @@ group('From a height: the time to the top', () => {
   ok(/upwards/.test(strip(solveHeight({ place: 'cliff', h: 10, theta: -20, tTop: 1.5, g: 9.8 }).reason)), 'a time to the top when thrown down: refused');
   ok(/too short/.test(strip(solveHeight({ place: 'tower', theta: 90, u: 20, t: 2, g: 9.8 }).reason)), 'a landing time too short to have started above the ground: refused');
   ok(KITS.height.working(ial, 1)[0].title === 'The speed, from the time to the top', 'the working starts from the time to the top');
+});
+
+group('Two ships, in i and j: the papers', () => {
+  const j12 = solveTwoPlane({ units: 'km', A: { r0: { x: 2, y: -8 }, v: { x: -4, y: 8 } }, B: { r0: { x: 18, y: 12 }, v: { x: -6, y: -8 } }, at: { due: 'W' } });
+  ok(j12.ok && near(j12.answers[0].t, 1.25) && near(j12.answers[0].dist, 13.5) && near(j12.heads[0].sp, Math.sqrt(80)), 'M1 J12 Q7: speed √80; due west at 1.25 h, 13.5 km apart');
+  const j17 = solveTwoPlane({ units: 'km', A: { r0: { x: 9, y: 10 }, v: { x: 9, y: -2 } }, B: { r0: { x: 1, y: 4 }, v: { x: 4, y: 8 } }, at: { apart: 10 } });
+  ok(j17.ok && Math.round(j17.heads[0].br) === 103 && near(j17.answers[0].times[0], 0) && near(j17.answers[0].times[1], 0.32), 'M1 J17 Q7: bearing 103°, 10 km apart at t = 0 and 0.32');
+  const i19 = solveTwoPlane({ units: 'm', A: { r0: { x: 20, y: -17 }, v: { x: -6, y: 7 } }, B: { r0: { x: -8, y: 9 }, w: { x: 1, y: 2 } }, find: 'p', at: { due: 'SW', bOfA: true, dueT: 4 } });
+  ok(i19.ok && Math.round(i19.heads[0].br) === 319 && near(i19.p, -0.5) && near(Math.hypot(i19.B.v.x, i19.B.v.y), Math.sqrt(5) / 2), 'IAL Jan19 Q2: bearing 319°, p = −0.5, B at √5⁄2');
+  for (const k of [{}, { A: { v: { x: 1 } } }, { A: { v: { x: 1 } }, B: { v: { x: 1 }, w: { x: 1 } }, find: 'p', at: { due: 'N', dueT: 1 } }, { A: { v: { x: 1, y: 0 } }, B: { w: { x: 1, y: 0 } }, find: 'p', at: { due: 'E', dueT: 1 } }]) {
+    ok(!solveTwoPlane(k).ok && solveTwoPlane(k).reason, `refused with a reason: ${JSON.stringify(k)}`);
+  }
+  for (const sec of twoPlaneWorking(j12)) for (const row of sec.rows) ok(!/NaN|undefined/.test(row.f + row.s + row.r), 'no NaN in the working');
+  const g = KITS.twoplane.graphs(j12.f, 0, new Proxy({}, { get: () => '#000' }));
+  ok(g[0].series.every((s, i) => (i % 2 === 0) === !!s.dash), 'i parts dashed, j parts solid');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

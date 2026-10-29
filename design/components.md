@@ -68,6 +68,7 @@ A kit is an object with:
 | `catcher` — `js/kits/catcher.js` | `catch-it` |
 | `trip` — `js/kits/trip.js` | `there-and-back` |
 | `jump` — `js/kits/jump.js` (engine: journey) | `parachute-stages` |
+| `twoplane` — `js/kits/twoplane.js` | `two-in-a-plane` |
 | `bounce` — `js/kits/bounce.js` | `bounce` |
 
 ## Engine models — `js/core/`
@@ -295,6 +296,17 @@ segment's acceleration and displacement as working (`tripWorking`).
 
 Used by: `there-and-back`.
 
+### Two in a plane — `js/core/twoplane.js`
+
+`solveTwoPlane({ units, A: { r0, v }, B: { r0, v, w }, find, at: { due, bOfA, dueT, apart } })`
+— two at constant velocities; everything is about Δ = r_A − r_B, linear in t:
+when one is due a compass direction of the other (and how far apart then),
+when they are a distance apart (|Δ|² = d², a quadratic), and p in B's velocity
+p·w from a direction at a given time. `bearing(v)` (exported) — clockwise
+from north. `twoPlaneWorking` writes each.
+
+Used by: `two-in-a-plane`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -307,6 +319,13 @@ its top level, so it can go into a product or after a minus as it stands
 built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
+
+### Two on a map — `js/render/twoplane.js`
+
+A map from above at one scale (sea for ships, sky for birds), both tracks, the
+vector from B to A, each asked moment ringed; `shipTop(g, x, y, s, a, color, P)`
+and `birdTop(g, x, y, s, a, color)` (exported). Used by: `two-in-a-plane`.
+
 
 ### A parachute jump — `js/render/jump.js`
 

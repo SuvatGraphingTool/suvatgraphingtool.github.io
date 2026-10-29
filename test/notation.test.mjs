@@ -36,6 +36,7 @@ import { solveTarget, targetWorking } from '../js/core/target.js';
 import { solveHeight } from '../js/core/height.js';
 import { solveCatch } from '../js/core/catch.js';
 import { solveTrip } from '../js/core/trip.js';
+import { solveTwoPlane } from '../js/core/twoplane.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { KITS } from '../js/kits/index.js';
 import { LIBRARY } from '../js/library.js';
@@ -398,6 +399,30 @@ group('The Past-paper library: a parachute jump, everything it says', () => {
     }
   }
   for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 30, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two ships, everything it says', () => {
+  const K = KITS.twoplane;
+  const bag = [];
+  let said = 0;
+  for (const k of [{ units: 'km', A: { r0: { x: 2, y: -8 }, v: { x: -4, y: 8 } }, B: { r0: { x: 18, y: 12 }, v: { x: -6, y: -8 } }, at: { due: 'W', apart: 5 } },
+    { units: 'km', A: { r0: { x: 9, y: 10 }, v: { x: 9, y: -2 } }, B: { r0: { x: 1, y: 4 }, v: { x: 4, y: 8 } }, at: { apart: 10, due: 'NE' } },
+    { units: 'm', A: { r0: { x: 20, y: -17 }, v: { x: -6, y: 7 } }, B: { r0: { x: -8, y: 9 }, w: { x: 1, y: 2 } }, find: 'p', at: { due: 'SW', bOfA: true, dueT: 4 } },
+    { units: 'm', A: { v: { x: 0, y: 3 } }, B: { r0: { x: 5, y: 0 }, v: { x: 0, y: 0 } }, at: { due: 'W', apart: 2 } }, {}]) {
+    const r = K.solve(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); } if (st.note) check('note', st.note, bag); }
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 30, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));

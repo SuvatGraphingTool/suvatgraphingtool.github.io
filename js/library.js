@@ -278,4 +278,28 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each stage\u2019s speeds, distance and time, and the time to the ground.',
     } },
+  { id: 'two-in-a-plane', group: 'library', kit: 'twoplane',
+    name: 'Two ships, in i and j',
+    sub: 'two at constant velocities — when is one due west of the other?',
+    note: 'Two ships, boats or birds, each moving at a constant velocity given in i and j. Everything the papers ask is about the one vector between them: when one is due west (or any compass direction) of the other and how far apart they are then, when they are a given distance apart, and a number p in one velocity found from where they are at a given time.',
+    params: { units: 'km', look: 'ships', A: { r0: { x: 2, y: -8 }, v: { x: -4, y: 8 } }, B: { r0: { x: 18, y: 12 }, v: { x: -6, y: -8 } }, at: { due: 'W' } },
+    place: 'A map from above: the sea, east and north',
+    sources: [
+      { board: 'Edexcel', paper: '6677/01 M1', session: 'Jan 2012', q: '7' },
+      { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2017', q: '7' },
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2019', q: '2' },
+    ],
+    tags: ['two ships', 'ships', 'boats', 'birds', 'two particles', 'vectors', 'i and j', 'due west', 'due east', 'south-west', 'bearing',
+           'apart', 'distance apart', 'constant velocity', 'position vector', 'mechanics', 'M1', 'IAL'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers\u2019 model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Points on a flat sea', 'the ships have no size and the sea no curve: east and north are straight lines.'],
+        ['Constant velocities', 'neither turns or changes speed; no current or wind is in the model.'],
+        ['One clock', 'both are timed from the same t = 0.'],
+      ],
+      caveat: 'What the engine did compute is above: each one\u2019s position, speed and bearing, the vector between them, and each moment the paper asked about.',
+    } },
 ];

@@ -51,13 +51,13 @@ this library: *covered* names the one of the twelve that does it.
 | 15 | AQA | 7357/2 | Jun 2023 | 20 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202023%20QP.pdf) | Ball thrown from 1.8 m at 14 m/s, 60°; dog starts 0.2 s later from rest, catches it at 0.3 m; find dog's acceleration | 9.8 | **built**: `catch-it` (caught at 2.59 s, 18.15 m out; a = 6.34) |
 | 16 | Edexcel | 6677/01 M1 | Jan 2012 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Stone up and back in 3 4/7 s; find u, max height, time at least 6.6 m above A | 9.8 | **covered** by `time-above` |
 | 17 | Edexcel | 6677/01 M1 | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | 885 m trip: accelerate over T/3 s to 15 m/s, steady T s, brake at 2.5 m/s²; find T, a | – | **built**: `journey-stages` (T = 48, a = 0.9375) |
-| 18 | Edexcel | 6677/01 M1 | Jan 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Two boats at constant velocity; when is P due west of Q, and how far apart then | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 18 | Edexcel | 6677/01 M1 | Jan 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202012%20QP.pdf) | Two boats at constant velocity; when is P due west of Q, and how far apart then | – | **built**: `two-in-a-plane` (t = 1.25 h, 13.5 km apart) |
 | 19 | Edexcel | 6677/01 M1 | Jun 2013 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Passes A at u, B 10 s later at 34 m/s, AB = 240 m; find u, time to midpoint | – | **covered** by `road` |
 | 20 | Edexcel | 6677/01 M1 | Jun 2013 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202013%20QP.pdf) | Car between lights 2145 m, 120 s; motorbike leaves 10 s later, passes car at 990 m | – | **built**: `journey-stages` does the car (T = 75); `two-on-a-road` the motorbike (50 s, a = 0.792) |
 | 21 | Edexcel | 6677/01 M1 | Jun 2015 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Stone up at 19.6 m/s; max height; time above 14.7 m | 9.8 | **covered** by `time-above` |
 | 22 | Edexcel | 6677/01 M1 | Jun 2015 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Train: accelerate 0.5, steady V, decelerate 0.25; 5 min, 6.3 km; find V (V < 50) | – | **built**: `journey-stages` (V = 30, V = 70 rejected) |
 | 23 | Edexcel | 6677/01 M1 | Jun 2017 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Cyclist passes A, 5 s later B at 10 m/s, AB = 40 m; find a, time to midpoint | – | **covered** by `road` |
-| 24 | Edexcel | 6677/01 M1 | Jun 2017 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Two ships at constant velocity; bearing; times when 10 km apart | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 24 | Edexcel | 6677/01 M1 | Jun 2017 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Two ships at constant velocity; bearing; times when 10 km apart | – | **built**: `two-in-a-plane` (bearing 103°; t = 0 and 0.32 h) |
 | 25 | Edexcel | 9MA0/03 | Jun 2018 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Constant a found from two positions; at A the acceleration switches; time until moving north-east | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 26 | Edexcel | 9MA0/03 | Jun 2018 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Ball thrown from 2 m, apex 3 m, hits target 20 m away at 0.75 m; find angle, time | 9.8 | **built**: `over-the-wall` (α = 14.0°, 1.13 s to T) |
 | 27 | Edexcel | 9MA0/32 | Oct 2020 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | a = 4i−5j, u = −2i+2j from O; velocity at t = 2; when it passes (λ, −4.5) | – | **built**: `vectors-ij` (v = 6i − 8j; λ = 2.88) |
@@ -73,7 +73,7 @@ this library: *covered* names the one of the twelve that does it.
 | 37 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Train max 25 m/s, braking time 4× accelerating time, 700 s, 15 km; speed at t = 572 | – | **built**: `journey-stages` (t = 40 s, a = 0.625, 20 m/s at 572 s) |
 | 38 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Two children race and finish together at 27.5 s; race length; Sam's top speed X | – | **built**: `two-on-a-road` (X = 3.92) |
 | 39 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Up at 39.2 m/s, hits ground 10 s later; height of O; time with speed ≤ 24.5 | 9.8 | **covered** by `up` |
-| 40 | Edexcel | IAL WME01 | Jan 2019 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Two birds leave nests; B is south-west of A at t = 4; find B's speed | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 40 | Edexcel | IAL WME01 | Jan 2019 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Two birds leave nests; B is south-west of A at t = 4; find B's speed | – | **built**: `two-in-a-plane` (bearing 319°; p = −0.5, B at 1.12 m s⁻¹) |
 | 41 | Edexcel | IAL WME01 | Jan 2019 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/January%202019%20QP.pdf) | Train 270 s, 4.5 km, accelerates 60 s, brakes 30 s; V; halfway time; times at V/4 | – | **built**: `journey-stages` (V = 20, 142.5 s, 15 s and 262.5 s) |
 | 42 | Edexcel | IAL WME01 | Oct 2021 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Car at 25 m/s, sign 48 m ahead; three braking models, one with a 0.2 s reaction delay | – | **candidate**: several stages along a line, one after another |
 | 43 | Edexcel | IAL WME01 | Oct 2021 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ball up from A above ground; v-t graph zero at 2.5 s; lands at 7 s; speed and height | 9.8 | **built**: `from-a-height`, the time to the top and the time to land (u = 24.5, h = 68.6 m) |
@@ -532,4 +532,23 @@ free fall and under the canopy, a marker where each stage begins.
 
 **What the student varies.** g, the height or the total time, the free fall's
 time or speed, the braking's rate and time or the steady speed.
+
+### `two-in-a-plane` — Two ships, in i and j
+
+**Papers.** Edexcel M1 Jan 2012 Q7 (boats at −4i + 8j from 2i − 8j and
+18i + 12j − t(6i + 8j): P due west of Q at t = 1.25 h, 13.5 km apart). Edexcel
+M1 Jun 2017 Q7 (ships at 9i − 2j and 4i + 8j from 9i + 10j and i + 4j:
+bearing 103°, 10 km apart at t = 0 and 0.32 h). Edexcel IAL WME01 Jan 2019 Q2
+(birds from 20i − 17j at −6i + 7j and from −8i + 9j at p(i + 2j); B south-west
+of A at t = 4: bearing 319°, p = −0.5, B at 1.12 m s⁻¹).
+
+**Why the twelve cannot.** None has two objects in a plane; the library's
+"Moving in a plane" has one.
+
+**How it is solved.** Δ = r_A − r_B is linear in t: a compass direction is one
+relation between its parts (linear), a distance is |Δ|² = d² (quadratic), and p
+enters linearly at the given time. Bearings from tan⁻¹ by quadrant.
+
+**The stage.** A map from above at one scale: sea (or sky), both tracks, ships
+or birds pointing their way, the vector from B to A, each moment ringed, north.
 
