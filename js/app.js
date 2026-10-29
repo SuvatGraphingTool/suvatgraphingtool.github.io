@@ -1821,6 +1821,8 @@ function showAbove() {
   } else if (r.noGravity) {
     // with nothing to bring it down, "how long above" has no end
     at = r.t1 > 1e-9 ? `It passes it at ${ts(r.t1)} and, with no gravity, never comes back down.`
+      : r.atStart ? (traj.uy > 1e-9 ? 'It starts on it and rises away from it: with no gravity it never comes back down.'
+        : 'It starts on it and, with no gravity, keeps level with it.')
       : 'With no gravity it never comes back down: it stays above it.';
   } else if (r.crosses === 2 && r.t1 > 1e-9) {
     at = `It passes it at ${ts(r.t1)} going up and ${ts(r.t2)} coming down, so it is above it for ${secs(r.above)}.`;
