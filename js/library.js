@@ -134,7 +134,7 @@ export const LIBRARY = [
   { id: 'over-the-wall', group: 'library', kit: 'target',
     name: 'Over the wall, through the point',
     sub: 'a projectile that must pass one point — which two angles clear the tree?',
-    note: 'A projectile with one point it has to pass: the top of a wall, a net or a tree, a wall it hits, or a target. Given the launch, the engine says whether it clears and by how much, and where a wall that high could stand. Leave one number out and it is found from the point: the two angles that pass through it, the speed, or both from the time to reach it or from its greatest height. It can be thrown from a stand, a window in a house or the edge of a roof, over a wall, a fence, a net or a tree.',
+    note: 'A projectile with one point it has to pass: the top of a wall, a net or a tree, a wall it hits, or a target. Given the launch, the engine says whether it clears and by how much, and where a wall that high could stand. Leave one number out and it is found from the point: the two angles that pass through it, the speed, or both from the time to reach it or from its greatest height. It can be thrown from a stand, a window in a house or the edge of a roof, over a wall, a fence, a net or a tree — or at a wall with a window in it, which breaks if it is struck fast enough.',
     params: { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' },
     place: 'Side on: the launch, the point, and the ground',
     sources: [
@@ -144,6 +144,7 @@ export const LIBRARY = [
       { board: 'Edexcel', paper: '9MA0/03', session: 'Jun 2018', q: '10' },
       { board: 'WJEC', paper: '1300U40-1 Unit 4', session: 'Jun 2019', q: '10' },
       { board: 'OCR MEI', paper: 'H640/01', session: 'Jun 2018', q: '9' },
+      { board: 'WJEC', paper: '1300U40-1 Unit 4', session: 'Jun 2023', q: '8' },
     ],
     tags: ['wall', 'clears', 'clear', 'just clears', 'net', 'tennis', 'serve', 'tree', 'treetop', 'fence', 'window', 'roof', 'house', 'garden', 'target', 'hits a wall',
            'through a point', 'passes through', 'two angles', 'tan theta', 'trajectory', 'cartesian equation', 'equation of the path',

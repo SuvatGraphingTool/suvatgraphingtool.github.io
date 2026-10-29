@@ -753,7 +753,7 @@ face at the launch, with a window whose sill is the launch height, or its roof's
 eave there; `fence(g, x, top, Y, P)` (exported) — a garden fence of boards and
 rails. The over-the-wall stage frames the house — its width, eave and roof — at the same scale when the
 throw is from a window or a roof (the kit's `from` choice); the fence is a
-kind of thing to clear. Used by: `over-the-wall`.
+kind of thing to clear. A wall it hits may carry a window (`winLo`, `winHi`, `winBreak`): the engine says whether the hit is in it and whether it breaks; the window is drawn glazed in the wall. Used by: `over-the-wall`.
 
 ### A velocity–time graph, and the line — `js/render/vtgraph.js`
 

@@ -1145,6 +1145,16 @@ group('Thrown towards each other (WJEC Unit 4 J18 Q9)', () => {
   ok(!K.solve({ g: 9.8, A: { u: 24.5, theta: 30 }, B: { u: 24.5, theta: 30 }, D: 50, range: true }).ok, 'a distance typed with AB as A\u2019s range is refused');
 });
 
+group('A window in the wall (WJEC Unit 4 J23 Q8)', () => {
+  const K = KITS.target;
+  const r = K.solve(K.read({ g: 9.8, u: 23, theta: 18, d: 8, kind: 'face', winLo: 1.1, winHi: 2.2, winBreak: 21 }));
+  ok(r.ok && r.f.win.inWin && r.f.win.breaks === true, 'strikes the window and breaks it (MS)', r.reason);
+  ok(/1\.944/.test(r.notes.join(' ').replace(/<[^>]+>/g, '')) && /22\.156/.test(r.notes.join(' ').replace(/<[^>]+>/g, '')), '1.94 m up at 22.2 m s⁻¹ (MS)');
+  const miss = K.solve({ g: 9.8, u: 23, theta: 18, d: 8, kind: 'face', winLo: 2.5, winHi: 3 });
+  ok(miss.ok && miss.f.win.inWin === false && /not the window/.test(miss.notes.join(' ')), 'below the window: hits the wall, not the window');
+  ok(!K.solve({ g: 9.8, u: 23, theta: 18, d: 8, kind: 'wall', winLo: 1.1, winHi: 2.2 }).ok, 'a window in a wall it clears is refused');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

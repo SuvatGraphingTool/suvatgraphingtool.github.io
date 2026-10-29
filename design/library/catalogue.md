@@ -120,6 +120,7 @@ this library: *covered* names the one of the twelve that does it.
 | 84 | OCR A Physics | H556/01 | Jun 2019 | 17 | — | Hollow ball falling with drag, v-t curve tangent | 9.81 | **out**: air resistance and a v–t curve |
 | 85 | AQA | 7357/2 | Jun 2018 | 12 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202018%20QP.pdf) | v–t graph of straight pieces above and below the axis; greatest acceleration; when back at the start | – | **built**: `vt-graph` (3 m s⁻²; t = 8 and 14) |
 | 86 | WJEC | 1300U40-1 Unit 4 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202018%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | P from A, AB its range; Q from B a second later, same speed and angle; height where they collide | 9.8 | **built**: `thrown-towards` (53.0 m; 6.43 m at t = 1.75 s) |
+| 87 | WJEC | 1300U40-1 Unit 4 | Jun 2023 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202023%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Kicked at 23 m/s, 18° at a wall 8 m away with a window 1.1–2.2 m up; does it strike it, does it break at 21 m/s? | 9.8 | **built**: `over-the-wall`, a wall it hits with a window (1.94 m up, 22.2 m s⁻¹: strikes it and breaks it) |
 
 ## Built, and why it is built the way it is
 
@@ -356,6 +357,10 @@ target 20 m out at 0.75 m: α = 14.0°, 1.13 s to the target). WJEC Unit 4 Jun
 y = 5 − 0.025x²; a 2 m fence is cleared anywhere up to 10.95 m out); with
 "Thrown from" set to a window and the thing to clear a fence, it is drawn as
 a house with a window and a garden fence.
+
+WJEC Unit 4 Jun 2023 Q8 (kicked at 23 m s⁻¹, 18°, at a wall 8 m away with a
+window from 1.1 to 2.2 m: it hits 1.94 m up at 22.2 m s⁻¹, so it strikes the
+window and, at 21 m s⁻¹ or more, breaks it) — a wall it hits, with a window.
 
 **Why the twelve cannot.** The twelve launch a projectile and report where it
 lands and how high it goes. None has a point the flight must pass, so none can

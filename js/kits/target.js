@@ -40,6 +40,11 @@ export const target = {
       { key: 'kind', type: 'choice', label: 'It is', default: 'wall', hint: 'A wall, fence, net or tree it does not clear, it hits. A wall it hits stops it there.',
         options: [{ v: 'wall', label: 'A wall' }, { v: 'fence', label: 'A fence' }, { v: 'net', label: 'A net' }, { v: 'tree', label: 'A tree' }, { v: 'face', label: 'A wall it hits' }, { v: 'point', label: 'A target point' }] },
     ] },
+    { title: 'A window in a wall it hits, if the paper has one', fields: [
+      { key: 'winLo', label: 'Window bottom (m)', aria: 'A window in the wall: the height of its bottom (m)', placeholder: '—', hint: 'Above the ground.' },
+      { key: 'winHi', label: 'Window top (m)', aria: 'A window in the wall: the height of its top (m)', placeholder: '—', hint: '' },
+      { key: 'winBreak', label: 'Breaks at (m s⁻¹)', aria: 'A window in the wall: the speed that breaks it (m s⁻¹)', placeholder: '—', hint: 'Optional: at least this speed.' },
+    ] },
     { title: 'Find from the point, if the paper asks', fields: [
       { key: 'find', type: 'choice', label: 'Find', names: true,
         hint: 'Its box above is then left to the engine. From the time or the greatest height, leave the speed and the angle blank.',
@@ -59,7 +64,7 @@ export const target = {
 
   read(vals) {
     const k = { g: vals.g };
-    for (const key of ['h0', 'u', 'theta', 'ux', 'uy', 'd', 'H', 'tAt', 'T', 'top', 'flag', 'kind', 'find', 'pick', 'from']) k[key] = vals[key];
+    for (const key of ['h0', 'u', 'theta', 'ux', 'uy', 'd', 'H', 'tAt', 'T', 'top', 'flag', 'kind', 'find', 'pick', 'from', 'winLo', 'winHi', 'winBreak']) k[key] = vals[key];
     // the box for the number being found is ignored, as the hint says
     if (k.find === 'theta' || k.find === 'u') delete k[k.find];
     return k;

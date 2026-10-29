@@ -68,6 +68,7 @@ export function render(canvas, cam, o) {
   const xs = [0, ...paths.flat().map((p) => p.x)], ys = [0, F.h0, ...paths.flat().map((p) => p.y)];
   // a wall it hits stands above where it hits, whether or not its height was given
   const faceTop = kind === 'face' && Pt ? (Pt.H ?? F.at?.y ?? 0) : null;
+  if (f.win) ys.push(f.win.hi * 1.1);
   if (Pt) { if (Pt.d != null) xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H); if (faceTop != null) ys.push(faceTop * 1.5); }
   if (f.flag != null) xs.push(f.flag);
   // a house it is thrown from stands behind the launch: room for it, at the same scale both ways
@@ -134,6 +135,12 @@ export function render(canvas, cam, o) {
       const ft = Y(Math.min(yMax * 0.92, faceTop * 1.5));
       g.save(); g.fillStyle = withAlpha(P.strong, 0.22); g.strokeStyle = P.strong; g.lineWidth = 1.6;
       g.fillRect(px, ft, 12, oy - ft); g.strokeRect(px, ft, 12, oy - ft); g.restore();
+      if (f.win) {
+        // the window in the wall, glazed, from its bottom to its top
+        g.save(); g.fillStyle = withAlpha('#9fb6c8', 0.85); g.strokeStyle = P.strong; g.lineWidth = 1.4;
+        g.fillRect(px, Y(f.win.hi), 12, Y(f.win.lo) - Y(f.win.hi)); g.strokeRect(px, Y(f.win.hi), 12, Y(f.win.lo) - Y(f.win.hi)); g.restore();
+        L.add(f.win.breaks === true ? 'window: breaks' : f.win.breaks === false ? 'window: holds' : 'window', px + 18, (Y(f.win.hi) + Y(f.win.lo)) / 2, { color: P.ink, align: 'left', pri: 7, size: 13, weight: 700 });
+      }
     } else if (kind === 'fence' && H != null) {
       fence(g, px, top, oy, P);
     } else if (kind === 'net' && H != null) {

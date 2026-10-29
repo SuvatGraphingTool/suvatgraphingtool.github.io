@@ -445,6 +445,20 @@ export function solveTarget(k = {}) {
   if (P.fromT) notes.push(`${K.hits ? 'At' : 'Above'} ${K.the} at ${M`t = ${d(P.fromT)} [s]`}: it is ${M`${d(P.d)} [m]`} out.`);
   if (S.hits && K.hits && S.at && !find) derived.push(`hits ${K.the} ${M`${d(S.at.y)} [m]`} up, ${M`t = ${d(S.at.t)} [s]`}`);
   if (at) notes.push(at);
+  // a window in the wall it hits: between two heights, broken at a speed
+  let win = null;
+  const wl = k.winLo, wh = k.winHi, wv = k.winBreak;
+  if (have(wl) || have(wh) || have(wv)) {
+    if (!K.hits) return fail('A window is in a wall the ball hits: choose “A wall it hits”.');
+    if (!have(wl) || !have(wh) || !(wh > wl) || !(wl >= 0)) return fail('Give the window\u2019s bottom and top, each above the ground, the top higher than the bottom.');
+    if (S.at?.reached) {
+      const inWin = S.at.y >= wl - 1e-9 && S.at.y <= wh + 1e-9;
+      win = { lo: wl, hi: wh, v: have(wv) ? wv : null, inWin, breaks: inWin && have(wv) ? S.at.speed >= wv - 1e-9 : null };
+      notes.push(inWin ? `${M`${d(S.at.y)} [m]`} is between ${M`${d(wl)}`} and ${M`${d(wh)} [m]`}: it strikes the window${have(wv) ? `, at ${M`${d(S.at.speed)} [m s^-1]`} — ${win.breaks ? 'at least' : 'less than'} the ${M`${d(wv)} [m s^-1]`} that breaks it, so the window ${win.breaks ? 'breaks' : 'does not break'}` : ''}.`
+        : `${M`${d(S.at.y)} [m]`} is ${S.at.y < wl ? 'below' : 'above'} the window (${M`${d(wl)}`} to ${M`${d(wh)} [m]`}): it hits the wall, not the window.`);
+      derived.unshift(inWin ? (win.breaks === true ? 'the window breaks' : win.breaks === false ? 'the window holds' : 'strikes the window') : 'misses the window');
+    }
+  }
   if (S.at?.reached && !K.hits && S.at.clear != null && Math.abs(S.at.clear) > 1e-6 && !find) derived.push(S.at.clear > 0 ? `${kind === 'point' ? 'above it' : 'clears'} by ${M`${d(Math.abs(S.at.clear))} [m]`}` : kind === 'point' ? `below it by ${M`${d(-S.at.clear)} [m]`}` : `hits it ${M`${d(-S.at.clear)} [m]`} below the top`);
   if (S.at && find === 'theta') {
     notes.push(`Its greatest height on the way to the point is ${M`${d(S.topBefore)} [m]`}${S.apexAt === 'before' ? ', at the top of its path, before it gets there'
@@ -481,7 +495,7 @@ export function solveTarget(k = {}) {
     derived.unshift(`never above ${M`${d(P.H)} [m]`}`);
   }
   const f = targetMotion(S, O, PP, have(k.flag) ? k.flag : null);
-  f.flights = F; f.pick = pick; f.kindOf = kind; f.flagGap = flagGap;
+  f.flights = F; f.pick = pick; f.kindOf = kind; f.flagGap = flagGap; f.win = win;
   // where it is thrown from, for the picture only: a stand, a window, a roof
   f.from = ['window', 'roof'].includes(k.from) ? k.from : 'stand';
   return {
