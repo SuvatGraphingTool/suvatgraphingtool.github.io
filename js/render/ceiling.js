@@ -280,7 +280,7 @@ export function render(canvas, cam, o) {
   for (let x = dx2 + 120; x < w + 20; x += 190) lamp(g, x, ceilY, drop, floorY, night);
 
   // ── the kicker: the kicking foot under the ball where it leaves, at h
-  const r = clamp(0.11 * k * 1.6, 6.5, 9);                 // the ball, drawn at a size that reads
+  const r = phone ? 10 : 12;                               // the ball, drawn at a size that reads
   const Hp = Math.max(54, 1.75 * k), legL = Hp * 0.51, hipY = floorY - legL * 0.96;
   const contact = { x: cx - r * 0.3, y: Y(f.h) + r + Math.max(2, Hp * 0.03) };
   const reach = Math.sqrt(Math.max(0, (legL * 0.93) ** 2 - (hipY - contact.y) ** 2));
@@ -343,7 +343,7 @@ export function render(canvas, cam, o) {
       }
       g.restore();
     }
-    dot(g, cx, Y(f.C), 12, { stroke: P.mark, width: 2.6 });
+    dot(g, cx, Y(f.C), r + 5, { stroke: P.mark, width: 2.6 });
     L.add(T`t = ${s3(f.hit.t)} [s], ${s3(f.hit.v)} [m s^-1]`, cx - 20, Y(f.C) + 26, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700 });
   }
   if (!f.hit && fired && t >= f.tMax - 1e-9) {
@@ -351,7 +351,13 @@ export function render(canvas, cam, o) {
     const { age, life } = ageOf(t, f.tMax, f.tMax);
     dust(g, bx, floorY, age, life, { size: 1.2, n: 16 });
   }
-  if (show.velocity !== false && Math.abs(v) > 1e-9) arrow(g, bx + 18, Y(y), bx + 18, Y(y) - clamp((v / f.u) * 60, -(h - 6 - Y(y)), 60), { color: P.velVec, width: 2.8, head: 11 });
+  if (show.velocity !== false && Math.abs(v) > 1e-9) {
+    // never through the floor: coming down onto it, the arrow arrives beside the ball instead of leaving it
+    const len = (v / f.u) * 64, ax = bx + r + 8;
+    let a0 = Y(y), a1 = Y(y) - len;
+    if (a1 > floorY - 4) { a1 = floorY - 4; a0 = a1 + len; }
+    arrow(g, ax, a0, ax, a1, { color: P.velVec, width: 2.8, head: 11 });
+  }
   softShadow(g, bx, floorY + 2, r * 1.6, 3, clamp(1 - (floorY - Y(y)) / 250, 0.15, 0.8));
   ballAt(g, bx, Y(y), r);
   L.draw(g, w, h);

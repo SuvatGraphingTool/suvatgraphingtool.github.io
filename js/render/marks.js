@@ -17,7 +17,7 @@
 // Everything drawn is read from js/core/marks.js (rule 4).
 
 import { dust, pulse, ageOf, phaseOf } from './effects.js';
-import { env, rng, skyscape, stone, softShadow } from './scenery.js';
+import { env, rng, skyscape, stone, softShadow, water } from './scenery.js';
 import { ballAt } from './figures.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha } from './util.js';
 import { inLetters } from '../core/letters.js';
@@ -245,6 +245,75 @@ function shore(g, w, Y, h, n) {
   g.restore();
 }
 
+/** A far headland on the right, standing on the sea's horizon at Y, `tall`
+    px high: two misted ridges, a lit rim, a lighthouse whose lamp shows at dusk. */
+function headland(g, w, Y, tall, n, phone) {
+  g.save();
+  const ridge = (x0, hgt, c) => (x) => { const u = clamp((x - x0) / (w + 30 - x0), 0, 1); return Y - hgt * Math.min(1, u * 3.2) * (0.86 + 0.14 * Math.sin(u * 9 + c)); };
+  for (const [far, x0, hgt, col] of [[true, w * 0.38, tall * 0.65, n ? '#3a3040' : '#b8aaa6'], [false, w * 0.58, tall, n ? '#4a3d4f' : '#9a8c84']]) {
+    const yAt = ridge(x0, hgt, far ? 1.3 : 0.4);
+    g.fillStyle = col; g.beginPath(); g.moveTo(x0, Y);
+    for (let x = x0; x <= w + 30; x += 6) g.lineTo(x, yAt(x));
+    g.lineTo(w + 30, Y); g.closePath(); g.fill();
+    // the rim catching the last light
+    g.strokeStyle = n ? 'rgba(255,200,180,0.22)' : 'rgba(255,255,255,0.45)'; g.lineWidth = 1.5;
+    g.beginPath(); for (let x = x0 + 4; x <= w + 30; x += 6) (x === x0 + 4 ? g.moveTo(x, yAt(x) + 1) : g.lineTo(x, yAt(x) + 1)); g.stroke();
+    if (!far && !phone) {
+      const lx = x0 + (w - x0) * 0.62, ly = yAt(lx) + 2, th = Math.max(22, hgt * 0.35);
+      g.fillStyle = '#f2ede4'; g.beginPath(); g.moveTo(lx - 5, ly); g.lineTo(lx + 5, ly); g.lineTo(lx + 3.5, ly - th); g.lineTo(lx - 3.5, ly - th); g.closePath(); g.fill();
+      g.fillStyle = '#a84a3e'; g.fillRect(lx - 4.5, ly - th * 0.45, 9, th * 0.18); g.fillRect(lx - 4, ly - th * 0.85, 8, th * 0.15);
+      g.fillStyle = '#2b2b30'; g.fillRect(lx - 5, ly - th - 7, 10, 3);
+      g.fillStyle = n ? '#ffe2a0' : '#fff7e0'; g.fillRect(lx - 3, ly - th - 4, 6, 4);
+      if (n) {
+        const gl = g.createRadialGradient(lx, ly - th - 2, 0, lx, ly - th - 2, 30); gl.addColorStop(0, 'rgba(255,226,160,0.75)'); gl.addColorStop(1, 'rgba(255,226,160,0)');
+        g.fillStyle = gl; g.beginPath(); g.arc(lx, ly - th - 2, 30, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(255,226,160,0.10)'; g.beginPath(); g.moveTo(lx, ly - th - 2); g.lineTo(lx - 160, ly - th - 26); g.lineTo(lx - 160, ly - th + 18); g.closePath(); g.fill();
+      }
+    }
+  }
+  const hz = g.createLinearGradient(0, Y - tall, 0, Y); hz.addColorStop(0, withAlpha(env().haze, 0)); hz.addColorStop(1, withAlpha(env().haze, 0.35));
+  g.fillStyle = hz; g.fillRect(0, Y - tall, w, tall);
+  g.restore();
+}
+
+/** Waves breaking: foam piled at the foot of the cliff (its face near `edge`)
+    and a line of surf along the beach at Y, moving with the time. */
+function surf(g, w, Y, edge, t, n) {
+  const r = rng(113), ph = t * 2.2;
+  g.save();
+  g.fillStyle = n ? 'rgba(225,235,240,0.75)' : 'rgba(255,255,255,0.9)';
+  for (let i = 0; i < 18; i++) {
+    const x = edge - 8 + r() * 46, rad = 2.5 + r() * 4.5, bob = Math.sin(ph * 3 + i) * 1.5;
+    g.beginPath(); g.arc(x, Y - 2 - r() * 7 + bob, rad, 0, TAU); g.fill();
+  }
+  g.strokeStyle = n ? 'rgba(225,235,240,0.7)' : 'rgba(255,255,255,0.85)'; g.lineWidth = 2;
+  g.beginPath();
+  for (let x = edge + 20; x <= w; x += 6) { const y = Y - 1.5 + Math.sin(x * 0.07 + ph * 4) * 1.6; x === edge + 20 ? g.moveTo(x, y) : g.lineTo(x, y); }
+  g.stroke();
+  g.restore();
+}
+
+/** A drystone wall from x0 to x1, its top at y0 and its foot at y1: rough
+    courses of stone and a row of upright copes along the top. */
+function drystone(g, x0, x1, y0, y1, n) {
+  const r = rng(127);
+  g.save();
+  g.fillStyle = n ? '#2e2a2d' : '#6e665e'; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+  for (let y = y0 + 3; y < y1; y += 5.5) {
+    for (let x = x0 + (r() - 0.5) * 6; x < x1 - 2; ) {
+      const sw = 7 + r() * 9, sh = 4 + r() * 2.5, c = n ? 85 + r() * 30 : 150 + r() * 40;
+      g.fillStyle = `rgb(${c},${c - 6},${c - 12})`; g.beginPath(); g.roundRect(Math.max(x0, x), y, Math.min(sw, x1 - x), sh, 2); g.fill();
+      x += sw + 1;
+    }
+  }
+  for (let x = x0; x < x1 - 3; x += 5) {
+    const c = n ? 95 + r() * 25 : 160 + r() * 35;
+    g.fillStyle = `rgb(${c},${c - 6},${c - 12})`; g.beginPath(); g.roundRect(x, y0 - 5, 4.2, 8, 1.5); g.fill();
+  }
+  g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x1 - 2, y0 - 5, 2, y1 - y0 + 5);
+  g.restore();
+}
+
 /* ── the stage ─────────────────────────────────────────────────────────── */
 
 export function render(canvas, cam, o) {
@@ -259,7 +328,8 @@ export function render(canvas, cam, o) {
   keepHud(L, w, 2);
 
   // ── one scale down the page: from the release (0) to the ground, or a little below N
-  const deep = f.ground ?? f.yN * 1.16;
+  // with no ground given the motion ends in the air: the pavement is drawn clear below its end
+  const deep = f.ground ?? Math.max(f.yN * 1.16, f.pos(f.tMax) * 1.07);
   const top = phone ? 132 : 104, band = phone ? 40 : 48, bottom = h - band, k = (bottom - top) / deep;
   const Y = (y) => top + y * k;
   const floor = Y(deep);
@@ -268,31 +338,38 @@ export function render(canvas, cam, o) {
   const cliffy = f.look === 'cliff';
 
   // ── the place
-  skyscape(g, 0, 0, w, floor, { far: cliffy ? 'hills' : 'none', seed: 27, clouds: 4 });
-  if (!cliffy) { town(g, w, floor, (floor - 40) * 0.75, true, 5); town(g, w, floor, (floor - 40) * 0.45, false, 9); }
   if (cliffy) {
-    // the sea behind, the beach in front
-    const sea = g.createLinearGradient(0, floor - 30, 0, floor);
-    sea.addColorStop(0, night ? '#2f4650' : '#7fa0ad'); sea.addColorStop(1, night ? '#22343c' : '#6a8c99');
-    g.fillStyle = sea; g.fillRect(0, floor - 30, w, 30);
+    // the sea out to a far headland, waves coming in, foam at the foot of the cliff, a beach in front
+    const seaTop = floor - clamp((floor - top) * 0.14, 34, 64);
+    skyscape(g, 0, 0, w, seaTop, { far: 'none', seed: 27, clouds: 5 });
+    headland(g, w, seaTop, Math.min(120, (seaTop - top) * 0.4), night, phone);
+    water(g, 0, w, seaTop, floor, { phase: t * 3 });
     shore(g, w, floor, h, night);
+    surf(g, w, floor, edge, t, night);
   } else {
+    skyscape(g, 0, 0, w, floor, { far: 'none', seed: 27, clouds: 4 });
+    town(g, w, floor, (floor - 40) * 0.75, true, 5); town(g, w, floor, (floor - 40) * 0.45, false, 9);
     street(g, w, floor, h, P);
     if (w - bx > 220) streetLamp(g, w - 60, floor + 4, Math.max(top + 40, floor - 4.5 * Math.min(k, 40)), night);
   }
   // the roof (or the cliff top) just above where it is let go, unless that is M itself
-  const atM = f.yM * k < 26;
+  const atM = f.yM * k < 16;                         // too little room above M for someone to hold it out
   const coping = atM ? Y(0) - 20 : Y(0) + 6;
-  if (cliffy) cliff(g, -20, edge, coping + 6, floor, night);
-  else buildingWall(g, -20, edge, coping + 14, floor, Y(f.yM), Y(f.yN), P);
-  if (!cliffy) {
-    if (!atM) leaner(g, edge - 26, coping, bx, Y(0) + r * 0.2, fired && t > 1e-9, night, { scale: phone ? 1.1 : 1.35 });
+  const lean = { scale: phone ? 1.1 : 1.35 };
+  if (cliffy) {
+    // the cliff path's drystone wall at the edge: they lean on it, standing on the top behind it
+    cliff(g, -20, edge, coping + 14, floor, night);
+    if (!atM) leaner(g, edge - 26, coping, bx, Y(0) + r * 0.2, fired && t > 1e-9, night, lean);
+    drystone(g, edge - (phone ? 70 : 96), edge - 3, coping, coping + 16, night);
+  } else {
+    buildingWall(g, -20, edge, coping + 14, floor, Y(f.yM), Y(f.yN), P);
+    if (!atM) leaner(g, edge - 26, coping, bx, Y(0) + r * 0.2, fired && t > 1e-9, night, lean);
     parapet(g, -20, edge, coping, night);
-  } else if (!atM) leaner(g, edge - 26, coping + 2, bx, Y(0) + r * 0.2, fired && t > 1e-9, night, { scale: phone ? 1.1 : 1.35 });
+  }
 
   // the marks: level lines from the wall to just past the ball's line
   const lab = (c) => (f.letters ? T`${inLetters(c, 'u^2', 'g')}` : T`${s3(c)} [m]`);
-  L.add(atM ? 'let go from rest at M' : 'let go from rest', bx + 16, Y(0) - (atM ? 18 : 2), { color: P.ink, align: 'left', pri: 5, size: 13 });
+  L.add(f.yM < 1e-9 ? 'let go from rest at M' : 'let go from rest', bx + 16, Y(0) - (atM ? 18 : 2), { color: P.ink, align: 'left', pri: 5, size: 13 });
   const passed = (tm) => fired && t >= tm - 1e-9;
   for (const [nm, y, tm] of [['M', f.yM, f.tM], ['N', f.yN, f.tN]]) {
     const hot = passed(tm) ? phaseOf(ageOf(t, tm, f.tMax, f.tMax / 4).age, f.tMax / 4) : null;
@@ -325,8 +402,11 @@ export function render(canvas, cam, o) {
     dust(g, bx, floor, age, life, { size: 1.3, n: 18 });
   }
   if (show.velocity !== false && v > 1e-9) {
-    const vMax = f.vel(f.tMax), len = Math.min((v / vMax) * 64, Math.max(0, h - 10 - Y(y)));
-    arrow(g, bx + 17, Y(y), bx + 17, Y(y) + len, { color: P.velVec, width: 2.8, head: 11 });
+    // never into the ground: near it, the arrow arrives beside the ball instead of leaving it
+    const len = (v / f.vel(f.tMax)) * 64;
+    let a0 = Y(y), a1 = Y(y) + len;
+    if (a1 > floor - 4) { a1 = floor - 4; a0 = a1 - len; }
+    arrow(g, bx + 17, a0, bx + 17, a1, { color: P.velVec, width: 2.8, head: 11 });
   }
   if (f.ground != null) softShadow(g, bx, floor + 2, r * 1.8, 3, clamp(1 - (floor - Y(y)) / 220, 0.15, 0.8));
   ballAt(g, bx, Y(y), r);

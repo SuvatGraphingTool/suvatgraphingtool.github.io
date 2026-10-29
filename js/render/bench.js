@@ -23,7 +23,7 @@
 import { env, rng, softShadow, fitSide } from './scenery.js';
 import { ballAt } from './figures.js';
 import { flash, pulse, dust, ageOf, phaseOf, speedLines } from './effects.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, cssVar } from './util.js';
 import { T, num } from '../notation.js';
 
 const TAU = Math.PI * 2;
@@ -38,12 +38,18 @@ const s3 = (x) => {
 const small = (x) => (Math.abs(x) < 0.1 ? T`${s3(x * 100)} [cm]` : T`${s3(x)} [m]`);
 const ease = (u) => 1 - (1 - u) ** 3;
 
-/** Keep labels out from under the readouts: the left column and the clock. */
-function keepHud(L, w, rows) {
+/** The readouts' boxes, top-left and the clock top-right: { x, y, w, h }.
+    Four rows down the left measure about 250 × 290 at laptop width. */
+function hudBoxes(w, rows) {
   const phone = w < 520;
-  L.reserve({ x: 0, y: 0, w: phone ? 150 : 205, h: 16 + rows * (phone ? 50 : 60) });
-  L.reserve({ x: w - (phone ? 195 : 235), y: 0, w: phone ? 195 : 235, h: phone ? 64 : 74 });
+  return [
+    { x: 0, y: 0, w: phone ? 150 : 255, h: phone ? 16 + rows * 58 : 16 + rows * 69 },
+    { x: w - (phone ? 195 : 235), y: 0, w: phone ? 195 : 235, h: phone ? 64 : 74 },
+  ];
 }
+const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+/** Does the segment (x0, y0)–(x1, y1) cross the box? Sampled: arrows are short. */
+const crosses = (b, x0, y0, x1, y1) => { for (let i = 0; i <= 12; i++) { const x = x0 + ((x1 - x0) * i) / 12, y = y0 + ((y1 - y0) * i) / 12; if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return true; } return false; };
 
 /* ── the room ──────────────────────────────────────────────────────────── */
 
@@ -85,6 +91,43 @@ export function labWall(g, w, Y, h, bench = null) {
       g.fillStyle = ['#b04a3a', '#3a6fb0', '#3f9a5a'][i % 3]; g.beginPath(); g.arc(0, -ph / 2 + 2, 2, 0, TAU); g.fill();
       g.restore();
     }
+  }
+  // a window with the outside in it: a frame, glazing bars, a sill
+  const Wn = bench?.window;
+  if (Wn && Wn.w > 60 && Wn.h > 50) {
+    const { x: wx, y: wy, w: ww, h: wh } = Wn;
+    g.fillStyle = n ? '#4a4450' : '#f1eee6'; g.fillRect(wx - 8, wy - 8, ww + 16, wh + 16);
+    const sky = g.createLinearGradient(0, wy, 0, wy + wh);
+    sky.addColorStop(0, n ? '#1c2236' : '#a9c6dc'); sky.addColorStop(1, n ? '#3a3046' : '#e8d9c8');
+    g.fillStyle = sky; g.fillRect(wx, wy, ww, wh);
+    g.save(); g.beginPath(); g.rect(wx, wy, ww, wh); g.clip();
+    g.fillStyle = n ? '#2a2632' : '#9fae8a';                       // the trees outside
+    for (let x = wx - 10; x < wx + ww + 20; x += 18 + r() * 14) { g.beginPath(); g.arc(x, wy + wh * 0.78, 12 + r() * 12, 0, TAU); g.fill(); }
+    g.fillRect(wx, wy + wh * 0.8, ww, wh * 0.2);
+    g.fillStyle = n ? 'rgba(170,190,255,0.10)' : 'rgba(255,255,255,0.35)';
+    g.beginPath(); g.moveTo(wx + ww * 0.1, wy + wh); g.lineTo(wx + ww * 0.45, wy); g.lineTo(wx + ww * 0.6, wy); g.lineTo(wx + ww * 0.25, wy + wh); g.closePath(); g.fill();
+    g.restore();
+    g.strokeStyle = n ? '#4a4450' : '#f1eee6'; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh); g.moveTo(wx, wy + wh * 0.45); g.lineTo(wx + ww, wy + wh * 0.45); g.stroke();
+    g.fillStyle = n ? '#5a5460' : '#e2ddd2'; g.fillRect(wx - 14, wy + wh + 6, ww + 28, 7);
+    g.fillStyle = 'rgba(0,0,0,0.28)'; g.fillRect(wx - 12, wy + wh + 13, ww + 24, 4);
+  }
+  // a wall shelf (o.shelf = { x0, x1, y }) with books and glassware on it
+  const Sh = bench?.shelf;
+  if (Sh && Sh.x1 - Sh.x0 > 60) {
+    const { x0: s0, x1: s1, y: sy } = Sh;
+    let x = s0 + 8;
+    for (let i = 0; x < s0 + (s1 - s0) * 0.5; i++) {
+      const bw = 6 + r() * 5, bh = 22 + r() * 12;
+      g.fillStyle = ['#7a4a3a', '#3f5a7a', '#5a6a3e', '#8a7a4a', '#6a4a6a'][i % 5]; g.fillRect(x, sy - bh, bw, bh);
+      g.fillStyle = 'rgba(255,255,255,0.25)'; g.fillRect(x + 1, sy - bh + 4, bw - 2, 1.5);
+      x += bw + 1;
+    }
+    for (let i = 0, gx = x + 16; gx < s1 - 10; i++, gx += 28 + r() * 14) glass(g, gx, sy, i, n, r);
+    g.fillStyle = n ? '#5d4a3a' : '#9b7651'; g.fillRect(s0, sy, s1 - s0, 7);
+    g.fillStyle = n ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'; g.fillRect(s0, sy, s1 - s0, 1.5);
+    g.fillStyle = n ? '#25262a' : '#6e6a62';
+    for (const bx of [s0 + 16, s1 - 20]) { g.beginPath(); g.moveTo(bx, sy + 7); g.lineTo(bx + 3, sy + 7); g.lineTo(bx + 3, sy + 22); g.lineTo(bx - 10, sy + 7); g.fill(); }
   }
   // a fire extinguisher on its bracket by the far wall, a sign above it
   if (bench?.extinguisher != null) {
@@ -204,26 +247,34 @@ function panel(g, x, y, w, h, n, kind) {
 /** A wooden table whose top's edge is at (edge, top), reaching back to x0,
     on two tapered legs down to the floor at Y, with an apron and a stretcher. */
 export function table(g, x0, edge, top, Y) {
-  const E = env(), n = E.night, tk = 10, ap = 16;
-  const wood = n ? '#7a5a3e' : '#a8774a', dark = n ? '#563e2a' : '#7e5735';
+  const E = env(), n = E.night, tk = 16, ap = 20, lw = 16;
+  const wood = n ? '#7a5a3e' : '#a8774a', dark = n ? '#563e2a' : '#7e5735', lit = n ? '#9a7550' : '#c99a68';
   g.save();
-  softShadow(g, (x0 + edge) / 2, Y + 2, (edge - x0) * 0.55, 7, 0.9);
-  // the legs, tapering to the floor, and a stretcher between them
-  for (const lx of [x0 + 10, edge - 22]) {
-    const lg = g.createLinearGradient(lx, 0, lx + 12, 0); lg.addColorStop(0, wood); lg.addColorStop(1, dark);
-    g.fillStyle = lg; g.beginPath(); g.moveTo(lx, top + tk); g.lineTo(lx + 12, top + tk); g.lineTo(lx + 10, Y); g.lineTo(lx + 2, Y); g.closePath(); g.fill();
+  softShadow(g, (x0 + edge) / 2, Y + 2, (edge - x0) * 0.6, 8, 0.9);
+  // the legs: square, lit on the left, tapering to a foot
+  for (const lx of [x0 + 8, edge - 8 - lw]) {
+    const lg = g.createLinearGradient(lx, 0, lx + lw, 0); lg.addColorStop(0, lit); lg.addColorStop(0.35, wood); lg.addColorStop(1, dark);
+    g.fillStyle = lg; g.beginPath(); g.moveTo(lx, top + tk); g.lineTo(lx + lw, top + tk); g.lineTo(lx + lw - 3, Y - 6); g.lineTo(lx + 3, Y - 6); g.closePath(); g.fill();
+    g.fillStyle = dark; g.fillRect(lx + 2, Y - 6, lw - 4, 6);
+    g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(lx, top + tk + ap, lw, 3);
   }
-  const sy = top + tk + (Y - top - tk) * 0.72;
-  g.fillStyle = dark; g.fillRect(x0 + 20, sy, edge - x0 - 40, 5);
-  // the apron under the top
+  // a stretcher low between them
+  const sy = top + tk + (Y - top - tk) * 0.74;
+  g.fillStyle = dark; g.fillRect(x0 + 8 + lw, sy, edge - x0 - 16 - 2 * lw, 7);
+  g.fillStyle = 'rgba(255,255,255,0.15)'; g.fillRect(x0 + 8 + lw, sy, edge - x0 - 16 - 2 * lw, 1.5);
+  // the apron, with a drawer and its knob
   const agr = g.createLinearGradient(0, top + tk, 0, top + tk + ap); agr.addColorStop(0, dark); agr.addColorStop(1, wood);
-  g.fillStyle = agr; g.fillRect(x0 + 6, top + tk, edge - x0 - 18, ap);
-  // the top, its grain and a lit edge
-  const tg = g.createLinearGradient(0, top, 0, top + tk); tg.addColorStop(0, n ? '#9a7550' : '#c99a68'); tg.addColorStop(1, wood);
-  g.fillStyle = tg; g.fillRect(x0, top, edge - x0, tk);
+  g.fillStyle = agr; g.fillRect(x0 + 8, top + tk, edge - x0 - 16, ap);
+  const dw = Math.min(90, (edge - x0) * 0.4), dx = (x0 + edge) / 2 - dw / 2;
+  g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.strokeRect(dx, top + tk + 3, dw, ap - 6);
+  g.fillStyle = n ? '#c9b48a' : '#e6d2a6'; g.beginPath(); g.arc(dx + dw / 2, top + tk + ap / 2, 2.6, 0, TAU); g.fill();
+  // the top: a thick slab with grain, a lit upper edge, a rounded front
+  const tg = g.createLinearGradient(0, top, 0, top + tk); tg.addColorStop(0, lit); tg.addColorStop(1, wood);
+  g.fillStyle = tg; g.beginPath(); g.moveTo(x0, top); g.lineTo(edge - 4, top); g.quadraticCurveTo(edge, top, edge, top + 4); g.lineTo(edge, top + tk - 3); g.quadraticCurveTo(edge, top + tk, edge - 3, top + tk); g.lineTo(x0, top + tk); g.closePath(); g.fill();
   g.strokeStyle = 'rgba(0,0,0,0.18)'; g.lineWidth = 1;
-  for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(x0, top + i * 3.2); g.bezierCurveTo(x0 + (edge - x0) * 0.3, top + i * 3.2 + 1, x0 + (edge - x0) * 0.6, top + i * 3.2 - 1, edge, top + i * 3.2); g.stroke(); }
-  g.fillStyle = 'rgba(255,255,255,0.30)'; g.fillRect(x0, top, edge - x0, 1.5);
+  for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(x0, top + i * 3.8); g.bezierCurveTo(x0 + (edge - x0) * 0.3, top + i * 3.8 + 1.2, x0 + (edge - x0) * 0.6, top + i * 3.8 - 1.2, edge - 2, top + i * 3.8); g.stroke(); }
+  g.fillStyle = 'rgba(255,255,255,0.32)'; g.fillRect(x0, top, edge - x0 - 4, 1.5);
+  g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(x0, top + tk - 1.5, edge - x0 - 3, 1.5);
   g.restore();
 }
 
@@ -379,7 +430,9 @@ export function render(canvas, cam, o) {
   const phone = w < 520;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
   const foil = f.look === 'foil';
-  keepHud(L, w, 4);
+  const HUD = hudBoxes(w, 4);
+  for (const b of HUD) L.reserve(b);
+  const keep = [...HUD];                                   // what the speed's label keeps off
 
   // ── the frame: on the experiment, one scale both ways
   const n = 140, pts = [];
@@ -387,27 +440,37 @@ export function render(canvas, cam, o) {
   const xEnd = Math.max(...pts.map((p) => p.x), f.d || 0);
   const lowest = f.H ?? Math.max(-Math.min(...pts.map((p) => p.y)), f.drop || 0, f.fall || 0);
   const box = f.H
-    ? { xLo: -0.42 * xEnd, xHi: xEnd * 1.16, yLo: -f.H, yHi: 0.16 * Math.max(f.H, xEnd * 0.4) }
-    : { xLo: -0.46 * xEnd, xHi: xEnd * 1.26, yLo: -(lowest * 1.55 + 0.04 * xEnd), yHi: 0.6 * lowest + 0.14 * xEnd };
+    ? { xLo: -0.95, xHi: xEnd * 1.14, yLo: -f.H, yHi: 0.16 * Math.max(f.H, xEnd * 0.4) }
+    : { xLo: phone ? -0.46 * xEnd : 0, xHi: xEnd * (phone ? 1.6 : 1.3), yLo: -(lowest * 1.55 + 0.04 * xEnd), yHi: 0.6 * lowest + 0.14 * xEnd };
   const floorBand = phone ? 34 : 44;
+  // the launcher and the timer, or the table, stand clear of the readouts on the left
   const area = f.H
-    ? { left: phone ? 18 : 236, right: w - 26, top: phone ? 150 : 96, bottom: h - floorBand }
-    : { left: phone ? 14 : 236, right: w - 22, top: phone ? 205 : 100, bottom: h - floorBand - (phone ? 64 : 96) };
-  const fit = fitSide(box, area, { sky: f.H ? 0 : 0.35 });
-  let { k, X, Y } = fit;
+    ? { left: phone ? 18 : 270, right: w - 26, top: phone ? 150 : 110, bottom: h - floorBand }
+    : { left: phone ? 14 : 470, right: w - 22, top: phone ? 250 : 100, bottom: h - floorBand - (phone ? 64 : 96) };
+  const fit = fitSide(box, area, { sky: f.H ? 1 : 0.35 });
+  const k = fit.k;
+  // the table, at a real width, shifted right if its back would sit under the readouts
+  const tableW = clamp(0.85 * k, 110, 260);
+  const shift = f.H ? clamp((phone ? 16 : 270) + tableW - fit.X(0), 0, Math.max(0, w - 20 - fit.X(xEnd * 1.12))) : 0;
+  const X = (x) => fit.X(x) + shift, Y = fit.Y;
   // with the table the floor is to scale; without a height it is the room's floor
   const floorY = f.H ? Y(-f.H) : h - floorBand;
   const r = foil ? 7 : 8;                                // the ball, drawn at a size that reads
 
   // ── the place
   const worktop = Y(0) + r + 7;                          // the barrel's cradle stands the ball's axis above it
-  const benchX0 = -40;
+  const benchX0 = -40, tx0 = X(0) - tableW;
   const boardX0 = X(0) + 40, boardX1 = X(f.d ?? xEnd) - 70, boardY = Math.max(Y(-lowest) + 70, floorY - 220);
-  labWall(g, w, floorY, h, foil ? { x0: benchX0, x1: X(0) - 2, top: worktop, extinguisher: w - 34,
+  const landX = f.R != null ? X(f.R) : null;
+  labWall(g, w, floorY, h, foil ? { x0: benchX0, x1: X(0) - 2, top: worktop, extinguisher: phone ? null : w - 34,
     board: { x: boardX0, y: boardY, w: Math.min(220, boardX1 - boardX0), h: Math.min(110, floorY - 70 - boardY) } }
-    : { extinguisher: w - 30, board: { x: X(0) + 30, y: Math.max(phone ? 210 : 96, Y(0) - 150), w: Math.min(200, w - X(0) - 90), h: Math.min(96, Y(0) - 40 - Math.max(phone ? 210 : 96, Y(0) - 150)) } });
+    : {
+      extinguisher: tx0 - 46 > 24 ? tx0 - 46 : (landX != null && w - 30 - landX > 60 ? w - 30 : null),
+      shelf: { x0: tx0 + 10, x1: X(0) - 10, y: Y(0) - Math.min(110, Math.max(60, (Y(0) - (phone ? 150 : 40)) * 0.6)) },
+      window: { x: X(0) + 50, y: Math.max(phone ? 150 : 60, Y(0) - 0.9 * k - 40), w: Math.min(220, w - X(0) - 110), h: Math.min(170, Y(0) - 30 - Math.max(phone ? 150 : 60, Y(0) - 0.9 * k - 40)) },
+    });
   if (foil) labBench(g, benchX0, X(0) - 1, worktop, floorY);
-  else table(g, Math.min(X(xEnd * -0.36), X(0) - 120), X(0), Y(0) + r, floorY);
+  else table(g, tx0, X(0), Y(0) + r, floorY);
 
   // ── the strips: the first at the end of the bench, the second d out and drop lower
   let rodTop = null;
@@ -416,6 +479,7 @@ export function render(canvas, cam, o) {
     const half = Math.max(30, (f.drop ?? f.fall) * k * 0.55, Math.abs(f.miss ?? 0) * k + 16);
     const y2 = Y(-(f.drop ?? f.fall)), x1 = X(0) + 3, x2 = X(f.d);
     const life = f.tMax / 3.2;
+    const LL = clamp(xEnd * 0.3 * k, 70, 130), timerX = X(0) - 3 - LL - 104;
     rodTop = Math.min(Y(0) - half, y2 - half) - 26;
     // the first: on a stand on the worktop behind the launcher, hanging to just above the top
     const a1 = Y(0) - half, b1 = worktop - 3, rod1 = X(0) - 30;
@@ -425,7 +489,7 @@ export function render(canvas, cam, o) {
     retortStand(g, rod2, floorY, y2 - half - 18, night);
     // the wires: to the timer along the bench; from the second down its stand and away along the floor
     if (foil) {
-      const tmx = X(0) - 3 - clamp(xEnd * 0.3 * k, 70, 130) - 104 + 70;
+      const tmx = timerX + 70;
       wire(g, x1, a1 - 2, tmx, worktop - 20, '#b8433a', 30);
       wire(g, x1, b1, tmx, worktop - 12, '#2b2b30', 6);
       wire(g, x2, y2 - half - 2, rod2 + 6, y2 - half + 20, '#b8433a', 6);
@@ -441,13 +505,19 @@ export function render(canvas, cam, o) {
     clampArm(g, rod2, y2 - half, x2, night); clampArm(g, rod2, y2 + half, x2, night);
     if (foil) {
       const shown = t1 ? Math.min(t, f.t2) : 0;
-      timer(g, X(0) - 3 - clamp(xEnd * 0.3 * k, 70, 130) - 104, worktop - 1, 74, num(shown, 3), night);
+      timer(g, timerX, worktop - 1, 74, num(shown, 3), night);
     }
+    // the strips, their clips and the stand are kept clear of labels
+    const strip = (x, ya, yb) => ({ x: x - 16, y: ya - 10, w: 32, h: yb - ya + 20 });
+    const offs = [strip(x2, y2 - half, y2 + half), { x: x2 - 12, y: y2 - half - 10, w: rod2 - x2 + 22, h: 20 }, { x: x2 - 12, y: y2 + half - 10, w: rod2 - x2 + 22, h: 20 },
+      { x: rod2 - 7, y: y2 - half - 20, w: 14, h: floorY - (y2 - half - 20) }];
+    if (foil) offs.push(strip(x1, a1, b1));
     // the gap between them, across the top
     const gy = rodTop - 12;
     stroke(g, [{ x: x1, y: gy }, { x: x2, y: gy }], { color: P.ink, width: 1.3, alpha: 0.85 });
     for (const xx of [x1, x2]) stroke(g, [{ x: xx, y: gy - 5 }, { x: xx, y: gy + 5 }], { color: P.ink, width: 1.3, alpha: 0.85 });
-    L.add(T`${s3(f.d)} [m]`, (x1 + x2) / 2, gy - 14, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700 });
+    L.add(T`${s3(f.d)} [m]`, phone ? Math.max((x1 + x2) / 2, 200) : (x1 + x2) / 2, gy - 14, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700 });
+    keep.push({ x: x1, y: gy - 26, w: x2 - x1, h: 32 });
     // how much lower the second's centre is, down its right
     if (f.drop != null && f.drop > 0) {
       const ry = rod2 + 26;
@@ -455,26 +525,37 @@ export function render(canvas, cam, o) {
       stroke(g, [{ x: ry, y: Y(0) }, { x: ry, y: y2 }], { color: P.ink, width: 1.3, alpha: 0.85 });
       for (const yy of [Y(0), y2]) stroke(g, [{ x: ry - 5, y: yy }, { x: ry + 5, y: yy }], { color: P.ink, width: 1.3, alpha: 0.85 });
       L.add(T`${s3(f.drop)} [m] "lower"`, ry + 10, (Y(0) + y2) / 2, { color: P.ink, align: 'left', pri: 7, size: 14, weight: 700 });
+      offs.push({ x: x2 - 30, y: Y(0) - 6, w: ry + 36 - x2, h: 12 });
+      keep.push({ x: ry - 6, y: Y(0), w: 12 + 120, h: y2 - Y(0) });         // its own label's place
     }
+    for (const b of offs) { L.reserve(b); keep.push(b); }
     if (past) {
       const q = f.pos(f.t2);
       pulse(g, X(q.x), Y(q.y), a2g.age, life, P.mark, { radius: 26 });
       dot(g, X(q.x), Y(q.y), 10, { stroke: P.mark, width: 2.6 });
       const say = f.drop == null ? `dropped ${small(f.fall)}` : f.atCentre ? 'at its centre' : `${small(Math.abs(f.miss))} ${f.miss > 0 ? 'below' : 'above'} its centre`;
-      L.add(say, X(q.x) - 18, Y(q.y) + 30, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700 });
-      L.add(T`t = ${s3(f.t2)} [s]`, X(q.x) - 18, Y(q.y) + 50, { color: P.mark, align: 'right', pri: 8, size: 13, weight: 700 });
+      // one label, the time with it: down and to the left of the break, clear of the strip
+      const lx = X(q.x) - 22, ly = Y(q.y) + 34;
+      if (phone) {
+        L.add(say, lx, ly, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700 });
+        L.add(T`t = ${s3(f.t2)} [s]`, lx, ly + 26, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700, push: 'down' });
+        keep.push({ x: 0, y: ly - 12, w: lx + 6, h: 50 });
+      } else {
+        L.add(`${say}, ${T`t = ${s3(f.t2)} [s]`}`, lx, ly, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700 });
+        keep.push({ x: lx - 300, y: ly - 12, w: 306, h: 24 });
+      }
     }
   }
 
   // ── the launcher, in front of the first stand
   if (foil) launcher(g, X(0) - 3, Y(0), worktop, clamp(xEnd * 0.3 * k, 70, 130), { cocked: !(fired && t > 1e-9), rb: r + 3 });
 
-  // ── the table's height, down its back
+  // ── the table's height, between its legs
   if (f.H) {
-    const tx0 = Math.min(X(xEnd * -0.36), X(0) - 120), dx = tx0 - 18;
-    stroke(g, [{ x: dx, y: Y(0) + r }, { x: dx, y: floorY }], { color: P.ink, width: 1.3, alpha: 0.85 });
-    for (const yy of [Y(0) + r, floorY]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.3, alpha: 0.85 });
-    L.add(T`${s3(f.H)} [m]`, dx - 8, (Y(0) + floorY) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700 });
+    const dx = tx0 + tableW * 0.32;
+    stroke(g, [{ x: dx, y: Y(0) + r }, { x: dx, y: floorY }], { color: P.ink, width: 1.3, alpha: 0.9 });
+    for (const yy of [Y(0) + r, floorY]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.3, alpha: 0.9 });
+    L.add(T`${s3(f.H)} [m]`, dx + 9, (Y(0) + r + floorY) / 2 - 14, { color: P.ink, align: 'left', pri: 7, size: 15, weight: 700 });
   }
 
   // ── the path: all of it faintly, the part flown strongly
@@ -497,15 +578,24 @@ export function render(canvas, cam, o) {
   const vMax = Math.hypot(f.vel(f.tMax).x, f.vel(f.tMax).y) || 1, vl = clamp(w * 0.08, 46, 100) / vMax;
   const sp = Math.hypot(v.x, v.y);
   if (fired && t > 1e-9 && !landed) speedLines(g, bx, by, 1, 0.8, P.strong);
+  let bx0 = null, by0 = null;
   if (show.velocity !== false && sp > 1e-6) {
     if (show.components) {
       arrow(g, bx, by, bx + v.x * vl, by, { color: P.velVec, width: 2, head: 9, dash: [5, 4] });
       if (Math.abs(v.y) * vl > 4) arrow(g, bx + v.x * vl, by, bx + v.x * vl, by - v.y * vl, { color: P.velVec, width: 2, head: 9 });
     }
-    const tx = bx + v.x * vl, ty = by - v.y * vl, dx = (tx - bx) / Math.hypot(tx - bx, ty - by), dy = (ty - by) / Math.hypot(tx - bx, ty - by);
-    arrow(g, bx, by, tx, ty, { color: P.velVec, width: 3, head: 12 });
-    // its speed set off the arrow, on the side away from the path (which bends down)
-    L.add(T`${s3(sp)} [m s^-1]`, tx + dy * 22 + 6, ty - dx * 22, { color: P.vel, align: 'left', pri: 6, size: 14, weight: 700 });
+    let tx = bx + v.x * vl, ty = by - v.y * vl;
+    // never through the floor: an arrow that would go into it ends on it instead
+    if (f.H && ty > floorY - 4) { const s2 = (floorY - 4 - by) / (ty - by); if (s2 > 0.25) { tx = bx + (tx - bx) * s2; ty = floorY - 4; } else { const dxa = tx - bx, dya = ty - by; tx = bx; ty = floorY - 4; bx0 = tx - dxa; by0 = ty - dya; } }
+    const ax0 = bx0 ?? bx, ay0 = by0 ?? by, len = Math.hypot(tx - ax0, ty - ay0) || 1, ux = (tx - ax0) / len, uy = (ty - ay0) / len;
+    arrow(g, ax0, ay0, tx, ty, { color: P.velVec, width: 3, head: 12 });
+    // its speed, set off the arrow on the side away from the path, wherever is clear
+    const text = T`${s3(sp)} [m s^-1]`;
+    g.save(); g.font = `700 14px ${cssVar('--font', 'system-ui, sans-serif')}`; const tw = g.measureText(text).width + 10; g.restore();
+    const spots = [[tx + uy * 22 + 6, ty - ux * 22], [ax0 + uy * 26 - tw / 2, ay0 - ux * 26 - 8], [tx + 10, ty + 18], [tx + 10, ty - 22], [ax0 - tw - 14, ay0 - 18], [ax0 - tw - 14, ay0 + 22], [tx - uy * 24 + 6, ty + ux * 24]];
+    const clear = (x, y) => { const b = { x: x - 5, y: y - 12, w: tw, h: 24 }; return b.x > 2 && b.x + b.w < w - 2 && b.y > 2 && b.y + b.h < h - 2 && !keep.some((k2) => hits(k2, b)) && !crosses(b, ax0, ay0, tx, ty); };
+    const [lx, ly] = spots.find(([x, y]) => clear(x, y)) ?? spots[0];
+    L.add(text, lx, ly, { color: P.vel, align: 'left', pri: 6, size: 14, weight: 700 });
   }
   if (show.acceleration) arrow(g, bx, by, bx, by + 40, { color: P.acc, width: 2.4, head: 10 });
   if (foil) bearing(g, bx, by, r); else ballAt(g, bx, by, r);
