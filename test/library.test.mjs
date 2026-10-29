@@ -957,6 +957,8 @@ group('Stage by stage (MM1B Jan13 Q1, H240/03 J19 Q7, H556/01 J19 Q19a)', () => 
   ok(!K.solve({ stages: [{ u: 0, a: 1, t: 2 }, { a: 0, t: 2 }], T: 999 }).ok, 'a whole time the stages do not add up to is refused');
   ok(/twice/.test(K.solve({ stages: [{ u: 10, a: -2, s: 21 }] }).notes.join(' ')), 'two roots: it says both, and which is taken');
   ok(!/twice/.test(K.solve({ stages: [{ u: 0, a: 1.5, t: 4 }, { a: 0 }], S: 48, T: 10 }).notes.join(' ')) && !/twice/.test(K.solve({ stages: [{ u: 10, a: -4, s: 0 }, { a: 1, t: 2 }] }).notes.join(' ')), 'no two-roots note where there is one time');
+  const tractor = K.solve({ stages: [{ t: 5 }, { a: 0, t: 25 }, { v: 12, a: 0.8, t: 5 }, { v: 0, t: 15 }], S: 375 });
+  ok(tractor.ok && tractor.S[1].u === 8 && tractor.S[0].u === 6, 'CIE 9709/42 N19 Q2: V = 8 carried back, U = 6 from 375 m (MS)', tractor.reason);
   const f = r.f; ok(Math.abs(f.pos(40) - 640) < 1e-9 && Math.abs(f.pos(110) - 2460) < 1e-9 && Math.abs(f.vel(40) - 12) < 1e-9, 'the motion passes the join and ends at 2460 m');
 });
 

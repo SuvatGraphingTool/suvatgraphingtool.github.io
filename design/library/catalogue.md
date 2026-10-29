@@ -97,7 +97,7 @@ this library: *covered* names the one of the twelve that does it.
 | 61 | WJEC | 1300U40-1 Unit 4 | Jun 2019 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202019%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Tennis serve (30i − 1.4j) from 2.4 m over a 0.9 m net; landing speed; clearance | 9.8 | **built**: `over-the-wall` (30.8 m s⁻¹; net 12 m out, cleared by 0.156 m) |
 | 62 | WJEC | 1300U40-1 Unit 4 | Jun 2022 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202022%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | 35 m/s golf shot just clears a treetop (100, 20); two values of tan θ; distance short of the flag at 130 | 9.8 | **built**: `over-the-wall` (tan θ = 1 or 1.5; 5 m short of the flag) |
 | 63 | CIE | 9709/41 | May/Jun 2019 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s19_qp_41.pdf) | Up at 25 m/s from 3 m; time to top; time above 23 m; h if above h for exactly 1 s | 10 | **covered** by `time-above` |
-| 64 | CIE | 9709/42 | Oct/Nov 2019 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | Tractor v-t graph, 4 segments, starts at U; find V, then U from 375 m | – | **candidate**: speed–time graph of several stages, with an unknown time or speed fixed by the total distance |
+| 64 | CIE | 9709/42 | Oct/Nov 2019 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | Tractor v-t graph, 4 segments, starts at U; find V, then U from 375 m | – | **built**: `stage-by-stage` (V = 8 from stage 3 run back; U = 6 from the whole distance) |
 | 65 | CIE | 9709/42 | Oct/Nov 2019 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w19_qp_42.pdf) | A up at 20 m/s from ground; B dropped from 40 m 1 s later; collision height; speed difference | 10 | **built**: `pair-vertical` |
 | 66 | CIE | 9709/42 | May/Jun 2021 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s21_qp_42.pdf) | A up at 30 m/s; B dropped from 15 m above at the same instant; they coalesce; two landing times | 10 | **built**: `pair-vertical`, the collision (0.5 s, 13.75 m). What C does after coalescing is momentum: out |
 | 67 | CIE | 9709/43 | May/Jun 2017 | 3 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s17_qp_43.pdf) | Train to 25 m/s in T s, braking at twice that rate, 180 s, 3300 m; braking distance | – | **built**: `journey-stages` (T = 64, 400 m braking) |
@@ -618,7 +618,10 @@ over 640 m, then speeds up uniformly over 1820 m in 70 s: 40 s; a deceleration
 of 0.2 m s⁻²; 0.4 m s⁻²; 40 m s⁻¹; an average of 22.4 m s⁻¹ over 2460 m).
 OCR A H240/03 Jun 2019 Q7 (a cyclist from rest at 1.5 m s⁻² for 4 s, then
 steady: 48 m in 10 s). OCR A Physics H556/01 Jun 2019 Q19(a) (18 m s⁻¹, a
-0.50 s reaction, stopped in 38 m in all: 5.59 m s⁻²).
+0.50 s reaction, stopped in 38 m in all: 5.59 m s⁻²). CIE 9709/42 Oct/Nov 2019
+Q2 (a tractor in four stages from U: up to V in 5 s, steady 25 s, up to 12 at
+0.8 m s⁻² in 5 s, to rest in 15 s; 375 m in all: V = 8 carried back from the
+third stage, U = 6 from the whole distance).
 
 **Why it is built.** Each stage is a SUVAT question of its own, but the next
 one starts where the last ended, and a stage may be short of a number the

@@ -379,8 +379,9 @@ export const LIBRARY = [
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '1' },
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2019', q: '7' },
       { board: 'OCR A Physics', paper: 'H556/01', session: 'Jun 2019', q: '19(a)' },
+      { board: 'CIE', paper: '9709/42', session: 'Oct/Nov 2019', q: '2' },
     ],
-    tags: ['stages', 'one after another', 'decelerates', 'then accelerates', 'average speed', 'race track', 'car', 'cyclist', 'train',
+    tags: ['stages', 'one after another', 'tractor', 'decelerates', 'then accelerates', 'average speed', 'race track', 'car', 'cyclist', 'train',
            'reaction time', 'thinking distance', 'braking', 'suvat', 'mechanics', 'A level'],
     ending: {
       close: 'See the diagram',
