@@ -692,3 +692,19 @@ with A and the particle moving on it, one clock.
 **What the student varies.** The start and up to six corners, one time
 blank; the speed of the moving pieces; velocities at three times; the
 formula after the graph and a speed to find.
+
+### `robots-closest` — Two robots on a floor: when are they closest?
+
+**Papers.** Edexcel IAL WME01 Jun 2023 Q8 (a 50 m square floor, centre O; R
+from −2i + j to 9i + 23j in 11 s, so i + 2j; S from the corner C at −i − j:
+SR = (2t − 27)i + (3t − 24)j, least at t = 126⁄13 ≈ 9.69 s, about 9.15 m).
+
+**Why it is built.** `two-in-a-plane` finds when two are due a direction or a
+given distance apart; nothing finds the least distance, and nothing is set on
+a floor with edges.
+
+**The stage.** From above: the tiled floor ABCD with O, two robots and their
+tracks, the vector between them now, the closest moment ringed.
+
+**What the student varies.** Each robot's start and velocity (R's from a later
+position and time instead); the floor's side.

@@ -547,6 +547,24 @@ group('The Past-paper library: the displacement–time graph, everything it says
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
+group('The Past-paper library: two robots, everything it says', () => {
+  const K = KITS.robots;
+  const bag = [];
+  for (const k of [{ R: { r0: { x: -2, y: 1 }, r1: { x: 9, y: 23 }, t1: 11 }, S: { r0: { x: 25, y: 25 }, v: { x: -1, y: -1 } }, side: 50 },
+    { R: { r0: { x: 0, y: 0 }, v: { x: 1, y: 0 } }, S: { r0: { x: -5, y: 0 }, v: { x: -1, y: 0 } } }, { R: { r0: { x: 0, y: 0 }, v: { x: 1, y: 1 } }, S: { r0: { x: 3, y: 0 }, v: { x: 1, y: 1 } } },
+    { R: { r0: { x: 20, y: 0 }, v: { x: 1, y: 0 } }, S: { r0: { x: -20, y: 10 }, v: { x: 2, y: 0 } } }, { R: { r0: { x: 30, y: 0 }, v: { x: 1 } }, S: { r0: {}, v: {} } }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('What Ask Suvat says it read, and what the engine made of it', () => {
   const READINGS = [
     { scenario: 'platform-angle', h: 25, s: 100, g: 9.8, angle: { degrees: 45 }, asks: ['speed of projection'] },

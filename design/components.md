@@ -374,6 +374,16 @@ sum of each piece's size, displacement where it ends. After the last corner,
 x = c₀ + c₁t + c₂t² (checked to join): v = c₁ + 2c₂t, and when its speed is
 given. Used by: `xt-graph`.
 
+### Two robots: closest approach — `js/core/robots.js`
+
+`solveRobots({ R: { r0, v | r1, t1 }, S: { r0, v }, side })` — the motions
+are `solveTwoPlane` (which finds a velocity from two positions); the vector
+SR = r_R − r_S is linear in t, so d² is a quadratic, least where its gradient
+is zero (or at t = 0 when they are already moving apart; never changing when
+the velocities are equal). The floor is a square of side `side` centred on O;
+when each robot would reach its edge is found, and a closest moment after it
+is said to be off the floor. Used by: `robots-closest`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -451,6 +461,14 @@ formula part curving, the time now a dashed upright, asked velocities and
 times ringed); below, the line at one scale with A, the particle and its
 velocity (dashed), "at rest" on the flat pieces. Kit `xtgraph`. Used by:
 `xt-graph`.
+
+### A square floor from above — `js/render/robots.js`
+
+The floor at one scale both ways, tiled, its corners A, B, C, D and centre O;
+`robotTop(g, x, y, s, a, color, P)` (exported) — a robot from above, turned the
+way it goes; each track to the floor's edge; the vector from S to R now with
+its length; the closest moment ringed with its time and distance. Kit
+`robots`. Used by: `robots-closest`.
 
 
 ### A parachute jump — `js/render/jump.js`

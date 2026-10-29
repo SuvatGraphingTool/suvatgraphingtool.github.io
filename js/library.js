@@ -460,4 +460,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: the corner left blank, each velocity, the distance travelled, and the time after the graph.',
     } },
+  { id: 'robots-closest', group: 'library', kit: 'robots',
+    name: 'Two robots on a floor: when are they closest?',
+    sub: 'two robots cross a square floor at constant velocities — when is the gap between them least?',
+    note: 'A square floor with its centre O, and two robots crossing it, each at a constant velocity in i and j; one robot’s velocity may come from where it is at two times. The vector from one to the other is linear in t, so the square of the distance between them is a quadratic in t: least where its gradient is zero. The floor has edges, and a robot that would reach one is said to.',
+    params: { R: { r0: { x: -2, y: 1 }, r1: { x: 9, y: 23 }, t1: 11 }, S: { r0: { x: 25, y: 25 }, v: { x: -1, y: -1 } }, side: 50 },
+    place: 'From above: a square floor ABCD, centre O, two robots',
+    sources: [
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2023', q: '8' },
+    ],
+    tags: ['robot', 'robots', 'floor', 'closest', 'minimum distance', 'least distance', 'vectors', 'i and j', 'constant velocity', 'position vector',
+           'square', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Each robot a particle', 'they have no size: "closest" is between two points, and they could pass through each other.'],
+        ['Constant velocities', 'each moves in a straight line at one speed from t = 0, with no starting or turning.'],
+        ['A flat floor', 'everything happens in the plane of the floor, i along AB and j along AD.'],
+      ],
+      caveat: 'What the engine did compute is above: each position in t, the vector between them, when the distance is least and what it is, and when a robot would reach the edge.',
+    } },
 ];

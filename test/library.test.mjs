@@ -1016,6 +1016,20 @@ group('Read the displacement–time graph (4728 J14 Q5)', () => {
   ok(corner.ok && corner.f.asked[0].v === null, 'at a corner the velocity changes: said, not guessed');
 });
 
+group('Two robots on a floor (WME01 J23 Q8)', () => {
+  const K = KITS.robots;
+  const r = K.solve({ R: { r0: { x: -2, y: 1 }, r1: { x: 9, y: 23 }, t1: 11 }, S: { r0: { x: 25, y: 25 }, v: { x: -1, y: -1 } }, side: 50 });
+  ok(r.ok && Math.abs(r.tc - 126 / 13) < 1e-9, 'closest at t = 126/13 (MS)', r.reason);
+  ok(Math.abs(r.dmin - Math.hypot(2 * 126 / 13 - 27, 3 * 126 / 13 - 24)) < 1e-6 && r.f.leaves.R === 12, 'the least distance; R reaches the edge at t = 12');
+  const away = K.solve({ R: { r0: { x: 0, y: 0 }, v: { x: 1, y: 0 } }, S: { r0: { x: -5, y: 0 }, v: { x: -1, y: 0 } } });
+  ok(away.ok && away.tc === 0 && /moving apart/.test(away.notes.join(' ')), 'already moving apart: closest at t = 0');
+  const same = K.solve({ R: { r0: { x: 0, y: 0 }, v: { x: 1, y: 1 } }, S: { r0: { x: 3, y: 0 }, v: { x: 1, y: 1 } } });
+  ok(same.ok && /never changes/.test(same.notes.join(' ')), 'equal velocities: the gap never changes');
+  ok(!K.solve({ R: { r0: { x: 30, y: 0 }, v: { x: 1 } }, S: { r0: {}, v: {} }, side: 50 }).ok, 'starting off the floor is refused');
+  const late = K.solve({ R: { r0: { x: 20, y: 0 }, v: { x: 1, y: 0 } }, S: { r0: { x: -20, y: 10 }, v: { x: 2, y: 0 } }, side: 50 });
+  ok(late.ok && /edge of the floor/.test(late.notes.join(' ')), 'closest only after one has reached the edge: said');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
