@@ -118,12 +118,14 @@ export function well(g, x0, x1, cx, half, top, Y, bottom) {
   g.fillStyle = withAlpha(EARTH, 0.85);
   g.fillRect(x0, top, cx - half - x0, bottom - top); g.fillRect(cx + half, top, x1 - cx - half, bottom - top);
   g.fillStyle = withAlpha(EARTH, 0.35); g.fillRect(cx - half, top, half * 2, Y - top);
-  g.fillStyle = withAlpha(SEA_D, 0.85); g.fillRect(cx - half, Y, half * 2, bottom - Y);
+  g.fillStyle = withAlpha(SEA_D, 0.9); g.fillRect(cx - half, Y - 4, half * 2, bottom - Y + 4);
+  g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(cx - half + 3, Y - 1); g.lineTo(cx + half - 3, Y - 1); g.stroke();
   g.strokeStyle = withAlpha(STONE_D, 0.9); g.lineWidth = 3;
   g.beginPath(); g.moveTo(cx - half, top); g.lineTo(cx - half, bottom); g.moveTo(cx + half, top); g.lineTo(cx + half, bottom); g.stroke();
   g.fillStyle = cssVar('--grass', '#7c9a63'); g.fillRect(x0, top - 3, cx - half - x0, 4); g.fillRect(cx + half, top - 3, x1 - cx - half, 4);
   // the low wall round the top
-  g.fillStyle = withAlpha(STONE, 0.95); g.fillRect(cx - half - 10, top - 12, 10, 12); g.fillRect(cx + half, top - 12, 10, 12);
+  g.fillStyle = withAlpha(STONE, 0.95); g.strokeStyle = withAlpha(STONE_D, 0.95); g.lineWidth = 1.2;
+  for (const x of [cx - half - 16, cx + half]) { g.fillRect(x, top - 22, 16, 22); g.strokeRect(x, top - 22, 16, 22); g.beginPath(); g.moveTo(x, top - 11); g.lineTo(x + 16, top - 11); g.stroke(); }
   g.restore();
 }
 /** A diving board whose tip is at (edge, top), on a stand reaching back to
@@ -163,7 +165,7 @@ export function render(canvas, cam, o) {
   const back = Math.max(H0 * 0.45, 6);
   const xLo = -back, xHi = Math.max(...pts.map((p) => p.x), H0 * 0.4, 4) * 1.08;
   // a balloon goes on rising, and its envelope is above it
-  const yHi = Math.max(Math.max(apex, H0) * 1.14 + 1, f.place === 'balloon' ? (H0 + Math.max(f.uy, 0) * f.tMax) * 1.12 + 8 : 0);
+  const yHi = Math.max(Math.max(apex, H0) * 1.14 + 1, f.place === 'balloon' ? Math.max(H0, H0 + f.uy * f.tMax) + 22 : 0);
   const bottom = h - 54;
   const frames = w < 520 ? [{ left: 16, right: w - 16, top: 60 }]
     : [{ left: HUD + 30, right: w - 90, top: 60 }, { left: 30, right: w - 90, top: Math.min(HUD_H, bottom - 140) }];
@@ -186,9 +188,9 @@ export function render(canvas, cam, o) {
   else { groundStrip(g, 0, w, oy, h); tower(g, X(0), Y(H0), oy, Math.max(26, Math.min(70, H0 * 0.22 * k))); }
   // the person who throws, at the edge, facing out; a balloon carries its own
   if (place === 'balloon') {
-    // the balloon goes on rising at the speed it had when it let go
-    const rise = Math.max(f.uy, 0);
-    balloon(g, X(0) - 6, Y(H0 + rise * t), 26, P);
+    // the balloon goes on at the speed it had when it let go, up or down;
+    // about 20 m from basket to crown, to scale with everything else
+    balloon(g, X(0) - 6, Y(H0 + f.uy * t), Math.max(16, 7.5 * k), P);
   } else runner(g, X(0) - (place === 'well' ? 26 : 4), Y(H0), Math.max(24, 1.7 * k), P, { dir: 1, still: true });
 
   // ── its height, as a dimension line just inside the edge

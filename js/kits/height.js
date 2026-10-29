@@ -12,7 +12,7 @@ import { M, T, num } from '../notation.js';
 const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 
 const FIELDS = [
-  { key: 'h', col: 'place', label: 'Height of the top (m)', placeholder: '—', hint: 'Above the sea, or the ground.' },
+  { key: 'h', col: 'place', label: 'Height it starts at (m)', placeholder: '—', hint: 'Above what it lands on: the sea, the river, the pool, the water in the well, the ground.' },
   { key: 'theta', col: 'throw', label: `Angle ${M`theta`} (°)`, placeholder: '—', hint: '90 straight up, 0 across, −90 straight down.' },
   { key: 'u', col: 'throw', label: `Speed ${M`u`} (m s⁻¹)`, placeholder: '—', hint: 'Or leave it blank and give one below.' },
 ];
@@ -22,19 +22,19 @@ export const height = {
   verb: 'Throw it',
   voice: {
     h: 'From how high, and how?',
-    sub: 'A stone thrown from the top of a cliff into the sea, or from the top of a tower to the ground. '
+    sub: 'A stone thrown from a height — a cliff over the sea, a tower, a bridge, a diving board, down a well, from a balloon — to what is below. '
       + 'Give the height and the angle, and the speed — or, instead of the speed, how fast it lands, how far out, or how long it takes.',
   },
   fields: FIELDS,
   cols: { place: 'Where from', throw: 'The throw' },
   rows: [
     { title: 'Where it is thrown from', fields: [
-      { key: 'place', type: 'choice', label: 'It is', default: 'cliff', hint: 'Let go from a rising balloon, it starts moving up at the balloon\u2019s speed: angle 90, that speed.',
+      { key: 'place', type: 'choice', label: 'It is', default: 'cliff', hint: 'Each place is drawn as it is. Down a well, or let go from a balloon, it moves straight up or down: from a rising balloon, angle 90 and the balloon\u2019s speed.',
         options: [{ v: 'cliff', label: 'A cliff over the sea' }, { v: 'tower', label: 'A tower' }, { v: 'bridge', label: 'A bridge over a river' },
           { v: 'board', label: 'A diving board' }, { v: 'well', label: 'Down a well' }, { v: 'balloon', label: 'A rising balloon' }] },
     ] },
     { title: 'Or, in place of the speed', fields: [
-      { key: 'v', label: 'Speed it lands at (m s⁻¹)', aria: 'In place of the speed: the speed it lands at (m s⁻¹)', placeholder: '—', hint: 'How fast it hits the sea or the ground.' },
+      { key: 'v', label: 'Speed it lands at (m s⁻¹)', aria: 'In place of the speed: the speed it lands at (m s⁻¹)', placeholder: '—', hint: 'How fast it hits what is below.' },
       { key: 's', label: 'How far out it lands (m)', aria: 'In place of the speed: how far out it lands (m)', placeholder: '—', hint: 'Thrown at an angle only.' },
       { key: 't', label: 'Time in the air (s)', aria: 'In place of the speed: the time in the air (s)', placeholder: '—', hint: 'From the throw to landing.' },
     ] },
