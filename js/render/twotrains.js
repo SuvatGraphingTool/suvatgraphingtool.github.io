@@ -38,7 +38,7 @@ export function render(canvas, cam, o) {
   // ── one scale: station to station, room for a train at each
   const trainL = Math.max(70, Math.min(130, w * 0.1));
   // the tracks low, the stations' canopies clear of the readouts; room for station 2's platform
-  const left = 40 + trainL, right = w - 110, yB = Math.max(h * 0.6, 290), yA = yB + 80;
+  const left = 40 + trainL, right = w - 110, yB = Math.min(Math.max(h * 0.6, 290), h - 150), yA = yB + Math.min(80, (h - yB) * 0.45);
   const k = (right - left) / f.D, X = (x) => left + x * k;
   landscape(g, w, h, yB - 60, { far: 'hills', seed: 13 });
   rails(g, 0, w, yB, P); rails(g, 0, w, yA, P);

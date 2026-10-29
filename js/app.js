@@ -4,6 +4,7 @@
 // else beyond what the chosen situation genuinely needs. Launch stays disabled
 // until the engine can actually determine the motion, and says why not.
 
+import { kitView, kitViewDone } from './render/kitview.js';
 import { solveLaunch } from './core/solve.js';
 import { trajectory } from './core/trajectory.js';
 import { flight, timeAbove, lineFacts, heightForTime, timeAtSpeed } from './core/projectile.js';
@@ -2821,7 +2822,7 @@ function draw() {
     // rule 1 — and it reads zero for the whole of the pre-roll because the
     // pre-roll is outside the clock and nothing in it has been measured.
     $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
-  } else if (kit()) kit().render($('scene'), cam, opts);
+  } else if (kit()) { kitView($('scene'), cam); kit().render($('scene'), cam, opts); kitViewDone($('scene')); }
   else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
   else if (scenario?.stage === 'road') roadStage.render($('scene'), cam, opts);
   else if (scenario?.plate) exhibit.render($('scene'), cam, opts);

@@ -15,6 +15,10 @@ export function fitCanvas(canvas) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = cssVar('--surface', '#131210');
   ctx.fillRect(0, 0, w, h);
+  // a library stage's view (js/render/kitview.js): the twelve's camera read
+  // as a pan and zoom of the stage's own layout; the stage draws as before
+  const v = canvas._view;
+  if (v) { ctx.translate(v.tx, v.ty); ctx.scale(v.s, v.s); }
   return { ctx, w, h };
 }
 

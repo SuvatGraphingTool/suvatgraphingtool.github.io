@@ -460,6 +460,16 @@ built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
 
+### The camera — `js/render/kitview.js` (every library stage, for free)
+
+Drag to pan, wheel or pinch to zoom, Fit and double-click to reset: the
+twelve's own camera (`scene.createCamera`, `attachControls`, `fitView`,
+`easeCamera`), not a copy. `kitView(canvas, cam)` reads it as a view onto the
+stage's pixel layout before the kit draws, and `fitCanvas` applies it, so a kit
+needs no code of its own. Zoom runs from the fit (1) in to 6 — never out past
+it, so the stage's labels stay above the 13 px floor — and a pan stops at the
+layout's edges. The app calls it at its one render line for kits.
+
 ### Scenery — `js/render/scenery.js` (every library stage stands on these)
 
 The places, drawn as places, in the stadium's colours (`env()` reads the

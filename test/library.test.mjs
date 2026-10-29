@@ -1384,6 +1384,25 @@ group('Bounce: the general case, and what it refuses', () => {
   ok(e.title === 'It hits the ground the second time 1.75 s after it set off.', 'the ending headlines the paper’s answer', e.title);
 });
 
+console.log('\nEvery library stage pans and zooms with the twelve\u2019s camera (js/render/kitview.js)');
+{
+  const { kitView, kitViewDone } = await import('../js/render/kitview.js');
+  const cv = { getBoundingClientRect: () => ({ width: 900, height: 500 }) };
+  const cam = { scale: 1, cx: 0, cy: 0, fit: true, touched: false };
+  kitView(cv, cam);
+  ok(cv._view === null && cam.scale === 1 && cam.cx === 450 && cam.cy === -250, 'the fit is the stage as it is laid out: no view');
+  ok(cam._map.pu(450) === 450 && cam._map.py(400) === -400, 'the wheel reads the pointer in the layout (y up)');
+  cam.scale = 2; cam.cx = 300; cam.cy = -200; kitView(cv, cam);
+  ok(near((450 - cv._view.tx) / 2, 300) && near((250 - cv._view.ty) / 2, 200), 'zoomed: the camera centre is the middle of the canvas');
+  cam.scale = 0.3; cam.cx = -5000; kitView(cv, cam);
+  ok(cam.scale === 1 && cam.cx === 450, 'never out past the fit, never dragged off the stage: the 13 px floor holds');
+  cam.scale = 40; kitView(cv, cam);
+  ok(cam.scale === 6, 'in to six times at most');
+  cam.fit = true; kitView(cv, cam);
+  ok(cv._view === null && cam.scale === 1, 'Fit and the double-click reset it');
+  kitViewDone(cv); ok(cv._view === null, 'the next renderer draws unmoved');
+}
+
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 
