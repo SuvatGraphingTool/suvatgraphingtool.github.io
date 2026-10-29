@@ -67,7 +67,8 @@ export function render(canvas, cam, o) {
   const paths = [f.path(160), ...(O ? [f.path(160, O.end, O)] : [])];
   const xs = [0, ...paths.flat().map((p) => p.x)], ys = [0, F.h0, ...paths.flat().map((p) => p.y)];
   // a wall it hits stands above where it hits, whether or not its height was given
-  const faceTop = kind === 'face' && Pt ? (Pt.H ?? F.at?.y ?? 0) : null;
+  // the wall it hits stands at least as high as a window in it
+  const faceTop = kind === 'face' && Pt ? Math.max(Pt.H ?? F.at?.y ?? 0, (f.win?.hi ?? 0) / 1.5 * 1.05) : null;
   if (f.win) ys.push(f.win.hi * 1.1);
   if (Pt) { if (Pt.d != null) xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H); if (faceTop != null) ys.push(faceTop * 1.5); }
   if (f.flag != null) xs.push(f.flag);
