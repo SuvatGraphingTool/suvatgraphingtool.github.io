@@ -875,6 +875,9 @@ group('Two ships: the lighthouse', () => {
   ok(near(r.answers[0].t, 2.1) && /19i−1\.5j/.test(strip(r.notes.join(' ')).replace(/\s/g, '')), 'IAL Oct21 Q8(d): due south of it at 19i − 1.5j');
   ok(/same line/.test(strip(solveTwoPlane({ A: { v: { x: 1, y: 0 } }, find: 'B', at: { sights: [{ due: 'E', t: 1 }, { due: 'W', t: 2 }] } }).reason)), 'two sightings along one line: refused');
   ok(/behind/.test(strip(solveTwoPlane({ A: { v: { x: 1, y: 0 } }, find: 'B', at: { sights: [{ due: 'NE', t: 2 }, { due: 'N', t: 1 }] } }).reason)), 'lines of sight that cross behind: refused');
+  ok(/leave B/.test(strip(solveTwoPlane({ A: { r0: { x: -2, y: 9 }, r1: { x: 4, y: 6 }, t1: 0.6 }, B: { v: { x: 3, y: 3 } }, find: 'B', at: { sights: [{ due: 'E', t: 1.8 }, { due: 'NE', t: 2 }] } }).reason)), 'finding B with B’s velocity typed: refused');
+  ok(/not both/.test(strip(solveTwoPlane({ A: { v: { x: 1, y: 1 }, r1: { x: 4, y: 6 }, t1: 0.6 }, B: { v: { x: 0, y: 0 } } }).reason)), 'a velocity and a later position: refused');
+  ok(/A itself/.test(strip(solveTwoPlane({ A: { v: { x: 0, y: 0 }, r1: undefined }, find: 'B', at: { sights: [{ due: 'N', t: 1 }, { due: 'E', t: 2 }] } }).reason || '')) || !solveTwoPlane({ A: { v: { x: 0, y: 0 } }, find: 'B', at: { sights: [{ due: 'N', t: 1 }, { due: 'E', t: 2 }] } }).ok, 'A at rest, two directions: no false "behind"');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

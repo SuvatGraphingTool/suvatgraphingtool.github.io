@@ -89,7 +89,7 @@ export function render(canvas, cam, o) {
     const so = []; for (let i = 0; i <= 60; i++) { const tt = (i / 60) * t; so.push(pos(tt)); }
     stroke(g, so.map((p) => ({ x: X(p.x), y: Y(p.y) })), { color, width: 2.8 });
     const r = pos(t), a = Math.atan2(-v.y, v.x), still = Math.hypot(v.x, v.y) < 1e-9;
-    if (still && !birds) lighthouse(g, X(r.x), Y(r.y), color, P);
+    if (still && f.lighthouse && name === 'B') lighthouse(g, X(r.x), Y(r.y), color, P);
     else if (still) dot(g, X(r.x), Y(r.y), 6, { fill: P.card, stroke: color, width: 2.4 });
     else if (birds) birdTop(g, X(r.x), Y(r.y), 18, a, color); else shipTop(g, X(r.x), Y(r.y), 26, a, color, P);
     L.add(name, X(r.x) + 12, Y(r.y) - 16, { color, align: 'left', pri: 8, size: 15, weight: 700 });

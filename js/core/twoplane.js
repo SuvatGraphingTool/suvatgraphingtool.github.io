@@ -85,6 +85,7 @@ export function solveTwoPlane(k0 = {}) {
   const say = (D) => (at.bOfA ? `B is ${COMPASS[at.due].word} of A` : `A is ${D.word} of B`);
   const pre = [];
   // A's velocity from a second position at a later time: (r₁ − r₀)/t₁
+  if (given(k.A?.v) && (given(k.A?.r1) || have(k.A?.t1))) return fail('Give A’s velocity, or a later position and its time — not both: the later position fixes the velocity.');
   if (!given(k.A?.v) && given(k.A?.r1) && have(k.A?.t1)) {
     if (!(k.A.t1 > 0)) return fail('The later time is after the start: give it as a positive number.');
     const r1 = vec(k.A.r1);
@@ -94,6 +95,7 @@ export function solveTwoPlane(k0 = {}) {
   // B a fixed point found from two sightings: B is D₁ of A at t₁ and D₂ of A at t₂
   const sights = (at.sights || []).filter((x) => x && COMPASS[x.due] && have(x.t));
   if (k.find === 'B') {
+    if (given(k.B?.v) || given(k.B?.r0)) return fail('To find where B is, leave B’s start and velocity blank: B stays put, and the sightings fix where.');
     if (sights.length !== 2) return fail('To find where B is, give two sightings: the direction B is from A, and the time, twice.');
     const [s1, s2] = sights, D1 = COMPASS[s1.due], D2 = COMPASS[s2.due];
     if (Math.abs(s1.t - s2.t) < 1e-12) return fail('The two sightings must be at different times.');
@@ -102,12 +104,15 @@ export function solveTwoPlane(k0 = {}) {
     const det = D1.x * -D2.y - D1.y * -D2.x;
     if (tiny(det)) return fail('The two directions are the same line: two sightings that way cannot fix where B is.');
     const lam = (R.x * -D2.y - R.y * -D2.x) / det, mu = (D1.x * R.y - D1.y * R.x) / det;
+    if (Math.abs(lam) <= 1e-9 || Math.abs(mu) <= 1e-9) return fail('The two lines of sight cross at A itself, not at a point it sees.');
     if (!(lam > 1e-9) || !(mu > 1e-9)) return fail('No point is in both those directions from A at those times: the two lines of sight cross behind it.');
     const p1 = { x: A.r0.x + A.v.x * s1.t, y: A.r0.y + A.v.y * s1.t };
     B.r0 = { x: snap(p1.x + lam * D1.x), y: snap(p1.y + lam * D1.y) };
     B.v = { x: 0, y: 0 };
     const p2 = { x: A.r0.x + A.v.x * s2.t, y: A.r0.y + A.v.y * s2.t };
-    const along = (D, p) => (D.x === 0 ? M`x_B = ${d(snap(p.x))}` : D.y === 0 ? M`y_B = ${d(snap(p.y))}` : D.x === D.y ? M`x_B - ${sgn(snap(p.x))} = y_B - ${sgn(snap(p.y))}` : M`x_B - ${sgn(snap(p.x))} = -(y_B - ${sgn(snap(p.y))})`);
+    // c − a, with no "− (−1)": written x_B + 1
+    const minus = (c, a) => (tiny(a) ? c : `${c} ${a < 0 ? '+' : '-'} ${d(Math.abs(snap(a)))}`);
+    const along = (D, p) => (D.x === 0 ? M`x_B = ${d(snap(p.x))}` : D.y === 0 ? M`y_B = ${d(snap(p.y))}` : D.x === D.y ? M`${minus('x_B', p.x)} = ${minus('y_B', p.y)}` : M`${minus('x_B', p.x)} = -(${minus('y_B', p.y)})`);
     pre.push({ f: M`vec r_A = vec r_0 + vec(v)t`, s: M`"at" t = ${d(s1.t)}`, r: M`vec r_A = ${vsrc(p1)}` });
     pre.push({ f: M`"B is ${D1.word} of A"`, s: '', r: along(D1, p1) });
     pre.push({ f: M`vec r_A = vec r_0 + vec(v)t`, s: M`"at" t = ${d(s2.t)}`, r: M`vec r_A = ${vsrc(p2)}` });
@@ -225,7 +230,7 @@ export function solveTwoPlane(k0 = {}) {
   // long enough to show every moment asked about, and a little after
   const tMax = times.length ? Math.max(0.2, ...times.map((t) => t * 1.4 + 0.05)) : 1;
   const f = {
-    kind: 'twoplane', tMax, tFlight: tMax, A, B, U, answers, due: dueKey ? COMPASS[dueKey] : null,
+    kind: 'twoplane', tMax, tFlight: tMax, A, B, U, answers, lighthouse: k.find === 'B', due: dueKey ? COMPASS[dueKey] : null,
     posA: (t) => pos(A, t), posB: (t) => pos(B, t), gap: (t) => snap(Math.hypot(c.x + m.x * t, c.y + m.y * t)),
     pos: (t) => pos(A, t), vel: () => A.v,
     params: { u: 0, theta: 0, h: 0, g: 0 }, bounces: 0, segments: [], horiz: null, kineticEnergy: () => 0, momentum: () => 0,
