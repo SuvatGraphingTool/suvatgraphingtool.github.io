@@ -204,7 +204,7 @@ export function render(canvas, cam, o) {
   if (lv) {
     const ly = Y(lv.L);
     stroke(g, [{ x: X(0) - 10, y: ly }, { x: Math.min(w - 10, X(xHi)), y: ly }], { color: P.mark, width: 1.4, alpha: 0.85 });
-    L.add(T`${tr(Math.abs(lv.rel))} [m] ${lv.rel >= 0 ? '"above"' : '"below"'} "the throw"`, Math.min(w - 12, X(xHi)), ly - 12, { color: P.mark, align: 'right', pri: 6, size: 13, weight: 700 });
+    L.add(Math.abs(lv.rel) < 1e-12 ? 'the height it started at' : T`${tr(Math.abs(lv.rel))} [m] ${lv.rel >= 0 ? '"above"' : '"below"'} "the start"`, Math.min(w - 12, X(xHi)), ly - 12, { color: P.mark, align: 'right', pri: 6, size: 13, weight: 700 });
     for (const tc of lv.times) {
       if (t < tc - 1e-9) continue;
       const q = f.pos(tc);

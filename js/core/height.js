@@ -30,7 +30,7 @@ export const PLACES = {
   bridge:  { word: 'bridge', top: 'the bridge', below: 'the river', lands: 'hits the water', foot: 'just below the bridge' },
   board:   { word: 'diving board', top: 'the diving board', below: 'the water', lands: 'enters the water', foot: 'below the end of the board' },
   well:    { word: 'well', top: 'the top of the well', below: 'the water in the well', lands: 'hits the water', foot: 'at the bottom of the well', vertical: true },
-  balloon: { word: 'balloon', top: 'the balloon', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', vertical: true, carried: true },
+  balloon: { word: 'balloon', top: 'the balloon', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', vertical: true, carried: true, from: 'where it was let go' },
 };
 
 /**
@@ -48,7 +48,8 @@ export function solveHeight(k = {}) {
   if (!(k.h > 0)) return fail(`${Pl.top.replace(/^./, (c) => c.toUpperCase())} is above ${Pl.below}: give its height as a positive number.`);
   if (!have(k.theta)) return fail('Still needed: the angle it is thrown at — 90 straight up, 0 across, −90 straight down.');
   if (!(k.theta >= -90 && k.theta <= 90)) return fail('The angle is between −90° (straight down) and 90° (straight up).');
-  const vertical = Math.abs(Math.abs(k.theta) - 90) < 1e-9;
+  const steep = Math.abs(Math.abs(k.theta) - 90) < 1e-9;
+  const vertical = steep;
   // down a well, or let go from a balloon, it moves straight up or down
   if (Pl.vertical && !vertical) return fail(`From ${Pl.top} it moves straight up or down: give the angle as 90 (up) or −90 (down)${Pl.carried ? ' — a balloon rising carries it up at its own speed' : ''}.`);
   if (vertical && have(k.s)) return fail('Thrown straight up or down it lands at the foot: there is no distance out to give.');
@@ -59,6 +60,8 @@ export function solveHeight(k = {}) {
   if (!r.ok) return fail(r.reason);
   const f = r.f;
   if (!(f.tFlight > 0) || !isFinite(f.tFlight)) return fail(`It never comes down to ${Pl.below}.`);
+  // with no speed across (dropped, or straight up or down) it lands at the foot
+  const straight = vertical || Math.abs(f.ux) < 1e-9;
 
   // the angle is what makes it vertical, never a value it did not need
   // and the height is the place itself, never a value it did not need
@@ -67,8 +70,8 @@ export function solveHeight(k = {}) {
   if (drop && !vertical) notes.unshift('At no speed the angle does nothing: it is dropped, and falls straight down.');
   const T = snap(f.tFlight), top = snap(f.apexHeight), out = snap(z(f.range)), vL = snap(Math.abs(f.vLanding));
   const lines = [];
-  if (f.uy > 1e-9) lines.push(`It rises to ${M`${d(top)} [m]`} above ${Pl.below}, ${M`${d(snap(top - k.h))} [m]`} above where it was thrown from, at ${M`t = ${d(snap(f.tApex))} [s]`}.`);
-  lines.push(`It ${Pl.lands} ${vertical ? Pl.foot : `${M`${d(out)} [m]`} out from the ${Pl.word}`} at ${M`t = ${d(T)} [s]`}, at ${M`${d(vL)} [m s^-1]`}.`);
+  if (f.uy > 1e-9) lines.push(`It rises to ${M`${d(top)} [m]`} above ${Pl.below}, ${M`${d(snap(top - k.h))} [m]`} above ${Pl.from || 'where it was thrown from'}, at ${M`t = ${d(snap(f.tApex))} [s]`}.`);
+  lines.push(`It ${Pl.lands} ${straight ? Pl.foot : `${M`${d(out)} [m]`} out from the ${Pl.word}`} at ${M`t = ${d(T)} [s]`}, at ${M`${d(vL)} [m s^-1]`}.`);
 
   // when is it a given height above the throw?
   let level = null;
@@ -83,18 +86,18 @@ export function solveHeight(k = {}) {
     times = times.map(snap).filter((x) => x > 1e-9);
     level = { rel: k.level, L, times, atTop };
     const at = Math.abs(k.level) < 1e-12 ? 'back at the height it was thrown from'
-      : `${M`${d(Math.abs(k.level))} [m]`} ${k.level >= 0 ? 'above' : 'below'} where it was thrown from`;
+      : `${M`${d(Math.abs(k.level))} [m]`} ${k.level >= 0 ? 'above' : 'below'} ${Pl.from || 'where it was thrown from'}`;
     lines.push(atTop ? `It is ${at} once, at the top of its path, ${M`t = ${d(times[0])} [s]`}.`
       : times.length === 2 ? `It is ${at} twice: at ${M`t = ${d(times[0])} [s]`} on the way up and ${M`t = ${d(times[1])} [s]`} on the way down.`
         : times.length === 1 ? `It is ${at} once, at ${M`t = ${d(times[0])} [s]`}.`
           : `It is never ${at}.`);
   }
   notes.push(...lines);
-  const derived = [...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below where it was thrown from`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
+  const derived = [...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
   if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}`);
-  f.place = place; f.level = level; f.vertical = vertical;
+  f.place = place; f.level = level; f.vertical = straight;
   return {
-    ok: true, mode: 'height', axis: vertical ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical,
+    ok: true, mode: 'height', axis: straight ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical: straight,
     T, top, out, vL, h: k.h, g: k.g, notes, derived,
     params: r.params, convention: `Up and away from the ${Pl.word} are positive; heights are above ${Pl.below}.`,
   };

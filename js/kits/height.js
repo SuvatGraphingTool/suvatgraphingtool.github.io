@@ -51,10 +51,16 @@ export const height = {
   solve: solveHeight,
   working: (solved, t) => {
     if (!solved?.ok) return [];
-    const out = buildWorking(solved.f, t);
+    // the twelve's working speaks of the ground and the launch point: here it
+    // is the place's own (the sea, the river, the water in the well)
+    const Pl = PLACES[solved.place], from = Pl.from || 'where it was thrown from';
+    const say = (x) => (typeof x === 'string' ? x.replace(/\bthe launch point\b/g, from).replace(/\bthe ground\b/g, Pl.below) : x);
+    const out = buildWorking(solved.f, t).map((sec) => ({ ...sec, title: say(sec.title), note: say(sec.note),
+      rows: sec.rows.map((r) => ({ ...r, f: say(r.f), s: say(r.s), r: say(r.r) })) }));
     const rows = levelRows(solved);
     if (rows.length) out.push({ title: `When it is ${M`${tr(Math.abs(solved.level.rel))} [m]`} ${solved.level.rel >= 0 ? 'above' : 'below'} the throw`, rows,
-      note: `Measured from where it was thrown, up positive: ${M`s`} is that height, and the two roots are on the way up and on the way down.` });
+      note: `Measured from ${Pl.from || 'where it was thrown from'}, up positive: ${M`s`} is that height. ${solved.level.atTop ? 'It is there once, at the top of its path.'
+        : solved.level.times.length === 2 ? 'The two roots are on the way up and on the way down.' : solved.level.times.length === 1 ? 'Only one root is a moment of its flight.' : 'No root is a moment of its flight: it is never there.'}` });
     return out;
   },
   render: stage.render,
@@ -124,7 +130,7 @@ export const height = {
         <p class="ph-units">${M`u`} and the landing speed in ${M`[m s^-1]`}; ${M`H_max`} above ${Pl.below}, in ${M`[m]`}; ${M`t`} in ${M`[s]`} in the air.</p>
       </div>`;
     return {
-      eyebrow: `From a <span class="u">${tr(h)}</span> <span class="u">m</span> ${Pl.word}`,
+      eyebrow: `From <span class="u">${tr(h)}</span> <span class="u">m</span> above ${Pl.below}`,
       title,
       body: `${solved.notes.map((x) => `<p>${x}</p>`).join('')}${table}`,
       real: true,
