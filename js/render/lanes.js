@@ -3,32 +3,191 @@
 //
 // Two pictures of one race, sharing the clock, as for the journey:
 //
-//   · ABOVE, both speed–time graphs on one pair of axes — the picture every
-//     paper in this family draws. A's line in the velocity hue, B's in the
-//     second-object stone, both dashed because the motion is along the road
-//     (rule 2). The area under each, up to now, is shaded in the displacement
-//     hue — A's solid, B's hatched — because that area IS the distance each
-//     has gone. Each moment they are level is marked once the clock reaches
-//     it: the two areas are equal there, which is what "level" means. Where
+//   · ON A CARD, top right, both speed–time graphs on one pair of axes — the
+//     picture every paper in this family draws. A's line in the velocity
+//     hue, B's in the second-object stone, both dashed because the motion is
+//     along the road (rule 2). The area under each, up to now, is shaded in
+//     the displacement hue — A's solid, B's hatched — because that area IS
+//     the distance each has gone; the card's key says what each is worth.
+//     Each moment they are level is marked once the clock reaches it, where
 //     the lines cross (the same speed, for an instant) is ringed, and the end
-//     of a held speed is dropped to the time axis and lettered, as the
-//     papers' sketches letter T.
-//   · BELOW, the road in two lanes — or two tracks, with the trains on them —
-//     A above B, each with its equal-time marks, its velocity arrow and its
-//     letter; the start; the line the question names, if it names one (on
-//     the tracks, the trackside posts X and Y); the gap between their fronts
-//     as a dashed displacement bracket; and each meeting as a line across
-//     both with the engine's time.
+//     of a held speed is dropped to the time axis and numbered, as the
+//     papers' sketches letter T. The card belongs to the screen: it is drawn
+//     after the place, out of the stage's pan and zoom (unview), with its own
+//     labels, clear of the readouts.
+//   · BELOW, the place: a two-lane road with its kerbs, footway and verge —
+//     or two tracks, with the trains on them — A in the far lane, B in the
+//     near one, each with its equal-time marks, its velocity arrow and its
+//     letter; the start (lights, when it leaves them); the line the question
+//     names (on the tracks, the trackside posts X and Y); the gap between
+//     their fronts as a dashed displacement bracket; and each meeting as a
+//     line across both, which pulses at the engine's time.
 //
-// Everything drawn is read from js/core/overtake.js (rule 4). The view frames
-// the whole run and does not pan.
+// THE ROADSIDE is here too, and models.js and journey.js stand on it: the
+// footway and kerbs, bushes and marker posts along the verge, a street lamp,
+// a measuring tape laid on the grass, the graph card's place beside the
+// readouts, and three significant figures.
+//
+// Everything drawn is read from js/core/overtake.js (rule 4).
 
-import { landscape, paper } from './scenery.js';
-import { fitCanvas, palette, fmt, clamp, labels, stroke, arrow, dot, niceStep, cssVar, withAlpha } from './util.js';
+import { landscape, paper, tarmac, env, rng, softShadow } from './scenery.js';
+import { fitCanvas, unview, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, cssVar } from './util.js';
 import { T, num } from '../notation.js';
 import { drawFigure, train, rails, post, phaseFor, trafficLights, FIGURES } from './figures.js';
+import { pulse, ageOf } from './effects.js';
 
-const tr = (x, p = 2) => num(x, p, { trim: true });
+const TAU = Math.PI * 2;
+
+/* ── shared by the road stages ─────────────────────────────────────────── */
+
+/** Three significant figures, with no trailing zeros: 12, 11, 15.4, 0.4. */
+export function s3(x) {
+  if (!isFinite(x) || Math.abs(x) < 1e-9) return num(0, 0);
+  const dp = Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x))));
+  return num(x, dp, { trim: true });
+}
+
+/** Where the readouts sit over the canvas — a column of `n` boxes top left,
+    `wide` px wide on a phone and `wideL` on a laptop (as wide as their
+    longest name), the clock top right — and the place beside them for a
+    graph card. */
+export function screen(w, h, n, wide = 146, wideL = 196) {
+  const phone = w < 520;
+  const hudR = 16 + (phone ? wide : wideL) + 4, hudB = 16 + n * (phone ? 55 : 64) + (n - 1) * 8 + 4;
+  return { phone, hudR, hudB, cardX0: hudR + (phone ? 4 : 44), cardY0: phone ? 80 : 90, cardX1: w - (phone ? 8 : 12) };
+}
+
+/** A sheet for a graph, in the screen's pixels: the scenery's paper card. */
+export function card(g, x0, y0, x1, y1) {
+  paper(g, x0, y0, x1 - x0, y1 - y0, { step: 14 });
+}
+
+/** A bush standing on y = Y at x, about s px tall: overlapping clumps lit
+    from the upper left, a soft shadow under it. */
+export function bush(g, x, Y, s, seed = 1) {
+  const E = env(), r = rng(seed);
+  softShadow(g, x, Y + 1, s * 0.75, s * 0.14, 0.6);
+  const lit = E.night ? '#5e6a45' : '#a0ad74', deep = E.night ? '#232a1a' : '#55623a';
+  const n = 4 + Math.floor(r() * 3);
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1), rad = s * (0.28 + r() * 0.14);
+    const cx = x + (u - 0.5) * s * 1.05 + (r() - 0.5) * s * 0.12;
+    const cy = Y - rad * 0.9 - s * 0.32 * Math.sin(Math.PI * u);
+    const gr = g.createRadialGradient(cx - rad * 0.4, cy - rad * 0.45, rad * 0.08, cx, cy, rad);
+    gr.addColorStop(0, lit); gr.addColorStop(1, deep);
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, rad, 0, TAU); g.fill();
+  }
+}
+
+/** A white roadside marker post on y = Y, `hh` px tall, with its black band
+    and reflector, shaded on the side away from the light. */
+export function markerPost(g, x, Y, hh) {
+  const pw = Math.max(3, hh * 0.18);
+  g.save();
+  g.fillStyle = '#efe9e1'; g.fillRect(x - pw / 2, Y - hh, pw, hh);
+  g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(x + pw * 0.1, Y - hh, pw * 0.4, hh);
+  g.fillStyle = '#1e1a1c'; g.fillRect(x - pw / 2, Y - hh * 0.9, pw, hh * 0.2);
+  g.fillStyle = '#c94b40'; g.fillRect(x - pw * 0.28, Y - hh * 0.86, pw * 0.56, hh * 0.12);
+  g.restore();
+}
+
+/** A street lamp on y = Y, `hh` px tall, its arm reaching over the road;
+    by night its lamp glows and lights a pool under it. */
+export function lampPost(g, x, Y, hh, dir = 1) {
+  const E = env(), top = Y - hh, arm = hh * 0.24;
+  g.save();
+  if (E.night) {
+    const gl = g.createRadialGradient(x + arm * dir, top + 6, 0, x + arm * dir, top + 6, hh * 0.55);
+    gl.addColorStop(0, withAlpha(E.window, 0.32)); gl.addColorStop(1, withAlpha(E.window, 0));
+    g.fillStyle = gl; g.beginPath(); g.arc(x + arm * dir, top + 6, hh * 0.55, 0, TAU); g.fill();
+  }
+  const metal = E.night ? '#7a6e74' : '#6b6166';
+  g.strokeStyle = metal; g.lineCap = 'round';
+  g.lineWidth = 3.2; g.beginPath(); g.moveTo(x, Y); g.lineTo(x, top + 8); g.quadraticCurveTo(x, top, x + arm * 0.5 * dir, top); g.lineTo(x + arm * dir, top); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(x - 1.6, top + 8, 1, hh - 8);
+  g.fillStyle = '#3a3236'; g.beginPath(); g.roundRect(x + arm * dir - 7, top - 2, 14, 6, 2); g.fill();
+  g.fillStyle = E.night ? '#fff1cf' : '#efe4cf'; g.fillRect(x + arm * dir - 5, top + 3, 10, 2);
+  g.fillStyle = '#4a4044'; g.fillRect(x - 3, Y - 6, 6, 6);
+  g.restore();
+}
+
+/** A road side on, from its far edge at y = top to its near kerb `d` px
+    below: a footway and kerb behind it, tarmac with its centre line and edge
+    lines, a kerb in front. Returns where wheels stand in the far lane and in
+    the near one — inside each lane, not on its lines. */
+export function road(g, x0, x1, top, d, { seed = 11 } = {}) {
+  const E = env(), r = rng(seed);
+  g.save();
+  // the footway: paving slabs, and the kerb's lit face
+  g.fillStyle = E.night ? '#3f363a' : '#bdb2ac'; g.fillRect(x0, top - 11, x1 - x0, 8);
+  g.strokeStyle = withAlpha(E.night ? '#000000' : '#7d716c', 0.35); g.lineWidth = 1;
+  for (let x = x0 + r() * 20; x < x1; x += 22) { g.beginPath(); g.moveTo(x, top - 11); g.lineTo(x - 3, top - 3); g.stroke(); }
+  g.fillStyle = E.night ? '#5a4f54' : '#ddd4cf'; g.fillRect(x0, top - 4, x1 - x0, 4);
+  g.restore();
+  tarmac(g, x0, x1, top, { depth: d, verge: false, seed });
+  // the near edge line, and the kerb's face in shadow under the kerb
+  g.save();
+  g.strokeStyle = withAlpha(E.line, 0.8); g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(x0, top + d - 3.5); g.lineTo(x1, top + d - 3.5); g.stroke();
+  g.fillStyle = 'rgba(0,0,0,0.28)'; g.fillRect(x0, top + d + 4, x1 - x0, 3);
+  g.restore();
+  return { far: top + d * 0.42, near: top + d * 0.88 };
+}
+
+/** The verge behind a road, along y = Y: bushes and marker posts, seeded,
+    kept clear of the x ranges in `keep` (a sign, a light, a post). */
+export function verge(g, x0, x1, Y, { seed = 5, scale = 1, keep = [], lamps = false } = {}) {
+  const r = rng(seed), clear = (x, half) => !keep.some(([a, b]) => x + half > a && x - half < b);
+  if (lamps) for (let x = x0 + 150 + r() * 80; x < x1; x += 300 + r() * 60) if (clear(x, 20)) lampPost(g, x, Y - 2, 62 * scale, 1);
+  for (let x = x0 + r() * 60; x < x1 + 20; x += (70 + r() * 70) * scale) {
+    const s = (12 + r() * 9) * scale;
+    if (clear(x, s)) bush(g, x, Y - 1, s, seed * 31 + Math.round(x));
+  }
+  for (let x = x0 + 40 + r() * 30; x < x1; x += 120 * scale) if (clear(x, 6)) markerPost(g, x, Y - 1, 15 * scale);
+}
+
+/** A measuring tape laid on the grass along y (its top edge), from metre s0
+    to s1 through X: a cream strip with ink ticks and numbers on it, so it
+    reads on any ground in either theme. Its numbers go through L at a fixed
+    place; `marks` ([{ s, color, text }]) are notches in their own colour,
+    their text just above it, so the even steps keep their numbers. */
+export function tape(g, L, X, s0, s1, y, { marks = [], minGap = 48, pri = 4 } = {}) {
+  const x0 = X(s0) - 20, x1 = X(s1) + 20, hh = 22;
+  g.save();
+  g.shadowColor = 'rgba(0,0,0,0.3)'; g.shadowBlur = 4; g.shadowOffsetY = 1.5;
+  g.fillStyle = '#efe6d4'; g.beginPath(); g.roundRect(x0, y, x1 - x0, hh, 3); g.fill();
+  g.shadowColor = 'transparent';
+  g.strokeStyle = '#b3a487'; g.lineWidth = 1; g.stroke();
+  g.restore();
+  let step = niceStep(s1 - s0, 6);
+  while (X(step) - X(0) < minGap) step = niceStep(step * 2.2, 1);
+  const minor = step / (String(step).startsWith('2') ? 4 : 5);
+  for (let s = Math.ceil(s0 / minor - 1e-9) * minor; s <= s1 + 1e-9; s += minor) {
+    const major = Math.abs(s / step - Math.round(s / step)) < 1e-6;
+    stroke(g, [{ x: X(s), y }, { x: X(s), y: y + (major ? 7 : 4) }], { color: '#2b2226', width: major ? 1.4 : 1 });
+    if (major) L.add(T`${s3(s)} [m]`, X(s), y + 14, { color: '#2b2226', align: 'center', pri, size: 13, bg: false, maxPush: 0 });
+  }
+  for (const m of marks) {
+    g.save(); g.fillStyle = m.color;
+    g.beginPath(); g.moveTo(X(m.s), y + 1); g.lineTo(X(m.s) - 6, y - 7); g.lineTo(X(m.s) + 6, y - 7); g.closePath(); g.fill();
+    g.restore();
+    stroke(g, [{ x: X(m.s), y }, { x: X(m.s), y: y + 4 }], { color: m.color, width: 2.4 });
+    if (m.text) L.add(m.text, X(m.s), y - 16, { color: m.color, align: 'center', pri: pri + 4, size: 13, weight: 700, maxPush: 0 });
+  }
+  return hh;
+}
+
+/** A round badge with a letter or number on it, on the side of a vehicle. */
+export function badge(g, x, y, text, ring, r = 9.5) {
+  g.save();
+  g.fillStyle = '#f6f1e8'; g.strokeStyle = ring || '#2b2226'; g.lineWidth = ring ? 2.4 : 1.4;
+  g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.stroke();
+  g.fillStyle = '#1e1a1c'; g.font = `700 13px ${cssVar('--font', 'system-ui, sans-serif')}`;
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, x, y + 0.5);
+  g.restore();
+}
+
+/* ── the stage ─────────────────────────────────────────────────────────── */
 
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
@@ -39,61 +198,193 @@ export function render(canvas, cam, o) {
   const { A, B, events } = f;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
   const passed = events.filter((e) => e.kind !== 'start' && t >= e.t - 1e-9);
+  const rail = f.where === 'rail';
+  const sc = screen(w, h, 4, 128, 176), phone = sc.phone;
+  const life = Math.max(1e-6, f.tMax / 9);
 
-  // ── both speed–time graphs, above
-  // clear of the readouts: the four boxes on the left, the clock top right
-  // on the tracks the graph gives up a little height to the trackside posts
-  const rail = f.where === 'rail', low = rail || f.lights;
-  landscape(g, w, h, Math.round(h * (low ? 0.72 : 0.68)) - 50, { far: rail ? 'hills' : 'trees', seed: 39 });
-  const gx0 = 270, gx1 = w - 60, gy0 = 100, gy1 = Math.round(h * (low ? 0.47 : 0.52));
-  paper(g, gx0 - 56, gy0 - 34, gx1 - gx0 + 76, gy1 - gy0 + 72);   // the graph on its sheet, clear of the scene behind
+  // ── sizes: each one's figure at its own size beside a car, at least a
+  // tenth of the width; a train of three long enough to read as one
+  const kind = (p) => (rail ? 'train' : FIGURES[f.figs?.[p.name]] ? f.figs[p.name] : 'car');
+  const base = rail ? clamp(w * 0.24, 130, 230) : clamp(w * 0.1, 46, 100);
+  const lenOf = (p) => (rail ? base : Math.max(FIGURES[kind(p)].min || 0, base * FIGURES[kind(p)].size / FIGURES.car.size));
+  const tallOf = (p) => (rail ? Math.min(base / 3 * 0.42, base * 0.3) + 8 : FIGURES[kind(p)].top * lenOf(p) / FIGURES[kind(p)].size);
+  const tall = Math.max(tallOf(A), tallOf(B)), maxLen = Math.max(lenOf(A), lenOf(B));
+
+  // ── where things go: the road along the bottom, the card above it beside
+  // the readouts, the start clear of them
+  const lane = Math.max(phone ? 30 : 36, tall * 1.08);
+  const d = rail ? 2 * (tall + 18) : 2 * lane;
+  const below = phone ? 66 : 54;
+  const R = Math.round(h - below - d - 4);               // the road's far edge
+  const horizon = R - (rail ? 24 : 30);
+  const sx0 = maxLen + (phone ? 14 : 24), sx1 = w - (phone ? 30 : 60);
+  const lo = Math.min(0, A.x0, B.x0), hi = Math.max(f.top, 1);
+  const S = (s) => sx0 + ((s - lo) / (hi - lo)) * (sx1 - sx0);
+  const cardY1 = Math.min(horizon - 8, sc.cardY0 + Math.max(170, h * 0.62));
+  const box = { x0: sc.cardX0, y0: sc.cardY0, x1: sc.cardX1, y1: cardY1 };
+  L.reserve({ x: 0, y: 0, w: sc.hudR, h: sc.hudB });
+  L.reserve({ x: box.x0, y: box.y0, w: box.x1 - box.x0, h: box.y1 - box.y0 });
+
+  // ── the place
+  landscape(g, w, h, horizon, { far: rail ? 'hills' : 'trees', seed: 39, clouds: 5 });
+  const startX = S(0), lineX = f.line != null ? S(f.line) : null;
+  const keep = [[startX - 30, startX + 20], ...(lineX != null ? [[lineX - 20, lineX + 20]] : [])];
+  let yA, yB;
+  if (rail) {
+    // two tracks on one bed of ballast, a lineside fence behind them
+    yA = R + tall + 4; yB = yA + tall + 22;
+    const E = env();
+    g.save(); g.fillStyle = E.night ? '#3a3236' : '#9d938e'; g.fillRect(0, R + 2, w, yB + 22 - R); g.restore();
+    for (let x = 0; x < w; x += 46) { stroke(g, [{ x, y: R + 4 }, { x, y: R - 12 }], { color: E.night ? '#6b5f64' : '#7a6e6a', width: 2 }); }
+    stroke(g, [{ x: 0, y: R - 8 }, { x: w, y: R - 8 }], { color: E.night ? '#6b5f64' : '#7a6e6a', width: 1.4 });
+    stroke(g, [{ x: 0, y: R - 2 }, { x: w, y: R - 2 }], { color: E.night ? '#6b5f64' : '#7a6e6a', width: 1.4 });
+    verge(g, 0, w, R - 12, { seed: 41, scale: phone ? 0.8 : 1, keep });
+    for (const y of [yA, yB]) rails(g, 0, w, y, P);
+  } else {
+    verge(g, 0, w, R - 11, { seed: 41, scale: phone ? 0.8 : 1, keep });
+    const wy = road(g, 0, w, R, d, { seed: 23 });
+    yA = wy.far; yB = wy.near;
+  }
+
+  // the start: a stop line across both lanes, and the lights when it leaves them
+  if (rail) post(g, L, startX, yB + 12, 'X', P.strong, P, { dashed: true, height: yB + 12 - (R - 2) });
+  else {
+    g.save(); g.fillStyle = withAlpha(env().line, 0.9); g.fillRect(startX - 2, R + 3, 4, d - 7); g.restore();
+    if (f.lights) trafficLights(g, startX - 18, R - 10, tall + 6, P, { lit: fired && tRaw > 0 ? 'green' : 'red' });
+    else L.add('start', startX, R - 22, { color: P.ink, align: 'center', pri: 5, size: 13 });
+  }
+  // the line the question names: chequered across the road, or the post Y
+  if (lineX != null) {
+    if (rail) post(g, L, lineX, yB + 12, 'Y', P.mark, P, { dashed: true, height: yB + 12 - (R - 2) });
+    else {
+      g.save();
+      for (let y = R + 3, k = 0; y < R + d - 4; y += 6, k++) for (let c = 0; c < 2; c++) { g.fillStyle = (k + c) % 2 ? '#1e1a1c' : '#f3eee6'; g.fillRect(lineX - 6 + c * 6, y, 6, Math.min(6, R + d - 4 - y)); }
+      g.restore();
+    }
+    L.add(rail ? T`XY = ${s3(f.line)} [m]` : T`${s3(f.line)} [m]`, lineX + (rail ? -24 : 10), rail ? R - 14 : R - 22,
+      { color: P.mark, align: rail ? 'right' : 'left', pri: 8, size: 14, weight: 700, maxPush: 20 });
+  }
+  // each meeting, across both lanes, and its pulse at the engine's time
+  for (const e of passed) {
+    stroke(g, [{ x: S(e.x), y: R - (rail ? 6 : 2) }, { x: S(e.x), y: R + d + 2 }], { color: P.mark, width: 2, dash: [5, 4] });
+    const { age } = ageOf(t, e.t, f.tMax, life);
+    pulse(g, S(e.x), yA - tall * 0.4, age, life, P.mark, { radius: 30 });
+    pulse(g, S(e.x), yB - tall * 0.4, age, life, P.mark, { radius: 30 });
+  }
+  // equal-time marks, each along its own lane, under its wheels
+  const dt = niceStep(f.tMax, 10);
+  for (const [p, y, color] of [[A, yA, P.vel], [B, yB, P.second]]) {
+    const my = rail ? y + 12 : y + 5;
+    for (let i = 0; i * dt <= t + 1e-9; i++) {
+      const tt = i * dt;
+      if (tt < p.t0 - 1e-9) continue;
+      dot(g, S(p.pos(tt)), my, 3.4, { fill: color, stroke: '#f6f1e8', width: 1.2 });
+      if (show.ticks) L.add(T`${num(tt, dt < 1 ? 1 : 0)} [s]`, S(p.pos(tt)), my + 14, { color, align: 'center', pri: 2, size: 13, maxPush: 0 });
+    }
+  }
+  // the two of them: A in the far lane first, B in front of it
+  for (const [p, y, ring] of [[A, yA, null], [B, yB, P.second]]) {
+    const xf = S(p.pos(t)), Lp = lenOf(p), k = kind(p), ht = tallOf(p);
+    const v = p.vel(t), a = p.acc(t);
+    const opts = { ring, phase: phaseFor(k, Lp, xf - S(p.x0), rail ? { cars: 3 } : {}), brake: a < -1e-9 && v > 1e-6,
+      paint: p === B ? (env().night ? '#9a8a74' : '#b8a27c') : null };
+    if (rail) train(g, xf, y, Lp, P, { ...opts, cars: 3 }); else drawFigure(g, k, xf, y, Lp, P, opts);
+    badge(g, xf - Lp * (rail ? 0.2 : k === 'car' ? 0.62 : 0.5), y - ht * (rail ? 0.62 : 0.5), p.name, ring, clamp(Lp * 0.11, 7.5, 10));
+    L.reserve({ x: xf - Lp, y: y - ht, w: Lp, h: ht });
+    // its velocity, from its front, dashed: along the road is horizontal
+    if (show.velocity !== false && v > 1e-6) {
+      const len = (v / f.vMax) * clamp(w * 0.1, 46, 110), vy = y - ht * (rail ? 0.55 : 0.42);
+      const x0 = xf + 5, x1 = x0 + len;
+      arrow(g, x0, vy, x1, vy, { color: P.velVec, width: 2.6, head: 10, dash: [6, 4] });
+      const text = T`${s3(v)} [m s^-1]`, room = x1 + 90 < w;
+      L.add(text, room ? x1 + 8 : xf - Lp - 8, vy, { color: P.vel, align: room ? 'left' : 'right', pri: 7, size: 14, weight: 700, maxPush: 20 });
+    }
+    // its acceleration over its roof, dashed for the same reason
+    if (show.acceleration && v > 1e-6 && Math.abs(a) > 1e-9) {
+      const len = Math.sign(a) * 36, ay = y - ht - 10;
+      arrow(g, xf - Lp / 2 - len / 2, ay, xf - Lp / 2 + len / 2, ay, { color: P.acc, width: 2.4, head: 9, dash: [5, 4] });
+    }
+    // it comes to rest: a pulse where it stops
+    const stop = p.stages.find((st) => st.kind === 'changing' && isFinite(st.t1) && Math.abs(p.vel(st.t1 + 1e-6)) < 1e-9);
+    if (stop) { const { age } = ageOf(t, stop.t1, f.tMax, life); pulse(g, xf - Lp / 2, y - ht * 0.4, age, life, P.muted, { radius: 26 }); }
+  }
+  // the gap between their fronts, on the verge in front of the road
+  const xa = S(A.pos(t)), xb = S(B.pos(t));
+  if (Math.abs(xa - xb) > 12 && !passed.some((e) => Math.abs(e.t - t) < 1e-6)) {
+    const by = R + d + 18;
+    stroke(g, [{ x: Math.min(xa, xb), y: by }, { x: Math.max(xa, xb), y: by }], { color: P.disp, width: 2.4, dash: [7, 5] });
+    for (const x of [xa, xb]) stroke(g, [{ x, y: by - 7 }, { x, y: by + 7 }], { color: P.disp, width: 2 });
+    L.add(`${A.pos(t) > B.pos(t) ? 'A' : 'B'} ahead by ${T`${s3(Math.abs(f.gap(t)))} [m]`}`, (xa + xb) / 2, by + 17,
+      { color: P.disp, align: 'center', pri: 8, size: 14, weight: 700, maxPush: 20 });
+  }
+  L.draw(g, w, h);
+
+  // ── the card, on the screen
+  unview(g);
+  graph(g, f, t, box, P, phone, passed, life);
+  return null;
+}
+
+/** Both speed–time graphs on a card in the box, in the screen's pixels. */
+function graph(g, f, t, box, P, phone, passed, life) {
+  const L = labels(), { A, B } = f;
+  card(g, box.x0, box.y0, box.x1, box.y1);
+  const gx0 = box.x0 + (phone ? 34 : 46), gx1 = box.x1 - (phone ? 46 : 54);
+  const gy0 = box.y0 + 64, gy1 = box.y1 - 30;
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0);
-  const vTop = f.vMax * 1.22;
+  const vTop = f.vMax * 1.25;
   const Y = (v) => gy1 - (v / vTop) * (gy1 - gy0);
-  stroke(g, [{ x: gx0, y: gy1 }, { x: gx1 + 16, y: gy1 }], { color: P.axis, width: 2 });
-  stroke(g, [{ x: gx0, y: gy1 }, { x: gx0, y: gy0 - 16 }], { color: P.axis, width: 2 });
-  L.add(T`v [m s^-1]`, gx0 - 10, gy0 - 22, { color: P.muted, align: 'right', pri: 4, size: 14, bg: false });
-  L.add(T`t [s]`, gx1 + 20, gy1, { color: P.muted, align: 'left', pri: 4, size: 14, bg: false });
-  // the speeds the paper's sketch marks — each one's speeds, held or reached —
-  // are numbered on the axis first; the even steps fill in where there is room
+  const font = `600 13px ${cssVar('--font', 'system-ui, sans-serif')}`;
+  const width = (s) => { g.save(); g.font = font; const m = g.measureText(s).width; g.restore(); return m; };
+
+  // the key, which is also what each area is worth so far
+  const dist = f.dist(t), ky = box.y0 + 17;
+  let kx = box.x0 + 14;
+  if (!phone) { const lead = 'distance gone, the area so far:'; L.add(lead, kx, ky, { color: P.muted, pri: 9, size: 13, bg: false, maxPush: 0 }); kx += width(lead) + 14; }
+  for (const [p, hatch] of [[A, false], [B, true]]) {
+    g.save();
+    g.fillStyle = withAlpha(P.disp, 0.22); g.fillRect(kx, ky - 7, 16, 14);
+    if (hatch) { g.beginPath(); g.rect(kx, ky - 7, 16, 14); g.clip(); g.strokeStyle = withAlpha(P.disp, 0.8); g.lineWidth = 1.2; g.beginPath(); for (let x = kx - 14; x < kx + 16; x += 5) { g.moveTo(x, ky + 7); g.lineTo(x + 14, ky - 7); } g.stroke(); }
+    g.restore();
+    stroke(g, [{ x: kx, y: ky - 7 }, { x: kx + 16, y: ky - 7 }], { color: p === A ? P.vel : P.second, width: 2.4, dash: [4, 3] });
+    const text = `${p.name} ${T`${s3(dist[p.name])} [m]`}`;
+    L.add(text, kx + 22, ky, { color: P.disp, pri: 9, size: 13, weight: 700, bg: false, maxPush: 0 });
+    kx += 22 + width(text) + 16;
+  }
+
+  // the axes
+  stroke(g, [{ x: gx0, y: gy1 }, { x: gx1 + 12, y: gy1 }], { color: P.axis, width: 2 });
+  stroke(g, [{ x: gx0, y: gy1 }, { x: gx0, y: gy0 - 12 }], { color: P.axis, width: 2 });
+  L.add(`${T`v`} (${T`[m s^-1]`})`, gx0 - 8, gy0 - 24, { color: P.muted, align: 'left', pri: 8, size: 13, bg: false, maxPush: 0 });
+  L.add(`${T`t`} (${T`[s]`})`, gx1 + 15, gy1, { color: P.muted, align: 'left', pri: 8, size: 13, bg: false, maxPush: 0 });
+  // the speeds the paper's sketch marks, then the even steps where there is room
   const keyV = [...new Set([A.u, B.u, A.V ?? 0, B.V ?? 0])].filter((v) => v > 1e-9 && v < vTop);
-  for (const v of keyV) {
-    stroke(g, [{ x: gx0 - 6, y: Y(v) }, { x: gx0, y: Y(v) }], { color: P.muted, width: 1.6 });
-    L.add(tr(v, 2), gx0 - 9, Y(v), { color: P.muted, align: 'right', pri: 3, size: 14, bg: false, maxPush: 0 });
-  }
+  const vs = [...keyV.map((v) => ({ v, key: true }))];
   const vstep = niceStep(vTop, 4);
-  for (let v = vstep; v < vTop; v += vstep) {
-    if (keyV.some((k) => Math.abs(Y(k) - Y(v)) < 16)) continue;
-    stroke(g, [{ x: gx0 - 5, y: Y(v) }, { x: gx0, y: Y(v) }], { color: P.faint, width: 1.4 });
-    L.add(fmt(v, vstep < 1 ? 1 : 0), gx0 - 9, Y(v), { color: P.faint, align: 'right', pri: 1, size: 14, bg: false, maxPush: 0 });
+  for (let v = vstep; v < vTop * 0.98; v += vstep) if (!keyV.some((k) => Math.abs(Y(k) - Y(v)) < 18)) vs.push({ v, key: false });
+  for (const { v, key } of vs) {
+    stroke(g, [{ x: gx0 - 5, y: Y(v) }, { x: gx0, y: Y(v) }], { color: key ? P.muted : P.faint, width: 1.5 });
+    L.add(s3(v), gx0 - 8, Y(v), { color: key ? P.ink : P.muted, align: 'right', pri: key ? 5 : 2, size: 13, bg: false, maxPush: 0 });
   }
-  L.add('0', gx0 - 9, gy1 + 12, { color: P.muted, align: 'right', pri: 2, size: 13, bg: false, maxPush: 0 });
-  // the time axis, numbered, so the times a paper asks about can be read off;
-  // the end of each held speed — the paper's T, and its 25 — is numbered
-  // first, in its own hue, and an even step too close to one gives way
+  L.add('0', gx0 - 8, gy1 + 2, { color: P.muted, align: 'right', pri: 4, size: 13, bg: false, maxPush: 0 });
+  // the time axis: the end of each held speed first, in its own hue, then
+  // each one's other moments and the end of the run, then even steps;
+  // fixed under the axis — a number with no room is left out, never moved
+  const ticks = [];
   const holds = [[A, P.vel], [B, P.second]].map(([p, color]) => ({ p, color, t: p.stages.find((st) => st.kind === 'held')?.t1 }))
     .filter((k) => k.t != null && k.p.tau > 1e-9);
-  for (const k of holds) {
-    stroke(g, [{ x: X(k.t), y: gy1 }, { x: X(k.t), y: gy1 + 6 }], { color: k.color, width: 1.8 });
-    L.add(tr(k.t, 3), X(k.t), gy1 + 14, { color: k.color, align: 'center', pri: 6, size: 13, weight: 700, bg: false, maxPush: 0 });
-  }
-  // then each one's other moments — setting off, reaching its speed — and the
-  // end of the run, where they meet, in the order of importance
-  const marks = [...holds.map((k) => X(k.t))];
-  const key = [[A, P.vel], [B, P.second]].flatMap(([p, color]) => p.stages.filter((st) => st.kind !== 'held' && isFinite(st.t1) && st.t1 > 1e-9)
-    .map((st) => ({ t: st.t1, color }))).concat([{ t: f.tMax, color: P.muted }]);
-  for (const k of key) {
-    if (k.t > f.tMax + 1e-9 || marks.some((x) => Math.abs(x - X(k.t)) < 34)) continue;
-    marks.push(X(k.t));
-    stroke(g, [{ x: X(k.t), y: gy1 }, { x: X(k.t), y: gy1 + 6 }], { color: k.color, width: 1.6 });
-    L.add(tr(k.t, 3), X(k.t), gy1 + 14, { color: k.color, align: 'center', pri: 5, size: 13, weight: 700, bg: false, maxPush: 0 });
-  }
-  const tstep = niceStep(f.tMax, 6);
-  for (let tt = tstep; tt <= f.tMax + 1e-9; tt += tstep) {
-    stroke(g, [{ x: X(tt), y: gy1 }, { x: X(tt), y: gy1 + 5 }], { color: P.faint, width: 1.4 });
-    if (marks.some((x) => Math.abs(x - X(tt)) < 34)) continue;
-    // fixed under the axis: a tick that would be pushed is dropped instead
-    L.add(fmt(tt, tstep < 1 ? 1 : 0), X(tt), gy1 + 14, { color: P.muted, align: 'center', pri: 1, size: 13, bg: false, maxPush: 0 });
+  for (const k of holds) ticks.push({ t: k.t, color: k.color, pri: 7 });
+  for (const [p, color] of [[A, P.vel], [B, P.second]]) for (const st of p.stages) if (st.kind !== 'held' && isFinite(st.t1) && st.t1 > 1e-9) ticks.push({ t: st.t1, color, pri: 6 });
+  ticks.push({ t: f.tMax, color: P.muted, pri: 5 });
+  const tstep = niceStep(f.tMax, phone ? 4 : 6);
+  for (let tt = tstep; tt <= f.tMax + 1e-9; tt += tstep) ticks.push({ t: tt, color: P.muted, pri: 2, faint: true });
+  const used = [X(0)];
+  for (const k of ticks.sort((a, b) => b.pri - a.pri)) {
+    if (k.t > f.tMax + 1e-9) continue;
+    stroke(g, [{ x: X(k.t), y: gy1 }, { x: X(k.t), y: gy1 + 5 }], { color: k.faint ? P.faint : k.color, width: 1.5 });
+    if (used.some((x) => Math.abs(x - X(k.t)) < (phone ? 28 : 32))) continue;
+    used.push(X(k.t));
+    L.add(s3(k.t), X(k.t), gy1 + 14, { color: k.color, align: 'center', pri: k.pri, size: 13, weight: k.faint ? 600 : 700, bg: false, maxPush: 0 });
   }
   const line = (p, t0, t1) => {
     const out = [];
@@ -105,167 +396,69 @@ export function render(canvas, cam, o) {
     }
     return out;
   };
-  // the area under each line so far, in the displacement hue: the distance
-  // each has gone. A's filled, B's hatched, so both read where they overlap.
+  // the area under each line so far: A's filled, B's hatched
   if (t > 0) {
     const under = (p) => {
-      const pts = line(p, 0, t).flat();
       g.beginPath(); g.moveTo(X(0), Y(0));
-      for (const q of pts) g.lineTo(q.x, q.y);
+      for (const q of line(p, 0, t).flat()) g.lineTo(q.x, q.y);
       g.lineTo(X(t), Y(0)); g.closePath();
     };
-    g.save(); under(A); g.fillStyle = withAlpha(P.disp, 0.16); g.fill(); g.restore();
+    g.save(); under(A); g.fillStyle = withAlpha(P.disp, 0.18); g.fill(); g.restore();
     g.save(); under(B); g.clip();
-    g.strokeStyle = withAlpha(P.disp, 0.55); g.lineWidth = 1.2; g.beginPath();
-    for (let x = gx0 - (gy1 - gy0); x < X(t); x += 9) { g.moveTo(x, gy1); g.lineTo(x + (gy1 - gy0), gy0); }
+    g.strokeStyle = withAlpha(P.disp, 0.6); g.lineWidth = 1.2; g.beginPath();
+    for (let x = gx0 - (gy1 - gy0); x < X(t); x += 8) { g.moveTo(x, gy1); g.lineTo(x + (gy1 - gy0), gy0); }
     g.stroke(); g.restore();
-    const dist = f.dist(t);
-    // inside the graph, over its own shading: what each area is worth so far
-    const area = `A ${T`${tr(dist.A, 1)} [m]`},  B (hatched) ${T`${tr(dist.B, 1)} [m]`}`;
-    // on a phone the words go and the two areas stay
-    L.add(w >= 560 ? `area so far, the distance gone:  ${area}` : area,
-      gx0 + 10, gy1 - 16, { color: P.disp, align: 'left', pri: 7, size: 14, weight: 700, maxPush: 0 });
   }
-  // a speed held for a while: where it ends, dropped to its number on the
-  // time axis, and said in words at the corner (canvas has no subscripts)
+  // a speed held for a while: where it ends, dropped to its time
   for (const { p, color, t: te } of holds) {
     stroke(g, [{ x: X(te), y: Y(p.u) }, { x: X(te), y: gy1 }], { color, width: 1.4, dash: [3, 4], alpha: 0.8 });
-    L.add(`${p.name} ${p.a < 0 ? 'brakes' : 'speeds up'}`, X(te), Y(p.u) - 14, { color, align: 'center', pri: 5, size: 13, weight: 700, maxPush: 20 });
+    if (!phone) {
+      // beside the corner, on the side the line leaves clear
+      const brakes = p.a < 0;
+      L.add(`${p.name} ${brakes ? 'brakes' : 'speeds up'}`, X(te) + (brakes ? 8 : -8), Y(p.u) - 13,
+        { color, align: brakes ? 'left' : 'right', pri: 4, size: 13, weight: 700, maxPush: 0 });
+    }
   }
   for (const [p, color] of [[B, P.second], [A, P.vel]]) {
     for (const seg of line(p, 0, f.tMax)) stroke(g, seg, { color, width: 1.6, dash: [6, 4], alpha: 0.35 });
     if (t > 0) for (const seg of line(p, 0, t)) stroke(g, seg, { color, width: 2.8, dash: [6, 4] });
   }
   // each line lettered at its end; two that end at one point share a tag
-  // (lifted off the time axis, so the last time on it keeps its number)
-  const yEndA = Math.min(Y(A.vel(f.tMax)), gy1 - 14), yEndB = Math.min(Y(B.vel(f.tMax)), gy1 - 14);
-  if (Math.abs(yEndA - yEndB) < 18) L.add('A, B', X(f.tMax) + 8, (yEndA + yEndB) / 2, { color: P.ink, align: 'left', pri: 9, size: 15, weight: 700, maxPush: 20 });
+  const yEndA = Math.min(Y(A.vel(f.tMax)), gy1 - 12), yEndB = Math.min(Y(B.vel(f.tMax)), gy1 - 12);
+  if (Math.abs(yEndA - yEndB) < 18) L.add('A, B', gx1 + 6, (yEndA + yEndB) / 2, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700, bg: false, maxPush: 20 });
   else {
-    L.add('B', X(f.tMax) + 8, yEndB, { color: P.second, align: 'left', pri: 8, size: 15, weight: 700, maxPush: 20 });
-    L.add('A', X(f.tMax) + 8, yEndA, { color: P.vel, align: 'left', pri: 8, size: 15, weight: 700, maxPush: 20 });
+    L.add('B', gx1 + 6, yEndB, { color: P.second, align: 'left', pri: 9, size: 15, weight: 700, bg: false, maxPush: 20 });
+    L.add('A', gx1 + 6, yEndA, { color: P.vel, align: 'left', pri: 9, size: 15, weight: 700, bg: false, maxPush: 20 });
   }
-  // under the axis, clear of the readouts in the top corners; moments too
-  // close for a label each share one, so neither is lost
+  // each moment they are level: a line up the graph, its time at the top,
+  // in the band above the lines where nothing else is drawn; moments too
+  // close for a tag each share one
   const groups = [];
   for (const e of passed) {
-    stroke(g, [{ x: X(e.t), y: gy1 + 8 }, { x: X(e.t), y: gy0 - 4 }], { color: P.mark, width: 1.6, dash: [4, 4] });
+    stroke(g, [{ x: X(e.t), y: gy1 }, { x: X(e.t), y: gy0 - 4 }], { color: P.mark, width: 1.6, dash: [4, 4] });
+    const { age } = ageOf(t, e.t, f.tMax, life);
+    pulse(g, X(e.t), gy1, age, life, P.mark, { radius: 18 });
     const last = groups[groups.length - 1];
-    if (last && X(e.t) - X(last[last.length - 1].t) < 150) last.push(e); else groups.push([e]);
+    if (last && X(e.t) - X(last[last.length - 1].t) < (phone ? 90 : 150)) last.push(e); else groups.push([e]);
   }
   for (const grp of groups) {
-    const ts = grp.map((e) => tr(e.t, 3));
-    const word = grp.length === 1 && grp[0].rest ? 'both at rest, level, at' : 'level at';
-    const text = ts.length === 1 ? `${word} ${T`t = ${ts[0]} [s]`}`
-      : `level at ${T`t = ${ts.slice(0, -1).join(', ')}`} and ${T`${ts[ts.length - 1]} [s]`}`;
-    const xm = (X(grp[0].t) + X(grp[grp.length - 1].t)) / 2;
-    // at the end of the axis it reads back from its line, not past the edge
-    const end = xm > gx1 - 120;
-    L.add(text, end ? xm + 6 : xm, gy1 + 36, { color: P.mark, align: end ? 'right' : 'center', pri: 9, size: 14, weight: 700, push: 'down', maxPush: 20 });
+    const ts = grp.map((e) => s3(e.t));
+    const word = grp.length === 1 && grp[0].rest ? (phone ? 'at rest' : 'both at rest, level') : 'level';
+    const when = ts.length === 1 ? T`t = ${ts[0]} [s]` : `${T`t = ${ts.slice(0, -1).join(', ')}`} and ${T`${ts[ts.length - 1]} [s]`}`;
+    const text = phone ? when : `${word} at ${when}`;
+    const xr = X(grp[grp.length - 1].t), xl = X(grp[0].t);
+    const right = xr + 6 + width(text) < box.x1 - 8;
+    L.add(text, right ? xr + 6 : xl - 6, gy0 + 4, { color: P.mark, align: right ? 'left' : 'right', pri: 9, size: 13, weight: 700, maxPush: 20, push: 'down' });
   }
   // where the lines cross: the same speed, for an instant
   for (const c of f.crossings || []) {
     if (t < c.t - 1e-9) continue;
     dot(g, X(c.t), Y(c.v), 7, { stroke: P.mark, width: 2.4 });
-    L.add(`same speed at ${T`t = ${tr(c.t, 3)} [s]`}`, X(c.t) + 12, Y(c.v) - 18, { color: P.mark, align: 'left', pri: 7, size: 14, weight: 700, maxPush: 40 });
+    if (!phone) L.add(`same speed at ${T`t = ${s3(c.t)} [s]`}`, X(c.t) + 12, Y(c.v) - 17, { color: P.mark, align: 'left', pri: 6, size: 13, weight: 700, maxPush: 0 });
   }
-  stroke(g, [{ x: X(t), y: gy1 }, { x: X(t), y: gy0 - 8 }], { color: P.muted, width: 1.6, dash: [5, 5] });
+  // the clock
+  stroke(g, [{ x: X(t), y: gy1 }, { x: X(t), y: gy0 - 6 }], { color: P.muted, width: 1.4, dash: [5, 5] });
   dot(g, X(t), Y(A.vel(t)), 4.5, { fill: P.surface, stroke: P.vel, width: 2.2 });
   dot(g, X(t), Y(B.vel(t)), 4.5, { fill: P.surface, stroke: P.second, width: 2.2 });
-
-  // ── the road (or the tracks), below: A's lane above B's
-  const carPx = rail ? clamp(w * 0.15, 105, 200) : clamp(w * 0.07, 54, 92);
-  // each one's figure, drawn at its own size beside a car, and how high its
-  // arrows ride: just over its roof (a train of three is long and low)
-  const kind = (p) => (rail ? 'train' : FIGURES[f.figs?.[p.name]] ? f.figs[p.name] : 'car');
-  const lenOf = (p) => (rail ? carPx : carPx * FIGURES[kind(p)].size / FIGURES.car.size);
-  const roofOf = (p) => (rail ? carPx * 0.17 + 8 : FIGURES[kind(p)].top * lenOf(p) / FIGURES[kind(p)].size + 6);
-  const roof = Math.max(roofOf(A), roofOf(B));
-  const lo = Math.min(0, A.x0, B.x0), hi = Math.max(f.top, 1);
-  const sx0 = Math.max(gx0, carPx + 30), sx1 = w - 60;
-  const S = (s) => sx0 + ((s - lo) / (hi - lo)) * (sx1 - sx0);
-  // the trackside posts and the traffic lights stand above the near lane, so
-  // those two settings sit a little lower, clear of the graph's axis
-  const yA = Math.round(h * (low ? 0.72 : 0.68)), yB = Math.round(h * (low ? 0.87 : 0.84));
-  if (rail) {
-    // two parallel tracks, side on: one rails() per track
-    for (const y of [yA, yB]) rails(g, 0, w, y + 4, P);
-  } else {
-    g.save(); g.fillStyle = cssVar('--hover', 'rgba(255,255,255,.06)'); g.fillRect(0, yA - 26, w, yB - yA + 40); g.restore();
-    stroke(g, [{ x: 0, y: yA + 6 }, { x: w, y: yA + 6 }], { color: P.axis, width: 1.6 });
-    stroke(g, [{ x: 0, y: (yA + yB) / 2 + 2 }, { x: w, y: (yA + yB) / 2 + 2 }], { color: P.faint, width: 1.6, dash: [16, 14] });
-    stroke(g, [{ x: 0, y: yB + 6 }, { x: w, y: yB + 6 }], { color: P.axis, width: 1.6 });
-  }
-  // the start, and the line the question names: on the tracks, the posts X
-  // and Y at the side of them, as the papers name them
-  // the posts' plates sit over A's track, clear of its arrows and the graph
-  const postH = yB + 14 - (yA - roof - 34);
-  if (rail) post(g, L, S(0), yB + 14, 'X', P.strong, P, { dashed: true, height: postH });
-  else {
-    stroke(g, [{ x: S(0), y: yA - 26 }, { x: S(0), y: yB + 14 }], { color: P.ink, width: 2 });
-    // the lights at the start line: red until they go, then green
-    if (f.lights) trafficLights(g, S(0) - 14, yA - 26, roof + 40, P, { lit: fired && tRaw > 0 ? 'green' : 'red' });
-    else L.add('start', S(0), yA - roof - 30, { color: P.muted, align: 'center', pri: 5, size: 14, bg: false });
-  }
-  if (f.line != null) {
-    if (rail) post(g, L, S(f.line), yB + 14, 'Y', P.mark, P, { dashed: true, height: postH });
-    else stroke(g, [{ x: S(f.line), y: yA - 30 }, { x: S(f.line), y: yB + 14 }], { color: P.mark, width: 2.4 });
-    // on the road, just past the line over the kerb, where nothing stops at it
-    L.add(rail ? T`XY = ${tr(f.line)} [m]` : T`${tr(f.line)} [m]`, rail ? S(f.line) - 24 : S(f.line) + 6, rail ? yB + 14 - postH - 12 : yA - 38,
-      { color: P.mark, align: rail ? 'right' : 'left', pri: 8, size: 14, weight: 700 });
-  }
-  // each meeting, across both lanes
-  for (const e of passed) {
-    stroke(g, [{ x: S(e.x), y: yA - (rail ? 4 : 30) }, { x: S(e.x), y: yB + 14 }], { color: P.mark, width: 1.6, dash: [4, 4] });
-  }
-  // equal-time marks, each lane its own
-  const dt = niceStep(f.tMax, 10);
-  for (const [p, y, color] of [[A, yA, P.vel], [B, yB, P.second]]) {
-    for (let i = 0; i * dt <= t + 1e-9; i++) {
-      const tt = i * dt;
-      if (tt < p.t0 - 1e-9) continue;
-      dot(g, S(p.pos(tt)), y + 6, 3.6, { fill: color, stroke: P.surface, width: 1.3 });
-      if (show.ticks) L.add(T`${num(tt, dt < 1 ? 1 : 0)} [s]`, S(p.pos(tt)), y + 20, { color, align: 'center', pri: 2, size: 13, bg: false, maxPush: 0 });
-    }
-  }
-  // the two of them, their letters, and their velocities
-  for (const [p, y, ring, color] of [[A, yA, null, P.vel], [B, yB, P.second, P.second]]) {
-    const xf = S(p.pos(t)), Lp = lenOf(p), k = kind(p);
-    // wheels (or legs) that turn with the distance gone, and stop when it stops
-    const opts = { ring, phase: phaseFor(k, Lp, S(p.pos(t)) - S(p.x0), rail ? { cars: 3 } : {}) };
-    if (rail) train(g, xf, y + 4, Lp, P, { ...opts, cars: 3 }); else drawFigure(g, k, xf, y + 4, Lp, P, opts);
-    L.add(p.name, xf - Lp - 10, y - 8, { color: P.ink, align: 'right', pri: 9, size: 16, weight: 700 });
-    const v = p.vel(t);
-    if (show.velocity !== false && v > 1e-6) {
-      const len = (v / f.vMax) * clamp(w * 0.1, 50, 120);
-      const vy = y - roofOf(p);
-      // near the right edge the arrow and its value sit back over the
-      // vehicle, the value before it, so neither runs off the canvas
-      const edge = xf - Lp * 0.7 + len + 110 > w;
-      const ax = edge ? Math.min(xf - Lp * 0.7, w - 16 - len) : xf - Lp * 0.7;
-      arrow(g, ax, vy, ax + len, vy, { color: P.velVec, width: 2.6, head: 10 });
-      L.add(T`${fmt(v, 2)} [m s^-1]`, edge ? ax - 8 : ax + len + 8, vy, { color: P.vel, align: edge ? 'right' : 'left', pri: 7, size: 14, weight: 700 });
-    }
-    // a vehicle that has come to rest has no acceleration left to show
-    if (show.acceleration && v > 1e-6) {
-      const a = p.acc(t);
-      if (Math.abs(a) > 1e-9) {
-        const len = Math.sign(a) * 36, ay = y - roofOf(p) - 20;
-        arrow(g, xf - Lp / 2 - len / 2, ay, xf - Lp / 2 + len / 2, ay, { color: P.acc, width: 2.4, head: 9 });
-      }
-    }
-    void color;
-  }
-  // the gap between their fronts
-  const xa = S(A.pos(t)), xb = S(B.pos(t));
-  if (Math.abs(xa - xb) > 12 && !passed.some((e) => Math.abs(e.t - t) < 1e-6)) {
-    // under the road, clear of both cars and their arrows
-    const by = yB + 26;
-    stroke(g, [{ x: Math.min(xa, xb), y: by }, { x: Math.max(xa, xb), y: by }], { color: P.disp, width: 2.4, dash: [7, 5] });
-    for (const x of [xa, xb]) stroke(g, [{ x, y: by - 7 }, { x, y: by + 7 }], { color: P.disp, width: 2 });
-    L.add(`${A.pos(t) > B.pos(t) ? 'A' : 'B'} ahead by ${T`${fmt(Math.abs(f.gap(t)), 1)} [m]`}`, (xa + xb) / 2, by + 16,
-      { color: P.disp, align: 'center', pri: 8, size: 14, weight: 700 });
-  }
-
-  L.draw(g, w, h);
-  return null;
+  L.draw(g, box.x1 + 4, box.y1 + 4);
 }
