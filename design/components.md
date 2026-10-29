@@ -353,6 +353,17 @@ part; the part with fewest roots solved (`quadRoots`) and the other checked at
 each root: they collide only where both agree. `at` gives each position at a
 time. `collideWorking` writes it the paper's way. Used by: `do-they-collide`.
 
+### Known from two moments — `js/core/snapshots.js`
+
+`solveSnapshots({ r0, u, tu, a, at2: { kind, t, v }, a2, ask: { t, dir } })` —
+a constant acceleration in i and j fixed by two moments: two velocities (a is
+the change over the time between, u run back to t = 0), or two positions with
+the velocity or the acceleration (the other from r = r₀ + ut + ½at²). At the
+second moment the acceleration may change (`a2`): the second stage starts from
+that position and velocity. Asks: velocity, speed and position at a time; when
+it is moving in a compass direction (one linear relation, checked for the
+right way). Each stage is `planeMotion`. Used by: `two-moments`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -414,6 +425,14 @@ and the part travelled strong, A in the quantity's hue and B in stone; `puck(g,
 x, y, r, color, P)` (exported) with its letter and its velocity now; the
 collision ringed with its time and position vector; an asked time marked on
 both paths. Kit `collide`. Used by: `do-they-collide`.
+
+### Known from two moments, from above — `js/render/snapshots.js`
+
+The plane at one scale both ways, grid, O and north; the path in the
+displacement hue, faint in full and strong so far; the second moment marked
+(and "the acceleration changes" there); each asked moment ringed; the puck
+(`puck` from collide.js) with its velocity and acceleration. Kit `snapshots`.
+Used by: `two-moments`.
 
 
 ### A parachute jump — `js/render/jump.js`

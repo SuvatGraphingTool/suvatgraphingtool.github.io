@@ -415,4 +415,27 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each position in t, when each part is equal, and whether those moments agree.',
     } },
+  { id: 'two-moments', group: 'library', kit: 'snapshots',
+    name: 'In i and j, known from two moments',
+    sub: 'its velocity at two times, or where it is at two — find the acceleration, then let it change',
+    note: 'A particle in a plane with a constant acceleration that the paper does not give: it gives two moments instead — the velocity at two times, so the acceleration is the change over the time between, or where it starts and where it is later. At the second moment the acceleration may change to a new one, and the paper asks when it is then moving in a compass direction, or its speed at a time.',
+    params: { u: { x: 2, y: -3 }, at2: { kind: 'r', t: 2, v: { x: 7, y: -10 } }, a2: { x: 4, y: 8.8 }, ask: { dir: 'NE' } },
+    place: 'From above: a plane, i east and j north',
+    sources: [
+      { board: 'Edexcel', paper: '9MA0/03', session: 'Jun 2018', q: '8' },
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2022', q: '6' },
+    ],
+    tags: ['vectors', 'i and j', 'constant acceleration', 'two velocities', 'two positions', 'acceleration changes', 'north-east', 'direction of motion',
+           'speed', 'magnitude of acceleration', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers’ model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['A particle', 'it has no size; its position is a point.'],
+        ['Constant acceleration, then another', 'the acceleration changes in an instant at the second moment and is constant either side of it.'],
+        ['A plane', 'i east and j north on a horizontal surface; nothing moves out of it.'],
+      ],
+      caveat: 'What the engine did compute is above: the acceleration or starting velocity from the two moments, the change, and the answers asked for.',
+    } },
 ];

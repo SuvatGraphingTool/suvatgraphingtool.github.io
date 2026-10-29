@@ -16,5 +16,6 @@ import { bench } from './bench.js';
 import { clears } from './clears.js';
 import { chain } from './chain.js';
 import { collide } from './collide.js';
+import { snapshots } from './snapshots.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots };

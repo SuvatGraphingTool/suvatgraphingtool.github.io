@@ -975,6 +975,20 @@ group('Do they collide? (MM1B J14 Q7)', () => {
   ok(line.ok && Math.abs(line.tc - (-2 + Math.sqrt(24))) < 1e-9, 'j parts always equal: the i parts alone decide');
 });
 
+group('Known from two moments (9MA0/03 J18 Q8, WME01 J22 Q6)', () => {
+  const K = KITS.snapshots;
+  const a = K.solve({ u: { x: 2, y: -3 }, at2: { kind: 'r', t: 2, v: { x: 7, y: -10 } }, a2: { x: 4, y: 8.8 }, ask: { dir: 'NE' } });
+  ok(a.ok && a.a.x === 1.5 && a.a.y === -2 && Math.abs(Math.hypot(a.a.x, a.a.y) - 2.5) < 1e-12, 'a = 1.5i − 2j, of size 2.5 (MS)', a.reason);
+  ok(a.tDir === 4.5 && a.dirWord === 'north-east', 'north-east 2.5 s after the change (MS)');
+  const b = K.solve({ u: { x: -1, y: 4 }, tu: 1, at2: { kind: 'v', t: 4, v: { x: 5, y: -8 } }, ask: { t: 3.5 } });
+  ok(b.ok && b.a.x === 2 && b.a.y === -4 && Math.abs(b.askSpeed - Math.sqrt(52)) < 1e-9, 'a = 2i − 4j; speed √52 = 7.21 at t = 3.5 (MS)');
+  const c = K.solve({ a: { x: 1.5, y: -2 }, at2: { kind: 'r', t: 2, v: { x: 7, y: -10 } } });
+  ok(c.ok && c.u.x === 2 && c.u.y === -3, 'two positions and the acceleration give the starting velocity');
+  ok(!K.solve({ u: { x: 1 }, a: { x: 1 }, at2: { kind: 'v', t: 2, v: { x: 3 } } }).ok, 'a second velocity and the acceleration together are refused');
+  ok(/never moving/.test(K.solve({ u: { x: 1, y: 0 }, a: { x: 1, y: 0 }, ask: { dir: 'W' } }).notes.join(' ')), 'never moving west, said');
+  const f = a.f; ok(Math.abs(f.pos(2).x - 7) < 1e-12 && Math.abs(f.vel(4.5).x - f.vel(4.5).y) < 1e-12, 'the motion passes the second moment and turns north-east');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

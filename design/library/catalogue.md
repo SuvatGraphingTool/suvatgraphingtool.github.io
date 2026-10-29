@@ -58,7 +58,7 @@ this library: *covered* names the one of the twelve that does it.
 | 22 | Edexcel | 6677/01 M1 | Jun 2015 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202015%20QP.pdf) | Train: accelerate 0.5, steady V, decelerate 0.25; 5 min, 6.3 km; find V (V < 50) | – | **built**: `journey-stages` (V = 30, V = 70 rejected) |
 | 23 | Edexcel | 6677/01 M1 | Jun 2017 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Cyclist passes A, 5 s later B at 10 m/s, AB = 40 m; find a, time to midpoint | – | **covered** by `road` |
 | 24 | Edexcel | 6677/01 M1 | Jun 2017 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202017%20QP.pdf) | Two ships at constant velocity; bearing; times when 10 km apart | – | **built**: `two-in-a-plane` (bearing 103°; t = 0 and 0.32 h) |
-| 25 | Edexcel | 9MA0/03 | Jun 2018 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Constant a found from two positions; at A the acceleration switches; time until moving north-east | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 25 | Edexcel | 9MA0/03 | Jun 2018 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Constant a found from two positions; at A the acceleration switches; time until moving north-east | – | **built**: `two-moments` (a = 1.5i − 2j, 2.5 m s⁻²; north-east 2.5 s after A) |
 | 26 | Edexcel | 9MA0/03 | Jun 2018 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202018%20QP.pdf) | Ball thrown from 2 m, apex 3 m, hits target 20 m away at 0.75 m; find angle, time | 9.8 | **built**: `over-the-wall` (α = 14.0°, 1.13 s to T) |
 | 27 | Edexcel | 9MA0/32 | Oct 2020 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | a = 4i−5j, u = −2i+2j from O; velocity at t = 2; when it passes (λ, −4.5) | – | **built**: `vectors-ij` (v = 6i − 8j; λ = 2.88) |
 | 28 | Edexcel | 9MA0/32 | Oct 2020 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/October%202020%20QP%20(Mech).pdf) | From a 25 m cliff at 45°, lands 100 m out; show U = 28; greatest height | 9.8 | **built**: `from-a-height` (a setting scene: the cliff over the sea; U = 28, greatest height 45 m) |
@@ -79,7 +79,7 @@ this library: *covered* names the one of the twelve that does it.
 | 43 | Edexcel | IAL WME01 | Oct 2021 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ball up from A above ground; v-t graph zero at 2.5 s; lands at 7 s; speed and height | 9.8 | **built**: `from-a-height`, the time to the top and the time to land (u = 24.5, h = 68.6 m) |
 | 44 | Edexcel | IAL WME01 | Oct 2021 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/October%202021%20QP.pdf) | Ship leaves port at 7:00; lighthouse due east at 8:48, north-east at 9:00; find it | – | **built**: `two-in-a-plane` (v = 10i − 5j; lighthouse 19i; due south at 19i − 1.5j) |
 | 45 | Edexcel | IAL WME01 | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Passes P, Q 10 s later at 28 m/s, PQ = 220; a; distance in the 5th second | – | **covered** by `road` |
-| 46 | Edexcel | IAL WME01 | Jun 2022 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Velocity known at t = 1 and t = 4; speed at t = 3.5 | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
+| 46 | Edexcel | IAL WME01 | Jun 2022 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Velocity known at t = 1 and t = 4; speed at t = 3.5 | – | **built**: `two-moments` (a = 2i − 4j; v = 4i − 6j; 7.21 m s⁻¹) |
 | 47 | Edexcel | IAL WME01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | 100 m race, finish together; Ajaz's time; Beth's T; difference in finishing speed | – | **built**: `two-on-a-road` (27.5 s, T = 3.915, speeds differ by 0.085) |
 | 48 | OCR A | H240/03 | Jun 2019 | 7 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Cyclist from rest at 1.5 m/s² for 4 s, then steady; distance in 10 s | – | **built**: `stage-by-stage` (12 + 36 = 48 m) |
 | 49 | OCR A | H240/03 | Jun 2019 | 8 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Flight 2.4 s, horizontal velocity 5d/3, just clears a wall at d; speed 16 over the wall | 9.8 | **candidate**: symbolic (the wall and the landing in terms of a letter); `over-the-wall` takes numbers, and a launch fixed by two points is not yet a mode |
@@ -651,3 +651,23 @@ its time and position.
 
 **What the student varies.** Each particle's start, velocity and acceleration
 in i and j; a time to give both positions at.
+
+### `two-moments` — In i and j, known from two moments
+
+**Papers.** Edexcel 9MA0/03 Jun 2018 Q8 (from O with 2i − 3j, at 7i − 10j two
+seconds later: a = 1.5i − 2j, of size 2.5 m s⁻²; then a new acceleration
+4i + 8.8j from that point: moving north-east 2.5 s later). Edexcel IAL WME01
+Jun 2022 Q6 (velocity −i + 4j at t = 1 and 5i − 8j at t = 4: a = 2i − 4j; at
+t = 3.5, v = 4i − 6j and the speed 7.21 m s⁻¹).
+
+**Why it is built.** `vectors-ij` is given the acceleration (and one
+velocity); these papers give two moments instead and the acceleration has to
+come out of them, and in 9MA0/03 it then changes partway through.
+
+**The stage.** From above at one scale both ways: the plane, grid, O and
+north; the path in the displacement hue; the second moment marked, with the
+change; the asked moments ringed; the puck with its velocity and acceleration.
+
+**What the student varies.** The start, a velocity (at any time), the
+acceleration or not; the second moment (a position or a velocity, and when);
+a new acceleration; a time to ask about; a compass direction.
