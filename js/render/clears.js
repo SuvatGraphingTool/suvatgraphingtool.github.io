@@ -18,7 +18,7 @@
 
 import { dust, pulse, ageOf } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, sig3 } from './util.js';
-import { thrower, ballAt, THROWER_MIN } from './figures.js';
+import { thrower, ballAt } from './figures.js';
 import { skyscape, grass, softShadow, fitSide, env, rng } from './scenery.js';
 import { farField, nearGrass, parkTree } from './towards.js';
 import { kaLine } from '../core/clears.js';
@@ -37,8 +37,8 @@ const lerp = (a, b, s) => ({ x: a.x + (b.x - a.x) * s, y: a.y + (b.y - a.y) * s 
  */
 export function brickWall(g, x, top, Y, wPx, P, { vp = null, depth = 0.45, seed = 5 } = {}) {
   const E = env(), r = rng(seed), H0 = Y - top;
-  const brick = E.night ? ['#7a4234', '#6c3a2e', '#83493a', '#5f3329'] : ['#b5634a', '#a6573f', '#c06d52', '#9a4f3a'];
-  const mortar = E.night ? '#4a3c38' : '#d9cbbd';
+  const brick = E.night ? ['#7a4234', '#6c3a2e', '#83493a', '#5f3329'] : ['#94452f', '#863d29', '#a0503a', '#7a3826'];
+  const mortar = E.night ? '#4a3c38' : '#a8998c';
   // the coping stone is the wall's top: the bricks stop under it
   const cope = clamp(H0 * 0.08, 4, 8), H = H0 - cope;
   top += cope;
@@ -108,6 +108,34 @@ function dim(g, L, P, x0, y0, x1, y1, text, { align = 'center', dx = 0, dy = 0, 
   L.add(text, (x0 + x1) / 2 + dx, (y0 + y1) / 2 + dy, { color: P.ink, align, pri, size: 14, weight: 700 });
 }
 
+/** A magnified view of O in a round inset at (cx, cy), radius r: the
+    thrower large enough to read, the first of the path leaving at θ with the
+    angle marked, and a leader back to O itself at (X0, oy). */
+function magnifiedO(g, cx, cy, r, P, { pose, aim, th, t, X0, oy }) {
+  const E = env(), gy = cy + r * 0.42, H = r * 1.05, feet = cx - r * 0.42, O = { x: feet + H * 0.2, y: gy };
+  // the leader from the rim to O, and O ringed
+  const a = Math.atan2(oy - cy, X0 - cx);
+  g.save(); g.strokeStyle = withAlpha(P.strong, 0.75); g.lineWidth = 1.3; g.setLineDash([4, 3]);
+  g.beginPath(); g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); g.lineTo(X0, oy); g.stroke(); g.setLineDash([]);
+  g.beginPath(); g.arc(X0, oy, 6, 0, Math.PI * 2); g.stroke(); g.restore();
+  // the view itself
+  g.save();
+  g.shadowColor = E.shadow; g.shadowBlur = 10; g.shadowOffsetY = 3;
+  g.fillStyle = E.skyBottom; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+  g.shadowColor = 'transparent';
+  g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.clip();
+  skyscape(g, cx - r, cy - r, cx + r, gy, { seed: 3, clouds: 1, sun: false, far: 'trees', farHeight: r * 0.25 });
+  grass(g, cx - r, cx + r, gy, cy + r, { seed: 8 });
+  // the path leaving O at θ: faint ahead, strong once thrown
+  const L = r * 1.6, ex = O.x + Math.cos(th) * L, ey = O.y - Math.sin(th) * L;
+  stroke(g, [O, { x: ex, y: ey }], { color: P.vel, width: 2, alpha: 0.4 });
+  if (t > 0) stroke(g, [O, { x: O.x + (ex - O.x) * Math.min(1, pose), y: O.y + (ey - O.y) * Math.min(1, pose) }], { color: P.vel, width: 3 });
+  g.strokeStyle = P.strong; g.lineWidth = 1.6; g.beginPath(); g.arc(O.x, O.y, r * 0.42, -th, 0); g.stroke();
+  thrower(g, feet, gy, H, P, { dir: 1, pose, aim });
+  g.restore();
+  g.save(); g.strokeStyle = P.strong; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke(); g.restore();
+}
+
 /** Keep labels off a drawn line: a small box reserved round every few px of it. */
 function keepOff(L, pts, pad = 7) {
   let last = null;
@@ -128,21 +156,27 @@ export function render(canvas, cam, o) {
   const a = f.a, xLand = f.R * a, W = f.wall;
 
   // ── the frame, fitted to the flight; one scale both ways
-  const figMin = phone ? THROWER_MIN : 60, back = figMin * 0.55 + 8;
+  const back = 22;
   // beside the readouts, or (on a laptop) under them across the whole width: whichever is larger
   const box = { xLo: 0, xHi: xLand, yLo: 0, yHi: Math.max(f.Hmax, W.H) }, bottom = h - 74, right = w - (phone ? 24 : 40);
   const fits = (phone ? [{ left: 16 + back, right, top: 104, bottom }]
     : [{ left: HUD + 30 + back, right, top: 84, bottom }, { left: 30 + back, right, top: Math.min(HUD_H, bottom - 120), bottom }])
-    .map((area) => fitSide(box, area, { sky: 0.5 }));
+    .map((area) => fitSide(box, area, { sky: phone ? 0.85 : 0.5 }));
   const fit = fits.reduce((p, q) => (q.k > p.k * 1.15 ? q : p));
   const { k, X, Y } = fit, oy = fit.oy;
-  const fig = clamp(1.7 * k, figMin, 100);
+  // the thrower TO SCALE (a person about 1.7 m tall): beside a wall of tens of
+  // metres that is a speck, so a magnified view of O shows who throws and the angle
+  const fig = Math.min(100, 1.7 * k), inset = fig < 40;
 
   // ── the place: sky, a field running back to a tree line, trees at its edge
   const horizon = oy - clamp(oy * 0.3, 24, 110);
   skyscape(g, 0, 0, w, horizon, { far: 'trees', seed: 17, farHeight: Math.min(50, horizon * 0.22) });
   farField(g, 0, w, horizon, oy);
-  for (const [x, s, sd] of [[X(0) - back - 70, 0.45, 4], [X(xLand) + 60, 0.3, 6], [X(0) - back - 170, 0.2, 9]]) parkTree(g, x, horizon + (oy - horizon) * s * 0.5, 60 + 120 * s, sd);
+  // trees about 14 m tall, standing back in the field, so smaller with distance
+  for (const [x, s, sd] of [[X(0) - back - 60, 0.45, 4], [X(xLand) + 50, 0.3, 6], [X(0) - back - 150, 0.2, 9]]) {
+    const d = 1 - s * 0.5, size = clamp(14 * k, 14, 150) * (1 - d * 0.75);
+    parkTree(g, x, horizon + (oy - horizon) * s * 0.5, size, sd);
+  }
   grass(g, 0, w, oy, h, { seed: 14 });
   nearGrass(g, 0, w, oy, h, 31);
 
@@ -152,14 +186,19 @@ export function render(canvas, cam, o) {
   L.reserve({ x: X(W.x) - wPx / 2 - 3, y: Y(W.H), w: wPx + 6, h: oy - Y(W.H) });
 
   // ── the thrower at O, winding up and letting go on the engine's clock
-  const pose = clamp(t / Math.max(1e-6, f.tMax * 0.08), 0, 1);
-  thrower(g, X(0) - fig * 0.2, oy, fig, P, { dir: 1, pose, aim: f.params.theta });
-  L.reserve({ x: X(0) - fig * 0.6, y: oy - fig * 1.05, w: fig * 0.7, h: fig * 1.05 });
-  L.add('O', X(0) - 6, oy + 13, { color: P.ink, align: 'right', pri: 8, size: 15, weight: 700 });
-
+  const pose = clamp(t / Math.max(1e-6, f.tMax * 0.08), 0, 1), aim = f.params.theta;
+  if (fig >= 40) {
+    thrower(g, X(0) - fig * 0.2, oy, fig, P, { dir: 1, pose, aim });
+    L.reserve({ x: X(0) - fig * 0.6, y: oy - fig * 1.05, w: fig * 0.7, h: fig * 1.05 });
+  } else {
+    // drawn at its true size (never under 4 px), scaled down whole
+    const px = Math.max(4, fig), s = px / 40;
+    g.save(); g.translate(X(0) - px * 0.2, oy); g.scale(s, s); thrower(g, 0, 0, 40, P, { dir: 1, pose, aim }); g.restore();
+  }
+  L.add('O', X(0), oy + 21, { color: P.ink, align: 'center', pri: 8, size: 15, weight: 700 });
   // ── the lengths, in the letter and in metres
   const both = (c, m) => T`${kaLine(c)} = ${sig3(m)} [m]`;
-  const dy = oy + 32;
+  const dy = oy + 40;
   dim(g, L, P, X(0), dy, X(W.x), dy, both(f.P, W.x), { dy: 18 });
   dim(g, L, P, X(W.x), dy, X(xLand), dy, both(f.R - f.P, xLand - W.x), { dy: 18 });
   keepOff(L, [{ x: X(0), y: dy }, { x: X(xLand), y: dy }].flatMap((p, i, a) => i ? Array.from({ length: 24 }, (_, j) => ({ x: a[0].x + (p.x - a[0].x) * (j + 1) / 24, y: dy })) : [p]), 5);
@@ -185,12 +224,30 @@ export function render(canvas, cam, o) {
     L.add(T`H = ${sig3(f.Hmax)} [m]`, ax, ay - 20, { color: P.disp, align: 'center', pri: 7, size: 14, weight: 700 });
   }
 
-  // ── the angle at O
-  const th = f.params.theta * Math.PI / 180, Ra = clamp(k * 6, 30, 46);
+  // ── the angle at O; with the thrower a speck, in a magnified view of O as well
+  const th = f.params.theta * Math.PI / 180, Ra = clamp(k * 6, 30, 46), thLabel = T`theta = ${num(f.params.theta, 1)}°`;
   g.save(); g.strokeStyle = P.strong; g.lineWidth = 1.6; g.beginPath(); g.arc(X(0), oy, Ra, -th, 0); g.stroke(); g.restore();
-  // in the angle's opening when there is room before the wall, else just under the ground there
-  const roomy = X(W.x) - X(0) > Ra + 110;
-  L.add(T`theta = ${num(f.params.theta, 1)}°`, X(0) + Ra + 8, roomy ? oy - 12 : oy + 13, { color: P.strong, align: 'left', pri: 7, size: 14, weight: 700 });
+  if (inset) {
+    const r = phone ? 46 : 54;
+    const hud = phone ? { x: 0, y: 0, w: w * 0.6, h: 80 } : { x: 0, y: 0, w: HUD, h: HUD_H };
+    const wallBox = { x: X(W.x) - wPx, y: Y(W.H) - 30, w: wPx * 2 + 120, h: oy - Y(W.H) + 30 };
+    const clearsBox = { x: X(W.x) - 120, y: Y(W.H) - 46, w: 120, h: 34 };          // where "just clears" goes
+    const clear = (c) => c.x - r > 4 && c.x + r < w - 4 && c.y - r > 4
+      && !pts.some((p) => Math.hypot(p.x - c.x, p.y - c.y) < r + 12)
+      && ![hud, wallBox, clearsBox].some((b) => c.x + r > b.x && c.x - r < b.x + b.w && c.y + r > b.y && c.y - r < b.y + b.h);
+    const cx0 = clamp(X(0) + r * 0.1, r + 6, w - r - 6);
+    const cands = [{ x: cx0, y: oy - r - 44 }, { x: cx0, y: oy - 2 * r - 70 }, { x: Math.max(r + 8, X(0) - r - 34), y: oy - r - 20 }, { x: cx0, y: oy - 2 * r - 130 }, { x: cx0 + r, y: oy - 2 * r - 130 }];
+    const c = cands.find(clear) ?? cands[0];
+    magnifiedO(g, c.x, c.y, r, P, { pose, aim, th, t, X0: X(0), oy });
+    L.reserve({ x: c.x - r - 3, y: c.y - r - 3, w: 2 * r + 6, h: 2 * r + 6 });
+    L.add(thLabel, c.x + r + 8, c.y + r * 0.2, { color: P.strong, align: 'left', pri: 7, size: 14, weight: 700 });
+    const capUp = c.y - r - 26 > hud.y + hud.h || c.x - 70 > hud.x + hud.w;
+    L.add('the thrower, enlarged', c.x, capUp ? c.y - r - 13 : c.y + r + 13, { color: P.muted, align: 'center', pri: 6, size: 13, maxPush: 20 });
+  } else {
+    // in the angle's opening when there is room before the wall, else just under the ground there
+    const roomy = X(W.x) - X(0) > Ra + 110;
+    L.add(thLabel, X(0) + Ra + 8, roomy ? oy - 12 : oy + 13, { color: P.strong, align: 'left', pri: 7, size: 14, weight: 700 });
+  }
 
   // ── the landing
   { const { age, life } = ageOf(t, f.tMax, f.tMax); if (t >= f.tMax - 1e-9) dust(g, X(xLand), oy, age, life, { size: 0.9 }); }

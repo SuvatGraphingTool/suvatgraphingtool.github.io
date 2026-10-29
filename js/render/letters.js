@@ -56,7 +56,7 @@ export function building(g, edge, bw, roof, Y, seed = 7) {
     }
   }
   // the door at the street
-  g.fillStyle = E.night ? '#3b2c26' : '#6e4f3c'; g.beginPath(); g.roundRect(x0 + bw * 0.35, Y - 34, 22, 34, [11, 11, 0, 0]); g.fill();
+  if (H > 60) { g.fillStyle = E.night ? '#3b2c26' : '#6e4f3c'; g.beginPath(); g.roundRect(x0 + bw * 0.35, Y - 34, 22, 34, [11, 11, 0, 0]); g.fill(); }
   // the cornice under the parapet
   g.fillStyle = E.night ? '#91858b' : '#e6ddd5'; g.fillRect(x0 - 5, roof + 4, bw + 10, 6);
   g.fillStyle = withAlpha('#000000', 0.25); g.fillRect(x0 - 5, roof + 10, bw + 10, 2);
@@ -95,6 +95,20 @@ function townBlock(g, x, bw, top, Y, seed, E) {
   g.restore();
 }
 
+/** Where a thrower's two hands are (figures.js thrower's own geometry, read
+    the same way): relative to the feet, facing +x, y down, at this pose. */
+function handsOf(H, pose, aim) {
+  H = Math.max(THROWER_MIN * 0.8, H);
+  const u = clamp(pose, 0, 1), e = u * u * (3 - 2 * u);
+  const thigh = H * 0.25, shin = H * 0.26, upper = H * 0.17, fore = H * 0.16;
+  const HIP = { x: -H * 0.04 + e * H * 0.07, y: -(thigh + shin) * 0.95 }, lean = -0.18 + e * 0.38;
+  const SH = { x: HIP.x + Math.sin(lean) * H * 0.3, y: HIP.y - Math.cos(lean) * H * 0.3 };
+  const a0 = Math.PI * 1.15, a1 = -(aim * Math.PI) / 180, ang = a0 + (a1 - a0 + (a1 < a0 - Math.PI ? 2 * Math.PI : 0)) * e;
+  const EL = { x: SH.x + Math.cos(ang - 0.35 * (1 - e)) * upper, y: SH.y + Math.sin(ang - 0.35 * (1 - e)) * upper };
+  const bal = 0.15 + e * 1.1, EL2 = { x: SH.x + Math.cos(bal) * upper, y: SH.y + Math.sin(bal) * upper };
+  return { throwing: { x: EL.x + Math.cos(ang) * fore, y: EL.y + Math.sin(ang) * fore }, other: { x: EL2.x + Math.cos(bal + 0.5) * fore, y: EL2.y + Math.sin(bal + 0.5) * fore } };
+}
+
 /** Keep labels off a drawn line: a small box reserved round every few px of it. */
 function keepOff(L, pts, pad = 7) {
   let last = null;
@@ -125,7 +139,7 @@ export function render(canvas, cam, o) {
   const k = Math.min((ground - 34 - yTop) / Math.max(1e-9, hi - lo), (ground - build - hand.y - yTop) / Math.max(1e-9, hi));
   const Y = (y) => yTop + (hi - y) * k;
   const R = phone ? 7 : 8.5;
-  const cx = phone ? w * 0.6 : Math.max(HUD + 170, w * 0.52), xP = cx - R - 0.5, xQ = cx + R + 0.5;
+  const cx = phone ? w * 0.5 : Math.max(HUD + 170, w * 0.52), xP = cx - R - 0.5, xQ = cx + R + 0.5;
   // the parapet's edge clear of the line through O, so a particle falling
   // below O passes the building's face; the thrower's front foot at the edge
   const roof = Y(0) + hand.y, edge = xP - R - 3, feet = edge - fig * 0.15 - 2, bw = clamp(w * 0.2, 110, 170);
@@ -149,14 +163,24 @@ export function render(canvas, cam, o) {
 
   // ── the vertical through O, O, and the level of O across
   stroke(g, [{ x: cx, y: Y(hi) - 24 }, { x: cx, y: Math.max(Y(lo), Y(0)) + 24 }], { color: P.grid, width: 1.4, dash: [3, 5] });
-  const oL = xQ + 14, oR = cx + (phone ? 70 : 110);
-  stroke(g, [{ x: oL, y: Y(0) }, { x: oR, y: Y(0) }], { color: P.axis, width: 1.6 });
+  const oL = xQ + R + 6, oR = cx + (phone ? 80 : 130);
+  stroke(g, [{ x: oL, y: Y(0) }, { x: oR, y: Y(0) }], { color: P.axis, width: 1.4, dash: [6, 4] });
   keepOff(L, line(oL, Y(0), oR, Y(0)), 5);
-  L.add('O', oR + 6, Y(0), { color: P.ink, align: 'left', pri: 8, size: 15, weight: 700 });
+  g.save(); g.strokeStyle = P.ink; g.lineWidth = 1.6; g.beginPath(); g.moveTo(cx - 6, Y(0)); g.lineTo(cx + 6, Y(0)); g.moveTo(cx, Y(0) - 6); g.lineTo(cx, Y(0) + 6); g.stroke(); g.restore();
+  L.add('O', oL + 4, Y(0) + 18, { color: P.ink, align: 'left', pri: 9, size: 15, weight: 700, maxPush: 20 });
+  if (!phone) L.add('level of O', oR + 11, Y(0), { color: P.muted, align: 'left', pri: 4, size: 13 });
 
-  // ── the thrower: P leaves the hand first; Q is held at O until it goes
-  const d = Math.max(1e-6, f.tMax * 0.06);
-  const pose = t < f.t0 ? clamp(t / d, 0, 1) : clamp(t / d, 0, 1) * (t - f.t0 < d ? 0.6 + 0.4 * clamp((t - f.t0) / d, 0, 1) : 1);
+  // ── the thrower: P leaves the throwing hand at once; Q waits in the other
+  //    hand, swaps across as the arm winds back, and leaves O when the engine says
+  const t0 = f.t0, d = Math.max(1e-6, Math.min(f.tMax * 0.06, t0 / 3));
+  let pose = 1, qHeld = null;
+  if (t < d) pose = t / d;
+  if (t < t0) {
+    if (t >= t0 - 2 * d && t < t0 - d) pose = 1 - (t - (t0 - 2 * d)) / d;
+    else if (t >= t0 - d) pose = (t - (t0 - d)) / d;
+    const hs = handsOf(fig, pose, aim), which = t >= t0 - 2 * d ? hs.throwing : hs.other;
+    qHeld = { x: feet + which.x, y: roof + which.y - R * 0.5 };
+  }
   thrower(g, feet, roof, fig, P, { dir: 1, pose, aim });
   L.reserve({ x: feet - fig * 0.45, y: roof - fig * 1.15, w: fig * 0.8, h: fig * 1.15 });
 
@@ -185,16 +209,23 @@ export function render(canvas, cam, o) {
   // ── each particle and its velocity (vertical: solid)
   for (const [fn, vf, x, ring, n, side] of [[f.yP, f.vP, xP, null, 'P', -1], [f.yQ, f.vQ, xQ, P.second, 'Q', 1]]) {
     const y = fn(t), v = vf(t), moving = n === 'P' || t > f.t0;
+    const held = n === 'Q' && qHeld, bx = held ? qHeld.x : x, by = held ? qHeld.y : Y(y);
     if (show.velocity !== false && !hit && moving && Math.abs(v) > 1e-9) {
       const vMax = Math.max(f.U, f.kq * f.U, 1e-6), len = (v / vMax) * (phone ? 54 : 70), ax = x + side * (R + 9);
       arrow(g, ax, Y(y), ax, Y(y) - len, { color: P.velVec, width: 2.6, head: 9 });
       keepOff(L, line(ax, Y(y), ax, Y(y) - len, 6), 7);
     }
-    ballAt(g, x, Y(y), R, ring);
-    L.reserve({ x: x - R - 4, y: Y(y) - R - 4, w: 2 * R + 8, h: 2 * R + 8 });
-    L.add(n, x + side * (R + 22), Y(y) - 14, { color: n === 'P' ? P.vel : P.second, align: side < 0 ? 'right' : 'left', pri: 9, size: 15, weight: 700 });
+    ballAt(g, bx, by, R, ring);
+    L.reserve({ x: bx - R - 4, y: by - R - 4, w: 2 * R + 8, h: 2 * R + 8 });
+    if (held) L.add(n, feet - fig * 0.45 - 8, by, { color: P.second, align: 'right', pri: 9, size: 15, weight: 700 });
+    else L.add(n, bx + side * (R + 22), by - 14, { color: n === 'P' ? P.vel : P.second, align: side < 0 ? 'right' : 'left', pri: 9, size: 15, weight: 700 });
   }
-  if (t < f.t0) L.add(`Q waits at O until ${f.top ? 'P is at the top' : 'it is projected'}`, xQ + 30, Y(0) + 24, { color: P.second, align: 'left', pri: 5, size: 13, push: 'down' });
+  if (t < f.t0) {
+    // in the sky above O, clear of the lines and the buildings
+    const nx = xQ + R + 18;
+    L.add('Q goes from O', nx, Y(0) - 70, { color: P.second, align: 'left', pri: 6, size: 13, weight: 700, maxPush: 60 });
+    L.add(f.top ? 'when P is at the top' : 'at the time given', nx, Y(0) - 44, { color: P.second, align: 'left', pri: 6, size: 13, weight: 700, maxPush: 60 });
+  }
   if (hit) {
     const tau = f.tau, yl = f.ycL, lx = xQ + R + 22;
     L.add(T`"collide," tau = ${inLetters(tau, 'U', 'g')}`, lx, Y(f.yc) - 38, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });

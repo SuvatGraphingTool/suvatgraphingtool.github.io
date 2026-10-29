@@ -2,7 +2,7 @@
 // on at one scale both ways, a playing field from A to B under a layered sky,
 // a thrower at each end facing the other (`thrower` from figures.js, winding
 // up and releasing on the engine's own launch times, B's shirt in B's colour),
-// a stone plinth under either one thrown from a height. Each path faint in
+// the roof of a stone building under either one thrown from a height. Each path faint in
 // full and strong so far — A in the quantity's hue, B in B's — each ball the
 // stadium's shaded ball (B's ringed) with its velocity in the velocity hue
 // (components dashed across, solid up, rule 2), and the moment they are level
@@ -18,6 +18,7 @@ import { dust, flash, pulse, ageOf } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, withAlpha, sig3 } from './util.js';
 import { thrower, ballAt, THROWER_MIN } from './figures.js';
 import { skyscape, grass, stone, softShadow, fitSide, env, rng } from './scenery.js';
+import { building } from './letters.js';
 import { T } from '../notation.js';
 
 const HUD = 250, HUD_H = 290;
@@ -111,7 +112,7 @@ export function render(canvas, cam, o) {
   const box = { xLo, xHi, yLo: 0, yHi }, bottom = h - 66, right = w - 16 - side;
   const fits = (phone ? [{ left: 16 + side, right, top: 96, bottom }]
     : [{ left: HUD + 30 + side, right, top: 70, bottom }, { left: 30 + side, right, top: Math.min(HUD_H, bottom - 120), bottom }])
-    .map((area) => fitSide(box, area, { sky: 0.45 }));
+    .map((area) => fitSide(box, area, { sky: phone ? 0.8 : 0.45 }));
   const fit = fits.reduce((p, q) => (q.k > p.k * 1.15 ? q : p));
   const { k, X, Y } = fit, oy = fit.oy;
   const fig = clamp(1.7 * k, phone ? THROWER_MIN : 60, 100);
@@ -126,12 +127,19 @@ export function render(canvas, cam, o) {
   grass(g, 0, w, oy, h, { seed: 12 });
   nearGrass(g, 0, w, oy, h, 22);
 
-  // ── where each stands: a stone plinth under a thrower above the ground
+  // ── where each stands: thrown from a height, from the roof of a building
+  //    (its parapet rail behind the thrower); a low height, a stone step
   const posts = [[X(0), f.A.h, 1], [X(f.D), f.B.h, -1]];
   for (const [x, hh, dir] of posts) if (hh > 1e-9) {
-    const pw = Math.max(34, fig * 0.62), x0 = dir > 0 ? x - pw + 4 : x - 4;
-    softShadow(g, x0 + pw / 2, oy + 1, pw * 0.7, 6, 0.9);
-    stone(g, x0, Y(hh), pw, oy - Y(hh), { course: Math.max(7, Math.min(13, (oy - Y(hh)) / 5)), seed: dir > 0 ? 3 : 4 });
+    const top = Y(hh), tall = oy - top;
+    if (tall >= 34) {
+      const bw = clamp(fig * 1.7, 70, 140);
+      g.save(); g.translate(x, 0); g.scale(dir, 1); building(g, 3, bw, top, oy, dir > 0 ? 3 : 4); g.restore();
+    } else {
+      const pw = Math.max(46, fig * 0.9), x0 = dir > 0 ? x - pw + 4 : x - 4;
+      softShadow(g, x0 + pw / 2, oy + 1, pw * 0.7, 6, 0.9);
+      stone(g, x0, top, pw, tall, { course: Math.max(6, tall / 3), seed: dir > 0 ? 3 : 4 });
+    }
   }
   // the throwers wind up and release on the engine's own launch times
   const run = Math.max(1e-6, f.tMax * 0.1);
