@@ -92,7 +92,7 @@ export const snapshots = {
   },
 
   ending(s) {
-    const title = s.tDir != null ? `Moving ${s.dirWord} at t = ${tr(s.tDir)} s.`
+    const title = s.tDir != null ? `Moving ${s.dirWord} ${s.dirFrom ? 'from' : 'at'} t = ${tr(s.tDir)} s.`
       : s.dirAsked ? `Never moving ${s.dirAsked}.`
         : s.askT != null ? `At t = ${tr(s.askT)} s its speed is ${tr(s.askSpeed)} m s⁻¹.`
           : s.found === 'u' ? `Starting velocity ${T`${vsrc(s.u)}`} m s⁻¹.`

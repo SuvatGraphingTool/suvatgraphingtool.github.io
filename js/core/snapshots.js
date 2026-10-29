@@ -112,7 +112,7 @@ export function solveSnapshots(k = {}) {
     notes.push(`At ${M`t = ${d(t)} [s]`} its speed is ${M`${d(mag(v))} [m s^-1]`}, at ${M`${vb(r)} [m]`}.`);
     marks.push({ t, what: 'asked' });
   }
-  let tDir = null;
+  let tDir = null, dirFrom = false;
   if (k.ask?.dir && COMPASS[k.ask.dir]) {
     const C = COMPASS[k.ask.dir], st = stage2 || { t0: 0, u, a };
     // moving in direction C: v parallel to C and the same way — v_x·C_y − v_y·C_x = 0, linear in t
@@ -135,7 +135,7 @@ export function solveSnapshots(k = {}) {
       r: tt != null && !from ? M`t = ${d(tt)} [s]` : from ? M`"always along it"` : M`"never"` });
     const when = (t) => (stage2 ? `${M`${d(t)} [s]`} after the acceleration changes, at ${M`t = ${d(snap(st.t0 + t))} [s]`}` : `at ${M`t = ${d(t)} [s]`}`);
     if (ok) {
-      tDir = snap(st.t0 + tt);
+      tDir = snap(st.t0 + tt); dirFrom = from && tt > 0;
       notes.push(from ? `Its velocity is always along that line; it is moving ${C.word} from the moment it starts to point that way, ${when(tt)}.`
         : `It is moving ${C.word} ${when(tt)}, with velocity ${M`${vb(vec(v))} [m s^-1]`}.`);
       marks.push({ t: tDir, what: C.word });
@@ -148,7 +148,7 @@ export function solveSnapshots(k = {}) {
   const tMax = snap(tEnd * 1.15);
   const f = { kind: 'snapshots', tMax, tFlight: tMax, pos, vel, acc, T: T ?? null, second, switched: !!stage2, marks, r0,
     params: { u: mag(u), g: 0, h: 0, theta: 0 } };
-  return { ok: true, mode: 'snapshots', u, a, a2: stage2?.a ?? null, T, rows, switchRows, askRows, notes, derived, f, tDir, dirWord: tDir != null ? COMPASS[k.ask.dir].word : null, dirAsked: k.ask?.dir && COMPASS[k.ask.dir] ? COMPASS[k.ask.dir].word : null, found: second?.kind === 'r' && hasV(k.a) ? 'u' : 'a', askT: have(k.ask?.t) ? k.ask.t : null, askSpeed: have(k.ask?.t) ? mag(vel(k.ask.t)) : null };
+  return { ok: true, mode: 'snapshots', u, a, a2: stage2?.a ?? null, T, rows, switchRows, askRows, notes, derived, f, tDir, dirFrom, dirWord: tDir != null ? COMPASS[k.ask.dir].word : null, dirAsked: k.ask?.dir && COMPASS[k.ask.dir] ? COMPASS[k.ask.dir].word : null, found: second?.kind === 'r' && hasV(k.a) ? 'u' : 'a', askT: have(k.ask?.t) ? k.ask.t : null, askSpeed: have(k.ask?.t) ? mag(vel(k.ask.t)) : null };
 }
 
 /** The working: the first stage from the two moments, the change, the questions. */
