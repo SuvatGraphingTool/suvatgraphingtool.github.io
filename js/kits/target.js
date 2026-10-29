@@ -15,7 +15,7 @@ const FIELDS = [
   { key: 'u', col: 'launch', label: `Speed ${M`u`} (m s⁻¹)`, placeholder: '—', hint: 'Or give its components below.' },
   { key: 'theta', col: 'launch', label: `Angle ${M`theta`} (°)`, placeholder: '—', hint: 'Above the horizontal; negative is below it.' },
   { key: 'd', col: 'point', label: 'How far out it is (m)', placeholder: '—', hint: 'Across from the launch.' },
-  { key: 'H', col: 'point', label: 'Height of its top (m)', placeholder: '—', hint: 'Above the ground: the top of the wall, net or tree, or the point.' },
+  { key: 'H', col: 'point', label: 'Height of its top (m)', placeholder: '—', hint: 'Above the ground: the top of the wall, fence, net or tree, or the point.' },
   { key: 'tAt', col: 'point', label: 'or above it at time (s)', placeholder: '—', hint: 'When the paper says how long it takes to be above it.' },
 ];
 
@@ -24,7 +24,7 @@ export const target = {
   verb: 'Launch it',
   voice: {
     h: 'What does it have to pass?',
-    sub: 'A projectile and one point it must pass: the top of a wall, a net or a tree, a wall it hits, or a target. '
+    sub: 'A projectile and one point it must pass: the top of a wall, a fence, a net or a tree, a wall it hits, or a target. '
       + 'Give the launch and the point and the engine says whether it clears and by how much — or leave one number out and it is found from the point.',
   },
   fields: FIELDS,
@@ -37,7 +37,7 @@ export const target = {
     { title: 'What is at the point', fields: [
       { key: 'from', type: 'choice', label: 'Thrown from', default: 'stand', hint: 'The picture only: a launch height of 0 is the ground.',
         options: [{ v: 'stand', label: 'A stand' }, { v: 'window', label: 'A window in a house' }, { v: 'roof', label: 'The edge of a roof' }] },
-      { key: 'kind', type: 'choice', label: 'It is', default: 'wall', hint: 'A wall, net or tree it does not clear, it hits. A wall it hits stops it there.',
+      { key: 'kind', type: 'choice', label: 'It is', default: 'wall', hint: 'A wall, fence, net or tree it does not clear, it hits. A wall it hits stops it there.',
         options: [{ v: 'wall', label: 'A wall' }, { v: 'fence', label: 'A fence' }, { v: 'net', label: 'A net' }, { v: 'tree', label: 'A tree' }, { v: 'face', label: 'A wall it hits' }, { v: 'point', label: 'A target point' }] },
     ] },
     { title: 'Find from the point, if the paper asks', fields: [

@@ -20,17 +20,20 @@ const tr = (x, p = 3) => num(x, p, { trim: true });
 const HUD = 250;              // the readouts' column, top left …
 const HUD_H = 290;            // … and how far down it reaches
 
+/** The house's shape, as fractions: the eave above a window sill (of the sill's
+    height), and the roof's rise (of the house's width). */
+const HOUSE = { eave: 0.45, pitch: 0.45 };
 /** A house side on, its wall's outer face at x = edge, standing on the ground
     at Y: with 'window', a window whose sill is at y = sill; with 'roof', the
     roof's eave at y = sill, the house below it. Width w px, back from the edge. */
 export function house(g, edge, sill, Y, w, from, P) {
   g.save();
-  const eave = from === 'roof' ? sill : sill - Math.max(26, (Y - sill) * 0.45);
+  const eave = from === 'roof' ? sill : sill - (Y - sill) * HOUSE.eave;
   g.fillStyle = withAlpha('#d9cbb5', 0.55); g.strokeStyle = P.strong; g.lineWidth = 1.6;
   g.fillRect(edge - w, eave, w, Y - eave); g.strokeRect(edge - w, eave, w, Y - eave);
   // the roof: a pitched slope from the eave back over the house
   g.fillStyle = withAlpha('#8a4b3c', 0.75);
-  g.beginPath(); g.moveTo(edge + 6, eave); g.lineTo(edge - w * 0.5, eave - w * 0.45); g.lineTo(edge - w - 6, eave); g.closePath(); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(edge + 6, eave); g.lineTo(edge - w * 0.5, eave - w * HOUSE.pitch); g.lineTo(edge - w - 6, eave); g.closePath(); g.fill(); g.stroke();
   if (from === 'window') {
     // the window open in the wall, its sill at the launch height
     const ww = Math.min(22, w * 0.3), wh = Math.min(26, (Y - eave) * 0.3);
@@ -44,8 +47,9 @@ export function house(g, edge, sill, Y, w, from, P) {
 /** A garden fence at x, from the ground at Y up to top: posts and rails, solid boards. */
 export function fence(g, x, top, Y, P) {
   g.save(); g.fillStyle = withAlpha('#9a7b55', 0.8); g.strokeStyle = P.strong; g.lineWidth = 1.4;
-  g.fillRect(x - 4, top, 8, Y - top); g.strokeRect(x - 4, top, 8, Y - top);
-  g.beginPath(); g.moveTo(x - 4, top); g.lineTo(x, top - 5); g.lineTo(x + 4, top); g.closePath(); g.fill(); g.stroke();
+  g.fillRect(x - 4, top + 5, 8, Y - top - 5); g.strokeRect(x - 4, top + 5, 8, Y - top - 5);
+  // the boards' pointed tops reach exactly the fence's height
+  g.beginPath(); g.moveTo(x - 4, top + 5); g.lineTo(x, top); g.lineTo(x + 4, top + 5); g.closePath(); g.fill(); g.stroke();
   for (const f of [0.3, 0.7]) { g.beginPath(); g.moveTo(x - 7, top + (Y - top) * f); g.lineTo(x + 7, top + (Y - top) * f); g.stroke(); }
   g.restore();
 }
@@ -66,9 +70,10 @@ export function render(canvas, cam, o) {
   const faceTop = kind === 'face' && Pt ? (Pt.H ?? F.at?.y ?? 0) : null;
   if (Pt) { if (Pt.d != null) xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H); if (faceTop != null) ys.push(faceTop * 1.5); }
   if (f.flag != null) xs.push(f.flag);
-  const xMax = Math.max(...xs) * 1.06 || 1, yMax = Math.max(...ys, xMax * 0.05) * 1.12;
-  // a house it is thrown from stands behind the launch: room for it, at the same scale
+  // a house it is thrown from stands behind the launch: room for it, at the same scale both ways
   const houseM = f.from !== 'stand' && F.h0 > 1e-9 ? Math.max(F.h0 * 0.9, 3) : 0;
+  if (houseM) ys.push((f.from === 'roof' ? F.h0 : F.h0 * (1 + HOUSE.eave)) + houseM * HOUSE.pitch);
+  const xMax = Math.max(...xs) * 1.06 || 1, yMax = Math.max(...ys, xMax * 0.05) * 1.12;
   // The scene goes beside the readouts or below them, whichever draws it
   // larger; on a narrow screen it takes the whole width. Room on the right
   // for the velocity arrow where it lands, and below for the distances.
@@ -102,7 +107,7 @@ export function render(canvas, cam, o) {
       g.save(); g.fillStyle = withAlpha(P.faint, 0.35); g.strokeStyle = P.muted; g.lineWidth = 1.4;
       g.fillRect(X(0) - 16, Y(F.h0), 16, F.h0 * k); g.strokeRect(X(0) - 16, Y(F.h0), 16, F.h0 * k); g.restore();
     }
-    L.add(T`${tr(F.h0)} [m]`, X(0) - 22, (Y(F.h0) + oy) / 2, { color: P.muted, align: 'right', pri: 5, size: 14 });
+    L.add(T`${tr(F.h0)} [m]`, X(0) - (houseM ? houseM * k + 10 : 22), (Y(F.h0) + oy) / 2, { color: P.muted, align: 'right', pri: 5, size: 14 });
   }
 
   // ── the thing at the point
