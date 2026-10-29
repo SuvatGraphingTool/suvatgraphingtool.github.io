@@ -353,6 +353,11 @@ target 20 m out at 0.75 m: α = 14.0°, 1.13 s to the target). WJEC Unit 4 Jun
 2018 Q9 (thrown horizontally at 14 m s⁻¹ from 5 m: down in 1.01 s; path
 y = 5 − 0.025x²; a 2 m fence is cleared anywhere up to 10.95 m out).
 
+Also OCR MEI H640/01 Jun 2018 Q9 (a pebble thrown horizontally at 14 m s⁻¹
+from a window 5 m up, over a 2 m fence d away: 1.01 s to the ground; the path
+y = 5 − 0.025x²; the fence is cleared for d up to 10.95 m), drawn as a house
+with a window and a garden fence.
+
 **Why the twelve cannot.** The twelve launch a projectile and report where it
 lands and how high it goes. None has a point the flight must pass, so none can
 say whether it clears a wall or by how much, none solves for the angle or the

@@ -718,3 +718,12 @@ Used by: `pair-vertical` (tags, points), `journey-stages` (points: the instants 
 Cards for every entry in `js/library.js`, in the same card style as the twelve,
 each with its papers under its note. The search box matches every word typed
 against the name, the note, the boards and papers, and the entry's `tags`.
+
+### A house and a fence — `js/render/target.js`
+
+`house(g, edge, sill, Y, w, from, P)` (exported) — a house side on, its wall's
+face at the launch, with a window whose sill is the launch height, or its roof's
+eave there; `fence(g, x, top, Y, P)` (exported) — a garden fence of boards and
+rails. The over-the-wall stage frames the house at the same scale when the
+throw is from a window or a roof (the kit's `from` choice); the fence is a
+kind of thing to clear. Used by: `over-the-wall`.

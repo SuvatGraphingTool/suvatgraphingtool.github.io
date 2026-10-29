@@ -20,6 +20,36 @@ const tr = (x, p = 3) => num(x, p, { trim: true });
 const HUD = 250;              // the readouts' column, top left …
 const HUD_H = 290;            // … and how far down it reaches
 
+/** A house side on, its wall's outer face at x = edge, standing on the ground
+    at Y: with 'window', a window whose sill is at y = sill; with 'roof', the
+    roof's eave at y = sill, the house below it. Width w px, back from the edge. */
+export function house(g, edge, sill, Y, w, from, P) {
+  g.save();
+  const eave = from === 'roof' ? sill : sill - Math.max(26, (Y - sill) * 0.45);
+  g.fillStyle = withAlpha('#d9cbb5', 0.55); g.strokeStyle = P.strong; g.lineWidth = 1.6;
+  g.fillRect(edge - w, eave, w, Y - eave); g.strokeRect(edge - w, eave, w, Y - eave);
+  // the roof: a pitched slope from the eave back over the house
+  g.fillStyle = withAlpha('#8a4b3c', 0.75);
+  g.beginPath(); g.moveTo(edge + 6, eave); g.lineTo(edge - w * 0.5, eave - w * 0.45); g.lineTo(edge - w - 6, eave); g.closePath(); g.fill(); g.stroke();
+  if (from === 'window') {
+    // the window open in the wall, its sill at the launch height
+    const ww = Math.min(22, w * 0.3), wh = Math.min(26, (Y - eave) * 0.3);
+    g.fillStyle = withAlpha('#9fb6c8', 0.7); g.fillRect(edge - ww, sill - wh, ww, wh); g.strokeRect(edge - ww, sill - wh, ww, wh);
+    g.lineWidth = 2.4; g.beginPath(); g.moveTo(edge - ww - 3, sill); g.lineTo(edge + 3, sill); g.stroke();
+  }
+  // a door on the ground floor
+  g.lineWidth = 1.4; g.strokeRect(edge - w * 0.75, Y - Math.min(30, (Y - eave) * 0.35), Math.min(16, w * 0.2), Math.min(30, (Y - eave) * 0.35));
+  g.restore();
+}
+/** A garden fence at x, from the ground at Y up to top: posts and rails, solid boards. */
+export function fence(g, x, top, Y, P) {
+  g.save(); g.fillStyle = withAlpha('#9a7b55', 0.8); g.strokeStyle = P.strong; g.lineWidth = 1.4;
+  g.fillRect(x - 4, top, 8, Y - top); g.strokeRect(x - 4, top, 8, Y - top);
+  g.beginPath(); g.moveTo(x - 4, top); g.lineTo(x, top - 5); g.lineTo(x + 4, top); g.closePath(); g.fill(); g.stroke();
+  for (const f of [0.3, 0.7]) { g.beginPath(); g.moveTo(x - 7, top + (Y - top) * f); g.lineTo(x + 7, top + (Y - top) * f); g.stroke(); }
+  g.restore();
+}
+
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
   if (!f || f.kind !== 'target') return null;
@@ -37,6 +67,8 @@ export function render(canvas, cam, o) {
   if (Pt) { if (Pt.d != null) xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H); if (faceTop != null) ys.push(faceTop * 1.5); }
   if (f.flag != null) xs.push(f.flag);
   const xMax = Math.max(...xs) * 1.06 || 1, yMax = Math.max(...ys, xMax * 0.05) * 1.12;
+  // a house it is thrown from stands behind the launch: room for it, at the same scale
+  const houseM = f.from !== 'stand' && F.h0 > 1e-9 ? Math.max(F.h0 * 0.9, 3) : 0;
   // The scene goes beside the readouts or below them, whichever draws it
   // larger; on a narrow screen it takes the whole width. Room on the right
   // for the velocity arrow where it lands, and below for the distances.
@@ -45,12 +77,12 @@ export function render(canvas, cam, o) {
     : [{ left: HUD + 40, right: w - 100, top: 64 }, { left: 40, right: w - 100, top: Math.min(HUD_H, bottom - 120) }];
   let best = null;
   for (const fr of frames) {
-    const kk = Math.min((fr.right - fr.left) / xMax, (bottom - fr.top) / yMax);
+    const kk = Math.min((fr.right - fr.left) / (xMax + houseM), (bottom - fr.top) / yMax);
     if (kk > 0 && (!best || kk > best.k)) best = { ...fr, k: kk };
   }
   if (!best) return null;
   const { left, k } = best;
-  const ox = left, oy = bottom;
+  const ox = left + houseM * k, oy = bottom;
   const X = (x) => ox + x * k, Y = (y) => oy - y * k;
 
   // ── the ground, with distances along it
@@ -63,10 +95,13 @@ export function render(canvas, cam, o) {
   }
   L.add(T`x [m]`, w - 14, oy + 16, { color: P.muted, align: 'right', pri: 3, size: 13, bg: false });
 
-  // ── where it leaves from: a stand when it is above the ground
+  // ── where it leaves from: a stand, a window in a house wall, or a roof's edge
+  if (F.h0 > 1e-9 && f.from !== 'stand') house(g, X(0), Y(F.h0), oy, houseM * k, f.from, P);
   if (F.h0 > 1e-9) {
-    g.save(); g.fillStyle = withAlpha(P.faint, 0.35); g.strokeStyle = P.muted; g.lineWidth = 1.4;
-    g.fillRect(X(0) - 16, Y(F.h0), 16, F.h0 * k); g.strokeRect(X(0) - 16, Y(F.h0), 16, F.h0 * k); g.restore();
+    if (f.from === 'stand') {
+      g.save(); g.fillStyle = withAlpha(P.faint, 0.35); g.strokeStyle = P.muted; g.lineWidth = 1.4;
+      g.fillRect(X(0) - 16, Y(F.h0), 16, F.h0 * k); g.strokeRect(X(0) - 16, Y(F.h0), 16, F.h0 * k); g.restore();
+    }
     L.add(T`${tr(F.h0)} [m]`, X(0) - 22, (Y(F.h0) + oy) / 2, { color: P.muted, align: 'right', pri: 5, size: 14 });
   }
 
@@ -79,7 +114,7 @@ export function render(canvas, cam, o) {
     stroke(g, [{ x: a, y: hy }, { x: b, y: hy }], { color: P.mark, width: 1.4, alpha: 0.8 });
     stroke(g, [{ x: a, y: oy + 8 }, { x: b, y: oy + 8 }], { color: P.mark, width: 2 });
     for (const xx of [a, b]) stroke(g, [{ x: xx, y: oy + 4 }, { x: xx, y: oy + 12 }], { color: P.mark, width: 2 });
-    L.add(`a ${T`${tr(Pt.H)} [m]`} ${{ wall: 'wall', net: 'net', tree: 'tree' }[kind] || 'wall'} is cleared here`, (a + b) / 2, oy + 24, { color: P.mark, align: 'center', pri: 7, size: 13, weight: 700, maxPush: 20 });
+    L.add(`a ${T`${tr(Pt.H)} [m]`} ${{ wall: 'wall', fence: 'fence', net: 'net', tree: 'tree' }[kind] || 'wall'} is cleared here`, (a + b) / 2, oy + 24, { color: P.mark, align: 'center', pri: 7, size: 13, weight: 700, maxPush: 20 });
     L.add(T`${tr(F.span.to)} [m]`, b, hy - 14, { color: P.mark, align: 'center', pri: 8, size: 14, weight: 700 });
     if (F.span.from > 1e-9) L.add(T`${tr(F.span.from)} [m]`, a, hy - 14, { color: P.mark, align: 'center', pri: 8, size: 14, weight: 700 });
     L.add(T`${tr(Pt.H)} [m]`, a + 8, (hy + oy) / 2, { color: P.mark, align: 'left', pri: 6, size: 14 });
@@ -94,6 +129,8 @@ export function render(canvas, cam, o) {
       const ft = Y(Math.min(yMax * 0.92, faceTop * 1.5));
       g.save(); g.fillStyle = withAlpha(P.strong, 0.22); g.strokeStyle = P.strong; g.lineWidth = 1.6;
       g.fillRect(px, ft, 12, oy - ft); g.strokeRect(px, ft, 12, oy - ft); g.restore();
+    } else if (kind === 'fence' && H != null) {
+      fence(g, px, top, oy, P);
     } else if (kind === 'net' && H != null) {
       stroke(g, [{ x: px, y: oy }, { x: px, y: top }], { color: P.strong, width: 3 });
       for (let yy = top + 6; yy < oy; yy += 7) stroke(g, [{ x: px - 4, y: yy }, { x: px + 4, y: yy }], { color: P.muted, width: 1 });

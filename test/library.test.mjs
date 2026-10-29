@@ -1087,6 +1087,15 @@ group('Past the posts (WME01 Jun16 Q1)', () => {
   ok(odd.ok && !/1a/.test(odd.rows.map((r) => r.s.replace(/<[^>]+>/g, '')).join(' ')), 'no coefficient of 1 written before a');
 });
 
+group('From a window, over a fence (MEI H640/01 J18 Q9)', () => {
+  const K = KITS.target;
+  const r = K.solve(K.read({ g: 9.8, h0: 5, u: 14, theta: 0, H: 2, kind: 'fence', from: 'window' }));
+  const all = r.ok ? r.notes.join(' ').replace(/<[^>]+>/g, '') : '';
+  ok(r.ok && /1\.01s/.test(all.replace(/\s/g, '')) && /10\.954/.test(all) && /fence/.test(all), 'lands at 1.01 s; a 2 m fence cleared up to 10.95 m (MS)', r.reason);
+  ok(K.working(r).some((sec) => sec.rows.some((x) => /0\.025x/.test(x.r.replace(/<[^>]+>/g, '')))), 'the path y = 5 − 0.025x² (MS)');
+  ok(r.f.from === 'window' && K.solve(K.read({ g: 9.8, h0: 5, u: 14, theta: 0 })).f.from === 'stand', 'a window when chosen, a stand when not');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

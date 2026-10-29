@@ -34,6 +34,7 @@ export const KINDS = {
   wall:  { word: 'wall',  the: 'the wall',  top: 'the top of the wall', solid: true },
   net:   { word: 'net',   the: 'the net',   top: 'the top of the net',  solid: true },
   tree:  { word: 'tree',  the: 'the tree',  top: 'the top of the tree', solid: true },
+  fence: { word: 'fence', the: 'the fence', top: 'the top of the fence', solid: true },
   face:  { word: 'wall',  the: 'the wall',  top: 'the point it hits',   solid: true, hits: true },
   point: { word: 'point', the: 'the point', top: 'the point',           solid: false },
 };
@@ -481,6 +482,8 @@ export function solveTarget(k = {}) {
   }
   const f = targetMotion(S, O, PP, have(k.flag) ? k.flag : null);
   f.flights = F; f.pick = pick; f.kindOf = kind; f.flagGap = flagGap;
+  // where it is thrown from, for the picture only: a stand, a window, a roof
+  f.from = ['window', 'roof'].includes(k.from) ? k.from : 'stand';
   return {
     ok: true, mode: 'target', axis: 'plane', kind, K, find, found, P: PP, h0, g,
     flights: F, pick, shown: S, other: O, rejected, findRows, findTitle, flag: have(k.flag) ? k.flag : null, flagGap,

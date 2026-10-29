@@ -35,8 +35,10 @@ export const target = {
       { key: 'uy', label: 'Up (m s⁻¹)', aria: 'Launch velocity: up (m s⁻¹)', placeholder: '—', hint: '… and 5 here; negative is thrown downwards, 0 horizontally.' },
     ] },
     { title: 'What is at the point', fields: [
+      { key: 'from', type: 'choice', label: 'Thrown from', default: 'stand', hint: 'The picture only: a launch height of 0 is the ground.',
+        options: [{ v: 'stand', label: 'A stand' }, { v: 'window', label: 'A window in a house' }, { v: 'roof', label: 'The edge of a roof' }] },
       { key: 'kind', type: 'choice', label: 'It is', default: 'wall', hint: 'A wall, net or tree it does not clear, it hits. A wall it hits stops it there.',
-        options: [{ v: 'wall', label: 'A wall' }, { v: 'net', label: 'A net' }, { v: 'tree', label: 'A tree' }, { v: 'face', label: 'A wall it hits' }, { v: 'point', label: 'A target point' }] },
+        options: [{ v: 'wall', label: 'A wall' }, { v: 'fence', label: 'A fence' }, { v: 'net', label: 'A net' }, { v: 'tree', label: 'A tree' }, { v: 'face', label: 'A wall it hits' }, { v: 'point', label: 'A target point' }] },
     ] },
     { title: 'Find from the point, if the paper asks', fields: [
       { key: 'find', type: 'choice', label: 'Find', names: true,
@@ -57,7 +59,7 @@ export const target = {
 
   read(vals) {
     const k = { g: vals.g };
-    for (const key of ['h0', 'u', 'theta', 'ux', 'uy', 'd', 'H', 'tAt', 'T', 'top', 'flag', 'kind', 'find', 'pick']) k[key] = vals[key];
+    for (const key of ['h0', 'u', 'theta', 'ux', 'uy', 'd', 'H', 'tAt', 'T', 'top', 'flag', 'kind', 'find', 'pick', 'from']) k[key] = vals[key];
     // the box for the number being found is ignored, as the hint says
     if (k.find === 'theta' || k.find === 'u') delete k[k.find];
     return k;
