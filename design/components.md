@@ -430,6 +430,15 @@ from rest (v² = 2gs), and the ground when M's height is given. In letters
 (the speed at N k times u at M) the same equations with u = g = 1, written by
 `inLetters`: t = (k − 1)u⁄g, MN = (k² − 1)u²⁄(2g). Used by: `past-two-marks`.
 
+### Thrown towards each other — `js/core/towards.js`
+
+`solveTowards({ g, A: { u, theta, h }, B: { u, theta, h, t0 }, D, range })`
+— each the twelve's `flight`, timed from its own launch (B t0 after A); AB
+given, or A's range (u² sin 2θ⁄g). Level across is one linear equation in t;
+each one's height then; they collide when the heights agree within a
+millimetre and both are in the air, else pass (the gap said) or never meet
+(one landed first, or A past before B is thrown). Used by: `thrown-towards`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -761,3 +770,11 @@ point, M and N as level lines with the distances between (in u²⁄g in letters)
 the ball falling beside the wall, its velocity solid, each mark ringed with its
 speed as it passes; the ground when given. Kit `marks`. Used by:
 `past-two-marks`.
+
+### Two throwers, side on — `js/render/towards.js`
+
+Level ground from A to B at one scale both ways, a `runner` at each end facing
+the other, each path faint in full and strong so far (A in the quantity's hue,
+B in stone), each ball's velocity; where they are level across, ringed with the
+time and height when they collide, or the gap between them when they pass.
+Kit `towards`. Used by: `thrown-towards`.

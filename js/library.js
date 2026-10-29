@@ -594,4 +594,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: M to N by the five equations, how far above M it was let go, and the ground when its height is given.',
     } },
+  { id: 'thrown-towards', group: 'library', kit: 'towards',
+    name: 'Thrown towards each other',
+    sub: 'two balls thrown at each other from A and B, one a second after the other — do they collide, and how high?',
+    note: 'Two projectiles thrown towards each other in one vertical plane, from A and B on level ground, the second perhaps a moment after the first. Across, each moves at a steady speed, so they are level across at one moment; they collide only if they are at the same height then, with both still in the air. The distance AB may be the first one’s range.',
+    params: { g: 9.8, A: { u: 24.5, theta: 30 }, B: { u: 24.5, theta: 30, t0: 1 }, range: true },
+    place: 'Side on: level ground, a thrower at A and another at B',
+    sources: [
+      { board: 'WJEC', paper: '1300U40-1 Unit 4', session: 'Jun 2018', q: '9' },
+    ],
+    tags: ['two projectiles', 'towards each other', 'collide', 'collision', 'range', 'projected later', 'same height', 'thrown',
+           'projectile', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Particles in one vertical plane', 'they have no size and fly in the same plane: they collide only where their points meet.'],
+        ['Gravity alone', 'no air resistance; across, each keeps its own steady speed.'],
+        ['Level ground', 'A and B at the same level, the ground flat between them.'],
+      ],
+      caveat: 'What the engine did compute is above: A’s range when AB is it, the moment they are level across, and each one’s height then.',
+    } },
 ];

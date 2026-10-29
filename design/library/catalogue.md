@@ -799,3 +799,20 @@ marks), the ball dropped from rest above, each mark ringed as it passes.
 
 **What the student varies.** Numbers or letters; two of the speeds at M and
 N, the time and the distance; M's height above the ground; window or cliff.
+
+### `thrown-towards` — Thrown towards each other
+
+**Papers.** WJEC 1300U40-1 Unit 4 Jun 2018 Q9 (P from A at 24.5 m s⁻¹, 30°,
+AB its range, 53.0 m; Q from B a second later at the same speed and angle:
+level across at t = 1.75 s, both 6.43 m up, so they collide 6.43 m above the
+ground).
+
+**Why it is built.** `do-they-collide` starts both together on a surface;
+`catch-it` has one runner on the ground. Here two projectiles fly at each
+other in one plane, one launched later.
+
+**The stage.** Side on: level ground, a thrower at each end, both paths, the
+collision ringed (or the gap when they pass).
+
+**What the student varies.** Each one's speed, angle and height; when B is
+thrown; AB, or AB as A's range.

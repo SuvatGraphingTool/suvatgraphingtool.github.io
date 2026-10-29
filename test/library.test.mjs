@@ -1128,6 +1128,18 @@ group('Falling past two marks (AQA 7357/2 J23 Q13)', () => {
   ok(top.ok && /at rest at M/.test(top.notes.join(' ')), 'released at M: said so');
 });
 
+group('Thrown towards each other (WJEC Unit 4 J18 Q9)', () => {
+  const K = KITS.towards;
+  const r = K.solve(K.read({ g: 9.8, 'A.u': 24.5, 'A.theta': 30, 'B.u': 24.5, 'B.theta': 30, 'B.t0': 1, range: 'range' }));
+  ok(r.ok && Math.abs(r.D - 53.044) < 1e-3, 'AB is A’s range: 53.0 m (MS)', r.reason);
+  ok(r.outcome === 'collide' && Math.abs(r.yA - 6.43125) < 1e-9 && r.t === 1.75, 'they collide 6.43 m up at t = 1.75 s (MS)');
+  const pass = K.solve({ g: 9.8, A: { u: 20, theta: 40 }, B: { u: 15, theta: 50 }, D: 30 });
+  ok(pass.ok && pass.outcome === 'pass', 'different throws: they pass, the gap said');
+  const late = K.solve({ g: 9.8, A: { u: 10, theta: 45 }, B: { u: 10, theta: 45, t0: 0 }, D: 100 });
+  ok(late.ok && late.outcome === 'landed', 'too far apart: one lands first');
+  ok(!K.solve({ g: 9.8, A: { u: 10, theta: 45 }, B: { u: 10, theta: 45 } }).ok, 'no distance: says what is needed');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
