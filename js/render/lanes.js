@@ -42,8 +42,8 @@ export function render(canvas, cam, o) {
   // ── both speed–time graphs, above
   // clear of the readouts: the four boxes on the left, the clock top right
   // on the tracks the graph gives up a little height to the trackside posts
-  const rail = f.where === 'rail';
-  const gx0 = 270, gx1 = w - 60, gy0 = 100, gy1 = Math.round(h * (rail ? 0.47 : 0.52));
+  const rail = f.where === 'rail', low = rail || f.lights;
+  const gx0 = 270, gx1 = w - 60, gy0 = 100, gy1 = Math.round(h * (low ? 0.47 : 0.52));
   const X = (tt) => gx0 + (tt / f.tMax) * (gx1 - gx0);
   const vTop = f.vMax * 1.22;
   const Y = (v) => gy1 - (v / vTop) * (gy1 - gy0);
@@ -74,10 +74,21 @@ export function render(canvas, cam, o) {
     stroke(g, [{ x: X(k.t), y: gy1 }, { x: X(k.t), y: gy1 + 6 }], { color: k.color, width: 1.8 });
     L.add(tr(k.t, 3), X(k.t), gy1 + 14, { color: k.color, align: 'center', pri: 6, size: 13, weight: 700, bg: false, maxPush: 0 });
   }
+  // then each one's other moments — setting off, reaching its speed — and the
+  // end of the run, where they meet, in the order of importance
+  const marks = [...holds.map((k) => X(k.t))];
+  const key = [[A, P.vel], [B, P.second]].flatMap(([p, color]) => p.stages.filter((st) => st.kind !== 'held' && isFinite(st.t1) && st.t1 > 1e-9)
+    .map((st) => ({ t: st.t1, color }))).concat([{ t: f.tMax, color: P.muted }]);
+  for (const k of key) {
+    if (k.t > f.tMax + 1e-9 || marks.some((x) => Math.abs(x - X(k.t)) < 34)) continue;
+    marks.push(X(k.t));
+    stroke(g, [{ x: X(k.t), y: gy1 }, { x: X(k.t), y: gy1 + 6 }], { color: k.color, width: 1.6 });
+    L.add(tr(k.t, 3), X(k.t), gy1 + 14, { color: k.color, align: 'center', pri: 5, size: 13, weight: 700, bg: false, maxPush: 0 });
+  }
   const tstep = niceStep(f.tMax, 6);
   for (let tt = tstep; tt <= f.tMax + 1e-9; tt += tstep) {
     stroke(g, [{ x: X(tt), y: gy1 }, { x: X(tt), y: gy1 + 5 }], { color: P.faint, width: 1.4 });
-    if (holds.some((k) => Math.abs(X(k.t) - X(tt)) < 34)) continue;
+    if (marks.some((x) => Math.abs(x - X(tt)) < 34)) continue;
     // fixed under the axis: a tick that would be pushed is dropped instead
     L.add(fmt(tt, tstep < 1 ? 1 : 0), X(tt), gy1 + 14, { color: P.muted, align: 'center', pri: 1, size: 13, bg: false, maxPush: 0 });
   }
@@ -168,7 +179,6 @@ export function render(canvas, cam, o) {
   const S = (s) => sx0 + ((s - lo) / (hi - lo)) * (sx1 - sx0);
   // the trackside posts and the traffic lights stand above the near lane, so
   // those two settings sit a little lower, clear of the graph's axis
-  const low = rail || f.lights;
   const yA = Math.round(h * (low ? 0.72 : 0.68)), yB = Math.round(h * (low ? 0.87 : 0.84));
   if (rail) {
     // two parallel tracks, side on: one rails() per track
@@ -187,7 +197,7 @@ export function render(canvas, cam, o) {
   else {
     stroke(g, [{ x: S(0), y: yA - 26 }, { x: S(0), y: yB + 14 }], { color: P.ink, width: 2 });
     // the lights at the start line: red until they go, then green
-    if (f.lights) trafficLights(g, S(0) - 14, yA - 26, clamp(yA - 26 - gy1 - 56, 30, 60), P, { lit: fired && tRaw > 0 ? 'green' : 'red' });
+    if (f.lights) trafficLights(g, S(0) - 14, yA - 26, roof + 40, P, { lit: fired && tRaw > 0 ? 'green' : 'red' });
     else L.add('start', S(0), yA - roof - 30, { color: P.muted, align: 'center', pri: 5, size: 14, bg: false });
   }
   if (f.line != null) {
@@ -222,8 +232,12 @@ export function render(canvas, cam, o) {
     if (show.velocity !== false && v > 1e-6) {
       const len = (v / f.vMax) * clamp(w * 0.1, 50, 120);
       const vy = y - roofOf(p);
-      arrow(g, xf - Lp * 0.7, vy, xf - Lp * 0.7 + len, vy, { color: P.velVec, width: 2.6, head: 10 });
-      L.add(T`${fmt(v, 2)} [m s^-1]`, xf - Lp * 0.7 + len + 8, vy, { color: P.vel, align: 'left', pri: 7, size: 14, weight: 700 });
+      // near the right edge the arrow and its value sit back over the
+      // vehicle, the value before it, so neither runs off the canvas
+      const edge = xf - Lp * 0.7 + len + 110 > w;
+      const ax = edge ? Math.min(xf - Lp * 0.7, w - 16 - len) : xf - Lp * 0.7;
+      arrow(g, ax, vy, ax + len, vy, { color: P.velVec, width: 2.6, head: 10 });
+      L.add(T`${fmt(v, 2)} [m s^-1]`, edge ? ax - 8 : ax + len + 8, vy, { color: P.vel, align: edge ? 'right' : 'left', pri: 7, size: 14, weight: 700 });
     }
     // a vehicle that has come to rest has no acceleration left to show
     if (show.acceleration && v > 1e-6) {

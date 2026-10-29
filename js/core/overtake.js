@@ -60,7 +60,9 @@ const RAIL = [
   [/\bfrom the start\b/g, 'from X'],
   [/\bAt the line\b/g, 'At Y'],
   [/\bthe line\b/g, 'Y'],
+  [/\bThe line\b/g, 'Y'],
   [/\bthe road\b/g, 'the track'],
+  [/\bThe road\b/g, 'The track'],
 ];
 export const railWords = (x) => (typeof x === 'string' ? RAIL.reduce((s, [re, w]) => s.replace(re, w), x) : x);
 
@@ -659,6 +661,7 @@ export function solveOvertake(k = {}) {
       text: kind === 'start' ? (first ? `They start level, and ${first} draws ahead.` : 'They start level.')
         : m.rest && !m.first ? `They come to rest ${kind === 'line' ? 'at the line' : 'side by side'}, ${M`${d(m.x)} [m]`} from the start, at the same instant: ${M`t = ${d(m.t)} [s]`}.`
         : m.rest ? `${m.first === 'A' ? 'B' : 'A'} comes to rest beside ${m.first} at ${M`t = ${d(m.t)} [s]`}, ${M`${d(m.x)} [m]`} from the start; ${m.first} stopped there earlier, at ${M`t = ${d(m.tFirst)} [s]`}.`
+        : kind === 'line' && ahead && before && ahead !== before ? `${ahead} passes ${ahead === 'A' ? 'B' : 'A'} at the line, ${M`${d(m.x)} [m]`} from the start, at ${M`t = ${d(m.t)} [s]`}.`
         : kind === 'line' ? `They are level at the line, ${M`${d(m.x)} [m]`} from the start, at ${M`t = ${d(m.t)} [s]`}.`
         : kind === 'time' ? `They are level at ${M`t = ${d(m.t)} [s]`}, ${M`${d(m.x)} [m]`} from the start.`
         : kind === 'overtake' ? `${ahead} overtakes ${ahead === 'A' ? 'B' : 'A'} at ${M`t = ${d(m.t)} [s]`}, ${M`${d(m.x)} [m]`} from the start.`
