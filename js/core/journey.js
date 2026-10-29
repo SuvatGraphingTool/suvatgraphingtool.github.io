@@ -74,6 +74,8 @@ const VULGAR = { '1/2': '½', '1/3': '⅓', '2/3': '⅔', '1/4': '¼', '3/4': '�
 
 /** A coefficient times a symbol, exactly, as a student writes it: 2V, ⅓t₂,
     (10V)/3 — never 0.3333t₂. With no symbol, the number alone. */
+/** A number written after a coefficient is bracketed (½(20)); a symbol is not (½t₂). */
+const wrapN = (x) => (/^[\d.−-]/.test(x) ? `(${x})` : x);
 function term(mag, sym, nice = false) {
   // A decimal that ends within three places is written as one (93.3, 62.5);
   // one that recurs is written as the fraction it is (10/3, not 3.333). A
@@ -284,10 +286,10 @@ export function solveStages(spec) {
             const say = Math.abs(c - 1) < EPS ? 'same' : 'ratio';
             if (t[y] && !t[x]) {
               t[x] = mul(t[y], m); done = true;
-              rows.push({ f: M`${aS(x)} = ${term(K, aS(y))} -> ${tS(x)} = ${term(m, tS(y), true)}`, s: M`${term(m, '')} * ${fb(t[y])}`, r: M`${tS(x)} = ${fs(t[x])}${u_(t[x], '[s]')}`, say });
+              rows.push({ f: M`${aS(x)} = ${term(K, aS(y))} -> ${tS(x)} = ${term(m, tS(y), true)}`, s: M`${term(m, wrapN(fb(t[y])), true)}`, r: M`${tS(x)} = ${fs(t[x])}${u_(t[x], '[s]')}`, say });
             } else if (t[x] && !t[y]) {
               t[y] = mul(t[x], 1 / m); done = true;
-              rows.push({ f: M`${aS(x)} = ${term(K, aS(y))} -> ${tS(y)} = ${term(1 / m, tS(x), true)}`, s: M`${term(1 / m, '')} * ${fb(t[x])}`, r: M`${tS(y)} = ${fs(t[y])}${u_(t[y], '[s]')}`, say });
+              rows.push({ f: M`${aS(x)} = ${term(K, aS(y))} -> ${tS(y)} = ${term(1 / m, tS(x), true)}`, s: M`${term(1 / m, wrapN(fb(t[x])), true)}`, r: M`${tS(y)} = ${fs(t[y])}${u_(t[y], '[s]')}`, say });
             }
           }
         }

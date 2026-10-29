@@ -244,9 +244,14 @@ export function render(canvas, cam, o) {
   const latest = hit[hit.length - 1];
   if (latest) {
     const leaves = latest.t < f.tMax - 1e-9;
-    L.add(`${ORD[latest.k - 1] || `${latest.k}th`} impact, ${T`t = ${sf(latest.t)} [s]`}: hits at ${T`${sf(latest.vIn)} [m s^-1]`}`
-      + (leaves ? `, leaves at ${T`${sf(latest.vOut)} [m s^-1]`}` : ''), cx - R, groundY + 36,
-      { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
+    const head = `${ORD[latest.k - 1] || `${latest.k}th`} impact, ${T`t = ${sf(latest.t)} [s]`}`;
+    const speeds = `hits at ${T`${sf(latest.vIn)} [m s^-1]`}` + (leaves ? `, leaves at ${T`${sf(latest.vOut)} [m s^-1]`}` : '');
+    // one line where there is room for it, two on a phone
+    if (w >= 520) L.add(`${head}: ${speeds}`, cx - R, groundY + 36, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
+    else {
+      L.add(head, 8, groundY + 30, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
+      L.add(speeds, 8, groundY + 48, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
+    }
   }
 
   // ── the convention, said where the signed numbers are

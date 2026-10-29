@@ -118,7 +118,9 @@ export function render(canvas, cam, o) {
     g.stroke(); g.restore();
     const dist = f.dist(t);
     // inside the graph, over its own shading: what each area is worth so far
-    L.add(`area so far, the distance gone:  A ${T`${tr(dist.A, 1)} [m]`},  B (hatched) ${T`${tr(dist.B, 1)} [m]`}`,
+    const area = `A ${T`${tr(dist.A, 1)} [m]`},  B (hatched) ${T`${tr(dist.B, 1)} [m]`}`;
+    // on a phone the words go and the two areas stay
+    L.add(w >= 560 ? `area so far, the distance gone:  ${area}` : area,
       gx0 + 10, gy1 - 16, { color: P.disp, align: 'left', pri: 7, size: 14, weight: 700, maxPush: 0 });
   }
   // a speed held for a while: where it ends, dropped to its number on the
