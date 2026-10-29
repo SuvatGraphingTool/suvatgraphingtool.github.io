@@ -65,7 +65,7 @@ export const height = {
         { k: `Height above ${below}`, v: num(r.y, 2), unit: 'm', hue: 'disp' },
         ...(f.vertical ? [] : [{ k: 'Out from the edge', v: num(r.x, 2), unit: 'm', hue: 'disp' }]),
         { k: 'Vertical velocity', v: num(v.y, 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Speed', v: num(Math.hypot(v.x, v.y), 2), unit: 'm s⁻¹', hue: 'vel' },
+        ...(f.vertical ? [] : [{ k: 'Speed', v: num(Math.hypot(v.x, v.y), 2), unit: 'm s⁻¹', hue: 'vel' }]),
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };

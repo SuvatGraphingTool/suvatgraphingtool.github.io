@@ -746,6 +746,18 @@ group('From a cliff or a tower: each paper against its mark scheme', () => {
   ok(g2.every((x) => x.series.length === 2 && x.series[0].dash && !x.series[1].dash), 'at an angle: across dashed, up solid');
 });
 
+group('Audit 4: from a cliff or a tower', () => {
+  const top = solveHeight({ place: 'cliff', h: 30, theta: 90, u: 20, g: 10, level: 20 });
+  ok(top.ok && top.level.times.length === 1 && near(top.level.times[0], 2) && /once, at the top/.test(strip(top.notes.join(' '))), 'a height equal to the top: once, at the top, never "never"');
+  const ang = solveHeight({ place: 'cliff', h: 20, theta: 30, u: 14, g: 9.8, level: 2.5 });
+  ok(ang.ok && ang.level.times.length === 1, 'the same at an angle');
+  const zero = solveHeight({ place: 'cliff', h: 30, theta: 90, u: 20, g: 10, level: 0 });
+  ok(zero.level.times.length === 1 && near(zero.level.times[0], 4) && /back at the height/.test(strip(zero.notes.join(' '))), 'level 0: back at the throw height at 4 s, not "at t = 0 on the way up"');
+  ok(!solveHeight({ place: 'cliff', h: 30, theta: 90, u: 20, g: 10 }).derived.some((x) => /on the ground/.test(strip(x))), 'a cliff into the sea never says "on the ground"');
+  const drop = solveHeight({ place: 'cliff', h: 30, theta: 30, u: 0, g: 9.8 });
+  ok(drop.ok && /dropped/.test(strip(drop.notes.join(' '))) && !/more than enough/.test(strip(drop.notes.join(' '))), 'speed 0 at an angle: a drop, said so');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

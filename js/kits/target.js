@@ -74,8 +74,9 @@ export const target = {
         { k: 'Height', v: num(r.y, 2), unit: 'm', hue: 'disp' },
         { k: 'Velocity across', v: num(v.x, 2), unit: 'm s⁻¹', hue: 'vel' },
         { k: 'Velocity up', v: num(v.y, 2), unit: 'm s⁻¹', hue: 'vel' },
+        { k: 'Speed', v: num(f.speed(t), 2), unit: 'm s⁻¹', hue: 'vel' },
       ],
-      right: [{ k: 'Time', v: num(t, 2), unit: 's' }, { k: 'Speed', v: num(f.speed(t), 2), unit: 'm s⁻¹' }],
+      right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };
   },
 

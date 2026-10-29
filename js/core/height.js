@@ -56,7 +56,9 @@ export function solveHeight(k = {}) {
 
   // the angle is what makes it vertical, never a value it did not need
   // and the height is the place itself, never a value it did not need
-  const notes = r.notes.filter((n) => !(/more than enough/.test(n) && (vertical || /launch height/.test(n))));
+  const drop = Math.hypot(f.ux, f.uy) < 1e-9;
+  const notes = r.notes.filter((n) => !(/more than enough/.test(n) && (vertical || drop || /launch height/.test(n))));
+  if (drop && !vertical) notes.unshift('At no speed the angle does nothing: it is dropped, and falls straight down.');
   const T = snap(f.tFlight), top = snap(f.apexHeight), out = snap(z(f.range)), vL = snap(Math.abs(f.vLanding));
   const lines = [];
   if (f.uy > 1e-9) lines.push(`It rises to ${M`${d(top)} [m]`} above ${Pl.below}, ${M`${d(snap(top - k.h))} [m]`} above where it was thrown from, at ${M`t = ${d(snap(f.tApex))} [s]`}.`);
@@ -68,15 +70,21 @@ export function solveHeight(k = {}) {
     const L = k.h + k.level;
     if (L < 0) return fail(`That is below ${Pl.below}: it never gets there.`);
     const a = timeAbove(f, L);
-    const times = a.crosses === 2 ? [a.t1, a.t2] : a.crosses === 1 ? [a.t2] : [];
-    level = { rel: k.level, L, times: times.map(snap) };
-    const at = `${M`${d(Math.abs(k.level))} [m]`} ${k.level >= 0 ? 'above' : 'below'} where it was thrown from`;
-    lines.push(times.length === 2 ? `It is ${at} twice: at ${M`t = ${d(level.times[0])} [s]`} on the way up and ${M`t = ${d(level.times[1])} [s]`} on the way down.`
-      : times.length === 1 ? `It is ${at} once, at ${M`t = ${d(level.times[0])} [s]`}.`
-        : `It is never ${at}.`);
+    // the very top of its path is one moment, not "never"; the throw itself
+    // (t = 0, at the throw's own height) is not a moment it comes back to
+    const atTop = f.uy > 1e-9 && Math.abs(L - f.apexHeight) <= 1e-6 * Math.max(1, Math.abs(L));
+    let times = atTop ? [f.tApex] : a.crosses === 2 ? [a.t1, a.t2] : a.crosses === 1 ? [a.t2] : [];
+    times = times.map(snap).filter((x) => x > 1e-9);
+    level = { rel: k.level, L, times, atTop };
+    const at = Math.abs(k.level) < 1e-12 ? 'back at the height it was thrown from'
+      : `${M`${d(Math.abs(k.level))} [m]`} ${k.level >= 0 ? 'above' : 'below'} where it was thrown from`;
+    lines.push(atTop ? `It is ${at} once, at the top of its path, ${M`t = ${d(times[0])} [s]`}.`
+      : times.length === 2 ? `It is ${at} twice: at ${M`t = ${d(times[0])} [s]`} on the way up and ${M`t = ${d(times[1])} [s]`} on the way down.`
+        : times.length === 1 ? `It is ${at} once, at ${M`t = ${d(times[0])} [s]`}.`
+          : `It is never ${at}.`);
   }
   notes.push(...lines);
-  const derived = [...r.derived, `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
+  const derived = [...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below where it was thrown from`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
   if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}`);
   f.place = place; f.level = level; f.vertical = vertical;
   return {
