@@ -82,10 +82,50 @@ Several sessions push to `ai` at once. Keep commits small, rebase often, keep
 edits to shared files (`js/app.js`, `js/library.js`, `js/kits/index.js`,
 `js/render/graphs.js`) minimal, and never reformat code you don't own.
 
+## How it looks (the user, 29 Oct: "it has to look really good and satisfying")
+
+The user's verdict on the library so far: un-detailed, "a bunch of BLOCKS". Correct
+physics on a flat rectangle fails. Every library scenario must look like a
+finished illustration, at least as rich as the stadium (`js/world/`) and the
+best of the hand-built scenes.
+
+- **A real background for every scene.** Sky with a gradient and soft clouds or
+  an interior with walls and light; ground with texture (grass, tarmac with
+  lane markings, rails with sleepers and ballast, sea with waves, stone with
+  courses); depth: a far layer (hills, skyline, trees) behind the action.
+  Backdrops are shared components in `js/render/backdrops.js`, chosen per
+  scenario, never a plain fill.
+- **Detailed objects, not boxes.** A car has wheels with hubs, windows, lights,
+  a body with curves and shading; a train has carriages, windows, a pantograph;
+  a person has a readable pose; a tower has stone courses and a parapet; a ball
+  has shading and a highlight. Soft shadows on the ground under things.
+  Gradients and highlights, rounded corners, consistent lighting from one side.
+- **Animation when something happens.** Wheels turn with the distance covered;
+  a landing kicks up dust or a splash; a bounce squashes the ball and rings the
+  floor; a collision flashes; brake lights come on when it slows; a catch
+  closes the hand; the moment two meet pulses. Smooth easing, nothing jerky,
+  and every effect runs off the engine's times (rule 4: the engine says WHEN,
+  the art only shows it).
+- **The teaching layer stays clean on top.** Vectors, markers, labels and
+  rulers keep the colour-is-quantity rule and the 13px floor, and stay readable
+  over the richer art (halo or backing behind text where needed).
+- Build these as reusable pieces in `js/render/` (figures, backdrops, effects),
+  listed in `design/components.md`, so every scenario and every future one
+  gets them.
+
+**The UI/UX critic.** Every scenario gets a second critic, separate from the
+physics one, whose only job is how it looks and feels. It takes screenshots at
+laptop and phone widths, at the start, mid-motion and at each event, and
+compares them side by side with the hand-built scenes and the stadium. It
+fails anything that looks like blocks, a flat background, an object with no
+detail, a missing or jerky event animation, cramped or overlapping labels,
+or a layout that feels unfinished. It reports what to draw better, not just
+what is wrong. No scenario ships until it passes.
+
 ## Usage (the user's instruction, 29 Oct: do the same work with less usage, even if it takes longer)
 
 - At most two library sessions work at once; the rest wait their turn. The lead or the watchdog says when.
-- Critic and audit subagents run on `model: "sonnet"`, one at a time. Give each a tight brief: the diff, the paper reference and what to try, so it doesn't re-explore the whole app.
-- Check with `read_page`, `get_page_text` and JS measurement. Take a screenshot only when nothing else can show the problem, at `scale` 0.5 or lower.
+- Critic and audit subagents run on Opus (the default model, no `model` override), one at a time. Give each a tight brief: the diff, the paper reference and what to try, so it doesn't re-explore the whole app. (Changed 29 Oct: the user wants Opus back for quality.)
+- Check numbers and wording with `read_page`, `get_page_text` and JS measurement. Judge how it LOOKS from screenshots: that is what they are for (see "How it looks").
 - At most three critic rounds. After round 3, only wrong physics, false claims and broken rules (notation, colour, 13px) block shipping; everything else goes to the audit.
 - Don't re-read large files you've already read. Read only the lines you need. Keep reports to two lines.
