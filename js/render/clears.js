@@ -200,7 +200,9 @@ export function render(canvas, cam, o) {
   }
   L.add('O', X(0) - 13, oy + 16, { color: P.ink, align: 'right', pri: 8, size: 15, weight: 700 });
   // ── the lengths, in the letter and in metres
-  const both = (c, m) => T`${kaLine(c)} = ${sig3(m)} [m]`;
+  // in the paper's letter (a, or d for a launch given by its flight time)
+  const inLetter = (c) => (f.letter ? kaLine(c).replace(/a/g, f.letter) : kaLine(c));
+  const both = (c, m) => T`${inLetter(c)} = ${sig3(m)} [m]`;
   const dy = oy + 40;
   // the two lengths along the ground: placed first and held under their own ruler
   dim(g, L, P, X(0), dy, X(W.x), dy, both(f.P, W.x), { dy: 18, pri: 10, maxPush: 20 });
@@ -208,7 +210,7 @@ export function render(canvas, cam, o) {
   keepOff(L, [{ x: X(0), y: dy }, { x: X(xLand), y: dy }].flatMap((p, i, a) => i ? Array.from({ length: 24 }, (_, j) => ({ x: a[0].x + (p.x - a[0].x) * (j + 1) / 24, y: dy })) : [p]), 5);
   // the wall's height down its far side, clear of the rising path
   const hx = X(W.x) + wPx / 2 + 12;
-  dim(g, L, P, hx, oy, hx, Y(W.H), both(f.Q, W.H), { align: 'left', dx: 14, pri: 8 });
+  dim(g, L, P, hx, oy, hx, Y(W.H), f.heightMetres ? T`${sig3(W.H)} [m]` : both(f.Q, W.H), { align: 'left', dx: 14, pri: 8 });
   keepOff(L, [{ x: hx, y: oy - 8 }, { x: hx, y: (oy + Y(W.H)) / 2 }, { x: hx, y: Y(W.H) }], 5);
 
   // ── the path: all of it faintly, flown strongly; the top ringed

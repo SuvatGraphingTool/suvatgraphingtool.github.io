@@ -82,7 +82,7 @@ this library: *covered* names the one of the twelve that does it.
 | 46 | Edexcel | IAL WME01 | Jun 2022 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Velocity known at t = 1 and t = 4; speed at t = 3.5 | – | **built**: `two-moments` (a = 2i − 4j; v = 4i − 6j; 7.21 m s⁻¹) |
 | 47 | Edexcel | IAL WME01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | 100 m race, finish together; Ajaz's time; Beth's T; difference in finishing speed | – | **built**: `two-on-a-road` (27.5 s, T = 3.915, speeds differ by 0.085) |
 | 48 | OCR A | H240/03 | Jun 2019 | 7 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Cyclist from rest at 1.5 m/s² for 4 s, then steady; distance in 10 s | – | **built**: `stage-by-stage` (12 + 36 = 48 m) |
-| 49 | OCR A | H240/03 | Jun 2019 | 8 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Flight 2.4 s, horizontal velocity 5d/3, just clears a wall at d; speed 16 over the wall | 9.8 | **candidate**: symbolic (the wall and the landing in terms of a letter); `over-the-wall` takes numbers, and a launch fixed by two points is not yet a mode |
+| 49 | OCR A | H240/03 | Jun 2019 | 8 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Flight 2.4 s, horizontal velocity 5d/3, just clears a wall at d; speed 16 over the wall | 9.8 | **built** → `in-the-air-over-a-wall` |
 | 50 | OCR A | H240/03 | Jun 2022 | 9 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | A overtakes B (12 m/s) at 20 m/s, slows to 8 m/s over 30 s; when B re-overtakes | – | **built**: `two-on-a-road` (B overtakes at t = 45 s) |
 | 51 | OCR A | H240/03 | Jun 2022 | 13 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | Just clears a wall of height a/2 at x = a, lands at 4a; angle; a from a speed of 54.6 m/s; max height | 9.8 | **built**: `wall-in-a-letter` (tan θ = 2/3, 33.7°; a = 70.2; H = 2a/3 = 46.8 m) |
 | 52 | OCR A | H240/03 | Jun 2023 | 8 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | a = 3i−2j, v = 6i at t = 4; speed at t = 0 | – | **built**: `vectors-ij` (u = −6i + 8j, speed 10) |
@@ -403,6 +403,27 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `in-the-air-over-a-wall` — In the air for a time, over a wall
+
+**Papers.** OCR H240/03 Jun 2019 Q8 (projected from level ground, lands after
+2.4 s; horizontal velocity (5/3)d m s⁻¹; it just clears a wall d from O and
+passes over it at 16 m s⁻¹: lands 4d away, vertical component 11.76 m s⁻¹,
+wall 5.292 m high, d = 8.93 m).
+
+**Why the twelve cannot.** They take numbers for the launch; here the launch
+is fixed by a time of flight and a velocity in a letter, the wall's height
+falls out without the letter, and the letter is found last from a speed
+part-way through the flight. `wall-in-a-letter` fixes its launch by two
+points in a letter, not by a time.
+
+**How it is solved.** js/core/flighttime.js: x = Ut across with U = kd; up,
+s = 0 at the landing gives the vertical component gT/2; the time to the wall
+is m/k, so its height is a number; v² = U² + v_y² over the wall gives U, and
+U = kd gives d. The twelve's `flight` then draws it.
+
+**The stage, graphs.** The wall-in-a-letter's (js/render/clears.js), labelled
+in d, with the wall's height in metres since it has no d in it.
 
 ### `back-past-the-start` — Back past the start
 

@@ -1415,6 +1415,25 @@ group('Back past the start: OCR 4728 M1 Jun 2014 Q1', () => {
   ok(!solveBounce({ start: 'down', h: 5, U: 3.5, y: 5, T: 0.3, g: 9.8 }).ok, 'back at 5 m only 0.3 s after the bounce needs a faster rebound than the impact: refused');
 });
 
+group('In the air for a time, over a wall: OCR H240/03 Jun 2019 Q8', async () => {});
+{
+  const { solveFlightTime, flightTimeWorking } = await import('../js/core/flighttime.js');
+  const s = solveFlightTime({ T: 2.4, kx: 5 / 3, V: 16, g: 9.8 });
+  ok(s.ok && near(s.R, 4, 1e-9), '(a) it lands 4d from O', s.reason);
+  ok(near(s.V0, 11.76, 1e-9), '(b) the vertical component is 11.76 m s⁻¹');
+  ok(near(s.H, 5.292, 1e-9) && near(s.tw, 0.6, 1e-9), '(c) the wall is 5.292 m high, reached at 0.6 s whatever d is');
+  ok(near(s.d, 8.93, 0.005), '(d) d = 8.93 m', s.d);
+  ok(near(s.f.pos(s.tw).y, s.H, 1e-6) && near(s.f.pos(s.tw).x, s.d, 1e-6) && near(s.f.tMax, 2.4, 1e-6), 'the drawn flight passes the top of the wall and lands at 2.4 s');
+  const b = solveFlightTime({ T: 2.4, kx: 5 / 3, d: s.d, g: 9.8 });
+  ok(b.ok && near(b.Vw, 16, 1e-6), 'given d instead, the speed over the wall is 16 m s⁻¹');
+  ok(flightTimeWorking(s).length === 3, 'the working: the landing and u_y, the wall, d');
+  { const w3 = solveFlightTime({ T: 2.4, kx: 5 / 3, m: 3, V: 16, g: 9.8 });
+    ok(w3.ok && w3.vyw < 0 && /\(−5\.88\)/.test(w3.fixRows[1].s.replace(/<[^>]+>/g, '')), 'a wall past the top: the falling v_y is bracketed before it is squared', w3.fixRows && w3.fixRows[1].s.replace(/<[^>]+>/g, '')); }
+  ok(!solveFlightTime({ T: 2.4, kx: 5 / 3, V: 5, g: 9.8 }).ok, 'a speed over the wall below its vertical part there is refused');
+  ok(!solveFlightTime({ T: 2.4, kx: 5 / 3, m: 5, V: 16, g: 9.8 }).ok, 'a wall beyond the landing is refused');
+  ok(!solveFlightTime({ T: 2.4, kx: 5 / 3, V: 16, d: 9, g: 9.8 }).ok, 'the speed and d together are refused: one fixes the other');
+}
+
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 
