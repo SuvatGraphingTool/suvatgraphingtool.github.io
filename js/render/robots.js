@@ -1,85 +1,379 @@
 // robots.js — the stage for two robots on a square floor, seen from above at
-// one scale both ways: the floor tiled every few metres, its corners A, B, C,
-// D (i along AB, j along AD), its centre O.
+// one scale both ways: the floor ABCD (i along AB, j along AD), its centre O.
 //
-// Each robot is drawn from above — a rounded body with two wheels, turned the
-// way it moves — with its letter: R in the quantity's hue, S in the
-// second-object stone; its track faintly to the floor's edge and strongly so
-// far. The vector from S to R now is drawn in the marker colour with its
-// length; where they are closest is ringed on both, with the time and the
-// distance.
+// THE PLACE. A tiled arena floor on a warehouse's concrete, filling the
+// stage: tiles with grout (the grout is the floor's grid, one tile every few
+// metres), a little variation tile to tile and the sheen of the lights on
+// them; a low skirting wall round the edge throwing a shadow inward, a
+// bollard at each corner A–D, a brass centre mark at O, and the floor's side
+// as a dimension line under AB. Concrete outside, with saw-cut joints, a
+// painted line and scuffs.
+//
+// THE ROBOTS. Each is drawn from above, turned the way it moves: two treads
+// (their bars running with the distance it has covered), a metal chassis, a
+// domed shell in its own colour (R the displacement hue its track is drawn
+// in, S the second-object magenta) with its letter on it, a sensor eye at the
+// front and two headlamps lighting the floor ahead, and a shadow under it.
+// Its velocity is an arrow in the velocity hue for both (rule 2). Its track
+// faintly to the floor's edge and strongly so far.
+//
+// THE MOMENT. The vector from S to R now is drawn in the marker colour with
+// its length. At the engine's time of closest approach (f.tc) a ring pulses
+// at each robot and the gap between them draws itself in from S to R, and it
+// stays, with the time and the distance said once. A robot reaching the
+// floor's edge (f.leaves) bumps the skirting.
 //
 // Everything drawn is read from js/core/robots.js (rule 4).
 
-import { dust, splash, pulse, flash, ageOf } from './effects.js';
-import { floorFromAbove } from './scenery.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha } from './util.js';
+import { pulse, ageOf } from './effects.js';
+import { env, rng, softShadow } from './scenery.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep } from './util.js';
 import { T, num } from '../notation.js';
 
-const tr = (x, p = 3) => num(x, p, { trim: true });
-const HUD = 250;
+const HUD = 250, HUD_H = 290, TAU = Math.PI * 2;
+/** Three significant figures, trailing zeros dropped (50 → 50, 9.1526 → 9.15). */
+const s3 = (x) => {
+  if (!isFinite(x) || Math.abs(x) < 1e-12) return num(0, 0);
+  return num(x, Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x)))), { trim: true });
+};
+const fontOf = () => { try { return getComputedStyle(document.documentElement).getPropertyValue('--font').trim() || 'system-ui, sans-serif'; } catch { return 'system-ui, sans-serif'; } };
+const ease = (u) => 1 - (1 - u) ** 3;
 
-/** A robot from above at (x, y), facing angle a (radians, screen), size s. */
-export function robotTop(g, x, y, s, a, color, P) {
-  g.save(); g.translate(x, y); g.rotate(a);
-  g.fillStyle = P.strong; for (const sy of [-1, 1]) g.fillRect(-s * 0.35, sy * s * 0.55 - s * 0.12, s * 0.7, s * 0.24);
-  g.fillStyle = P.card; g.strokeStyle = color; g.lineWidth = 2.2;
-  g.beginPath(); g.roundRect(-s * 0.5, -s * 0.45, s, s * 0.9, s * 0.2); g.fill(); g.stroke();
-  g.fillStyle = color; g.beginPath(); g.arc(s * 0.28, 0, s * 0.12, 0, Math.PI * 2); g.fill();
+/** Two #rrggbb colours mixed, u of the way from a to b. */
+function mix(a, b, u) {
+  const p = (c) => { const m = /^#([0-9a-f]{6})$/i.exec(String(c).trim()); return m ? [16, 8, 0].map((s) => (parseInt(m[1], 16) >> s) & 255) : null; };
+  const A = p(a), B = p(b); if (!A || !B) return a;
+  return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * u)).join(',')})`;
+}
+
+/* ── the place ─────────────────────────────────────────────────────────── */
+
+/** Warehouse concrete over the whole stage: a cool grey slab with grain,
+    saw-cut joints and a few scuffs. */
+function concrete(g, w, h, E) {
+  const R = rng(73), night = E.night;
+  const gr = g.createLinearGradient(0, 0, w, h);
+  gr.addColorStop(0, night ? '#3d383b' : '#bdb6af'); gr.addColorStop(1, night ? '#2f2b2e' : '#aaa29c');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 7; i++) {
+    const x = R() * w, y = R() * h, rr = 60 + R() * 140, s = g.createRadialGradient(x, y, 0, x, y, rr);
+    const c = R() < 0.5 ? '0,0,0' : '255,255,255';
+    s.addColorStop(0, `rgba(${c},${night ? 0.07 : 0.08})`); s.addColorStop(1, `rgba(${c},0)`);
+    g.fillStyle = s; g.fillRect(x - rr, y - rr, rr * 2, rr * 2);
+  }
+  for (let i = 0; i < (w * h) / 260; i++) {
+    g.fillStyle = R() < 0.5 ? `rgba(0,0,0,${0.06 + R() * 0.1})` : `rgba(255,255,255,${night ? 0.03 + R() * 0.05 : 0.08 + R() * 0.12})`;
+    g.fillRect(R() * w, R() * h, 1 + R() * 1.4, 1 + R() * 1.4);
+  }
+  // saw-cut joints: a dark cut with a lit lip
+  const J = 150;
+  for (let x = J * 0.6; x < w; x += J) { line(g, x, 0, x, h, night ? 'rgba(0,0,0,0.45)' : 'rgba(70,60,55,0.35)', 1.4); line(g, x + 1.4, 0, x + 1.4, h, 'rgba(255,255,255,0.08)', 1); }
+  for (let y = J * 0.45; y < h; y += J) { line(g, 0, y, w, y, night ? 'rgba(0,0,0,0.45)' : 'rgba(70,60,55,0.35)', 1.4); line(g, 0, y + 1.4, w, y + 1.4, 'rgba(255,255,255,0.08)', 1); }
+  // tyre scuffs from forklifts long gone
+  g.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    const x = R() * w, y = R() * h, a = R() * TAU, l = 60 + R() * 120;
+    g.strokeStyle = `rgba(0,0,0,${night ? 0.045 : 0.035})`; g.lineWidth = 4 + R() * 3;
+    g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a + 0.4) * l * 0.6, y + Math.sin(a + 0.4) * l * 0.6, x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+  }
+}
+function line(g, x0, y0, x1, y1, color, width) { g.strokeStyle = color; g.lineWidth = width; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); }
+
+/** The tiled floor in the box (x, y, S × S px), tiles `tile` px from its
+    bottom-left corner A: grout, tile-to-tile variation, a bevel, the sheen. */
+function tiles(g, x, y, S, tile, E) {
+  const R = rng(19), night = E.night;
+  g.save(); g.beginPath(); g.rect(x, y, S, S); g.clip();
+  g.fillStyle = night ? '#1f1a1d' : '#9e928a'; g.fillRect(x, y, S, S);          // the grout
+  const gap = Math.max(1.5, Math.min(3, tile * 0.05)), n = Math.ceil(S / tile - 1e-6);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const tx = x + i * tile + gap / 2, ty = y + S - (j + 1) * tile + gap / 2, tw = tile - gap;
+    const v = (R() - 0.5) * 0.08;
+    const base = night ? [84, 76, 80] : [226, 217, 207];
+    const c = base.map((q) => Math.round(clamp(q * (1 + v), 0, 255)));
+    const tg = g.createLinearGradient(tx, ty, tx + tw, ty + tw);
+    tg.addColorStop(0, `rgb(${c.map((q) => Math.min(255, q + 10)).join(',')})`); tg.addColorStop(1, `rgb(${c.join(',')})`);
+    g.fillStyle = tg; g.fillRect(tx, ty, tw, tw);
+    // the bevel: lit edge top-left, shaded edge bottom-right
+    g.fillStyle = night ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.55)'; g.fillRect(tx, ty, tw, 1.2); g.fillRect(tx, ty, 1.2, tw);
+    g.fillStyle = night ? 'rgba(0,0,0,0.30)' : 'rgba(90,75,65,0.22)'; g.fillRect(tx, ty + tw - 1.2, tw, 1.2); g.fillRect(tx + tw - 1.2, ty, 1.2, tw);
+    // a fleck or two in the glaze
+    for (let f = 0; f < 3; f++) { g.fillStyle = `rgba(0,0,0,${0.05 + R() * 0.06})`; g.fillRect(tx + R() * tw, ty + R() * tw, 1.4, 1.4); }
+  }
+  // the sheen of the lights: two soft pools and a long diagonal glint
+  for (const [u, v, rr] of [[0.3, 0.28, 0.55], [0.74, 0.7, 0.4]]) {
+    const cx = x + S * u, cy = y + S * v, s = g.createRadialGradient(cx, cy, 0, cx, cy, S * rr);
+    s.addColorStop(0, `rgba(255,248,236,${night ? 0.16 : 0.32})`); s.addColorStop(1, 'rgba(255,248,236,0)');
+    g.fillStyle = s; g.fillRect(x, y, S, S);
+  }
+  const gl = g.createLinearGradient(x, y, x + S, y + S);
+  gl.addColorStop(0.36, 'rgba(255,255,255,0)'); gl.addColorStop(0.42, `rgba(255,255,255,${night ? 0.05 : 0.14})`); gl.addColorStop(0.5, 'rgba(255,255,255,0)');
+  g.fillStyle = gl; g.fillRect(x, y, S, S);
+  // the skirting's shadow on the tiles: deepest under the top and left walls (the light is above left)
+  for (const [x0, y0, x1, y1, a] of [[x, y, x, y + 20, 0.5], [x, y, x + 20, y, 0.45], [x, y + S, x, y + S - 8, 0.2], [x + S, y, x + S - 8, y, 0.2]]) {
+    const s = g.createLinearGradient(x0, y0, x1, y1);
+    s.addColorStop(0, `rgba(0,0,0,${night ? a : a * 0.6})`); s.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = s; g.fillRect(x, y, S, S);
+  }
   g.restore();
 }
 
+/** The skirting wall round the floor, `t` px thick, seen from above, with
+    its shadow cast out onto the concrete below and right. */
+function skirting(g, x, y, S, t, E) {
+  const night = E.night;
+  g.save();
+  g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 10; g.shadowOffsetX = 4; g.shadowOffsetY = 5;
+  g.fillStyle = night ? '#5a5157' : '#e9e2da';
+  g.beginPath(); g.rect(x - t, y - t, S + 2 * t, S + 2 * t); g.rect(x, y, S, S); g.fill('evenodd');
+  g.restore();
+  const top = g.createLinearGradient(x - t, y - t, x + S + t, y + S + t);
+  top.addColorStop(0, night ? '#776d73' : '#f7f2ec'); top.addColorStop(1, night ? '#4c444a' : '#d6cdc3');
+  g.fillStyle = top; g.beginPath(); g.rect(x - t, y - t, S + 2 * t, S + 2 * t); g.rect(x, y, S, S); g.fill('evenodd');
+  g.strokeStyle = night ? 'rgba(0,0,0,0.5)' : 'rgba(80,65,55,0.45)'; g.lineWidth = 1;
+  g.strokeRect(x - t + 0.5, y - t + 0.5, S + 2 * t - 1, S + 2 * t - 1); g.strokeRect(x - 0.5, y - 0.5, S + 1, S + 1);
+  // a painted safety line on the concrete, a hand's width out
+  g.strokeStyle = night ? 'rgba(196,170,110,0.45)' : 'rgba(170,140,70,0.6)'; g.lineWidth = 3;
+  g.strokeRect(x - t - 9, y - t - 9, S + 2 * t + 18, S + 2 * t + 18);
+}
+
+/** A bollard from above at a corner: a shadow, a dark base ring, a domed cap with a reflective band. */
+function bollard(g, x, y, r) {
+  softShadow(g, x + r * 0.5, y + r * 0.6, r * 1.6, r * 1.2, 0.9);
+  g.save();
+  g.fillStyle = '#2a2427'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+  const cap = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r * 0.86);
+  cap.addColorStop(0, '#f4ead2'); cap.addColorStop(0.55, '#c9b07a'); cap.addColorStop(1, '#8e7746');
+  g.fillStyle = cap; g.beginPath(); g.arc(x, y, r * 0.84, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(40,30,25,0.6)'; g.lineWidth = 1.6; g.beginPath(); g.arc(x, y, r * 0.55, 0, TAU); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,0.75)'; g.beginPath(); g.arc(x - r * 0.3, y - r * 0.32, r * 0.18, 0, TAU); g.fill();
+  g.restore();
+}
+
+/** The centre mark at O: a brass disc set in the tiles, with a cross. */
+function centreMark(g, x, y, r) {
+  g.save();
+  g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.arc(x + 1, y + 1.5, r + 1, 0, TAU); g.fill();
+  const b = g.createRadialGradient(x - r * 0.4, y - r * 0.4, 0, x, y, r);
+  b.addColorStop(0, '#f1dfae'); b.addColorStop(0.6, '#b8975a'); b.addColorStop(1, '#7d6235');
+  g.fillStyle = b; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(60,40,20,0.8)'; g.lineWidth = 1.4;
+  g.beginPath(); g.moveTo(x - r * 0.7, y); g.lineTo(x + r * 0.7, y); g.moveTo(x, y - r * 0.7); g.lineTo(x, y + r * 0.7); g.stroke();
+  g.restore();
+}
+
+/* ── the robot ─────────────────────────────────────────────────────────── */
+
+/** A robot from above at (x, y), facing angle a (radians, screen), s px
+    across: treads whose bars run with `phase` (px travelled), a chassis, a
+    dome in `color` with its letter, a sensor eye, headlamps, a shadow. */
+export function robotTop(g, x, y, s, a, color, P, { letter = null, phase = 0, lamps = true } = {}) {
+  softShadow(g, x + s * 0.12, y + s * 0.18, s * 0.72, s * 0.6, 0.85);
+  g.save(); g.translate(x, y); g.rotate(a);
+  // the headlamps' light on the floor ahead
+  if (lamps) {
+    const bl = g.createRadialGradient(s * 0.45, 0, 0, s * 0.45, 0, s * 1.5);
+    bl.addColorStop(0, 'rgba(255,244,214,0.42)'); bl.addColorStop(1, 'rgba(255,244,214,0)');
+    g.fillStyle = bl; g.beginPath(); g.moveTo(s * 0.45, -s * 0.2); g.lineTo(s * 1.9, -s * 0.72); g.quadraticCurveTo(s * 2.1, 0, s * 1.9, s * 0.72); g.lineTo(s * 0.45, s * 0.2); g.closePath(); g.fill();
+  }
+  // the treads, their bars running with the distance covered
+  const tl = s * 0.96, tw = s * 0.24, bar = s * 0.12;
+  for (const sy of [-1, 1]) {
+    const ty = sy * s * 0.36 - tw / 2;
+    g.fillStyle = '#18151a'; g.beginPath(); g.roundRect(-tl / 2, ty, tl, tw, tw * 0.45); g.fill();
+    g.save(); g.beginPath(); g.roundRect(-tl / 2, ty, tl, tw, tw * 0.45); g.clip();
+    g.fillStyle = '#4a454b';
+    const off = ((phase % bar) + bar) % bar;
+    for (let bx = -tl / 2 - bar + off; bx < tl / 2; bx += bar) g.fillRect(bx, ty + 1.5, bar * 0.45, tw - 3);
+    g.restore();
+  }
+  // the chassis
+  const ch = g.createLinearGradient(0, -s * 0.3, 0, s * 0.3);
+  ch.addColorStop(0, '#a7a2a4'); ch.addColorStop(0.5, '#7b7678'); ch.addColorStop(1, '#5a5558');
+  g.fillStyle = ch; g.beginPath(); g.roundRect(-s * 0.42, -s * 0.27, s * 0.84, s * 0.54, s * 0.12); g.fill();
+  g.strokeStyle = 'rgba(20,16,18,0.7)'; g.lineWidth = 1.2; g.stroke();
+  // headlamps at the front corners, a tail light at the back
+  g.fillStyle = '#fff6dc';
+  for (const sy of [-1, 1]) { g.beginPath(); g.arc(s * 0.38, sy * s * 0.18, s * 0.05, 0, TAU); g.fill(); }
+  g.fillStyle = '#7a2a2a'; g.fillRect(-s * 0.43, -s * 0.08, s * 0.04, s * 0.16);
+  // the dome, lit from above left
+  const dr = s * 0.3, dm = g.createRadialGradient(-dr * 0.35, -dr * 0.4, dr * 0.1, 0, 0, dr);
+  dm.addColorStop(0, mix(color, '#ffffff', 0.55)); dm.addColorStop(0.55, color); dm.addColorStop(1, mix(color, '#000000', 0.35));
+  g.fillStyle = dm; g.beginPath(); g.arc(-s * 0.02, 0, dr, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1.2; g.stroke();
+  // the sensor eye: a dark visor at the front of the dome, a glowing lens in it
+  g.fillStyle = '#141216'; g.beginPath(); g.ellipse(dr * 0.78, 0, s * 0.07, s * 0.16, 0, 0, TAU); g.fill();
+  const ln = g.createRadialGradient(dr * 0.8, 0, 0, dr * 0.8, 0, s * 0.07);
+  ln.addColorStop(0, '#ffffff'); ln.addColorStop(0.5, '#ffe7b0'); ln.addColorStop(1, 'rgba(255,231,176,0)');
+  g.fillStyle = ln; g.beginPath(); g.arc(dr * 0.8, 0, s * 0.07, 0, TAU); g.fill();
+  g.restore();
+  // the letter, upright whichever way the robot faces
+  if (letter) {
+    g.save(); g.font = `800 ${Math.max(13, Math.round(s * 0.36))}px ${fontOf()}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const lx = x - Math.cos(a) * s * 0.06, ly = y - Math.sin(a) * s * 0.06;
+    g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,0.5)'; g.strokeText(letter, lx, ly + 0.5);
+    g.fillStyle = '#ffffff'; g.fillText(letter, lx, ly + 0.5); g.restore();
+  }
+}
+
+/* ── the stage ─────────────────────────────────────────────────────────── */
+
 export function render(canvas, cam, o) {
-  const { traj: f, t: tRaw, fired = true } = o;
+  const { traj: f, t: tRaw, show = {}, fired = true } = o;
   if (!f || f.kind !== 'robots') return null;
   const { ctx: g, w, h } = fitCanvas(canvas);
-  const P = palette();
-  const L = labels();
+  const P = palette(), E = env();
+  const L = labels(), held = [];
+  const reserve = (b) => { held.push(b); L.reserve(b); };
+  const free = (b) => b.x >= 4 && b.y >= 4 && b.x + b.w <= w - 4 && b.y + b.h <= h - 4
+    && !held.some((q) => b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y);
+  const textW = (s, size = 14) => { g.save(); g.font = `700 ${size}px ${fontOf()}`; const m = g.measureText(s).width; g.restore(); return m; };
+  // a free spot for a label block tw × hh px near (x, y): tried first along
+  // `dir` (radians, screen), then turning away from it either way, nearest first
+  const place = (x, y, tw, hh, radii, dir = -Math.PI / 2) => {
+    for (const d of radii) for (const da of [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6, -1.6, 2.0, -2.0, 2.5, -2.5, Math.PI]) {
+      const ux = Math.cos(dir + da), uy = Math.sin(dir + da), al = ux < -0.35 ? 'right' : ux > 0.35 ? 'left' : 'center';
+      const ax = x + ux * d, ay = y + uy * d, bx = al === 'left' ? ax : al === 'right' ? ax - tw : ax - tw / 2;
+      if (free({ x: bx - 8, y: ay - hh / 2 - 2, w: tw + 16, h: hh + 4 })) return { ax, ay, al };
+    }
+    return null;
+  };
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  const half = f.side / 2;
+  const half = f.side / 2, phone = w < 520;
 
-  // ── the floor, square, centred on O
-  const left = w < 520 ? 16 : HUD + 30, right = w < 520 ? w - 16 : w - 150, top = 40, bottom = h - 40;   // clear of the readouts both sides
-  const k = Math.min((right - left) / (f.side * 1.16), (bottom - top) / (f.side * 1.16));
+  // ── the floor, square, centred on O, clear of the readouts
+  const left = phone ? 16 : HUD + 30, right = phone ? w - 16 : w - 60, top = phone ? 108 : 56, bottom = h - (phone ? 30 : 34);
+  const k = Math.min((right - left) / (f.side * 1.18), (bottom - top) / (f.side * 1.18));
   const cx = (left + right) / 2, cy = (top + bottom) / 2;
-  const X = (x) => cx + x * k, Y = (y) => cy - y * k;
-  floorFromAbove(g, X(-half), Y(half), f.side * k, f.side * k, Math.max(12, (f.side / 10) * k));
-  const step = niceStep(f.side, 10);
-  for (let v = -half + step; v < half - 1e-9; v += step) {
-    stroke(g, [{ x: X(v), y: Y(-half) }, { x: X(v), y: Y(half) }], { color: P.grid, width: 1 });
-    stroke(g, [{ x: X(-half), y: Y(v) }, { x: X(half), y: Y(v) }], { color: P.grid, width: 1 });
-  }
-  g.save(); g.strokeStyle = P.strong; g.lineWidth = 2; g.strokeRect(X(-half), Y(half), f.side * k, f.side * k); g.restore();
-  for (const [n, x, y, ax, ay] of [['A', -half, -half, -1, 1], ['B', half, -half, 1, 1], ['C', half, half, 1, -1], ['D', -half, half, -1, -1]])
-    L.add(n, X(x) + ax * 12, Y(y) + ay * 12, { color: P.ink, align: 'center', pri: 7, size: 15, weight: 700, bg: false });
-  dot(g, X(0), Y(0), 3, { fill: P.ink, stroke: P.ink, width: 1 });
-  L.add('O', X(0) - 10, Y(0) + 12, { color: P.ink, align: 'right', pri: 6, size: 14, weight: 700, bg: false });
-  L.add(T`${tr(f.side)} [m]`, (X(-half) + X(half)) / 2, Y(-half) + 26, { color: P.ink, align: 'center', pri: 6, size: 13, weight: 700, bg: false });
+  const X = (x) => cx + x * k, Y = (y) => cy - y * k, PX = (p) => ({ x: X(p.x), y: Y(p.y) });
+  const fx = X(-half), fy = Y(half), S = f.side * k;
+  if (phone) reserve({ x: 0, y: 0, w, h: 100 });
+  else { reserve({ x: 0, y: 0, w: HUD, h: HUD_H }); reserve({ x: w - 160, y: 0, w: 160, h: 64 }); }
 
-  // ── each track, and the robot where it is
-  const each = [[f.posA, f.A.v, P.vel, 'R'], [f.posB, f.B.v, P.second, 'S']];
-  for (const [pos, v, c] of each) {
-    const a = pos(0), b = pos(f.tMax), now = pos(t);
-    stroke(g, [{ x: X(a.x), y: Y(a.y) }, { x: X(b.x), y: Y(b.y) }], { color: c, width: 1.6, alpha: 0.3 });
-    stroke(g, [{ x: X(a.x), y: Y(a.y) }, { x: X(now.x), y: Y(now.y) }], { color: c, width: 2.8 });
+  concrete(g, w, h, E);
+  let step = niceStep(f.side, 10); if (step * k < 16) step *= 2; else if (step * k > 64) step /= 2;
+  const wall = clamp(S * 0.018, 5, 9);
+  skirting(g, fx, fy, S, wall, E);
+  tiles(g, fx, fy, S, step * k, E);
+  const br = clamp(S * 0.026, 8, 12);
+  for (const [n, x, y, ax, ay] of [['A', -half, -half, -1, 1], ['B', half, -half, 1, 1], ['C', half, half, 1, -1], ['D', -half, half, -1, -1]]) {
+    const px = X(x) + ax * wall * 0.5, py = Y(y) + ay * wall * 0.5;
+    bollard(g, px, py, br);
+    reserve({ x: px - br - 2, y: py - br - 2, w: 2 * br + 4, h: 2 * br + 4 });
+    L.add(n, px + ax * (br + 7), py + ay * (br + 6), { color: P.ink, align: 'center', pri: 7, size: 16, weight: 800 });
   }
-  // ── the vector from S to R now, and the closest moment
-  const r = f.posA(t), s = f.posB(t);
-  if (Math.hypot(r.x - s.x, r.y - s.y) * k > 16) {
-    arrow(g, X(s.x), Y(s.y), X(r.x), Y(r.y), { color: P.mark, width: 1.6, head: 9, alpha: 0.85 });
-    L.add(T`${tr(f.gap(t), 2)} [m]`, (X(r.x) + X(s.x)) / 2 + 8, (Y(r.y) + Y(s.y)) / 2 - 10, { color: P.mark, align: 'left', pri: 6, size: 13, weight: 700 });
+  centreMark(g, X(0), Y(0), 7);
+  reserve({ x: X(0) - 9, y: Y(0) - 9, w: 18, h: 18 });
+  L.add('O', X(0) - 12, Y(0) + 14, { color: P.ink, align: 'right', pri: 6, size: 15, weight: 800 });
+  // the floor's side, as a dimension line under AB
+  {
+    const ry = Y(-half) + wall + 18, x0 = X(-half), x1 = X(half), lab = T`${s3(f.side)} [m]`, tw = textW(lab, 13) + 14;
+    g.save(); g.strokeStyle = P.strong; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(x0, ry); g.lineTo((x0 + x1 - tw) / 2, ry); g.moveTo((x0 + x1 + tw) / 2, ry); g.lineTo(x1, ry);
+    for (const x of [x0, x1]) { g.moveTo(x, ry - 6); g.lineTo(x, ry + 6); }
+    g.stroke(); g.restore();
+    L.add(lab, (x0 + x1) / 2, ry, { color: P.ink, align: 'center', pri: 6, size: 13, weight: 700 });
   }
-  if (!f.same && f.tc != null && f.tc <= f.tMax + 1e-9 && t >= f.tc - 1e-9) {
-    const a = f.posA(f.tc), b = f.posB(f.tc);
-    { const { age, life } = ageOf(t, f.tc, f.tMax); pulse(g, (X(a.x) + X(b.x)) / 2, (Y(a.y) + Y(b.y)) / 2, age, life, P.mark, { radius: 46 }); }
-    for (const q of [a, b]) dot(g, X(q.x), Y(q.y), 9, { stroke: P.mark, width: 2.2 });
-    stroke(g, [{ x: X(a.x), y: Y(a.y) }, { x: X(b.x), y: Y(b.y) }], { color: P.mark, width: 1.4 });
-    L.add(T`"closest," t = ${tr(f.tc)} [s], ${tr(f.dmin)} [m]`, (X(a.x) + X(b.x)) / 2 + 14, (Y(a.y) + Y(b.y)) / 2 + 18, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });
+
+  // ── each track: faintly to where it ends, strongly so far
+  const casing = E.night ? 'rgba(12,10,12,0.55)' : 'rgba(255,255,255,0.75)';
+  const each = [{ pos: f.posA, v: f.A.v, c: P.disp, n: 'R', leaves: f.leaves?.R }, { pos: f.posB, v: f.B.v, c: P.second, n: 'S', leaves: f.leaves?.S }];
+  for (const r of each) {
+    const a = PX(r.pos(0)), b = PX(r.pos(f.tMax)), now = PX(r.pos(t));
+    stroke(g, [a, b], { color: r.c, width: 2, alpha: 0.42 });
+    stroke(g, [a, now], { color: casing, width: 6 });
+    stroke(g, [a, now], { color: r.c, width: 3.2 });
+    for (let i = 0; i <= 24; i++) { const u = i / 24; reserve({ x: a.x + (b.x - a.x) * u - 6, y: a.y + (b.y - a.y) * u - 6, w: 12, h: 12 }); }
   }
-  for (const [pos, v, c, n] of each) {
-    const q = pos(t), still = Math.hypot(v.x, v.y) < 1e-9;
-    robotTop(g, X(q.x), Y(q.y), Math.max(16, Math.min(26, 2 * k)), still ? 0 : Math.atan2(-v.y, v.x), c, P);
-    L.add(n, X(q.x) - 16, Y(q.y) - 16, { color: c, align: 'right', pri: 9, size: 15, weight: 700 });
+
+  // ── where the robots are, how big, which way
+  const size = phone ? 38 : clamp(2.6 * k, 40, 52);
+  // where each robot is drawn: at the engine's point — except that two robots
+  // closer than a body's width are drawn side by side, each pushed apart
+  // square to the way they pass, so neither hides the other (a drawing
+  // offset of under half a body; the tracks, the gap and its numbers stay
+  // at the engine's points)
+  let pr = PX(f.posA(t)), ps = PX(f.posB(t));
+  {
+    const m = size * 0.82, rv = { x: f.A.v.x - f.B.v.x, y: -(f.A.v.y - f.B.v.y) }, rl = Math.hypot(rv.x, rv.y);
+    const dx = pr.x - ps.x, dy = pr.y - ps.y;
+    if (Math.hypot(dx, dy) < m) {
+      let nx, ny;
+      if (rl > 1e-9) { nx = -rv.y / rl; ny = rv.x / rl; } else { const l = Math.hypot(dx, dy) || 1; nx = l > 1e-6 ? dx / l : 0; ny = l > 1e-6 ? dy / l : 1; }
+      const c = dx * nx + dy * ny, sl = dx * -ny + dy * nx, sg = c < 0 ? -1 : 1;
+      const want = sg * Math.sqrt(Math.max(c * c, m * m - sl * sl)), push = (want - c) / 2;
+      pr = { x: pr.x + nx * push, y: pr.y + ny * push }; ps = { x: ps.x - nx * push, y: ps.y - ny * push };
+    }
+  }
+  const drawn = { R: pr, S: ps };
+  for (const q of [pr, ps]) reserve({ x: q.x - size * 0.55, y: q.y - size * 0.55, w: size * 1.1, h: size * 1.1 });
+  const along = (a0, a1, n, r) => { for (let i = 0; i <= n; i++) { const v = i / n; reserve({ x: a0.x + (a1.x - a0.x) * v - r, y: a0.y + (a1.y - a0.y) * v - r, w: 2 * r, h: 2 * r }); } };
+  // each one's velocity arrow, from its nose (laid out now so labels keep off it)
+  const vMax = Math.max(Math.hypot(f.A.v.x, f.A.v.y), Math.hypot(f.B.v.x, f.B.v.y), 1e-9);
+  const vArrows = show.velocity === false ? [] : each.map((r) => {
+    const q = drawn[r.n], sp = Math.hypot(r.v.x, r.v.y); if (sp < 1e-9) return null;
+    const ang = Math.atan2(-r.v.y, r.v.x), len = size * 0.5 + 16 + (sp / vMax) * (phone ? 34 : 46);
+    const a = { x: q.x + Math.cos(ang) * size * 0.45, y: q.y + Math.sin(ang) * size * 0.45 }, b = { x: q.x + Math.cos(ang) * len, y: q.y + Math.sin(ang) * len };
+    along(a, b, 6, 7); return [a, b];
+  }).filter(Boolean);
+  // the vector from S to R now, rim to rim — unless it says what the closest moment already says
+  const closest = !f.same && f.tc != null && f.tc <= f.tMax + 1e-9 && t >= f.tc - 1e-9;
+  let gapA = null;
+  {
+    const dx = pr.x - ps.x, dy = pr.y - ps.y, dl = Math.hypot(dx, dy), gap = f.gap(t);
+    if (dl > size * 1.3 && !(closest && s3(gap) === s3(f.dmin))) {
+      const ux = dx / dl, uy = dy / dl;
+      gapA = { gap, ux, uy, a0: { x: ps.x + ux * size * 0.5, y: ps.y + uy * size * 0.5 }, a1: { x: pr.x - ux * size * 0.55, y: pr.y - uy * size * 0.55 } };
+      along(gapA.a0, gapA.a1, 8, 6);
+    }
+  }
+
+  // ── the closest moment: a pulse, and the gap drawing itself in, S to R
+  if (closest) {
+    const a = PX(f.posA(f.tc)), b = PX(f.posB(f.tc));
+    const { age, life } = ageOf(t, f.tc, f.tMax);
+    const atEnd = Math.abs(f.tc - f.tMax) < 1e-6 * Math.max(1, f.tMax);
+    const u = atEnd ? 1 : ease(clamp(age / (life * 0.6), 0, 1));
+    const ex = b.x + (a.x - b.x) * u, ey = b.y + (a.y - b.y) * u;
+    for (const q of [a, b]) pulse(g, q.x, q.y, age, life, P.mark, { radius: 40 });
+    stroke(g, [b, { x: ex, y: ey }], { color: casing, width: 7 });
+    stroke(g, [b, { x: ex, y: ey }], { color: P.mark, width: 3.4 });
+    for (const q of u >= 1 ? [a, b] : [b]) {
+      g.save(); g.fillStyle = P.mark; g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.beginPath(); g.arc(q.x, q.y, 5.5, 0, TAU); g.fill(); g.stroke(); g.restore();
+    }
+    for (let i = 0; i <= 10; i++) { const v = i / 10; reserve({ x: b.x + (a.x - b.x) * v - 7, y: b.y + (a.y - b.y) * v - 7, w: 14, h: 14 }); }
+    if (u > 0.5) {
+      const l1 = 'closest at ' + T`t = ${s3(f.tc)} [s]`, l2 = T`${s3(f.dmin)} [m]` + ' apart', tw = Math.max(textW(l1), textW(l2)) + 12;
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dl = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      // first choice: square off the gap, on the side away from the floor's centre
+      let dir = Math.atan2(a.x - b.x, -(a.y - b.y));
+      if (Math.cos(dir) * (mx - X(0)) + Math.sin(dir) * (my - Y(0)) < 0) dir += Math.PI;
+      let best = place(mx, my, tw, 44, [34, 54, 80, 110, 150], dir);
+      best ??= { ax: mx, ay: my + 40, al: 'center' };
+      L.add(l1, best.ax, best.ay - 10, { color: P.mark, align: best.al, pri: 9, size: 14, weight: 700, maxPush: 20 });
+      L.add(l2, best.ax, best.ay + 10, { color: P.mark, align: best.al, pri: 8, size: 14, weight: 700, maxPush: 20 });
+      held.push({ x: (best.al === 'left' ? best.ax : best.al === 'right' ? best.ax - tw : best.ax - tw / 2) - 6, y: best.ay - 22, w: tw + 12, h: 44 });   // kept clear for this label alone: the label system is not told
+    }
+  }
+
+  // ── the vector from S to R now, with its length
+  if (gapA) {
+    const { a0, a1, ux, uy } = gapA;
+    arrow(g, a0.x, a0.y, a1.x, a1.y, { color: P.mark, width: 2.4, head: 10 });
+    const lab = T`${s3(gapA.gap)} [m]`, tw = textW(lab) + 10;
+    const best = place((a0.x + a1.x) / 2, (a0.y + a1.y) / 2, tw, 24, [20, 34, 52, 74], Math.atan2(ux, -uy));
+    if (best) L.add(lab, best.ax, best.ay, { color: P.mark, align: best.al, pri: 6, size: 14, weight: 700, maxPush: 20 });
+  }
+
+  // ── a bump where a robot reaches the floor's edge; each one's velocity
+  for (const r of each) if (r.leaves != null && r.leaves <= f.tMax + 1e-9 && t >= r.leaves - 1e-9) {
+    const { age, life } = ageOf(t, r.leaves, f.tMax);
+    const e = PX(r.pos(r.leaves)); pulse(g, e.x, e.y, age, life, P.strong, { radius: 30 });
+  }
+  for (const [a, b] of vArrows) arrow(g, a.x, a.y, b.x, b.y, { color: P.vel, width: 2.8, head: 11 });
+  for (const r of each) {
+    const q = drawn[r.n], now = PX(r.pos(t)), p0 = PX(r.pos(0)), still = Math.hypot(r.v.x, r.v.y) < 1e-9;
+    robotTop(g, q.x, q.y, size, still ? 0 : Math.atan2(-r.v.y, r.v.x), r.c, P, { letter: r.n, phase: Math.hypot(now.x - p0.x, now.y - p0.y) });
   }
   L.draw(g, w, h);
   return null;
