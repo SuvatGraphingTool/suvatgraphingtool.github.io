@@ -937,6 +937,23 @@ group('Over the wall, in a letter (H240/03 J22 Q13)', () => {
   ok(!KITS.clears.solve({ g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 50, a: 70 }).ok, 'the speed and a together are refused');
 });
 
+group('Stage by stage (MM1B Jan13 Q1, H240/03 J19 Q7, H556/01 J19 Q19a)', () => {
+  const K = KITS.chain;
+  const r = K.solve({ stages: [{ u: 20, v: 12, s: 640 }, { s: 1820, t: 70 }] });
+  ok(r.ok && Math.abs(r.S[0].t - 40) < 1e-9 && Math.abs(r.S[0].a + 0.2) < 1e-9, 'stage 1: 40 s, deceleration 0.2 (MS)', r.reason);
+  ok(Math.abs(r.S[1].a - 0.4) < 1e-9 && Math.abs(r.S[1].v - 40) < 1e-9 && Math.abs(r.avg - 2460 / 110) < 1e-9, 'stage 2: 0.4 m s⁻², 40 m s⁻¹; average 22.4 (MS)');
+  const cy = K.solve({ stages: [{ u: 0, a: 1.5, t: 4 }, { a: 0, t: 6 }] });
+  ok(cy.ok && Math.abs(cy.Stot - 48) < 1e-9, 'the cyclist: 48 m in 10 s');
+  const br = K.solve({ stages: [{ u: 18, a: 0, t: 0.5 }, { v: 0 }], S: 38 });
+  ok(br.ok && Math.abs(br.S[1].a + 324 / 58) < 1e-9, 'reaction then braking, stopped in 38 m: 5.59 m s⁻² (from the whole distance)');
+  const back = K.solve({ stages: [{ u: 0, a: 2, s: 25 }, { u: 10, a: -1, t: 4 }] });
+  ok(back.ok && back.S[0].v === 10, 'a stage that ends where the next is given to start');
+  ok(!K.solve({ stages: [{ u: 20, v: 12, s: 640, t: 30 }] }).ok, 'four numbers that disagree are refused');
+  ok(!K.solve({ stages: [{ u: 5, v: 11.4, t: 4 }, { a: 0 }] }).ok, 'a stage short of a number says so');
+  ok(!K.solve({ stages: [{ u: 0, a: 1, t: 4 }, { a: 0 }], T: 3 }).ok, 'a whole time shorter than the stages is refused');
+  const f = r.f; ok(Math.abs(f.pos(40) - 640) < 1e-9 && Math.abs(f.pos(110) - 2460) < 1e-9 && Math.abs(f.vel(40) - 12) < 1e-9, 'the motion passes the join and ends at 2460 m');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

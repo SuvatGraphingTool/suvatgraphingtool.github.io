@@ -334,6 +334,17 @@ tan θ = RQ⁄(P(R − P)) with no a in it; the speed or a fixes the other, then
 greatest height (in a and in metres) and the time. The motion is `flight`.
 `ka(c)` (exported) writes c·a as notation source. Used by: `wall-in-a-letter`.
 
+### Stage by stage — `js/core/chain.js`
+
+`solveChain({ look, stages: [{ s, u, v, a, t }], S, T })` — up to four stages
+along one line, each solved by the twelve's `solve` (js/core/suvat.js) from any
+three of its five, the numbers typed preferred over those carried in. Speeds
+carry across each join both ways (a blank start is the last stage's end, a
+blank end is the next stage's start); a whole distance `S` or time `T` fills
+the one stage missing it; a stage given four or five is checked. Then the
+whole: distance, time, average speed. `chainWorking` writes each stage as the
+solver did. Used by: `stage-by-stage`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -378,6 +389,15 @@ Sky and level ground (`sky`, `groundStrip` from heights.js), O and the angle,
 "just clears"), the greatest height; each length a dimension line labelled in
 the letter and in metres at once (a = 70.2 m). Kit `clears`. Used by:
 `wall-in-a-letter`.
+
+### Stage by stage, side on — `js/render/chain.js`
+
+The whole distance at one scale on the figure's own surface (`surface`,
+`post`, `drawFigure` from figures.js): a numbered post where each stage
+begins, each stage's distance and time as a dimension line under the road,
+what it does over each (speeding up, slowing down, steady, with a), the speed
+at each post once passed, and the car, cyclist or train where it is now with
+its velocity (dashed). Kit `chain`. Used by: `stage-by-stage`.
 
 
 ### A parachute jump — `js/render/jump.js`

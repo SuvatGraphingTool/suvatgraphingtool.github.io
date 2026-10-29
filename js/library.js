@@ -369,4 +369,28 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: the angle from the two points, the speed or a from the other, the greatest height and the time in the air.',
     } },
+  { id: 'stage-by-stage', group: 'library', kit: 'chain',
+    name: 'Stage by stage along a line',
+    sub: 'slows down over one distance, then speeds up over the next — each stage from what the paper gives',
+    note: 'A car, a cyclist or a train along a straight line in stages, one after another, each with its own constant acceleration. Each stage is solved from any three of the five, with the speed one stage ends at carried on as the speed the next begins at; a stage short of a number can take it from the whole distance or the whole time. Then the whole: how far, how long, and the average speed.',
+    params: { look: 'car', stages: [{ u: 20, v: 12, s: 640 }, { s: 1820, t: 70 }] },
+    place: 'Side on: a straight race track, a post where each stage begins',
+    sources: [
+      { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '1' },
+      { board: 'OCR A', paper: 'H240/03', session: 'Jun 2019', q: '7' },
+      { board: 'OCR A Physics', paper: 'H556/01', session: 'Jun 2019', q: '19(a)' },
+    ],
+    tags: ['stages', 'one after another', 'decelerates', 'then accelerates', 'average speed', 'race track', 'car', 'cyclist', 'train',
+           'reaction time', 'thinking distance', 'braking', 'suvat', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers’ model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['A particle on a straight line', 'the car, cyclist or train has no length; it is where its point is.'],
+        ['Constant acceleration in each stage', 'it changes from one value to the next in an instant at each join; real driving eases from one to the next.'],
+        ['No gap between stages', 'the speed one stage ends at is exactly the speed the next begins at.'],
+      ],
+      caveat: 'What the engine did compute is above: each stage by the five equations, the joins, and the whole distance, time and average speed.',
+    } },
 ];

@@ -40,7 +40,7 @@ this library: *covered* names the one of the twelve that does it.
 | 4 | AQA | MM1B | Jun 2012 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | Car braking from 20 m/s, at 10 m/s after 75 m; find a, stopping time (then force parts) | 9.8 | **covered** by `road` |
 | 5 | AQA | MM1B | Jun 2012 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | a = 0.1i−0.2j from origin with u = −i+3j; when due east; speed when heading south-east | – | **built**: `vectors-ij` (due east at 30 s; south-east at 20 s, 1.41 m s⁻¹) |
 | 6 | AQA | MM1B | Jun 2012 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202012%20QP%20-%20M1%20AQA.pdf) | 22.4 m/s launch, apex after 2 s; angle, max height, range, time above 5 m, min speed | 9.8 | **covered**: time-above, once θ is worked from the 2 s to the top (sin θ = 0.875); no box takes a time to the top |
-| 7 | AQA | MM1B | Jan 2013 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Decelerate 20→12 m/s over 640 m, then accelerate 1820 m in 70 s; times, a, final speed, average speed | – | **candidate**: several stages along a line, one after another |
+| 7 | AQA | MM1B | Jan 2013 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Decelerate 20→12 m/s over 640 m, then accelerate 1820 m in 70 s; times, a, final speed, average speed | – | **built**: `stage-by-stage` (40 s; −0.2; 0.4; 40 m s⁻¹; 22.4 m s⁻¹) |
 | 8 | AQA | MM1B | Jan 2013 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Starts at 13.6i, u = 6i+2.4j, a = −0.8i+0.1j; distance from O when moving north-west | – | **built**: `vectors-ij` (north-west at 12 s, 45.6 m from O) |
 | 9 | AQA | MM1B | Jan 2013 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202013%20QP%20-%20M1%20AQA.PDF) | Golf ball hits a wall 38.4 m away at 3 m height after 2.4 s; find V and angle | 9.8 | **built**: `over-the-wall` (uₓ = 16, V = 20.6, α = 39.1°) |
 | 10 | AQA | 7357/2 | Jun 2018 | 16 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202018%20QP.pdf) | 35° launch lands 10 m below start; 1.5 s to apex; find u and flight time | 9.81 | **built**: `from-a-height`, with the time to the top (u = 25.6, 3.57 s) |
@@ -81,7 +81,7 @@ this library: *covered* names the one of the twelve that does it.
 | 45 | Edexcel | IAL WME01 | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Passes P, Q 10 s later at 28 m/s, PQ = 220; a; distance in the 5th second | – | **covered** by `road` |
 | 46 | Edexcel | IAL WME01 | Jun 2022 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | Velocity known at t = 1 and t = 4; speed at t = 3.5 | – | **candidate**: vectors in i and j: position, velocity and acceleration as vectors; "due east", "north-west", bearings, collisions |
 | 47 | Edexcel | IAL WME01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202022%20QP.pdf) | 100 m race, finish together; Ajaz's time; Beth's T; difference in finishing speed | – | **built**: `two-on-a-road` (27.5 s, T = 3.915, speeds differ by 0.085) |
-| 48 | OCR A | H240/03 | Jun 2019 | 7 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Cyclist from rest at 1.5 m/s² for 4 s, then steady; distance in 10 s | – | **candidate**: several stages along a line, one after another |
+| 48 | OCR A | H240/03 | Jun 2019 | 7 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Cyclist from rest at 1.5 m/s² for 4 s, then steady; distance in 10 s | – | **built**: `stage-by-stage` (12 + 36 = 48 m) |
 | 49 | OCR A | H240/03 | Jun 2019 | 8 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Flight 2.4 s, horizontal velocity 5d/3, just clears a wall at d; speed 16 over the wall | 9.8 | **candidate**: symbolic (the wall and the landing in terms of a letter); `over-the-wall` takes numbers, and a launch fixed by two points is not yet a mode |
 | 50 | OCR A | H240/03 | Jun 2022 | 9 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | A overtakes B (12 m/s) at 20 m/s, slows to 8 m/s over 30 s; when B re-overtakes | – | **built**: `two-on-a-road` (B overtakes at t = 45 s) |
 | 51 | OCR A | H240/03 | Jun 2022 | 13 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | Just clears a wall of height a/2 at x = a, lands at 4a; angle; a from a speed of 54.6 m/s; max height | 9.8 | **built**: `wall-in-a-letter` (tan θ = 2/3, 33.7°; a = 70.2; H = 2a/3 = 46.8 m) |
@@ -103,7 +103,7 @@ this library: *covered* names the one of the twelve that does it.
 | 67 | CIE | 9709/43 | May/Jun 2017 | 3 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s17_qp_43.pdf) | Train to 25 m/s in T s, braking at twice that rate, 180 s, 3300 m; braking distance | – | **built**: `journey-stages` (T = 64, 400 m braking) |
 | 68 | CIE | 9709/43 | May/Jun 2017 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s17_qp_43.pdf) | Up at 12 m/s; a second particle from the same point 2 s later at 20 m/s; when and where they collide | 10 | **built**: `pair-vertical` |
 | 69 | AQA Physics | 7408/1 | Jun 2019 | 04.3 | [paper](https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2019/june/AQA-74081-QP-JUN19.PDF) | Catapult releases a rock horizontally at 18 m/s from 7.5 m; range | 9.81 | **covered** by `platform` |
-| 70 | OCR A Physics | H556/01 | Jun 2019 | 19(a) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/OCR-A/Paper-1/QP/June%202019%20QP.pdf) | 18 m/s, 0.50 s reaction, stops in 38 m; deceleration | – | **candidate**: several stages along a line, one after another |
+| 70 | OCR A Physics | H556/01 | Jun 2019 | 19(a) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/OCR-A/Paper-1/QP/June%202019%20QP.pdf) | 18 m/s, 0.50 s reaction, stops in 38 m; deceleration | – | **built**: `stage-by-stage` (9 m thinking; 29 m braking; 5.59 m s⁻²) |
 | 71 | CIE Physics | 9702/22 | Oct/Nov 2018 | 1 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Physics%20(9702)/9702_w18_qp_22.pdf) | Golf ball 6.0 m/s with vertical component 4.8, apex at 0.49 s; component-time sketches; max height | 9.81 | **candidate**: component–time sketches of a projectile; the graphs show them, but the question gives a component, not a speed |
 | 72 | Edexcel Physics | 9PH0/01 | Jun 2018 | 18(b) | [paper](https://pmt.physicsandmathstutor.com/download/Physics/A-level/Past-Papers/Edexcel/Paper-1/QP/June%202018%20QP.pdf) | Ball bearing rolls off a bench through two foil strips 0.50 m apart, 0.14 s; speed; is a strip 8 cm lower hit at its centre? | 9.81 | **built**: `off-the-bench` (3.57 m s⁻¹; drops 0.0961 m, so 0.0161 m below the centre) |
 | 73 | Edexcel | 6677/01 M1 | Jun 2015 | 8 | [paper](see) | 4 kg on a rough incline with a pulley to a hanging 0.5 kg | 9.8 | **out**: connected particles, friction on an incline |
@@ -610,3 +610,26 @@ the letter and in metres at once.
 
 **What the student varies.** Where the wall is, how high, and how far beyond it
 it lands (each a multiple of a); then the speed, or a; g.
+
+### `stage-by-stage` — Stage by stage along a line
+
+**Papers.** AQA MM1B Jan 2013 Q1 (a car slows uniformly from 20 to 12 m s⁻¹
+over 640 m, then speeds up uniformly over 1820 m in 70 s: 40 s; a deceleration
+of 0.2 m s⁻²; 0.4 m s⁻²; 40 m s⁻¹; an average of 22.4 m s⁻¹ over 2460 m).
+OCR A H240/03 Jun 2019 Q7 (a cyclist from rest at 1.5 m s⁻² for 4 s, then
+steady: 48 m in 10 s). OCR A Physics H556/01 Jun 2019 Q19(a) (18 m s⁻¹, a
+0.50 s reaction, stopped in 38 m in all: 5.59 m s⁻²).
+
+**Why it is built.** Each stage is a SUVAT question of its own, but the next
+one starts where the last ended, and a stage may be short of a number the
+whole distance or time supplies. `journey-stages` is rest to rest in three set
+stages; `there-and-back` is a graph of given speeds. Neither solves a stage
+from whatever three it is given.
+
+**The stage.** Side on at one scale: the race track (or road, or rails), a
+numbered post where each stage begins, each stage's distance and time under
+it, what it does over each, the speeds at the posts, the vehicle moving.
+
+**What the student varies.** Car, cyclist or train; up to four stages, any
+three of s, u, v, a, t each (a start left blank carries the last end); the
+whole distance or time.
