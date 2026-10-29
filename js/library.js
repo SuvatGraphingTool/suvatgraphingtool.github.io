@@ -505,4 +505,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: the greatest height, when the gap closes and where, each in U and g.',
     } },
+  { id: 'two-trains', group: 'library', kit: 'twotrains',
+    name: 'Two trains, one journey',
+    sub: 'two trains leave a station together and stop together at the next — when are they at the same speed?',
+    note: 'Two trains on parallel tracks leave one station together from rest and come to rest together at the next, each in its own stages. One train’s journey fixes the distance between the stations; the other’s hidden acceleration or speed comes from covering that same distance in the same time — the areas under their speed–time graphs are equal. Then: when are they moving at the same speed, and how far apart are they at a given moment?',
+    params: { A: { stages: [{ kind: 'up', t: 30, a: 2 / 3 }, { kind: 'hold', t: 120 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] }, ask: { t: 96 } },
+    place: 'Side on: two parallel tracks between two stations',
+    sources: [
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2014', q: '8' },
+    ],
+    tags: ['two trains', 'trains', 'stations', 'parallel tracks', 'same speed', 'same distance', 'speed-time graph', 'area', 'how far apart',
+           'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Each train a particle', 'a train has no length here: "how far apart" is between two points, and each is "at" a station when its point is.'],
+        ['Constant accelerations, changed in an instant', 'each stage has one constant acceleration, switching at once to the next.'],
+        ['Straight, level, parallel tracks', 'the two run side by side the whole way, the same distance between the stations.'],
+      ],
+      caveat: 'What the engine did compute is above: each journey, the hidden number from the equal distances, when the speeds are equal, and the gap at the time asked.',
+    } },
 ];

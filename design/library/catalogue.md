@@ -726,3 +726,20 @@ letters, the collision ringed with τ and the height in letters.
 
 **What the student varies.** Q's speed as a multiple of U; Q at P's top or a
 multiple of U⁄g later; numbers for U and g, optionally.
+
+### `two-trains` — Two trains, one journey
+
+**Papers.** Edexcel IAL WME01 Jan 2014 Q8 (A: ⅔ m s⁻² for 30 s, steady 120 s,
+slows over 30 s; B: speeds up for 90 s and slows for 90 s; both 180 s station
+to station: 3000 m, so B's acceleration is 10⁄27 m s⁻²; the same speed at
+t = 54 and 126; 73.3 m apart at t = 96).
+
+**Why it is built.** `two-on-a-road` finds when two are level; this asks when
+their speeds are equal and how far apart they are, with one train's hidden
+acceleration fixed by the other's distance. `journey-stages` is one train.
+
+**The stage.** Side on: two parallel tracks between two stations, both trains,
+the gap between them, the moments of equal speed.
+
+**What the student varies.** Up to three stages for each train (what it does,
+for how long, its rate, its end speed); a time to ask the gap at.

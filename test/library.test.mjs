@@ -1050,6 +1050,16 @@ group('Two thrown up, in letters (WME01 Jan20 Q3)', () => {
   ok(!K.solve({ k: 1, when: 'after', c: 2 }).ok, 'P back at O as Q is projected: refused');
 });
 
+group('Two trains, one journey (WME01 Jan14 Q8)', () => {
+  const K = KITS.twotrains;
+  const r = K.solve({ A: { stages: [{ kind: 'up', t: 30, a: 2 / 3 }, { kind: 'hold', t: 120 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] }, ask: { t: 96 } });
+  ok(r.ok && Math.abs(r.B.J.a[1] - 10 / 27) < 1e-12, 'B accelerates at 10/27 m s⁻² (MS 0.370)', r.reason);
+  ok(r.eq.join() === '54,126' && Math.abs(r.gap - 220 / 3) < 1e-9, 'same speed at 54 and 126 s; 73.3 m apart at 96 s (MS)');
+  ok(!K.solve({ A: { stages: [{ kind: 'up', t: 30, a: 1 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 20, a: 1 }, { kind: 'down', t: 20, v: 0 }] } }).ok, 'B fully given but a different distance: refused');
+  ok(!K.solve({ A: { stages: [{ kind: 'up', t: 30, a: 1 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] } }).ok, 'arriving at different times: refused');
+  ok(!K.solve({ A: { stages: [{ kind: 'up', t: 30, a: 2 / 3 }, { kind: 'hold', t: 120 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] }, ask: { t: 400 } }).ok, 'a time after they arrive is refused');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

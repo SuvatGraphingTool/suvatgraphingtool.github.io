@@ -394,6 +394,15 @@ Both have a = −g, so the ½gτ² terms cancel and the meeting is linear in τ.
 With numbers for U and g, every answer in metres and seconds too. Used by:
 `two-up-letters`.
 
+### Two trains, one journey — `js/core/twotrains.js`
+
+`solveTwoTrains({ A: spec, B: spec, ask: { t } })` — each train is the
+journey engine (`solveStages`); when B's stages leave one number open, it is
+solved again with A's distance (the same two stations), and the two must
+arrive together. Equal speeds: in every stretch where each is in one stage,
+v_A − v_B is linear in t — one root per stretch. The gap at a time is the
+difference of the two `askAt` distances. Used by: `two-trains`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -487,6 +496,15 @@ each with its velocity (solid); P's greatest height H marked with its value in
 letters; where they collide ringed with τ and the height in letters. The HUD
 and graphs read in U⁄g, U²⁄g and U when no numbers are given. Kit `letters`.
 Used by: `two-up-letters`.
+
+### Two tracks between two stations — `js/render/twotrains.js`
+
+Side on at one scale: two `rails`, `station(g, L, x, top, bottom, name, P)`
+(exported) at each end spanning both — a platform under a canopy and its name;
+each `train` with its front at its position, A near and B far, velocities
+dashed; the gap between their fronts as a dimension line; the same-speed
+moments and the asked gap written as they pass. Kit `twotrains`. Used by:
+`two-trains`.
 
 
 ### A parachute jump — `js/render/jump.js`

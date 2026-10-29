@@ -20,5 +20,6 @@ import { snapshots } from './snapshots.js';
 import { xtgraph } from './xtgraph.js';
 import { robots } from './robots.js';
 import { letters } from './letters.js';
+import { twotrains } from './twotrains.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains };
