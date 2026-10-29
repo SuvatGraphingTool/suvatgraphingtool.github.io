@@ -407,7 +407,7 @@ difference of the two `askAt` distances. Used by: `two-trains`.
 
 `solvePosts({ gaps: [{ s, t }], u, a, look })` — from the first post to each
 later one, s = ut + ½at² in the same u and a: two give a pair of simultaneous
-equations (solved by elimination, written out), a third is checked; either u
+equations (solved by substitution, written out), a third is checked; either u
 or a may be given instead. Each post's speed is v = u + at. The motion is in
 the chain shape (`kind: 'chain'`, stretches named P to Q…) so the
 stage-by-stage road draws it, its posts named. Used by: `past-the-posts`.

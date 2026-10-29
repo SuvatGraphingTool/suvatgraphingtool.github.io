@@ -530,7 +530,7 @@ export const LIBRARY = [
   { id: 'past-the-posts', group: 'library', kit: 'posts',
     name: 'Past the posts, one acceleration',
     sub: 'a car covers one distance in one time, then another in the next — what was its speed and acceleration?',
-    note: 'A car with a constant acceleration passes a row of posts, the distance and the time between each pair given, but neither its speed at the first post nor its acceleration. Measured from the first post, each later post gives one equation in the same two unknowns — a pair of simultaneous equations, solved by elimination. A third stretch, if given, must agree.',
+    note: 'A car with a constant acceleration passes a row of posts, the distance and the time between each pair given, but neither its speed at the first post nor its acceleration. Measured from the first post, each later post gives one equation in the same two unknowns — a pair of simultaneous equations, solved by substituting one into the other. A third stretch, if given, must agree.',
     params: { look: 'car', gaps: [{ s: 76, t: 4 }, { s: 219, t: 6 }] },
     place: 'Side on: a straight road with posts P, Q and R',
     sources: [

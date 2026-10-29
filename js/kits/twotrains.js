@@ -9,14 +9,16 @@ import { M, num } from '../notation.js';
 
 const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const N = 3;
+// what each "It" box shows before it is touched: the paper's own shapes
+const DEF = { A: ['up', 'hold', 'down'], B: ['up', 'down', ''] };
 const KIND = [{ v: '', label: '—' }, { v: 'up', label: 'speeds up' }, { v: 'hold', label: 'holds its speed' }, { v: 'down', label: 'slows down' }];
 const stageRow = (n, i) => ({
   title: `Train ${n}, stage ${i}`,
   fields: [
-    { key: `${n}${i}.kind`, type: 'choice', label: 'It', default: n === 'A' ? ['up', 'hold', 'down'][i - 1] : ['up', 'down', ''][i - 1], hint: '', options: KIND },
+    { key: `${n}${i}.kind`, type: 'choice', label: 'It', default: DEF[n][i - 1], hint: '', options: KIND },
     { key: `${n}${i}.t`, label: 'For (s)', aria: `Train ${n}, stage ${i}: how long (s)`, placeholder: '—', hint: '' },
-    { key: `${n}${i}.a`, label: 'Rate (m s⁻²)', aria: `Train ${n}, stage ${i}: the rate it speeds up or slows down (m s⁻²)`, placeholder: '—', hint: 'A size; blank to find it.' },
-    { key: `${n}${i}.v`, label: 'Ends at (m s⁻¹)', aria: `Train ${n}, stage ${i}: the speed it ends at (m s⁻¹)`, placeholder: '—', hint: i === 1 ? 'Blank to find it.' : 'The last stage, blank: it comes to rest.' },
+    { key: `${n}${i}.a`, label: 'Rate (m s⁻²)', aria: `Train ${n}, stage ${i}: the rate it speeds up or slows down (m s⁻²)`, placeholder: '—', hint: n === 'A' ? 'A size. A is given in full.' : 'A size; blank to find it from A\u2019s distance.' },
+    { key: `${n}${i}.v`, label: 'Ends at (m s⁻¹)', aria: `Train ${n}, stage ${i}: the speed it ends at (m s⁻¹)`, placeholder: '—', hint: 'The last stage, blank: it comes to rest.' },
   ],
 });
 
@@ -36,8 +38,14 @@ export const twotrains = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
   read(v) {
-    const spec = (n) => ({ stages: Array.from({ length: N }, (_, i) => ({ kind: v[`${n}${i + 1}.kind`], t: v[`${n}${i + 1}.t`], a: v[`${n}${i + 1}.a`], v: v[`${n}${i + 1}.v`] }))
-      .filter((s) => s.kind).map((s, i, all) => (i === all.length - 1 && s.kind === 'down' && s.v == null ? { ...s, v: 0 } : s)) });
+    // every row as typed, blanks included: the engine refuses a gap rather than shifting stages up
+    const spec = (n) => {
+      const rows = Array.from({ length: N }, (_, i) => ({ kind: v[`${n}${i + 1}.kind`] ?? DEF[n][i], t: v[`${n}${i + 1}.t`], a: v[`${n}${i + 1}.a`], v: v[`${n}${i + 1}.v`] }));
+      let last = -1; rows.forEach((s, i) => { if (s.t != null || s.a != null || s.v != null || (s.kind && v[`${n}${i + 1}.kind`] != null)) last = i; });
+      const used = rows.slice(0, last + 1);
+      if (used.length && used[used.length - 1].kind === 'down' && used[used.length - 1].v == null) used[used.length - 1] = { ...used[used.length - 1], v: 0 };
+      return { stages: used };
+    };
     return { A: spec('A'), B: spec('B'), ask: { t: v.askT } };
   },
   solve: solveTwoTrains,

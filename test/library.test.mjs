@@ -1065,6 +1065,8 @@ group('Two trains, one journey (WME01 Jan14 Q8)', () => {
   const same = K.solve({ A: PA, B: PA, ask: { t: 96 } });
   ok(same.ok && same.spans.length && /whole time/.test(K.ending(same).title), 'identical trains: the same speed the whole time, not never');
   ok(!K.solve({ A: PA, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'hold', t: 90 }] } }).ok, 'a train that does not come to rest at the station is refused');
+  const gapped = K.solve(K.read({ 'A1.kind': 'up', 'A1.t': 30, 'A1.a': 2 / 3, 'A2.kind': '', 'A3.kind': 'down', 'A3.t': 30, 'B1.kind': 'up', 'B1.t': 90, 'B2.kind': 'down', 'B2.t': 90 }));
+  ok(!gapped.ok && /stage 2/.test(gapped.reason), 'a blank stage before a later one is refused, not shifted up');
 });
 
 group('Past the posts (WME01 Jun16 Q1)', () => {

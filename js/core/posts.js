@@ -38,7 +38,7 @@ export function solvePosts(k = {}) {
   if (gaps.some((g) => !(g.t > 0))) return fail('Each stretch takes a positive time.');
   const n = gaps.length, gu = have(k.u), ga = have(k.a);
   const need = 2 - (gu ? 1 : 0) - (ga ? 1 : 0);
-  if (n < need) return fail(`Still needed: ${need - n === 2 ? 'two stretches' : 'another stretch'} — each with its distance and time — to find ${gu ? 'the acceleration' : ga ? 'the speed at P' : 'the speed at P and the acceleration'}.`);
+  if (n < need) return fail(`Still needed: ${need - n === 2 ? 'two stretches' : n ? 'another stretch' : 'a stretch'} — each with its distance and time — to find ${gu ? 'the acceleration' : ga ? 'the speed at P' : 'the speed at P and the acceleration'}.`);
   if (!n) return fail('Still needed: the stretches between the posts.');
 
   // from P to each post: S_k = u T_k + ½ a T_k²
@@ -76,7 +76,8 @@ export function solvePosts(k = {}) {
   const speedRows = [{ f: M`v = u + at`, s: M`v_P = ${d(u)}`, r: M`v_P = ${d(u)} [m s^-1]` }];
   const vs = [u];
   cum.forEach((c, j) => { const v = snap(u + a * c.T); vs.push(v); speedRows.push({ f: M`v = u + at`, s: M`${d(u)} ${sgn(a)} * ${d(c.T)}`, r: M`v_${NAMES[j + 1]} = ${d(v)} [m s^-1]` }); });
-  if (vs.some((v) => v < -1e-9)) return fail('With that acceleration it would stop and turn back before the last post: the posts are passed going forwards.');
+  const back = vs.findIndex((v) => v < -1e-9);
+  if (back > 0) return fail(`With ${M`u = ${d(u)}`} and ${M`a = ${d(a)}`} it would stop ${M`${d(snap(-u / a))} [s]`} after P, before reaching ${NAMES[back]}: the posts are passed going forwards.`);
 
   // the motion, in the stage-by-stage road's shape: each stretch one stage
   let t0 = 0, x0 = 0;

@@ -51,7 +51,7 @@ export function render(canvas, cam, o) {
     train(g, X(x), y, trainL, P, { dir: 1, phase: phaseFor('train', trainL, X(x) - X(0)) });
     stroke(g, [{ x: X(x), y: y - 30 }, { x: X(x), y }], { color: c, width: 2.4 });
     if (show.velocity !== false && v > 1e-6) {
-      const vMax = Math.max(...[0.25, 0.5, 0.75].map((q) => Math.max(f.velA(q * f.tMax), f.velB(q * f.tMax))), 1e-6);
+      const vMax = f.vMax;
       arrow(g, X(x) + 6, y - 40, X(x) + 6 + Math.min(70, (v / vMax) * 70), y - 40, { color: P.velVec, width: 2.4, head: 9, dash: [6, 4] });
       L.add(T`${tr(v, 2)} [m s^-1]`, X(x) + 14 + Math.min(70, (v / vMax) * 70), y - 40, { color: c, align: 'left', pri: 7, size: 13, weight: 700 });
     }

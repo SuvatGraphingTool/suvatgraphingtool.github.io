@@ -43,12 +43,19 @@ function vSrc(st) {
  */
 export function solveTwoTrains(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
+  for (const n of ['A', 'B']) {
+    const st = k[n]?.stages || [];
+    const gap = st.findIndex((s) => !s.kind);
+    if (gap >= 0) return fail(`Train ${n}, stage ${gap + 1}: say what it does — speeds up, holds its speed or slows down — and fill the stages in order.`);
+    const lastSt = st[st.length - 1];
+    if (lastSt && lastSt.kind !== 'down') return fail(`Train ${n} must come to rest at the next station: its last stage slows down to 0.`);
+  }
   const A = solveStages({ u: 0, ...(k.A || {}) });
   if (!A.ok) return fail(`Train A: ${A.reason}`);
   let B = solveStages({ u: 0, ...(k.B || {}) }), sameD = false;
   if (!B.ok) { B = solveStages({ u: 0, ...(k.B || {}), D: A.J.D }); sameD = true; }
   if (!B.ok) return fail(`Train B: ${B.reason}`);
-  if (Math.abs(A.J.D - B.J.D) > 1e-6 * Math.max(1, A.J.D)) return fail(`They do not stop at the same station: A goes ${M`${d(snap(A.J.D))} [m]`} and B ${M`${d(snap(B.J.D))} [m]`}. Give one less number for B, to be found from A’s distance.`);
+  if (Math.abs(A.J.D - B.J.D) > 1e-6 * Math.max(1, A.J.D)) return fail(`They do not stop at the same station: A goes ${M`${d(snap(A.J.D))} [m]`} and B ${M`${d(snap(B.J.D))} [m]`}. One of them has a number too many: leave out one of B\u2019s, to be found from A\u2019s distance.`);
   if (Math.abs(A.J.T - B.J.T) > 1e-6 * Math.max(1, A.J.T)) return fail(`They do not arrive together: A takes ${M`${d(snap(A.J.T))} [s]`} and B ${M`${d(snap(B.J.T))} [s]`}.`);
   const T = A.J.T, fA = A.f, fB = B.f;
   for (const [n, J] of [['A', A.J], ['B', B.J]]) if (Math.abs(J.w[J.n]) > 1e-9) return fail(`Train ${n} must come to rest at the next station: end its last stage at 0, slowing down.`);
@@ -96,7 +103,7 @@ export function solveTwoTrains(k = {}) {
   const derived = [`${M`${d(snap(A.J.D))} [m]`} between the stations`, ...eq.map((t) => `same speed at ${M`t = ${d(t)} [s]`}`)];
 
   const f = { kind: 'twotrains', tMax: T, tFlight: T, D: A.J.D, posA: (t) => fA.pos(t).x, posB: (t) => fB.pos(t).x, velA: (t) => fA.vel(t).x, velB: (t) => fB.vel(t).x,
-    accA: (t) => fA.accel(t), accB: (t) => fB.accel(t), eq, ask: have(k.ask?.t) ? k.ask.t : null, gap, gapAt: (t) => snap(Math.abs(fA.pos(t).x - fB.pos(t).x)), params: { g: 0, h: 0, u: 0, theta: 0 } };
+    accA: (t) => fA.accel(t), accB: (t) => fB.accel(t), vMax: Math.max(...[A.J, B.J].flatMap((J) => J.w.filter((x) => typeof x === 'number')), 1e-6), eq, ask: have(k.ask?.t) ? k.ask.t : null, gap, gapAt: (t) => snap(Math.abs(fA.pos(t).x - fB.pos(t).x)), params: { g: 0, h: 0, u: 0, theta: 0 } };
   return { ok: true, mode: 'twotrains', A, B, sameD, sameSay, spans: merged, eq, gap, eqRows, gapRows, gapA, gapB, notes, derived, f, T };
 }
 
