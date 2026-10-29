@@ -25,14 +25,14 @@ const EPS = 1e-9;
 export function inLetters(c, top, bottom) {
   c = snap(c);
   if (Math.abs(c) < EPS) return '0';
-  const r = rat(Math.abs(c), 48), sg = c < 0 ? '-' : '';
+  const r = rat(Math.abs(c), 2000), sg = c < 0 ? '-' : '';
   if (!r) return `${sg}${d(Math.abs(c))}${top}/${bottom}`;
   const p = r.p === 1 ? '' : r.p;
   return `${sg}(${p}${top})/(${r.q === 1 ? '' : r.q}${bottom})`;
 }
 const len = (c) => inLetters(c, 'U^2', 'g');
 const tim = (c) => inLetters(c, 'U', 'g');
-const spd = (c) => { c = snap(c); const r = rat(Math.abs(c), 48); if (Math.abs(c) < EPS) return '0'; const sg = c < 0 ? '-' : ''; if (!r) return `${sg}${d(Math.abs(c))}U`; return r.q === 1 ? `${sg}${r.p === 1 ? '' : r.p}U` : `${sg}(${r.p}/${r.q})U`; };
+const spd = (c) => { c = snap(c); const r = rat(Math.abs(c), 2000); if (Math.abs(c) < EPS) return '0'; const sg = c < 0 ? '-' : ''; if (!r) return `${sg}${d(Math.abs(c))}U`; return r.q === 1 ? `${sg}${r.p === 1 ? '' : r.p}U` : `${sg}(${r.p}/${r.q})U`; };
 
 /**
  * @param k { k, when, c, U, g }
@@ -47,6 +47,7 @@ export function solveLetters(k0 = {}) {
   if (!have(kq)) return fail('Still needed: Q’s speed as a multiple of U — ½ for half P’s speed.');
   if (!(kq >= 0)) return fail('Q is projected upwards: give its speed as 0 or a positive multiple of U.');
   const top = k0.when !== 'after';
+  if (top && have(k0.c)) return fail('Q goes when P is at the top, so there is no time to give: clear it, or choose a given time after P.');
   const c = top ? 1 : k0.c;
   if (!have(c) || !(c > 0)) return fail('Still needed: how long after P that Q is projected, as a multiple of U⁄g — a positive number.');
   const num2 = have(k0.U) && have(k0.g);
@@ -69,7 +70,7 @@ export function solveLetters(k0 = {}) {
   let tau = null, yc = null;
   if (Math.abs(y0) < EPS) return fail('P is back at O just as Q is projected: they are together at that instant, not a collision afterwards.');
   if (Math.abs(rel) < EPS) {
-    meetRows.push({ f: M`s_P = s_Q`, s: M`${top ? 'H' : len(y0)} = 0`, r: M`"never"` });
+    meetRows.push({ f: M`s_P - s_Q`, s: M`${top ? 'H' : len(y0)}`, r: M`"the gap never changes"` });
   } else {
     tau = snap(y0 / rel);
     meetRows.push({ f: M`s_P = s_Q`, s: M`${top ? 'H' : len(y0)} = ${spd(rel)} tau`, r: tau > EPS ? M`tau = ${tim(tau)}` : M`tau = ${tim(tau)} "(before Q is projected)"` });
@@ -82,7 +83,7 @@ export function solveLetters(k0 = {}) {
   const where = !met ? null : Math.abs(yc) < EPS ? 'at O' : yc > 0 ? `${M`${len(yc)}`} above O` : `${M`${len(-yc)}`} below O`;
   const notes = [];
   if (top) notes.push(`P’s greatest height is ${M`H = ${len(0.5)}`}.`);
-  notes.push(met ? `They collide ${M`${tim(tau)}`} after Q is projected, ${where}.` : 'They never collide: Q never catches P up.');
+  notes.push(met ? `They collide ${M`${tim(tau)}`} after Q is projected, ${where}.` : 'They never collide: once both are moving they never meet.');
   // ── and in numbers, when U and g are given
   const U = num2 ? k0.U : 1, g = num2 ? k0.g : 1, T = U / g, Lu = U * U / g;
   if (num2) notes.push(`With ${M`U = ${d(U)} [m s^-1]`} and ${M`g = ${d(g)} [m s^-2]`}: ${top ? `${M`H = ${d(snap(0.5 * Lu))} [m]`}; ` : ''}${met ? `they collide ${M`${d(snap(tau * T))} [s]`} after Q is projected, ${Math.abs(yc) < EPS ? 'at O' : `${M`${d(snap(Math.abs(yc) * Lu))} [m]`} ${yc > 0 ? 'above' : 'below'} O`}.` : 'they never collide.'}`);
