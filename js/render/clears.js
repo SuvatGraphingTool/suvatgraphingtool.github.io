@@ -48,7 +48,10 @@ export function brickWall(g, x, top, Y, wPx, P, { vp = null, depth = 0.45, seed 
   g.save();
   softShadow(g, x - (vp ? 10 : 0), Y + 1, wPx * 1.6 + 18, 6, 0.9);
   // ── the long face, running back towards the vanishing point
-  if (vp) {
+  // the side face runs back about as far as the wall is tall, so a short
+  // wall on a long throw stays a wall and never reads as a ramp
+  if (vp) depth = Math.min(depth, (H0 * 1.1) / Math.max(1, Math.hypot(vp.x - x, vp.y - Y)));
+  if (vp && depth > 0.03) {
     const nT = { x: L0, y: top }, nB = { x: L0, y: Y };
     const fT = lerp(nT, vp, depth), fB = lerp(nB, vp, depth);
     g.fillStyle = mortar; g.beginPath(); g.moveTo(nT.x, nT.y); g.lineTo(nB.x, nB.y); g.lineTo(fB.x, fB.y); g.lineTo(fT.x, fT.y); g.closePath(); g.fill();
@@ -101,11 +104,11 @@ export function brickWall(g, x, top, Y, wPx, P, { vp = null, depth = 0.45, seed 
 }
 
 /** A dimension line from (x0, y0) to (x1, y1) with end ticks, and its label. */
-function dim(g, L, P, x0, y0, x1, y1, text, { align = 'center', dx = 0, dy = 0, pri = 7 } = {}) {
+function dim(g, L, P, x0, y0, x1, y1, text, { align = 'center', dx = 0, dy = 0, pri = 7, maxPush } = {}) {
   const vert = Math.abs(x1 - x0) < 1;
   stroke(g, [{ x: x0, y: y0 }, { x: x1, y: y1 }], { color: P.ink, width: 1.3, alpha: 0.85 });
   for (const [x, y] of [[x0, y0], [x1, y1]]) stroke(g, vert ? [{ x: x - 5, y }, { x: x + 5, y }] : [{ x, y: y - 5 }, { x, y: y + 5 }], { color: P.ink, width: 1.3, alpha: 0.85 });
-  L.add(text, (x0 + x1) / 2 + dx, (y0 + y1) / 2 + dy, { color: P.ink, align, pri, size: 14, weight: 700 });
+  L.add(text, (x0 + x1) / 2 + dx, (y0 + y1) / 2 + dy, { color: P.ink, align, pri, size: 14, weight: 700, push: 'down', maxPush });
 }
 
 /** A magnified view of O in a round inset at (cx, cy), radius r: the
@@ -181,7 +184,7 @@ export function render(canvas, cam, o) {
   nearGrass(g, 0, w, oy, h, 31);
 
   // ── the wall, running back from the motion's plane
-  const wPx = clamp(k * 0.45, 12, 22), vp = { x: X(0) + (X(W.x) - X(0)) * 0.25, y: horizon };
+  const wPx = clamp(k * 0.45, 12, 22), vp = { x: X(0) + (X(W.x) - X(0)) * 0.25, y: Math.max(horizon, Y(W.H) - 14) };   // eye level near the wall's top: its coping runs back near level
   brickWall(g, X(W.x), Y(W.H), oy, wPx, P, { vp, depth: 0.5 });
   L.reserve({ x: X(W.x) - wPx / 2 - 3, y: Y(W.H), w: wPx + 6, h: oy - Y(W.H) });
 
@@ -195,12 +198,13 @@ export function render(canvas, cam, o) {
     const px = Math.max(4, fig), s = px / 40;
     g.save(); g.translate(X(0) - px * 0.2, oy); g.scale(s, s); thrower(g, 0, 0, 40, P, { dir: 1, pose, aim }); g.restore();
   }
-  L.add('O', X(0), oy + 21, { color: P.ink, align: 'center', pri: 8, size: 15, weight: 700 });
+  L.add('O', X(0) - 13, oy + 16, { color: P.ink, align: 'right', pri: 8, size: 15, weight: 700 });
   // ── the lengths, in the letter and in metres
   const both = (c, m) => T`${kaLine(c)} = ${sig3(m)} [m]`;
   const dy = oy + 40;
-  dim(g, L, P, X(0), dy, X(W.x), dy, both(f.P, W.x), { dy: 18 });
-  dim(g, L, P, X(W.x), dy, X(xLand), dy, both(f.R - f.P, xLand - W.x), { dy: 18 });
+  // the two lengths along the ground: placed first and held under their own ruler
+  dim(g, L, P, X(0), dy, X(W.x), dy, both(f.P, W.x), { dy: 18, pri: 10, maxPush: 20 });
+  dim(g, L, P, X(W.x), dy, X(xLand), dy, both(f.R - f.P, xLand - W.x), { dy: 18, pri: 10, maxPush: 20 });
   keepOff(L, [{ x: X(0), y: dy }, { x: X(xLand), y: dy }].flatMap((p, i, a) => i ? Array.from({ length: 24 }, (_, j) => ({ x: a[0].x + (p.x - a[0].x) * (j + 1) / 24, y: dy })) : [p]), 5);
   // the wall's height down its far side, clear of the rising path
   const hx = X(W.x) + wPx / 2 + 12;
