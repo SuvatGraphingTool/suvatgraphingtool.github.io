@@ -67,6 +67,7 @@ A kit is an object with:
 | `height` — `js/kits/height.js` | `from-a-height` |
 | `catcher` — `js/kits/catcher.js` | `catch-it` |
 | `trip` — `js/kits/trip.js` | `there-and-back` |
+| `jump` — `js/kits/jump.js` (engine: journey) | `parachute-stages` |
 | `bounce` — `js/kits/bounce.js` | `bounce` |
 
 ## Engine models — `js/core/`
@@ -306,6 +307,15 @@ its top level, so it can go into a product or after a minus as it stands
 built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
+
+### A parachute jump — `js/render/jump.js`
+
+A column of sky at one scale from the aircraft to the fields: `aircraft(g, x,
+y, L, P)` and `fields(g, x0, x1, Y, bottom)` (exported), a height ruler, the
+jumper in free fall and then under a canopy, a marker where each stage
+begins. The engine is the library's journey in stages, read downwards (kit
+`jump`). Used by: `parachute-stages`.
+
 
 ### A road under its graph — `js/render/trip.js`
 

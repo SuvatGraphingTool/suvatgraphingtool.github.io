@@ -254,4 +254,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each segment\u2019s acceleration and displacement, where everything is, and the times the paper left out.',
     } },
+  { id: 'parachute-stages', group: 'library', kit: 'jump',
+    name: 'A parachute jump in stages',
+    sub: 'free fall, the canopy brakes, then steady — how long to the ground?',
+    note: 'A parachutist steps out of an aircraft and falls freely, opens the canopy and slows down at a steady rate, then falls at a constant speed to the ground. Three stages of constant acceleration, read downwards, with the drop drawn to scale from the aircraft to the fields: give two numbers for each of the first two stages and the height (or the total time), and the engine finds the rest.',
+    params: { g: 10, D: 550, t1: 3, a2: 12, t2: 2 },
+    place: 'A column of sky from the aircraft to the fields',
+    sources: [
+      { board: 'Edexcel', paper: '8MA0/22 (AS)', session: 'Jun 2019', q: '1' },
+    ],
+    tags: ['parachute', 'parachutist', 'skydiver', 'free fall', 'canopy', 'aircraft', 'plane', 'jump', 'stages', 'decelerates',
+           'steady speed', 'terminal', 'vertical', 'mechanics', 'AS level', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers\u2019 model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Constant acceleration in each stage', 'free fall at g with no air resistance, then a steady deceleration, then a steady speed; a real fall speeds up less and less, and the canopy jolts rather than slowing evenly.'],
+        ['A particle, falling straight down', 'no size and no drift: the jumper drops vertically from the aircraft.'],
+        ['Level ground', 'the fall ends at a single height, the field.'],
+      ],
+      caveat: 'What the engine did compute is above: each stage\u2019s speeds, distance and time, and the time to the ground.',
+    } },
 ];

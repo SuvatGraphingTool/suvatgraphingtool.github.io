@@ -9,5 +9,6 @@ import { bounce } from './bounce.js';
 import { height } from './height.js';
 import { catcher } from './catcher.js';
 import { trip } from './trip.js';
+import { jump } from './jump.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump };

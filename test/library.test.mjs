@@ -804,6 +804,16 @@ group('Audit 5: catch and trip', () => {
   ok(/back at the start/.test(strip(solveTrip({ segs: [{ v: 6, t: 2 }, { v: 0, t: 2 }, { u: -6, v: -6, t: 2 }] }).notes.join(' '))), 'back at the start is said so');
 });
 
+group('A parachute jump in stages: the paper', () => {
+  const K = KITS.jump;
+  const r = K.solve({ g: 10, D: 550, t1: 3, a2: 12, t2: 2 });
+  ok(r.ok && near(r.f.tMax, 83.1667, 1e-3) && near(r.f.vel(3).x, 30) && near(r.f.vel(6).x, 6), 'E 8MA0/22 J19 Q1: 30 and 6 m s⁻¹, T = 83.2 s');
+  ok(near(r.f.jump.D, 550) && near(r.f.pos(r.f.tMax).x, 550), 'it lands after 550 m');
+  ok(!K.solve({ D: 550, t1: 3, a2: 12, t2: 2 }).ok, 'g is asked for');
+  const g = K.graphs(r.f, 0, new Proxy({}, { get: () => '#000' }));
+  ok(g.every((x) => x.series.every((sr) => !sr.dash)), 'vertical: solid on every graph');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

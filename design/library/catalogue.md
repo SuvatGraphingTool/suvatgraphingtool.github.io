@@ -68,7 +68,7 @@ this library: *covered* names the one of the twelve that does it.
 | 32 | Edexcel | 9MA0/32 | Jun 2023 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/Paper-3/QP/June%202023%20QP%20(Mech).pdf) | 28 m/s from ground through a point 40 m across and 20 m up; two angles; greatest possible height | 9.8 | **built**: `over-the-wall` (tan α = 1 or 3; greatest height 36 m) |
 | 33 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Ball leaves hand 2 m up at 9 m/s upward; time to hit ground | 10 | **covered** by `up` |
 | 34 | Edexcel | 8MA0/02 (AS) | Jun 2018 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202018%20QP.pdf) | Train: 0.3 m/s² for 80 s, steady, −0.5 m/s²; total 4800 m; total time | – | **built**: `journey-stages` (264 s) |
-| 35 | Edexcel | 8MA0/22 (AS) | Jun 2019 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202019%20QP%20(Mech).pdf) | Parachutist: free fall 3 s, then −12 m/s² for 2 s, then steady to ground; 550 m; find T | 10 | **candidate**: several stages; descent.js takes a steady speed, but this paper gives a braking time instead |
+| 35 | Edexcel | 8MA0/22 (AS) | Jun 2019 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202019%20QP%20(Mech).pdf) | Parachutist: free fall 3 s, then −12 m/s² for 2 s, then steady to ground; 550 m; find T | 10 | **built**: `parachute-stages` (30 and 6 m s⁻¹; 78.2 s steady; T = 83.2 s) |
 | 36 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Thrown up from 1.8 m, lands at 10 m/s; find U and T | 10 | **covered** by `up` |
 | 37 | Edexcel | 8MA0/22 (AS) | Jun 2022 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202022%20QP%20(Mech).pdf) | Train max 25 m/s, braking time 4× accelerating time, 700 s, 15 km; speed at t = 572 | – | **built**: `journey-stages` (t = 40 s, a = 0.625, 20 m/s at 572 s) |
 | 38 | Edexcel | 8MA0/22 (AS) | Jun 2023 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel/AS-Paper-2/QP/June%202023%20QP%20(Mech).pdf) | Two children race and finish together at 27.5 s; race length; Sam's top speed X | – | **built**: `two-on-a-road` (X = 3.92) |
@@ -509,4 +509,21 @@ road with the car, its driver on foot, and the shop.
 
 **What the student varies.** Up to six segments: who moves, the velocity each
 starts at (a jump) and ends at, its time; the total time; where it ends.
+
+### `parachute-stages` — A parachute jump in stages
+
+**Papers.** Edexcel 8MA0/22 (AS) Jun 2019 Q1 (free fall for 3 s, then
+slowing at 12 m s⁻² for 2 s, then steady to the ground; 550 m, g = 10: 30 and
+6 m s⁻¹, 78.2 s at the steady speed, T = 83.2 s).
+
+**Why it is built.** The twelve's parachute takes a steady speed and the air's
+effect; this paper gives a braking time instead, which is three stages of
+constant acceleration — the library's journey in stages, read downwards. No
+new physics; a new scene: the drop drawn to scale from an aircraft to fields.
+
+**The stage.** Sky, the aircraft, the fields, a height ruler, the jumper in
+free fall and under the canopy, a marker where each stage begins.
+
+**What the student varies.** g, the height or the total time, the free fall's
+time or speed, the braking's rate and time or the steady speed.
 
