@@ -200,21 +200,24 @@ export function render(canvas, cam, o) {
   } else events.push({ te: f.tMax, text: 'the end' });
   const vMax = Math.max(...f.S.map((s) => Math.abs(s.v)), ...(f.tail ? [Math.abs(f.vel(f.tMax)), Math.abs(f.vel(f.tEnd + 1e-9))] : []), 1e-6);
   const ay = Yg - 2 * rB - 20;
+  let caption = false;
   for (const ev of events) {
     const { age, life } = ageOf(t, ev.te, f.tMax, f.tMax / 12);
     if (age < 0 || age > life) continue;
     pulse(g, R(f.pos(ev.te)), Yg - rB, age, life, P.mark, { radius: rB * 2.4 });
     L.add(ev.text, R(f.pos(ev.te)), ay - 30, { color: P.mark, align: 'center', pri: 7, size: 14, weight: 700 });
+    caption = true;
   }
 
   // its velocity along the line, dashed (rule 2): long enough to read, still in proportion
   if (show.velocity !== false && Math.abs(v) > 1e-9) {
     const len = Math.sign(v) * (34 + (F.phone ? 40 : 66) * Math.abs(v) / vMax);
     arrow(g, bx, ay, bx + len, ay, { color: P.velVec, width: 2.8, head: 11, dash: [7, 4] });
-    const tip = bx + len + (v > 0 ? 8 : -8), fits = v > 0 ? tip + 84 < w : tip - 84 > 0;
-    if (fits) L.add(T`${s3(v)} [m s^-1]`, tip, ay, { color: P.vel, align: v > 0 ? 'left' : 'right', pri: 7, size: 14, weight: 700 });
-    else L.add(T`${s3(v)} [m s^-1]`, bx - Math.sign(v) * (rB + 8), ay, { color: P.vel, align: v > 0 ? 'right' : 'left', pri: 7, size: 14, weight: 700 });
-  } else L.add('at rest', bx, ay, { color: P.ink, align: 'center', pri: 6, size: 13 });
+    // the label tucked against the arrow: past its head, or on it when the head is at the edge
+    const tip = bx + len + (v > 0 ? 3 : -3), fits = v > 0 ? tip + 84 < w : tip - 84 > 0;
+    if (fits) L.add(T`${s3(v)} [m s^-1]`, tip, ay, { color: P.vel, align: v > 0 ? 'left' : 'right', pri: 7, size: 14, weight: 700, maxPush: 20 });
+    else L.add(T`${s3(v)} [m s^-1]`, bx + len / 2, ay - 15, { color: P.vel, align: 'center', pri: 7, size: 14, weight: 700, maxPush: 20 });
+  } else if (!caption) L.add('at rest', bx, ay, { color: P.ink, align: 'center', pri: 6, size: 13 });
   L.add('P', bx - rB - 10, Yg - 2 * rB, { color: P.ink, align: 'right', pri: 8, size: 15, weight: 700 });
 
   L.reserve(F.card);
@@ -241,8 +244,8 @@ function graphCard(g, c, f, t, P, w, h, xLo, xHi) {
   const pad = (xHi - xLo || 1) * 0.1;
   const X = (tt) => x0 + (tt / f.tMax) * (x1 - x0), V = (x) => y1 - ((x - (xLo - pad)) / (xHi - xLo + 2 * pad)) * (y1 - y0);
   L.add('Displacement–time graph', c.x + c.w - 14, c.y + 17, { color: P.strong, align: 'right', pri: 9, size: 13, weight: 700, bg: false });
-  L.add(T`x [m]`, x0 - 8, c.y + 17, { color: P.muted, align: 'left', pri: 8, size: 13, bg: false });
-  L.add(T`t [s]`, x1 + 12, V(0), { color: P.muted, align: 'left', pri: 8, size: 13, bg: false });
+  L.add(T`x` + ' (m)', x0 - 8, c.y + 17, { color: P.muted, align: 'left', pri: 8, size: 13, bg: false });
+  L.add(T`t` + ' (s)', x1 + 12, V(0), { color: P.muted, align: 'left', pri: 8, size: 13, bg: false });
   // the corners: faint uprights, their times in one row under the plot
   for (const p of f.P.slice(1)) {
     stroke(g, [{ x: X(p.t), y: y0 }, { x: X(p.t), y: y1 }], { color: withAlpha(P.faint, 0.35), width: 1 });
