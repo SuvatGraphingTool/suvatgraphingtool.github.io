@@ -710,3 +710,19 @@ tracks, the vector between them now, the closest moment ringed.
 
 **What the student varies.** Each robot's start and velocity (R's from a later
 position and time instead); the floor's side.
+
+### `two-up-letters` — Two thrown up, in letters
+
+**Papers.** Edexcel IAL WME01 Jan 2020 Q3 (P up from O at U; at its greatest
+height H, Q up from O at ½U: H = U²⁄(2g); they collide U⁄g after Q is projected,
+at O itself).
+
+**Why it is built.** `pair-vertical` takes numbers and treats the start as the
+ground; here every answer is in U and g, and O is only a point they can meet
+at. Run in units of U⁄g and U²⁄g, each answer is a number times its letters.
+
+**The stage.** One vertical line through O, P and Q side by side, H marked in
+letters, the collision ringed with τ and the height in letters.
+
+**What the student varies.** Q's speed as a multiple of U; Q at P's top or a
+multiple of U⁄g later; numbers for U and g, optionally.

@@ -483,4 +483,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each position in t, the vector between them, when the distance is least and what it is, and when a robot would reach the edge.',
     } },
+  { id: 'two-up-letters', group: 'library', kit: 'letters',
+    name: 'Two thrown up, in letters',
+    sub: 'P goes up at U; at the top, Q follows at ½U — when and where do they collide, in terms of U and g?',
+    note: 'Two particles projected straight up from the same point O, the first with speed U and the second a moment later with a multiple of U. Every answer is in letters: the greatest height in U² over g, the time in U over g. Both fall with the same g, so once both are moving the gap closes at a steady rate. O is a point, not the ground: they may meet at it or below it.',
+    params: { k: 0.5, when: 'top' },
+    place: 'One vertical line through O, the two particles side by side',
+    sources: [
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2020', q: '3' },
+    ],
+    tags: ['vertically upwards', 'two particles', 'in terms of U and g', 'letters', 'algebra', 'greatest height', 'collide', 'projected later',
+           'symbolic', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Particles in one vertical line', 'they have no size, so they collide only where their points meet; real balls side by side would pass.'],
+        ['Free under gravity', 'no air resistance; both have the same acceleration g downwards the whole time.'],
+        ['O is a point', 'nothing stops them at O: a particle carries on below it.'],
+      ],
+      caveat: 'What the engine did compute is above: the greatest height, when the gap closes and where, each in U and g.',
+    } },
 ];

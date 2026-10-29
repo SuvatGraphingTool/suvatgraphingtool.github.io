@@ -19,5 +19,6 @@ import { collide } from './collide.js';
 import { snapshots } from './snapshots.js';
 import { xtgraph } from './xtgraph.js';
 import { robots } from './robots.js';
+import { letters } from './letters.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters };

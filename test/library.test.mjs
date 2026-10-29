@@ -1034,6 +1034,20 @@ group('Two robots on a floor (WME01 J23 Q8)', () => {
   ok(late.ok && /edge of the floor/.test(late.notes.join(' ')), 'closest only after one has reached the edge: said');
 });
 
+group('Two thrown up, in letters (WME01 Jan20 Q3)', () => {
+  const K = KITS.letters;
+  const st = (x) => x.replace(/<[^>]+>/g, '').replace(/\s/g, '');
+  const r = K.solve({ k: 0.5, when: 'top' });
+  ok(r.ok && r.tau === 1 && Math.abs(r.yc) < 1e-12, 'they collide U/g after Q is projected, at O (MS)', r.reason);
+  ok(/H=U2⁄?\(?2g/.test(st(r.rows[0].r)) || /U2.*2g/.test(st(r.rows[0].r)), 'H = U²/2g (MS)');
+  const n = K.solve({ k: 0.5, when: 'top', U: 14, g: 9.8 });
+  ok(/10m/.test(st(n.notes.join(' '))) && /1\.429s/.test(st(n.notes.join(' '))), 'with numbers: H = 10 m, 1.429 s');
+  const later = K.solve({ k: 1, when: 'after', c: 0.5 });
+  ok(later.ok && Math.abs(later.tau - 0.75) < 1e-12 && Math.abs(later.yc - 15 / 32) < 1e-12, 'Q at U after U/2g: 3U/4g later, 15U²/32g up');
+  ok(!K.solve({ k: 0.5, U: 14 }).ok, 'U without g is refused');
+  ok(!K.solve({ k: 1, when: 'after', c: 2 }).ok, 'P back at O as Q is projected: refused');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

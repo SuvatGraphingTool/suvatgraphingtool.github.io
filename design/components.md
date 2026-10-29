@@ -384,6 +384,16 @@ the velocities are equal). The floor is a square of side `side` centred on O;
 when each robot would reach its edge is found, and a closest moment after it
 is said to be off the floor. Used by: `robots-closest`.
 
+### Two thrown up, in letters — `js/core/letters.js`
+
+`solveLetters({ k, when, c, U, g })` — P up from O at U; Q up from O at kU,
+when P is at its top (`when: 'top'`) or c·U⁄g after it. Run with U = g = 1, so
+every time is a number times U⁄g and every length a number times U²⁄g;
+`inLetters(c, top, bottom)` (exported) writes c·U²⁄g as (3U²)⁄(8g), U⁄g, 0.
+Both have a = −g, so the ½gτ² terms cancel and the meeting is linear in τ.
+With numbers for U and g, every answer in metres and seconds too. Used by:
+`two-up-letters`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -469,6 +479,14 @@ The floor at one scale both ways, tiled, its corners A, B, C, D and centre O;
 way it goes; each track to the floor's edge; the vector from S to R now with
 its length; the closest moment ringed with its time and distance. Kit
 `robots`. Used by: `robots-closest`.
+
+### Two thrown up, in letters — `js/render/letters.js`
+
+One vertical line through O at one scale, P and Q drawn a little apart on it,
+each with its velocity (solid); P's greatest height H marked with its value in
+letters; where they collide ringed with τ and the height in letters. The HUD
+and graphs read in U⁄g, U²⁄g and U when no numbers are given. Kit `letters`.
+Used by: `two-up-letters`.
 
 
 ### A parachute jump — `js/render/jump.js`
