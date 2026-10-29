@@ -88,7 +88,7 @@ this library: *covered* names the one of the twelve that does it.
 | 52 | OCR A | H240/03 | Jun 2023 | 8 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | a = 3i−2j, v = 6i at t = 4; speed at t = 0 | – | **built**: `vectors-ij` (u = −6i + 8j, speed 10) |
 | 53 | OCR A | H240/03 | Jun 2023 | 12 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | 39 m/s from 20 m up, sin θ = 5/13; max height; time to land (part (d) out of scope) | 10 | **covered** by `platform-angle` |
 | 54 | OCR | 4728 M1 (legacy) | Jun 2011 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202011%20QP%20-%20M1%20OCR.pdf) | Driver's v-t graph: car trip, then walks back to a shop, later jogs to the car; time in shop | – | **built**: `there-and-back` (2.5 and 7.5 m s⁻²; 225 m; 13 s in the shop) |
-| 55 | OCR | 4728 M1 | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | Thrown down at 3.5 from 5 m; rebounds and passes start 0.87 s later; rebound speed | 9.8 | **candidate**: a bounce mid-question (rebound speed found from a later time); trajectory has restitution but not a found rebound |
+| 55 | OCR | 4728 M1 | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | Thrown down at 3.5 from 5 m; rebounds and passes start 0.87 s later; rebound speed | 9.8 | **built** → `back-past-the-start` |
 | 56 | OCR | 4728 M1 | Jun 2014 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | x-t graph with speed 4 or rest; show T = 1.75; velocities; distance in 10 s | – | **built**: `xt-graph` (T = 1.75; −4, 4, 4; 25 m; t = 12 after it) |
 | 57 | OCR MEI | H640/01 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | Thrown horizontally at 14 m/s from a 5 m window over a 2 m fence; trajectory; range of d | 9.8 | **built**: `over-the-wall` (1.01 s; y = 5 − 0.025x²; clears for d up to 10.95 m) |
 | 58 | OCR MEI | H640/01 | Jun 2018 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | 5 to 11.4 m/s in 4 s, uniform, then steady at 17.8; displacement in 20 s | – | **built**: `stage-by-stage` (a = 1.6; steady from t = 8; 304.8 m). Model B, (v)–(vi), is calculus: out |
@@ -403,6 +403,25 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `back-past-the-start` — Back past the start
+
+**Papers.** OCR 4728 M1 Jun 2014 Q1 (a ball thrown down at 3.5 m s⁻¹ from
+5 m above horizontal ground rebounds and passes its starting point 0.87 s
+after the bounce: it hits at 10.5 m s⁻¹ and rebounds at 10.0 m s⁻¹).
+
+**Why the twelve cannot, nor the bounce as it was.** The stadium's bounce is a
+restitution slider; the library's bounce took the rebound as a speed, a height
+or a fraction. Here the rebound is the unknown, found from where the ball is a
+time after the impact.
+
+**How it is solved.** The bounce engine (js/core/bounce.js) with one more way
+to fix the bounce: `T`, the time after the impact at which it is at the height
+`y`. From the ground, y = wT − ½gT² gives the rebound speed w; the rest is the
+bounce as before — the fall (v² = u² + 2as), the fraction kept, and every
+moment it is at y. The run stops as it passes y after the bounce.
+
+**The stage, graphs.** The bounce's courtyard and its graphs, unchanged.
 
 ### `bounce` — A ball that bounces
 

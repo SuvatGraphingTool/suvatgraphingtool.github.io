@@ -77,6 +77,8 @@ export function bounceMotion({ h, u, g, e, impacts }) {
  *   w      the speed it rebounds with, the first time
  *   H      the greatest height it rises to after the first bounce
  *   e      the fraction of its speed it keeps at a bounce
+ *   T      how long after the first bounce it is at the height y (OCR M1
+ *          Jun 2014 Q1: back past where it started, a time later)
  *   n      how many impacts to watch (blank: 2)
  *   y      a height to ask about: every time it is there
  *   stop   'y': end the run the first time it is at y after the first bounce
@@ -95,7 +97,7 @@ export function solveBounce(k = {}) {
   if (missing.length) return fail(`Still needed: ${missing.join(', ')}.`);
   if (!(g > EPS)) return fail('A bounce needs gravity to bring the ball back down: give g as a size, such as 9.8.');
   for (const [key, what] of [['h', 'The height it starts from'], ['U', 'The speed it is thrown with'], ['V', 'The speed it hits the ground with'],
-    ['w', 'The speed it rebounds with'], ['H', 'The height it rises to'], ['e', 'The fraction of its speed it keeps']]) {
+    ['w', 'The speed it rebounds with'], ['H', 'The height it rises to'], ['e', 'The fraction of its speed it keeps'], ['T', 'The time after the bounce']]) {
     if (have(k[key]) && k[key] < 0) {
       return fail(`${what} is a size, so it cannot be negative.${/U|V|w/.test(key) ? ' The direction is set by how it sets off, and by the convention you choose.' : ''}`);
     }
@@ -149,7 +151,13 @@ export function solveBounce(k = {}) {
   if (have(k.w)) asked.push({ key: 'w', w: k.w, say: `rebounds at ${M`${d(k.w)} [m s^-1]`}` });
   if (have(k.H)) asked.push({ key: 'H', w: Math.sqrt(2 * g * k.H), say: `rises to ${M`${d(k.H)} [m]`}` });
   if (have(k.e)) asked.push({ key: 'e', w: k.e * V, say: `keeps ${M`${d(k.e, 3)}`} of its speed` });
-  if (!asked.length) return fail('Still needed: how it bounces — the speed it rebounds with, the greatest height it rises to after the bounce, or the fraction of its speed it keeps.');
+  if (have(k.T)) {
+    // at height y a time T after the bounce: y = wT − ½gT², so w = (y + ½gT²)/T
+    if (!have(k.y)) return fail('A time after the bounce needs the height it is at then: give the height to ask about (the height it started from, if it passes its start).');
+    if (!(k.T > EPS)) return fail('The time after the bounce is after it, so it must be more than 0.');
+    asked.push({ key: 'T', w: (k.y + 0.5 * g * k.T * k.T) / k.T, say: `is ${M`${d(k.y)} [m]`} up ${M`${d(k.T)} [s]`} after the bounce` });
+  }
+  if (!asked.length) return fail('Still needed: how it bounces — the speed it rebounds with, the greatest height it rises to after the bounce, the fraction of its speed it keeps, or when it is at a height after it.');
   for (const q of asked.slice(1)) {
     if (!agree(q.w, asked[0].w)) {
       return fail(`Those do not agree: a ball that ${asked[0].say} leaves the ground at ${M`${sf(asked[0].w)} [m s^-1]`}, but one that ${q.say} leaves it at ${M`${sf(q.w)} [m s^-1]`}. Give one of them.`);
@@ -196,7 +204,10 @@ export function solveBounce(k = {}) {
   const allY = y == null ? [] : timesAt(m, y, { from: 0, to: m.end }).map((c) => describe(c, impacts));
   let tMax = m.end, stopAt = null;
   if (stopAtY) {
-    stopAt = allY.find((c) => c.after >= 1 && c.t > impacts[0].t + 1e-9);
+    // with the bounce found from a time at y, the run stops at THAT time,
+    // which may be the second pass (on the way down), not the first
+    stopAt = by === 'T' ? allY.find((c) => c.after === 1 && Math.abs(c.since - k.T) < 1e-6)
+      : allY.find((c) => c.after >= 1 && c.t > impacts[0].t + 1e-9);
     tMax = stopAt.t;
   }
   const crossings = allY.filter((c) => c.t <= tMax + 1e-9);
@@ -207,6 +218,10 @@ export function solveBounce(k = {}) {
 
   if (by === 'w') notes.push(`It rebounds at ${M`${sf(w)} [m s^-1]`}, so it keeps ${M`${sf(e)}`} of the ${M`${sf(V)} [m s^-1]`} it hit the ground with.`);
   if (by === 'H') notes.push(`Rising to ${M`${d(k.H)} [m]`} means it left the ground at ${M`${sf(w)} [m s^-1]`}.`);
+  if (by === 'T') {
+    const vT = w - g * k.T;
+    notes.push(`Being ${M`${d(y)} [m]`} up ${M`${d(k.T)} [s]`} after the bounce means it left the ground at ${M`${sf(w)} [m s^-1]`}, keeping ${M`${sf(e)}`} of the ${M`${sf(V)} [m s^-1]`} it hit it with; it is ${Math.abs(vT) < 1e-6 ? 'at the top then' : vT > 0 ? 'still going up then' : 'already coming down then'}.`);
+  }
   if (shown.length > 2 || (!stopAtY && n > 2)) notes.push(`Each later bounce keeps the same fraction, ${M`${sf(e)}`}, of the speed it arrives with: the same ball on the same ground.`);
   if (y != null && !crossings.length) {
     const highest = Math.max(h, top0 ? top0.H : 0, ...shown.map((x) => x.H));
@@ -251,7 +266,7 @@ export function solveBounce(k = {}) {
   const f = motion(m, { h, u, g, e, w, V, sg, impacts: shown, crossings, y, top0, tMax, stopAt });
   return {
     ok: true, mode: 'bounce', axis, sign: sg,
-    params: { g, h, u, U, V, w, e, H1, n, y, start, by, stopAtY, found },
+    params: { g, h, u, U, V, w, e, H1, n, y, start, by, stopAtY, found, T: have(k.T) ? k.T : null },
     f, m, impacts: shown, crossings, top0, stopAt, moment, derived, notes, extras, convention, watched,
     say: moment.text,
   };
@@ -350,11 +365,13 @@ export function bounceWorking(solved) {
   const brow = by === 'w' ? { f: M`u = ${nm(u2)} [m s^-1]`, s: '', r: '' }
     : by === 'H' ? { f: M`v^2 = u^2 + 2as`, s: M`0 = u^2 + 2 * ${sbs(a)} * ${sbs(s * P.H1)}`, r: M`u = ${nm(u2)} [m s^-1]` }
     : by === 'same' ? { f: M`"speed after" = "speed before"`, s: M`${nm(V)}`, r: M`u = ${nm(u2)} [m s^-1]` }
+    : by === 'T' ? { f: M`s = ut + ½at^2`, s: M`${sbs(s * y)} = ${d(P.T)}u + ½ * ${sbs(a)} * ${d(P.T)}^2`, r: M`u = ${sf(u2)} [m s^-1]` }
     : { f: M`"speed after" = e * "speed before"`, s: M`${d(e, 3)} * ${nm(V)} = ${nm(w)}`, r: M`u = ${nm(u2)} [m s^-1]` };
   out.push({
     title: 'The bounce',
     rows: [brow],
     note: (by === 'w' ? 'The paper gives the speed it leaves the ground with. '
+      : by === 'T' ? `From the impact, the paper says where it is a time later: ${M`${d(y)} [m]`} up after ${M`${d(P.T)} [s]`}, with ${M`a = ${nm(a)}`} the whole way. That one equation has the rebound speed as its only unknown. `
       : by === 'H' ? `At its greatest height, ${M`${nm(P.H1)} [m]`} up, it is momentarily at rest, so ${M`v = 0`} there. `
       : by === 'same' ? 'The rebound given is a rounding faster than the impact, so it is taken as losing no speed. '
       : `It keeps ${M`${d(e, 3)}`} of the speed it arrives with, and leaves going up, so with ${pos} ${M`u`} is ${s > 0 ? 'positive' : 'negative'}. `)

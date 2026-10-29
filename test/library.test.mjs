@@ -1403,6 +1403,18 @@ console.log('\nEvery library stage pans and zooms with the twelve\u2019s camera 
   kitViewDone(cv); ok(cv._view === null, 'the next renderer draws unmoved');
 }
 
+group('Back past the start: OCR 4728 M1 Jun 2014 Q1', () => {
+  const s = solveBounce({ start: 'down', h: 5, U: 3.5, y: 5, T: 0.87, stop: 'y', g: 9.8 });
+  ok(s.ok && near(s.params.V, 10.5, 1e-9), 'it hits the ground at 10.5 m s⁻¹', s.reason);
+  ok(near(s.params.w, 10.0, 0.02), 'the rebound speed is 10.0 m s⁻¹ (5 = 0.87u − 4.9 × 0.87²)', s.params.w);
+  ok(near(s.stopAt.since, 0.87, 1e-9) && near(s.f.tMax, s.impacts[0].t + 0.87, 1e-9), 'the run stops as it passes the start, 0.87 s after the bounce');
+  ok(bounceWorking(s)[1].rows[0].r.length > 0, 'the bounce row works the rebound from the time');
+  { const d2 = solveBounce({ start: 'down', h: 5, U: 3.5, y: 1, T: 1.94, stop: 'y', g: 9.8 });
+    ok(d2.ok && near(d2.stopAt.since, 1.94, 1e-9) && d2.stopAt.dir === 'down', 'a time on the way down stops the run at that time, not the first pass', d2.stopAt && d2.stopAt.since); }
+  ok(!solveBounce({ start: 'down', h: 5, U: 3.5, T: 0.87, g: 9.8 }).ok, 'a time after the bounce with no height is refused');
+  ok(!solveBounce({ start: 'down', h: 5, U: 3.5, y: 5, T: 0.3, g: 9.8 }).ok, 'back at 5 m only 0.3 s after the bounce needs a faster rebound than the impact: refused');
+});
+
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 

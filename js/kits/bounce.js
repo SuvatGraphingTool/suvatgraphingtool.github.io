@@ -19,7 +19,8 @@ const FIELDS = [
   { key: 'V', col: 'throw', label: 'Speed it hits the ground with (m s⁻¹)', hint: 'Just before the first impact. Any two of these three will do.' },
   { key: 'w', col: 'bounce', label: 'Speed it rebounds with (m s⁻¹)', hint: 'Just after the first impact.' },
   { key: 'H', col: 'bounce', label: 'Greatest height after the bounce (m)', hint: 'How high it rises again, from the ground.' },
-  { key: 'e', col: 'bounce', label: 'Fraction of its speed it keeps', hint: 'Rebound speed ÷ impact speed: “half its speed” is 0.5; a third, type with a slash. Give one of these three.' },
+  { key: 'e', col: 'bounce', label: 'Fraction of its speed it keeps', hint: 'Rebound speed ÷ impact speed: “half its speed” is 0.5; a third, type with a slash.' },
+  { key: 'T', col: 'bounce', label: 'Or: time after the bounce it is at the height asked about (s)', hint: 'With the height to ask about below — “passes its starting point 0.87 s after rebounding”. Give one of these four.' },
 ];
 
 export const bounce = {
@@ -37,7 +38,7 @@ export const bounce = {
     { title: 'What to watch, and what to ask',
       fields: [
         { key: 'n', label: 'Impacts to watch', placeholder: '2', hint: `“Until it hits the ground for the second time” is 2. Up to ${MAX_IMPACTS}.` },
-        { key: 'y', label: 'A height to ask about (m)', placeholder: '—', hint: 'Every time it is there: B in the paper. Optional.' },
+        { key: 'y', label: 'A height to ask about (m)', placeholder: '—', hint: 'Every time it is there: B in the paper. Optional, but needed with the time after the bounce.' },
         { key: 'stop', type: 'choice', label: 'Stop the run',
           options: [{ v: 'y', label: 'there, after the bounce' }],
           hint: 'The first time it reaches that height after the first impact: for a sketch “until it first passes B”. Otherwise it stops at the last impact.' },
@@ -54,7 +55,7 @@ export const bounce = {
 
   read(vals) {
     const k = {};
-    for (const key of ['start', 'h', 'U', 'V', 'w', 'H', 'e', 'n', 'y', 'stop', 'axis']) k[key] = vals[key];
+    for (const key of ['start', 'h', 'U', 'V', 'w', 'H', 'e', 'T', 'n', 'y', 'stop', 'axis']) k[key] = vals[key];
     k.g = vals.g;
     return k;
   },
