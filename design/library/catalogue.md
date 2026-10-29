@@ -621,7 +621,9 @@ steady: 48 m in 10 s). OCR A Physics H556/01 Jun 2019 Q19(a) (18 m s⁻¹, a
 0.50 s reaction, stopped in 38 m in all: 5.59 m s⁻²). CIE 9709/42 Oct/Nov 2019
 Q2 (a tractor in four stages from U: up to V in 5 s, steady 25 s, up to 12 at
 0.8 m s⁻² in 5 s, to rest in 15 s; 375 m in all: V = 8 carried back from the
-third stage, U = 6 from the whole distance).
+third stage, U = 6 from the whole distance). Edexcel IAL WME01 Oct 2023
+Q2 (an acceleration–time graph from A at 8 m s⁻¹: −0.5 for 4 s, 0 for 6 s, 1.2 for
+10 s, each a stage of a and t: v = 18 at B; AB = 184 m).
 
 **Why it is built.** Each stage is a SUVAT question of its own, but the next
 one starts where the last ended, and a stage may be short of a number the

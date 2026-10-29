@@ -959,6 +959,8 @@ group('Stage by stage (MM1B Jan13 Q1, H240/03 J19 Q7, H556/01 J19 Q19a)', () => 
   ok(!/twice/.test(K.solve({ stages: [{ u: 0, a: 1.5, t: 4 }, { a: 0 }], S: 48, T: 10 }).notes.join(' ')) && !/twice/.test(K.solve({ stages: [{ u: 10, a: -4, s: 0 }, { a: 1, t: 2 }] }).notes.join(' ')), 'no two-roots note where there is one time');
   const tractor = K.solve({ stages: [{ t: 5 }, { a: 0, t: 25 }, { v: 12, a: 0.8, t: 5 }, { v: 0, t: 15 }], S: 375 });
   ok(tractor.ok && tractor.S[1].u === 8 && tractor.S[0].u === 6, 'CIE 9709/42 N19 Q2: V = 8 carried back, U = 6 from 375 m (MS)', tractor.reason);
+  const at = K.solve({ stages: [{ u: 8, a: -0.5, t: 4 }, { a: 0, t: 6 }, { a: 1.2, t: 10 }] });
+  ok(at.ok && at.S[2].v === 18 && at.Stot === 184, 'WME01 Oct23 Q2: an a–t graph as stages; v = 18, AB = 184 m (MS)');
   const f = r.f; ok(Math.abs(f.pos(40) - 640) < 1e-9 && Math.abs(f.pos(110) - 2460) < 1e-9 && Math.abs(f.vel(40) - 12) < 1e-9, 'the motion passes the join and ends at 2460 m');
 });
 

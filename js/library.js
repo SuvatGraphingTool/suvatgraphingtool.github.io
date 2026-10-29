@@ -380,6 +380,7 @@ export const LIBRARY = [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2019', q: '7' },
       { board: 'OCR A Physics', paper: 'H556/01', session: 'Jun 2019', q: '19(a)' },
       { board: 'CIE', paper: '9709/42', session: 'Oct/Nov 2019', q: '2' },
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Oct 2023', q: '2' },
     ],
     tags: ['stages', 'one after another', 'tractor', 'decelerates', 'then accelerates', 'average speed', 'race track', 'car', 'cyclist', 'train',
            'reaction time', 'thinking distance', 'braking', 'suvat', 'mechanics', 'A level'],
