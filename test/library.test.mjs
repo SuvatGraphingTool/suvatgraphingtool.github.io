@@ -1138,6 +1138,11 @@ group('Thrown towards each other (WJEC Unit 4 J18 Q9)', () => {
   const late = K.solve({ g: 9.8, A: { u: 10, theta: 45 }, B: { u: 10, theta: 45, t0: 0 }, D: 100 });
   ok(late.ok && late.outcome === 'landed', 'too far apart: one lands first');
   ok(!K.solve({ g: 9.8, A: { u: 10, theta: 45 }, B: { u: 10, theta: 45 } }).ok, 'no distance: says what is needed');
+  const gone = K.solve({ g: 9.8, A: { u: 10, theta: 30 }, B: { u: 30, theta: 20, t0: 0.5 }, D: 40 });
+  ok(gone.ok && gone.outcome === 'landed' && !gone.rows.some((x) => /−/.test(x.r.replace(/<[^>]+>/g, '')) && /y/.test(x.r.replace(/<[^>]+>/g, ''))), 'a ball already down: no height below the ground printed');
+  const early = K.solve({ g: 9.8, A: { u: 20, theta: 40 }, B: { u: 15, theta: 60, t0: 10 }, D: 30 });
+  ok(early.ok && /landed.*before B is even thrown/.test(early.notes.join(' ').replace(/<[^>]+>/g, '')), 'A down before B is thrown: said so');
+  ok(!K.solve({ g: 9.8, A: { u: 24.5, theta: 30 }, B: { u: 24.5, theta: 30 }, D: 50, range: true }).ok, 'a distance typed with AB as A\u2019s range is refused');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

@@ -38,6 +38,8 @@ export function render(canvas, cam, o) {
 
   // the throwers, A and B, facing each other; the distance between
   const fig = Math.max(24, 1.7 * k);
+  // a thrower above the ground stands on a stand of that height
+  for (const [x, hh] of [[X(0) - 6, f.A.h], [X(f.D) + 6, f.B.h]]) if (hh > 1e-9) { g.save(); g.fillStyle = withAlpha(P.faint, 0.35); g.strokeStyle = P.muted; g.lineWidth = 1.4; g.fillRect(x - 10, Y(hh), 20, oy - Y(hh)); g.strokeRect(x - 10, Y(hh), 20, oy - Y(hh)); g.restore(); }
   runner(g, X(0) - 6, Y(f.A.h), fig, P, { dir: 1, still: true });
   runner(g, X(f.D) + 6, Y(f.B.h), fig, P, { dir: -1, still: true });
   L.add('A', X(0) - 14, oy + 16, { color: P.vel, align: 'right', pri: 8, size: 15, weight: 700, bg: false });

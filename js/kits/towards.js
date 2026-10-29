@@ -35,7 +35,7 @@ export const towards = {
 
   read(v) {
     const p = (n) => ({ u: v[`${n}.u`], theta: v[`${n}.theta`], h: v[`${n}.h`], t0: v[`${n}.t0`] });
-    return { g: v.g, A: p('A'), B: p('B'), D: v.range === 'range' ? undefined : v.D, range: v.range === 'range' };
+    return { g: v.g, A: p('A'), B: p('B'), D: v.D, range: v.range === 'range' };
   },
   solve: solveTowards,
   working: (solved) => towardsWorking(solved),

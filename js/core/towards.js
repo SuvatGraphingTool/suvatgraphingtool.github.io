@@ -42,6 +42,7 @@ export function solveTowards(k = {}) {
   if (P.B.t0 < 0) return fail('B is thrown at or after A: give how long after as 0 or more.');
   const A = P.A, B = P.B, rows = [];
   let D = k.D;
+  if (k.range && have(k.D)) return fail('AB is A\u2019s range, so a distance typed for it is not used: clear it, or choose "the distance given".');
   if (k.range) {
     if (A.h > 0) return fail('A’s range is from level ground: with A thrown from a height, give the distance AB instead.');
     D = snap(A.f.range);
@@ -56,12 +57,16 @@ export function solveTowards(k = {}) {
   const tA = t, tB = snap(t - B.t0);
   const yA = snap(A.h + A.f.uy * tA - 0.5 * g * tA * tA), yB = snap(B.h + B.f.uy * tB - 0.5 * g * tB * tB);
   const hRow = (n, p, tt, y) => ({ f: n === 'B' && p.t0 > 0 ? M`y_B = h + (u sin theta)t_B - ½g t_B^2` : M`y_${n} = h + (u sin theta)t - ½gt^2`, s: M`${p.h ? `${d(p.h)} + ` : ''}${d(snap(p.f.uy))} * ${d(tt)} - ½ * ${d(g)} * ${d(tt)}^2`, r: M`y_${n} = ${d(y)} [m]` });
-  rows.push(hRow('A', A, tA, yA));
-  if (tB >= 0) rows.push(hRow('B', B, tB, yB));
+  // each one's height then, only while it is in the air
+  const inAirA = tA <= A.f.tFlight + 1e-9, inAirB = tB >= 0 && tB <= B.f.tFlight + 1e-9;
+  if (B.t0 > 0 && tB >= 0) rows.push({ f: M`t_B = t - t_0`, s: M`${d(t)} - ${d(B.t0)}`, r: M`t_B = ${d(tB)} [s]` });
+  if (inAirA) rows.push(hRow('A', A, tA, yA)); else rows.push({ f: M`"A lands at" t = ${d(snap(A.f.tFlight))} [s]`, s: '', r: M`"landed before then"` });
+  if (inAirB) rows.push(hRow('B', B, tB, yB)); else if (tB >= 0) rows.push({ f: M`"B lands at" t_B = ${d(snap(B.f.tFlight))} [s]`, s: '', r: M`"landed before then"` });
   const notes = [], derived = [];
   let outcome;
-  if (tB < 0) { outcome = 'before'; notes.push(`A has passed B’s line of flight before B is even thrown: they never meet across.`); }
-  else if (tA > A.f.tFlight + 1e-9 || tB > B.f.tFlight + 1e-9) { outcome = 'landed'; notes.push(`By the time they are level across, ${tA > A.f.tFlight ? 'A' : 'B'} has already landed: they never collide.`); }
+  if (A.f.tFlight < B.t0 - 1e-9) { outcome = 'landed'; notes.push(`A has landed, at ${M`t = ${d(snap(A.f.tFlight))} [s]`}, before B is even thrown: they never meet.`); }
+  else if (tB < 0) { outcome = 'before'; notes.push(`A is already past where B stands before B is thrown: they never meet across.`); }
+  else if (!inAirA || !inAirB) { outcome = 'landed'; notes.push(`By the time they are level across, ${!inAirA ? 'A' : 'B'} has already landed: they never collide.`); }
   else if (Math.abs(yA - yB) < HIT) { outcome = 'collide'; notes.push(`At ${M`t = ${d(t)} [s]`} they are level across and at the same height: they collide ${M`${d(yA)} [m]`} above the ground, ${M`${d(snap(ca * tA))} [m]`} from A.`); derived.push(`collide ${M`${d(yA)} [m]`} up`); }
   else { outcome = 'pass'; notes.push(`At ${M`t = ${d(t)} [s]`} they are level across but ${M`${d(snap(Math.abs(yA - yB)))} [m]`} apart in height, ${yA > yB ? 'A' : 'B'} above: they pass without colliding.`); }
   if (k.range) notes.unshift(`AB is A’s range: ${M`${d(D)} [m]`}.`);
