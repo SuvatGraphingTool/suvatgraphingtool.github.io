@@ -55,7 +55,8 @@ export function solveHeight(k = {}) {
   if (!(f.tFlight > 0) || !isFinite(f.tFlight)) return fail(`It never comes down to ${Pl.below}.`);
 
   // the angle is what makes it vertical, never a value it did not need
-  const notes = r.notes.filter((n) => !(vertical && /more than enough/.test(n)));
+  // and the height is the place itself, never a value it did not need
+  const notes = r.notes.filter((n) => !(/more than enough/.test(n) && (vertical || /launch height/.test(n))));
   const T = snap(f.tFlight), top = snap(f.apexHeight), out = snap(z(f.range)), vL = snap(Math.abs(f.vLanding));
   const lines = [];
   if (f.uy > 1e-9) lines.push(`It rises to ${M`${d(top)} [m]`} above ${Pl.below}, ${M`${d(snap(top - k.h))} [m]`} above where it was thrown from, at ${M`t = ${d(snap(f.tApex))} [s]`}.`);
