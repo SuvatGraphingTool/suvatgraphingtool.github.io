@@ -132,7 +132,8 @@ export function render(canvas, cam, o) {
     if (t > 0) for (const seg of line(p, 0, t)) stroke(g, seg, { color, width: 2.8, dash: [6, 4] });
   }
   // each line lettered at its end; two that end at one point share a tag
-  const yEndA = Y(A.vel(f.tMax)), yEndB = Y(B.vel(f.tMax));
+  // (lifted off the time axis, so the last time on it keeps its number)
+  const yEndA = Math.min(Y(A.vel(f.tMax)), gy1 - 14), yEndB = Math.min(Y(B.vel(f.tMax)), gy1 - 14);
   if (Math.abs(yEndA - yEndB) < 18) L.add('A, B', X(f.tMax) + 8, (yEndA + yEndB) / 2, { color: P.ink, align: 'left', pri: 9, size: 15, weight: 700, maxPush: 20 });
   else {
     L.add('B', X(f.tMax) + 8, yEndB, { color: P.second, align: 'left', pri: 8, size: 15, weight: 700, maxPush: 20 });
