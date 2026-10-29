@@ -67,7 +67,7 @@ export function solveCeiling(k = {}) {
   // without a ceiling it hit, the time to the floor
   const f0 = flight({ u, theta: 90, h, g });
   const floorRows = [];
-  if (!hit) floorRows.push({ f: M`s = ut + ½at^2`, s: M`-${d(h)} = ${d(u)}t - ½ * ${d(g)}t^2`, r: M`t = ${d(snap(f0.tFlight))} [s]` });
+  if (!hit) floorRows.push({ f: M`s = ut + ½at^2`, s: M`${h > 0 ? `-${d(h)}` : '0'} = ${d(u)}t - ½ * ${d(g)}t^2`, r: M`t = ${d(snap(f0.tFlight))} [s]` });
   if (!hit) notes.push(`It lands on the floor ${M`${d(snap(f0.tFlight))} [s]`} after it is kicked.`);
   notes.unshift(hit && Hmax > (k.C ?? Infinity) + 1e-9 ? `Without the ceiling it would rise to ${M`${d(Hmax)} [m]`} above the floor.` : `It rises to ${M`${d(Hmax)} [m]`} above the floor, at ${M`t = ${d(tTop)} [s]`}.`);
   const tMax = hit ? hit.t : f0.tFlight;
@@ -81,7 +81,7 @@ export function solveCeiling(k = {}) {
 export function ceilingWorking(s) {
   if (!s?.ok) return [];
   const out = [{ title: 'Its greatest height', rows: s.rows, note: 'At the top it stops rising: v = 0. Up positive, a = −g.' }];
-  if (s.ceilRows.length) out.push({ title: 'The ceiling', rows: s.ceilRows, note: s.hit ? 'The first time it is that high: on the way up.' : 'It turns before it gets there.' });
+  if (s.ceilRows.length) out.push({ title: 'The ceiling', rows: s.ceilRows, note: `${s.hit ? 'The first time it is that high: on the way up.' : 'It turns before it gets there.'} Nothing here depends on the ball\u2019s mass: a lighter ball kicked at the same speed goes exactly as high.` });
   if (s.floorRows.length) out.push({ title: 'Back down to the floor', rows: s.floorRows, note: 'From where it was kicked, down to the floor: s is negative.' });
   return out;
 }

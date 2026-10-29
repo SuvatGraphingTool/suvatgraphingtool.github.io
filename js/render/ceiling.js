@@ -49,7 +49,8 @@ export function render(canvas, cam, o) {
   }
   // the ball: up on one line, down on another just beside it
   const down = t > f.tTop, bx = cx + (down ? 10 : 0), y = f.pos(t), v = f.vel(t);
-  stroke(g, [{ x: cx, y: Y(f.h) }, { x: cx, y: Y(Math.min(y, down ? f.Hmax : y)) }], { color: P.disp, width: 2, alpha: 0.5 });
+  stroke(g, [{ x: cx, y: Y(f.h) }, { x: cx, y: Y(down ? f.Hmax : y) }], { color: P.disp, width: 2, alpha: 0.5 });
+  if (down) stroke(g, [{ x: cx + 10, y: Y(f.Hmax) }, { x: cx + 10, y: Y(y) }], { color: P.disp, width: 2, alpha: 0.5 });
   if (f.hit && t >= f.hit.t - 1e-9) {
     dot(g, cx, Y(f.C), 9, { stroke: P.mark, width: 2.4 });
     L.add(T`t = ${tr(f.hit.t)} [s], ${tr(f.hit.v)} [m s^-1]`, cx - 16, Y(f.C) + 22, { color: P.mark, align: 'right', pri: 9, size: 13, weight: 700 });
