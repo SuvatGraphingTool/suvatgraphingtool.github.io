@@ -79,8 +79,7 @@ export const twotrains = {
 
   ending(s) {
     const gapSay = s.gap != null ? `; ${tr(s.gap)} m apart at ${tr(s.f.ask)} s` : '';
-    const title = s.spans.length ? `Same speed the whole time from t = ${tr(s.spans[0][0])} s to ${tr(s.spans[0][1])} s${gapSay}.`
-      : s.eq.length ? `Same speed at t = ${s.eq.map((x) => tr(x)).join(' s and ')} s${gapSay}.` : `${tr(s.f.D)} m in ${tr(s.T)} s, never at the same speed between${gapSay}.`;
+    const title = s.sameSay.length ? `Same speed ${s.sameSay.join(' and ')}${gapSay}.` : `${tr(s.f.D)} m in ${tr(s.T)} s, never at the same speed between${gapSay}.`;
     return { eyebrow: 'Two trains, one journey', title, body: s.notes.map((x) => `<p>${x}</p>`).join(''), real: true };
   },
 };

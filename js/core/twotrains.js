@@ -87,14 +87,17 @@ export function solveTwoTrains(k = {}) {
   const eqOut = eq.filter((t) => !merged.some(([a, b]) => t >= a - 1e-9 && t <= b + 1e-9));
   const keep = eq.map((t) => eqOut.includes(t)); const rowsKept = eqRows.filter((_, i) => keep[i]); eqRows.length = 0; eqRows.push(...rowsKept);
   eq.length = 0; eq.push(...eqOut);
-  const said = [...eq.map((t) => M`t = ${d(t)} [s]`), ...merged.map(([a, b]) => `the whole time from ${M`t = ${d(snap(a))}`} to ${M`t = ${d(snap(b))} [s]`}`)];
-  notes.push(said.length ? `They are moving at the same speed at ${said.join(' and ')}, as well as at rest at each station.` : 'They are never at the same speed between the stations, except at rest at each end.');
+  // every moment and every stretch of equal speed, in time order, each with its own words
+  const items = [...eq.map((t) => ({ t, m: `at ${M`t = ${d(t)} [s]`}`, plain: `at t = ${num(t, 3, { trim: true })} s` })),
+    ...merged.map(([a, b]) => ({ t: a, m: `the whole time from ${M`t = ${d(snap(a))}`} to ${M`t = ${d(snap(b))} [s]`}`, plain: `the whole time from t = ${num(snap(a), 3, { trim: true })} s to ${num(snap(b), 3, { trim: true })} s` }))].sort((p, q) => p.t - q.t);
+  const sameSay = items.map((x) => x.plain);
+  notes.push(items.length ? `They are moving at the same speed ${items.map((x) => x.m).join(' and ')}, as well as at rest at each station.` : 'They are never at the same speed between the stations, except at rest at each end.');
   if (gap != null) notes.push(`At ${M`t = ${d(k.ask.t)} [s]`} they are ${M`${d(gap)} [m]`} apart.`);
   const derived = [`${M`${d(snap(A.J.D))} [m]`} between the stations`, ...eq.map((t) => `same speed at ${M`t = ${d(t)} [s]`}`)];
 
   const f = { kind: 'twotrains', tMax: T, tFlight: T, D: A.J.D, posA: (t) => fA.pos(t).x, posB: (t) => fB.pos(t).x, velA: (t) => fA.vel(t).x, velB: (t) => fB.vel(t).x,
     accA: (t) => fA.accel(t), accB: (t) => fB.accel(t), eq, ask: have(k.ask?.t) ? k.ask.t : null, gap, gapAt: (t) => snap(Math.abs(fA.pos(t).x - fB.pos(t).x)), params: { g: 0, h: 0, u: 0, theta: 0 } };
-  return { ok: true, mode: 'twotrains', A, B, sameD, spans: merged, eq, gap, eqRows, gapRows, gapA, gapB, notes, derived, f, T };
+  return { ok: true, mode: 'twotrains', A, B, sameD, sameSay, spans: merged, eq, gap, eqRows, gapRows, gapA, gapB, notes, derived, f, T };
 }
 
 /** The working: each train's journey, then the same speeds, then the gap. */
