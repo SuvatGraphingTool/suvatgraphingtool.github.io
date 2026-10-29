@@ -95,10 +95,10 @@ export function solveBench(k = {}) {
     if (have(k.drop)) {
       miss = fall - k.drop;
       atCentre = Math.abs(miss) < AT_CENTRE;
-      stripRows.push({ f: M`"drop" - "strip lower"`, s: M`${d(snap(fall))} - ${d(k.drop)}`, r: M`${atCentre ? 0 : d(snap(miss))} [m]` });
+      stripRows.push({ f: M`"drop" - "strip lower"`, s: M`${d(snap(fall))} - ${d(k.drop)}`, r: M`${d(snap(miss))} [m]` });
       const lower = k.drop === 0 ? 'level with the first' : M`${d(k.drop)} [m]` + ' lower';
       notes.push(atCentre
-        ? `It has dropped ${M`${d(snap(fall))} [m]`} at the second strip, and the strip's centre is ${lower}: it breaks the strip at its centre.`
+        ? `It has dropped ${M`${d(snap(fall))} [m]`} at the second strip, and the strip's centre is ${lower}: within half a millimetre, so it breaks the strip at its centre.`
         : `It has dropped ${M`${d(snap(fall))} [m]`} at the second strip, ${miss > 0 ? 'more than' : 'less than'} the strip's centre is set (${lower}): it reaches the strip ${M`${d(snap(Math.abs(miss)))} [m]`} ${miss > 0 ? 'below' : 'above'} its centre, not at it.`);
     } else {
       notes.push(`At the second strip it has dropped ${M`${d(snap(fall))} [m]`}: to be broken at its centre, that strip's centre is that much lower than the first's.`);
@@ -124,7 +124,7 @@ export function benchWorking(solved) {
   if (solved.speedRows.length) out.push({ title: 'The speed it leaves at', rows: solved.speedRows,
     note: solved.speedRows.length > 1 ? 'Vertically it starts from rest, falling the height of the edge; across, the speed never changes.' : 'Across, nothing acts on it: its speed between the strips is the speed it left at.' });
   if (solved.stripRows.length) out.push({ title: 'At the second strip', rows: solved.stripRows,
-    note: 'Across at a steady speed gives the time; down from rest, under gravity alone, gives the drop.' });
+    note: 'Across at a steady speed gives the time; down positive, from rest, under gravity alone, gives the drop.' });
   if (solved.floorRows.length) out.push({ title: 'To the floor', rows: solved.floorRows,
     note: 'Down positive here for the time: it starts with no vertical velocity.' });
   return out;

@@ -585,7 +585,7 @@ and none is set at a bench or a table.
 
 **The stage.** Side on, measured from the edge: the end of a laboratory bench
 with the launcher on it, each strip on a clamp stand with its centre marked and
-torn where the ball goes through (whole, and said so, if it misses); the gap and how much lower as dimension
+torn where the ball goes through; the gap and how much lower as dimension
 lines; where it breaks the second ringed, with how far from the centre. As a
 table: a table, the floor, the height and how far out it lands.
 

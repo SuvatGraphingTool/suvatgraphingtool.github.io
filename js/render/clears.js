@@ -89,7 +89,7 @@ export function render(canvas, cam, o) {
   // ── the angle at O
   const th = f.params.theta * Math.PI / 180, Ra = 40;
   g.save(); g.strokeStyle = P.strong; g.lineWidth = 1.6; g.beginPath(); g.arc(X(0), oy, Ra, -th, 0); g.stroke(); g.restore();
-  L.add(T`theta = ${num(f.params.theta, 1)}°`, X(0) + Ra + 8, oy - 14, { color: P.strong, align: 'left', pri: 7, size: 14, weight: 700 });
+  L.add(T`theta = ${num(f.params.theta, 1)}°`, X(0) - 12, oy - 16, { color: P.strong, align: 'right', pri: 7, size: 14, weight: 700 });
 
   // ── the ball, its velocity and its acceleration
   const q = f.pos(t), v = f.vel(t), bx = X(q.x), by = Y(q.y);

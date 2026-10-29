@@ -921,7 +921,8 @@ group('Off the bench (9PH0/01 J18 Q18b)', () => {
   ok(!KITS.bench.solve({ g: 9.81, d: 0.5, tGap: 0.14, H: 0.3, drop: 0.5 }).ok, 'a strip below the floor is refused');
   const hi = KITS.bench.solve({ g: 9.81, d: 0.5, tGap: 0.14, drop: 0.2 });
   ok(!/only/.test(hi.notes.join(' ')) && /above its centre/.test(hi.notes.join(' ')), 'a strip set lower than the drop: above its centre, no "only"');
-  ok(/>0</.test(c.stripRows[c.stripRows.length - 1].r) && !/10/.test(c.stripRows[c.stripRows.length - 1].r.replace(/<[^>]+>/g, '')), 'at its centre the residual is 0, not noise');
+  const near = KITS.bench.solve({ g: 9.81, d: 0.5, tGap: 0.14, drop: 0.096 });
+  ok(near.atCentre && /0\.0001/.test(near.stripRows[near.stripRows.length - 1].r.replace(/<[^>]+>/g, '')) && /half a millimetre/.test(near.notes.join(' ')), 'within half a millimetre: the true difference, and said so');
 });
 
 group('Over the wall, in a letter (H240/03 J22 Q13)', () => {

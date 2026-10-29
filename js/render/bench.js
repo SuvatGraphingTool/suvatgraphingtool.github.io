@@ -100,11 +100,12 @@ export function render(canvas, cam, o) {
 
   // ── the strips: the first at the end of the bench, the second d out and drop lower
   if (f.d) {
-    const half = Math.max(30, (f.drop ?? f.fall) * k * 0.55);
+    // the paper gives no strip length: each is drawn long enough to show where it is broken
+    const half = Math.max(30, (f.drop ?? f.fall) * k * 0.55, Math.abs(f.miss ?? 0) * k + 14);
     const y2 = Y(-(f.drop ?? f.fall));
     foilStrip(g, X(0), Y(0), half, P, { torn: t > 1e-9 ? Y(0) : null, top: top - 30 });
-    const past = t >= f.t2 - 1e-9, hitY = Y(f.pos(f.t2).y), hits = Math.abs(hitY - y2) <= half;
-    foilStrip(g, X(f.d), y2, half, P, { torn: past && hits ? hitY : null, top: top - 30 });
+    const past = t >= f.t2 - 1e-9, hitY = Y(f.pos(f.t2).y);
+    foilStrip(g, X(f.d), y2, half, P, { torn: past ? hitY : null, top: top - 30 });
     // the gap between them, across the top
     const gy = top - 4;
     stroke(g, [{ x: X(0), y: gy }, { x: X(f.d), y: gy }], { color: P.ink, width: 1.2, alpha: 0.8 });
@@ -120,7 +121,7 @@ export function render(canvas, cam, o) {
     if (past) {
       const q = f.pos(f.t2);
       dot(g, X(q.x), Y(q.y), 8, { stroke: P.mark, width: 2.4 });
-      const say = f.drop == null ? T`"dropped" ${tr(f.fall)} [m]` : f.atCentre ? 'at its centre' : !hits ? T`"misses the strip:" ${tr(Math.abs(f.miss), 4)} [m] ${f.miss > 0 ? '"below"' : '"above"'} "its centre"` : T`${tr(Math.abs(f.miss), 4)} [m] ${f.miss > 0 ? '"below"' : '"above"'} "its centre"`;
+      const say = f.drop == null ? T`"dropped" ${tr(f.fall)} [m]` : f.atCentre ? 'at its centre' :  T`${tr(Math.abs(f.miss), 4)} [m] ${f.miss > 0 ? '"below"' : '"above"'} "its centre"`;
       L.add(say, X(q.x) - 14, Y(q.y) + 22, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700 });
       L.add(T`t = ${tr(f.t2)} [s]`, X(q.x) - 14, Y(q.y) + 40, { color: P.mark, align: 'right', pri: 8, size: 13, weight: 700 });
     }

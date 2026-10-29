@@ -90,7 +90,7 @@ export const clears = {
       </div>`;
     return {
       eyebrow: `Just clears, then lands`,
-      title: `${num(s.theta, 1)}° whatever a is; here a = ${tr(s.a)}.`,
+      title: `${num(s.theta, 1)}° whatever a is; here a = ${num(s.a, Math.abs(s.a) >= 100 ? 1 : 3, { trim: true })} m.`,
       body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}${table}`,
       real: true,
     };

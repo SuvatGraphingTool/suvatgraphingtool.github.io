@@ -23,6 +23,8 @@ import { M, num } from '../notation.js';
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const DEG = Math.PI / 180;
+// a length in metres: three figures after the point when small, one when large
+const m = (x) => num(snap(x), Math.abs(x) >= 100 ? 1 : 3, { trim: true });
 
 /** A coefficient as notation source: a fraction when it is one, bracketed for a product. */
 function co(c, bare = false) {
@@ -76,10 +78,10 @@ export function solveClears(k = {}) {
   if (have(u)) {
     U = u * cos; a = U * U / (c * g);
     fixRows.push({ f: M`U = u cos theta`, s: M`${d(u)} cos ${d(snap(theta), 1)}°`, r: M`U = ${d(snap(U))} [m s^-1]` });
-    fixRows.push({ f: M`U^2 = ${ka(c)}g`, s: M`${d(snap(U))}^2 = ${co(c)} * ${d(g)}a`, r: M`a = ${d(snap(a))}` });
+    fixRows.push({ f: M`U^2 = ${ka(c)}g`, s: M`${d(snap(U))}^2 = ${co(c)} * ${d(g)}a`, r: M`a = ${m(a)} [m]` });
   } else if (have(a)) {
     U = Math.sqrt(c * g * a); u = U / cos;
-    fixRows.push({ f: M`U^2 = ${ka(c)}g`, s: M`${co(c)} * ${d(g)} * ${d(a)}`, r: M`U^2 = ${d(snap(U * U))}, U = ${d(snap(U))} [m s^-1]` });
+    fixRows.push({ f: M`U^2 = ${ka(c)}g`, s: M`${co(c)} * ${d(g)} * ${m(a)}`, r: M`U^2 = ${d(snap(U * U))}, U = ${d(snap(U))} [m s^-1]` });
     fixRows.push({ f: M`u = U/cos theta`, s: M`${d(snap(U))}/cos ${d(snap(theta), 1)}°`, r: M`u = ${d(snap(u))} [m s^-1]` });
   }
   const notes = [`The angle comes from the two points alone: ${M`tan theta = ${co(tan, true)}`}, whatever ${M`a`} is.`];
@@ -92,11 +94,11 @@ export function solveClears(k = {}) {
   const heightRows = [
     { f: M`V = U tan theta`, s: M`${d(snap(U))} * ${co(tan)}`, r: M`V = ${d(snap(V))} [m s^-1]` },
     { f: M`H = V^2/(2g)`, s: M`${d(snap(V))}^2/(2 * ${d(g)})`, r: M`H = ${ka(hc)} = ${d(snap(Hmax))} [m]` },
-    { f: M`t = x/U`, s: M`(${co(R)} * ${d(snap(a))})/${d(snap(U))}`, r: M`t = ${d(snap(T))} [s]` },
+    { f: M`t = x/U`, s: M`(${co(R)} * ${m(a)})/${d(snap(U))}`, r: M`t = ${d(snap(T))} [s]` },
   ];
-  notes.push(`With ${M`u = ${d(snap(u))} [m s^-1]`}, ${M`a = ${d(snap(a))}`}: the wall is ${M`${d(snap(P * a))} [m]`} away and ${M`${d(snap(Q * a))} [m]`} high, and it lands ${M`${d(snap(R * a))} [m]`} from O.`);
+  notes.push(`With ${M`u = ${d(snap(u))} [m s^-1]`}, ${M`a = ${m(a)} [m]`}: the wall is ${M`${d(snap(P * a))} [m]`} away and ${M`${d(snap(Q * a))} [m]`} high, and it lands ${M`${d(snap(R * a))} [m]`} from O.`);
   notes.push(`Its greatest height is ${M`${ka(hc)}`}, ${M`${d(snap(Hmax))} [m]`} above the ground.`);
-  derived.push(have(k.u) ? `${M`a = ${d(snap(a))}`}` : `${M`u = ${d(snap(u))} [m s^-1]`}`, `${M`H = ${d(snap(Hmax))} [m]`}`);
+  derived.push(have(k.u) ? `${M`a = ${m(a)} [m]`}` : `${M`u = ${d(snap(u))} [m s^-1]`}`, `${M`H = ${d(snap(Hmax))} [m]`}`);
 
   const f0 = flight({ u, theta, h: 0, g });
   const f = { ...f0, kind: 'clears', a, P, Q, R, wall: { x: P * a, H: Q * a }, Hmax, tWall: P * a / U };
