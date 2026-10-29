@@ -190,10 +190,10 @@ export function render(canvas, cam, o) {
   // ── across: the scale, the line, the towers and the labels, closed up
   // together on a canvas too narrow for them at full size
   const towerW = phone ? 92 : 130;
-  const k = phone ? 0.55 : 1;
+  const k = phone ? 0.45 : 1;
   const lane = (name) => LANE[name] * k;
   // a tower stands clear of the marks, and on a phone clear of the gap's bracket too
-  const towerGap = phone ? lane('letter') + 24 : lane('tower');
+  const towerGap = phone ? lane('letter') + 18 : lane('tower');
   const hasTower = (p) => p.h > 1e-6;
   // what stands beside the line on each side: a tower, a thrower on the ground, or nothing
   const sideW = (p) => hasTower(p) ? towerGap + towerW : (Math.abs(p.u) > 1e-9 ? Math.max(lane('letter') + 12, TH * 0.75) : lane('letter') + 12);
@@ -203,8 +203,8 @@ export function render(canvas, cam, o) {
   if (phone) {
     // the scale just clear of the readouts, left of the column; the line
     // beyond A's marks; a tower on the right may run off the edge
-    rx = hl.w + 58;
-    cx = Math.round(rx + 10 + lane('letter') + 10);
+    rx = hl.w + 60;
+    cx = Math.round(rx + 10 + lane('letter') + 8);
   } else {
     rx = hl.w + 84;
     cx = Math.round(Math.max(rx + 18 + leftRaw, Math.min(w * 0.46, w - 16 - info - rightRaw)));
@@ -226,12 +226,14 @@ export function render(canvas, cam, o) {
       const yH = Y(p.h);                                 // the ball's centre at the start
       const feet = Math.min(yH + hand.y, Y(p.h) + (groundY - Y(p.h)) / 3);
       const fx = cx + side * (hand.x + BALL * 0.7);
-      const near = cx + side * towerGap, far = near + side * towerW;
+      // the whole tower on the canvas: on a phone it takes what width is left
+      const tw = phone ? Math.max(40, Math.min(towerW, side > 0 ? w - 6 - (cx + towerGap) : cx - towerGap - 6)) : towerW;
+      const near = cx + side * towerGap, far = near + side * tw;
       building(g, Math.min(near, far), Math.max(near, far), feet, groundY, { storey: Math.max(12, 3 * ky), seed: side > 0 ? 11 : 17 });
       const tip = fx - side * TH * 0.3;
       slab(g, near, tip, feet, near);
       // labels keep off the ledge and whoever stands on it
-      L.reserve({ x: Math.min(near, tip) - 2, y: feet - 4, w: Math.abs(near - tip) + 4, h: 14 });
+      L.reserve({ x: Math.min(near, tip) - 2, y: feet - 4, w: Math.abs(near - tip) + 4, h: 14 + Math.min(34, Math.abs(near - tip) * 0.5) });
       L.reserve({ x: fx - TH * 0.5, y: feet - TH * 1.1, w: TH, h: TH * 1.1 });
       people.push(() => person(g, fx, feet, TH, P, { dir: side > 0 ? -1 : 1, pose, aim }));
     } else if (Math.abs(p.u) > 1e-9) {
@@ -311,7 +313,7 @@ export function render(canvas, cam, o) {
     const apart = `apart ${T`${sig3(Math.abs(f.gap(t)))} [m]`}`;
     if (phone) {
       // between the line and whatever stands on its right, and said under the ground
-      const bx = cx + lane('letter') + 10;
+      const bx = cx + lane('letter') + 6;
       stroke(g, [{ x: bx, y: yA }, { x: bx, y: yB }], { color: P.disp, width: 2.6 });
       for (const yy of [yA, yB]) stroke(g, [{ x: bx - 6, y: yy }, { x: bx + 6, y: yy }], { color: P.disp, width: 2.2 });
       L.add(apart, 10, groundY + 22, { color: P.disp, align: 'left', pri: 8, size: 15, weight: 700 });

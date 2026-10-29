@@ -369,20 +369,18 @@ export function fence(g, x, top, Y, P, k = 20) {
     building runs back to the right. With `win` ({ hi, lo } in px), a glazed
     window in it between those heights, its glass seen edge on in the wall's
     face as well. */
-function endWall(g, x, top, Y, w, win, k) {
+function endWall(g, x, top, Y, bw, win, k) {
   const E = env();
-  const bw = Math.max(40, w - x + 30);
-  softShadow(g, x + 30, Y + 1, 60, 5, 0.8);
+  softShadow(g, x + bw / 2, Y + 1, bw * 0.6, 5, 0.8);
   bricks(g, x, top, bw, Y - top, { course: clamp(0.075 * k, 2, 7), seed: 31, base: E.night ? '#6e4c43' : '#a76450' });
   // the roof, running back from the eave over the wall
-  const rise = Math.min(top - 6, bw * 0.45, (Y - top) * 0.6);
-  if (rise > 8) tiledRoof(g, x - 8, x + 2 * bw, top, top - rise);
+  const rise = Math.min(top - 6, bw * 0.4, (Y - top) * 0.6);
+  if (rise > 8) tiledRoof(g, x - 6, x + bw + 6, top, top - rise);
   else band(g, x - 3, top - 5, bw + 6, 6);
   // a storey's windows along the side, beyond the one it is aimed at
   const storey = 3 * k, pw = storey * 0.33, ph = storey * 0.42;      // true size
   for (let yb = Y - storey * 0.3; yb - ph > top + 6; yb -= storey) {
-    for (let xx = x + Math.max(60, pw * 3); xx + pw < x + bw - 4 && pw > 3; xx += pw * 2.6) {
-      if (win && yb > win.hi - 6 && yb - ph < win.lo + 6 && xx < x + 70) continue;
+    for (let xx = x + Math.max(pw * 3, (win ? clamp((win.lo - win.hi) * 0.8, 14, 46) : 0) + 14); xx + pw < x + bw - 4 && pw > 3; xx += pw * 2.6) {
       windowPane(g, xx, yb - ph, pw, ph, { lit: E.night && Math.round(xx + yb) % 3 === 0 });
     }
   }
@@ -531,6 +529,9 @@ export function render(canvas, cam, o) {
   if (f.flag != null) xs.push(f.flag);
   // the thing at the point has a width of its own: a tree's crown, a fence's run
   if (Pt?.d != null && Pt.H != null) xs.push(Pt.d + ({ tree: 0.36 * Pt.H, fence: 1.9, wall: 0.25 }[kind] ?? 0));
+  // a wall it hits is the end of a building 8 m deep, all of it in the frame
+  const FACE_DEPTH = 8;
+  if (kind === 'face' && Pt?.d != null) xs.push(Pt.d + FACE_DEPTH / 1.04);
   const xMax = Math.max(...xs) * 1.04 || 1, yMax = Math.max(...ys, xMax * 0.05) * 1.08;
   const elevated = F.h0 > 1e-9;
   const inHouse = elevated && f.from !== 'stand';
@@ -542,8 +543,9 @@ export function render(canvas, cam, o) {
   // room beside anything.
   let leftPx = 24 + (elevated ? 56 : 0);
   // (and beyond the thing, room for its height's dimension and label)
-  const rightPx = kind === 'face' ? (phone ? 56 : 120) : (phone ? 52 : 72);
-  const below = phone ? 136 : 96;
+  const rightPx = phone ? 52 : 72;
+  // (on a phone the ground sits just under the readouts, so the launch is never behind them)
+  const below = phone ? 108 : 96;
   const areasFor = () => (phone ? [{ left: 10 + leftPx, right: w - rightPx, top: 96, bottom: h - below }]
     : [{ left: HUD + 16 + leftPx, right: w - rightPx, top: 72, bottom: h - below },
        { left: 24 + leftPx, right: w - rightPx, top: HUD_H + 16, bottom: h - below }]);
@@ -634,7 +636,9 @@ export function render(canvas, cam, o) {
     stroke(g, [{ x: dx, y: oy }, { x: dx, y: ly }], { color: P.muted, width: 1.2 });
     for (const yy of [oy, ly]) stroke(g, [{ x: dx - 4, y: yy }, { x: dx + 4, y: yy }], { color: P.muted, width: 1.2 });
     stroke(g, [{ x: dx + 4, y: ly }, { x: lx - 4, y: ly }], { color: P.muted, width: 1, dash: [2, 4], alpha: 0.7 });
-    L.add(T`${tr(F.h0)} [m]`, dx - 6, (ly + oy) / 2, { color: P.strong, align: 'right', pri: 5, size: 14 });
+    // beside its bracket — on a phone low enough down it to clear the readouts
+    const hy = phone ? Math.min(oy - 8, Math.max((ly + oy) / 2, HUD_PHONE.h + 14)) : (ly + oy) / 2;
+    L.add(T`${tr(F.h0)} [m]`, dx - 6, hy, { color: P.strong, align: 'right', pri: 8, size: 14, maxPush: 20 });
   }
 
   // ── the thing at the point
@@ -660,8 +664,8 @@ export function render(canvas, cam, o) {
     else if (kind === 'face') {
       const ft = Y(Math.min(yMax * 0.95, faceTop * 1.35));
       if (f.win) faceWin = { hi: Y(f.win.hi), lo: Y(f.win.lo) };
-      endWall(g, px, ft, oy, w, faceWin, k);
-      L.reserve({ x: px, y: ft, w: w - px, h: oy - ft });
+      endWall(g, px, ft, oy, FACE_DEPTH * k, faceWin, k);
+      L.reserve({ x: px, y: ft, w: FACE_DEPTH * k, h: oy - ft });
       if (f.win) {
         // named below the window, on the near side of the wall
         const struck = F.at?.reached && t >= F.at.t - 1e-9;
@@ -686,7 +690,8 @@ export function render(canvas, cam, o) {
     const dy = oy + 34;
     stroke(g, [{ x: X(0), y: dy }, { x: px, y: dy }], { color: P.muted, width: 1.2 });
     for (const xx of [X(0), px]) stroke(g, [{ x: xx, y: dy - 4 }, { x: xx, y: dy + 4 }], { color: P.muted, width: 1.2 });
-    L.add(T`${tr(Pt.d)} [m]`, (X(0) + px) / 2, dy + 13, { color: P.strong, align: 'center', pri: 6, size: 14 });
+    L.add(T`${tr(Pt.d)} [m]`, (X(0) + px) / 2, dy + 13, { color: P.strong, align: 'center', pri: 8, size: 14 });
+    L.reserve({ x: X(0), y: dy - 5, w: px - X(0), h: 5.5 });
   }
   // ── a mark on the ground
   if (f.flag != null) {
@@ -707,7 +712,7 @@ export function render(canvas, cam, o) {
       const dmin = Math.min(...mine.map((m) => Math.hypot(m.x - q.x, m.y - q.y)));
       if (dmin > far) { far = dmin; at = q; }
     }
-    L.add(T`theta = ${num(O.theta, 2, { trim: true })}°`, at.x, at.y + 14, { color: P.muted, align: 'center', pri: 4, size: 13 });
+    L.add(T`theta = ${num(O.theta, 1, { trim: true })}°`, at.x, at.y + 14, { color: P.muted, align: 'center', pri: 4, size: 13 });
   }
   // ── the path flown: all of it faintly, the part flown strongly; labels keep off it
   stroke(g, mine, { color: P.vel, width: 1.6, alpha: 0.3 });
@@ -721,7 +726,11 @@ export function render(canvas, cam, o) {
   if (Math.abs(F.theta) > 0.5) {
     g.save(); g.strokeStyle = P.muted; g.lineWidth = 1.4; g.beginPath();
     g.arc(lx, ly, R, -Math.max(th, 0), -Math.min(th, 0)); g.stroke(); g.restore();
-    L.add(T`${num(F.theta, 2, { trim: true })}°`, lx + R + 8, ly - (th > 0 ? 14 : -14), { color: P.strong, align: 'left', pri: 7, size: 14, weight: 700, maxPush: 20 });
+    // to one decimal place; on a phone, where the readouts cover the launch,
+    // on the distances' row at the right, named
+    const ang = num(F.theta, 1, { trim: true });
+    if (phone) L.add(T`theta = ${ang}°`, w - 12, oy + 47, { color: P.strong, align: 'right', pri: 8, size: 14, weight: 700, maxPush: 30 });
+    else L.add(T`${ang}°`, lx + R + 8, ly - (th > 0 ? 14 : -14), { color: P.strong, align: 'left', pri: 8, size: 14, weight: 700, maxPush: 30 });
   }
 
   // ── equal steps of time along the path, labelled when asked
@@ -824,7 +833,7 @@ export function render(canvas, cam, o) {
   ballAt(g, sx, sy, rBall);
 
   // ── on a phone, what happened, in captions under the distances
-  caps.forEach((c, i) => L.add(c.text, 12, oy + 68 + i * 22, { color: c.color, align: 'left', pri: 10, size: 14, weight: 700 }));
+  caps.forEach((c, i) => L.add(c.text, 12, oy + 66 + i * 24, { color: c.color, align: 'left', pri: 10, size: 14, weight: 700 }));
 
   L.draw(g, w, h);
   return null;

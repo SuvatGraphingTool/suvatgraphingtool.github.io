@@ -205,6 +205,29 @@ function gardenWall(g, x0, x1, top, Y, m) {
   band(g, x0 - 2, top, x1 - x0 + 4, cop);
 }
 
+/** A wooden crate from x0 to x1, its lid at y = top, on the ground at Y:
+    horizontal planks with gaps, a darker frame at the edges, a diagonal
+    brace, nail heads, the light from the left. */
+function crate(g, x0, x1, top, Y) {
+  const E = env(), w = x1 - x0, h = Y - top;
+  if (w < 4 || h < 3) return;
+  softShadow(g, (x0 + x1) / 2, Y + 1, w * 0.65, 4, 0.9);
+  const light = E.night ? '#a8865e' : '#d2a874', mid = E.night ? '#7c5f40' : '#a77d4f', dark = E.night ? '#4a3726' : '#6e4f31';
+  const n = Math.max(2, Math.round(h / Math.max(5, w * 0.12)));
+  for (let i = 0; i < n; i++) {
+    const py = top + (h / n) * i, ph = h / n - 1;
+    const gr = g.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, light); gr.addColorStop(1, mid);
+    g.fillStyle = gr; g.fillRect(x0, py, w, ph);
+    g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x0 + w * 0.15, py + ph * 0.45, w * 0.5, 1);   // grain
+  }
+  const fr = Math.max(2, w * 0.08);
+  g.fillStyle = dark; g.fillRect(x0, top, fr, h); g.fillRect(x1 - fr, top, fr, h); g.fillRect(x0, top, w, Math.max(2, fr * 0.7));
+  g.strokeStyle = dark; g.lineWidth = Math.max(1.5, fr * 0.8);
+  g.beginPath(); g.moveTo(x0 + fr, Y - 1); g.lineTo(x1 - fr, top + fr); g.stroke();
+  g.fillStyle = E.night ? '#cfc6bf' : '#5a5a5a';
+  for (const x of [x0 + fr / 2, x1 - fr / 2]) for (const y of [top + fr, Y - fr]) { g.beginPath(); g.arc(x, y, Math.max(0.8, fr * 0.2), 0, TAU); g.fill(); }
+}
+
 /** A person `H` px tall at the scene's own scale: the shared thrower,
     scaled down when the scene makes a person smaller than it draws one. */
 function person(g, X, Y, H, P, opts) {
@@ -323,10 +346,8 @@ export function render(canvas, cam, o) {
   } else if (base === 'wall') {
     gardenWall(g, fx - bw * 0.75, fx + bw * 0.25, fyFeet, groundY, ky);
   } else if (base === 'step') {
-    // a stone step under the feet
-    const sw = TH * 0.55;
-    softShadow(g, fx, groundY + 1, sw * 0.7, 4, 0.9);
-    band(g, fx - sw / 2, fyFeet, sw, groundY - fyFeet);
+    // a wooden crate under the feet, true size: planks, a frame, a diagonal brace
+    crate(g, fx - TH * 0.32, fx + TH * 0.32, fyFeet, groundY);
   }
   const pose = fired ? 1 : 0.15;
   person(g, fx, fyFeet, TH, P, { pose, aim });
@@ -402,7 +423,6 @@ export function render(canvas, cam, o) {
     const old = s.flight < now.flight;
     g.save(); g.globalAlpha = old ? 0.4 : 1;
     dot(g, x, Y(s.y), 3.6, { fill: P.vel, stroke: P.surface, width: 1.3 });
-    L.reserve({ x: x - 5, y: Y(s.y) - 5, w: 10, h: 10 });
     g.restore();
     if (show.ticks && !old) {
       L.add(T`${num(tt, dp)} [s]`, x + (up ? 10 : -10), Y(s.y), { color: P.vel, align: up ? 'left' : 'right', pri: 2, size: 13, bg: false, maxPush: 20 });
@@ -465,12 +485,11 @@ export function render(canvas, cam, o) {
     let y0 = yb - R, y1 = y0 - len;
     if (y1 > groundY - 3) { y0 -= y1 - (groundY - 3); y1 = groundY - 3; }
     arrow(g, ax, y0, ax, y1, { color: P.velVec, width: 3, head: 11 });
-    L.reserve({ x: ax - 7, y: Math.min(y0, y1) - 6, w: 14, h: Math.abs(y1 - y0) + 12 });
     const vt = T`v = ${sig3(now.v)} [m s^-1]`;
     // On a phone there is no room beside the arrow that is not the marks:
     // the velocity is a caption under the paving, in its own colour.
     if (phone) L.add(vt, 10, groundY + 28, { color: P.vel, align: 'left', pri: 9, size: 15, weight: 700 });
-    else L.add(vt, ax + 8, len > 0 ? y1 - 12 : y0 - 14, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700 });
+    else L.add(vt, ax + 8, len > 0 ? y1 - 12 : y0 - 14, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700, maxPush: 40 });
   }
   if (show.acceleration && t < f.tMax - 1e-9) {
     const ax = lane('acc');
