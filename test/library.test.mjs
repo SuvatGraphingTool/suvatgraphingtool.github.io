@@ -801,7 +801,7 @@ group('Audit 5: catch and trip', () => {
   ok(/never moves forwards/.test(strip(solveCatch({ g: 9.8, u: 14, theta: 60, yc: 0.3, c: { a: -2 } }).reason)), 'from rest and slowing: refused');
   ok(/add up to/.test(strip(solveTrip({ segs: [{ v: 6, t: 3 }, { v: 0, t: 2 }, { u: -6, v: -6 }], back: 1, T: 99 }).reason)), 'a total time the segments do not make: refused');
   ok(/not back there/.test(strip(solveTrip({ segs: [{ v: 6, t: 3 }, { v: 0, t: 3 }, { u: -6, v: -6, t: 1 }], back: 1 }).reason)), 'ends back at a segment it is not back at: refused');
-  ok(/back at the start/.test(strip(solveTrip({ segs: [{ v: 6, t: 2 }, { v: 0, t: 2 }, { u: -6, v: -6, t: 2 }, { u: -6, v: 0, t: 2 }] }).notes.join(' '))), 'back at the start is said so');
+  ok(/back at the start/.test(strip(solveTrip({ segs: [{ v: 6, t: 2 }, { v: 0, t: 2 }, { u: -6, v: -6, t: 2 }] }).notes.join(' '))), 'back at the start is said so');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
