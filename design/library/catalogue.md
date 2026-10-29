@@ -743,3 +743,19 @@ the gap between them, the moments of equal speed.
 
 **What the student varies.** Up to three stages for each train (what it does,
 for how long, its rate, its end speed); a time to ask the gap at.
+
+### `past-the-posts` — Past the posts, one acceleration
+
+**Papers.** Edexcel IAL WME01 Jun 2016 Q1 (a car with constant acceleration
+passes P; it covers 76 m in the next 4 s and a further 219 m in the next 6 s:
+76 = 4u + 8a and 295 = 10u + 50a, so a = 3.5 m s⁻², u = 12 m s⁻¹).
+
+**Why it is built.** `stage-by-stage` solves each stretch from three of its
+own numbers; here every stretch has only two, and it is the one acceleration
+shared by all of them that makes a pair of simultaneous equations.
+
+**The stage.** The stage-by-stage road with posts P, Q, R: each stretch's
+distance and time under it, the car passing, the speed at each post.
+
+**What the student varies.** Up to three stretches (distance and time); the
+speed at P or the acceleration, when the paper gives one; car, cyclist or train.

@@ -403,6 +403,15 @@ arrive together. Equal speeds: in every stretch where each is in one stage,
 v_A − v_B is linear in t — one root per stretch. The gap at a time is the
 difference of the two `askAt` distances. Used by: `two-trains`.
 
+### Past the posts, one acceleration — `js/core/posts.js`
+
+`solvePosts({ gaps: [{ s, t }], u, a, look })` — from the first post to each
+later one, s = ut + ½at² in the same u and a: two give a pair of simultaneous
+equations (solved by elimination, written out), a third is checked; either u
+or a may be given instead. Each post's speed is v = u + at. The motion is in
+the chain shape (`kind: 'chain'`, stretches named P to Q…) so the
+stage-by-stage road draws it, its posts named. Used by: `past-the-posts`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -455,7 +464,7 @@ The whole distance at one scale on the figure's own surface (`surface`,
 begins, each stage's distance and time as a dimension line under the road,
 what it does over each (speeding up, slowing down, steady, with a), the speed
 at each post once passed, and the car, cyclist or train where it is now with
-its velocity (dashed). Kit `chain`. Used by: `stage-by-stage`.
+its velocity (dashed). Kit `chain`. Used by: `stage-by-stage`. Named posts (a stretch's `name` and `end`) take letters, and the last post stands at the end; used by kit `posts` (`past-the-posts`) too.
 
 ### Two on a surface, from above — `js/render/collide.js`
 

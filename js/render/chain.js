@@ -37,7 +37,7 @@ export function render(canvas, cam, o) {
 
   // ── a post where each stage begins, and its distance under the road
   f.S.forEach((x, i) => {
-    post(g, L, X(x.x0), Y, String(x.i), P.mark, P, { height: 60 });
+    post(g, L, X(x.x0), Y, x.name || String(x.i), P.mark, P, { height: 60 });
     const passed = t >= x.t0 - 1e-9;
     if (passed) L.add(T`${tr(x.u)} [m s^-1]`, X(x.x0) + 20, Y - 74, { color: P.vel, align: 'left', pri: 6, size: 13, weight: 700 });
     const dy = Y + 34 + (i % 2) * 40;
@@ -48,7 +48,9 @@ export function render(canvas, cam, o) {
     L.add(`${wide ? `${x.does}, ` : ''}${T`a = ${tr(x.a)} [m s^-2]`}`, (X(x.x0) + X(x.x1)) / 2, dy + 30, { color: P.acc, align: 'center', pri: 5, size: 13, weight: 700 });
   });
   const end = f.S[f.S.length - 1];
-  stroke(g, [{ x: X(end.x1), y: Y + 6 }, { x: X(end.x1), y: Y - 40 }], { color: P.mark, width: 2.4 });
+  // the end: a named post when the stretches run between named posts, else a line
+  if (end.end) post(g, L, X(end.x1), Y, end.end, P.mark, P, { height: 60 });
+  else stroke(g, [{ x: X(end.x1), y: Y + 6 }, { x: X(end.x1), y: Y - 40 }], { color: P.mark, width: 2.4 });
   if (t >= f.tMax - 1e-9) L.add(T`${tr(end.v)} [m s^-1]`, X(end.x1) - 8, Y - 52, { color: P.vel, align: 'right', pri: 7, size: 13, weight: 700 });
 
   // ── the vehicle, its velocity and acceleration (along the road: dashed)

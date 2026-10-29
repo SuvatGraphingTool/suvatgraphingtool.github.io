@@ -527,4 +527,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each journey, the hidden number from the equal distances, when the speeds are equal, and the gap at the time asked.',
     } },
+  { id: 'past-the-posts', group: 'library', kit: 'posts',
+    name: 'Past the posts, one acceleration',
+    sub: 'a car covers one distance in one time, then another in the next — what was its speed and acceleration?',
+    note: 'A car with a constant acceleration passes a row of posts, the distance and the time between each pair given, but neither its speed at the first post nor its acceleration. Measured from the first post, each later post gives one equation in the same two unknowns — a pair of simultaneous equations, solved by elimination. A third stretch, if given, must agree.',
+    params: { look: 'car', gaps: [{ s: 76, t: 4 }, { s: 219, t: 6 }] },
+    place: 'Side on: a straight road with posts P, Q and R',
+    sources: [
+      { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2016', q: '1' },
+    ],
+    tags: ['posts', 'successive intervals', 'in the next', 'further', 'simultaneous equations', 'constant acceleration', 'initial speed', 'car', 'road',
+           'suvat', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['A particle', 'the car has no length: it passes a post when its point does.'],
+        ['One constant acceleration', 'the same acceleration all the way, through every stretch.'],
+        ['A straight level road', 'the distances are along the one line of the road.'],
+      ],
+      caveat: 'What the engine did compute is above: an equation from the first post to each later one, the pair solved, and the speed at each post.',
+    } },
 ];

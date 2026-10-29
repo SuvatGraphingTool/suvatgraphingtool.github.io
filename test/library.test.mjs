@@ -1067,6 +1067,19 @@ group('Two trains, one journey (WME01 Jan14 Q8)', () => {
   ok(!K.solve({ A: PA, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'hold', t: 90 }] } }).ok, 'a train that does not come to rest at the station is refused');
 });
 
+group('Past the posts (WME01 Jun16 Q1)', () => {
+  const K = KITS.posts;
+  const r = K.solve(K.read({ s1: 76, t1: 4, s2: 219, t2: 6 }));
+  ok(r.ok && r.u === 12 && r.a === 3.5, 'u = 12, a = 3.5 (MS)', r.reason);
+  ok(r.vs.join() === '12,26,47', 'its speed at P, Q, R');
+  ok(!K.solve({ gaps: [{ s: 76, t: 4 }, { s: 219, t: 6 }, { s: 100, t: 2 }] }).ok, 'a third stretch that does not fit is refused');
+  ok(K.solve({ gaps: [{ s: 76, t: 4 }, { s: 219, t: 6 }, { s: 47 * 2 + 3.5 * 2, t: 2 }] }).ok, 'a third stretch that fits is accepted');
+  const ua = K.solve({ gaps: [{ s: 76, t: 4 }], u: 12 });
+  ok(ua.ok && ua.a === 3.5, 'given u, one stretch finds a');
+  ok(!K.solve({ gaps: [{ s: 76, t: 4 }] }).ok, 'one stretch and nothing else is not enough, and says so');
+  ok(!K.solve({ gaps: [{ s: 10, t: 4 }, { s: 1, t: 6 }] }).ok, 'an acceleration that would turn it back is refused');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }
