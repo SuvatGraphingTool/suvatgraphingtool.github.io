@@ -29,6 +29,8 @@ import { pulse, ageOf } from './effects.js';
 import { fitClear } from './heights.js';
 
 const TAU = Math.PI * 2;
+/** A value the paper gave, as given: 0.2 not 0.200, 1.8 not 1.80. */
+const given = (x) => { const s = sig3(x); return s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s; };
 const HUD = 250, HUD_H = 290;
 
 /** Level sand from its surface at Y down. */
@@ -200,6 +202,44 @@ function retriever(g, X, Y, L, { phase = 0, still = false, lift = 0, pitch = 0, 
   g.strokeStyle = E.night ? '#41557e' : '#2f4677'; g.lineWidth = Math.max(2, L * 0.03); g.beginPath(); g.moveTo(-L * 0.24, hy + L * 0.05); g.lineTo(-L * 0.17, hy + L * 0.12); g.stroke();
   g.restore();
 }
+/** The retriever lying in wait, its front at X: down on the sand, forelegs
+    out in front, head up and watching the ball — low, so beside the
+    thrower's feet it does not hide them. About 0.9 L long, 0.4 L high. */
+function sittingDog(g, X, Y, L) {
+  const E = env(), TAU2 = Math.PI * 2;
+  const coat = E.night ? '#b98a52' : '#d4a062', coatLo = E.night ? '#7d5a33' : '#a77a43', coatHi = E.night ? '#d8ad75' : '#efc68c';
+  softShadow(g, X - L * 0.42, Y + 1, L * 0.46, L * 0.06, 0.8);
+  g.save(); g.translate(X, Y); g.lineCap = 'round'; g.lineJoin = 'round';
+  // the tail out behind on the sand
+  g.strokeStyle = coatLo; g.lineWidth = L * 0.055; g.beginPath(); g.moveTo(-L * 0.72, -L * 0.07); g.quadraticCurveTo(-L * 0.84, -L * 0.03, -L * 0.94, -L * 0.04); g.stroke();
+  g.strokeStyle = withAlpha(coatHi, 0.7); g.lineWidth = L * 0.02; g.stroke();
+  // the body, low along the sand
+  const bg = g.createLinearGradient(0, -L * 0.22, 0, 0);
+  bg.addColorStop(0, coatHi); bg.addColorStop(0.55, coat); bg.addColorStop(1, coatLo);
+  g.fillStyle = bg; g.beginPath(); g.ellipse(-L * 0.45, -L * 0.1, L * 0.3, L * 0.1, 0.03, 0, TAU2); g.fill();
+  // the haunch and the folded hind paw
+  g.fillStyle = withAlpha(coatLo, 0.6); g.beginPath(); g.ellipse(-L * 0.62, -L * 0.1, L * 0.12, L * 0.085, 0, 0, TAU2); g.fill();
+  g.fillStyle = coat; g.beginPath(); g.ellipse(-L * 0.5, -L * 0.015, L * 0.06, L * 0.02, 0, 0, TAU2); g.fill();
+  // the forelegs out in front, paws on the sand
+  for (const [dy, c] of [[-0.03, coatLo], [0, coat]]) {
+    g.strokeStyle = c; g.lineWidth = L * 0.055; g.beginPath(); g.moveTo(-L * 0.24, -L * (0.08 - dy)); g.lineTo(-L * 0.05, -L * (0.02 - dy * 0.3)); g.stroke();
+    g.fillStyle = c; g.beginPath(); g.ellipse(-L * 0.03, -L * (0.018 - dy * 0.3), L * 0.045, L * 0.02, 0, 0, TAU2); g.fill();
+  }
+  // the neck and the head, up, muzzle forward to x = 0
+  const hx = -L * 0.12, hy = -L * 0.3;
+  g.fillStyle = coat; g.beginPath(); g.moveTo(-L * 0.32, -L * 0.17); g.lineTo(hx - L * 0.04, hy - L * 0.04); g.lineTo(hx + L * 0.05, hy + L * 0.06); g.lineTo(-L * 0.18, -L * 0.08); g.closePath(); g.fill();
+  const hg = g.createRadialGradient(hx - L * 0.03, hy - L * 0.04, L * 0.01, hx, hy, L * 0.11);
+  hg.addColorStop(0, coatHi); hg.addColorStop(1, coat);
+  g.fillStyle = hg; g.beginPath(); g.ellipse(hx, hy, L * 0.085, L * 0.07, 0, 0, TAU2); g.fill();
+  g.fillStyle = coat; g.beginPath(); g.moveTo(hx + L * 0.03, hy - L * 0.045); g.lineTo(0, hy - L * 0.03); g.lineTo(0, hy + L * 0.01); g.lineTo(hx + L * 0.04, hy + L * 0.04); g.closePath(); g.fill();
+  g.fillStyle = '#2b2220'; g.beginPath(); g.arc(-L * 0.004, hy - L * 0.025, L * 0.018, 0, TAU2); g.fill();
+  g.fillStyle = coatLo; g.beginPath(); g.ellipse(hx - L * 0.045, hy + L * 0.02, L * 0.035, L * 0.06, 0.25, 0, TAU2); g.fill();
+  g.fillStyle = '#1e1715'; g.beginPath(); g.arc(hx + L * 0.03, hy - L * 0.03, Math.max(1.1, L * 0.012), 0, TAU2); g.fill();
+  g.strokeStyle = E.night ? '#41557e' : '#2f4677'; g.lineWidth = Math.max(2, L * 0.03); g.beginPath(); g.moveTo(-L * 0.23, hy + L * 0.08); g.lineTo(-L * 0.15, hy + L * 0.12); g.stroke();
+  g.restore();
+}
+const SIT = 0.95;                      // how far back the waiting dog reaches, × L
+
 /** The mouth's height above the feet, standing with its head up: the leg,
     the body's drop and the head's rise in retriever(), less the jaw. */
 const MOUTH = (L) => L * 0.27 + L * 0.1 + L * 0.24 - L * 0.02;
@@ -219,20 +259,28 @@ export function render(canvas, cam, o) {
   const n = 140, path = [];
   for (let i = 0; i <= n; i++) { const tt = (i / n) * f.tMax; path.push({ t: tt, ...f.pos(tt) }); }
   const xEnd = Math.max(C.x, f.dog.pos(f.tMax));
+  // On a phone the numbers go in a band of captions under the sand, so the
+  // stage can be wide to the edges and its ground low.
+  const CAP = phone ? 78 : 0;
+  const sizes = (k) => {
+    const TH = Math.max(phone ? THROWER_MIN * 0.8 : THROWER_MIN, Math.min(110, 1.8 * k));
+    const dogL = clamp(1.5 * k, phone ? 44 : 64, 150);
+    return { TH, dogL, back: Math.max(dogL * SIT, TH * 0.45) };   // how far back of x = 0 the figures reach
+  };
   let F = null;
   for (let it = 0, k = 20; it < 4; it++) {
-    const TH = Math.max(THROWER_MIN, Math.min(110, 1.8 * k));
-    const pl = TH * 0.75 + 64, pr = 96, pt = 34;
+    const { TH, back } = sizes(k);
+    const pl = back + TH * 0.2 + (phone ? 22 : 64), pr = phone ? 34 : 96, pt = phone ? 22 : 34;
     const box = { xLo: -pl / k, xHi: xEnd + pr / k, yLo: 0, yHi: f.apex.y + pt / k };
     const inHud = (x, y) => x < HUD + 8 && y < HUD_H + 8;
-    F = fitClear(box, w, h, phone, phone ? 0.5 : 0.3, (fs) => !path.some((q) => inHud(fs.X(q.x) + 8, fs.Y(q.y) - 8))
-      && !inHud(fs.X(0) - pl + 10, fs.Y(0) - TH - 10), 62);
+    F = fitClear(box, w, h, phone, phone ? 0.92 : 0.3, (fs) => !path.some((q) => inHud(fs.X(q.x) + 8, fs.Y(q.y) - 8))
+      && !inHud(fs.X(0) - pl + 10, fs.Y(0) - TH - 10), phone ? CAP + 36 : 62);
     if (!F) return null;
     k = F.k;
   }
   const { k, X, Y } = F, oy = Y(0);
-  const TH = Math.max(phone ? THROWER_MIN * 0.8 : THROWER_MIN, Math.min(110, 1.8 * k));
-  const dogL = clamp(1.5 * k, phone ? 44 : 64, 150);
+  const { TH, dogL, back } = sizes(k);
+  const caps = [];                      // on a phone: [text, colour] lines for the band
 
   // ── the place: the sea to the horizon, the surf, wet sand, dry sand
   const top = F.Y(f.apex.y);
@@ -254,15 +302,22 @@ export function render(canvas, cam, o) {
   if (!phone) { L.reserve({ x: 0, y: 0, w: HUD, h: HUD_H - 40 }); L.reserve({ x: w - 130, y: 0, w: 130, h: 56 }); }
 
   // ── the thrower: the hand lets go where the engine starts the ball
+  // the hand is at the engine's launch point; the engine starts the dog
+  // beside the thrower, at x = 0 too, so the dog sits there a step nearer
+  // the viewer — a few px lower and drawn in front — and the two read side
+  // by side; it comes onto the line of the run as it sets off
   const hand = throwerHand(TH, aim);
   const feet = X(0) - hand.x;
-  const pose = fired ? clamp(0.55 + t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
+  const NEAR = clamp(TH * 0.14, 6, 12), lane = NEAR * (1 - clamp((t - f.dog.t0) / 0.3, 0, 1));
+  // the arm is through, at the release: the ball starts in the hand
+  const pose = 1;
 
   // the height the ball leaves the hand at, beside the thrower
-  const dh = feet - TH * 0.32 - 14;
+  const dh = Math.min(feet - TH * 0.32 - 14, X(0) - dogL * SIT - 8);
   stroke(g, [{ x: dh, y: oy }, { x: dh, y: Y(f.h) }], { color: P.ink, width: 1.4, alpha: 0.9 });
   for (const yy of [oy, Y(f.h)]) stroke(g, [{ x: dh - 4, y: yy }, { x: dh + 4, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
-  L.add(T`${sig3(f.h)} [m]`, dh - 7, (oy + Y(f.h)) / 2, { color: P.ink, align: 'right', pri: 6, size: 14, weight: 700 });
+  if (phone) caps.push([T`"thrown from" ${given(f.h)} [m] "above the sand"`, P.ink]);
+  else L.add(T`${given(f.h)} [m]`, dh - 7, (oy + Y(f.h)) / 2, { color: P.ink, align: 'right', pri: 6, size: 14, weight: 700 });
 
   // ── the ball's path: all of it faintly, the part flown strongly
   stroke(g, path.map((p) => ({ x: X(p.x), y: Y(p.y) })), { color: P.vel, width: 1.8, alpha: 0.35 });
@@ -288,31 +343,40 @@ export function render(canvas, cam, o) {
   const done = t >= C.t - 1e-9;
   // caught, the ball is drawn first so the dog's jaws close over it
   if (done && caught) ballAt(g, bx, by, br);
-  retriever(g, X(dx), oy, dogL, { phase: gait, still: dv < 1e-9 && t < f.dog.t0 + 1e-9, lift, pitch: lift > 0 ? 0.06 * e : 0, head, wag: t >= C.t - 1e-9 && caught ? 1 : 0 });
+  const sitting = t < f.dog.t0 - 1e-9 && dx < 1e-9;
+  const drawDog = () => (sitting ? sittingDog(g, X(dx), oy + lane, dogL)
+    : retriever(g, X(dx), oy + lane, dogL, { phase: gait, still: dv < 1e-9, lift, pitch: lift > 0 ? 0.06 * e : 0, head, wag: t >= C.t - 1e-9 && caught ? 1 : 0 }));
   L.reserve({ x: X(dx) - dogL, y: oy - mouthUp - lift - dogL * 0.12, w: dogL * 1.05, h: mouthUp + lift + dogL * 0.12 });
   if (show.velocity !== false && dv > 1e-6) {
     const vl = clamp(w * 0.06, 34, 80) / Math.max(f.dog.vel(f.tMax), 1e-6), ay = oy - mouthUp - lift - 14;
     arrow(g, X(dx) + 4, ay, X(dx) + 4 + dv * vl, ay, { color: P.velVec, width: 2.4, head: 9, dash: [5, 4] });
   }
-  if (t < f.dog.t0 - 1e-9) L.add('sets off at ' + T`t = ${sig3(f.dog.t0)} [s]`, X(0) + dogL * 0.2, oy - mouthUp - 26, { color: P.ink, align: 'left', pri: 5, size: 13 });
+  if (t < f.dog.t0 - 1e-9) {
+    if (phone) caps.push(['the dog sets off at ' + T`t = ${given(f.dog.t0)} [s]`, P.ink]);
+    else L.add('sets off at ' + T`t = ${given(f.dog.t0)} [s]`, X(0) + dogL * 0.2, oy - mouthUp - 26, { color: P.ink, align: 'left', pri: 5, size: 13 });
+  }
 
-  // the thrower stands in front of the waiting dog
+  // the thrower behind; the dog, nearer the viewer, in front
   thrower(g, feet, oy, TH, P, { dir: 1, pose, aim });
+  drawDog();
 
   // ── the catch, once it happens: a pulse, ringed, its height and its distance
   if (done) {
     const cx = X(C.x), cy = Y(C.y);
     if (caught) { const { age, life } = ageOf(t, C.t, f.tMax, Math.max(0.3, f.tMax / 6)); pulse(g, cx, cy, age, life, P.mark, { radius: 46 }); }
     dot(g, cx, cy, br + 9, { stroke: P.mark, width: 2.2 });
-    L.add(T`${caught ? '"caught"' : '"at the catch height"'}, t = ${sig3(C.t)} [s]`, cx + 16, cy - 40, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });
+    const said = T`${caught ? '"caught"' : '"at the catch height"'}, t = ${sig3(C.t)} [s]`;
+    if (phone) caps.unshift([said, P.mark]);
+    else L.add(said, cx + 16, cy - 40, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });
     const hx = cx + 22;
     stroke(g, [{ x: hx, y: oy }, { x: hx, y: cy }], { color: P.ink, width: 1.4, alpha: 0.9 });
     for (const yy of [oy, cy]) stroke(g, [{ x: hx - 4, y: yy }, { x: hx + 4, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
-    L.add(T`${sig3(C.y)} [m]`, hx + 7, (oy + cy) / 2 - 2, { color: P.ink, align: 'left', pri: 6, size: 14, weight: 700 });
-    const ry = oy + 30;
+    if (phone) caps.push([T`"caught" ${given(C.y)} [m] "up", ${sig3(C.x)} [m] "out"`, P.ink]);
+    else L.add(T`${given(C.y)} [m]`, hx + 7, (oy + cy) / 2 - 2, { color: P.ink, align: 'left', pri: 6, size: 14, weight: 700 });
+    const ry = oy + (phone ? 24 : 30);
     stroke(g, [{ x: X(0), y: ry }, { x: cx, y: ry }], { color: P.ink, width: 1.4, alpha: 0.9 });
     for (const xx of [X(0), cx]) stroke(g, [{ x: xx, y: ry - 5 }, { x: xx, y: ry + 5 }], { color: P.ink, width: 1.4, alpha: 0.9 });
-    L.add(T`${sig3(C.x)} [m]`, (X(0) + cx) / 2, ry + 15, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700 });
+    if (!phone) L.add(T`${sig3(C.x)} [m]`, (X(0) + cx) / 2, ry + 15, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700 });
   }
 
   // ── the ball, with its velocity; once caught, in the dog's mouth
@@ -332,6 +396,13 @@ export function render(canvas, cam, o) {
   if (show.acceleration) arrow(g, bx, by, bx, by + 40, { color: P.acc, width: 2.4, head: 10 });
   // the ball is where the engine puts it; at the catch the dog's mouth has come to it
   if (!(done && caught)) ballAt(g, bx, by, br);
+
+  // ── on a phone, the captions in their band under the sand
+  if (phone && caps.length) {
+    const y0 = h - CAP + 4;
+    g.save(); g.fillStyle = withAlpha(P.surface, 0.55); g.fillRect(0, y0 - 6, w, h - y0 + 6); g.restore();
+    caps.slice(0, 3).forEach(([text, color], i) => L.add(text, 12, y0 + 12 + i * 23.5, { color, align: 'left', pri: 10 - i, size: 13, weight: i ? 600 : 700, maxPush: 0 }));
+  }
 
   L.draw(g, w, h);
   return null;

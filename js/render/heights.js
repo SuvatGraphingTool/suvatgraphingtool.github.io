@@ -36,6 +36,8 @@ import { T } from '../notation.js';
 import { skyscape, water, grass, env, rng, stone, softShadow, fitSide } from './scenery.js';
 
 const TAU = Math.PI * 2, WELL = 26;
+/** Three figures without trailing zeros: a height the paper gave reads 49, not 49.0. */
+const trimmed = (s) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s);
 const HUD = 250, HUD_H = 290;
 
 /* ── backdrop pieces other stages import ──────────────────────────────── */
@@ -738,7 +740,7 @@ export function render(canvas, cam, o) {
     if (place === 'well') { const rise = Math.max(0, apex - H0) * k; return { l: 40 + TH * 0.6 + 60, r: 120, t: Math.max(40, wellFrame(H0 * k, rise).up + 16 - rise) }; }
     if (place === 'board') return { l: clamp(Math.max(TH * 1.5, H0 * k * 0.5), 70, 160) + 80, r: f.vertical ? 120 : 92, t: Math.max(34, TH + 14 - (yTop - H0) * k) };
     const head = TH + 14 - (yTop - H0) * k;      // the thrower's head above the place
-    return { l: TH * 0.9 + 70, r: f.vertical ? 120 : 92, t: Math.max(place === 'bridge' ? 80 : place === 'tower' ? 50 : 34, head) };
+    return { l: TH * (f.vertical ? 1.2 : 0.9) + 70, r: f.vertical ? 120 : 92, t: Math.max(place === 'bridge' ? 80 : place === 'tower' ? 50 : 34, head) };
   };
   // what must stay clear of the HUD in the top-left: the path, the top of the
   // place and of the thrower, and the height's label beside the place
@@ -789,7 +791,8 @@ export function render(canvas, cam, o) {
 
   // ── who throws: at the edge, wound up before the throw, through after it
   const pose = fired ? clamp(0.55 + t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
-  const feet = place === 'well' ? x0 - WELL - 13 - 10 - TH * 0.18 : x0 - TH * 0.2;
+  // thrown straight up or down, the thrower stands back so the path clears the arm
+  const feet = place === 'well' ? x0 - WELL - 13 - 10 - TH * 0.18 : x0 - TH * (f.vertical ? 0.5 : 0.2);
   let bs = 0;
   if (place === 'balloon') {
     bs = Math.max(26, 7.5 * k);
@@ -800,7 +803,7 @@ export function render(canvas, cam, o) {
   const dx = place === 'balloon' ? x0 - bs * 0.95 - 16 : place === 'well' ? feet - TH * 0.35 - 14 : place === 'board' ? sx - 26 : feet - TH * 0.3 - 14;
   stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.ink, width: 1.4, alpha: 0.9 });
   for (const yy of [oy, top]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
-  L.add(T`${sig3(H0)} [m]`, dx - 8, (oy + top) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700 });
+  L.add(T`${trimmed(sig3(H0))} [m]`, dx - 8, (oy + top) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700 });
   if (place === 'balloon') L.add('where it was let go', dx - 8, top - 2, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   // keep labels off the path and the ruler
@@ -840,13 +843,14 @@ export function render(canvas, cam, o) {
   const lx = X(f.pos(f.tMax).x) + (f.vertical ? side : 0);
   if (landed) {
     const { age, life } = ageOf(t, f.tMax, f.tMax, Math.max(0.35, f.tMax / 6));
-    if (wet) bigSplash(g, lx, oy, age, life, place === 'well' ? 0.8 : clamp(k / 5, 1.5, 2.6));
+    if (wet) bigSplash(g, lx, oy, age, life, place === 'well' ? 0.8 : clamp(k / 5, phone ? 1 : 1.5, phone ? 1.5 : 2.6));
     else dust(g, lx, oy, age, life, { size: 1.6, n: 22 });
     if (!f.vertical) {
       const ry = oy + 24;
       stroke(g, [{ x: x0, y: ry }, { x: lx, y: ry }], { color: P.ink, width: 1.4, alpha: 0.9 });
       for (const xx of [x0, lx]) stroke(g, [{ x: xx, y: ry - 5 }, { x: xx, y: ry + 5 }], { color: P.ink, width: 1.4, alpha: 0.9 });
-      L.add(T`${sig3(f.pos(f.tMax).x)} [m]`, (x0 + lx) / 2, ry + 15, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700 });
+      // centred under the ruler, but kept left of the landing, where the arrow comes down
+      L.add(T`${sig3(f.pos(f.tMax).x)} [m]`, Math.min((x0 + lx) / 2, lx - 40), ry + 15, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700, maxPush: 20 });
     }
   }
 
