@@ -19,6 +19,7 @@
 
 import { planeMotion, vsrc, COMPASS } from './plane.js';
 import { snap } from './numeric.js';
+import { poly } from './pair.js';
 import { M, num } from '../notation.js';
 
 const have = (x) => typeof x === 'number' && isFinite(x);
@@ -44,6 +45,7 @@ export function solveSnapshots(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   const r0 = vec(k.r0), tu = have(k.tu) ? k.tu : 0;
   const second = k.at2 && have(k.at2.t) && hasV(k.at2.v) ? { kind: k.at2.kind === 'v' ? 'v' : 'r', t: k.at2.t, v: vec(k.at2.v) } : null;
+  if (k.at2 && have(k.at2.t) !== hasV(k.at2.v)) return fail(have(k.at2.t) ? 'The second moment has a time but no position or velocity: give its i and j parts, or clear the time.' : 'The second moment has a position or velocity but no time: give when it is.');
   if (second && !(second.t > 0)) return fail('The second moment is at a time after t = 0.');
   if (tu < 0) return fail('The time its velocity is known at is 0 or later.');
   const T = second?.t;
@@ -115,27 +117,38 @@ export function solveSnapshots(k = {}) {
     const C = COMPASS[k.ask.dir], st = stage2 || { t0: 0, u, a };
     // moving in direction C: v parallel to C and the same way — v_x·C_y − v_y·C_x = 0, linear in t
     const c1 = st.u.x * C.y - st.u.y * C.x, c2 = st.a.x * C.y - st.a.y * C.x;
-    let tt = null;
+    // the moment(s) its velocity is along that line; then it must point the right way
+    const dot = (t) => (st.u.x + st.a.x * t) * C.x + (st.u.y + st.a.y * t) * C.y;
+    let tt = null, from = false;
     if (Math.abs(c2) > 1e-12) tt = snap(-c1 / c2);
-    else if (Math.abs(c1) < 1e-12) tt = 0;
+    else if (Math.abs(c1) < 1e-12) {
+      // always along the line: moving that way once the velocity points that way
+      const p0 = st.u.x * C.x + st.u.y * C.y, p1 = st.a.x * C.x + st.a.y * C.y;
+      if (p0 > 1e-9) tt = 0; else if (p1 > 1e-12) { tt = snap(-p0 / p1); from = true; }
+    }
     const v = tt != null && tt >= 0 ? { x: st.u.x + st.a.x * tt, y: st.u.y + st.a.y * tt } : null;
-    const ok = v && v.x * C.x + v.y * C.y > 1e-9;
+    const still = v && Math.hypot(v.x, v.y) < 1e-9;
+    const ok = v && (dot(tt) > 1e-9 || (from && still));
     const rel = C.x === 0 ? M`v_x = 0` : C.y === 0 ? M`v_y = 0` : C.x === C.y ? M`v_x = v_y` : M`v_x = -v_y`;
-    const comp = (p) => `${d(st.u[p])} + ${d(st.a[p])}t`;
+    const comp = (p) => poly([st.u[p], st.a[p], 0]);
     askRows.push({ f: rel, s: C.x === 0 ? M`${comp('x')} = 0` : C.y === 0 ? M`${comp('y')} = 0` : C.x === C.y ? M`${comp('x')} = ${comp('y')}` : M`${comp('x')} = -(${comp('y')})`,
-      r: tt != null ? M`t = ${d(tt)} [s]` : M`"never"` });
+      r: tt != null && !from ? M`t = ${d(tt)} [s]` : from ? M`"always along it"` : M`"never"` });
+    const when = (t) => (stage2 ? `${M`${d(t)} [s]`} after the acceleration changes, at ${M`t = ${d(snap(st.t0 + t))} [s]`}` : `at ${M`t = ${d(t)} [s]`}`);
     if (ok) {
       tDir = snap(st.t0 + tt);
-      notes.push(`It is moving ${C.word} ${stage2 ? `${M`${d(tt)} [s]`} after the acceleration changes, at ${M`t = ${d(tDir)} [s]`}` : `at ${M`t = ${d(tDir)} [s]`}`}, with velocity ${M`${vb(vec(v))} [m s^-1]`}.`);
+      notes.push(from ? `Its velocity is always along that line; it is moving ${C.word} from the moment it starts to point that way, ${when(tt)}.`
+        : `It is moving ${C.word} ${when(tt)}, with velocity ${M`${vb(vec(v))} [m s^-1]`}.`);
       marks.push({ t: tDir, what: C.word });
-    } else notes.push(tt != null && tt >= 0 ? `At ${M`t = ${d(tt)} [s]`} its velocity is along that line but pointing the other way: it is never moving ${C.word}.` : `It is never moving ${C.word}${stage2 ? ' after the change' : ''}.`);
+    } else notes.push(still ? `${when(tt).replace(/^at/, 'At')} it is at rest, not moving at all: it is never moving ${C.word}${stage2 ? ' after the change' : ''}.`
+      : tt != null && tt >= 0 ? `${when(tt).replace(/^at/, 'At')} its velocity is along that line but pointing the other way: it is never moving ${C.word}${stage2 ? ' after the change' : ''}.`
+        : `It is never moving ${C.word}${stage2 ? ' after the change' : ''}.`);
   }
 
   const tEnd = Math.max(T ?? 0, have(k.ask?.t) ? k.ask.t : 0, tDir ?? 0, tu, 1);
   const tMax = snap(tEnd * 1.15);
   const f = { kind: 'snapshots', tMax, tFlight: tMax, pos, vel, acc, T: T ?? null, second, switched: !!stage2, marks, r0,
     params: { u: mag(u), g: 0, h: 0, theta: 0 } };
-  return { ok: true, mode: 'snapshots', u, a, a2: stage2?.a ?? null, T, rows, switchRows, askRows, notes, derived, f, tDir, dirWord: tDir != null ? COMPASS[k.ask.dir].word : null, askT: have(k.ask?.t) ? k.ask.t : null, askSpeed: have(k.ask?.t) ? mag(vel(k.ask.t)) : null };
+  return { ok: true, mode: 'snapshots', u, a, a2: stage2?.a ?? null, T, rows, switchRows, askRows, notes, derived, f, tDir, dirWord: tDir != null ? COMPASS[k.ask.dir].word : null, dirAsked: k.ask?.dir && COMPASS[k.ask.dir] ? COMPASS[k.ask.dir].word : null, found: second?.kind === 'r' && hasV(k.a) ? 'u' : 'a', askT: have(k.ask?.t) ? k.ask.t : null, askSpeed: have(k.ask?.t) ? mag(vel(k.ask.t)) : null };
 }
 
 /** The working: the first stage from the two moments, the change, the questions. */
@@ -144,6 +157,6 @@ export function snapshotsWorking(s) {
   const out = [{ title: 'The motion, from what the paper gives', rows: s.rows, note: 'Each vector equation is two SUVAT equations side by side: the i parts and the j parts.' }];
   if (s.switchRows.length) out.push({ title: `Where it is, and how fast, when the acceleration changes at ${M`t = ${d(s.T)} [s]`}`, rows: s.switchRows,
     note: 'The second stage starts from here, with its new acceleration.' });
-  if (s.askRows.length) out.push({ title: 'What the paper asks', rows: s.askRows, note: 'A direction of motion is the direction of the velocity: one relation between its parts.' });
+  if (s.askRows.length) out.push({ title: 'What the paper asks', rows: s.askRows, note: `A direction of motion is the direction of the velocity: one relation between its parts.${s.a2 ? ` After the change, ${M`vec(u)`} is the velocity at the change and ${M`t`} is counted from it.` : ''}` });
   return out;
 }

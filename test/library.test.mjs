@@ -986,6 +986,11 @@ group('Known from two moments (9MA0/03 J18 Q8, WME01 J22 Q6)', () => {
   ok(c.ok && c.u.x === 2 && c.u.y === -3, 'two positions and the acceleration give the starting velocity');
   ok(!K.solve({ u: { x: 1 }, a: { x: 1 }, at2: { kind: 'v', t: 2, v: { x: 3 } } }).ok, 'a second velocity and the acceleration together are refused');
   ok(/never moving/.test(K.solve({ u: { x: 1, y: 0 }, a: { x: 1, y: 0 }, ask: { dir: 'W' } }).notes.join(' ')), 'never moving west, said');
+  const rest = K.solve({ a: { x: 2, y: -4 }, u: { x: 0, y: 0 }, ask: { dir: 'N' } });
+  ok(rest.ok && rest.tDir === null && /at rest/.test(rest.notes.join(' ')) && !/other way/.test(rest.notes.join(' ')), 'at rest is not "pointing the other way"');
+  const along = K.solve({ u: { x: 0, y: -2 }, a: { x: 0, y: 1 }, ask: { dir: 'N' } });
+  ok(along.ok && along.tDir === 2, 'always along the line: north from when it turns, t = 2');
+  ok(!K.solve({ u: { x: 1 }, a: { x: 1 }, at2: { kind: 'r', t: 2, v: {} } }).ok, 'a second-moment time with no vector is refused');
   const f = a.f; ok(Math.abs(f.pos(2).x - 7) < 1e-12 && Math.abs(f.vel(4.5).x - f.vel(4.5).y) < 1e-12, 'the motion passes the second moment and turns north-east');
 });
 

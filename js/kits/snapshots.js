@@ -26,20 +26,20 @@ export const snapshots = {
   },
   fields: [
     ...two('r0', 'First', 'where it is at t = 0', 'm', 'Blank is the origin.'),
-    ...two('u', 'First', 'its velocity', 'm s⁻¹', 'At the time below; blank time is t = 0.'),
+    ...two('u', 'First', 'its velocity', 'm s⁻¹', 'At the time below; blank time is t = 0. A part left blank is 0.'),
     { key: 'tu', col: 'First', label: 'That velocity is at time (s)', placeholder: '0', hint: 'For a velocity known at t = 1, say.' },
-    ...two('a', 'First', 'its acceleration', 'm s⁻²', 'Blank to find it from the second moment.'),
+    ...two('a', 'First', 'its acceleration', 'm s⁻²', 'Both blank to find it from the second moment; one blank part is 0.'),
   ],
   cols: { First: 'The first moment' },
   rows: [
     { title: 'The second moment', fields: [
       { key: 'k2', type: 'choice', label: 'Known then', default: 'r', hint: '', options: [{ v: 'r', label: 'Where it is' }, { v: 'v', label: 'Its velocity' }] },
       { key: 't2', label: 'At time (s)', aria: 'The second moment: the time (s)', placeholder: '—', hint: '' },
-      { key: 'p2.x', label: `${M`vec i`} part`, aria: 'The second moment: the i part', placeholder: '—', hint: 'Of the position (m) or the velocity (m s⁻¹).' },
+      { key: 'p2.x', label: `${M`vec i`} part`, aria: 'The second moment: the i part', placeholder: '—', hint: 'Of the position (m) or the velocity (m s⁻¹). A part left blank is 0.' },
       { key: 'p2.y', label: `${M`vec j`} part`, aria: 'The second moment: the j part', placeholder: '—', hint: '' },
     ] },
     { title: 'From the second moment, a new acceleration', fields: [
-      { key: 'a2.x', label: `${M`vec i`} part (m s⁻²)`, aria: 'The new acceleration: the i part (m s⁻²)', placeholder: '—', hint: 'Blank: it keeps the first.' },
+      { key: 'a2.x', label: `${M`vec i`} part (m s⁻²)`, aria: 'The new acceleration: the i part (m s⁻²)', placeholder: '—', hint: 'Both blank: it keeps the first. One blank part is 0.' },
       { key: 'a2.y', label: `${M`vec j`} part (m s⁻²)`, aria: 'The new acceleration: the j part (m s⁻²)', placeholder: '—', hint: '' },
     ] },
     { title: 'What the paper asks', fields: [
@@ -93,8 +93,10 @@ export const snapshots = {
 
   ending(s) {
     const title = s.tDir != null ? `Moving ${s.dirWord} at t = ${tr(s.tDir)} s.`
-      : s.askT != null ? `At t = ${tr(s.askT)} s its speed is ${tr(s.askSpeed)} m s⁻¹.`
-        : `Acceleration ${T`${vsrc(s.a)}`} m s⁻², of size ${tr(Math.hypot(s.a.x, s.a.y))} m s⁻².`;
+      : s.dirAsked ? `Never moving ${s.dirAsked}.`
+        : s.askT != null ? `At t = ${tr(s.askT)} s its speed is ${tr(s.askSpeed)} m s⁻¹.`
+          : s.found === 'u' ? `Starting velocity ${T`${vsrc(s.u)}`} m s⁻¹.`
+            : `Acceleration ${T`${vsrc(s.a)}`} m s⁻², of size ${tr(Math.hypot(s.a.x, s.a.y))} m s⁻².`;
     return { eyebrow: 'Known from two moments', title, body: s.notes.map((x) => `<p>${x}</p>`).join(''), real: true };
   },
 };
