@@ -86,11 +86,11 @@ export const clears = {
         <div class="ph-row" role="row" data-key="first">
           <span role="cell">${cell(s.theta)}</span><span role="cell">${cell(s.u)}</span><span role="cell">${cell(s.a)}</span>
           <span role="cell">${cell(s.Hmax)}</span><span role="cell">${cell(s.T)}</span><span role="cell">${cell(s.R * s.a)}</span></div>
-        <p class="ph-units">${M`theta`} in degrees; ${M`u`} in ${M`[m s^-1]`}; ${M`a`}, the greatest height ${M`H`} = ${M`${ka(s.c * s.tan * s.tan / 2)}`} and where it lands in ${M`[m]`}; ${M`t`} in the air, in ${M`[s]`}.</p>
+        <p class="ph-units">${M`theta`} in degrees; ${M`u`} in ${M`[m s^-1]`}; ${M`a`} in ${M`[m]`}; the greatest height ${M`H`}, which is ${M`${ka(s.c * s.tan * s.tan / 2)}`}, in ${M`[m]`}; where it lands, from O, in ${M`[m]`}; ${M`t`}, the time in the air, in ${M`[s]`}.</p>
       </div>`;
     return {
       eyebrow: `Just clears, then lands`,
-      title: `${tr(s.theta)}° whatever a is; here a = ${tr(s.a)}.`,
+      title: `${num(s.theta, 1)}° whatever a is; here a = ${tr(s.a)}.`,
       body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}${table}`,
       real: true,
     };

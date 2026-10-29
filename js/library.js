@@ -350,7 +350,7 @@ export const LIBRARY = [
   { id: 'wall-in-a-letter', group: 'library', kit: 'clears',
     name: 'Over the wall, in a letter',
     sub: 'it just clears a wall and lands beyond it, every length in terms of a — the angle needs no a at all',
-    note: 'Projected from the ground, a ball just clears a wall and lands beyond it, every length a multiple of one letter a. Put both points into the path 2U²y = 2UVx − gx² and the letter cancels: the angle comes from the two points alone. One number more, the speed or a itself, fixes the other, the greatest height and the time in the air.',
+    note: 'Projected from the ground, a ball just clears a wall and lands beyond it, every length a multiple of one letter a. Put both points into the equation of its path and the letter cancels: the angle comes from the two points alone. One number more, the speed or a itself, fixes the other, the greatest height and the time in the air.',
     params: { g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 },
     place: 'Side on: level ground, a brick wall, and where it lands',
     sources: [

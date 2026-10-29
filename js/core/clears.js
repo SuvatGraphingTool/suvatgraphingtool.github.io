@@ -50,9 +50,9 @@ export function kaLine(c) {
 export function solveClears(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
-  for (const [key, what] of [['P', 'How far the wall is'], ['Q', 'The wall’s height'], ['beyond', 'How far beyond the wall it lands']]) {
+  for (const [key, what] of [['P', 'How far the wall is from O'], ['Q', 'The wall’s height'], ['beyond', 'How far beyond the wall it lands']]) {
     if (!have(k[key])) return fail(`Still needed: ${what.toLowerCase()}, as a multiple of a.`);
-    if (!(k[key] > 0)) return fail(`${what} is a positive multiple of a.`);
+    if (!(k[key] > 0)) return fail(`${what}: give it as a positive multiple of a.`);
   }
   if (have(k.u) && have(k.a)) return fail('Give the speed of projection or the length a, not both: one fixes the other.');
   for (const [key, what] of [['u', 'The speed of projection'], ['a', 'The length a']]) if (have(k[key]) && !(k[key] > 0)) return fail(`${what} is a positive number.`);
@@ -62,10 +62,11 @@ export function solveClears(k = {}) {
   const c = P * (R - P) / (2 * Q);                 // U² = c·g·a
   const tan = R * Q / (P * (R - P));
   const theta = Math.atan(tan) / DEG;
+  if (theta > 89) return fail(`That wall and landing need a launch almost straight up (${M`theta = ${d(snap(theta), 1)}°`}): give it room to land further beyond the wall.`);
   const angleRows = [
     { f: M`2U^2 y = 2UVx - gx^2`, s: M`y = 0, x = ${ka(R)}`, r: M`2UV = ${ka(R)}g` },
     { f: M`2U^2 y = 2UVx - gx^2`, s: M`2U^2(${ka(Q)}) = ${ka(R)}g(${ka(P)}) - g(${ka(P)})^2`, r: M`U^2 = ${ka(c)}g` },
-    { f: M`tan theta = V/U = (2UV)/(2U^2)`, s: M`(${ka(R)}g)/(2 * ${ka(c)}g)`, r: M`tan theta = ${co(tan, true)}, theta = ${d(snap(theta), 3)}°` },
+    { f: M`tan theta = V/U = (2UV)/(2U^2)`, s: M`(${ka(R)}g)/(2 * ${ka(c)}g)`, r: M`tan theta = ${co(tan, true)}, theta = ${d(snap(theta), 1)}°` },
   ];
 
   // ── the speed or a, whichever the paper does not give
@@ -74,16 +75,16 @@ export function solveClears(k = {}) {
   let u = k.u, a = k.a, U;
   if (have(u)) {
     U = u * cos; a = U * U / (c * g);
-    fixRows.push({ f: M`U = u cos theta`, s: M`${d(u)} cos ${d(snap(theta), 3)}°`, r: M`U = ${d(snap(U))} [m s^-1]` });
+    fixRows.push({ f: M`U = u cos theta`, s: M`${d(u)} cos ${d(snap(theta), 1)}°`, r: M`U = ${d(snap(U))} [m s^-1]` });
     fixRows.push({ f: M`U^2 = ${ka(c)}g`, s: M`${d(snap(U))}^2 = ${co(c)} * ${d(g)}a`, r: M`a = ${d(snap(a))}` });
   } else if (have(a)) {
     U = Math.sqrt(c * g * a); u = U / cos;
-    fixRows.push({ f: M`U^2 = ${ka(c)}g`, s: M`${co(c)} * ${d(g)} * ${d(a)}`, r: M`U = ${d(snap(U))} [m s^-1]` });
-    fixRows.push({ f: M`u = U/cos theta`, s: M`${d(snap(U))}/cos ${d(snap(theta), 3)}°`, r: M`u = ${d(snap(u))} [m s^-1]` });
+    fixRows.push({ f: M`U^2 = ${ka(c)}g`, s: M`${co(c)} * ${d(g)} * ${d(a)}`, r: M`U^2 = ${d(snap(U * U))}, U = ${d(snap(U))} [m s^-1]` });
+    fixRows.push({ f: M`u = U/cos theta`, s: M`${d(snap(U))}/cos ${d(snap(theta), 1)}°`, r: M`u = ${d(snap(u))} [m s^-1]` });
   }
   const notes = [`The angle comes from the two points alone: ${M`tan theta = ${co(tan, true)}`}, whatever ${M`a`} is.`];
-  const derived = [`${M`theta = ${d(snap(theta), 3)}°`}`];
-  if (!have(u)) return fail(`From the two points alone ${M`tan theta = ${co(tan, true)}`}, so ${M`theta = ${d(snap(theta), 3)}°`} whatever ${M`a`} is. Still needed to draw it: the speed of projection, or the length ${M`a`}.`);
+  const derived = [`${M`theta = ${d(snap(theta), 1)}°`}`];
+  if (!have(u)) return fail(`From the two points alone ${M`tan theta = ${co(tan, true)}`}, so ${M`theta = ${d(snap(theta), 1)}°`} whatever ${M`a`} is. Still needed to draw it: the speed of projection, or the length ${M`a`}.`);
 
   // ── the greatest height and the time of flight
   const V = U * tan, Hmax = V * V / (2 * g), T = R * a / U;
@@ -99,7 +100,7 @@ export function solveClears(k = {}) {
 
   const f0 = flight({ u, theta, h: 0, g });
   const f = { ...f0, kind: 'clears', a, P, Q, R, wall: { x: P * a, H: Q * a }, Hmax, tWall: P * a / U };
-  return { ok: true, mode: 'clears', P, Q, R, theta, tan, c, u, a, U, V, Hmax, T, angleRows, fixRows, heightRows, notes, derived, f };
+  return { ok: true, mode: 'clears', given: have(k.u) ? 'u' : 'a', P, Q, R, theta, tan, c, u, a, U, V, Hmax, T, angleRows, fixRows, heightRows, notes, derived, f };
 }
 
 /** The working: the angle in the letter, then the numbers. */
@@ -107,7 +108,7 @@ export function clearsWorking(solved) {
   if (!solved?.ok) return [];
   const out = [{ title: 'The angle, from the wall and the landing', rows: solved.angleRows,
     note: `The path through O, with ${M`U`} across and ${M`V`} up: it lands at ${M`x = ${ka(solved.R)}`}, and just clears the top of the wall at ${M`(${ka(solved.P)}, ${ka(solved.Q)})`}.` }];
-  if (solved.fixRows.length) out.push({ title: solved.fixRows.some((r) => /a =/.test(r.r.replace(/<[^>]+>/g, ''))) ? 'The length a, from the speed' : 'The speed, from the length a', rows: solved.fixRows,
+  if (solved.fixRows.length) out.push({ title: solved.given === 'u' ? 'The length a, from the speed' : 'The speed, from the length a', rows: solved.fixRows,
     note: `The across part of the velocity ties the speed to ${M`a`}.` });
   if (solved.heightRows.length) out.push({ title: 'The greatest height and the time of flight', rows: solved.heightRows,
     note: 'At the top the vertical velocity is zero; across, the speed never changes.' });

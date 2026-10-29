@@ -67,8 +67,9 @@ export function render(canvas, cam, o) {
   const both = (c, m) => T`${kaLine(c)} = ${tr(m)} [m]`;
   dim(g, L, P, X(0), oy + 24, X(W.x), oy + 24, both(f.P, W.x), { dy: 16 });
   dim(g, L, P, X(W.x), oy + 24, X(xLand), oy + 24, both(f.R - f.P, xLand - W.x), { dy: 16 });
-  const hx = X(W.x) - Math.max(16, Math.min(30, xLand * 0.02 * k)) - 8;
-  dim(g, L, P, hx, oy, hx, Y(W.H), both(f.Q, W.H), { align: 'right', dx: -8 });
+  // the wall's height down its far side, clear of the rising path
+  const hx = X(W.x) + Math.max(10, Math.min(22, xLand * 0.025 * k)) / 2 + 14;
+  dim(g, L, P, hx, oy, hx, Y(W.H), both(f.Q, W.H), { align: 'left', dx: 8 });
 
   // ── the path: all of it faintly, flown strongly; the top ringed
   const n = 160, pts = [];
@@ -88,7 +89,7 @@ export function render(canvas, cam, o) {
   // ── the angle at O
   const th = f.params.theta * Math.PI / 180, Ra = 40;
   g.save(); g.strokeStyle = P.strong; g.lineWidth = 1.6; g.beginPath(); g.arc(X(0), oy, Ra, -th, 0); g.stroke(); g.restore();
-  L.add(T`theta = ${tr(f.params.theta)}°`, X(0) + Ra + 8, oy - 14, { color: P.strong, align: 'left', pri: 7, size: 14, weight: 700 });
+  L.add(T`theta = ${num(f.params.theta, 1)}°`, X(0) + Ra + 8, oy - 14, { color: P.strong, align: 'left', pri: 7, size: 14, weight: 700 });
 
   // ── the ball, its velocity and its acceleration
   const q = f.pos(t), v = f.vel(t), bx = X(q.x), by = Y(q.y);
