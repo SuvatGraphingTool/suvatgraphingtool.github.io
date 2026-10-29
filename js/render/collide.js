@@ -28,11 +28,11 @@
 
 import { flash, pulse, phaseOf, ageOf } from './effects.js';
 import { env, rng, softShadow } from './scenery.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep, fmt, withAlpha, unview } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep, fmt, withAlpha, unview, hudBoxes } from './util.js';
 import { vsrc } from '../core/plane.js';
 import { T, num } from '../notation.js';
 
-const HUD = 250, HUD_H = 290, TAU = Math.PI * 2;
+const TAU = Math.PI * 2;
 /** Three significant figures, trailing zeros dropped (14 → 14, 9.6923 → 9.69). */
 const s3 = (x) => {
   if (!isFinite(x) || Math.abs(x) < 1e-12) return num(0, 0);
@@ -259,16 +259,31 @@ export function render(canvas, cam, o) {
   x0 -= span * 0.06; x1 += span * 0.06; y0 -= span * 0.06; y1 += span * 0.06;
   // the rink is fitted to the motion's own box (O in it, not centred on it),
   // with a strip inside its left and bottom edges for the scales
-  const PADL = 34, PADB = 26, PAD = 12;
-  const left = phone ? 12 : HUD + 24, right = w - (phone ? 12 : 24), bottom = h - (phone ? (f.at != null ? 66 : 16) : 18);
-  const fit = (top) => {
+  const PADL = 34, PADB = 26, PAD = 26;
+  const HB = hudBoxes(w, 3), [hudL, hudC] = HB;
+  const hitsBox = (b, q) => b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y;
+  const bottom = h - (phone ? (f.at != null ? 66 : 16) : 18);
+  const fit = (left, top, right = w - (phone ? 12 : 24)) => {
     const k = Math.min((right - left - PADL - PAD - 18) / (x1 - x0), (bottom - top - PADB - PAD - 18) / (y1 - y0));
     const bw = (x1 - x0) * k, bh = (y1 - y0) * k;
-    return { k, bw, bh, ox: left + 9 + PADL + ((right - left - 18 - PADL - PAD) - bw) / 2, oy: top + 9 + PAD + ((bottom - top - 18 - PAD - PADB) - bh) / 2 };
+    const F = { k, bw, bh, ox: left + 9 + PADL + ((right - left - 18 - PADL - PAD) - bw) / 2, oy: top + 9 + PAD + ((bottom - top - 18 - PAD - PADB) - bh) / 2 };
+    F.rink = { x: F.ox - PADL - 9, y: F.oy - PAD - 9, w: bw + PADL + PAD + 18, h: bh + PAD + PADB + 18 };
+    // the motion itself (each path, a puck's width round it) and O, in this fit's pixels
+    F.art = [...pa, ...pb, { x: 0, y: 0 }].map((p) => ({ x: F.ox + (p.x - x0) * k - 20, y: F.oy + (y1 - p.y) * k - 20, w: 40, h: 40 }));
+    return F;
   };
-  // as tall as it can be, unless that puts its corner under the clock (top right)
-  let F = fit(phone ? 108 : 22);
-  if (!phone && F.oy - PAD - 9 < 70 && F.ox + F.bw + PAD + 9 > w - 170) F = fit(72);
+  // the readouts sit over the stage (the column top left, the clock top
+  // right): the rink may run under them, but nothing of the motion may
+  let F;
+  if (phone) {
+    // as large as it fits below the clock if the motion itself clears the
+    // column; otherwise the larger of below the column or right of it
+    const full = fit(12, hudC.h + 8);
+    F = full.art.some((b) => hitsBox(b, hudL)) ? [fit(12, hudL.h + 8), fit(hudL.w + 8, hudC.h + 8)].sort((p, q) => q.k - p.k)[0] : full;
+  } else {
+    F = fit(hudL.w + 24, 22);
+    if (hitsBox(F.rink, hudC)) F = [fit(hudL.w + 24, hudC.h + 8), fit(hudL.w + 24, 22, hudC.x - 8)].sort((p, q) => q.k - p.k)[0];
+  }
   const { k, bw, bh, ox, oy } = F;
   const X = (x) => ox + (x - x0) * k, Y = (y) => oy + (y1 - y) * k;
   const Xi = (px) => x0 + (px - ox) / k, Yi = (py) => y1 - (py - oy) / k;
@@ -289,16 +304,19 @@ export function render(canvas, cam, o) {
   for (let y = Math.ceil(gy0 / step) * step; y <= gy1 + 1e-9; y += step) if (Y(y) < ice.iy + ice.ih - PADB + 4 && Y(y) > ice.iy + 12) stroke(g, [{ x: ice.ix, y: Y(y) }, { x: ice.ix + 6, y: Y(y) }], { color: sc, width: 1.4 });
   g.restore();
   // keep labels off the readouts
-  if (phone) reserve({ x: 0, y: 0, w, h: 100 });
-  else { reserve({ x: 0, y: 0, w: HUD, h: HUD_H }); reserve({ x: w - 160, y: 0, w: 160, h: 64 }); }
+  for (const b of HB) reserve(b);
   const tick = { color: P.strong, pri: 7, size: 13, weight: 700, maxPush: 0 };
   const iLab = T`vec(i) [m]`, jLab = T`vec(j) [m]`;
+  // "j m" at the top of the j axis, or the first place on it below the readouts
+  const jx = clamp(X(0), ice.ix + PADL, ice.ix + ice.iw - 60) + 8;
+  let jy = ice.iy + 16;
+  if (HB.some((b) => hitsBox({ x: jx - 4, y: jy - 12, w: 44, h: 24 }, b))) jy = Math.max(jy, hudL.h + 16);
   for (let x = Math.ceil(gx0 / step) * step; x <= gx1 + 1e-9; x += step)
     if (Math.abs(x) > 1e-9 && X(x) > ice.ix + PADL && X(x) < ice.ix + ice.iw - 46) L.add(fmt(x, step < 1 ? 1 : 0), X(x), ice.iy + ice.ih - PADB / 2 - 2, { ...tick, align: 'center' });
   for (let y = Math.ceil(gy0 / step) * step; y <= gy1 + 1e-9; y += step)
-    if (Math.abs(y) > 1e-9 && Y(y) < ice.iy + ice.ih - PADB && Y(y) > ice.iy + 34) L.add(fmt(y, step < 1 ? 1 : 0), ice.ix + PADL - 8, Y(y), { ...tick, align: 'right' });
+    if (Math.abs(y) > 1e-9 && Y(y) < ice.iy + ice.ih - PADB && Y(y) > jy + 18) L.add(fmt(y, step < 1 ? 1 : 0), ice.ix + PADL - 8, Y(y), { ...tick, align: 'right' });
   L.add(iLab, ice.ix + ice.iw - 10, ice.iy + ice.ih - PADB / 2 - 2, { ...tick, color: P.ink, align: 'right', size: 14, maxPush: 20 });
-  L.add(jLab, clamp(X(0), ice.ix + PADL, ice.ix + ice.iw - 60) + 8, ice.iy + 16, { ...tick, color: P.ink, align: 'left', size: 14, maxPush: 20 });
+  L.add(jLab, jx, jy, { ...tick, color: P.ink, align: 'left', size: 14, maxPush: 20 });
   if (X(0) > ice.ix && Y(0) < ice.iy + ice.ih) L.add('O', X(0) - 7, Y(0) + 13, { color: P.ink, align: 'right', pri: 8, size: 15, weight: 800 });
 
   // ── each path, faint in full and strong to now
@@ -358,7 +376,11 @@ export function render(canvas, cam, o) {
   for (const [vel, q] of [[f.velB, qb], [f.velA, qa]]) {
     const v = vel(t), sp = Math.hypot(v.x, v.y);
     if (show.velocity === false || sp < 1e-9) continue;
-    const len = r + 12 + (sp / vMax) * ARROW, ex = q.x + (v.x / sp) * len, ey = q.y - (v.y / sp) * len;
+    // as long as its speed says, but kept on the ice: shortened to end inside the boards
+    const ux = v.x / sp, uy = -v.y / sp, room = Math.min(
+      ux > 1e-9 ? (ice.ix + ice.iw - 6 - q.x) / ux : ux < -1e-9 ? (ice.ix + 6 - q.x) / ux : Infinity,
+      uy > 1e-9 ? (ice.iy + ice.ih - 6 - q.y) / uy : uy < -1e-9 ? (ice.iy + 6 - q.y) / uy : Infinity);
+    const len = Math.max(r + 14, Math.min(r + 12 + (sp / vMax) * ARROW, room)), ex = q.x + ux * len, ey = q.y + uy * len;
     arrow(g, q.x, q.y, ex, ey, { color: P.vel, width: 2.8, head: 11 });
     for (let i = 1; i <= 6; i++) { const u = i / 6; reserve({ x: q.x + (ex - q.x) * u - 7, y: q.y + (ey - q.y) * u - 7, w: 14, h: 14 }); }
   }
@@ -376,7 +398,7 @@ export function render(canvas, cam, o) {
     const wh = { x: r3(f.where.x), y: r3(f.where.y) };
     const l1 = 'collide at ' + T`t = ${s3(f.tc)} [s]`, l2 = T`(${vsrc(wh)}) [m]`;
     g.save(); g.font = `700 14px ${fontOf()}`; const tw = Math.max(g.measureText(l1).width, g.measureText(l2).width) + 12; g.restore();
-    const blocked = phone ? [{ x: 0, y: 0, w, h: 100 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 160, y: 0, w: 160, h: 64 }];
+    const blocked = HB;
     const a0 = Math.atan2(dy, dx), rr = r * 2.6 + 14;
     let best = null;
     for (const inside of [true, false]) for (const ext of [0, 26, 52]) for (const da of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.2, -2.2, Math.PI]) {

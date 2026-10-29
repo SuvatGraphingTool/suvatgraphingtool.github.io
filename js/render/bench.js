@@ -23,7 +23,7 @@
 import { env, rng, softShadow, fitSide } from './scenery.js';
 import { ballAt } from './figures.js';
 import { flash, pulse, dust, ageOf, phaseOf, speedLines } from './effects.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, cssVar } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, cssVar, hudBoxes } from './util.js';
 import { T, num } from '../notation.js';
 
 const TAU = Math.PI * 2;
@@ -38,15 +38,6 @@ const s3 = (x) => {
 const small = (x) => (Math.abs(x) < 0.1 ? T`${s3(x * 100)} [cm]` : T`${s3(x)} [m]`);
 const ease = (u) => 1 - (1 - u) ** 3;
 
-/** The readouts' boxes, top-left and the clock top-right: { x, y, w, h }.
-    Four rows down the left measure about 250 × 290 at laptop width. */
-function hudBoxes(w, rows) {
-  const phone = w < 520;
-  return [
-    { x: 0, y: 0, w: phone ? 150 : 255, h: phone ? 16 + rows * 58 : 16 + rows * 69 },
-    { x: w - (phone ? 195 : 235), y: 0, w: phone ? 195 : 235, h: phone ? 64 : 74 },
-  ];
-}
 const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 /** Does the segment (x0, y0)–(x1, y1) cross the box? Sampled: arrows are short. */
 const crosses = (b, x0, y0, x1, y1) => { for (let i = 0; i <= 12; i++) { const x = x0 + ((x1 - x0) * i) / 12, y = y0 + ((y1 - y0) * i) / 12; if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return true; } return false; };
@@ -446,7 +437,7 @@ export function render(canvas, cam, o) {
   // the launcher and the timer, or the table, stand clear of the readouts on the left
   const area = f.H
     ? { left: phone ? 18 : 270, right: w - 26, top: phone ? 150 : 110, bottom: h - floorBand }
-    : { left: phone ? 14 : 470, right: w - 22, top: phone ? 250 : 100, bottom: h - floorBand - (phone ? 64 : 96) };
+    : { left: phone ? 14 : 470, right: w - 22, top: phone ? 272 : 100, bottom: h - floorBand - (phone ? 46 : 96) };
   const fit = fitSide(box, area, { sky: f.H ? 1 : 0.35 });
   const k = fit.k;
   // the table, at a real width, shifted right if its back would sit under the readouts
@@ -489,7 +480,7 @@ export function render(canvas, cam, o) {
     retortStand(g, rod2, floorY, y2 - half - 18, night);
     // the wires: to the timer along the bench; from the second down its stand and away along the floor
     if (foil) {
-      const tmx = timerX + 70;
+      const tmx = phone ? -10 : timerX + 70;                // on a phone the timer is off to the left
       wire(g, x1, a1 - 2, tmx, worktop - 20, '#b8433a', 30);
       wire(g, x1, b1, tmx, worktop - 12, '#2b2b30', 6);
       wire(g, x2, y2 - half - 2, rod2 + 6, y2 - half + 20, '#b8433a', 6);
@@ -503,7 +494,7 @@ export function render(canvas, cam, o) {
     const past = fired && t >= f.t2 - 1e-9, hitY = Y(f.pos(f.t2).y), a2g = ageOf(t, f.t2, f.tMax, life);
     foilStrip(g, x2, y2 - half, y2 + half, { cut: past ? hitY : null, age: a2g.age, life, centre: f.drop != null ? y2 : null, P });
     clampArm(g, rod2, y2 - half, x2, night); clampArm(g, rod2, y2 + half, x2, night);
-    if (foil) {
+    if (foil && !phone) {
       const shown = t1 ? Math.min(t, f.t2) : 0;
       timer(g, timerX, worktop - 1, 74, num(shown, 3), night);
     }
@@ -516,7 +507,7 @@ export function render(canvas, cam, o) {
     const gy = rodTop - 12;
     stroke(g, [{ x: x1, y: gy }, { x: x2, y: gy }], { color: P.ink, width: 1.3, alpha: 0.85 });
     for (const xx of [x1, x2]) stroke(g, [{ x: xx, y: gy - 5 }, { x: xx, y: gy + 5 }], { color: P.ink, width: 1.3, alpha: 0.85 });
-    L.add(T`${s3(f.d)} [m]`, phone ? Math.max((x1 + x2) / 2, 200) : (x1 + x2) / 2, gy - 14, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700 });
+    L.add(T`${s3(f.d)} [m]`, phone ? Math.max((x1 + x2) / 2, HUD[0].w + 34) : (x1 + x2) / 2, gy - 14, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700 });
     keep.push({ x: x1, y: gy - 26, w: x2 - x1, h: 32 });
     // how much lower the second's centre is, down its right
     if (f.drop != null && f.drop > 0) {

@@ -19,7 +19,7 @@
 import { dust, pulse, ageOf, phaseOf } from './effects.js';
 import { env, rng, skyscape, stone, softShadow, water } from './scenery.js';
 import { ballAt } from './figures.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, hudBoxes } from './util.js';
 import { inLetters } from '../core/letters.js';
 import { T, num } from '../notation.js';
 
@@ -30,12 +30,6 @@ const s3 = (x) => {
   // trailing zeros only go when the number is exactly that (given data): 10.98 is 11.0, 0.5 stays 0.5
   return num(x, dp, { trim: Math.abs(x - Number(x.toFixed(dp))) < 1e-9 });
 };
-
-function keepHud(L, w, rows) {
-  const phone = w < 520;
-  L.reserve({ x: 0, y: 0, w: phone ? 150 : 205, h: 16 + rows * (phone ? 50 : 60) });
-  L.reserve({ x: w - (phone ? 195 : 235), y: 0, w: phone ? 195 : 235, h: phone ? 64 : 74 });
-}
 
 /* ── the town behind ───────────────────────────────────────────────────── */
 
@@ -181,6 +175,8 @@ function parapet(g, x0, edge, y, n) {
 function leaner(g, sx, y, hx, hy, open, n, o = {}) {
   const skin = n ? '#b08a74' : '#d9a988', skinFar = n ? '#7d6253' : '#b5876a', coat = n ? '#7d6a58' : '#6d5a48';
   g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  // nothing of them below the top of the wall they lean on
+  g.beginPath(); g.rect(-1e4, -1e4, 2e4, y + 1e4); g.clip();
   const s = o.scale ?? 1;                                  // drawn larger about the hand, which stays on the ball
   g.translate(hx, hy); g.scale(s, s); g.translate(-hx, -hy);
   const SH = { x: sx, y: y - 12 }, hr = 7.5;
@@ -325,12 +321,13 @@ export function render(canvas, cam, o) {
   const E = env(), night = E.night;
   const phone = w < 520;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  keepHud(L, w, 2);
+  const HUD = hudBoxes(w, 2);
+  for (const b of HUD) L.reserve(b);
 
   // ── one scale down the page: from the release (0) to the ground, or a little below N
   // with no ground given the motion ends in the air: the pavement is drawn clear below its end
   const deep = f.ground ?? Math.max(f.yN * 1.16, f.pos(f.tMax) * 1.07);
-  const top = phone ? 132 : 104, band = phone ? 40 : 48, bottom = h - band, k = (bottom - top) / deep;
+  const top = phone ? HUD[0].h + 30 : 104, band = phone ? 40 : 48, bottom = h - band, k = (bottom - top) / deep;
   const Y = (y) => top + y * k;
   const floor = Y(deep);
   const edge = phone ? Math.round(w * 0.36) : Math.max(330, Math.round(w * 0.4)), bx = edge + 17;

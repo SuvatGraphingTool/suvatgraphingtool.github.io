@@ -22,12 +22,12 @@
 import { fieldFromAbove, fitPlanAround, blendPlan, planGrid, compassRose, softShadow } from './scenery.js';
 import { pulse, ageOf, phaseOf } from './effects.js';
 import { ballAt } from './figures.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, unview, cssVar } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, unview, cssVar, hudBoxes as hudOf } from './util.js';
 import { s3, placer } from './twoplane.js';
 import { T, num } from '../notation.js';
 import { vsrc } from '../core/plane.js';
 
-const HUD = 250, HUD_H = 290;
+const ROWS = 4;             // the readouts' left column: the kit's hud(...).left
 
 /** Where a peg goes for what happened at an asked moment, and what it says. */
 function told(a, ta, short) {
@@ -57,10 +57,18 @@ export function render(canvas, cam, o) {
   //    particle goes on past that, the view widens to the whole run — eased
   //    by the engine's clock, one fixed pair of frames, so it never jumps.
   const tAsk = asked.length ? Math.min(f.tMax, Math.max(...asked.map((q) => q.ta)) * 1.12) : f.tMax;
-  const hudBoxes = phone ? [{ x: 0, y: 0, w: w * 0.6, h: 96 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 150, y: 0, w: 150, h: 60 }];
+  const hudBoxes = hudOf(w, ROWS);   // the readouts, where they really are
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 22), cY = h - cR - (phone ? 14 : 24);
   const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
-  const frameOf = (pts) => {
+  // the velocity arrow is drawn to one scale, tau seconds of travel at that
+  // velocity, and each frame holds the arrow's tip as well as the path, so the
+  // arrow never runs off the canvas
+  const whole = f.path(160);
+  const spPath = Math.max(1, ...['x', 'y'].map((c) => Math.max(...whole.map((p) => p[c])) - Math.min(...whole.map((p) => p[c]))));
+  const vMax = Math.max(...whole.map((p) => f.speed(p.t)), 1e-6), tau = (0.16 * spPath) / vMax;
+  const tipOf = (p) => { const v = f.vel(p.t); return { x: p.x + v.x * tau, y: p.y + v.y * tau }; };
+  const frameOf = (path) => {
+    const pts = [...path, ...path.map(tipOf)];
     const xs = [0, f.r0.x, ...pts.map((p) => p.x)], ys = [0, f.r0.y, ...pts.map((p) => p.y)];
     const box = { xLo: Math.min(...xs), xHi: Math.max(...xs), yLo: Math.min(...ys), yHi: Math.max(...ys) };
     const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
@@ -68,9 +76,9 @@ export function render(canvas, cam, o) {
     const m = phone ? 26 : 34;
     return { sp, F: fitPlanAround(box, [{ x: 0, y: 0 }, f.r0, ...pts], { left: m, right: w - m, top: m, bottom: h - m }, { avoid: [...hudBoxes, compassBox], margin: 22 }) };
   };
-  const focus = f.path(120, tAsk), whole = f.path(160);
+  const focus = f.path(120, tAsk);
   const near = frameOf(focus), far = tAsk < f.tMax - 1e-9 ? frameOf(whole) : near;
-  const s = clamp((t - tAsk) / Math.max(1e-9, f.tMax - tAsk), 0, 1), ease = 1 - (1 - s) ** 2;
+  const s = clamp((t - tAsk) / Math.max(1e-9, f.tMax - tAsk), 0, 1), ease = s * s * (3 - 2 * s);
   const F = blendPlan(near.F, far.F, ease), sp = near.sp + (far.sp - near.sp) * ease;
   const { X, Y } = F;
   const px = (p) => ({ x: X(p.x), y: Y(p.y) });
@@ -93,8 +101,13 @@ export function render(canvas, cam, o) {
   // ── the grid and the axes through O
   // one grid for the whole run, so it never changes under the student's eyes
   const step = niceStep(Math.max(near.sp, far.sp), phone ? 5 : 9), dp = step < 1 ? (step < 0.1 ? 2 : 1) : 0;
-  planGrid(g, L, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [m]`, nameJ: T`vec(j) [m]`, clear: Q.clear,
-    jTop: (phone ? F.X(0) < w * 0.6 + 10 : F.X(0) < HUD + 10) ? (phone ? 112 : HUD_H + 14) : 16 });
+  // the grid's words are placed once against what never moves, in their own
+  // labels, so they hold still; everything else keeps off them
+  const Ls = labels();
+  for (const b of [...hudBoxes, compassBox]) Ls.reserve(b);
+  const gridWords = planGrid(g, Ls, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [m]`, nameJ: T`vec(j) [m]`, clear: Q.clear,
+    jTop: F.X(0) < hudBoxes[0].x + hudBoxes[0].w + 10 ? hudBoxes[0].h + 14 : 16 });
+  for (const b of gridWords) hold(b);
 
   // ── the path: a neutral trail, all of it faintly, the part travelled strongly
   stroke(g, wholePx, { color: P.strong, width: 1.6, alpha: 0.4 });
@@ -156,17 +169,8 @@ export function render(canvas, cam, o) {
     const big = Math.max(Math.abs(r.x), Math.abs(r.y), 1e-9), rdp = clamp(2 - Math.floor(Math.log10(big)), 0, 3);
     Q.add(T`vec r = ${vsrc(r, rdp)}`, mx, my, { color: P.disp, pri: 6, size: 14, weight: 700 });
   }
-  const sp0 = f.speed(t), vMax = Math.max(...whole.map((p) => f.speed(p.t)), 1e-6);
-  // One scale for the whole run, so an arrow's length always says its speed —
-  // chosen so that no arrow along the framed path leaves the canvas.
-  const room = (c, dv, lo, hi) => (dv > 0 ? (hi - c) / dv : dv < 0 ? (lo - c) / dv : Infinity);
-  let vl = clamp(Math.min(w, h) * 0.2, 64, 130) / vMax;
-  for (const q of focus) {
-    const vq = f.vel(q.t), qx = X(q.x), qy = Y(q.y);
-    if (qx < 0 || qx > w || qy < 0 || qy > h) continue;
-    vl = Math.min(vl, room(qx, vq.x, 12, w - 12) * 0.9, room(qy, -vq.y, 12, h - 12) * 0.9);
-  }
-  vl = Math.max(vl, 30 / vMax);
+  // one scale for the whole run (tau, above), so an arrow's length always says its speed
+  const sp0 = f.speed(t), vl = tau * F.k;
   softShadow(g, pX + 4, pY + 7, 15, 6);
   if (show.velocity !== false && sp0 > 1e-6) {
     // one scale throughout, but never so short it hides under the ball
@@ -189,6 +193,7 @@ export function render(canvas, cam, o) {
   hold({ x: pX - 14, y: pY - 14, w: 28, h: 28 });
 
   Q.flush(L);
+  Ls.draw(g, w, h);
   L.draw(g, w, h);
 
   // ── the compass: the screen's, not the field's

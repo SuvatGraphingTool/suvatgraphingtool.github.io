@@ -17,10 +17,10 @@
 
 import { seaFromAbove, skyFromAbove, fitPlanAround, planGrid, compassRose, lighthouseAbove, env } from './scenery.js';
 import { pulse, ageOf, phaseOf } from './effects.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, unview, cssVar } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, unview, cssVar, hudBoxes as hudOf } from './util.js';
 import { T, num } from '../notation.js';
 
-const HUD = 250, HUD_H = 290;
+const ROWS = 5;             // the readouts' left column: the kit's hud(...).left
 const TAU = Math.PI * 2;
 
 /** Three significant figures, as a paper answers, with no trailing zeros (1, not 1.00). */
@@ -41,6 +41,8 @@ export function beside(L, text, x, y, nx, ny, d, o) {
  * placed; then it goes to the stage's labels L, so the axis numbers keep off
  * it too. Queue with add(), place them all with flush(L) just before L.draw.
  */
+// up-right, up-left, down-right, down-left, up, down, right, left, then between
+const ORDER = [14, 10, 2, 6, 12, 4, 0, 8, 15, 13, 11, 9, 1, 3, 5, 7];
 export function placer(g, w, h) {
   const obs = [], taken = [], q = [];
   const font = cssVar('--font', 'system-ui, sans-serif');
@@ -67,8 +69,13 @@ export function placer(g, w, h) {
         const size = Math.max(13, it.o.size ?? 13);
         g.save(); g.font = `${it.o.weight || 600} ${size}px ${font}`; const tw = g.measureText(it.text).width + 12; g.restore();
         const bh = size + 10;
+        // The first spot, nearest first and in one fixed order of directions,
+        // that is clear of everything wins outright: so a label stays in its
+        // slot frame after frame until something actually takes it. If none
+        // is clear, the least crowded one.
         let best = null;
-        for (const d of [10, 18, 28, 40, 56, 76]) for (let k = 0; k < 16; k++) {
+        search:
+        for (const d of [10, 18, 28, 40, 56, 76]) for (const k of ORDER) {
           const an = (k / 16) * TAU, cx = it.x + Math.cos(an) * (d + (tw / 2) * Math.abs(Math.cos(an))), cy = it.y + Math.sin(an) * (d + (bh / 2) * Math.abs(Math.sin(an)));
           const bx = cx - tw / 2, by = cy - bh / 2;
           if (bx < 3 || bx + tw > w - 3 || by < 3 || by + bh > h - 3) continue;
@@ -76,6 +83,7 @@ export function placer(g, w, h) {
           let m = 12;
           for (const p of obs) { const dx = Math.max(bx - p.x, 0, p.x - bx - tw), dy = Math.max(by - p.y, 0, p.y - by - bh); if (dx < m && dy < m) m = Math.min(m, Math.hypot(dx, dy)); }
           const score = m * 10 - d;
+          if (m >= 8) { best = { score, cx, cy, bx, by }; break search; }
           if (!best || score > best.score) best = { score, cx, cy, bx, by };
         }
         if (!best) best = { cx: it.x, cy: it.y - 24, bx: it.x - tw / 2, by: it.y - 24 - bh / 2 };
@@ -244,7 +252,7 @@ export function render(canvas, cam, o) {
   for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(0, sp * 0.25 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
   const S = birds ? clamp(Math.min(w, h) * 0.17, 68, 96) : clamp(Math.min(w, h) * 0.13, 54, 76);
   const pad = S * 1.05;    // a ship's length all round: the ship, its wake, or a gull's wings
-  const hudBoxes = phone ? [{ x: 0, y: 0, w: w * 0.6, h: 96 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 150, y: 0, w: 150, h: 60 }];
+  const hudBoxes = hudOf(w, ROWS);   // the readouts, where they really are
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 20), cY = h - cR - (phone ? 14 : 22);
   const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
   const F = fitPlanAround(box, all, { left: pad, right: w - pad, top: pad, bottom: h - pad }, { avoid: [...hudBoxes, compassBox], margin: pad * 0.7 });
@@ -275,8 +283,13 @@ export function render(canvas, cam, o) {
   // ── the grid and the axes through O
   const step = niceStep(Math.max(box.xHi - box.xLo, box.yHi - box.yLo), phone ? 5 : 8);
   const dp = step < 1 ? (step < 0.1 ? 2 : 1) : 0;
-  planGrid(g, L, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [${U.len}]`, nameJ: T`vec(j) [${U.len}]`, clear: Q.clear,
-    jTop: (phone ? F.X(0) < w * 0.6 + 10 : F.X(0) < HUD + 10) ? (phone ? 112 : HUD_H + 14) : 16 });
+  // the grid's words are placed once against what never moves, in their own
+  // labels, so they hold still; everything else keeps off them
+  const Ls = labels();
+  for (const b of [...hudBoxes, compassBox]) Ls.reserve(b);
+  const gridWords = planGrid(g, Ls, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [${U.len}]`, nameJ: T`vec(j) [${U.len}]`, clear: Q.clear,
+    jTop: F.X(0) < hudBoxes[0].x + hudBoxes[0].w + 10 ? hudBoxes[0].h + 14 : 16 });
+  for (const b of gridWords) hold(b);
 
   // ── the ships' wakes on the water, under the tracks
   // a wake builds as a ship gets under way: none at the start, full soon after
@@ -346,6 +359,7 @@ export function render(canvas, cam, o) {
   place(f.posA, f.A.v, P.disp, 'A');
 
   Q.flush(L);
+  Ls.draw(g, w, h);
   L.draw(g, w, h);
 
   // ── the compass: the screen's, not the sea's

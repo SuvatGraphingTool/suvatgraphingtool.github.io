@@ -27,7 +27,7 @@
 
 import { pulse, dust, ageOf } from './effects.js';
 import { env, rng, softShadow } from './scenery.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, niceStep, hudBoxes } from './util.js';
 import { T, num } from '../notation.js';
 
 const HUD = 250, HUD_H = 290, TAU = Math.PI * 2;
@@ -357,13 +357,24 @@ export function render(canvas, cam, o) {
   const half = f.side / 2, phone = w < 520;
 
   // ── the floor, square, centred on O, clear of the readouts
-  const left = phone ? 16 : HUD + 30, right = phone ? w - 16 : w - 60, top = phone ? 108 : 56, bottom = h - (phone ? 30 : 34);
-  const k = Math.min((right - left) / (f.side * 1.18), (bottom - top) / (f.side * 1.18));
-  const cx = (left + right) / 2, cy = (top + bottom) / 2;
+  // the readouts sit over the stage (the column top left, the clock top
+  // right): the concrete may run under them, but not the floor, its posts,
+  // its letters or its dimension line
+  const HB = hudBoxes(w, 3), [hudL, hudC] = HB, bottom = h - (phone ? 30 : 34);
+  const hitsBox = (b, q) => b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y;
+  const fit = (left, top, right) => {
+    const k = Math.min((right - left) / (f.side * 1.18), (bottom - top) / (f.side * 1.18)), cx = (left + right) / 2, cy = (top + bottom) / 2, S = f.side * k;
+    return { k, cx, cy, art: { x: cx - S / 2 - 40, y: cy - S / 2 - 22, w: S + 80, h: S + 54 } };
+  };
+  const pick = (...c) => c.sort((p, q) => q.k - p.k)[0];
+  let F = phone ? fit(16, hudC.h + 8, w - 16) : fit(hudL.w + 38, 56, w - 60);
+  if (HB.some((b) => hitsBox(F.art, b)))
+    F = phone ? pick(fit(16, hudL.h + 8, w - 16), fit(hudL.w + 8, hudC.h + 8, w - 16))
+      : pick(fit(hudL.w + 38, hudC.h + 8, w - 60), fit(hudL.w + 38, 56, hudC.x - 12));
+  const { k, cx, cy } = F;
   const X = (x) => cx + x * k, Y = (y) => cy - y * k, PX = (p) => ({ x: X(p.x), y: Y(p.y) });
   const fx = X(-half), fy = Y(half), S = f.side * k;
-  if (phone) reserve({ x: 0, y: 0, w, h: 100 });
-  else { reserve({ x: 0, y: 0, w: HUD, h: HUD_H }); reserve({ x: w - 160, y: 0, w: 160, h: 64 }); }
+  for (const b of HB) reserve(b);
 
   concrete(g, w, h, E);
   let step = niceStep(f.side, 10); if (step * k < 16) step *= 2; else if (step * k > 64) step /= 2;
@@ -466,16 +477,22 @@ export function render(canvas, cam, o) {
     }
     for (let i = 0; i <= 10; i++) { const v = i / 10; reserve({ x: b.x + (a.x - b.x) * v - 7, y: b.y + (a.y - b.y) * v - 7, w: 14, h: 14 }); }
     if (u > 0.5) {
-      const l1 = 'closest at ' + T`t = ${s3(f.tc)} [s]`, l2 = T`${s3(f.dmin)} [m]` + ' apart', tw = Math.max(textW(l1), textW(l2)) + 12;
-      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dl = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      // two lines, or three where a phone leaves no room for a wide block
+      const tl = T`t = ${s3(f.tc)} [s]`, dd = T`${s3(f.dmin)} [m]` + ' apart';
+      const tries = [['closest at ' + tl, dd], ['closest at', tl, dd]];
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
       // first choice: square off the gap, on the side away from the floor's centre
       let dir = Math.atan2(a.x - b.x, -(a.y - b.y));
       if (Math.cos(dir) * (mx - X(0)) + Math.sin(dir) * (my - Y(0)) < 0) dir += Math.PI;
-      let best = place(mx, my, tw, 44, [34, 54, 80, 110, 150, 190], dir);
-      best ??= { ax: mx, ay: my + 40, al: 'center' };
-      L.add(l1, best.ax, best.ay - 10, { color: P.mark, align: best.al, pri: 9, size: 14, weight: 700, maxPush: 20 });
-      L.add(l2, best.ax, best.ay + 10, { color: P.mark, align: best.al, pri: 8, size: 14, weight: 700, maxPush: 20 });
-      held.push({ x: (best.al === 'left' ? best.ax : best.al === 'right' ? best.ax - tw : best.ax - tw / 2) - 6, y: best.ay - 22, w: tw + 12, h: 44 });   // kept clear for this label alone: the label system is not told
+      let best = null, lines = tries[0];
+      for (const ls of tries) {
+        const tw = Math.max(...ls.map((q) => textW(q))) + 12, hh = ls.length * 20 + 4;
+        const at = place(mx, my, tw, hh, [34, 54, 80, 110, 150, 190], dir);
+        if (at) { best = { ...at, tw, hh }; lines = ls; break; }
+      }
+      best ??= { ax: mx, ay: my + 40, al: 'center', tw: Math.max(...lines.map((q) => textW(q))) + 12, hh: 44 };
+      lines.forEach((q, i) => L.add(q, best.ax, best.ay + (i - (lines.length - 1) / 2) * 20, { color: P.mark, align: best.al, pri: 9 - Math.min(i, 1), size: 14, weight: 700, maxPush: 20 }));
+      held.push({ x: (best.al === 'left' ? best.ax : best.al === 'right' ? best.ax - best.tw : best.ax - best.tw / 2) - 6, y: best.ay - best.hh / 2, w: best.tw + 12, h: best.hh });   // kept clear for this label alone: the label system is not told
     }
   }
 

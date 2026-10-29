@@ -18,7 +18,7 @@
 
 import { flash, pulse, dust, ageOf, phaseOf } from './effects.js';
 import { env, rng, softShadow, floorboards } from './scenery.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, hudBoxes } from './util.js';
 import { thrower, throwerHand, ballAt } from './figures.js';
 import { T, num } from '../notation.js';
 
@@ -30,12 +30,6 @@ const s3 = (x) => {
   return num(x, dp, { trim: Math.abs(x - Number(x.toFixed(dp))) < 1e-9 });
 };
 const ease = (u) => u * u * (3 - 2 * u);
-
-function keepHud(L, w, rows) {
-  const phone = w < 520;
-  L.reserve({ x: 0, y: 0, w: phone ? 150 : 205, h: 16 + rows * (phone ? 50 : 60) });
-  L.reserve({ x: w - (phone ? 195 : 235), y: 0, w: phone ? 195 : 235, h: phone ? 64 : 74 });
-}
 
 /* ── the hall ──────────────────────────────────────────────────────────── */
 
@@ -258,12 +252,13 @@ export function render(canvas, cam, o) {
   const E = env(), night = E.night;
   const phone = w < 520;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  keepHud(L, w, 2);
+  const HUD = hudBoxes(w, 2);
+  for (const b of HUD) L.reserve(b);
 
   // ── one scale, the floor at the foot of the picture and the ceiling at its top.
   // With no ceiling given the hall's roof is drawn above the greatest height, unmeasured.
   const roof = f.C ?? (f.Hmax * 1.1 + 0.8);
-  const ceilY = phone ? 118 : 96, floorY = h - (phone ? 40 : 48);
+  const ceilY = phone ? HUD[0].h + 10 : 96, floorY = h - (phone ? 40 : 48);
   const k = (floorY - ceilY) / roof, Y = (y) => floorY - y * k;
   const cx = phone ? Math.round(w * 0.46) : Math.max(380, Math.round(w * 0.5));
   const dx = cx + (phone ? 48 : 62), dx2 = dx + (phone ? 46 : 56);

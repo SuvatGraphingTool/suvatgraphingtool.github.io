@@ -804,8 +804,9 @@ export function blendPlan(A, B, u) {
  * The surveyor's grid laid over a plan, across the whole canvas: faint lines
  * every `step`, the two axes through O with a casing so they hold over the
  * scenery, a tick at each step, and the numbers, the axis names and O through
- * the stage's labels L (so they keep off each other, off what has been
- * reserved, and never sit at the canvas edge).
+ * the labels L — each placed once against what never moves (`clear`), so
+ * they hold still while the clock runs. Returns their boxes, for the
+ * stage's other words to keep off.
  * @param o { step, fmt(x) → text, nameI, nameJ, clear(x, y, w, h) → is that box free
  *   of the drawing (a number goes the other side of its axis if not),
  *   jTop: the highest the j axis's name may sit (below the readouts) }
@@ -828,28 +829,41 @@ export function planGrid(g, L, F, w, h, P, o) {
   for (let y = Math.ceil(wy0 / step) * step; y <= wy1; y += step) { g.moveTo(ax - 4, F.Y(y)); g.lineTo(ax + 4, F.Y(y)); }
   g.stroke();
   g.restore();
-  // each number on its usual side of the axis, or — where something drawn
-  // is in the way there and the other side is clear — on the other side
-  const clear = o.clear || (() => true);
-  g.save(); g.font = `600 13px ${cssVar('--font', 'system-ui, sans-serif')}`;
-  const tw = (s) => g.measureText(s).width + 10;
+  // The words on the grid are the place's, not the motion's: each goes where
+  // the drawing that never moves (`clear` — the whole paths, the axes, the
+  // readouts) leaves room, so none of them hops as the clock runs. O and the
+  // axis names first, then each number on its usual side of its axis — or
+  // the other side, where that one is blocked.
+  const clear = o.clear || (() => true), font = cssVar('--font', 'system-ui, sans-serif');
+  const boxes = [];
+  const free = (b) => b.x > 2 && b.x + b.w < w - 2 && b.y > 2 && b.y + b.h < h - 2 && clear(b.x, b.y, b.w, b.h) && !boxes.some((q) => b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y);
+  const measure = (text, size, weight) => { g.save(); g.font = `${weight} ${size}px ${font}`; const m = g.measureText(text).width; g.restore(); return m; };
+  const boxAt = (x, y, tw, size, align) => ({ x: (align === 'right' ? x - tw : align === 'center' ? x - tw / 2 : x) - 5, y: y - (size + 10) / 2, w: tw + 10, h: size + 10 });
+  // the first free spot of `spots` ([x, y, align]), or the first of them
+  const put = (text, spots, opts, must) => {
+    const size = opts.size ?? 13, tw = measure(text, size, opts.weight || 600);
+    let pick = spots.find(([x, y, al]) => free(boxAt(x, y, tw, size, al)));
+    if (!pick && !must) return;
+    pick = pick || spots[0];
+    const b = boxAt(pick[0], pick[1], tw, size, pick[2]);
+    boxes.push(b);
+    L.add(text, pick[0], pick[1], { ...opts, align: pick[2], maxPush: 0 });
+  };
+  put('O', [[ax - 9, ay + 15, 'right'], [ax - 9, ay - 15, 'right'], [ax + 9, ay + 15, 'left'], [ax + 9, ay - 15, 'left'],
+    [ax - 22, ay + 26, 'right'], [ax + 22, ay + 26, 'left'], [ax - 22, ay - 26, 'right'], [ax + 22, ay - 26, 'left']], { color: P.ink, pri: 6, size: 15, weight: 700 }, true);
+  if (o.nameJ) { const jy = Math.max(F.area.top, o.jTop ?? 16) + 2; put(o.nameJ, [0, 24, 48, 72].flatMap((d) => [[ax + 10, jy + d, 'left'], [ax - 10, jy + d, 'right']]), { color: P.strong, pri: 5, size: 14 }); }
+  if (o.nameI) { const ix = Math.min(w - 10, F.area.right + 10); put(o.nameI, [0, 40, 80].flatMap((d) => [[ix - d, ay - 15, 'right'], [ix - d, ay + 15, 'right']]), { color: P.strong, pri: 5, size: 14 }); }
   for (let x = Math.ceil(wx0 / step) * step; x <= wx1; x += step) {
-    const px = F.X(x), s = fmt(x), ww = tw(s);
+    const px = F.X(x);
     if (Math.abs(x) < step * 1e-6 || px < 18 || px > w - 18) continue;
-    const below = clear(px - ww / 2, ay + 4, ww, 22), above = clear(px - ww / 2, ay - 26, ww, 22);
-    L.add(s, px, !below && above ? ay - 15 : ay + 15, { color: P.muted, align: 'center', pri: 1, size: 13, maxPush: 0 });
+    put(fmt(x), [[px, ay + 15, 'center'], [px, ay - 15, 'center']], { color: P.muted, pri: 1, size: 13 });
   }
   for (let y = Math.ceil(wy0 / step) * step; y <= wy1; y += step) {
-    const py = F.Y(y), s = fmt(y), ww = tw(s);
+    const py = F.Y(y);
     if (Math.abs(y) < step * 1e-6 || py < 16 || py > h - 16) continue;
-    const left = clear(ax - 8 - ww, py - 11, ww, 22), right = clear(ax + 8, py - 11, ww, 22);
-    if (!left && right) L.add(s, ax + 8, py, { color: P.muted, align: 'left', pri: 1, size: 13, maxPush: 0 });
-    else L.add(s, ax - 8, py, { color: P.muted, align: 'right', pri: 1, size: 13, maxPush: 0 });
+    put(fmt(y), [[ax - 8, py, 'right'], [ax + 8, py, 'left']], { color: P.muted, pri: 1, size: 13 });
   }
-  g.restore();
-  L.add('O', ax - 9, ay + 15, { color: P.ink, align: 'right', pri: 6, size: 15, weight: 700, maxPush: 40 });
-  if (o.nameI) L.add(o.nameI, Math.min(w - 10, F.area.right + 10), ay - 15, { color: P.strong, align: 'right', pri: 5, size: 14, maxPush: 40 });
-  if (o.nameJ) L.add(o.nameJ, ax + 10, Math.max(F.area.top, o.jTop ?? 16) + 2, { color: P.strong, align: 'left', pri: 5, size: 14, maxPush: 40, push: 'down' });
+  return boxes;
 }
 
 /** A compass for a plan, in the screen's own pixels (draw it after unview so

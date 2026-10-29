@@ -16,12 +16,12 @@
 import { fieldFromAbove, fitPlanAround, planGrid, compassRose, softShadow } from './scenery.js';
 import { pulse, ageOf, phaseOf } from './effects.js';
 import { ballAt } from './figures.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, unview, cssVar } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, unview, cssVar, hudBoxes as hudOf } from './util.js';
 import { s3, placer } from './twoplane.js';
 import { COMPASS } from '../core/plane.js';
 import { T, num } from '../notation.js';
 
-const HUD = 250, HUD_H = 290;
+const ROWS = 3;             // the readouts' left column: the kit's hud(...).left
 
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
@@ -37,11 +37,17 @@ export function render(canvas, cam, o) {
   //    canvas allows with nothing that moves under the readouts or the compass
   const n = 160, pts = [];
   for (let i = 0; i <= n; i++) { const tt = (i / n) * f.tMax; pts.push({ t: tt, ...f.pos(tt) }); }
-  const all = [...pts, { x: 0, y: 0 }];
+  // the velocity arrow is drawn to one scale, tau seconds of travel at that
+  // velocity, and the frame holds each arrow's tip too: it never runs off,
+  // or under the readouts
+  const spPath = Math.max(1, ...['x', 'y'].map((c) => Math.max(...pts.map((p) => p[c])) - Math.min(...pts.map((p) => p[c]))));
+  const vMax = Math.max(...pts.map((p) => Math.hypot(f.vel(p.t).x, f.vel(p.t).y)), 1e-6), tau = (0.14 * spPath) / vMax;
+  const tips = pts.map((p) => { const v = f.vel(p.t); return { x: p.x + v.x * tau, y: p.y + v.y * tau }; });
+  const all = [...pts, ...tips, { x: 0, y: 0 }];
   const box = { xLo: Math.min(...all.map((p) => p.x)), xHi: Math.max(...all.map((p) => p.x)), yLo: Math.min(...all.map((p) => p.y)), yHi: Math.max(...all.map((p) => p.y)) };
   const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
   for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(sp * 0.03, sp * 0.15 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
-  const hudBoxes = phone ? [{ x: 0, y: 0, w: w * 0.6, h: 96 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 150, y: 0, w: 150, h: 60 }];
+  const hudBoxes = hudOf(w, ROWS);   // the readouts, where they really are
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 22), cY = h - cR - (phone ? 14 : 24);
   const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
   const mg = phone ? 26 : 34;
@@ -64,8 +70,13 @@ export function render(canvas, cam, o) {
 
   // ── the grid and the axes through O
   const step = niceStep(sp, phone ? 5 : 8), dp = step < 1 ? (step < 0.1 ? 2 : 1) : 0;
-  planGrid(g, L, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [m]`, nameJ: T`vec(j) [m]`, clear: Q.clear,
-    jTop: (phone ? F.X(0) < w * 0.6 + 10 : F.X(0) < HUD + 10) ? (phone ? 112 : HUD_H + 14) : 16 });
+  // the grid's words are placed once against what never moves, in their own
+  // labels, so they hold still; everything else keeps off them
+  const Ls = labels();
+  for (const b of [...hudBoxes, compassBox]) Ls.reserve(b);
+  const gridWords = planGrid(g, Ls, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [m]`, nameJ: T`vec(j) [m]`, clear: Q.clear,
+    jTop: F.X(0) < hudBoxes[0].x + hudBoxes[0].w + 10 ? hudBoxes[0].h + 14 : 16 });
+  for (const b of gridWords) hold(b);
 
   // ── the path, faint in full and strong so far
   stroke(g, pathPx, { color: P.disp, width: 1.8, alpha: 0.4 });
@@ -108,13 +119,8 @@ export function render(canvas, cam, o) {
   // ── the ball, its velocity and its acceleration
   const r = f.pos(t), v = f.vel(t), a = f.acc(t), qx = X(r.x), qy = Y(r.y);
   softShadow(g, qx + 4, qy + 7, 15, 6);
-  const vMax = Math.max(...pts.map((p) => Math.hypot(f.vel(p.t).x, f.vel(p.t).y)), 1e-6);
-  // one scale for the whole run, so an arrow's length says its speed — and
-  // chosen so that no arrow along the path leaves the canvas
-  const room = (c, dv, lo, hi) => (dv > 0 ? (hi - c) / dv : dv < 0 ? (lo - c) / dv : Infinity);
-  let vl = clamp(Math.min(w, h) * 0.2, 64, 120) / vMax;
-  for (const p of pts) { const vq = f.vel(p.t); vl = Math.min(vl, room(X(p.x), vq.x, 14, w - 14) * 0.9, room(Y(p.y), -vq.y, 14, h - 14) * 0.9); }
-  vl = Math.max(vl, 30 / vMax);
+  // one scale for the whole run (tau, above), so an arrow's length says its speed
+  const vl = tau * F.k;
   if (show.velocity !== false && Math.hypot(v.x, v.y) > 1e-9) {
     // one scale throughout, but never so short it hides under the ball
     const k0 = Math.max(vl, 24 / Math.hypot(v.x, v.y)), ex = qx + v.x * k0, ey = qy - v.y * k0;
@@ -131,6 +137,7 @@ export function render(canvas, cam, o) {
   hold({ x: qx - 14, y: qy - 14, w: 28, h: 28 });
   Q.add('P', qx, qy, { color: P.ink, pri: 9, size: 15, weight: 700 });
   Q.flush(L);
+  Ls.draw(g, w, h);
   L.draw(g, w, h);
 
   // ── the compass: the screen's, not the field's
