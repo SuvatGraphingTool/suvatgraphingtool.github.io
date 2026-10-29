@@ -15,7 +15,7 @@
 //
 // Everything drawn is read from js/core/twoplane.js (rule 4).
 
-import { seaFromAbove, skyFromAbove, fitPlan, planGrid, compassRose, lighthouseAbove, env } from './scenery.js';
+import { seaFromAbove, skyFromAbove, fitPlanAround, planGrid, compassRose, lighthouseAbove, env } from './scenery.js';
 import { pulse, ageOf, phaseOf } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, unview, cssVar } from './util.js';
 import { T, num } from '../notation.js';
@@ -55,6 +55,11 @@ export function placer(g, w, h) {
     },
     point(x, y) { obs.push({ x, y }); },
     box(b) { taken.push(b); },
+    /** Is this box free of everything drawn and held so far? */
+    clear(x, y, bw, bh) {
+      if (taken.some((b) => x < b.x + b.w && x + bw > b.x && y < b.y + b.h && y + bh > b.y)) return false;
+      return !obs.some((p) => p.x > x - 3 && p.x < x + bw + 3 && p.y > y - 3 && p.y < y + bh + 3);
+    },
     add(text, x, y, o = {}) { q.push({ text, x, y, o }); },
     flush(L) {
       q.sort((a, b) => (b.o.pri ?? 0) - (a.o.pri ?? 0));
@@ -109,7 +114,7 @@ export function shipTop(g, x, y, s, a, color, P, { wake = 1, phase = 0, part = '
   };
   g.save(); g.translate(x, y); g.rotate(a);
   if (wake > 0 && part !== 'hull') {
-    const wl = s * 1.25 * wake;
+    const wl = s * 1.05 * wake;
     // the churned water straight behind, widening and fading
     const wg = g.createLinearGradient(-L2, 0, -L2 - wl, 0);
     wg.addColorStop(0, 'rgba(255,255,255,0.75)'); wg.addColorStop(1, 'rgba(255,255,255,0)');
@@ -228,18 +233,21 @@ export function render(canvas, cam, o) {
   const birds = f.look === 'birds';
   const U = f.U, tr = s3;
 
-  // ── the frame: both whole tracks and O, one scale both ways, beside the
-  //    readouts or under them, whichever draws it larger
+  // ── the frame: both whole tracks and O, one scale both ways, as large as
+  //    the canvas allows with a ship's length all round and nothing that
+  //    moves under the readouts or the compass
   const n = 80, ptsA = [], ptsB = [];
   for (let i = 0; i <= n; i++) { const tt = (i / n) * f.tMax; ptsA.push(f.posA(tt)); ptsB.push(f.posB(tt)); }
   const all = [...ptsA, ...ptsB, { x: 0, y: 0 }];
   const box = { xLo: Math.min(...all.map((p) => p.x)), xHi: Math.max(...all.map((p) => p.x)), yLo: Math.min(...all.map((p) => p.y)), yHi: Math.max(...all.map((p) => p.y)) };
   const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
   for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(0, sp * 0.25 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
-  const pad = 34;    // a ship's half-length and its letter
-  const F = fitPlan(box, phone
-    ? [{ left: pad, right: w - pad, top: 104 + pad, bottom: h - pad - 10 }]
-    : [{ left: HUD + 20 + pad, right: w - 64 - pad, top: 40 + pad, bottom: h - pad }, { left: pad + 10, right: w - 64 - pad, top: HUD_H + pad, bottom: h - pad }]);
+  const S = birds ? clamp(Math.min(w, h) * 0.17, 68, 96) : clamp(Math.min(w, h) * 0.13, 54, 76);
+  const pad = S * 1.05;    // a ship's length all round: the ship, its wake, or a gull's wings
+  const hudBoxes = phone ? [{ x: 0, y: 0, w: w * 0.6, h: 96 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 150, y: 0, w: 150, h: 60 }];
+  const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 20), cY = h - cR - (phone ? 14 : 22);
+  const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
+  const F = fitPlanAround(box, all, { left: pad, right: w - pad, top: pad, bottom: h - pad }, { avoid: [...hudBoxes, compassBox], margin: pad * 0.7 });
   const { X, Y } = F;
   const px = (p) => ({ x: X(p.x), y: Y(p.y) });
 
@@ -256,26 +264,26 @@ export function render(canvas, cam, o) {
   // the words: kept off the readouts (top left, and on a laptop the clock
   // top right), the compass, every line drawn and each other
   const Q = placer(g, w, h);
-  const off = (pts, pad) => { keepOff(L, pts, pad); Q.line(pts); };
+  const off = (pts) => Q.line(pts);
   const hold = (b) => { L.reserve(b); Q.box(b); };
   // and off the axes, where they can be
   Q.line([{ x: 0, y: F.Y(0) }, { x: w, y: F.Y(0) }], 10); Q.line([{ x: F.X(0), y: 0 }, { x: F.X(0), y: h }], 10);
-  if (!phone) { hold({ x: 0, y: 0, w: HUD, h: HUD_H }); hold({ x: w - 150, y: 0, w: 150, h: 60 }); }
-  else hold({ x: 0, y: 0, w: w * 0.6, h: 96 });
-  const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 20), cY = h - cR - (phone ? 14 : 22);
-  hold({ x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 });
+  for (const b of [...hudBoxes, compassBox]) hold(b);
   Q.point(F.X(0), F.Y(0));
+  Q.line(ptsA.map(px)); Q.line(ptsB.map(px));
 
   // ── the grid and the axes through O
   const step = niceStep(Math.max(box.xHi - box.xLo, box.yHi - box.yLo), phone ? 5 : 8);
   const dp = step < 1 ? (step < 0.1 ? 2 : 1) : 0;
-  planGrid(g, L, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [${U.len}]`, nameJ: T`vec(j) [${U.len}]` });
+  planGrid(g, L, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [${U.len}]`, nameJ: T`vec(j) [${U.len}]`, clear: Q.clear,
+    jTop: (phone ? F.X(0) < w * 0.6 + 10 : F.X(0) < HUD + 10) ? (phone ? 112 : HUD_H + 14) : 16 });
 
   // ── the ships' wakes on the water, under the tracks
-  const S = birds ? clamp(Math.min(w, h) * 0.17, 68, 96) : clamp(Math.min(w, h) * 0.13, 54, 76);
+  // a wake builds as a ship gets under way: none at the start, full soon after
+  const wakeOn = clamp(t / Math.max(1e-9, f.tMax * 0.1), 0, 1);
   if (!birds) for (const [pos, v] of [[f.posB, f.B.v], [f.posA, f.A.v]]) {
     const q = px(pos(t));
-    if (!still(v) && fired) shipTop(g, q.x, q.y, S, Math.atan2(-v.y, v.x), P.ink, P, { phase: phase * 3, part: 'wake' });
+    if (!still(v) && fired && wakeOn > 0) shipTop(g, q.x, q.y, S, Math.atan2(-v.y, v.x), P.ink, P, { wake: wakeOn, phase: phase * 3, part: 'wake' });
   }
 
   // ── each track, faint in full and strong to now
@@ -285,7 +293,7 @@ export function render(canvas, cam, o) {
     const so = []; for (let i = 0; i <= 60; i++) so.push(px(pos((i / 60) * t)));
     stroke(g, so, { color: cssVar('--surface', '#131210'), width: 5.5, alpha: 0.45 });
     stroke(g, so, { color, width: 3 });
-    off(full);
+
   };
   track(ptsB, f.posB, P.second);
   track(ptsA, f.posA, P.disp);
@@ -309,7 +317,7 @@ export function render(canvas, cam, o) {
     }
     // its time, by the line, clear of it and of the tracks
     const mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2;
-    const word = f.due && an0(f.answers, ta)?.kind === 'due' ? T`"A due ${f.due.word} of B," t = ${tr(ta)} [${U.time}]` : T`t = ${tr(ta)} [${U.time}]`;
+    const word = f.due && !phone && an0(f.answers, ta)?.kind === 'due' ? T`"A due ${f.due.word} of B," t = ${tr(ta)} [${U.time}]` : T`t = ${tr(ta)} [${U.time}]`;
     Q.add(word, mx, my, { color: P.mark, pri: 8, size: 14, weight: 700 });
   }
 
@@ -328,7 +336,7 @@ export function render(canvas, cam, o) {
     const q = px(pos(t)), heading = Math.atan2(-v.y, v.x), rest = still(v);
     if (rest && lightB && name === 'B') lighthouseAbove(g, q.x, q.y, 36, { beam: (t / Math.max(f.tMax, 1e-9)) * TAU * 3 - 1 });
     else if (birds) birdTop(g, q.x, q.y, S, rest ? -Math.PI / 2 : heading, color, { flap: rest ? 0 : flap });
-    else shipTop(g, q.x, q.y, S, rest ? -Math.PI / 2 : heading, color, P, { wake: rest || !fired ? 0 : 1, phase: phase * 3, part: 'hull' });
+    else shipTop(g, q.x, q.y, S, rest ? -Math.PI / 2 : heading, color, P, { wake: rest || !fired ? 0 : wakeOn, phase: phase * 3, part: 'hull' });
     const R = birds ? S * 0.42 : S * 0.4;
     if (rest && lightB && name === 'B') hold({ x: q.x - 16, y: q.y - 46, w: 32, h: 54 });
     else hold({ x: q.x - R, y: q.y - R, w: R * 2, h: R * 2 });

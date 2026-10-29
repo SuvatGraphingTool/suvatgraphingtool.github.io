@@ -579,7 +579,8 @@ export function treeAbove(g, x, y, R, { seed = 3 } = {}) {
  * the upper left falling away to the lower right, and — where the motion
  * leaves room (`avoid`, px) — trees round the edge throwing their shadows.
  * @param o { seed, band (stripe width, px), avoid: [{x, y}], keep: [{x, y, w, h}]
- *   boxes to leave bare (the readouts), trees: how many at most (default 6 with avoid) }
+ *   boxes to leave bare (the readouts), trees: how many at most (default 6 with avoid),
+ *   pitch: mark it out as a football pitch, with goals }
  */
 export function fieldFromAbove(g, x, y, w, h, o = {}) {
   const E = env(), r = rng(o.seed ?? 37), avoid = o.avoid || [];
@@ -614,8 +615,9 @@ export function fieldFromAbove(g, x, y, w, h, o = {}) {
   }
   // a scatter of daisies in daylight
   if (!E.night) { g.fillStyle = 'rgba(255,255,250,0.65)'; for (let i = 0; i < (w * h) / 6000; i++) { g.beginPath(); g.arc(x + r() * w, y + r() * h, 1.1, 0, Math.PI * 2); g.fill(); } }
+  if (o.pitch) pitchAbove(g, x, y, w, h, E);
   // trees, where nothing passes: near the edges, never on the motion or under the readouts
-  const want = o.trees ?? (avoid.length ? 6 : 0), keep = o.keep || [];
+  const want = o.trees ?? (avoid.length && !o.pitch ? 6 : 0), keep = o.keep || [];
   const placed = [];
   for (let tries = 0; tries < 80 && placed.length < want; tries++) {
     const edge = Math.floor(r() * 4), u = r(), R = 16 + r() * 14, inset = R * (0.2 + r() * 1.2);
@@ -631,6 +633,53 @@ export function fieldFromAbove(g, x, y, w, h, o = {}) {
   lg.addColorStop(0, E.night ? 'rgba(255,214,190,0.10)' : 'rgba(255,240,205,0.28)'); lg.addColorStop(0.5, 'rgba(255,240,205,0)');
   lg.addColorStop(1, E.night ? 'rgba(0,0,0,0.30)' : 'rgba(40,40,10,0.14)');
   g.fillStyle = lg; g.fillRect(x, y, w, h);
+  g.restore();
+}
+
+/** A pitch marked out on the grass from above, filling the box: touchlines,
+    the halfway line and centre circle, the penalty areas and spots, corner
+    arcs with flags, and a goal at each end — posts, crossbar and a net with
+    its shadow. Chalk, not ink: soft and a little worn, under the grid. */
+function pitchAbove(g, x0, y0, w0, h0, E) {
+  // a pitch runs the long way: on a tall (phone) canvas, end to end up the screen
+  g.save();
+  let x = x0, y = y0, w = w0, h = h0;
+  if (h0 > w0) { g.translate(x0 + w0, y0); g.rotate(Math.PI / 2); x = 0; y = 0; w = h0; h = w0; }
+  const m = Math.max(18, Math.min(w, h) * 0.05), L = x + m, R = x + w - m, T = y + m, B = y + h - m, cx = (L + R) / 2, cy = (T + B) / 2, H = B - T;
+  const chalk = `rgba(255,255,250,${E.night ? 0.3 : 0.55})`;
+  g.save(); g.strokeStyle = chalk; g.lineWidth = 2.6; g.lineJoin = 'round';
+  g.strokeRect(L, T, R - L, B - T);
+  g.beginPath(); g.moveTo(cx, T); g.lineTo(cx, B); g.stroke();
+  g.beginPath(); g.arc(cx, cy, H * 0.16, 0, Math.PI * 2); g.stroke();
+  g.fillStyle = chalk; g.beginPath(); g.arc(cx, cy, 3, 0, Math.PI * 2); g.fill();
+  for (const side of [-1, 1]) {
+    const gx = side < 0 ? L : R, d = side < 0 ? 1 : -1, bw = Math.min((R - L) * 0.16, H * 0.3), bh = H * 0.56, sw = bw * 0.37, sh = H * 0.26;
+    g.strokeRect(Math.min(gx, gx + d * bw), cy - bh / 2, bw, bh);
+    g.strokeRect(Math.min(gx, gx + d * sw), cy - sh / 2, sw, sh);
+    g.beginPath(); g.arc(gx + d * bw * 0.7, cy, 2.6, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(gx + d * bw * 0.7, cy, H * 0.16, side < 0 ? -0.93 : Math.PI - 0.93, side < 0 ? 0.93 : Math.PI + 0.93);
+    g.save(); g.beginPath(); g.rect(side < 0 ? gx + bw : x, y, side < 0 ? w : gx - bw - x, h); g.clip();
+    g.beginPath(); g.arc(gx + d * bw * 0.7, cy, H * 0.16, 0, Math.PI * 2); g.stroke(); g.restore();
+    // the goal: the net behind the line, its shadow, the frame
+    const gw = H * 0.13, depth = Math.min(m * 0.85, 18), nx = gx - d * depth;
+    g.fillStyle = withAlpha('#000000', 0.22); g.fillRect(Math.min(gx, nx) + 3, cy - gw + 4, depth, gw * 2);
+    g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(Math.min(gx, nx), cy - gw, depth, gw * 2);
+    g.save(); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.8;
+    for (let k = 3; k < gw * 2; k += 4) { g.beginPath(); g.moveTo(Math.min(gx, nx), cy - gw + k); g.lineTo(Math.max(gx, nx), cy - gw + k); g.stroke(); }
+    for (let k = 3; k < depth; k += 4) { g.beginPath(); g.moveTo(Math.min(gx, nx) + k, cy - gw); g.lineTo(Math.min(gx, nx) + k, cy + gw); g.stroke(); }
+    g.restore();
+    g.fillStyle = '#f7f5f0'; g.fillRect(gx - 2.5, cy - gw - 2.5, 5, gw * 2 + 5);
+    g.fillStyle = withAlpha('#000000', 0.25); g.fillRect(gx + 2.5, cy - gw + 2, 2, gw * 2);
+    // corner arcs and flags
+    for (const yy of [T, B]) {
+      const up = yy === T ? 1 : -1;
+      g.beginPath(); g.arc(gx, yy, 9, up > 0 ? (d > 0 ? 0 : Math.PI / 2) : (d > 0 ? -Math.PI / 2 : Math.PI), up > 0 ? (d > 0 ? Math.PI / 2 : Math.PI) : (d > 0 ? 0 : -Math.PI / 2)); g.stroke();
+      g.fillStyle = withAlpha('#000000', 0.3); g.beginPath(); g.ellipse(gx + 6, yy + 4, 6, 2, 0.4, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#e8c547'; g.beginPath(); g.moveTo(gx, yy); g.lineTo(gx + 8, yy - 3); g.lineTo(gx, yy - 7); g.closePath(); g.fill();
+      g.fillStyle = '#f7f5f0'; g.beginPath(); g.arc(gx, yy, 2, 0, Math.PI * 2); g.fill();
+    }
+  }
+  g.restore();
   g.restore();
 }
 
@@ -704,12 +753,62 @@ export function fitPlan(box, areas) {
 }
 
 /**
+ * Fit a plan as large as it will go in `area` (px) while keeping every one of
+ * `pts` (the motion, in its own units) out from under `avoid` — the readouts,
+ * the compass — by `margin` px: the plan may slide anywhere in the area, so a
+ * motion that leaves the top-left corner empty can use the whole canvas with
+ * the readouts over that empty corner. Deterministic: the same inputs give
+ * the same fit. Returns what fitPlan returns.
+ */
+const fits = new Map();
+export function fitPlanAround(box, pts, area, { avoid = [], margin = 0, steps = 10 } = {}) {
+  // the same stage asks the same question every frame: answer it once
+  const key = JSON.stringify([box, area, avoid, margin, pts.length, pts[0], pts[pts.length >> 1], pts[pts.length - 1]]);
+  const hitF = fits.get(key);
+  if (hitF) return hitF;
+  if (fits.size > 64) fits.clear();
+  const F = fitAround(box, pts, area, avoid, margin, steps);
+  fits.set(key, F);
+  return F;
+}
+function fitAround(box, pts, area, avoid, margin, steps) {
+  const bw = Math.max(1e-9, box.xHi - box.xLo), bh = Math.max(1e-9, box.yHi - box.yLo);
+  const W = area.right - area.left, H = area.bottom - area.top;
+  const make = (k, ox, oy) => ({ k, ox, oy, area, X: (x) => ox + x * k, Y: (y) => oy - y * k, ix: (px) => (px - ox) / k, iy: (py) => (oy - py) / k });
+  const hit = (k, ox, oy) => pts.some((p) => { const x = ox + p.x * k, y = oy - p.y * k; return avoid.some((b) => x > b.x - margin && x < b.x + b.w + margin && y > b.y - margin && y < b.y + b.h + margin); });
+  let k = Math.min(W / bw, H / bh);
+  for (let it = 0; it < 45; it++, k *= 0.965) {
+    const oxLo = area.left - box.xLo * k, oxHi = area.right - box.xHi * k, oyLo = area.top + box.yHi * k, oyHi = area.bottom + box.yLo * k;
+    const oxC = (oxLo + oxHi) / 2, oyC = (oyLo + oyHi) / 2;
+    let best = null;
+    for (let i = 0; i <= steps; i++) for (let j = 0; j <= steps; j++) {
+      const ox = oxLo + ((oxHi - oxLo) * i) / steps, oy = oyLo + ((oyHi - oyLo) * j) / steps;
+      const d = Math.hypot(ox - oxC, oy - oyC);
+      if (best && d >= best.d) continue;
+      if (!hit(k, ox, oy)) best = { ox, oy, d };
+    }
+    if (best) return make(k, best.ox, best.oy);
+  }
+  const F = fitPlan(box, [area]);
+  return make(F.k, F.ox, F.oy);
+}
+
+/** Between two fits, by u (0..1): scale and offset eased together, so a view
+    that has to widen does so smoothly. */
+export function blendPlan(A, B, u) {
+  const k = A.k + (B.k - A.k) * u, ox = A.ox + (B.ox - A.ox) * u, oy = A.oy + (B.oy - A.oy) * u;
+  return { k, ox, oy, area: A.area, X: (x) => ox + x * k, Y: (y) => oy - y * k, ix: (px) => (px - ox) / k, iy: (py) => (oy - py) / k };
+}
+
+/**
  * The surveyor's grid laid over a plan, across the whole canvas: faint lines
  * every `step`, the two axes through O with a casing so they hold over the
  * scenery, a tick at each step, and the numbers, the axis names and O through
  * the stage's labels L (so they keep off each other, off what has been
  * reserved, and never sit at the canvas edge).
- * @param o { step, fmt(x) → text, nameI, nameJ, ink colours from palette P }
+ * @param o { step, fmt(x) → text, nameI, nameJ, clear(x, y, w, h) → is that box free
+ *   of the drawing (a number goes the other side of its axis if not),
+ *   jTop: the highest the j axis's name may sit (below the readouts) }
  */
 export function planGrid(g, L, F, w, h, P, o) {
   const { step, fmt } = o;
@@ -729,19 +828,28 @@ export function planGrid(g, L, F, w, h, P, o) {
   for (let y = Math.ceil(wy0 / step) * step; y <= wy1; y += step) { g.moveTo(ax - 4, F.Y(y)); g.lineTo(ax + 4, F.Y(y)); }
   g.stroke();
   g.restore();
+  // each number on its usual side of the axis, or — where something drawn
+  // is in the way there and the other side is clear — on the other side
+  const clear = o.clear || (() => true);
+  g.save(); g.font = `600 13px ${cssVar('--font', 'system-ui, sans-serif')}`;
+  const tw = (s) => g.measureText(s).width + 10;
   for (let x = Math.ceil(wx0 / step) * step; x <= wx1; x += step) {
-    const px = F.X(x);
+    const px = F.X(x), s = fmt(x), ww = tw(s);
     if (Math.abs(x) < step * 1e-6 || px < 18 || px > w - 18) continue;
-    L.add(fmt(x), px, ay + 15, { color: P.muted, align: 'center', pri: 1, size: 13, maxPush: 0 });
+    const below = clear(px - ww / 2, ay + 4, ww, 22), above = clear(px - ww / 2, ay - 26, ww, 22);
+    L.add(s, px, !below && above ? ay - 15 : ay + 15, { color: P.muted, align: 'center', pri: 1, size: 13, maxPush: 0 });
   }
   for (let y = Math.ceil(wy0 / step) * step; y <= wy1; y += step) {
-    const py = F.Y(y);
+    const py = F.Y(y), s = fmt(y), ww = tw(s);
     if (Math.abs(y) < step * 1e-6 || py < 16 || py > h - 16) continue;
-    L.add(fmt(y), ax - 8, py, { color: P.muted, align: 'right', pri: 1, size: 13, maxPush: 0 });
+    const left = clear(ax - 8 - ww, py - 11, ww, 22), right = clear(ax + 8, py - 11, ww, 22);
+    if (!left && right) L.add(s, ax + 8, py, { color: P.muted, align: 'left', pri: 1, size: 13, maxPush: 0 });
+    else L.add(s, ax - 8, py, { color: P.muted, align: 'right', pri: 1, size: 13, maxPush: 0 });
   }
+  g.restore();
   L.add('O', ax - 9, ay + 15, { color: P.ink, align: 'right', pri: 6, size: 15, weight: 700, maxPush: 40 });
   if (o.nameI) L.add(o.nameI, Math.min(w - 10, F.area.right + 10), ay - 15, { color: P.strong, align: 'right', pri: 5, size: 14, maxPush: 40 });
-  if (o.nameJ) L.add(o.nameJ, ax + 10, Math.max(F.area.top, 16) + 2, { color: P.strong, align: 'left', pri: 5, size: 14, maxPush: 40, push: 'down' });
+  if (o.nameJ) L.add(o.nameJ, ax + 10, Math.max(F.area.top, o.jTop ?? 16) + 2, { color: P.strong, align: 'left', pri: 5, size: 14, maxPush: 40, push: 'down' });
 }
 
 /** A compass for a plan, in the screen's own pixels (draw it after unview so

@@ -19,11 +19,11 @@
 //
 // Everything drawn is read from js/core/plane.js (rule 4).
 
-import { fieldFromAbove, fitPlan, planGrid, compassRose, softShadow } from './scenery.js';
+import { fieldFromAbove, fitPlanAround, blendPlan, planGrid, compassRose, softShadow } from './scenery.js';
 import { pulse, ageOf, phaseOf } from './effects.js';
 import { ballAt } from './figures.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, unview, cssVar } from './util.js';
-import { s3, keepOff, placer } from './twoplane.js';
+import { s3, placer } from './twoplane.js';
 import { T, num } from '../notation.js';
 import { vsrc } from '../core/plane.js';
 
@@ -52,45 +52,55 @@ export function render(canvas, cam, o) {
   const asked = answers.flatMap((a) => (a.times || [a.t]).filter((ta) => ta >= 0 && ta <= f.tMax + 1e-9).map((ta) => ({ a, ta })));
 
   // ── the frame: O, the start, and the motion through the last moment asked
-  //    (or the whole run, if nothing is asked) — and on to where it is now
+  //    (or the whole run, if nothing is asked), as large as the canvas allows
+  //    with nothing that moves under the readouts or the compass. If the
+  //    particle goes on past that, the view widens to the whole run — eased
+  //    by the engine's clock, one fixed pair of frames, so it never jumps.
   const tAsk = asked.length ? Math.min(f.tMax, Math.max(...asked.map((q) => q.ta)) * 1.12) : f.tMax;
-  const tFrame = Math.max(tAsk, t);
-  const focus = f.path(120, tFrame);
-  const xs = [0, f.r0.x, ...focus.map((p) => p.x)], ys = [0, f.r0.y, ...focus.map((p) => p.y)];
-  const box = { xLo: Math.min(...xs), xHi: Math.max(...xs), yLo: Math.min(...ys), yHi: Math.max(...ys) };
-  const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
-  for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(sp * 0.06, sp * 0.3 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
-  const F = fitPlan(box, phone
-    ? [{ left: 30, right: w - 26, top: 116, bottom: h - 36 }]
-    : [{ left: HUD + 40, right: w - 80, top: 54, bottom: h - 44 }, { left: 50, right: w - 80, top: HUD_H + 10, bottom: h - 44 }]);
+  const hudBoxes = phone ? [{ x: 0, y: 0, w: w * 0.6, h: 96 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 150, y: 0, w: 150, h: 60 }];
+  const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 22), cY = h - cR - (phone ? 14 : 24);
+  const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
+  const frameOf = (pts) => {
+    const xs = [0, f.r0.x, ...pts.map((p) => p.x)], ys = [0, f.r0.y, ...pts.map((p) => p.y)];
+    const box = { xLo: Math.min(...xs), xHi: Math.max(...xs), yLo: Math.min(...ys), yHi: Math.max(...ys) };
+    const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
+    for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(sp * 0.06, sp * 0.3 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
+    const m = phone ? 26 : 34;
+    return { sp, F: fitPlanAround(box, [{ x: 0, y: 0 }, f.r0, ...pts], { left: m, right: w - m, top: m, bottom: h - m }, { avoid: [...hudBoxes, compassBox], margin: 22 }) };
+  };
+  const focus = f.path(120, tAsk), whole = f.path(160);
+  const near = frameOf(focus), far = tAsk < f.tMax - 1e-9 ? frameOf(whole) : near;
+  const s = clamp((t - tAsk) / Math.max(1e-9, f.tMax - tAsk), 0, 1), ease = 1 - (1 - s) ** 2;
+  const F = blendPlan(near.F, far.F, ease), sp = near.sp + (far.sp - near.sp) * ease;
   const { X, Y } = F;
   const px = (p) => ({ x: X(p.x), y: Y(p.y) });
 
-  // ── the field, filling the stage, its trees kept off the motion
-  const whole = f.path(160), wholePx = whole.map(px);
-  const hudBoxes = phone ? [{ x: 0, y: 0, w: w * 0.6, h: 96 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 150, y: 0, w: 150, h: 60 }];
-  fieldFromAbove(g, 0, 0, w, h, { avoid: [...wholePx, { x: X(0), y: Y(0) }], keep: hudBoxes });
+  // ── the field, filling the stage, its trees kept off the motion in both
+  //    frames (so they never move)
+  const wholePx = whole.map(px);
+  const both = [near.F, far.F].flatMap((G) => [...whole.map((p) => ({ x: G.X(p.x), y: G.Y(p.y) })), { x: G.X(0), y: G.Y(0) }]);
+  fieldFromAbove(g, 0, 0, w, h, { avoid: both, keep: hudBoxes });
   // the words: kept off the readouts, the compass, every line drawn and each other
   const Q = placer(g, w, h);
-  const off = (pts, pad) => { keepOff(L, pts, pad); Q.line(pts); };
+  const off = (pts) => Q.line(pts);
   const hold = (b) => { L.reserve(b); Q.box(b); };
   // and off the axes, where they can be
   Q.line([{ x: 0, y: F.Y(0) }, { x: w, y: F.Y(0) }], 10); Q.line([{ x: F.X(0), y: 0 }, { x: F.X(0), y: h }], 10);
-  for (const b of hudBoxes) hold(b);
-  const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 22), cY = h - cR - (phone ? 14 : 24);
-  hold({ x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 });
+  for (const b of [...hudBoxes, compassBox]) hold(b);
   Q.point(X(0), Y(0));
+  Q.line(wholePx);
 
   // ── the grid and the axes through O
-  const step = niceStep(sp, phone ? 5 : 8), dp = step < 1 ? (step < 0.1 ? 2 : 1) : 0;
-  planGrid(g, L, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [m]`, nameJ: T`vec(j) [m]` });
+  // one grid for the whole run, so it never changes under the student's eyes
+  const step = niceStep(Math.max(near.sp, far.sp), phone ? 5 : 9), dp = step < 1 ? (step < 0.1 ? 2 : 1) : 0;
+  planGrid(g, L, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [m]`, nameJ: T`vec(j) [m]`, clear: Q.clear,
+    jTop: (phone ? F.X(0) < w * 0.6 + 10 : F.X(0) < HUD + 10) ? (phone ? 112 : HUD_H + 14) : 16 });
 
   // ── the path: a neutral trail, all of it faintly, the part travelled strongly
   stroke(g, wholePx, { color: P.strong, width: 1.6, alpha: 0.4 });
   const flown = f.path(120, t).map(px);
   stroke(g, flown, { color: surface, width: 5.5, alpha: 0.45 });
   stroke(g, flown, { color: P.ink, width: 2.6 });
-  off(wholePx);
 
   // ── where it started, when that is not O
   if (Math.hypot(f.r0.x, f.r0.y) > 1e-9) {
@@ -124,10 +134,9 @@ export function render(canvas, cam, o) {
       // the compass direction it is moving in, through the peg
       const dl = Math.hypot(a.D.x, a.D.y) || 1, ux = a.D.x / dl, uy = -a.D.y / dl, Lh = 46 * grow;
       const s0 = { x: q.x - ux * Lh * 0.6, y: q.y - uy * Lh * 0.6 }, s1 = { x: q.x + ux * Lh, y: q.y + uy * Lh };
-      stroke(g, [s0, s1], { color: surface, width: 5, alpha: 0.4 });
-      stroke(g, [s0, s1], { color: P.mark, width: 2 });
-      if (grow > 0.5) stroke(g, [{ x: s1.x - ux * 8 - uy * 6, y: s1.y - uy * 8 + ux * 6 }, s1, { x: s1.x - ux * 8 + uy * 6, y: s1.y - uy * 8 - ux * 6 }], { color: P.mark, width: 2 });
-      off([s0, q, s1], 8);
+      // a direction of motion is the velocity's direction: its hue (rule 2)
+      if (grow > 0.15) arrow(g, s0.x, s0.y, s1.x, s1.y, { color: P.velVec, width: 2.4, head: 10 });
+      off([s0, q, s1]);
     }
     pulse(g, q.x, q.y, age, life, P.mark, { radius: 44 });
     dot(g, q.x, q.y, 6, { fill: P.mark, stroke: surface, width: 2 });
@@ -158,7 +167,7 @@ export function render(canvas, cam, o) {
     vl = Math.min(vl, room(qx, vq.x, 12, w - 12) * 0.9, room(qy, -vq.y, 12, h - 12) * 0.9);
   }
   vl = Math.max(vl, 30 / vMax);
-  softShadow(g, pX + 3, pY + 5, 11, 5);
+  softShadow(g, pX + 4, pY + 7, 15, 6);
   if (show.velocity !== false && sp0 > 1e-6) {
     // one scale throughout, but never so short it hides under the ball
     const k0 = Math.max(vl, 24 / sp0), ex = pX + v.x * k0, ey = pY - v.y * k0;
@@ -176,8 +185,8 @@ export function render(canvas, cam, o) {
     const an = Math.hypot(A.x, A.y);
     if (an > 1e-9) { arrow(g, pX, pY, pX + (A.x / an) * 44, pY - (A.y / an) * 44, { color: P.acc, width: 2.4, head: 10 }); Q.line([{ x: pX, y: pY }, { x: pX + (A.x / an) * 44, y: pY - (A.y / an) * 44 }]); }
   }
-  ballAt(g, pX, pY, 9);
-  hold({ x: pX - 12, y: pY - 12, w: 24, h: 24 });
+  ballAt(g, pX, pY, 11);
+  hold({ x: pX - 14, y: pY - 14, w: 28, h: 28 });
 
   Q.flush(L);
   L.draw(g, w, h);
