@@ -91,7 +91,7 @@ this library: *covered* names the one of the twelve that does it.
 | 55 | OCR | 4728 M1 | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | Thrown down at 3.5 from 5 m; rebounds and passes start 0.87 s later; rebound speed | 9.8 | **candidate**: a bounce mid-question (rebound speed found from a later time); trajectory has restitution but not a found rebound |
 | 56 | OCR | 4728 M1 | Jun 2014 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | x-t graph with speed 4 or rest; show T = 1.75; velocities; distance in 10 s | – | **built**: `xt-graph` (T = 1.75; −4, 4, 4; 25 m; t = 12 after it) |
 | 57 | OCR MEI | H640/01 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | Thrown horizontally at 14 m/s from a 5 m window over a 2 m fence; trajectory; range of d | 9.8 | **built**: `over-the-wall` (1.01 s; y = 5 − 0.025x²; clears for d up to 10.95 m) |
-| 58 | OCR MEI | H640/01 | Jun 2018 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | 5 to 11.4 m/s in 4 s, uniform, then steady at 17.8; displacement in 20 s | – | **candidate**: several stages along a line, one after another |
+| 58 | OCR MEI | H640/01 | Jun 2018 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | 5 to 11.4 m/s in 4 s, uniform, then steady at 17.8; displacement in 20 s | – | **built**: `stage-by-stage` (a = 1.6; steady from t = 8; 304.8 m). Model B, (v)–(vi), is calculus: out |
 | 59 | OCR MEI | H640/01 | Jun 2019 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202019%20QP.pdf) | Cannonball 100 m/s at 25°; greatest height; range | 9.8 | **covered** by `arc` |
 | 60 | OCR MEI | H640/01 | Jun 2022 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202022%20QP.pdf) | Thrown from 5 m above origin with velocity (14, 7); position vector; landing distance | 9.8 | **covered**: up and off a platform, but given as velocity components (14, 7), not a speed and an angle |
 | 61 | WJEC | 1300U40-1 Unit 4 | Jun 2019 | 10 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202019%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Tennis serve (30i − 1.4j) from 2.4 m over a 0.9 m net; landing speed; clearance | 9.8 | **built**: `over-the-wall` (30.8 m s⁻¹; net 12 m out, cleared by 0.156 m) |
@@ -623,7 +623,10 @@ Q2 (a tractor in four stages from U: up to V in 5 s, steady 25 s, up to 12 at
 0.8 m s⁻² in 5 s, to rest in 15 s; 375 m in all: V = 8 carried back from the
 third stage, U = 6 from the whole distance). Edexcel IAL WME01 Oct 2023
 Q2 (an acceleration–time graph from A at 8 m s⁻¹: −0.5 for 4 s, 0 for 6 s, 1.2 for
-10 s, each a stage of a and t: v = 18 at B; AB = 184 m).
+10 s, each a stage of a and t: v = 18 at B; AB = 184 m). OCR MEI H640/01 Jun 2018
+Q14(i)–(iv) (from 5 to 11.4 m s⁻¹ in 4 s, uniform, until 17.8 m s⁻¹, then
+steady: a = 1.6, steady from t = 8, 304.8 m in 20 s with the whole time filling
+the steady stage).
 
 **Why it is built.** Each stage is a SUVAT question of its own, but the next
 one starts where the last ended, and a stage may be short of a number the
