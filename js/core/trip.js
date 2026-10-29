@@ -54,6 +54,8 @@ export function solveTrip(k = {}) {
   const moving = open.filter((s) => Math.abs(s.v0) + Math.abs(s.v1) > EPS), resting = open.filter((s) => !(Math.abs(s.v0) + Math.abs(s.v1) > EPS));
   if (moving.length > 1) return fail('Only one moving segment can have its time found: the place it ends at fixes one.');
   if (resting.length > 1) return fail('Only one stop can have its length found: the total time fixes one.');
+  // a moving segment with nowhere to end at, but a total time: the total fixes it
+  if (moving.length && back == null && have(k.T) && !resting.length) { resting.push(moving.pop()); }
   if (moving.length && back == null) return fail(`Segment ${moving[0].i} has no time: say where it ends (back at the start of which segment).`);
   if (resting.length && !have(k.T)) return fail(`Segment ${resting[0].i} is a stop with no time: give the total time.`);
   const findRows = [];

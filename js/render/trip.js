@@ -85,14 +85,17 @@ export function render(canvas, cam, o) {
   const parkT = carSegs.length ? carSegs[carSegs.length - 1].t1 : 0;
   const carX = f.pos(Math.min(t, parkT));
   // a stop on foot is at a shop
-  for (const s of S.filter((x) => x.who === 'foot' && Math.abs(x.v0) + Math.abs(x.v1) < 1e-9)) shopfront(g, R(s.x0), ry, 34, P);
+  for (const s of S.filter((x) => x.who === 'foot' && Math.abs(x.v0) + Math.abs(x.v1) < 1e-9)) {
+    shopfront(g, R(s.x0), ry, 34, P);
+    L.add('shop', R(s.x0), ry - 50, { color: P.ink, align: 'center', pri: 5, size: 13, weight: 700 });
+  }
   const carL = 64;
   car(g, R(carX) + carL * 0.5, ry, carL, P, { dir: 1, phase: phaseFor('car', carL, R(carX) - R(0)) });
   if (t > parkT + 1e-9 || (t >= parkT - 1e-9 && S.some((s) => s.who === 'foot'))) {
     const px = f.pos(t), pv = f.vel(t);
     const inside = S.some((s) => s.who === 'foot' && Math.abs(s.v0) + Math.abs(s.v1) < 1e-9 && t > s.t0 + 1e-9 && t < s.t1 - 1e-9);
     if (!inside) runner(g, R(px), ry, 34, P, { dir: pv < 0 ? -1 : 1, still: Math.abs(pv) < 1e-9, phase: phaseFor('runner', 34, Math.abs(R(px) - R(f.pos(parkT)))) });
-    else L.add('in the shop', R(px), ry - 50, { color: P.ink, align: 'center', pri: 6, size: 13 });
+    else L.add('in the shop', R(px), ry - 66, { color: P.ink, align: 'center', pri: 6, size: 13 });
   }
   // velocity along the road, dashed
   const v = f.vel(t), x = f.pos(t);
