@@ -358,3 +358,24 @@ export function skyFromAbove(g, x, y, w, h, o = {}) {
   for (let i = 0; i < 6; i++) { const cx = x + r() * w, cy = y + r() * h, R = 40 + r() * 70; const cg = g.createRadialGradient(cx, cy, 0, cx, cy, R); cg.addColorStop(0, E.night ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.45)'); cg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = cg; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill(); }
   g.restore();
 }
+
+/* ── fitting a side-on stage ───────────────────────────────────────────── */
+
+/**
+ * Fit a side-on motion to the canvas. `box` is the motion's own extent in
+ * metres, y up ({ xLo, xHi, yLo, yHi }); `area` the pixels it may use
+ * ({ left, right, top, bottom }). One scale both ways, as large as fits.
+ * A wide, low motion leaves height spare: rather than float the action in a
+ * strip under an empty sky, the spare is split — `sky` of it above (0.4 by
+ * default) and the rest below, where the ground comes up to meet it, so the
+ * place fills the canvas and the motion sits in the middle of it.
+ * Returns { k, X, Y, ox, oy } with X(x), Y(y) to pixels and oy = Y(0).
+ */
+export function fitSide(box, area, { sky = 0.4 } = {}) {
+  const bw = Math.max(1e-9, box.xHi - box.xLo), bh = Math.max(1e-9, box.yHi - box.yLo);
+  const W = area.right - area.left, Hh = area.bottom - area.top;
+  const k = Math.min(W / bw, Hh / bh);
+  const spare = Hh - bh * k, top = area.top + spare * sky;
+  const ox = area.left + (W - bw * k) / 2 - box.xLo * k, oy = top + box.yHi * k;
+  return { k, ox, oy, X: (x) => ox + x * k, Y: (y) => oy - y * k };
+}

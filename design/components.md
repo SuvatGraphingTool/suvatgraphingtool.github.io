@@ -491,6 +491,10 @@ scene draws the same every frame.
   over a scene sits on it, so it reads.
 - `landscape(g, w, h, Y, o)` — a whole outdoor scene: `skyscape` down to the
   ground at Y, grass (or sand or water) below.
+- `fitSide(box, area, { sky })` — fit a side-on motion's own extent (metres,
+  y up) to the canvas at one scale both ways. A wide, low motion leaves height
+  spare; the ground comes up to take most of it rather than leave the action
+  in a strip under an empty sky. Returns `{ k, X, Y, ox, oy }`.
 
 ### Effects — `js/render/effects.js`
 
@@ -662,6 +666,15 @@ the acceleration when asked, each answer ringed with its time.
 Used by: `vectors-ij`.
 
 ### Figures — `js/render/figures.js`
+
+- `thrower(g, X, Y, H, P, { dir, pose, aim, ring })` — a dressed person who
+  winds up (`pose` 0) and releases (1) along `aim` degrees, feet at (X, Y),
+  at least `THROWER_MIN` (50 px) tall. `throwerHand(H, aim)` is the hand at
+  release. Every launch with a person behind it uses it.
+- `ballAt(g, x, y, r, color)` — the stadium's shaded ball, with a ring in
+  `color` when there are two to tell apart. Never a hollow ring or a dot.
+- `sig3(x)` (in `util.js`) — a ruler's or a tag's number to three significant
+  figures, as a paper answers.
 
 Everything that moves or stands in a straight-line question, drawn one way so
 any stage can use any of them:

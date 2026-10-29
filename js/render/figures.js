@@ -436,6 +436,74 @@ export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still =
     if (ring) { g.strokeStyle = ring; g.lineWidth = 1.5; g.beginPath(); g.arc(hx2, hy2, hr + 1, 0, TAU); g.stroke(); }
   });
 }
+/**
+ * A person throwing (or kicking off, or dropping): standing side on, feet at
+ * (X, Y), H tall, facing +x (or −x when dir is −1). `pose` runs the throw: 0
+ * is wound up, the throwing arm back and high and the weight on the back
+ * foot; 1 is the release, the arm through and pointing along the throw, the
+ * weight onto the front foot. `aim` is the throw's angle above the
+ * horizontal, in degrees, so the arm at release points where the ball goes.
+ * Dressed like the runner; `ring` dresses the shirt in a second colour to
+ * tell B from A. Draw it at least 50 px tall (THROWER_MIN) so a face, an arm
+ * and a stance read on a phone.
+ */
+export const THROWER_MIN = 50;
+export function thrower(g, X, Y, H, P, { dir = 1, pose = 0, aim = 45, ring = null } = {}) {
+  H = Math.max(THROWER_MIN * 0.8, H);
+  const u = Math.max(0, Math.min(1, pose)), e = u * u * (3 - 2 * u);
+  const E = env(), skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
+  const shirt = ring || (E.night ? '#6c7f9a' : '#5f7392'), shorts = '#2f3340', lw = Math.max(3, H * 0.075);
+  const thigh = H * 0.25, shin = H * 0.26, upper = H * 0.17, fore = H * 0.16;
+  softShadow(g, X, Y + 1, H * 0.3, H * 0.05, 0.8);
+  at(g, X, Y, dir, () => {
+    // the stance: feet apart, the weight moving from the back foot to the front
+    const back = { x: -H * 0.17, y: 0 }, front = { x: H * 0.15, y: 0 };
+    const HIP = { x: -H * 0.04 + e * H * 0.07, y: -(thigh + shin) * 0.95 };
+    const lean = -0.18 + e * 0.38;                       // back, then into the throw
+    const SH = { x: HIP.x + Math.sin(lean) * H * 0.3, y: HIP.y - Math.cos(lean) * H * 0.3 };
+    const legOf = (F, side) => [HIP, joint(HIP, F, thigh, shin, side), F];
+    const farLeg = legOf(back, 1), nearLeg = legOf(front, 1);
+    // the throwing arm (near): from behind and high to along the aim
+    const a0 = Math.PI * 1.15, a1 = -(aim * Math.PI) / 180;      // angle from +x, y down
+    const ang = a0 + (a1 - a0 + (a1 < a0 - Math.PI ? 2 * Math.PI : 0)) * e;
+    const EL = { x: SH.x + Math.cos(ang - 0.35 * (1 - e)) * upper, y: SH.y + Math.sin(ang - 0.35 * (1 - e)) * upper };
+    const HA = { x: EL.x + Math.cos(ang) * fore, y: EL.y + Math.sin(ang) * fore };
+    // the other arm out in front for balance, dropping as the throw comes through
+    const bal = 0.15 + e * 1.1;
+    const EL2 = { x: SH.x + Math.cos(bal) * upper, y: SH.y + Math.sin(bal) * upper };
+    const HA2 = { x: EL2.x + Math.cos(bal + 0.5) * fore, y: EL2.y + Math.sin(bal + 0.5) * fore };
+    limb(g, farLeg, skinFar, lw); limb(g, farLeg.slice(0, 2), withAlpha(shorts, 0.85), lw * 1.15);
+    limb(g, [SH, EL2, HA2], skinFar, lw * 0.8);
+    limb(g, [HIP, SH], shirt, lw * 2.1);
+    limb(g, [HIP, { x: HIP.x + (SH.x - HIP.x) * 0.18, y: HIP.y + (SH.y - HIP.y) * 0.18 }], shorts, lw * 2.15);
+    limb(g, nearLeg, skin, lw); limb(g, nearLeg.slice(0, 2), shorts, lw * 1.15);
+    limb(g, [SH, EL, HA], skin, lw * 0.8); limb(g, [SH, EL], shirt, lw * 0.95);
+    for (const F of [back, front]) { g.fillStyle = '#2b2628'; g.beginPath(); g.ellipse(F.x + lw * 0.4, F.y - lw * 0.25, lw * 0.8, lw * 0.42, 0, 0, TAU); g.fill(); }
+    // the head, turned to the throw, with hair and an eye
+    const hx = SH.x + Math.sin(lean) * H * 0.1, hy = SH.y - H * 0.095, hr = H * 0.08;
+    const hg = g.createRadialGradient(hx - hr * 0.3, hy - hr * 0.3, hr * 0.1, hx, hy, hr); hg.addColorStop(0, skin); hg.addColorStop(1, skinFar);
+    g.fillStyle = hg; g.beginPath(); g.arc(hx, hy, hr, 0, TAU); g.fill();
+    g.fillStyle = '#3a2c26'; g.beginPath(); g.arc(hx - hr * 0.2, hy - hr * 0.25, hr * 0.85, Math.PI * 1.0, Math.PI * 1.9); g.fill();
+    g.fillStyle = '#2b2628'; g.beginPath(); g.arc(hx + hr * 0.45, hy - hr * 0.1, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
+  });
+}
+
+/** Where a thrower's hand is at release, relative to the feet (for a stage
+    that wants the ball to leave from the hand): x along `dir`, y up. */
+export function throwerHand(H, aim = 45) {
+  H = Math.max(THROWER_MIN * 0.8, H);
+  const HIPx = H * 0.03, HIPy = (H * 0.51) * 0.95, lean = 0.2;
+  const SHx = HIPx + Math.sin(lean) * H * 0.3, SHy = HIPy + Math.cos(lean) * H * 0.3, a = (aim * Math.PI) / 180;
+  return { x: SHx + Math.cos(a) * H * 0.33, y: SHy + Math.sin(a) * H * 0.33 };
+}
+
+/** A ball in flight, `r` px in radius: the stadium's shaded ball, with a
+    ring in `color` round it when there are two to tell apart (A, B). */
+export function ballAt(g, x, y, r, color = null) {
+  ballSprite(g, x, y, Math.max(5.5, r));
+  if (color) { g.save(); g.strokeStyle = color; g.lineWidth = 2.4; g.beginPath(); g.arc(x, y, Math.max(5.5, r) + 3, 0, TAU); g.stroke(); g.restore(); }
+}
+
 const SWING = 0.5, STANCE_BEND = 0.1;
 // ground covered per stride, per px of height: twice the stance foot's sweep
 // under the hip, from the thigh SWING ahead to SWING behind

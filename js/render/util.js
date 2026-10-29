@@ -531,3 +531,11 @@ export function labels() {
     },
   };
 }
+
+/** A measured length or speed for a ruler or a tag: three significant
+    figures, as a paper answers (60.107 → 60.1, 0.04567 → 0.0457). */
+export function sig3(x) {
+  if (!isFinite(x) || x === 0) return num(x || 0, 0);
+  const dp = Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x))));
+  return num(x, dp);
+}
