@@ -9,8 +9,10 @@
 // reference and our own paraphrase (design/library/catalogue.md).
 //
 // A library scenario has a `kit` — the pieces js/app.js plugs in for it, see
-// js/kits/ and design/components.md. `params` is for the card's sketch only;
-// nothing on the values screen is pre-filled.
+// js/kits/ and design/components.md. `params` is for the card's sketch only.
+// `example` is the kit's boxes filled in with the numbers of the entry's FIRST
+// paper, keyed as the boxes are; js/app.js puts them in only while its
+// PREFILL switch is on (for testing), and otherwise every box starts empty.
 
 export const LIBRARY = [
   { id: 'pair-vertical', group: 'library', kit: 'pair',
@@ -19,6 +21,7 @@ export const LIBRARY = [
     note: 'Two particles share a vertical line but not a clock: one is thrown up, and a second is dropped from above it, or thrown after it, some time later. Each is SUVAT on its own; they collide at the one instant both give the same height — if that happens before either lands.',
     params: { A: { h: 0, u: 20, t0: 0 }, B: { h: 40, u: 0, t0: 1 }, g: 10 },
     place: 'One vertical line, two clocks',
+    example: { 'A.h': 0, 'A.u': 20, 'B.h': 40, 'B.u': 0, 'B.t0': 1, g: 10 },
     sources: [
       { board: 'CIE', paper: '9709/42', session: 'Oct/Nov 2019', q: '5' },
       { board: 'CIE', paper: '9709/43', session: 'May/Jun 2017', q: '5' },
@@ -44,6 +47,7 @@ export const LIBRARY = [
     note: 'A train between two stations, a car between two sets of lights, a car that brakes to a lower speed and speeds up again, a runner who fades over the line: a journey in stages, each one changing speed at a steady rate or holding it. The speed–time graph is a chain of straight pieces and its area is the distance, so the whole time and the whole distance fix whatever the paper leaves out — a time, or a speed V, even from a quadratic with one root that cannot be.',
     params: { u: 20, stages: [{ kind: 'hold', t: 25 }, { kind: 'down', v: 8, a: 0.4 }, { kind: 'hold', t: 60 }, { kind: 'up', v: 20 }], D: 1960 },
     place: 'A straight way from A to B',
+    example: { n: '4', u: 20, k1: 'hold', t1: 25, k2: 'down', v2: 8, a2: 0.4, k3: 'hold', t3: 60, k4: 'up', v4: 20, D: 1960, who: 'car' },
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2012', q: '4' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2011', q: '4' },
@@ -77,6 +81,7 @@ export const LIBRARY = [
     note: 'A car and a motorbike leave the lights ten seconds apart; a car slowing down is passed by a lorry going steadily; two children race and cross the line together; one train overtakes another on parallel tracks and both brake to rest beside the same post at the same instant. Each may hold its speed for a while, then changes speed at a steady rate. From the same start, they are level when the areas under their speed–time graphs are equal — so the moment, or the one number the paper hides, comes out of that.',
     params: { A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } },
     place: 'Side by side: a straight road, or two parallel tracks',
+    example: { 'A.u': 20, 'A.V': 8, 'A.tau': 30, 'B.u': 12 },
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '9' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2013', q: '5', part: 'the motorbike' },
@@ -109,6 +114,7 @@ export const LIBRARY = [
     note: 'A particle on a flat plane, with east and north as its two unit vectors, and a velocity and a constant acceleration both given as vectors. Every question in this family is two SUVAT equations side by side, one per direction: when is it due east of O, when is it moving south-east or parallel to a vector, where does it cross a line, how fast is it going then.',
     params: { u: { x: -1, y: 3 }, a: { x: 0.1, y: -0.2 }, at: { moving: 'NW' } },
     place: 'A plane, seen from above: east and north',
+    example: { 'u.x': -1, 'u.y': 3, 'a.x': 0.1, 'a.y': -0.2, 'at.due': 'E', 'at.moving': 'SE' },
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jun 2012', q: '7' },
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '7' },
@@ -137,6 +143,7 @@ export const LIBRARY = [
     note: 'A projectile with one point it has to pass: the top of a wall, a net or a tree, a wall it hits, or a target. Given the launch, the engine says whether it clears and by how much, and where a wall that high could stand. Leave one number out and it is found from the point: the two angles that pass through it, the speed, or both from the time to reach it or from its greatest height. It can be thrown from a stand, a window in a house or the edge of a roof, over a wall, a fence, a net or a tree — or at a wall with a window in it, which breaks if it is struck fast enough.',
     params: { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' },
     place: 'Side on: the launch, the point, and the ground',
+    example: { g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' },
     sources: [
       { board: 'Edexcel', paper: '9MA0/32', session: 'Jun 2023', q: '5' },
       { board: 'WJEC', paper: '1300U40-1 Unit 4', session: 'Jun 2022', q: '10' },
@@ -167,6 +174,7 @@ export const LIBRARY = [
     note: 'A ball is released, thrown down or thrown up from a height, hits horizontal ground and rebounds — given as the speed it leaves at, the height it rises to, or the fraction of its speed it keeps. Each flight is SUVAT with g alone; the impact is an instant, where the velocity jumps from one side of zero to the other. How fast just before and just after, when it passes a height, how long between bounces, and the time to the second impact.',
     params: { start: 'drop', h: 2, H: 1.5, g: 9.8, n: 2, axis: 'down' },
     place: 'A ball over horizontal ground',
+    example: { start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down' },
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2014', q: '3', part: 'all but the impulse' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2018', q: '4', part: '(b) and (c); the impact speed given instead of found from the impulse' },
@@ -192,6 +200,7 @@ export const LIBRARY = [
     note: 'A stone thrown from a height — a cliff over the sea, a tower, a bridge over a river, a diving board, down a well, or let go from a rising balloon: straight up, straight down, across or at an angle. The place is drawn to scale with the throw, so a 49 m drop looks like one. Give the speed — or how fast it lands, how far out, or how long it takes — and ask when it is a given height above where it was thrown from.',
     params: { place: 'cliff', h: 25, theta: 45, u: 28, g: 9.8 },
     place: 'Side on: the place it is thrown from, and what is below',
+    example: { place: 'tower', h: 49, u: 14.7, theta: 90, g: 9.8 },
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2010', q: '6' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2012', q: '5' },
@@ -219,6 +228,7 @@ export const LIBRARY = [
     note: 'A ball thrown forwards from someone\u2019s hand, and a dog that sets off along the sand a moment later with a constant acceleration and catches it on the way down. Two motions, one moment: the ball\u2019s vertical motion says when it is at the catch height, its horizontal motion where, and the dog\u2019s one equation the number the paper hides.',
     params: { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2 }, find: 'a' },
     place: 'Side on: a beach, the thrower, the dog and the ball',
+    example: { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, 'c.t0': 0.2, find: 'c.a' },
     sources: [
       { board: 'AQA', paper: '7357/2', session: 'Jun 2023', q: '20' },
     ],
@@ -241,6 +251,8 @@ export const LIBRARY = [
     note: 'A velocity–time graph made of straight segments, each from one velocity to another over its own time, and some of them below the axis: going back. A car speeds up, holds its speed and brakes; its driver walks back to a shop, waits, and jogs back to the car. The engine finds a time the paper leaves out — a moving segment\u2019s from where it ends, a stop\u2019s from the total time.',
     params: { segs: [{ who: 'car', v: 15, t: 6 }, { who: 'car', v: 15, t: 11 }, { who: 'car', v: 0, t: 2 }, { who: 'foot', u: -2, v: -2, t: 20 }, { who: 'foot', u: 0, v: 0 }, { who: 'foot', u: 5, v: 5 }], T: 60, back: 4 },
     place: 'A road: the car, its driver and a shop, under the velocity–time graph',
+    example: { T: 60, back: 4, 's1.who': 'car', 's1.v': 15, 's1.t': 6, 's2.who': 'car', 's2.v': 15, 's2.t': 11, 's3.who': 'car', 's3.v': 0, 's3.t': 2,
+      's4.who': 'foot', 's4.u': -2, 's4.v': -2, 's4.t': 20, 's5.who': 'foot', 's5.u': 0, 's5.v': 0, 's6.who': 'foot', 's6.u': 5, 's6.v': 5 },
     sources: [
       { board: 'OCR', paper: '4728 M1', session: 'Jun 2011', q: '4' },
     ],
@@ -263,6 +275,7 @@ export const LIBRARY = [
     note: 'A parachutist steps out of an aircraft and falls freely, opens the canopy and slows down at a steady rate, then falls at a constant speed to the ground. Three stages of constant acceleration, read downwards, with the drop from the aircraft to the fields drawn to scale (the jumper and the aircraft are enlarged to be seen): give two numbers for each of the first two stages and the height (or the total time), and the engine finds the rest.',
     params: { g: 10, D: 550, t1: 3, a2: 12, t2: 2 },
     place: 'A column of sky from the aircraft to the fields',
+    example: { g: 10, D: 550, t1: 3, a2: 12, t2: 2 },
     sources: [
       { board: 'Edexcel', paper: '8MA0/22 (AS)', session: 'Jun 2019', q: '1' },
     ],
@@ -285,6 +298,7 @@ export const LIBRARY = [
     note: 'Two ships, boats or birds, each moving at a constant velocity given in i and j. Everything the papers ask is about the one vector between them: when one is due west (or any compass direction) of the other and how far apart they are then, when they are a given distance apart, and a number p in one velocity found from where they are at a given time.',
     params: { units: 'km', look: 'ships', A: { r0: { x: 2, y: -8 }, v: { x: -4, y: 8 } }, B: { r0: { x: 18, y: 12 }, v: { x: -6, y: -8 } }, at: { due: 'W' } },
     place: 'A map from above: the sea, east and north',
+    example: { units: 'km', 'A.r0.x': 2, 'A.r0.y': -8, 'A.v.x': -4, 'A.v.y': 8, 'B.r0.x': 18, 'B.r0.y': 12, 'B.v.x': -6, 'B.v.y': -8, due: 'W' },
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jan 2012', q: '7' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2017', q: '7' },
@@ -310,6 +324,7 @@ export const LIBRARY = [
     note: 'A car at speed and a speed-limit sign ahead, modelled three ways side by side: braking all the way to the sign, braking to the limit and holding it, and the same after a reaction time. Three lanes of one road on one clock, so the difference a model makes is seen as well as worked out.',
     params: { u: 25, D: 48, a: 6, limit: 13, react: 0.2 },
     place: 'Three lanes of one road, a speed-limit sign ahead',
+    example: { u: 25, D: 48, a: 6, limit: 13, react: 0.2 },
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Oct 2021', q: '3' },
     ],
@@ -332,6 +347,7 @@ export const LIBRARY = [
     note: 'A ball bearing leaves the end of a laboratory bench moving across and breaks two strips of foil: the time between them and the distance between them give its speed, and from there it falls freely. How far it has dropped at the second strip says whether a strip set a little lower is broken at its centre. The same scene is a ball rolled off a table to the floor: the height and how far out it lands give the speed it left at.',
     params: { look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 },
     place: 'Side on: a laboratory bench, two strips of foil on clamp stands',
+    example: { look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 },
     sources: [
       { board: 'Edexcel', paper: '9PH0/01', session: 'Jun 2018', q: '18(b)(iii)(iv)' },
     ],
@@ -354,6 +370,7 @@ export const LIBRARY = [
     note: 'Projected from the ground, a ball just clears a wall and lands beyond it, every length a multiple of one letter a. Put both points into the equation of its path and the letter cancels: the angle comes from the two points alone. One number more, the speed or a itself, fixes the other, the greatest height and the time in the air.',
     params: { g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 },
     place: 'Side on: level ground, a brick wall, and where it lands',
+    example: { g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 },
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '13(b)(c)(d)' },
     ],
@@ -376,6 +393,7 @@ export const LIBRARY = [
     note: 'A car, a cyclist or a train along a straight line in stages, one after another, each with its own constant acceleration. Each stage is solved from any three of the five, with the speed one stage ends at carried on as the speed the next begins at; a stage short of a number can take it from the whole distance or the whole time. Then the whole: how far, how long, and the average speed.',
     params: { look: 'car', stages: [{ u: 20, v: 12, s: 640 }, { s: 1820, t: 70 }] },
     place: 'Side on: a straight race track, a post where each stage begins',
+    example: { 's1.u': 20, 's1.v': 12, 's1.s': 640, 's2.s': 1820, 's2.t': 70 },
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '1' },
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2019', q: '7' },
@@ -404,6 +422,7 @@ export const LIBRARY = [
     note: 'Two particles on a horizontal surface, each starting with its own velocity and each with its own constant acceleration, all in i and j. Each position is a quadratic in t, part by part. To collide they must be at the same place at the same moment: solve for when one part is equal, then check the other part at that time.',
     params: { A: { u: { x: 4, y: 2 }, a: { x: -0.4 } }, B: { r0: { x: 11.2 }, u: { x: 0.4, y: 0.6 }, a: { y: 0.2 } }, at: 10 },
     place: 'From above: a horizontal surface, i across and j up',
+    example: { 'A.u.x': 4, 'A.u.y': 2, 'A.a.x': -0.4, 'B.r0.x': 11.2, 'B.u.x': 0.4, 'B.u.y': 0.6, 'B.a.y': 0.2, at: 10 },
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jun 2014', q: '7' },
     ],
@@ -426,6 +445,7 @@ export const LIBRARY = [
     note: 'A particle in a plane with a constant acceleration that the paper does not give: it gives two moments instead — the velocity at two times, so the acceleration is the change over the time between, or where it starts and where it is later. At the second moment the acceleration may change to a new one, and the paper asks when it is then moving in a compass direction, or its speed at a time.',
     params: { u: { x: 2, y: -3 }, at2: { kind: 'r', t: 2, v: { x: 7, y: -10 } }, a2: { x: 4, y: 8.8 }, ask: { dir: 'NE' } },
     place: 'From above: a plane, i east and j north',
+    example: { 'u.x': 2, 'u.y': -3, k2: 'r', t2: 2, 'p2.x': 7, 'p2.y': -10, 'a2.x': 4, 'a2.y': 8.8, dir: 'NE' },
     sources: [
       { board: 'Edexcel', paper: '9MA0/03', session: 'Jun 2018', q: '8' },
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2022', q: '6' },
@@ -449,6 +469,8 @@ export const LIBRARY = [
     note: 'A particle on a line whose displacement–time graph is straight pieces: at rest where it is flat, at a steady velocity where it slopes, going back where it slopes down. A corner time left blank is found from the speed; the velocity anywhere is the gradient; the distance travelled counts every piece, the displacement only where it ends. After the graph the motion may be a constant acceleration given as a formula in t.',
     params: { x0: 5, speed: 4, pts: [{ x: 5 }, { t: 3, x: 0 }, { t: 5, x: 0 }, { t: 7, x: -8 }, { t: 10, x: 4 }], tail: { c0: -96, c1: 20, c2: -1, speed: 4 }, ask: { ts: [2, 8, 9] } },
     place: 'A (t, x) graph above, the line with A and the particle below',
+    example: { x0: 5, speed: 4, 'p1.x': 5, 'p2.t': 3, 'p2.x': 0, 'p3.t': 5, 'p3.x': 0, 'p4.t': 7, 'p4.x': -8, 'p5.t': 10, 'p5.x': 4,
+      c0: -96, c1: 20, c2: -1, tailSpeed: 4, ask1: 2, ask2: 8, ask3: 9 },
     sources: [
       { board: 'OCR', paper: '4728 M1', session: 'Jun 2014', q: '5' },
     ],
@@ -470,6 +492,7 @@ export const LIBRARY = [
     note: 'A square floor with its centre O, and two robots crossing it, each at a constant velocity in i and j; one robot’s velocity may come from where it is at two times. The vector from one to the other is linear in t, so the square of the distance between them is a quadratic in t: least where its gradient is zero. The floor has edges, and a robot that would reach one is said to.',
     params: { R: { r0: { x: -2, y: 1 }, r1: { x: 9, y: 23 }, t1: 11 }, S: { r0: { x: 25, y: 25 }, v: { x: -1, y: -1 } }, side: 50 },
     place: 'From above: a square floor ABCD, centre O, two robots',
+    example: { 'R.r0.x': -2, 'R.r0.y': 1, 'R.r1.x': 9, 'R.r1.y': 23, 'R.t1': 11, 'S.r0.x': 25, 'S.r0.y': 25, 'S.v.x': -1, 'S.v.y': -1, side: 50 },
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2023', q: '8' },
     ],
@@ -492,6 +515,7 @@ export const LIBRARY = [
     note: 'Two particles projected straight up from the same point O, the first with speed U and the second a moment later with a multiple of U. Every answer is in letters: the greatest height in U² over g, the time in U over g. Both fall with the same g, so once both are moving the gap closes at a steady rate. O is a point, not the ground: they may meet at it, above it or below it.',
     params: { k: 0.5, when: 'top' },
     place: 'One vertical line through O, the two particles side by side',
+    example: { k: 0.5, when: 'top' },
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2020', q: '3' },
     ],
@@ -514,6 +538,8 @@ export const LIBRARY = [
     note: 'Two trains on parallel tracks leave one station together from rest and come to rest together at the next, each in its own stages. One train’s journey fixes the distance between the stations; the other’s hidden acceleration or speed comes from covering that same distance in the same time — the areas under their speed–time graphs are equal. Then: when are they moving at the same speed, and how far apart are they at a given moment?',
     params: { A: { stages: [{ kind: 'up', t: 30, a: 2 / 3 }, { kind: 'hold', t: 120 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] }, ask: { t: 96 } },
     place: 'Side on: two parallel tracks between two stations',
+    example: { askT: 96, 'A1.kind': 'up', 'A1.t': 30, 'A1.v': 20, 'A2.kind': 'hold', 'A2.t': 120, 'A3.kind': 'down', 'A3.t': 30, 'A3.v': 0,
+      'B1.kind': 'up', 'B1.t': 90, 'B2.kind': 'down', 'B2.t': 90, 'B2.v': 0 },
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2014', q: '8' },
     ],
@@ -536,6 +562,7 @@ export const LIBRARY = [
     note: 'A car with a constant acceleration passes a row of posts, the distance and the time between each pair given, but neither its speed at the first post nor its acceleration. Measured from the first post, each later post gives one equation in the same two unknowns — a pair of simultaneous equations, solved by substituting one into the other. A third stretch, if given, must agree.',
     params: { look: 'car', gaps: [{ s: 76, t: 4 }, { s: 219, t: 6 }] },
     place: 'Side on: a straight road with posts P, Q and R',
+    example: { s1: 76, t1: 4, s2: 219, t2: 6 },
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2016', q: '1' },
     ],
@@ -558,6 +585,7 @@ export const LIBRARY = [
     note: 'An object on a line whose velocity–time graph is straight pieces, some below the axis. The gradient of each piece is its acceleration, the steepest the greatest; the area under the graph is the displacement, below the axis counting back. Adding the areas piece by piece finds every time it is back where it started — or any displacement asked.',
     params: { v0: 0, pts: [{ t: 4, v: -2 }, { t: 6, v: 2 }, { t: 11, v: 2 }, { t: 13, v: -4 }, { t: 16, v: -4 }, { t: 20, v: 0 }] },
     place: 'A (t, v) graph above, the line with its start O below',
+    example: { v0: 0, 'p1.t': 4, 'p1.v': -2, 'p2.t': 6, 'p2.v': 2, 'p3.t': 11, 'p3.v': 2, 'p4.t': 13, 'p4.v': -4, 'p5.t': 16, 'p5.v': -4, 'p6.t': 20, 'p6.v': 0 },
     sources: [
       { board: 'AQA', paper: '7357/2', session: 'Jun 2018', q: '12' },
     ],
@@ -580,6 +608,7 @@ export const LIBRARY = [
     note: 'A ball falling freely past two marks one above the other: the top and bottom of a window, or two points on a cliff. Two of the speed at the upper mark, the speed at the lower, the time between and the distance between fix the other two; then how far above the upper mark it was dropped from rest, and when it reaches the ground. Or in letters: the speed at the lower mark a multiple of u, the time and distance in u and g.',
     params: { mode: 'letters', k: 3 },
     place: 'Side on: a building wall with a window (or a cliff with two marks), the ball falling past it',
+    example: { mode: 'letters', k: 3 },
     sources: [
       { board: 'AQA', paper: '7357/2', session: 'Jun 2023', q: '13' },
     ],
@@ -602,6 +631,7 @@ export const LIBRARY = [
     note: 'Two projectiles thrown towards each other in one vertical plane, from A and B on level ground (or from a height above it), the second perhaps a moment after the first. Across, each moves at a steady speed, so they are level across at one moment; they collide only if they are at the same height then, with both still in the air. The distance AB may be the first one’s range.',
     params: { g: 9.8, A: { u: 24.5, theta: 30 }, B: { u: 24.5, theta: 30, t0: 1 }, range: true },
     place: 'Side on: level ground, a thrower at A and another at B',
+    example: { g: 9.8, 'A.u': 24.5, 'A.theta': 30, 'B.u': 24.5, 'B.theta': 30, 'B.t0': 1, range: 'range' },
     sources: [
       { board: 'WJEC', paper: '1300U40-1 Unit 4', session: 'Jun 2018', q: '9' },
     ],
@@ -624,6 +654,7 @@ export const LIBRARY = [
     note: 'A ball kicked or thrown straight up from just above the floor, indoors. Its greatest height comes from v² = u² + 2as at the top, or its speed from the greatest height it reached outside. Under a ceiling: if it gets that high, when and how fast it meets the ceiling; if not, how far below it turns.',
     params: { g: 9.8, h: 0.9, u: 14, C: 11.5 },
     place: 'Side on: a sports hall, its floor and ceiling, the kicker',
+    example: { g: 9.8, h: 0.9, top: 10.9 },
     sources: [
       { board: 'WJEC', paper: '2300U20-1 Unit 2', session: 'Jun 2019', q: '8' },
     ],

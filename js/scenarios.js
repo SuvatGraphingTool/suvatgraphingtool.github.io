@@ -9,7 +9,10 @@
 //
 // A scenario chooses the SITUATION and nothing else. It decides which boxes
 // apply, which markers appear and what the card says it is for. Every number
-// is typed by the student; nothing here is pre-filled.
+// is typed by the student — unless js/app.js's PREFILL switch is on (for
+// testing), when the boxes open with the scenario's `example`: which of the
+// five it gives (`given`, with g for a), and the angle, height, parachute
+// setup or road point a run needs. They are the card's own `params`.
 //
 // Three groups, by where the object starts:
 //   from the ground · from a platform · and the ones worth a detour.
@@ -39,12 +42,14 @@ export const SCENARIOS = [
   { id: 'up', group: 'ground', name: 'Thrown straight up',
     sub: 'no angle to enter',
     note: 'Up, stops, back down at the speed it left. Time up equals time down.',
-    params: { u: 14, theta: 90, h: 0, g: 9.81 }, lockAngle: true },
+    params: { u: 14, theta: 90, h: 0, g: 9.81 }, lockAngle: true,
+    example: { given: { u: 14, g: 9.81 }, h: 0 } },
 
   { id: 'arc', group: 'ground', name: 'Simple arc',
     sub: 'at an angle',
     note: 'An angle, landing at the same level. Gives you range and greatest height.',
     params: { u: 25, theta: 45, h: 0, g: 9.81 },
+    example: { given: { u: 25, g: 9.81 }, theta: 45, h: 0 },
     // UPWARDS ONLY. Launched from the ground, a downward angle has nowhere to
     // go: it puts the object under the floor before it has travelled
     // anything, and the flight it describes does not exist. Flat is the same
@@ -56,17 +61,20 @@ export const SCENARIOS = [
   { id: 'dropped', group: 'platform', name: 'Dropped',
     sub: 'straight down, from rest',
     note: 'Released, not thrown. No angle, no launch speed — height and g are the whole question.',
-    params: { u: 0, theta: -90, h: 80, g: 9.81 }, noAngle: true, fixedU: 0 },
+    params: { u: 0, theta: -90, h: 80, g: 9.81 }, noAngle: true, fixedU: 0,
+    example: { given: { g: 9.81 }, h: 80 } },
 
   { id: 'down', group: 'platform', name: 'Thrown straight down',
     sub: 'straight down, with a push',
     note: 'A drop with a head start. Lands sooner and faster than if released.',
-    params: { u: 10, theta: -90, h: 45, g: 9.81 }, lockAngle: true },
+    params: { u: 10, theta: -90, h: 45, g: 9.81 }, lockAngle: true,
+    example: { given: { u: 10, g: 9.81 }, h: 45 } },
 
   { id: 'platform-down', group: 'platform', name: 'Down and off a platform',
     sub: 'thrown down, at an angle',
     note: 'Aimed below the horizontal, so it is falling before it has gone anywhere. No upward half, no greatest height — and a negative angle, which is where the marks go.',
     params: { u: 25, theta: -30, h: 25, g: 9.81 },
+    example: { given: { u: 25, g: 9.81 }, theta: -30, h: 25 },
     // THE ONE SCENARIO WHERE A NEGATIVE ANGLE IS THE QUESTION. Everywhere
     // else the control refuses them, because everywhere else they describe a
     // throw that cannot happen or a card that already exists. Here the sign
@@ -76,12 +84,14 @@ export const SCENARIOS = [
   { id: 'platform', group: 'platform', name: 'Off a platform',
     sub: 'thrown flat',
     note: 'Falls in the same time as if dropped — try it against Dropped.',
-    params: { u: 20, theta: 0, h: 25, g: 9.81 }, lockAngle: true },
+    params: { u: 20, theta: 0, h: 25, g: 9.81 }, lockAngle: true,
+    example: { given: { u: 20, g: 9.81 }, h: 25 } },
 
   { id: 'platform-angle', group: 'platform', name: 'Up and off a platform',
     sub: 'thrown up, at an angle',
     note: 'Thrown up, lands lower, so the two halves differ. The commonest exam setup.',
     params: { u: 28, theta: 45, h: 25, g: 9.81 },
+    example: { given: { u: 28, g: 9.81 }, theta: 45, h: 25 },
     // The card says UP and off a platform, so the control says the same. A
     // downward angle from here is a different question and has its own card.
     // Flat is allowed, because flat off a platform is a real throw — and it
@@ -93,6 +103,7 @@ export const SCENARIOS = [
     sub: 'how long is it up there?',
     note: 'It crosses the line twice. The gap between those times is the answer. Drag the line. Thrown straight up works too — the same two crossings, one above the other.',
     params: { u: 24, theta: 40, h: 0.9, g: 9.81 },
+    example: { given: { u: 24, g: 9.81 }, theta: 40, h: 0.9 },
     // `straightUp` offers a one-press 90° beside the angle: the question is
     // asked of vertical throws as often as of arcs.
     markers: { heightLine: 6 }, dragLine: true, straightUp: true },
@@ -112,6 +123,7 @@ export const SCENARIOS = [
     note: 'Three phases, and SUVAT applies to each one separately: free fall under gravity alone, a hard deceleration as the canopy opens, then a steady descent at constant speed. The equations never described the whole fall — only a stretch of it at a time, which is what this one is for.',
     params: { u: 0, theta: -90, h: 100, g: 9.81 },
     descent: { tOpen: 3, aChute: 25, vTerm: 6 },
+    example: { given: { g: 9.81 }, h: 100, descent: { tOpen: 3, aChute: 25, vTerm: 6 } },
     card: 'sky',
     ending: {
       close: 'See the drop',
@@ -249,6 +261,7 @@ export const SCENARIOS = [
     sub: 'speeding up, or braking',
     note: 'A vehicle passes A, and some time later passes B. Its acceleration is its own, so a is one of the five like the rest — and the area under the velocity\u2013time line is the distance AB.',
     params: { u: 14, theta: 0, h: 0, g: 0, a: 2, s: 240, v: 34, t: 10 },
+    example: { given: { s: 240, u: 14, t: 10 } },
     road: true, stage: 'road',
     place: 'A straight, level road from A to B' },
 ];

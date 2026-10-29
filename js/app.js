@@ -35,6 +35,9 @@ import { readoutHTML, solutionHTML } from './ai/readout.js';
 
 const $ = (id) => document.getElementById(id);
 
+// For testing: a picked scenario opens with its `example` numbers in the boxes. false restores empty boxes.
+const PREFILL = true;
+
 /**
  * A number the way a student writes one.
  *
@@ -159,7 +162,7 @@ function buildScenarioScreen() {
       <div class="pgrid-row">${cards}</div></div>`;
   }).join('');
   for (const b of $('pgrid').querySelectorAll('.pcard')) {
-    b.addEventListener('click', () => chooseScenario(b.dataset.id));
+    b.addEventListener('click', () => chooseScenario(b.dataset.id, { example: true }));
   }
   wireSpotlight();
   buildLibrary();
@@ -183,7 +186,7 @@ function buildLibrary() {
       <p class="pc-src">${s.sources.map((x) => `<span>${x.board} ${x.paper} · ${x.session} · Q${x.q}${x.part ? `, ${x.part}` : ''}</span>`).join('')}</p>
     </button>`).join('');
   for (const b of grid.querySelectorAll('.pcard')) {
-    b.addEventListener('click', () => chooseScenario(b.dataset.id));
+    b.addEventListener('click', () => chooseScenario(b.dataset.id, { example: true }));
   }
   $('lib-count').textContent = `${LIBRARY.length} ${LIBRARY.length === 1 ? 'scenario' : 'scenarios'}`;
   const box = $('lib-q');
@@ -334,7 +337,7 @@ function thumb(s) {
  * what tells this card apart from Dropped at a glance.
  *
  * Drawn from the scenario's own illustrative numbers, like every other card.
- * Nothing here is pre-filled into the boxes.
+ * The boxes take the scenario's `example` instead, and only while PREFILL is on.
  */
 /* A road card: the road, A and B, and where the vehicle is at equal steps of
    time — the gaps widen because it is speeding up, which is the scenario. */
@@ -397,13 +400,16 @@ function aimFor(s) {
   return (Math.atan2(t.y - (s.params.h || 0), t.x) * 180) / Math.PI;
 }
 
-function chooseScenario(id) {
+function chooseScenario(id, { example = false } = {}) {
   scenario = byId(id);
   state.id = id;
   state.given = {};
-  // The scenario picks the SITUATION, never the numbers. Every box starts
-  // empty; the only thing it fixes is that a dropped object starts at rest,
-  // which is what "dropped" means.
+  // The scenario picks the SITUATION. Every box starts empty unless PREFILL
+  // is on and the pick came from a card (`example`), when the scenario's own
+  // `example` numbers go in — see applyExample. A reading from Ask Suvat or
+  // the whiteboard brings its own numbers and never asks for these. The one
+  // thing always fixed is that a dropped object starts at rest, which is what
+  // "dropped" means.
   if (scenario.noAngle) state.given.u = 0;
   state.theta = undefined;
   state.h = undefined;
@@ -412,6 +418,7 @@ function chooseScenario(id) {
   state.who = 'lorry';               // and what it is that moves along the road
   state.kit = {};                    // a library scenario's own boxes
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
+  if (PREFILL && example && !scenario.exhibit) applyExample(scenario.example);
   $('ask-at').hidden = !!scenario.road || !!scenario.kit;
   state.firedBefore = false; ghost = null;
   state.aimed = true;                  // the hunter starts pointing at it
@@ -453,6 +460,24 @@ function chooseScenario(id) {
     buildLive();
     go('values');
   }
+}
+
+/**
+ * A scenario's `example`, put in the boxes (PREFILL only). A library entry's
+ * is its kit's boxes, keyed as they are; a hand-built one's says which of the
+ * five it gives, and the angle, height, parachute setup or road point. The
+ * boxes read state as they are built, so this is all it takes to show them.
+ */
+function applyExample(ex) {
+  if (!ex) return;
+  if (scenario.kit) { state.kit = { ...ex }; return; }
+  Object.assign(state.given, ex.given || {});
+  if (scenario.noAngle) state.given.u = 0;
+  if (ex.theta != null) state.theta = ex.theta;
+  if (ex.h != null) state.h = ex.h;
+  if (ex.descent) state.descent = { ...ex.descent };
+  if (ex.mark != null) state.mark = ex.mark;
+  if (ex.who) state.who = ex.who;
 }
 
 /** Fill in the scenario's own starting numbers, so the stage has something to show. */
@@ -650,7 +675,7 @@ function valuesVoice(descentMode) {
    settles to. The engine works out all five for each phase from those, and
    the ending card shows them as three rows of five.
 
-   Nothing is pre-filled, as everywhere else. The hints carry the real
+   Nothing is pre-filled unless PREFILL is on. The hints carry the real
    magnitudes instead, because a student who has never seen the question has
    no idea whether a canopy pulls 2 m s⁻² or 200. */
 const DESCENT_ROWS = [
@@ -755,10 +780,10 @@ function buildRoadExtras() {
 
 /* ── a library scenario's own boxes ──────────────────────────────────────
    Its kit says which numbers the situation needs (js/kits/), grouped into
-   columns when there are two objects. Like every other screen, nothing is
-   pre-filled: a box marked optional says in its hint what blank means. g is
-   a box of its own with the three values papers use one press away, because
-   the answer depends on which one the paper said. */
+   columns when there are two objects. Unless PREFILL puts the entry's
+   example in, nothing is pre-filled: a box marked optional says in its hint
+   what blank means. g is a box of its own with the three values papers use
+   one press away, because the answer depends on which one the paper said. */
 function buildKitScreen() {
   const K = kit();
   $('suvat').innerHTML = '';
