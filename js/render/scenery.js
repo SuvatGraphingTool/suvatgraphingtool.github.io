@@ -283,19 +283,234 @@ export function softShadow(g, x, y, rx, ry = rx * 0.25, strength = 1) {
 
 /* ── the same places from above ────────────────────────────────────────── */
 
-/** The sea from above in the box (x, y, w, h): deep in the middle, wave crescents drifting with `phase`. */
-export function seaFromAbove(g, x, y, w, h, o = {}) {
-  const E = env(), r = rng(o.seed ?? 23), phase = o.phase ?? 0;
-  const gr = g.createRadialGradient(x + w / 2, y + h / 2, 0, x + w / 2, y + h / 2, Math.max(w, h) * 0.7);
-  gr.addColorStop(0, E.night ? '#1f333b' : '#6f93a1'); gr.addColorStop(1, E.night ? '#2c434c' : '#8fb0bc');
-  g.fillStyle = gr; g.fillRect(x, y, w, h);
-  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
-  g.strokeStyle = 'rgba(255,255,255,0.22)'; g.lineWidth = 1.2;
-  for (let i = 0; i < (w * h) / 2600; i++) {
-    const cx = x + ((r() * w + phase * 6) % w), cy = y + r() * h, s = 5 + r() * 7;
-    g.beginPath(); g.arc(cx, cy, s, Math.PI * 1.15, Math.PI * 1.85); g.stroke();
+/* The sea, the field and the farmland below a bird are drawn to fill the
+   whole stage — the axes and the grid are laid on top of the place, never the
+   place cut to the size of the plot. Each takes `avoid`, the pixels the motion
+   passes through (its tracks, O, the moments asked about), and keeps its
+   scenery — a coast, a tree, an island — off them, so nothing in the place
+   hides the physics. */
+
+/** A smooth seeded wobble along 0..1, about −1..1: for coastlines and shores. */
+function wobble(r, n = 4) {
+  const parts = Array.from({ length: n }, (_, i) => ({ p: r() * 6.283, f: (1.2 + r() * 1.6) * (i + 1), a: 1 / (i + 1) }));
+  const norm = parts.reduce((s, q) => s + q.a, 0);
+  return (u) => parts.reduce((s, q) => s + Math.sin(u * q.f * 3.1 + q.p) * q.a, 0) / norm;
+}
+
+/** The least distance, px, from a point to any of `avoid`. */
+const clearOf = (avoid, x, y) => avoid.reduce((m, p) => Math.min(m, Math.hypot(p.x - x, p.y - y)), Infinity);
+
+/** Where land can go without touching the motion: the edge or corner of the
+    box furthest from every avoided point. Returns a shape function
+    shape(off) → polygon (the land grown by `off` px seaward), the shore alone
+    as an open polyline, and a spot inland for a lighthouse — or null. */
+function landSpot(x, y, w, h, avoid, r, o = {}) {
+  const wob = wobble(r), bumpU = 0.25 + r() * 0.5, bumpW = 0.09 + r() * 0.05;
+  const bump = (u) => Math.exp(-(((u - bumpU) / bumpW) ** 2));
+  const cands = [];
+  const edgeClear = {
+    bottom: Math.min(...avoid.map((p) => y + h - p.y)), top: Math.min(...avoid.map((p) => p.y - y)),
+    right: Math.min(...avoid.map((p) => x + w - p.x)), left: Math.min(...avoid.map((p) => p.x - x)),
+  };
+  for (const [side, c] of Object.entries(edgeClear)) {
+    if (o.hud && (side === 'left' || side === 'top')) continue;      // under the readouts
+    const along = side === 'top' || side === 'bottom' ? h : w;
+    const d = Math.min(c - 46, along * 0.28, 120);
+    if (d >= 34) cands.push({ kind: 'edge', side, d, score: d * 1.7 });
+  }
+  const corners = { br: [x + w, y + h, Math.PI, 1.5 * Math.PI], tr: [x + w, y, 0.5 * Math.PI, Math.PI], bl: [x, y + h, 1.5 * Math.PI, 2 * Math.PI], tl: [x, y, 0, 0.5 * Math.PI] };
+  for (const [side, [cx, cy]] of Object.entries(corners)) {
+    if (o.hud && side === 'tl') continue;
+    const R = Math.min(clearOf(avoid, cx, cy) - 50, Math.min(w, h) * 0.5, 260);
+    if (R >= 70) cands.push({ kind: 'corner', side, R, score: R });
+  }
+  if (!cands.length) return null;
+  const best = cands.reduce((a, b) => (b.score > a.score ? b : a));
+  const N = 72;
+  let at;   // at(u, depth) → the point `depth` px in from the edge (or out from the corner) at u
+  if (best.kind === 'edge') {
+    const s = best.side, base = best.d;
+    at = (u, dep) => (s === 'bottom' ? { x: x + u * w, y: y + h - dep } : s === 'top' ? { x: x + u * w, y: y + dep }
+      : s === 'left' ? { x: x + dep, y: y + u * h } : { x: x + w - dep, y: y + u * h });
+    const depth = (u) => base * (0.78 + 0.22 * wob(u)) + base * 0.75 * bump(u);
+    const shape = (off) => { const pts = []; for (let i = 0; i <= N; i++) pts.push(at(i / N, Math.max(0, depth(i / N) + off))); return [at(1, -4), at(0, -4), ...pts]; };
+    const shore = (off) => { const pts = []; for (let i = 0; i <= N; i++) pts.push(at(i / N, Math.max(0, depth(i / N) + off))); return pts; };
+    return { shape, shore, light: at(bumpU, depth(bumpU) * 0.62), size: base };
+  }
+  const [cx, cy, a0, a1] = corners[best.side], R0 = best.R;
+  const rad = (u) => R0 * (0.8 + 0.18 * wob(u)) + R0 * 0.35 * bump(u);
+  const pt = (u, rr) => { const a = a0 + (a1 - a0) * u; return { x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr }; };
+  const shape = (off) => { const pts = [{ x: cx, y: cy }]; for (let i = 0; i <= N; i++) pts.push(pt(i / N, Math.max(0, rad(i / N) + off))); return pts; };
+  const shore = (off) => { const pts = []; for (let i = 0; i <= N; i++) pts.push(pt(i / N, Math.max(0, rad(i / N) + off))); return pts; };
+  return { shape, shore, light: pt(bumpU, rad(bumpU) * 0.68), size: R0 * 0.5 };
+}
+
+const poly = (g, pts) => { g.beginPath(); g.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y); g.closePath(); };
+const line = (g, pts) => { g.beginPath(); g.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y); };
+
+/** Land seen from above, as a coast: shallows, a moving line of surf, sand,
+    then grass and scrub with rocks along the shore. `land` from landSpot (or
+    an island's own shape functions). */
+function drawLand(g, land, E, r, phase) {
+  const shallow = E.night ? '#2d5258' : '#a6cfc8', sand = E.night ? '#6a5a48' : '#e2cfa6', sandWet = E.night ? '#4f4639' : '#c9b48a';
+  g.save();
+  g.fillStyle = withAlpha(shallow, 0.4); poly(g, land.shape(34)); g.fill();
+  g.fillStyle = withAlpha(shallow, 0.55); poly(g, land.shape(16)); g.fill();
+  // the surf: two lines of foam that come in and draw back with the phase
+  const swash = Math.sin(phase * 0.08) * 2.5;
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  g.strokeStyle = 'rgba(255,255,255,0.32)'; g.lineWidth = 1.6; g.setLineDash([10, 7]); g.lineDashOffset = -phase * 0.6;
+  line(g, land.shore(20 + swash)); g.stroke(); g.setLineDash([]);
+  g.fillStyle = sandWet; poly(g, land.shape(5 + swash * 0.5)); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,0.75)'; g.lineWidth = 2.4; line(g, land.shore(6 + swash * 0.5)); g.stroke();
+  g.fillStyle = sand; poly(g, land.shape(0)); g.fill();
+  // the land behind the beach: grass, lit from the upper left, with scrub
+  const pts = land.shape(-11);
+  const bx = Math.min(...pts.map((p) => p.x)), by = Math.min(...pts.map((p) => p.y)), bx1 = Math.max(...pts.map((p) => p.x)), by1 = Math.max(...pts.map((p) => p.y));
+  const gr = g.createLinearGradient(bx, by, bx1, by1); gr.addColorStop(0, E.grass); gr.addColorStop(1, E.grassAlt);
+  g.fillStyle = gr; poly(g, pts); g.fill();
+  g.save(); poly(g, pts); g.clip();
+  for (let i = 0; i < (bx1 - bx) * (by1 - by) / 700; i++) {
+    const sx = bx + r() * (bx1 - bx), sy = by + r() * (by1 - by), rr = 4 + r() * 9;
+    const sg = g.createRadialGradient(sx - rr * 0.3, sy - rr * 0.3, 0, sx, sy, rr);
+    sg.addColorStop(0, withAlpha(E.grass, 0.9)); sg.addColorStop(1, withAlpha(E.grassAlt, 0));
+    g.fillStyle = withAlpha('#000000', 0.16); g.beginPath(); g.arc(sx + rr * 0.35, sy + rr * 0.3, rr * 0.8, 0, Math.PI * 2); g.fill();
+    g.fillStyle = sg; g.beginPath(); g.arc(sx, sy, rr, 0, Math.PI * 2); g.fill();
   }
   g.restore();
+  g.strokeStyle = withAlpha(E.earth, 0.35); g.lineWidth = 1.2; line(g, land.shore(-11)); g.stroke();
+  // rocks along the shore, each lit on its upper left
+  const shore = land.shore(-2);
+  for (let i = 2; i < shore.length - 2; i += 3 + Math.floor(r() * 4)) {
+    if (r() < 0.45) continue;
+    const p = shore[i], rr = 2.5 + r() * 4;
+    g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.ellipse(p.x + 1.5, p.y + 1.5, rr, rr * 0.75, 0, 0, Math.PI * 2); g.fill();
+    const rg = g.createRadialGradient(p.x - rr * 0.4, p.y - rr * 0.4, 0, p.x, p.y, rr);
+    rg.addColorStop(0, E.night ? '#8d8285' : '#d6cdc6'); rg.addColorStop(1, E.night ? '#4d4447' : '#8f8580');
+    g.fillStyle = rg; g.beginPath(); g.ellipse(p.x, p.y, rr, rr * 0.75, r() * 3, 0, Math.PI * 2); g.fill();
+  }
+  g.restore();
+}
+
+/** A lighthouse seen from above and a little to the south, standing at (x, y):
+    a white tower with dark bands on its rock, the gallery and the lantern, and
+    — `beam`, an angle in radians, or null — the light sweeping round. s is its
+    height in px (about 34 reads well). */
+export function lighthouseAbove(g, x, y, s = 34, { beam = null } = {}) {
+  const E = env(), bw = s * 0.34, tw = s * 0.22, top = y - s;
+  g.save();
+  // its shadow, falling down and to the right, away from the light
+  g.fillStyle = withAlpha('#000000', 0.28);
+  g.beginPath(); g.moveTo(x - bw / 2, y); g.lineTo(x + s * 0.55, y + s * 0.42); g.lineTo(x + s * 0.55 + tw * 0.8, y + s * 0.3); g.lineTo(x + bw / 2, y - 2); g.closePath(); g.fill();
+  // the plinth
+  const pg = g.createRadialGradient(x - bw * 0.3, y - 2, 0, x, y, bw);
+  pg.addColorStop(0, E.night ? '#9a9092' : '#e9e2dc'); pg.addColorStop(1, E.night ? '#5c5254' : '#a39892');
+  g.fillStyle = pg; g.beginPath(); g.ellipse(x, y, bw * 0.95, bw * 0.42, 0, 0, Math.PI * 2); g.fill();
+  // the tower, tapering, lit from the left, with two dark bands
+  const tg = g.createLinearGradient(x - bw / 2, 0, x + bw / 2, 0);
+  tg.addColorStop(0, '#fbf7f2'); tg.addColorStop(0.55, '#e4ddd6'); tg.addColorStop(1, '#a89e98');
+  g.fillStyle = tg;
+  g.beginPath(); g.moveTo(x - bw / 2, y); g.lineTo(x - tw / 2, top + s * 0.18); g.lineTo(x + tw / 2, top + s * 0.18); g.lineTo(x + bw / 2, y); g.closePath(); g.fill();
+  g.save(); g.clip();
+  g.fillStyle = '#3b4250';
+  for (const f of [0.32, 0.62]) g.fillRect(x - bw, y - s * f - s * 0.07, bw * 2, s * 0.13);
+  g.restore();
+  g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 1; g.stroke();
+  // the gallery, the lantern and its cap
+  g.fillStyle = '#3b4250'; g.beginPath(); g.ellipse(x, top + s * 0.18, tw * 0.85, tw * 0.3, 0, 0, Math.PI * 2); g.fill();
+  const lit = E.night ? 'rgba(255,230,160,1)' : 'rgba(255,224,150,1)';
+  g.fillStyle = lit; g.fillRect(x - tw * 0.38, top + s * 0.04, tw * 0.76, s * 0.14);
+  g.fillStyle = '#2c313b'; g.beginPath(); g.moveTo(x - tw * 0.5, top + s * 0.05); g.lineTo(x, top - s * 0.06); g.lineTo(x + tw * 0.5, top + s * 0.05); g.closePath(); g.fill();
+  // the glow, and the beam
+  const lx = x, ly = top + s * 0.11;
+  const glow = g.createRadialGradient(lx, ly, 0, lx, ly, s * 0.7);
+  glow.addColorStop(0, `rgba(255,230,160,${E.night ? 0.55 : 0.35})`); glow.addColorStop(1, 'rgba(255,230,160,0)');
+  g.fillStyle = glow; g.beginPath(); g.arc(lx, ly, s * 0.7, 0, Math.PI * 2); g.fill();
+  if (beam != null) {
+    const L = s * 4.2, half = 0.16;
+    const bg = g.createRadialGradient(lx, ly, 0, lx, ly, L);
+    bg.addColorStop(0, `rgba(255,232,170,${E.night ? 0.42 : 0.26})`); bg.addColorStop(1, 'rgba(255,232,170,0)');
+    g.fillStyle = bg; g.beginPath(); g.moveTo(lx, ly); g.arc(lx, ly, L, beam - half, beam + half); g.closePath(); g.fill();
+  }
+  g.restore();
+}
+
+/**
+ * The sea from above, filling the box (x, y, w, h): deep water darkening away
+ * from the shore, long swell lines lit on their crests and shaded in their
+ * troughs, whitecaps that come and go, the sun's glint — and, where the motion
+ * leaves room, a coast with surf, a beach and a headland (with a lighthouse).
+ * @param o { phase: px the swell has travelled, seed, avoid: [{x, y}] px the
+ *   motion passes through, coast: draw land where it fits (needs avoid),
+ *   hud: keep land out from under the top-left readouts,
+ *   islands: [{ x, y, r }] small islands (a lighthouse's rock) }
+ * @returns { light: {x, y} | null } where the headland's lighthouse stands
+ */
+export function seaFromAbove(g, x, y, w, h, o = {}) {
+  const E = env(), r = rng(o.seed ?? 23), phase = o.phase ?? 0, avoid = o.avoid || [];
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  const deep = E.night ? '#132229' : '#5f8796', mid = E.night ? '#1b313a' : '#77a0ad';
+  const gr = g.createLinearGradient(x, y, x + w * 0.4, y + h);
+  gr.addColorStop(0, mid); gr.addColorStop(1, deep);
+  g.fillStyle = gr; g.fillRect(x, y, w, h);
+  // broad patches of deeper and shallower water
+  for (let i = 0; i < 7; i++) {
+    const cx = x + r() * w, cy = y + r() * h, R = Math.max(w, h) * (0.15 + r() * 0.2);
+    const pg = g.createRadialGradient(cx, cy, 0, cx, cy, R);
+    pg.addColorStop(0, withAlpha(i % 2 ? deep : (E.night ? '#24414a' : '#8db3bb'), 0.5)); pg.addColorStop(1, withAlpha(deep, 0));
+    g.fillStyle = pg; g.fillRect(x, y, w, h);
+  }
+  // the swell: long crests across the box at a slant, drifting with the phase
+  const ang = -0.38, sp = 30, cs = Math.cos(ang), sn = Math.sin(ang), D = Math.hypot(w, h);
+  const ccx = x + w / 2, ccy = y + h / 2, drift = (phase % sp + sp) % sp;
+  g.lineCap = 'round';
+  for (let j = -D / 2 - sp; j < D / 2 + sp; j += sp) {
+    const v0 = j + drift, k = Math.round(j / sp);
+    for (const [dv, col, lw] of [[3, E.night ? 'rgba(0,0,0,0.30)' : 'rgba(30,60,75,0.20)', 3], [0, E.night ? 'rgba(200,230,240,0.12)' : 'rgba(255,255,255,0.30)', 1.4]]) {
+      g.strokeStyle = col; g.lineWidth = lw; g.beginPath();
+      for (let u = -D / 2; u <= D / 2; u += 14) {
+        const vv = v0 + dv + Math.sin(u / 47 + k * 1.7) * 3.2 + Math.sin(u / 19 + k) * 1.1;
+        const px = ccx + u * cs - vv * sn, py = ccy + u * sn + vv * cs;
+        if (u === -D / 2) g.moveTo(px, py); else g.lineTo(px, py);
+      }
+      g.stroke();
+    }
+  }
+  // whitecaps: small breaking crests, each coming and going with the phase
+  const nCap = Math.round((w * h) / 4200);
+  for (let i = 0; i < nCap; i++) {
+    const cx = x + r() * w, cy = y + r() * h, s = 3 + r() * 6, life = Math.sin(phase * 0.05 + i * 2.39);
+    if (life < 0.15) continue;
+    g.save(); g.translate(cx, cy); g.rotate(ang);
+    g.strokeStyle = `rgba(255,255,255,${(E.night ? 0.32 : 0.6) * life})`; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(-s, 0); g.quadraticCurveTo(0, -s * 0.45, s, 0); g.stroke();
+    g.fillStyle = `rgba(255,255,255,${(E.night ? 0.18 : 0.35) * life})`;
+    for (let q = 0; q < 3; q++) { g.beginPath(); g.arc((r() - 0.5) * s * 1.6, r() * 2.5, 0.9 + r() * 0.9, 0, Math.PI * 2); g.fill(); }
+    g.restore();
+  }
+  // the sun's (or the moon's) glint, high on the left
+  const sx = x + w * 0.18, sy = y + h * 0.12, SR = Math.max(w, h) * 0.55;
+  const sg = g.createRadialGradient(sx, sy, 0, sx, sy, SR);
+  sg.addColorStop(0, E.night ? 'rgba(255,220,200,0.10)' : 'rgba(255,240,215,0.32)'); sg.addColorStop(1, 'rgba(255,240,215,0)');
+  g.fillStyle = sg; g.fillRect(x, y, w, h);
+  // land: a coast where the motion leaves room, and any islands
+  let light = null;
+  if (o.coast && avoid.length) {
+    const land = landSpot(x, y, w, h, avoid, rng((o.seed ?? 23) + 5), o);
+    if (land) { drawLand(g, land, E, r, phase); light = land.light; }
+  }
+  for (const is of o.islands || []) {
+    const ir = rng(Math.round(is.x * 7 + is.y * 13)), iw = wobble(ir, 3);
+    const rad = (u) => is.r * (1 + 0.22 * iw(u));
+    const ring = (off) => { const pts = []; for (let i = 0; i <= 48; i++) { const a = (i / 48) * Math.PI * 2; pts.push({ x: is.x + Math.cos(a) * Math.max(1, rad(i / 48) + off), y: is.y + Math.sin(a) * Math.max(1, rad(i / 48) + off) * 0.8 }); } return pts; };
+    drawLand(g, { shape: ring, shore: ring }, E, ir, phase);
+  }
+  // a vignette: the water darkens towards the edges of the view
+  const vg = g.createRadialGradient(x + w / 2, y + h / 2, Math.min(w, h) * 0.35, x + w / 2, y + h / 2, D * 0.62);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, E.night ? 'rgba(0,0,0,0.30)' : 'rgba(20,40,50,0.16)');
+  g.fillStyle = vg; g.fillRect(x, y, w, h);
+  g.restore();
+  return { light };
 }
 
 /** A floor from above in the box: square tiles with grout and a soft sheen. */
@@ -338,24 +553,219 @@ export function landscape(g, w, h, Y, o = {}) {
   else grass(g, 0, w, Y, h, o);
 }
 
-/** A field from above in the box: mown stripes across it, a little texture. */
-export function fieldFromAbove(g, x, y, w, h, o = {}) {
-  const E = env(), r = rng(o.seed ?? 37);
-  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
-  g.fillStyle = E.grass; g.fillRect(x, y, w, h);
-  g.fillStyle = withAlpha(E.grassAlt, 0.55); const band = o.band ?? 34;
-  for (let xx = x; xx < x + w; xx += band * 2) g.fillRect(xx, y, band, h);
-  g.fillStyle = withAlpha(E.grassAlt, 0.5);
-  for (let i = 0; i < (w * h) / 900; i++) g.fillRect(x + r() * w, y + r() * h, 1.5, 1.5);
+/** A tree seen from above at (x, y), canopy radius R px: its shadow thrown
+    down and to the right, a canopy of lit clumps. */
+export function treeAbove(g, x, y, R, { seed = 3 } = {}) {
+  const E = env(), r = rng(seed);
+  g.save();
+  g.fillStyle = withAlpha('#000000', E.night ? 0.32 : 0.22);
+  g.beginPath(); g.ellipse(x + R * 0.55, y + R * 0.4, R * 1.05, R * 0.85, 0.5, 0, Math.PI * 2); g.fill();
+  const dark = E.night ? '#2f3a22' : '#5f6e3c', lit = E.night ? '#5d6b40' : '#a3ad6a';
+  const base = g.createRadialGradient(x - R * 0.3, y - R * 0.3, 0, x, y, R);
+  base.addColorStop(0, withAlpha(lit, 1)); base.addColorStop(1, withAlpha(dark, 1));
+  g.fillStyle = base; g.beginPath(); g.arc(x, y, R * 0.92, 0, Math.PI * 2); g.fill();
+  for (let i = 0; i < 7; i++) {
+    const a = r() * Math.PI * 2, d = R * (0.2 + r() * 0.5), cr = R * (0.32 + r() * 0.22), cx = x + Math.cos(a) * d, cy = y + Math.sin(a) * d;
+    const cg = g.createRadialGradient(cx - cr * 0.4, cy - cr * 0.4, 0, cx, cy, cr);
+    cg.addColorStop(0, withAlpha(lit, 0.95)); cg.addColorStop(1, withAlpha(dark, 0.0));
+    g.fillStyle = cg; g.beginPath(); g.arc(cx, cy, cr, 0, Math.PI * 2); g.fill();
+  }
   g.restore();
 }
-/** The sky from above (a bird's eye): soft cloud shadows over a hazy ground far below. */
-export function skyFromAbove(g, x, y, w, h, o = {}) {
-  const E = env(), r = rng(o.seed ?? 41);
+
+/**
+ * A field from above, filling the box: the mower's stripes, each lit on one
+ * side, the grain of the grass, darker clover patches, the sun's light from
+ * the upper left falling away to the lower right, and — where the motion
+ * leaves room (`avoid`, px) — trees round the edge throwing their shadows.
+ * @param o { seed, band (stripe width, px), avoid: [{x, y}], keep: [{x, y, w, h}]
+ *   boxes to leave bare (the readouts), trees: how many at most (default 6 with avoid) }
+ */
+export function fieldFromAbove(g, x, y, w, h, o = {}) {
+  const E = env(), r = rng(o.seed ?? 37), avoid = o.avoid || [];
   g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
-  const gr = g.createLinearGradient(x, y, x + w, y + h); gr.addColorStop(0, E.skyMid); gr.addColorStop(1, E.skyBottom);
+  const gr = g.createLinearGradient(x, y, x + w * 0.5, y + h);
+  gr.addColorStop(0, E.grass); gr.addColorStop(1, E.grassAlt);
   g.fillStyle = gr; g.fillRect(x, y, w, h);
-  for (let i = 0; i < 6; i++) { const cx = x + r() * w, cy = y + r() * h, R = 40 + r() * 70; const cg = g.createRadialGradient(cx, cy, 0, cx, cy, R); cg.addColorStop(0, E.night ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.45)'); cg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = cg; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill(); }
+  // the mower's stripes: each pass lit across its width, the way back shaded
+  const band = o.band ?? 46;
+  for (let xx = x - ((x % (band * 2)) + band * 2) % (band * 2), i = 0; xx < x + w; xx += band, i++) {
+    const sg = g.createLinearGradient(xx, 0, xx + band, 0);
+    if (i % 2) { sg.addColorStop(0, 'rgba(0,0,0,0.10)'); sg.addColorStop(0.5, 'rgba(0,0,0,0.07)'); sg.addColorStop(1, 'rgba(0,0,0,0.10)'); }
+    else { sg.addColorStop(0, `rgba(255,255,240,${E.night ? 0.03 : 0.08})`); sg.addColorStop(0.5, `rgba(255,255,240,${E.night ? 0.06 : 0.13})`); sg.addColorStop(1, `rgba(255,255,240,${E.night ? 0.03 : 0.08})`); }
+    g.fillStyle = sg; g.fillRect(xx, y, band, h);
+  }
+  // clover and thicker patches
+  for (let i = 0; i < Math.max(6, (w * h) / 26000); i++) {
+    const cx = x + r() * w, cy = y + r() * h, R = 24 + r() * 60;
+    const pg = g.createRadialGradient(cx, cy, 0, cx, cy, R);
+    pg.addColorStop(0, withAlpha(E.grassAlt, 0.4)); pg.addColorStop(1, withAlpha(E.grassAlt, 0));
+    g.fillStyle = pg; g.beginPath(); g.ellipse(cx, cy, R, R * (0.6 + r() * 0.4), r() * 3, 0, Math.PI * 2); g.fill();
+  }
+  // the grain: short blades, two tones, leaning the way the stripe was mown
+  const nBl = Math.round((w * h) / 70);
+  for (const [col, a] of [[E.night ? '#000000' : '#3e4826', E.night ? 0.22 : 0.16], [E.night ? '#b8c08a' : '#f4f1c8', E.night ? 0.10 : 0.20]]) {
+    g.strokeStyle = withAlpha(col, a); g.lineWidth = 1; g.beginPath();
+    for (let i = 0; i < nBl / 2; i++) {
+      const bx = x + r() * w, by = y + r() * h, stripe = Math.floor((bx - x) / band) % 2 ? -1 : 1;
+      g.moveTo(bx, by); g.lineTo(bx + stripe * 0.8, by - 2.2 - r() * 1.6);
+    }
+    g.stroke();
+  }
+  // a scatter of daisies in daylight
+  if (!E.night) { g.fillStyle = 'rgba(255,255,250,0.65)'; for (let i = 0; i < (w * h) / 6000; i++) { g.beginPath(); g.arc(x + r() * w, y + r() * h, 1.1, 0, Math.PI * 2); g.fill(); } }
+  // trees, where nothing passes: near the edges, never on the motion or under the readouts
+  const want = o.trees ?? (avoid.length ? 6 : 0), keep = o.keep || [];
+  const placed = [];
+  for (let tries = 0; tries < 80 && placed.length < want; tries++) {
+    const edge = Math.floor(r() * 4), u = r(), R = 16 + r() * 14, inset = R * (0.2 + r() * 1.2);
+    const tx = edge === 0 ? x + inset : edge === 1 ? x + w - inset : x + u * w, ty = edge === 2 ? y + inset : edge === 3 ? y + h - inset : y + u * h;
+    if (clearOf(avoid, tx, ty) < R + 46) continue;
+    if (placed.some((p) => Math.hypot(p.x - tx, p.y - ty) < (p.R + R) * 1.3)) continue;
+    if (keep.some((b) => tx > b.x - R && tx < b.x + b.w + R && ty > b.y - R && ty < b.y + b.h + R)) continue;
+    placed.push({ x: tx, y: ty, R });
+  }
+  for (const p of placed) treeAbove(g, p.x, p.y, p.R, { seed: Math.round(p.x + p.y) });
+  // the light: warm from the upper left, falling away to the lower right
+  const lg = g.createRadialGradient(x + w * 0.12, y + h * 0.08, 0, x + w * 0.12, y + h * 0.08, Math.hypot(w, h) * 0.9);
+  lg.addColorStop(0, E.night ? 'rgba(255,214,190,0.10)' : 'rgba(255,240,205,0.28)'); lg.addColorStop(0.5, 'rgba(255,240,205,0)');
+  lg.addColorStop(1, E.night ? 'rgba(0,0,0,0.30)' : 'rgba(40,40,10,0.14)');
+  g.fillStyle = lg; g.fillRect(x, y, w, h);
+  g.restore();
+}
+
+/** The ground far below a bird, filling the box: a patchwork of fields with
+    hedges, a river and a lane, misted by height, and soft clouds drifting
+    (with `phase`, px) between, each with its shadow on the ground. */
+export function skyFromAbove(g, x, y, w, h, o = {}) {
+  const E = env(), r = rng(o.seed ?? 41), phase = o.phase ?? 0;
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  const tones = E.night ? ['#3d4630', '#454c33', '#4d4a35', '#3a4031', '#524a3a'] : ['#a4a86e', '#b4b07a', '#c6b98a', '#93985f', '#b8a77c'];
+  g.fillStyle = tones[0]; g.fillRect(x, y, w, h);
+  // the patchwork, on a slightly turned, jittered grid
+  const ang = -0.22, cs = Math.cos(ang), sn = Math.sin(ang), D = Math.hypot(w, h), cx = x + w / 2, cy = y + h / 2, cell = 120;
+  const P = (u, v) => ({ x: cx + u * cs - v * sn, y: cy + u * sn + v * cs });
+  const jit = {}; const J = (i, j) => (jit[i + ',' + j] ??= { u: (r() - 0.5) * cell * 0.35, v: (r() - 0.5) * cell * 0.35 });
+  const n = Math.ceil(D / cell / 2) + 1;
+  for (let i = -n; i < n; i++) for (let j = -n; j < n; j++) {
+    const c = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => { const q = J(a, b); return P(a * cell + q.u, b * cell + q.v); });
+    g.fillStyle = tones[Math.floor(r() * tones.length)]; poly(g, c); g.fill();
+    if (r() < 0.5) { g.strokeStyle = withAlpha('#000000', 0.08); g.lineWidth = 1; for (let s = 0.15; s < 1; s += 0.15) { g.beginPath(); g.moveTo(c[0].x + (c[1].x - c[0].x) * s, c[0].y + (c[1].y - c[0].y) * s); g.lineTo(c[3].x + (c[2].x - c[3].x) * s, c[3].y + (c[2].y - c[3].y) * s); g.stroke(); } }
+    g.strokeStyle = withAlpha(E.night ? '#262c1d' : '#6b7a45', 0.8); g.lineWidth = 3.2; poly(g, c); g.stroke();
+    g.fillStyle = withAlpha(E.night ? '#2c3521' : '#76854c', 0.9);
+    for (let q = 0; q < 4; q++) { const e = Math.floor(r() * 4), u = r(), A = c[e], B = c[(e + 1) % 4]; g.beginPath(); g.arc(A.x + (B.x - A.x) * u, A.y + (B.y - A.y) * u, 3 + r() * 4, 0, Math.PI * 2); g.fill(); }
+  }
+  // a river winding across, and a lane
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  const river = []; for (let u = -D / 2; u <= D / 2; u += 10) river.push(P(u, D * 0.18 + Math.sin(u / 90) * 40 + Math.sin(u / 37) * 10));
+  g.strokeStyle = E.night ? '#2c3a2a' : '#7d8a55'; g.lineWidth = 15; line(g, river); g.stroke();
+  g.strokeStyle = E.night ? '#2c434c' : '#7fa0ad'; g.lineWidth = 10; line(g, river); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,0.25)'; g.lineWidth = 1.5; line(g, river); g.stroke();
+  // height: everything below is misted
+  g.fillStyle = withAlpha(E.skyMid, E.night ? 0.42 : 0.38); g.fillRect(x, y, w, h);
+  // clouds between, and their shadows on the ground
+  const nC = Math.max(4, Math.round((w * h) / 70000));
+  for (let i = 0; i < nC; i++) {
+    const px = x + ((r() * (w + 300) + phase) % (w + 300)) - 150, py = y + r() * h, R = 40 + r() * 60;
+    const blob = (ox, oy, col0, col1) => {
+      for (let q = 0; q < 5; q++) {
+        const bx = ox + (q - 2) * R * 0.38, by = oy + Math.sin(q * 1.7 + i) * R * 0.18, br = R * (0.45 + 0.2 * Math.sin(q + i));
+        const cg = g.createRadialGradient(bx - br * 0.3, by - br * 0.3, 0, bx, by, br);
+        cg.addColorStop(0, col0); cg.addColorStop(1, col1);
+        g.fillStyle = cg; g.beginPath(); g.arc(bx, by, br, 0, Math.PI * 2); g.fill();
+      }
+    };
+    blob(px + R * 0.8, py + R * 0.6, 'rgba(0,0,0,0.16)', 'rgba(0,0,0,0)');
+    blob(px, py, E.night ? 'rgba(235,225,230,0.20)' : 'rgba(255,255,255,0.75)', 'rgba(255,255,255,0)');
+  }
+  g.restore();
+}
+
+/* ── fitting a plan (a stage seen from above) ──────────────────────────── */
+
+/**
+ * Fit a plan — x east, y north, one scale both ways — to the best of
+ * `areas` (each { left, right, top, bottom } px): the one that lets it be
+ * drawn largest. `box` is what must be seen, in the motion's units
+ * ({ xLo, xHi, yLo, yHi }). The place itself still fills the whole canvas;
+ * this only says where the plan's own pixels go.
+ * Returns { k, ox, oy, area, X, Y, ix, iy } — X, Y to px and ix, iy back.
+ */
+export function fitPlan(box, areas) {
+  const bw = Math.max(1e-9, box.xHi - box.xLo), bh = Math.max(1e-9, box.yHi - box.yLo);
+  let best = null;
+  for (const a of areas) {
+    const k = Math.min((a.right - a.left) / bw, (a.bottom - a.top) / bh);
+    if (!best || k > best.k * 1.08) best = { k, a };
+  }
+  const { k, a } = best;
+  const ox = a.left + (a.right - a.left - bw * k) / 2 - box.xLo * k, oy = a.top + (a.bottom - a.top - bh * k) / 2 + box.yHi * k;
+  return { k, ox, oy, area: a, X: (x) => ox + x * k, Y: (y) => oy - y * k, ix: (px) => (px - ox) / k, iy: (py) => (oy - py) / k };
+}
+
+/**
+ * The surveyor's grid laid over a plan, across the whole canvas: faint lines
+ * every `step`, the two axes through O with a casing so they hold over the
+ * scenery, a tick at each step, and the numbers, the axis names and O through
+ * the stage's labels L (so they keep off each other, off what has been
+ * reserved, and never sit at the canvas edge).
+ * @param o { step, fmt(x) → text, nameI, nameJ, ink colours from palette P }
+ */
+export function planGrid(g, L, F, w, h, P, o) {
+  const { step, fmt } = o;
+  const wx0 = F.ix(0), wx1 = F.ix(w), wy0 = F.iy(h), wy1 = F.iy(0), ax = F.X(0), ay = F.Y(0);
+  g.save(); g.strokeStyle = P.grid; g.lineWidth = 1;
+  g.beginPath();
+  for (let x = Math.ceil(wx0 / step) * step; x <= wx1; x += step) { g.moveTo(F.X(x), 0); g.lineTo(F.X(x), h); }
+  for (let y = Math.ceil(wy0 / step) * step; y <= wy1; y += step) { g.moveTo(0, F.Y(y)); g.lineTo(w, F.Y(y)); }
+  g.stroke();
+  // the axes: a soft casing, then the line, then a tick at every step
+  g.strokeStyle = withAlpha(cssVar('--surface', '#131210'), 0.45); g.lineWidth = 4.5;
+  g.beginPath(); g.moveTo(0, ay); g.lineTo(w, ay); g.moveTo(ax, 0); g.lineTo(ax, h); g.stroke();
+  g.strokeStyle = P.strong; g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(0, ay); g.lineTo(w, ay); g.moveTo(ax, 0); g.lineTo(ax, h); g.stroke();
+  g.lineWidth = 1.4; g.beginPath();
+  for (let x = Math.ceil(wx0 / step) * step; x <= wx1; x += step) { g.moveTo(F.X(x), ay - 4); g.lineTo(F.X(x), ay + 4); }
+  for (let y = Math.ceil(wy0 / step) * step; y <= wy1; y += step) { g.moveTo(ax - 4, F.Y(y)); g.lineTo(ax + 4, F.Y(y)); }
+  g.stroke();
+  g.restore();
+  for (let x = Math.ceil(wx0 / step) * step; x <= wx1; x += step) {
+    const px = F.X(x);
+    if (Math.abs(x) < step * 1e-6 || px < 18 || px > w - 18) continue;
+    L.add(fmt(x), px, ay + 15, { color: P.muted, align: 'center', pri: 1, size: 13, maxPush: 0 });
+  }
+  for (let y = Math.ceil(wy0 / step) * step; y <= wy1; y += step) {
+    const py = F.Y(y);
+    if (Math.abs(y) < step * 1e-6 || py < 16 || py > h - 16) continue;
+    L.add(fmt(y), ax - 8, py, { color: P.muted, align: 'right', pri: 1, size: 13, maxPush: 0 });
+  }
+  L.add('O', ax - 9, ay + 15, { color: P.ink, align: 'right', pri: 6, size: 15, weight: 700, maxPush: 40 });
+  if (o.nameI) L.add(o.nameI, Math.min(w - 10, F.area.right + 10), ay - 15, { color: P.strong, align: 'right', pri: 5, size: 14, maxPush: 40 });
+  if (o.nameJ) L.add(o.nameJ, ax + 10, Math.max(F.area.top, 16) + 2, { color: P.strong, align: 'left', pri: 5, size: 14, maxPush: 40, push: 'down' });
+}
+
+/** A compass for a plan, in the screen's own pixels (draw it after unview so
+    it stays put while the stage pans and zooms): a card with the four points,
+    north long and strong, and N above. Centred at (x, y), radius R. */
+export function compassRose(g, x, y, R, P) {
+  const E = env();
+  g.save();
+  g.shadowColor = E.shadow; g.shadowBlur = 10; g.shadowOffsetY = 3;
+  g.fillStyle = P.card; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fill();
+  g.shadowColor = 'transparent';
+  g.strokeStyle = withAlpha(cssVar('--ink', '#fff'), 0.25); g.lineWidth = 1; g.beginPath(); g.arc(x, y, R - 3, 0, Math.PI * 2); g.stroke();
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, l = i % 4 ? 2.5 : 4.5; g.beginPath(); g.moveTo(x + Math.cos(a) * (R - 3), y + Math.sin(a) * (R - 3)); g.lineTo(x + Math.cos(a) * (R - 3 - l), y + Math.sin(a) * (R - 3 - l)); g.stroke(); }
+  const point = (a, len, wd, col, colDark) => {
+    const ux = Math.sin(a), uy = -Math.cos(a), nx = -uy, ny = ux;
+    g.fillStyle = col; g.beginPath(); g.moveTo(x, y); g.lineTo(x + ux * len, y + uy * len); g.lineTo(x + nx * wd, y + ny * wd); g.closePath(); g.fill();
+    g.fillStyle = colDark; g.beginPath(); g.moveTo(x, y); g.lineTo(x + ux * len, y + uy * len); g.lineTo(x - nx * wd, y - ny * wd); g.closePath(); g.fill();
+  };
+  for (const a of [Math.PI / 2, Math.PI, Math.PI * 1.5]) point(a, R * 0.62, R * 0.17, P.faint, P.muted);
+  point(0, R * 0.8, R * 0.2, P.ink, P.strong);
+  g.fillStyle = P.ink; g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fill();
+  g.font = `700 15px ${cssVar('--font', 'system-ui, sans-serif')}`; g.textAlign = 'center'; g.textBaseline = 'bottom';
+  g.lineWidth = 4; g.strokeStyle = withAlpha(cssVar('--surface', '#131210'), 0.85); g.lineJoin = 'round';
+  g.strokeText('N', x, y - R - 3); g.fillStyle = P.ink; g.fillText('N', x, y - R - 3);
   g.restore();
 }
 

@@ -1,22 +1,27 @@
 // snapshots.js — the stage for a particle moving in a plane, known from two
-// moments: the plane seen from above at one scale both ways, i east and j
-// north, O, the grid and a north arrow.
+// moments: a field seen from above, filling the stage, with i east and j
+// north at one scale both ways, and the grid and the axes through O laid
+// over the grass.
 //
 // Its path — a curve, its acceleration not along its velocity — faintly in
-// full and strongly so far, in the displacement hue; the puck where it is now
-// with its velocity (vel hue) and its acceleration (acc hue). The second moment
-// the paper gives is marked with its time; where the acceleration changes the
-// path turns a new way and is marked so; each moment asked about is ringed.
+// full and strongly so far, in the displacement hue; the ball where it is now
+// with its velocity (vel hue) and its acceleration (acc hue). The second
+// moment the paper gives pulses and is pegged with its time; where the
+// acceleration changes there, the path turns a new way and the peg says so;
+// each moment asked about pulses and is pegged, with the direction it is
+// moving in drawn through it. The compass belongs to the screen.
 //
 // Everything drawn is read from js/core/snapshots.js (rule 4).
 
-import { fieldFromAbove } from './scenery.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, fmt, withAlpha } from './util.js';
-import { puck } from './collide.js';
+import { fieldFromAbove, fitPlan, planGrid, compassRose, softShadow } from './scenery.js';
+import { pulse, ageOf, phaseOf } from './effects.js';
+import { ballAt } from './figures.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, unview, cssVar } from './util.js';
+import { s3, keepOff, placer } from './twoplane.js';
+import { COMPASS } from '../core/plane.js';
 import { T, num } from '../notation.js';
 
-const tr = (x, p = 3) => num(x, p, { trim: true });
-const HUD = 250;
+const HUD = 250, HUD_H = 290;
 
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
@@ -24,70 +29,113 @@ export function render(canvas, cam, o) {
   const { ctx: g, w, h } = fitCanvas(canvas);
   const P = palette();
   const L = labels();
+  const phone = w < 520;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
+  const surface = cssVar('--surface', '#131210');
 
-  // ── the frame: the path and O, one scale both ways
+  // ── the frame: the path and O, one scale both ways, beside the readouts or
+  //    under them, whichever draws it larger
   const n = 160, pts = [];
-  for (let i = 0; i <= n; i++) pts.push(f.pos((i / n) * f.tMax));
+  for (let i = 0; i <= n; i++) { const tt = (i / n) * f.tMax; pts.push({ t: tt, ...f.pos(tt) }); }
   const all = [...pts, { x: 0, y: 0 }];
-  let x0 = Math.min(...all.map((p) => p.x)), x1 = Math.max(...all.map((p) => p.x)), y0 = Math.min(...all.map((p) => p.y)), y1 = Math.max(...all.map((p) => p.y));
-  const span = Math.max(x1 - x0, y1 - y0, 1);
-  x0 -= span * 0.12; x1 += span * 0.12; y0 -= span * 0.12; y1 += span * 0.12;
-  const left = w < 520 ? 16 : HUD + 30, right = w - 60, top = 50, bottom = h - 40;
-  const k = Math.min((right - left) / (x1 - x0), (bottom - top) / (y1 - y0));
-  const ox = left + ((right - left) - (x1 - x0) * k) / 2, oy = top + ((bottom - top) - (y1 - y0) * k) / 2;
-  const X = (x) => ox + (x - x0) * k, Y = (y) => oy + (y1 - y) * k;
+  const box = { xLo: Math.min(...all.map((p) => p.x)), xHi: Math.max(...all.map((p) => p.x)), yLo: Math.min(...all.map((p) => p.y)), yHi: Math.max(...all.map((p) => p.y)) };
+  const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
+  for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(sp * 0.06, sp * 0.3 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
+  const F = fitPlan(box, phone
+    ? [{ left: 30, right: w - 26, top: 116, bottom: h - 40 }]
+    : [{ left: HUD + 40, right: w - 80, top: 60, bottom: h - 44 }, { left: 50, right: w - 80, top: HUD_H + 10, bottom: h - 44 }]);
+  const { X, Y } = F;
+  const px = (p) => ({ x: X(p.x), y: Y(p.y) });
+  const pathPx = pts.map(px);
 
-  // ── the plane, its grid, the axes through O, north
-  fieldFromAbove(g, X(x0), Y(y1), (x1 - x0) * k, (y1 - y0) * k);
-  const step = niceStep(Math.max(x1 - x0, y1 - y0), 8), dp = step < 1 ? (step < 0.1 ? 2 : 1) : 0;
-  for (let x = Math.ceil(x0 / step) * step; x <= x1; x += step) {
-    stroke(g, [{ x: X(x), y: Y(y0) }, { x: X(x), y: Y(y1) }], { color: P.grid, width: 1 });
-    if (Math.abs(x) > 1e-9) L.add(fmt(x, dp), X(x), Y(0) + 14, { color: P.faint, align: 'center', pri: 1, size: 13, bg: false, maxPush: 0 });
-  }
-  for (let y = Math.ceil(y0 / step) * step; y <= y1; y += step) {
-    stroke(g, [{ x: X(x0), y: Y(y) }, { x: X(x1), y: Y(y) }], { color: P.grid, width: 1 });
-    if (Math.abs(y) > 1e-9) L.add(fmt(y, dp), X(0) - 8, Y(y), { color: P.faint, align: 'right', pri: 1, size: 13, bg: false, maxPush: 0 });
-  }
-  stroke(g, [{ x: X(x0), y: Y(0) }, { x: X(x1), y: Y(0) }], { color: P.axis, width: 1.6 });
-  stroke(g, [{ x: X(0), y: Y(y0) }, { x: X(0), y: Y(y1) }], { color: P.axis, width: 1.6 });
-  L.add('O', X(0) - 10, Y(0) + 14, { color: P.ink, align: 'right', pri: 6, size: 15, weight: 700, bg: false });
-  const cx = w - 30, cy = h - 70;
-  arrow(g, cx, cy + 20, cx, cy - 20, { color: P.strong, width: 2, head: 9 });
-  L.add('N', cx, cy - 32, { color: P.strong, align: 'center', pri: 6, size: 15, weight: 700, bg: false });
+  // ── the field, filling the stage, its trees kept off the motion
+  const hudBoxes = phone ? [{ x: 0, y: 0, w: w * 0.6, h: 96 }] : [{ x: 0, y: 0, w: HUD, h: HUD_H }, { x: w - 150, y: 0, w: 150, h: 60 }];
+  fieldFromAbove(g, 0, 0, w, h, { avoid: [...pathPx, { x: X(0), y: Y(0) }], keep: hudBoxes, seed: 53 });
+  // the words: kept off the readouts, the compass, every line drawn and each other
+  const Q = placer(g, w, h);
+  const off = (pts, pad) => { keepOff(L, pts, pad); Q.line(pts); };
+  const hold = (b) => { L.reserve(b); Q.box(b); };
+  // and off the axes, where they can be
+  Q.line([{ x: 0, y: F.Y(0) }, { x: w, y: F.Y(0) }], 10); Q.line([{ x: F.X(0), y: 0 }, { x: F.X(0), y: h }], 10);
+  for (const b of hudBoxes) hold(b);
+  const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 22), cY = h - cR - (phone ? 14 : 24);
+  hold({ x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 });
+  Q.point(X(0), Y(0));
+
+  // ── the grid and the axes through O
+  const step = niceStep(sp, phone ? 5 : 8), dp = step < 1 ? (step < 0.1 ? 2 : 1) : 0;
+  planGrid(g, L, F, w, h, P, { step, fmt: (x) => num(x, dp), nameI: T`vec(i) [m]`, nameJ: T`vec(j) [m]` });
 
   // ── the path, faint in full and strong so far
-  stroke(g, pts.map((p) => ({ x: X(p.x), y: Y(p.y) })), { color: P.disp, width: 1.6, alpha: 0.3 });
-  const so = []; for (let i = 0; i <= 80; i++) so.push(f.pos((i / 80) * t));
-  stroke(g, so.map((p) => ({ x: X(p.x), y: Y(p.y) })), { color: P.disp, width: 2.8 });
+  stroke(g, pathPx, { color: P.disp, width: 1.8, alpha: 0.4 });
+  const so = []; for (let i = 0; i <= 80; i++) so.push(px(f.pos((i / 80) * t)));
+  stroke(g, so, { color: surface, width: 5.5, alpha: 0.45 });
+  stroke(g, so, { color: P.disp, width: 2.8 });
+  off(pathPx);
 
-  // ── the second moment (and where the acceleration changes), and the asked moments
+  // the words for a moment, by its peg, clear of the path
+  const tell = (q, text, pri) => {
+    hold({ x: q.x - 7, y: q.y - 7, w: 14, h: 14 });
+    Q.add(text, q.x, q.y, { color: P.mark, pri, size: 14, weight: 700 });
+  };
+
+  // ── the second moment (and where the acceleration changes): a pulse and a peg
   if (f.T != null && t >= f.T - 1e-9) {
-    const q = f.pos(f.T);
-    dot(g, X(q.x), Y(q.y), 6, { fill: P.card, stroke: P.strong, width: 2.2 });
-    L.add(`${T`t = ${tr(f.T)} [s]`}${f.switched ? ', the acceleration changes' : ''}`, X(q.x) + 12, Y(q.y) + 16, { color: P.strong, align: 'left', pri: 7, size: 13, weight: 700 });
+    const q = px(f.pos(f.T)), { age, life } = ageOf(t, f.T, f.tMax);
+    pulse(g, q.x, q.y, age, life, P.mark, { radius: 44 });
+    dot(g, q.x, q.y, 6, { fill: P.mark, stroke: surface, width: 2 });
+    tell(q, `${T`t = ${s3(f.T)} [s]`}${f.switched ? ', new acceleration' : ''}`, 7);
   }
+  // ── each asked moment: a pulse, a peg, and the direction it is moving in
   for (const m of f.marks) {
     if (t < m.t - 1e-9) continue;
-    const q = f.pos(m.t);
-    dot(g, X(q.x), Y(q.y), 9, { stroke: P.mark, width: 2.4 });
-    L.add(m.what === 'asked' ? T`t = ${tr(m.t)} [s]` : T`"moving ${m.what}," t = ${tr(m.t)} [s]`, X(q.x) + 14, Y(q.y) - 16, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 });
+    const q = px(f.pos(m.t)), { age, life } = ageOf(t, m.t, f.tMax);
+    const u = phaseOf(age, life * 0.6), grow = u == null ? 1 : 1 - (1 - u) ** 3;
+    const key = Object.keys(COMPASS).find((k) => COMPASS[k].word === m.what), D = key && COMPASS[key];
+    if (D) {
+      const dl = Math.hypot(D.x, D.y), ux = D.x / dl, uy = -D.y / dl, Lh = 46 * grow;
+      const s0 = { x: q.x - ux * Lh * 0.6, y: q.y - uy * Lh * 0.6 }, s1 = { x: q.x + ux * Lh, y: q.y + uy * Lh };
+      stroke(g, [s0, s1], { color: surface, width: 5, alpha: 0.4 });
+      stroke(g, [s0, s1], { color: P.mark, width: 2 });
+      if (grow > 0.5) stroke(g, [{ x: s1.x - ux * 8 - uy * 6, y: s1.y - uy * 8 + ux * 6 }, s1, { x: s1.x - ux * 8 + uy * 6, y: s1.y - uy * 8 - ux * 6 }], { color: P.mark, width: 2 });
+      off([s0, q, s1], 8);
+    }
+    pulse(g, q.x, q.y, age, life, P.mark, { radius: 44 });
+    dot(g, q.x, q.y, 6, { fill: P.mark, stroke: surface, width: 2 });
+    const word = phone && key ? key : m.what;
+    tell(q, m.what === 'asked' ? T`t = ${s3(m.t)} [s]` : T`"moving ${word}," t = ${s3(m.t)} [s]`, 8);
   }
 
-  // ── the puck, its velocity and its acceleration
-  const q = f.pos(t), v = f.vel(t), a = f.acc(t);
-  const vMax = Math.max(...[0, f.tMax].map((tt) => Math.hypot(f.vel(tt).x, f.vel(tt).y)), 1e-6);
+  // ── the ball, its velocity and its acceleration
+  const r = f.pos(t), v = f.vel(t), a = f.acc(t), qx = X(r.x), qy = Y(r.y);
+  softShadow(g, qx + 3, qy + 5, 11, 5);
+  const vMax = Math.max(...pts.map((p) => Math.hypot(f.vel(p.t).x, f.vel(p.t).y)), 1e-6);
+  // one scale for the whole run, so an arrow's length says its speed — and
+  // chosen so that no arrow along the path leaves the canvas
+  const room = (c, dv, lo, hi) => (dv > 0 ? (hi - c) / dv : dv < 0 ? (lo - c) / dv : Infinity);
+  let vl = clamp(Math.min(w, h) * 0.2, 64, 120) / vMax;
+  for (const p of pts) { const vq = f.vel(p.t); vl = Math.min(vl, room(X(p.x), vq.x, 14, w - 14) * 0.9, room(Y(p.y), -vq.y, 14, h - 14) * 0.9); }
+  vl = Math.max(vl, 30 / vMax);
   if (show.velocity !== false && Math.hypot(v.x, v.y) > 1e-9) {
-    const ex = X(q.x) + (v.x / vMax) * 70, ey = Y(q.y) - (v.y / vMax) * 70;
-    arrow(g, X(q.x), Y(q.y), ex, ey, { color: P.velVec, width: 2.6, head: 10 });
-    L.add(T`${tr(Math.hypot(v.x, v.y), 2)} [m s^-1]`, ex + 8, ey, { color: P.vel, align: 'left', pri: 7, size: 13, weight: 700 });
+    // one scale throughout, but never so short it hides under the ball
+    const k0 = Math.max(vl, 24 / Math.hypot(v.x, v.y)), ex = qx + v.x * k0, ey = qy - v.y * k0;
+    arrow(g, qx, qy, ex, ey, { color: P.velVec, width: 2.8, head: 11 });
+    off([{ x: qx, y: qy }, { x: ex, y: ey }], 8);
+    Q.add(T`${s3(Math.hypot(v.x, v.y))} [m s^-1]`, ex, ey, { color: P.vel, pri: 7, size: 14, weight: 700 });
   }
   if (show.acceleration && Math.hypot(a.x, a.y) > 1e-9) {
     const am = Math.hypot(a.x, a.y);
-    arrow(g, X(q.x), Y(q.y), X(q.x) + (a.x / am) * 40, Y(q.y) - (a.y / am) * 40, { color: P.acc, width: 2.2, head: 9 });
+    arrow(g, qx, qy, qx + (a.x / am) * 42, qy - (a.y / am) * 42, { color: P.acc, width: 2.2, head: 9 });
+    Q.line([{ x: qx, y: qy }, { x: qx + (a.x / am) * 42, y: qy - (a.y / am) * 42 }]);
   }
-  puck(g, X(q.x), Y(q.y), 8, P.disp, P);
-  L.add('P', X(q.x) - 12, Y(q.y) - 14, { color: P.ink, align: 'right', pri: 9, size: 15, weight: 700 });
+  ballAt(g, qx, qy, 9);
+  hold({ x: qx - 12, y: qy - 12, w: 24, h: 24 });
+  Q.add('P', qx, qy, { color: P.ink, pri: 9, size: 15, weight: 700 });
+  Q.flush(L);
   L.draw(g, w, h);
+
+  // ── the compass: the screen's, not the field's
+  unview(g);
+  compassRose(g, cX, cY, cR, P);
   return null;
 }
