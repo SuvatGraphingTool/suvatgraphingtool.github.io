@@ -345,6 +345,6 @@ export const LIBRARY = [
         ['Gravity alone after the edge', 'no air resistance and no spin; across, its speed between the strips never changes.'],
         ['The strips do not slow it', 'breaking the foil takes nothing from its speed, and it breaks the first exactly at the edge.'],
       ],
-      caveat: 'What the engine did compute is above: the speed from the strips, the time to the second, how far it has dropped there, and how far from the centre it breaks it.',
+      caveat: 'What the engine did compute is above: the speed from the strips, the time to the second, how far it has dropped there, and, when the paper sets the second strip lower, how far from its centre it breaks it.',
     } },
 ];

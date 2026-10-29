@@ -48,6 +48,9 @@ export function solveBench(k = {}) {
     if (have(k[key]) && !(k[key] > 0)) return fail(`${what} is a positive number.`);
   }
   if (have(k.drop) && !(k.drop >= 0)) return fail('Give how much lower the second strip is as a positive number, or 0 for level.');
+  if (have(k.R) && (have(k.u) || have(k.tGap))) return fail('Give how far out it lands, or the speed (or the strips\u2019 time), not both: with the height, one fixes the other.');
+  if (have(k.R) && !have(k.H)) return fail('How far out it lands fixes the speed only with the height of the edge: give that too.');
+  if (have(k.H) && have(k.drop) && k.drop > k.H + 1e-9) return fail('The second strip would be below the floor: it can be no lower than the height of the edge.');
   if (have(k.drop) && !have(k.d)) return fail('Still needed: how far apart the strips are, across — the second strip is that far out.');
 
   // ── the speed it leaves the edge at: given, from the strips, or from where it lands
@@ -68,7 +71,6 @@ export function solveBench(k = {}) {
   } else if (have(k.tGap)) {
     return fail('Give the speed or the time between the strips, not both: one fixes the other.');
   }
-  if (have(k.R) && have(k.u) && have(k.H)) return fail('Give the speed or how far out it lands, not both: with the height, one fixes the other.');
   u = snap(u);
 
   const f = flight({ u, theta: 0, h: 0, g });
@@ -93,10 +95,11 @@ export function solveBench(k = {}) {
     if (have(k.drop)) {
       miss = fall - k.drop;
       atCentre = Math.abs(miss) < AT_CENTRE;
-      stripRows.push({ f: M`"drop" - "strip lower"`, s: M`${d(snap(fall))} - ${d(k.drop)}`, r: M`${d(snap(miss))} [m]` });
+      stripRows.push({ f: M`"drop" - "strip lower"`, s: M`${d(snap(fall))} - ${d(k.drop)}`, r: M`${atCentre ? 0 : d(snap(miss))} [m]` });
+      const lower = k.drop === 0 ? 'level with the first' : M`${d(k.drop)} [m]` + ' lower';
       notes.push(atCentre
-        ? `It has dropped ${M`${d(snap(fall))} [m]`} at the second strip, and the strip's centre is ${M`${d(k.drop)} [m]`} lower: it breaks the strip at its centre.`
-        : `It has dropped ${M`${d(snap(fall))} [m]`} at the second strip, but the strip's centre is only ${M`${d(k.drop)} [m]`} lower: it breaks the strip ${M`${d(snap(Math.abs(miss)))} [m]`} ${miss > 0 ? 'below' : 'above'} its centre, not at it.`);
+        ? `It has dropped ${M`${d(snap(fall))} [m]`} at the second strip, and the strip's centre is ${lower}: it breaks the strip at its centre.`
+        : `It has dropped ${M`${d(snap(fall))} [m]`} at the second strip, ${miss > 0 ? 'more than' : 'less than'} the strip's centre is set (${lower}): it reaches the strip ${M`${d(snap(Math.abs(miss)))} [m]`} ${miss > 0 ? 'below' : 'above'} its centre, not at it.`);
     } else {
       notes.push(`At the second strip it has dropped ${M`${d(snap(fall))} [m]`}: to be broken at its centre, that strip's centre is that much lower than the first's.`);
     }

@@ -917,6 +917,11 @@ group('Off the bench (9PH0/01 J18 Q18b)', () => {
   ok(!KITS.bench.solve({ g: 9.81, u: 2, tGap: 0.1, d: 0.2 }).ok, 'the speed and the time together are refused');
   ok(!KITS.bench.solve({ g: 9.81, u: 1, H: 0.1, d: 2 }).ok, 'a strip past where it lands is refused');
   ok(!KITS.bench.solve({ g: 9.81, d: 0.5 }).ok, 'no speed and no time: it says what is needed');
+  ok(!KITS.bench.solve({ g: 9.81, d: 0.5, tGap: 0.14, H: 0.8, R: 1.5 }).ok && !KITS.bench.solve({ g: 9.81, u: 2, R: 1 }).ok, 'a landing distance that would be ignored is refused');
+  ok(!KITS.bench.solve({ g: 9.81, d: 0.5, tGap: 0.14, H: 0.3, drop: 0.5 }).ok, 'a strip below the floor is refused');
+  const hi = KITS.bench.solve({ g: 9.81, d: 0.5, tGap: 0.14, drop: 0.2 });
+  ok(!/only/.test(hi.notes.join(' ')) && /above its centre/.test(hi.notes.join(' ')), 'a strip set lower than the drop: above its centre, no "only"');
+  ok(/>0</.test(c.stripRows[c.stripRows.length - 1].r) && !/10/.test(c.stripRows[c.stripRows.length - 1].r.replace(/<[^>]+>/g, '')), 'at its centre the residual is 0, not noise');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

@@ -85,7 +85,7 @@ export const bench = {
 
   ending(solved) {
     const title = solved.atCentre === true ? 'Broken at its centre.'
-      : solved.atCentre === false ? `${tr(Math.abs(solved.miss))} m ${solved.miss > 0 ? 'below' : 'above'} the centre.`
+      : solved.atCentre === false ? `${tr(Math.abs(solved.miss))} m ${solved.miss > 0 ? 'below' : 'above'} the ${solved.f.drop === 0 ? 'first strip\u2019s level' : 'centre'}.`
         : solved.fall != null ? `Dropped ${tr(solved.fall)} m at the second strip.`
           : solved.R != null ? `Lands ${tr(solved.R)} m out.` : `Leaves at ${tr(solved.u)} m s⁻¹.`;
     const cell = (x) => (x == null ? '<b>—</b>' : `<b>${tr(x)}</b>`);
