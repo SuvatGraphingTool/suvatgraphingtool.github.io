@@ -572,4 +572,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: each gradient, each area, the running displacement, and when it is back where it started.',
     } },
+  { id: 'past-two-marks', group: 'library', kit: 'marks',
+    name: 'Falling past two marks',
+    sub: 'a ball falls past the top and bottom of a window — how fast, how long, and from how high was it dropped?',
+    note: 'A ball falling freely past two marks one above the other: the top and bottom of a window, or two points on a cliff. Two of the speed at the upper mark, the speed at the lower, the time between and the distance between fix the other two; then how far above the upper mark it was dropped from rest, and when it reaches the ground. Or in letters: the speed at the lower mark a multiple of u, the time and distance in u and g.',
+    params: { mode: 'letters', k: 3 },
+    place: 'Side on: a building wall with a window, the ball falling past it',
+    sources: [
+      { board: 'AQA', paper: '7357/2', session: 'Jun 2023', q: '13' },
+    ],
+    tags: ['falls freely', 'free fall', 'window', 'passes two points', 'M and N', 'in terms of u and g', 'letters', 'dropped from rest',
+           'how high', 'vertical', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Gravity only', 'no air resistance: the ball speeds up at g the whole way.'],
+        ['g is constant', 'the same g at M as at N, however far apart they are.'],
+        ['A particle', 'the ball has no size: it passes a mark when its point does.'],
+      ],
+      caveat: 'What the engine did compute is above: M to N by the five equations, how far above M it was let go, and the ground when its height is given.',
+    } },
 ];

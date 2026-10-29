@@ -1110,6 +1110,20 @@ group('Read the velocity–time graph (AQA 7357/2 J18 Q12)', () => {
   ok(rest.ok && rest.times.length === 0 && /at rest at the start/.test(rest.notes.join(' ')) && !/^Back/.test(K.ending(rest).title), 'at rest at the start is not a return to it');
 });
 
+group('Falling past two marks (AQA 7357/2 J23 Q13)', () => {
+  const K = KITS.marks;
+  const st = (x) => x.replace(/<[^>]+>/g, '').replace(/\s/g, '');
+  const r = K.solve(K.read({ mode: 'letters', k: 3 }));
+  ok(r.ok && r.tL === 2 && r.hL === 4, 'M to N takes 2u/g and covers 4u²/g (MS)', r.reason);
+  ok(/2u⁄g|2u\/g/.test(st(K.ending(r).title)) || /\(2u\)/.test(st(K.ending(r).title)), 'the headline in letters');
+  const w = K.solve({ g: 9.8, h: 2, t: 0.2 });
+  ok(w.ok && Math.abs(w.V.u - 9.02) < 1e-9 && Math.abs(w.above - 9.02 * 9.02 / 19.6) < 1e-9, 'a 2 m window in 0.2 s: 9.02 m s⁻¹ at its top, let go 4.15 m above');
+  ok(!K.solve({ g: 9.8, vM: 5, vN: 4 }).ok, 'slower at N than M is refused');
+  ok(!K.solve({ g: 9.8, vM: 5, vN: 8, t: 1 }).ok, 'three numbers given is refused');
+  ok(!K.solve({ g: 9.8, vM: 5, vN: 8, H: 1 }).ok, 'N underground is refused');
+  ok(!K.solve({ mode: 'letters', k: 1 }).ok, 'a multiple not above 1 is refused');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

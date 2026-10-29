@@ -421,6 +421,15 @@ displacement is a given value — back where it started by default — from
 s = ut + ½at² within the piece (`quadRoots`). Also the displacement and
 velocity at a time, and the distance travelled. Used by: `vt-graph`.
 
+### Falling past two marks — `js/core/marks.js`
+
+`solveMarks({ mode, g, vM, vN, t, h, H, k, look })` — down positive, a = g:
+in numbers the twelve's `solve` works M to N from two of the speed at M, the
+speed at N, the time and the distance; then how far above M it was dropped
+from rest (v² = 2gs), and the ground when M's height is given. In letters
+(the speed at N k times u at M) the same equations with u = g = 1, written by
+`inLetters`: t = (k − 1)u⁄g, MN = (k² − 1)u²⁄(2g). Used by: `past-two-marks`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -743,3 +752,12 @@ Above, the (t, v) graph as the paper draws it (dashed, the steepest heavier with
 its a; the area shaded to now, stronger above the axis than below; each return
 to the start ringed); below, the line at one scale with O and the object and
 its velocity. Kit `vtgraph`. Used by: `vt-graph`.
+
+### Falling past a window — `js/render/marks.js`
+
+Down the page at one scale: `buildingWall(g, x0, edge, top, Y, wy0, wy1, P)`
+(exported) — a wall with a window from M to N — or a cliff face; the release
+point, M and N as level lines with the distances between (in u²⁄g in letters);
+the ball falling beside the wall, its velocity solid, each mark ringed with its
+speed as it passes; the ground when given. Kit `marks`. Used by:
+`past-two-marks`.

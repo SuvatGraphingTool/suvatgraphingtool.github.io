@@ -781,3 +781,21 @@ line below with the object moving on it.
 
 **What the student varies.** The start velocity and up to eight corners; a
 displacement to find the times of (0 by default); a time to ask about.
+
+### `past-two-marks` — Falling past two marks
+
+**Papers.** AQA 7357/2 Jun 2023 Q13 (a ball falls freely past M at u and N at
+3u: M to N takes 2u⁄g, and MN = 4u²⁄g, so M is more than 4u²⁄g above the
+ground).
+
+**Why it is built.** The twelve drop from a height to the ground; nothing
+starts the clock part-way down, works between two marks the ball passes, or
+puts those in letters. In numbers it is the window problem: the time to pass
+a window of known height gives the speed at its top, and how far above it the
+ball was let go.
+
+**The stage.** A building wall with a window from M to N (or a cliff with two
+marks), the ball dropped from rest above, each mark ringed as it passes.
+
+**What the student varies.** Numbers or letters; two of the speeds at M and
+N, the time and the distance; M's height above the ground; window or cliff.
