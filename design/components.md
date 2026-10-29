@@ -308,6 +308,14 @@ from north. `twoPlaneWorking` writes each.
 
 Used by: `two-in-a-plane`.
 
+### One question, three models — `js/core/models.js`
+
+`solveModels({ u, D, a, limit, react })` — model 1 brakes to the sign, model 2
+to the limit and holds, model 3 after the reaction time; each is the journey
+in stages. When the numbers will not let a model do what it says, it does what
+it can and says so: it stops short of the sign, reaches it still above the
+limit, or passes it during the reaction time. Used by: `three-models`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas

@@ -884,7 +884,13 @@ group('Braking for a sign: three models', () => {
   const r = KITS.models.solve({ u: 25, D: 48, a: 6, limit: 13, react: 0.2 });
   ok(r.ok && near(r.models[0].vSign, 7) && near(r.models[1].tSign, 2.769, 1e-3) && near(r.models[2].tSign, 2.585, 1e-3), 'IAL Oct21 Q3: 7 m s⁻¹; 2.77 s; 2.58 s');
   ok(!KITS.models.solve({ u: 25, D: 48, a: 6, limit: 30, react: 0.2 }).ok, 'a limit above the speed: refused');
-  ok(!KITS.models.solve({ u: 25, D: 10, a: 6, limit: 13, react: 0.2 }).ok, 'a sign too close to brake to the limit: refused');
+  const near10 = KITS.models.solve({ u: 25, D: 30, a: 6, limit: 13, react: 0.2 });
+  ok(near10.ok && /still above the limit/.test(strip(near10.notes.join(' '))), 'a sign too close to brake to the limit: said in its own words, the other lanes still run');
+  const short = KITS.models.solve({ u: 25, D: 60, a: 6, limit: 13, react: 0.2 });
+  ok(short.ok && /short of the sign/.test(strip(short.notes[0])) && short.models[1].tSign > 0, 'model 1 stopping short: it stops, said so; models 2 and 3 still answer');
+  const late = KITS.models.solve({ u: 25, D: 48, a: 6, limit: 13, react: 2.5 });
+  ok(late.ok && /during the reaction time/.test(strip(late.notes[2])), 'a reaction so long it passes the sign first: said so');
+  ok(KITS.models.solve({ u: 25, D: 48, a: 6, limit: 13, react: 0 }).ok, 'no reaction time: model 3 is model 2');
   const g = KITS.models.graphs(r.f, 0, new Proxy({}, { get: () => '#000' }));
   ok(g.every((x) => x.series.length === 3 && x.series.every((s) => s.dash)), 'three models on each graph, dashed along the road');
 });

@@ -6,7 +6,8 @@
 // js/render/models.js. This file says which boxes to show, reads them, and
 // lays out what the engine answered (rule 4).
 
-import { solveJourney, journeyWorking } from '../core/journey.js';
+import { journeyWorking } from '../core/journey.js';
+import { solveModels } from '../core/models.js';
 import * as stage from '../render/models.js';
 import { M, num } from '../notation.js';
 
@@ -17,29 +18,8 @@ const FIELDS = [
   { key: 'D', col: 'car', label: 'Distance to the sign (m)', placeholder: '—', hint: 'From where it is at t = 0.' },
   { key: 'a', col: 'car', label: `Deceleration ${M`a`} (m s⁻²)`, placeholder: '—', hint: 'Its size, the same in every model.' },
   { key: 'limit', col: 'sign', label: 'Speed limit on the sign (m s⁻¹)', placeholder: '—', hint: 'Models 2 and 3 slow to this, then hold it.' },
-  { key: 'react', col: 'sign', label: 'Reaction time (s)', placeholder: '—', hint: 'Model 3 holds full speed this long first.' },
+  { key: 'react', col: 'sign', label: 'Reaction time (s)', placeholder: '—', hint: 'Model 3 holds full speed this long first. 0 or blank: none.' },
 ];
-
-/** The three journeys, each from the journey engine. */
-function three(k) {
-  const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
-  for (const [key, name] of [['u', 'speed'], ['D', 'distance to the sign'], ['a', 'deceleration']]) if (!(k[key] > 0)) return fail(`Give the ${name} as a positive number.`);
-  if (!(k.limit > 0) || !(k.limit < k.u)) return fail('The speed limit is below the speed it starts at, and above zero.');
-  if (!(k.react > 0)) return fail('Give the reaction time as a positive number: model 3 needs it.');
-  const specs = [
-    { say: 'slows all the way to the sign', spec: { u: k.u, D: k.D, stages: [{ kind: 'down', a: k.a }] } },
-    { say: 'slows to the limit, then holds it', spec: { u: k.u, D: k.D, stages: [{ kind: 'down', a: k.a, v: k.limit }, { kind: 'hold' }] } },
-    { say: 'reacts, slows to the limit, holds it', spec: { u: k.u, D: k.D, stages: [{ kind: 'hold', t: k.react }, { kind: 'down', a: k.a, v: k.limit }, { kind: 'hold' }] } },
-  ];
-  const out = [];
-  for (const [i, m] of specs.entries()) {
-    const r = solveJourney(m.spec);
-    if (!r.ok) return fail(`Model ${i + 1} cannot happen with those numbers: ${String(r.reason).replace(/\bjourney\b/g, 'drive to the sign')}`);
-    const tSign = r.f.tMax;
-    out.push({ ...m, r, tSign, vSign: r.f.vel(tSign).x, pos: (t) => r.f.pos(Math.min(t, tSign)).x, vel: (t) => (t >= tSign ? r.f.vel(tSign).x : r.f.vel(t).x), acc: (t) => (t >= tSign ? 0 : r.f.accel(t)) });
-  }
-  return { ok: true, models: out };
-}
 
 export const models = {
   id: 'models',
@@ -56,7 +36,7 @@ export const models = {
 
   read(vals) { return { u: vals.u, D: vals.D, a: vals.a, limit: vals.limit, react: vals.react }; },
   solve(k) {
-    const r = three(k);
+    const r = solveModels(k);
     if (!r.ok) return r;
     const M3 = r.models;
     const tMax = Math.max(...M3.map((m) => m.tSign)) * 1.08;
@@ -64,9 +44,7 @@ export const models = {
       pos: (t) => M3[0].pos(t), vel: (t) => M3[0].vel(t), params: { u: k.u, theta: 0, h: 0, g: 0 },
       bounces: 0, segments: [], horiz: null, kineticEnergy: () => 0, momentum: () => 0,
       path(n = 200, tEnd = tMax) { const o = []; for (let i = 0; i <= n; i++) { const t = (i / n) * tEnd; o.push({ t, x: M3[0].pos(t), y: 0 }); } return o; } };
-    const notes = M3.map((m, i) => `Model ${i + 1}, which ${m.say}, reaches the sign at ${M`t = ${tr(m.tSign)} [s]`}, at ${M`${tr(m.vSign)} [m s^-1]`}.`);
-    return { ok: true, mode: 'models', axis: 'along', f, models: M3, notes,
-      derived: M3.map((m, i) => `model ${i + 1}: ${M`t = ${tr(m.tSign)} [s]`}, ${M`${tr(m.vSign)} [m s^-1]`}`),
+    return { ok: true, mode: 'models', axis: 'along', f, models: M3, notes: r.notes, derived: r.derived,
       params: f.params, convention: 'Along the road towards the sign is positive.' };
   },
   working: (solved) => solved.models.flatMap((m, i) => journeyWorking(m.r).map((s) => ({ ...s, title: `Model ${i + 1}: ${String(s.title).replace(/\bjourney\b/g, 'drive to the sign')}` }))),
@@ -106,7 +84,7 @@ export const models = {
       <span role="cell">${cell(m.tSign)}</span><span role="cell">${cell(m.vSign)}</span></div>`).join('');
     return {
       eyebrow: `Three models, one sign`,
-      title: `At the sign: ${M3.map((m, i) => `${tr(m.tSign)} s`).join(', ')}.`,
+      title: M3.map((m, i) => (m.xEnd < solved.f.D - 1e-9 ? `${i + 1}: stops short` : `${i + 1}: ${tr(m.tSign)} s`)).join(' · ') + '.',
       body: `${solved.notes.map((x) => `<p>${x}</p>`).join('')}<div class="ph-tab" role="table" aria-label="Each model at the sign">
         <div class="ph-head" role="row"><span role="columnheader">Model</span><span role="columnheader">${M`t`}</span><span role="columnheader">${M`v`}</span></div>${rows}
         <p class="ph-units">${M`t`} in ${M`[s]`} when it reaches the sign; ${M`v`} in ${M`[m s^-1]`} as it passes it.</p></div>`,
