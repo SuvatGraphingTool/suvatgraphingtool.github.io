@@ -80,7 +80,7 @@ export const bounce = {
      The velocity jumps at each impact — drawn as the papers sketch it, the
      line stopping and starting again with an upright between in the neutral
      axis colour (a jump, not a horizontal velocity, so not the velocity hue);
-     the convention is a note that outranks every label on it but the title; the value
+     the convention is in the title — “v–t” keeps it short enough to leave the unit room on a narrow pane — where no value can push it off; the value
      at the start, either side of the first impact and at the end are named.
      The acceleration is g throughout, broken only at the instants of impact,
      where the model says nothing. */
@@ -92,20 +92,24 @@ export const bounce = {
     for (const x of f.impacts.filter((q) => q.t < tMax - 1e-9)) {
       const before = f.at(x.t - e).v, after = f.at(x.t + e).v;
       // each value named beside its ring, the lower one from above so it stays off the time axis
-      const lab = (v, o) => (x === first ? { label: tr(v), dy: v < o ? -16 : 16 } : {});
-      vPts.push({ t: x.t, y: before, color: P.mark, ...lab(before, after) },
-                { t: x.t, y: after, color: P.mark, ...lab(after, before) });
+      // before the jump named on its left, after it on its right
+      const lab = (v, o, dx) => (x === first ? { label: sf(v, { trim: true }), dx, dy: v < o ? -16 : 16, pri: 7 } : {});
+      vPts.push({ t: x.t, y: before, color: P.mark, ...lab(before, after, -12) },
+                { t: x.t, y: after, color: P.mark, ...lab(after, before, 12) });
     }
     // the value it starts at and the value it ends at, named as the sketches name them
     const v0 = f.at(0).v, vEnd = f.at(tMax).v;
-    if (Math.abs(v0) > 1e-9) vPts.push({ t: 0, y: v0, color: P.mark, label: tr(v0), dx: 12, dy: v0 > 0 ? -14 : 14 });
-    vPts.push({ t: tMax, y: vEnd, color: P.mark, label: tr(vEnd), dy: vEnd > 0 ? 16 : -16 });
+    // the start value on the axis, where the papers' sketches write it; the
+    // end value on the side of its ring away from the graph's edge
+    const inward = (v) => (v > 0 ? 16 : -16);
+    if (Math.abs(v0) > 1e-9) vPts.push({ t: 0, y: v0, color: P.mark, label: sf(v0, { trim: true }), dx: -12, dy: 0, pri: 7 });
+    vPts.push({ t: tMax, y: vEnd, color: P.mark, label: sf(vEnd, { trim: true }), dy: inward(vEnd), pri: 7 });
     const cross = (fn) => f.crossings.filter((c) => c.dir !== 'start').map((c) => ({ t: c.t, y: fn(c.t), color: P.mark }));
     return [
       { canvas: 'g-s', title: 'Height–time', unit: 'm', tMax, t,
         series: [{ label: 'height', fn: (tt) => f.at(tt).y, color: P.disp, dash: null }],
         points: cross((tt) => f.at(tt).y) },
-      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax, t, note: `${pos} is positive`, notePri: 8,
+      { canvas: 'g-v', title: `v–t, ${pos} +ve`, unit: 'm s⁻¹', tMax, t,
         series: [{ label: 'velocity', fn: (tt) => f.at(tt).v, color: P.vel, dash: null, jumps: J }],
         points: [...vPts, ...cross((tt) => f.at(tt).v)] },
       { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,

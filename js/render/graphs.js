@@ -173,7 +173,7 @@ export function drawGraph(canvas, spec) {
     // positive dx puts it to the right)
     if (p.label) {
       const dx = p.dx ?? -12;
-      L.add(p.label, X(p.t) + dx, Y(p.y) + (p.dy ?? 16), { color: p.color, align: dx < 0 ? 'right' : 'left', pri: 6, size: 14, weight: 700, maxPush: 20 });
+      L.add(p.label, X(p.t) + dx, Y(p.y) + (p.dy ?? 16), { color: p.color, align: dx < 0 ? 'right' : 'left', pri: p.pri ?? 6, size: 14, weight: 700, maxPush: 20 });
     }
   }
 

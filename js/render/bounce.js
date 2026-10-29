@@ -175,10 +175,12 @@ export function render(canvas, cam, o) {
       const yy = Y(q.H), last = i === tops.length - 1;
       stroke(g, [{ x: cx - 18, y: yy }, { x: dimX + 22, y: yy }], { color: P.disp, width: 1.2, dash: [5, 4], alpha: last ? 0.9 : 0.45 });
       // the latest one is bracketed and named; the ones before keep a level line
-      if (last) {
+      // (and only when it stands clear of the paving: a bounce of a few
+      // millimetres keeps its level line and is named in the HUD and the ending)
+      if (last && Y(0) - yy > 18) {
         const bx = dimX + 26;
         if (q.k) bracket(g, bx + 18, Y(0), yy, P);
-        L.add(q.first ? `top ${T`${sf(q.H)} [m]`}` : `rises to ${T`${sf(q.H)} [m]`}`, bx + 32, yy, {
+        L.add(q.first ? `top ${T`${sf(q.H, { trim: true })} [m]`}` : `rises to ${T`${sf(q.H, { trim: true })} [m]`}`, bx + 32, yy, {
           color: P.disp, align: 'left', pri: last ? 8 : 6, size: last ? 16 : 14, weight: 700, maxPush: 20 });
       }
     });

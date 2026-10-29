@@ -155,8 +155,7 @@ export function solveBounce(k = {}) {
       return fail(`Those do not agree: a ball that ${asked[0].say} leaves the ground at ${M`${sf(asked[0].w)} [m s^-1]`}, but one that ${q.say} leaves it at ${M`${sf(q.w)} [m s^-1]`}. Give one of them.`);
     }
   }
-  let w = snap(asked[0].w), e = snap(w / V);
-  const by = asked[0].key;
+  let w = snap(asked[0].w), e = snap(w / V), by = asked[0].key;
   if (!(w > EPS)) return fail('With no rebound it stays on the ground: there is no bounce to show. Give the speed it rebounds with, or the height it rises to.');
   // A bounce cannot add speed. A rebound a whisker faster than the impact is
   // rounding in the paper's figures, and is taken as losing none; any more is
@@ -165,8 +164,8 @@ export function solveBounce(k = {}) {
     if (e > 1 + TOL) {
       return fail(`It would leave the ground faster than it hit it: it arrives at ${M`${sf(V)} [m s^-1]`} and leaves at ${M`${sf(w)} [m s^-1]`}. A bounce keeps some of the speed; it cannot add to it.`);
     }
-    w = V; e = 1;
-    notes.push(`That rebound is a fraction faster than the impact, which only rounding can do: it is taken as losing no speed at all, ${M`${sf(V)} [m s^-1]`} out as in.`);
+    notes.push(`${asked[0].say[0].toUpperCase()}${asked[0].say.slice(1)} would mean leaving the ground at ${M`${sf(w)} [m s^-1]`}, a fraction faster than the ${M`${sf(V)} [m s^-1]`} it hit it at, which only rounding can do: it is taken as losing no speed at all, ${M`${sf(V)} [m s^-1]`} out as in.`);
+    w = V; e = 1; by = 'same';
   }
 
   /* ── how far to watch ────────────────────────────────────────────────── */
@@ -346,15 +345,19 @@ export function bounceWorking(solved) {
 
   // 2 — the bounce
   const u2 = s * w;
+  // A fraction of a speed is a statement about sizes, so that row is written
+  // in speeds and only its answer takes the convention's sign.
   const brow = by === 'w' ? { f: M`u = ${nm(u2)} [m s^-1]`, s: '', r: '' }
     : by === 'H' ? { f: M`v^2 = u^2 + 2as`, s: M`0 = u^2 + 2 * ${sbs(a)} * ${sbs(s * P.H1)}`, r: M`u = ${nm(u2)} [m s^-1]` }
-    : { f: M`u = e * v`, s: M`${d(e, 3)} * ${sf(V)}`, r: M`u = ${nm(u2)} [m s^-1]` };
+    : by === 'same' ? { f: M`"speed after" = "speed before"`, s: M`${nm(V)}`, r: M`u = ${nm(u2)} [m s^-1]` }
+    : { f: M`"speed after" = e * "speed before"`, s: M`${d(e, 3)} * ${nm(V)} = ${nm(w)}`, r: M`u = ${nm(u2)} [m s^-1]` };
   out.push({
     title: 'The bounce',
     rows: [brow],
     note: (by === 'w' ? 'The paper gives the speed it leaves the ground with. '
-      : by === 'H' ? `At its greatest height, ${M`${sf(P.H1)} [m]`} up, it is momentarily at rest, so ${M`v = 0`} there. `
-      : `It keeps ${M`${d(e, 3)}`} of the speed it arrives with. `)
+      : by === 'H' ? `At its greatest height, ${M`${nm(P.H1)} [m]`} up, it is momentarily at rest, so ${M`v = 0`} there. `
+      : by === 'same' ? 'The rebound given is a rounding faster than the impact, so it is taken as losing no speed. '
+      : `It keeps ${M`${d(e, 3)}`} of the speed it arrives with, and leaves going up, so with ${pos} ${M`u`} is ${s > 0 ? 'positive' : 'negative'}. `)
       + `The velocity jumps from ${M`${nm(v1)}`} to ${M`${nm(u2)} [m s^-1]`} at the instant of the impact, which the model takes to last no time at all: `
       + `that jump is the vertical step on the velocity–time graph. The speed just after the impact is ${M`${sf(w)} [m s^-1]`}.`,
   });

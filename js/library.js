@@ -178,7 +178,7 @@ export const LIBRARY = [
       why: [
         ['The impact takes no time', 'the velocity jumps from one value to the other in an instant, so the graph has an upright step in it. A real ball is in contact with the ground for a few milliseconds, squashing and springing back, and its velocity passes smoothly through zero.'],
         ['A particle, and no air', 'the ball has no size, does not spin, and falls with g alone. A real ball meets the ground a radius before its centre would, and air slows it a little on the way up and down.'],
-        ['The same fraction every bounce', 'the paper gives one bounce; later ones keep the same fraction of their speed. Real balls keep a slightly different fraction at different speeds, and eventually stop bouncing and roll.'],
+        ['One bounce stands for all of them', 'a paper gives one rebound, and any later one here keeps the same fraction of its speed. Real balls keep a slightly different fraction at different speeds, and eventually stop bouncing and roll.'],
       ],
       caveat: 'What the engine did compute is above: each flight from what you gave, the speeds either side of every impact, the times between them, and every moment it is at the height asked about. The bounce itself was given, not worked out: finding it from an impulse is momentum, another chapter.',
     } },
