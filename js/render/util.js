@@ -19,7 +19,16 @@ export function fitCanvas(canvas) {
   // as a pan and zoom of the stage's own layout; the stage draws as before
   const v = canvas._view;
   if (v) { ctx.translate(v.tx, v.ty); ctx.scale(v.s, v.s); }
+  ctx._dpr = dpr;
   return { ctx, w, h };
+}
+
+/** Step out of a library stage's pan and zoom, back to the canvas's own
+    pixels: for what belongs to the screen, not the place — a graph panel, a
+    key, a caption — drawn after the scene so it neither zooms nor pans. */
+export function unview(ctx) {
+  const dpr = ctx._dpr || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 export function cssVar(name, fallback) {

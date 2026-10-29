@@ -469,6 +469,9 @@ stage's pixel layout before the kit draws, and `fitCanvas` applies it, so a kit
 needs no code of its own. Zoom runs from the fit (1) in to 6 — never out past
 it, so the stage's labels stay above the 13 px floor — and a pan stops at the
 layout's edges. The app calls it at its one render line for kits.
+What belongs to the screen rather than the place — a graph panel, a key —
+is drawn after the scene, after `unview(g)` (`util.js`), so it neither zooms
+nor pans, with its own `labels()`.
 
 ### Scenery — `js/render/scenery.js` (every library stage stands on these)
 
