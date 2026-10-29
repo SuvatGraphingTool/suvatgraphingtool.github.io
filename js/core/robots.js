@@ -22,7 +22,8 @@ import { M, num } from '../notation.js';
 
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
-const vb = (v) => { const s = vsrc(v); return / /.test(s) || s.startsWith('-') ? `(${s})` : s; };
+// a velocity after t is always bracketed: t(5i), never t5i
+const vb = (v) => `(${vsrc(v)})`;
 
 /** When a robot moving from r0 at v first reaches the edge of a square of half-side h. */
 function leaves(r0, v, h) {
@@ -43,6 +44,9 @@ export function solveRobots(k = {}) {
   const side = have(k.side) ? k.side : 50;
   if (!(side > 0)) return fail('The floor’s side is a positive length.');
   const h = side / 2;
+  const hasV = (o) => o && (have(o.x) || have(o.y));
+  if (hasV(k.R?.v) && (hasV(k.R?.r1) || have(k.R?.t1))) return fail('Give R\u2019s velocity or a later position, not both: either fixes its velocity.');
+  if (hasV(k.R?.r1) && (Math.abs(k.R.r1.x ?? 0) > h + 1e-9 || Math.abs(k.R.r1.y ?? 0) > h + 1e-9)) return fail(`R\u2019s later position is off the floor: it is ${M`${d(side)} [m]`} square, centred on O.`);
   const tp = solveTwoPlane({ units: 'm', A: k.R || {}, B: k.S || {} });
   if (!tp.ok) return fail(tp.reason.replace(/\bA\b/g, 'R').replace(/\bB\b/g, 'S'));
   const R = tp.A, S = tp.B;
@@ -82,13 +86,14 @@ export function solveRobots(k = {}) {
   else notes.push(`They are closest at ${M`t = ${d(tc)} [s]`}, ${M`${d(dmin)} [m]`} apart.`);
   const off = [['R', lR], ['S', lS]].filter(([, l]) => l != null && tc != null && l < tc - 1e-9);
   if (off.length) notes.push(`But ${off.map(([n, l]) => `${n} reaches the edge of the floor at ${M`t = ${d(l)} [s]`}`).join(' and ')}: on this floor they would never get that close.`);
+  const offFloor = off.map(([n, l]) => ({ n, t: l }));
   const derived = [`closest at ${M`t = ${d(tc ?? 0)} [s]`}`, `${M`${d(dmin)} [m]`} apart`];
 
   const ends = [lR, lS].filter((l) => l != null);
   const tMax = snap(Math.max(Math.min(ends.length ? Math.min(...ends) : Infinity, Math.max((tc || 0) * 1.4, 4)), 1));
   const f = { ...tp.f, kind: 'robots', tMax, tFlight: tMax, side, tc, dmin, leaves: { R: lR, S: lS },
     gap: (t) => snap(Math.hypot(D0.x + Dv.x * t, D0.y + Dv.y * t)) };
-  return { ok: true, mode: 'robots', R, S, tp, posRows, rows, closeRows, tc, dmin, apart, side, notes, derived, f };
+  return { ok: true, mode: 'robots', R, S, tp, offFloor, same: apart === null, posRows, rows, closeRows, tc, dmin, apart, side, notes, derived, f };
 }
 
 /** The working: each one's position (the two-in-a-plane working), then the closest approach. */

@@ -25,7 +25,7 @@ export const robots = {
   },
   fields: [
     ...two('R.r0', 'R', 'where R starts', 'm', 'At t = 0, from O.'),
-    ...two('R.v', 'R', 'R’s velocity', 'm s⁻¹', 'Or leave both blank and give a later position below.'),
+    ...two('R.v', 'R', 'R’s velocity', 'm s⁻¹', 'Or leave both blank and give a later position below; blank with no later position is at rest.'),
     ...two('S.r0', 'S', 'where S starts', 'm', 'A corner is half the side each way.'),
     ...two('S.v', 'S', 'S’s velocity', 'm s⁻¹', ''),
   ],
@@ -36,15 +36,18 @@ export const robots = {
       { key: 'R.t1', label: 'At time (s)', aria: 'Later: the time R is there (s)', placeholder: '—', hint: '' },
     ] },
     { title: 'The floor', fields: [
-      { key: 'side', label: 'Side of the square (m)', aria: 'The floor: the side of the square (m)', placeholder: '50', hint: 'Centred on O.' },
+      { key: 'side', label: 'Side of the square (m)', aria: 'The floor: the side of the square (m)', placeholder: '50', hint: 'Centred on O. Blank is 50.' },
     ] },
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
   read(v) {
     const vv = (key) => (v[`${key}.x`] != null || v[`${key}.y`] != null ? { x: v[`${key}.x`] ?? 0, y: v[`${key}.y`] ?? 0 } : undefined);
-    const R = { r0: vv('R.r0') || { x: 0, y: 0 }, v: vv('R.v') };
-    if (!R.v && vv('R.r1')) { R.r1 = vv('R.r1'); R.t1 = v['R.t1']; delete R.v; }
+    const R = { r0: vv('R.r0') || { x: 0, y: 0 } };
+    if (vv('R.v')) R.v = vv('R.v');
+    if (vv('R.r1') || v['R.t1'] != null) { R.r1 = vv('R.r1'); R.t1 = v['R.t1']; }
+    // nothing given for its motion: at rest, as a blank part is 0
+    if (!R.v && !R.r1 && R.t1 == null) R.v = { x: 0, y: 0 };
     return { R, S: { r0: vv('S.r0') || { x: 0, y: 0 }, v: vv('S.v') || { x: 0, y: 0 } }, side: v.side };
   },
   solve: solveRobots,
@@ -85,7 +88,9 @@ export const robots = {
 
   ending(s) {
     return { eyebrow: 'Two robots, constant velocities',
-      title: `Closest at t = ${tr(s.tc)} s, ${tr(s.dmin)} m apart.`,
+      title: s.same ? `Always ${tr(s.dmin)} m apart.`
+        : s.offFloor.length ? `On this floor never that close: ${s.offFloor[0].n} reaches the edge at t = ${tr(s.offFloor[0].t)} s.`
+          : `Closest at t = ${tr(s.tc)} s, ${tr(s.dmin)} m apart.`,
       body: s.notes.map((x) => `<p>${x}</p>`).join(''), real: true };
   },
 };
