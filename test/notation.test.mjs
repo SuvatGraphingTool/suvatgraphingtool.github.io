@@ -35,6 +35,7 @@ import { solvePlane, planeWorking } from '../js/core/plane.js';
 import { solveTarget, targetWorking } from '../js/core/target.js';
 import { solveHeight } from '../js/core/height.js';
 import { solveCatch } from '../js/core/catch.js';
+import { solveTrip } from '../js/core/trip.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { KITS } from '../js/kits/index.js';
 import { LIBRARY } from '../js/library.js';
@@ -336,6 +337,33 @@ group('The Past-paper library: thrown, chased and caught, everything it says', (
   let said = 0;
   for (const k of INPUTS) {
     const r = solveCatch(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); } if (st.note) check('note', st.note, bag); }
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: there and back, everything it says', () => {
+  const K = KITS.trip;
+  const INPUTS = [
+    { segs: [{ who: 'car', v: 15, t: 6 }, { who: 'car', v: 15, t: 11 }, { who: 'car', v: 0, t: 2 }, { who: 'foot', u: -2, v: -2, t: 20 }, { who: 'foot', u: 0, v: 0 }, { who: 'foot', u: 5, v: 5 }], T: 60, back: 4 },
+    { segs: [{ v: 4, t: 2 }, { v: 4, t: 3 }, { v: 0, t: 2 }, { u: -3, v: -3, t: 4 }] }, { segs: [{ v: 2.5, t: 0.4 }, { v: -1, t: 1.4 }] },
+    { segs: [{ v: 5, t: 2 }, { u: 0, v: 0 }], T: 1 }, {},
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveTrip(k);
     for (const x of r.derived || []) { said++; check('derived', x, bag); }
     for (const x of r.notes || []) { said++; check('note', x, bag); }
     if (r.reason) { said++; check('reason', r.reason, bag); }

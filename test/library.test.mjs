@@ -17,6 +17,7 @@ import { solvePlane, planeWorking } from '../js/core/plane.js';
 import { solveTarget, targetWorking, flight } from '../js/core/target.js';
 import { solveHeight, levelRows } from '../js/core/height.js';
 import { solveCatch, catchWorking } from '../js/core/catch.js';
+import { solveTrip, tripWorking } from '../js/core/trip.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { toLevel, rebound, timesAt } from '../js/core/stages.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
@@ -776,6 +777,22 @@ group('Thrown, chased and caught: the paper and its edges', () => {
   const g = KITS.catcher.graphs(a23.f, 0, new Proxy({}, { get: () => '#000' }));
   ok(g.every((x) => x.series[0].dash && x.series[1].dash && !x.series[2].dash), 'across dashed, up solid, on every graph');
   ok(typeof a23.f.path === 'function' && a23.f.path(10).length === 11 && near(a23.f.path(10)[10].y, 0.3), 'the motion has a path, for the ghost of a second launch');
+});
+
+group('There and back: the paper and its edges', () => {
+  const P = { segs: [{ who: 'car', v: 15, t: 6 }, { who: 'car', v: 15, t: 11 }, { who: 'car', v: 0, t: 2 }, { who: 'foot', u: -2, v: -2, t: 20 }, { who: 'foot', u: 0, v: 0 }, { who: 'foot', u: 5, v: 5 }], T: 60, back: 4 };
+  const r = solveTrip(P);
+  ok(r.ok && near(r.S[0].a, 2.5) && near(r.S[2].a, -7.5), 'OCR 4728 J11 Q4(i): 2.5 and 7.5 m s⁻²');
+  ok(near(r.S.slice(0, 3).reduce((a, s) => a + s.s, 0), 225), 'OCR 4728 J11 Q4(ii): the car travels 225 m');
+  ok(near(r.S[4].t, 13) && near(r.S[5].t, 8) && near(r.f.pos(60), 225), 'OCR 4728 J11 Q4(iii): 13 s in the shop, and back at the car at 60 s');
+  ok(byId('there-and-back') && near(solveTrip(byId('there-and-back').params).S[4].t, 13), 'the card is the paper');
+  for (const k of [{ segs: [] }, { segs: [{ v: 5, t: -1 }] }, { segs: [{ v: 5, t: 2 }, { v: -5, t: 2 }] }, { segs: [{ v: 5, t: 2 }, { u: 0, v: 0 }] },
+    { segs: [{ v: 5, t: 2 }, { u: 3, v: 3 }], back: 1 }, { segs: [{ v: 5, t: 2 }, { u: 0, v: 0 }], T: 1 }]) {
+    ok(!solveTrip(k).ok && solveTrip(k).reason, `refused with a reason: ${JSON.stringify(k)}`);
+  }
+  for (const sec of tripWorking(r)) for (const row of sec.rows) ok(!/NaN|undefined|Infinity/.test(row.f + row.s + row.r), 'no NaN in the working');
+  const gr = KITS.trip.graphs(r.f, 0, new Proxy({}, { get: () => '#000' }));
+  ok(gr.every((x) => x.series.every((sr) => sr.dash)), 'along the road: dashed on every graph');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

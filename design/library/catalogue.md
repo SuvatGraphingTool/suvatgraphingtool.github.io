@@ -87,7 +87,7 @@ this library: *covered* names the one of the twelve that does it.
 | 51 | OCR A | H240/03 | Jun 2022 | 13 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | Just clears a wall of height a/2 at x = a, lands at 4a; angle; a given 54.6 m/s; max height | 9.8 | **candidate**: symbolic (the wall and the landing in terms of a letter); `over-the-wall` takes numbers, and a launch fixed by two points is not yet a mode |
 | 52 | OCR A | H240/03 | Jun 2023 | 8 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | a = 3i−2j, v = 6i at t = 4; speed at t = 0 | – | **built**: `vectors-ij` (u = −6i + 8j, speed 10) |
 | 53 | OCR A | H240/03 | Jun 2023 | 12 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | 39 m/s from 20 m up, sin θ = 5/13; max height; time to land (part (d) out of scope) | 10 | **covered** by `platform-angle` |
-| 54 | OCR | 4728 M1 (legacy) | Jun 2011 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202011%20QP%20-%20M1%20OCR.pdf) | Driver's v-t graph: car trip, then walks back to a shop, later jogs to the car; time in shop | – | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
+| 54 | OCR | 4728 M1 (legacy) | Jun 2011 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202011%20QP%20-%20M1%20OCR.pdf) | Driver's v-t graph: car trip, then walks back to a shop, later jogs to the car; time in shop | – | **built**: `there-and-back` (2.5 and 7.5 m s⁻²; 225 m; 13 s in the shop) |
 | 55 | OCR | 4728 M1 | Jun 2014 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | Thrown down at 3.5 from 5 m; rebounds and passes start 0.87 s later; rebound speed | 9.8 | **candidate**: a bounce mid-question (rebound speed found from a later time); trajectory has restitution but not a found rebound |
 | 56 | OCR | 4728 M1 | Jun 2014 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202014%20QP%20-%20M1%20OCR.pdf) | x-t graph with speed 4 or rest; show T = 1.75; velocities; distance in 10 s | – | **candidate**: a velocity–time or displacement–time graph read as several stages, including standing still and going back |
 | 57 | OCR MEI | H640/01 | Jun 2018 | 9 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202018%20QP.pdf) | Thrown horizontally at 14 m/s from a 5 m window over a 2 m fence; trajectory; range of d | 9.8 | **built**: `over-the-wall` (1.01 s; y = 5 − 0.025x²; clears for d up to 10.95 m) |
@@ -489,4 +489,24 @@ components; the catch ringed with its time, height and distance.
 **What the student varies.** The throw (height, speed, angle), the catch
 height, and the dog's delay, starting speed and acceleration — any one of the
 three can be the number to find.
+
+### `there-and-back` — There and back: a graph in segments
+
+**Papers.** OCR 4728 M1 Jun 2011 Q4 (a car from rest to 15 m s⁻¹ in 6 s,
+steady for 11 s, to rest in 2 s; the driver walks back at 2 m s⁻¹ for 20 s
+to a shop, then jogs back at 5 m s⁻¹, at the car 60 s after the start:
+accelerations 2.5 and 7.5 m s⁻², the car travels 225 m, 13 s in the shop).
+
+**Why the twelve cannot.** None takes a motion as a graph of segments, and
+none goes back the other way, stops, and sets off again.
+
+**How it is solved.** Each segment is constant acceleration: a = (v − u)/t,
+s = ½(u + v)t. A moving segment's missing time from where it ends (the area
+from the segment it returns to sums to zero); a stop's from the total time.
+
+**The stage.** The (t, v) graph on the stage, shaded as it is swept, above a
+road with the car, its driver on foot, and the shop.
+
+**What the student varies.** Up to six segments: who moves, the velocity each
+starts at (a jump) and ends at, its time; the total time; where it ends.
 

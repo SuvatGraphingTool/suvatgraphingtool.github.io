@@ -66,6 +66,7 @@ A kit is an object with:
 | `target` — `js/kits/target.js` | `over-the-wall` |
 | `height` — `js/kits/height.js` | `from-a-height` |
 | `catcher` — `js/kits/catcher.js` | `catch-it` |
+| `trip` — `js/kits/trip.js` | `there-and-back` |
 | `bounce` — `js/kits/bounce.js` | `bounce` |
 
 ## Engine models — `js/core/`
@@ -282,6 +283,17 @@ it is from the ball then. `catchWorking` lays the two out.
 
 Used by: `catch-it`.
 
+### A graph in segments — `js/core/trip.js`
+
+`solveTrip({ segs: [{ u, v, t, who }], T, back })` — a velocity–time graph of
+straight segments, each from its start velocity (the last one's end, or a
+jump to `u`) to `v` over `t`; below zero is going back. Up to two times left
+blank: a moving one fixed by ending back at the start of segment `back` (the
+area from there sums to zero), a stop fixed by the total time `T`. Each
+segment's acceleration and displacement as working (`tripWorking`).
+
+Used by: `there-and-back`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -294,6 +306,14 @@ its top level, so it can go into a product or after a minus as it stands
 built from pieces uses it, so no piece is ever a bracket short.
 
 ## Stages — `js/render/`
+
+### A road under its graph — `js/render/trip.js`
+
+The (t, v) graph drawn on the stage, its area shaded up to now (forwards and
+back), over a road at one scale with the `car` (driven, then parked), the
+driver (`runner`) on foot, and `shopfront(g, x, Y, H, P)` (exported) where the
+driver stops. Used by: `there-and-back`.
+
 
 ### A beach — `js/render/beach.js`
 

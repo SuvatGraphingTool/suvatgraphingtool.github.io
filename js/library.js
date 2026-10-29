@@ -232,4 +232,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: when and where the ball is at the catch height, and the dog\u2019s number that puts it there then.',
     } },
+  { id: 'there-and-back', group: 'library', kit: 'trip',
+    name: 'There and back: a graph in segments',
+    sub: 'a car parks, its driver walks back to a shop and jogs back — how long inside?',
+    note: 'A velocity–time graph made of straight segments, each from one velocity to another over its own time, and some of them below the axis: going back. A car speeds up, holds its speed and brakes; its driver walks back to a shop, waits, and jogs back to the car. The engine finds a time the paper leaves out — a moving segment\u2019s from where it ends, a stop\u2019s from the total time.',
+    params: { segs: [{ who: 'car', v: 15, t: 6 }, { who: 'car', v: 15, t: 11 }, { who: 'car', v: 0, t: 2 }, { who: 'foot', u: -2, v: -2, t: 20 }, { who: 'foot', u: 0, v: 0 }, { who: 'foot', u: 5, v: 5 }], T: 60, back: 4 },
+    place: 'A road: the car, its driver and a shop, under the velocity–time graph',
+    sources: [
+      { board: 'OCR', paper: '4728 M1', session: 'Jun 2011', q: '4' },
+    ],
+    tags: ['velocity-time graph', 'speed-time graph', 'graph', 'segments', 'going back', 'negative velocity', 'shop', 'walks back', 'jogs',
+           'driver', 'car', 'stops', 'at rest', 'area under the graph', 'mechanics', 'M1', 'A level', 'AS level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The papers\u2019 model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['Straight lines on the graph', 'each segment has a constant acceleration; a walk that starts at once is a jump on the graph, which nothing real does.'],
+        ['One straight road', 'the car and the driver move along one line, forwards or back; the shop is on it.'],
+        ['Points', 'the car and the driver have no size: the driver gets out exactly where the car stops.'],
+      ],
+      caveat: 'What the engine did compute is above: each segment\u2019s acceleration and displacement, where everything is, and the times the paper left out.',
+    } },
 ];
