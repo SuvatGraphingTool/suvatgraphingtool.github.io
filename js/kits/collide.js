@@ -82,7 +82,7 @@ export const collide = {
   ending(s) {
     return {
       eyebrow: 'Two particles, constant accelerations',
-      title: s.tc != null ? `They collide at t = ${tr(s.tc)} s, at ${T`(${vsrc(s.where)})`} m.` : 'They never collide.',
+      title: s.tc != null ? `They collide at t = ${tr(s.tc)} s, ${Math.hypot(s.where.x, s.where.y) < 1e-12 ? 'at the origin' : `at ${T`(${vsrc(s.where)})`} m`}.` : 'They never collide.',
       body: s.notes.map((x) => `<p>${x}</p>`).join(''),
       real: true,
     };

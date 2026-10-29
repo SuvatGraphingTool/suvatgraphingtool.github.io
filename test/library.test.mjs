@@ -969,6 +969,8 @@ group('Do they collide? (MM1B J14 Q7)', () => {
   ok(miss.ok && miss.tc === null && /never collide/.test(miss.notes.join(' ')), 'moved a little, they never collide');
   ok(!K.solve({ A: { u: { x: 1 } }, B: { u: { x: 1 } } }).ok, 'together the whole time is said, not solved');
   ok(!K.solve({ A: { u: { x: 1 } } }).ok, 'B missing says what is needed');
+  const sameStart = K.solve({ A: { u: { x: 1 } }, B: { u: { y: 1 } } });
+  ok(sameStart.ok && sameStart.tc === null && /start together/.test(sameStart.notes.join(' ')), 'starting together is not a collision');
   const line = K.solve({ A: { u: { x: 2 } }, B: { r0: { x: 10 }, a: { x: -1 } } });
   ok(line.ok && Math.abs(line.tc - (-2 + Math.sqrt(24))) < 1e-9, 'j parts always equal: the i parts alone decide');
 });

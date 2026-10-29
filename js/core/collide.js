@@ -20,7 +20,7 @@ import { M, num } from '../notation.js';
 
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
-const EPS = 1e-6;
+const EPS = 1e-9;
 const vec = (o) => ({ x: o?.x ?? 0, y: o?.y ?? 0 });
 // a vector as a bracket when it has two terms: (4i + 2j), 0.2j
 const vb = (v) => { const s = vsrc(v); return / /.test(s) || s.startsWith('-') ? `(${s})` : s; };
@@ -82,14 +82,19 @@ export function solveCollide(k = {}) {
     collideRows.push({ f: M`"the " vec(${E[other]}) " parts at " t = ${d(t)}`, s: M`${d(snap(a))}, ${d(snap(b))}`,
       r: Math.abs(a - b) < EPS * Math.max(1, Math.abs(a)) ? M`"equal"` : M`"not equal"` });
   }
-  const tc = both.length ? both[0] : null;
+  // starting at the same place is not a collision: the first moment after it is
+  const together = both.some((t) => t < 1e-9);
+  const later = both.filter((t) => t > 1e-9);
+  const tc = later.length ? later[0] : null;
   const notes = [], derived = [];
   let where = null;
   if (tc != null) {
     where = { x: snap(A.r0.x + A.u.x * tc + 0.5 * A.a.x * tc * tc), y: snap(A.r0.y + A.u.y * tc + 0.5 * A.a.y * tc * tc) };
     collideRows.push({ f: M`vec r_A = ${rOf(A)}`, s: M`t = ${d(tc)}`, r: M`vec r = ${vb(where)} [m]` });
-    notes.push(`At ${M`t = ${d(tc)} [s]`} both parts are equal at once: they collide, at ${M`${vb(where)} [m]`}.`);
+    notes.push(`At ${M`t = ${d(tc)} [s]`} both parts are equal at once: they collide, ${Math.hypot(where.x, where.y) < 1e-12 ? 'at the origin' : `at ${M`${vb(where)} [m]`}`}.`);
     derived.push(`collide at ${M`t = ${d(tc)} [s]`}`);
+  } else if (together) {
+    notes.push(`They start together at ${M`t = 0`}, but are never at the same place again after it: they never collide.`);
   } else {
     notes.push(rf.length
       ? `The ${M`vec(${E[first]})`} parts are equal only at ${M`t = ${rf.map((t) => d(t)).join(', ')}`}, and the ${M`vec(${E[other]})`} parts are not equal then: they never collide.`
