@@ -550,4 +550,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: an equation from the first post to each later one, the pair solved, and the speed at each post.',
     } },
+  { id: 'vt-graph', group: 'library', kit: 'vtgraph',
+    name: 'Read the velocity–time graph',
+    sub: 'straight pieces above and below the axis — the steepest gradient, and when it is back where it started',
+    note: 'An object on a line whose velocity–time graph is straight pieces, some below the axis. The gradient of each piece is its acceleration, the steepest the greatest; the area under the graph is the displacement, below the axis counting back. Adding the areas piece by piece finds every time it is back where it started — or any displacement asked.',
+    params: { v0: 0, pts: [{ t: 4, v: -2 }, { t: 6, v: 2 }, { t: 11, v: 2 }, { t: 13, v: -4 }, { t: 16, v: -4 }, { t: 20, v: 0 }] },
+    place: 'A (t, v) graph above, the line with its start O below',
+    sources: [
+      { board: 'AQA', paper: '7357/2', session: 'Jun 2018', q: '12' },
+    ],
+    tags: ['velocity-time graph', 'v-t graph', 'gradient', 'area under the graph', 'displacement', 'back to the start', 'starting position', 'greatest acceleration',
+           'below the axis', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['An object on a line', 'it has no size, and moves only along the one line: forwards or back.'],
+        ['Straight pieces', 'each piece is a constant acceleration, changing in an instant at each corner.'],
+        ['Read off the graph', 'the corners are the values read from the paper’s grid.'],
+      ],
+      caveat: 'What the engine did compute is above: each gradient, each area, the running displacement, and when it is back where it started.',
+    } },
 ];

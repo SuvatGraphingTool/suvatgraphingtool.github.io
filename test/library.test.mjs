@@ -1096,6 +1096,18 @@ group('From a window, over a fence (MEI H640/01 J18 Q9)', () => {
   ok(r.f.from === 'window' && K.solve(K.read({ g: 9.8, h0: 5, u: 14, theta: 0 })).f.from === 'stand', 'a window when chosen, a stand when not');
 });
 
+group('Read the velocity–time graph (AQA 7357/2 J18 Q12)', () => {
+  const K = KITS.vtgraph;
+  const r = K.solve(K.read({ v0: 0, 'p1.t': 4, 'p1.v': -2, 'p2.t': 6, 'p2.v': 2, 'p3.t': 11, 'p3.v': 2, 'p4.t': 13, 'p4.v': -4, 'p5.t': 16, 'p5.v': -4, 'p6.t': 20, 'p6.v': 0 }));
+  ok(r.ok && r.aMax === 3, 'the greatest acceleration has size 3 (MS)', r.reason);
+  ok(r.times.join() === '8,14', 'back at the start at t = 8 and 14 (MS)');
+  ok(!K.solve(K.read({ v0: 0, 'p1.t': 4, 'p1.v': 2, 'p3.t': 8, 'p3.v': 0 })).ok, 'a blank corner before a later one is refused');
+  ok(!K.solve({ v0: 0, pts: [{ t: 4, v: 2 }, { t: 3, v: 0 }] }).ok, 'corners out of order are refused');
+  const at = K.solve({ v0: 0, pts: [{ t: 4, v: 4 }], ask: { t: 2 } });
+  ok(at.ok && at.at.x === 2 && at.at.v === 2, 'at a time: its displacement and velocity');
+  ok(K.solve({ v0: 2, pts: [{ t: 4, v: 2 }] }).times.length === 0, 'never back: said');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

@@ -412,6 +412,15 @@ or a may be given instead. Each post's speed is v = u + at. The motion is in
 the chain shape (`kind: 'chain'`, stretches named P to Q…) so the
 stage-by-stage road draws it, its posts named. Used by: `past-the-posts`.
 
+### A velocity–time graph — `js/core/vtgraph.js`
+
+`solveVt({ v0, pts: [{ t, v }], ask: { t, s } })` — straight pieces between
+corners: each piece's gradient (the steepest the greatest acceleration), its
+area (the running displacement, piece by piece), and every time the
+displacement is a given value — back where it started by default — from
+s = ut + ½at² within the piece (`quadRoots`). Also the displacement and
+velocity at a time, and the distance travelled. Used by: `vt-graph`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -727,3 +736,10 @@ eave there; `fence(g, x, top, Y, P)` (exported) — a garden fence of boards and
 rails. The over-the-wall stage frames the house — its width, eave and roof — at the same scale when the
 throw is from a window or a roof (the kit's `from` choice); the fence is a
 kind of thing to clear. Used by: `over-the-wall`.
+
+### A velocity–time graph, and the line — `js/render/vtgraph.js`
+
+Above, the (t, v) graph as the paper draws it (dashed, the steepest heavier with
+its a; the area shaded to now, stronger above the axis than below; each return
+to the start ringed); below, the line at one scale with O and the object and
+its velocity. Kit `vtgraph`. Used by: `vt-graph`.

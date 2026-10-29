@@ -767,3 +767,19 @@ distance and time under it, the car passing, the speed at each post.
 
 **What the student varies.** Up to three stretches (distance and time); the
 speed at P or the acceleration, when the paper gives one; car, cyclist or train.
+
+### `vt-graph` — Read the velocity–time graph
+
+**Papers.** AQA 7357/2 Jun 2018 Q12 (a 20 s velocity–time graph of straight
+pieces above and below the axis: the greatest acceleration has size 3 m s⁻²; it
+is back at its starting position at t = 8 and t = 14).
+
+**Why it is built.** `there-and-back` is a story of a car and a walk with
+hidden times; nothing reads a bare velocity–time graph for its steepest
+gradient and the moments the area returns to zero.
+
+**The stage.** The (t, v) graph above with its area shaded as time runs, the
+line below with the object moving on it.
+
+**What the student varies.** The start velocity and up to eight corners; a
+displacement to find the times of (0 by default); a time to ask about.
