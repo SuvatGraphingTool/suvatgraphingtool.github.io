@@ -66,7 +66,7 @@ export function render(canvas, cam, o) {
     L.add(f.letters ? T`v = ${tm === f.tM ? f.vLabel.M : f.vLabel.N}` : T`${tr(f.vel(tm), 3)} [m s^-1]`, bx - 14, Y(ym) - 12, { color: P.vel, align: 'right', pri: 7, size: 13, weight: 700 });
   }
   if (show.velocity !== false && v > 1e-9) {
-    const vMax = f.vel(f.tMax), len = (v / vMax) * 60;
+    const vMax = f.vel(f.tMax), len = Math.min((v / vMax) * 60, Math.max(0, h - 10 - Y(y)));
     arrow(g, bx + 16, Y(y), bx + 16, Y(y) + len, { color: P.velVec, width: 2.6, head: 10 });
   }
   dot(g, bx, Y(y), 7, { fill: P.card, stroke: P.ink, width: 2.2 });

@@ -29,8 +29,9 @@ export function render(canvas, cam, o) {
   const tA1 = f.A.f.tFlight, tB1 = f.B.t0 + f.B.f.tFlight;
   for (let i = 0; i <= n; i++) { pa.push(f.posA((i / n) * tA1)); pb.push(f.posB(f.B.t0 + (i / n) * f.B.f.tFlight)); }
   const yTop = Math.max(...pa.map((p) => p.y), ...pb.map((p) => p.y), 1) * 1.2;
-  const xLo = -f.D * 0.06, xHi = f.D * 1.06;
-  const left = w < 520 ? 16 : HUD + 30, right = w - 30, top = 60, bottom = h - 50;
+  const allX = [0, f.D, ...pa.map((p) => p.x), ...pb.map((p) => p.x)];
+  const span = Math.max(...allX) - Math.min(...allX), xLo = Math.min(...allX) - span * 0.06, xHi = Math.max(...allX) + span * 0.06;
+  const left = w < 520 ? 16 : HUD + 30, right = w - 30, top = 60, bottom = h - 64;
   const k = Math.min((right - left) / (xHi - xLo), (bottom - top) / yTop);
   const ox = left + ((right - left) - (xHi - xLo) * k) / 2 - xLo * k, oy = bottom;
   const X = (x) => ox + x * k, Y = (y) => oy - y * k;

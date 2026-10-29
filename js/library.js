@@ -597,7 +597,7 @@ export const LIBRARY = [
   { id: 'thrown-towards', group: 'library', kit: 'towards',
     name: 'Thrown towards each other',
     sub: 'two balls thrown at each other from A and B, one a second after the other — do they collide, and how high?',
-    note: 'Two projectiles thrown towards each other in one vertical plane, from A and B on level ground, the second perhaps a moment after the first. Across, each moves at a steady speed, so they are level across at one moment; they collide only if they are at the same height then, with both still in the air. The distance AB may be the first one’s range.',
+    note: 'Two projectiles thrown towards each other in one vertical plane, from A and B on level ground (or from a height above it), the second perhaps a moment after the first. Across, each moves at a steady speed, so they are level across at one moment; they collide only if they are at the same height then, with both still in the air. The distance AB may be the first one’s range.',
     params: { g: 9.8, A: { u: 24.5, theta: 30 }, B: { u: 24.5, theta: 30, t0: 1 }, range: true },
     place: 'Side on: level ground, a thrower at A and another at B',
     sources: [
@@ -612,7 +612,7 @@ export const LIBRARY = [
       why: [
         ['Particles in one vertical plane', 'they have no size and fly in the same plane: they collide only where their points meet.'],
         ['Gravity alone', 'no air resistance; across, each keeps its own steady speed.'],
-        ['Level ground', 'A and B at the same level, the ground flat between them.'],
+        ['Level ground', 'the ground flat between A and B; each may be thrown from a height above it.'],
       ],
       caveat: 'What the engine did compute is above: A’s range when AB is it, the moment they are level across, and each one’s height then.',
     } },

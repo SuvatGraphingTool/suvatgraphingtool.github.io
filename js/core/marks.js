@@ -72,13 +72,14 @@ export function solveMarks(k0 = {}) {
   const r = solve(given);
   if (!r.ok) return fail(r.error);
   const V = r.values;
-  if (!(V.t > 0) || V.u < -1e-9) return fail('No fall from M to N fits those numbers: with these it would be rising at M.');
+  if (!(V.t > 0) || V.u < -1e-9) return fail('No fall from M to N fits those numbers: with these it would be rising at M. Try a shorter distance, a longer time, or a faster speed at N.');
   const rows = r.steps.map((sp) => ({ f: sp.formula, s: sp.substitution, r: M`${sp.target} = ${d(snap(sp.value))} [${UNIT[sp.target]}]` }));
   const rooted = r.steps.some((sp) => sp.roots && sp.roots.length === 2);
   const above = snap(V.u * V.u / (2 * g));
   const aboveRows = [{ f: M`v^2 = u^2 + 2as`, s: M`${d(snap(V.u))}^2 = 0 + 2 * ${d(g)}s`, r: M`s = ${d(above)} [m]` }];
   const groundRows = [];
   let ground = null;
+  if (have(k0.H) && !(k0.H > 0)) return fail('Give how high M is above the ground as a positive number.');
   if (have(k0.H)) {
     if (!(k0.H > V.s - 1e-9)) return fail(`M is only ${M`${d(k0.H)} [m]`} up, but N is ${M`${d(snap(V.s))} [m]`} below it: N would be underground.`);
     const vG = Math.sqrt(V.u * V.u + 2 * g * k0.H), tG = (vG - V.u) / g;
@@ -87,7 +88,7 @@ export function solveMarks(k0 = {}) {
     groundRows.push({ f: M`t = (v - u)/a`, s: M`(${d(ground.v)} - ${d(snap(V.u))})/${d(g)}`, r: M`t = ${d(ground.t)} [s]` });
   }
   const notes = [`From M to N: ${M`${d(snap(V.s))} [m]`} in ${M`${d(snap(V.t))} [s]`}, from ${M`${d(snap(V.u))}`} to ${M`${d(snap(V.v))} [m s^-1]`}.`,
-    above < 1e-9 ? 'It is at rest at M: M is where it was let go.' : `Dropped from rest, it was let go ${M`${d(above)} [m]`} above M.`];
+    above < 1e-6 ? 'It is at rest at M: M is where it was let go.' : `Dropped from rest, it was let go ${M`${d(above)} [m]`} above M.`];
   if (rooted) notes.push('Down is positive and it is falling, so of the two roots the speed is the positive one.');
   if (ground) notes.push(`It reaches the ground ${M`${d(ground.t)} [s]`} after M, at ${M`${d(ground.v)} [m s^-1]`}.`);
   const tM = V.u / g, tN = tM + V.t;

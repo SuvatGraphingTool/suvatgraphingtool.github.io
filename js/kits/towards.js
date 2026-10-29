@@ -19,7 +19,7 @@ export const towards = {
   verb: 'Throw them',
   voice: {
     h: 'Thrown towards each other',
-    sub: 'Two projectiles thrown towards each other in one vertical plane, from A and B on level ground, B perhaps a moment after A. '
+    sub: 'Two projectiles thrown towards each other in one vertical plane, from A and B on level ground (or from a height), B perhaps a moment after A. '
       + 'Across, each moves at a steady speed, so they are level across at one moment: do they collide, and how high?',
   },
   fields: [...one('A'), ...one('B'), { key: 'B.t0', col: 'B', label: 'Thrown after A by (s)', placeholder: '0', hint: 'Blank: together.' }],
@@ -62,7 +62,9 @@ export const towards = {
     return [
       { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax: f.tMax, t, points: pts, series: [...two(f.posB, P.second, 'B'), ...two(f.posA, P.disp, 'A')] },
       { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [...two(f.velB, P.second, 'B'), ...two(f.velA, P.vel, 'A')] },
-      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'up', tag: 'A, B', fn: () => -f.g, color: P.acc, dash: null }] },
+      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [
+        { label: 'B up', tag: 'B', fn: (tt) => (tt >= f.B.t0 && tt <= f.B.t0 + f.B.f.tFlight ? -f.g : 0), color: P.second, dash: null, breaks: [f.B.t0, f.B.t0 + f.B.f.tFlight] },
+        { label: 'A up', tag: 'A', fn: (tt) => (tt <= f.A.f.tFlight ? -f.g : 0), color: P.acc, dash: null, breaks: [f.A.f.tFlight] }] },
     ];
   },
 
