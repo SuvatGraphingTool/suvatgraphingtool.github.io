@@ -69,6 +69,7 @@ export function solveCatch(k = {}) {
     if (!have(c.a)) return fail('To find the starting speed, give the acceleration.');
     const u2 = snap((xc - 0.5 * c.a * T * T) / T);
     if (u2 < -EPS) return fail(`At that acceleration it covers more than the ${M`${d(xc)} [m]`} even from rest: no starting speed fits.`);
+    if (c.a < 0 && u2 + c.a * T < -1e-9) return fail(`Slowing at that rate, any start speed that gets it there would have it stop first: no starting speed fits.`);
     catcherRows = [{ f: M`s = u(t - t_0) + ½a(t - t_0)^2`, s: M`${d(xc)} = ${d(T)}u + ½ * ${d(c.a)} * ${d(T)}^2`, r: M`u = ${d(u2)} [m s^-1]` }];
     c.u = u2;
   } else if (find === 't0') {
@@ -84,15 +85,20 @@ export function solveCatch(k = {}) {
     c.t0 = t0f;
   } else {
     if (!have(c.a)) return fail('Give the catcher’s acceleration, or choose it as the number to find.');
-    const xd = snap(cu * T + 0.5 * c.a * T * T);
+    // slowing down, it stops and stays stopped: it never runs backwards
+    if (c.a < 0 && !(cu > EPS)) return fail('Starting from rest and slowing down, the catcher never moves forwards.');
+    const tStop = c.a < 0 ? cu / -c.a : Infinity, Tr = Math.min(T, tStop);
+    const xd = snap(cu * Tr + 0.5 * c.a * Tr * Tr);
     gap = snap(xd - xc);
     catcherRows = [{ f: M`s = u(t - t_0) + ½a(t - t_0)^2`, s: M`${Math.abs(cu) > EPS ? `${d(cu)} * ${d(T)} + ` : ''}½ * ${sgn(c.a)} * ${d(T)}^2`, r: M`s = ${d(xd)} [m]` }];
   }
   const C = { t0: have(c.t0) ? c.t0 : 0, u: have(c.u) ? c.u : 0, a: find === 'a' ? a : c.a };
-  const runT = (t) => Math.max(0, t - C.t0);
+  // the catcher's own clock, held at the moment it stops if it slows to rest
+  const stopAt = C.a < 0 && C.u > 0 ? C.u / -C.a : Infinity;
+  const runT = (t) => Math.min(Math.max(0, t - C.t0), stopAt);
   const cx = (t) => C.u * runT(t) + 0.5 * C.a * runT(t) * runT(t);
-  const cv = (t) => (t < C.t0 ? 0 : C.u + C.a * runT(t));
-  const ca = (t) => (t < C.t0 ? 0 : C.a);
+  const cv = (t) => (t < C.t0 || t - C.t0 >= stopAt ? 0 : C.u + C.a * runT(t));
+  const ca = (t) => (t < C.t0 || t - C.t0 >= stopAt ? 0 : C.a);
 
   const notes = [
     `The ball comes down to ${M`${d(k.yc)} [m]`} at ${M`t = ${d(tc)} [s]`}, ${M`${d(xc)} [m]`} from the throw.`,

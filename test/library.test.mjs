@@ -795,6 +795,15 @@ group('There and back: the paper and its edges', () => {
   ok(gr.every((x) => x.series.every((sr) => sr.dash)), 'along the road: dashed on every graph');
 });
 
+group('Audit 5: catch and trip', () => {
+  const c = solveCatch({ g: 9.81, u: 20, theta: 40, yc: 0, c: { t0: 0, u: 5, a: -3 } });
+  ok(c.ok && near(c.f.dog.pos(c.tc), 25 / 6) && c.f.dog.vel(c.tc) === 0 && near(c.gap, 25 / 6 - c.xc, 1e-3), 'a slowing dog stops and stays stopped, and the gap is from there');
+  ok(/never moves forwards/.test(strip(solveCatch({ g: 9.8, u: 14, theta: 60, yc: 0.3, c: { a: -2 } }).reason)), 'from rest and slowing: refused');
+  ok(/add up to/.test(strip(solveTrip({ segs: [{ v: 6, t: 3 }, { v: 0, t: 2 }, { u: -6, v: -6 }], back: 1, T: 99 }).reason)), 'a total time the segments do not make: refused');
+  ok(/not back there/.test(strip(solveTrip({ segs: [{ v: 6, t: 3 }, { v: 0, t: 3 }, { u: -6, v: -6, t: 1 }], back: 1 }).reason)), 'ends back at a segment it is not back at: refused');
+  ok(/back at the start/.test(strip(solveTrip({ segs: [{ v: 6, t: 2 }, { v: 0, t: 2 }, { u: -6, v: -6, t: 2 }, { u: -6, v: 0, t: 2 }] }).notes.join(' '))), 'back at the start is said so');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

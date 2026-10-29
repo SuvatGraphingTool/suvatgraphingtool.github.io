@@ -5,7 +5,7 @@
 
 import { solveTrip, tripWorking } from '../core/trip.js';
 import * as stage from '../render/trip.js';
-import { M, num } from '../notation.js';
+import { M, T, num } from '../notation.js';
 
 const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const N = 6;
@@ -80,7 +80,7 @@ export const trip = {
 
   ending(solved) {
     const found = solved.S.filter((s) => s.found);
-    const title = found.length ? found.map((s) => `t${String(s.i).replace(/\d/g, (c) => '₀₁₂₃₄₅₆₇₈₉'[c])} = ${tr(s.t)} s`).join(', ') + '.' : `${tr(solved.D)} m in all.`;
+    const title = found.length ? found.map((s) => T`t_${s.i} = ${tr(s.t)} [s]`).join(', ') + '.' : `${tr(solved.D)} m in all.`;
     const cell = (x) => `<b>${tr(x)}</b>`;
     const rows = solved.S.map((s) => `<div class="ph-row" role="row" data-key="${s.who === 'foot' ? 'second' : 'first'}">
         <span class="ph-name" role="cell"><b>${s.i}</b><em>${s.who === 'foot' ? 'on foot' : 'the car'}</em></span>

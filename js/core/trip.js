@@ -79,7 +79,7 @@ export function solveTrip(k = {}) {
     r0.t = t; r0.found = 'T';
     findRows.push({ f: M`t_${r0.i} = T - "the other times"`, s: M`${d(k.T)} - ${d(snap(sum))}`, r: M`t_${r0.i} = ${d(t)} [s]` });
   }
-  if (!moving.length && !resting.length && have(k.T) && Math.abs(S.reduce((a, s) => a + s.t, 0) - k.T) > 1e-6) {
+  if (have(k.T) && Math.abs(S.reduce((a, s) => a + s.t, 0) - k.T) > 1e-6) {
     return fail(`The segments add up to ${M`${d(snap(S.reduce((a, s) => a + s.t, 0)))} [s]`}, not the ${M`${d(k.T)} [s]`} given.`);
   }
 
@@ -94,6 +94,11 @@ export function solveTrip(k = {}) {
     rows.push({ f: M`s_${s.i} = ½(u + v)t`, s: M`½(${d(s.v0)} + ${sgn(s.v1)}) * ${d(s.t)}`, r: M`s_${s.i} = ${d(s.s)} [m]` });
   }
   const T = t0, X = x0, D = snap(dist);
+  // "ends back at the start of segment k", given when nothing was left for it
+  // to find, must still be true
+  if (back != null && !moving.length && !S.some((s) => s.found === 'back') && Math.abs(X - S[back - 1].x0) > 1e-6 * Math.max(1, Math.abs(X))) {
+    return fail(`It ends ${M`${d(snap(Math.abs(X - S[back - 1].x0)))} [m]`} from where segment ${back} started, not back there.`);
+  }
   const segAt = (t) => S.find((s) => t <= s.t1 + 1e-12) || S[S.length - 1];
   const pos = (t) => { const s = segAt(Math.min(Math.max(t, 0), T)), u = t - s.t0; return s.x0 + s.v0 * u + 0.5 * s.a * u * u; };
   const vel = (t) => { const s = segAt(Math.min(Math.max(t, 0), T)); return s.v0 + s.a * (t - s.t0); };
@@ -105,12 +110,12 @@ export function solveTrip(k = {}) {
     path(n = 200, tEnd = tMax) { const o = []; for (let i = 0; i <= n; i++) { const t = (i / n) * tEnd; o.push({ t, x: pos(t), y: 0 }); } return o; },
   };
   const notes = [
-    ...S.filter((s) => s.found).map((s) => `Segment ${s.i} takes ${M`${d(s.t)} [s]`}${s.found === 'back' ? `, to come back to where segment ${back} started` : ', so the total time comes to what is given'}.`),
+    ...S.filter((s) => s.found).map((s) => `Segment ${s.i} takes ${M`${d(s.t)} [s]`}${s.found === 'back' ? `, to come back to where segment ${back} started` : ', the time the total leaves'}.`),
     ...['car', 'foot'].filter((w) => S.some((s) => s.who === w)).map((w) => {
       const seg = S.filter((s) => s.who === w), cov = snap(seg.reduce((a, s) => a + Math.abs(s.s), 0));
       return `${w === 'car' ? 'The car' : 'On foot, the driver'} covers ${M`${d(cov)} [m]`}${w === 'car' ? `, ending ${M`${d(Math.abs(snap(seg.reduce((a, s) => a + s.s, 0))))} [m]`} from where it set off` : ''}.`;
     }),
-    `At ${M`t = ${d(T)} [s]`} it all ends ${M`${d(Math.abs(X))} [m]`} ${X >= -EPS ? 'ahead of' : 'behind'} the start.`,
+    Math.abs(X) < 1e-6 ? `At ${M`t = ${d(T)} [s]`} it is back at the start.` : `At ${M`t = ${d(T)} [s]`} it all ends ${M`${d(Math.abs(X))} [m]`} ${X > 0 ? 'ahead of' : 'behind'} the start.`,
   ];
   const carD = snap(S.filter((s) => s.who === 'car').reduce((a, s) => a + Math.abs(s.s), 0));
   const derived = [...S.filter((s) => s.found).map((s) => M`t_${s.i} = ${d(s.t)} [s]`), ...(carD > 0 ? [`the car covers ${M`${d(carD)} [m]`}`] : [`${M`${d(D)} [m]`} covered`])];
