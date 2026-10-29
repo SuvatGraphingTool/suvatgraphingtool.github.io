@@ -151,6 +151,19 @@ function slab(g, x0, x1, top, near) {
   band(g, a, top, b - a, 6);
 }
 
+/** A person `H` px tall at the scene's own scale: the shared thrower,
+    scaled down when the scene makes a person smaller than it draws one. */
+function person(g, X, Y, H, P, opts) {
+  if (H >= THROWER_MIN) return thrower(g, X, Y, H, P, opts);
+  const s = H / THROWER_MIN;
+  g.save(); g.translate(X, Y); g.scale(s, s); thrower(g, 0, 0, THROWER_MIN, P, opts); g.restore();
+}
+function handOf(H, aim) {
+  if (H >= THROWER_MIN) return throwerHand(H, aim);
+  const q = throwerHand(THROWER_MIN, aim), s = H / THROWER_MIN;
+  return { x: q.x * s, y: q.y * s };
+}
+
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
   if (!f || f.kind !== 'pair') return null;
@@ -167,43 +180,39 @@ export function render(canvas, cam, o) {
   // ── the frame: the ground to a little above the highest point either
   // reaches, with room over a roof for whoever stands on it
   const top = Math.max(f.top, 2);
-  const groundY = Math.round(h - (phone ? 76 : 70)), topY = phone ? 86 : 46;
+  // (on a phone, rows under the ground for what happens: the meeting, the gap, g)
+  const groundY = Math.round(h - (phone ? 96 : 70)), topY = phone ? 86 : 46;
   const ky = (groundY - topY - 10) / (top * 1.06);
   const Y = (y) => groundY - y * ky;
-  const TH = clamp(1.8 * ky, THROWER_MIN, phone ? 64 : 84);
+  // the people at the scene's scale, 1.75 m tall (never under 14 px, a smudge)
+  const TH = Math.max(14, 1.75 * ky);
 
   // ── across: the scale, the line, the towers and the labels, closed up
   // together on a canvas too narrow for them at full size
   const towerW = phone ? 92 : 130;
-  const k = phone ? 0.62 : 1;
+  const k = phone ? 0.55 : 1;
   const lane = (name) => LANE[name] * k;
+  // a tower stands clear of the marks, and on a phone clear of the gap's bracket too
+  const towerGap = phone ? lane('letter') + 24 : lane('tower');
   const hasTower = (p) => p.h > 1e-6;
   // what stands beside the line on each side: a tower, a thrower on the ground, or nothing
-  const sideW = (p) => hasTower(p) ? lane('tower') + towerW : (Math.abs(p.u) > 1e-9 ? Math.max(lane('letter') + 12, TH * 0.75) : lane('letter') + 12);
+  const sideW = (p) => hasTower(p) ? towerGap + towerW : (Math.abs(p.u) > 1e-9 ? Math.max(lane('letter') + 12, TH * 0.75) : lane('letter') + 12);
   const leftRaw = sideW(A), rightRaw = sideW(B);
   const info = phone ? 0 : 168;                     // the gap and the meeting, beside the right side
   let cx, rx;
   if (phone) {
-    // the line just clear of the readouts; a tower on the right may run off the edge
-    cx = Math.round(clamp(w - 24 - rightRaw, hl.w + 26, w * 0.62));
-    rx = w - 6;
-  } else {
+    // the scale just clear of the readouts, left of the column; the line
+    // beyond A's marks; a tower on the right may run off the edge
     rx = hl.w + 58;
+    cx = Math.round(rx + 10 + lane('letter') + 10);
+  } else {
+    rx = hl.w + 84;
     cx = Math.round(Math.max(rx + 18 + leftRaw, Math.min(w * 0.46, w - 16 - info - rightRaw)));
   }
   const outR = Math.min(w - info + 12, cx + rightRaw + 18);
 
   // ── the place
   landscape(g, w, h, groundY, { far: 'hills', seed: 23 });
-
-  // ── the height scale: on the left on a laptop, on the right edge of a phone
-  const step = niceStep(top * 1.06, 6);
-  stroke(g, [{ x: rx, y: Y(0) }, { x: rx, y: Y(top * 1.04) }], { color: P.faint, width: 1.4 });
-  for (let m = 0; m <= top * 1.04 + 1e-9; m += step) {
-    stroke(g, [{ x: rx - 7, y: Y(m) }, { x: rx, y: Y(m) }], { color: P.faint, width: 1.4 });
-    L.add(`${fmt(m, step < 1 ? 1 : 0)} m`, rx - 11, Y(m), { color: P.muted, align: 'right', pri: 1, bg: phone, size: 14, maxPush: 0 });
-    if (show.grid && m > 0) stroke(g, [{ x: phone ? 0 : rx, y: Y(m) }, { x: phone ? rx : w - 20, y: Y(m) }], { color: P.grid, width: 1 });
-  }
 
   // ── what each starts from, and who sets it off
   const people = [];
@@ -213,23 +222,38 @@ export function render(canvas, cam, o) {
     if (hasTower(p)) {
       // the person holds it out over the line from the end of a slab off the roof
       const aim = p.u > 1e-9 ? 60 : p.u < -1e-9 ? -40 : -4;
-      const hand = throwerHand(TH, aim);
+      const hand = handOf(TH, aim);
       const yH = Y(p.h);                                 // the ball's centre at the start
       const feet = Math.min(yH + hand.y, Y(p.h) + (groundY - Y(p.h)) / 3);
       const fx = cx + side * (hand.x + BALL * 0.7);
-      const near = cx + side * lane('tower'), far = near + side * towerW;
-      building(g, Math.min(near, far), Math.max(near, far), feet, groundY, { storey: clamp(3 * ky, 18, 40), seed: side > 0 ? 11 : 17 });
-      slab(g, near, fx - side * TH * 0.3, feet, near);
-      people.push(() => thrower(g, fx, feet, TH, P, { dir: side > 0 ? -1 : 1, pose, aim }));
+      const near = cx + side * towerGap, far = near + side * towerW;
+      building(g, Math.min(near, far), Math.max(near, far), feet, groundY, { storey: Math.max(12, 3 * ky), seed: side > 0 ? 11 : 17 });
+      const tip = fx - side * TH * 0.3;
+      slab(g, near, tip, feet, near);
+      // labels keep off the ledge and whoever stands on it
+      L.reserve({ x: Math.min(near, tip) - 2, y: feet - 4, w: Math.abs(near - tip) + 4, h: 14 });
+      L.reserve({ x: fx - TH * 0.5, y: feet - TH * 1.1, w: TH, h: TH * 1.1 });
+      people.push(() => person(g, fx, feet, TH, P, { dir: side > 0 ? -1 : 1, pose, aim }));
     } else if (Math.abs(p.u) > 1e-9) {
       // on the ground beside the line, throwing it up
       const fx = cx + side * (TH * 0.2 + BALL);
-      people.push(() => thrower(g, fx, groundY, TH, P, { dir: side > 0 ? -1 : 1, pose, aim: p.u > 0 ? 84 : -40 }));
+      L.reserve({ x: fx - TH * 0.5, y: groundY - TH * 1.1, w: TH, h: TH * 1.1 });
+      people.push(() => person(g, fx, groundY, TH, P, { dir: side > 0 ? -1 : 1, pose, aim: p.u > 0 ? 84 : -40 }));
     }
   };
   start(A, -1);
   start(B, 1);
   for (const draw of people) draw();
+
+  // ── the height scale: left of the column, over anything it crosses
+  const step = niceStep(top * 1.06, 6);
+  stroke(g, [{ x: rx, y: Y(0) }, { x: rx, y: Y(top * 1.04) }], { color: P.faint, width: 1.4 });
+  for (let m = 0; m <= top * 1.04 + 1e-9; m += step) {
+    stroke(g, [{ x: rx - 7, y: Y(m) }, { x: rx, y: Y(m) }], { color: P.faint, width: 1.4 });
+    L.add(`${fmt(m, step < 1 ? 1 : 0)} m`, rx - 11, Y(m), { color: P.muted, align: 'right', pri: 1, bg: true, size: 14, maxPush: 0 });
+    if (show.grid && m > 0) stroke(g, [{ x: phone ? 0 : rx, y: Y(m) }, { x: phone ? rx : w - 20, y: Y(m) }], { color: P.grid, width: 1 });
+  }
+
 
   // ── the line they share
   stroke(g, [{ x: cx, y: groundY }, { x: cx, y: topY - 10 }], { color: P.faint, width: 1.2, dash: [4, 6] });
@@ -247,10 +271,12 @@ export function render(canvas, cam, o) {
                  { x: cx + Math.cos(an) * 25, y: my + Math.sin(an) * 25 }], { color: P.mark, width: 2.4 });
     }
     const where = `they meet ${T`${sig3(meet.x)} [m]`} up`, when = T`t = ${sig3(meet.t)} [s]`;
-    if (phone) L.add(`${where}, ${when}`, 10, groundY + 24, { color: P.mark, align: 'left', pri: 10, size: 15, weight: 700 });
+    if (phone) L.add(`${where}, ${when}`, 10, groundY + 22, { color: P.mark, align: 'left', pri: 10, size: 15, weight: 700 });
     else {
-      L.add(where, outR, my - 16, { color: P.mark, align: 'left', pri: 10, size: 16, weight: 700 });
-      L.add(when, outR, my + 14, { color: P.mark, align: 'left', pri: 10, size: 16, weight: 700 });
+      // one block beside the meeting: where, when, and each one's velocity there
+      const y0 = clamp(my - 16, topY + 12, groundY - 14 - 3 * 25);
+      L.add(where, outR, y0, { color: P.mark, align: 'left', pri: 10, size: 16, weight: 700 });
+      L.add(when, outR, y0 + 25, { color: P.mark, align: 'left', pri: 10, size: 16, weight: 700 });
     }
   }
 
@@ -288,7 +314,7 @@ export function render(canvas, cam, o) {
       const bx = cx + lane('letter') + 10;
       stroke(g, [{ x: bx, y: yA }, { x: bx, y: yB }], { color: P.disp, width: 2.6 });
       for (const yy of [yA, yB]) stroke(g, [{ x: bx - 6, y: yy }, { x: bx + 6, y: yy }], { color: P.disp, width: 2.2 });
-      L.add(apart, 10, groundY + 24, { color: P.disp, align: 'left', pri: 8, size: 15, weight: 700 });
+      L.add(apart, 10, groundY + 22, { color: P.disp, align: 'left', pri: 8, size: 15, weight: 700 });
     } else {
       const bx = outR;
       stroke(g, [{ x: cx + BALL + 4, y: yA }, { x: bx - 8, y: yA }], { color: P.disp, width: 1, dash: [2, 4], alpha: 0.55 });
@@ -300,7 +326,7 @@ export function render(canvas, cam, o) {
     }
   }
   if (Math.abs(A.g) > 1e-9) {
-    L.add(`${T`g = ${num(A.g, 2, { trim: true })} [m s^-2]`}, downwards`, phone ? 10 : rx - 40, groundY + (phone ? 52 : 40),
+    L.add(`${T`g = ${num(A.g, 2, { trim: true })} [m s^-2]`}, downwards`, phone ? 10 : rx - 40, groundY + (phone ? 74 : 40),
       { color: show.acceleration ? P.acc : P.muted, align: 'left', pri: 3, size: 14, bg: false });
   }
 
@@ -314,10 +340,13 @@ export function render(canvas, cam, o) {
       const len = clamp(Math.abs(s.v) * vLen, 14, 160) * Math.sign(s.v);
       const ax = cx + side * lane('arrow');
       arrow(g, ax, y, ax, y - len, { color: P.velVec, width: 3, head: 11 });
-      // the label at the arrow's tip, out on its own side, never on the ground line
+      L.reserve({ x: ax - 7, y: Math.min(y, y - len) - 6, w: 14, h: Math.abs(len) + 12 });
+      // the label at the arrow's tip, out on its own side, never on the ground
+      // line — and at the meeting, where the two arrows and the balls are all
+      // in one place, stacked to the side with the meeting's own numbers
       let ly = y - len - Math.sign(len) * 12;
       if (ly > groundY - 10) ly = Math.max(ly, groundY + 16);
-      L.add(T`${sig3(s.v)} [m s^-1]`, ax + side * 8, ly, {
+      if (!met) L.add(T`${sig3(s.v)} [m s^-1]`, ax + side * 8, ly, {
         color: P.vel, align: side < 0 ? 'right' : 'left', pri: 7, size: 15, weight: 700 });
     }
     if (show.acceleration && !held && s.stage && Math.abs(p.g) > 1e-9) {
@@ -336,6 +365,15 @@ export function render(canvas, cam, o) {
   };
   draw(A, now.A, -1, null, 'A');
   draw(B, now.B, 1, P.second, 'B');
+  if (met && show.velocity !== false) {
+    const vA = T`${sig3(now.A.v)} [m s^-1]`, vB = T`${sig3(now.B.v)} [m s^-1]`;
+    if (phone) L.add(`A ${vA}, B ${vB}`, 10, groundY + 47, { color: P.vel, align: 'left', pri: 9, size: 15, weight: 700 });
+    else {
+      const y0 = clamp(Y(meet.x) - 16, topY + 12, groundY - 14 - 3 * 25);
+      L.add(`A ${vA}`, outR, y0 + 50, { color: P.vel, align: 'left', pri: 9, size: 15, weight: 700 });
+      L.add(`B ${vB}`, outR, y0 + 75, { color: P.vel, align: 'left', pri: 9, size: 15, weight: 700 });
+    }
+  }
 
   L.draw(g, w, h);
   return null;

@@ -149,52 +149,73 @@ export function court(g, x0, x1, groundY, bottom, P, pxPerM = 60) {
 }
 
 /** A brick building whose right-hand wall stands at x = xWall1 (from
-    xWall0), with a balcony slab at y = yPx reaching out to `tip`: a railing
-    with balusters along its edge, windows to each storey, a door, a parapet. */
-export function balcony(g, xWall0, xWall1, tip, yPx, groundY, pxPerM, P, { rail = null } = {}) {
-  const E = env();
+    xWall0), with a balcony slab at y = yPx reaching out to `tip`: everything
+    at its true size for `pxPerM` — 3 m storeys, 1 m by 1.25 m windows, a
+    2.1 m door, a 1 m railing with balusters along the slab's edge, a storey
+    above the balcony and a parapet. */
+export function balcony(g, xWall0, xWall1, tip, yPx, groundY, pxPerM, P) {
+  const E = env(), m = pxPerM;
   const w = xWall1 - xWall0;
-  const storey = clamp(3 * pxPerM, 46, 120);
-  const top = Math.max(-10, yPx - storey * 0.95);       // a storey above the balcony, then the roof
+  const storey = 3 * m;
+  const top = Math.max(-10, yPx - storey);              // a storey above the balcony, then the roof
   softShadow(g, (xWall0 + xWall1) / 2, groundY + 1, w * 0.62, 6, 0.9);
-  bricks(g, xWall0, top, w, groundY - top, { course: clamp(storey / 9, 4, 7), seed: 13 });
-  g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(xWall0, groundY - 6, w, 6);
-  band(g, xWall0 - 3, top - 5, w + 6, 6);
-  // the balcony door behind the person, and windows on each storey below
-  const ww = clamp(w * 0.32, 14, 40), wh = clamp(storey * 0.5, 20, 60);
-  const dh = clamp(storey * 0.68, 26, 80), dw = clamp(w * 0.34, 16, 44);
-  if (yPx < groundY - 20) {
-    const dx = xWall0 + w * 0.42 - dw / 2;
-    windowPane(g, dx, yPx - dh, dw, dh, { lit: E.night });
+  bricks(g, xWall0, top, w, groundY - top, { course: clamp(0.075 * m, 2, 7), seed: 13 });
+  g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(xWall0, groundY - 0.3 * m, w, 0.3 * m);
+  band(g, xWall0 - 3, top - Math.max(3, 0.2 * m), w + 6, Math.max(3, 0.2 * m));
+  // the balcony door, and a window on each storey below it, sills 0.9 m up
+  const ww = m, wh = 1.25 * m, dh = 2.1 * m, dw = 0.9 * m;
+  if (groundY - yPx > dh * 0.5) windowPane(g, xWall0 + w * 0.45 - dw / 2, yPx - dh, dw, dh, { lit: E.night });
+  for (let base = groundY - storey; base > yPx + 0.5 * m; base -= storey) {
+    const sill = base - 0.9 * m;
+    if (sill - wh < yPx + 0.4 * m) continue;
+    windowPane(g, xWall0 + w * 0.5 - ww / 2, sill - wh, ww, wh, { lit: E.night && Math.round(base) % 2 === 0 });
   }
-  for (let yb = yPx + storey * 0.62; yb < groundY - 8; yb += storey) {
-    if (groundY - yb < storey * 0.5) {
-      // the ground floor: a door with a step
-      const dx = xWall0 + w * 0.5 - dw * 0.45;
-      const gg = g.createLinearGradient(dx, 0, dx + dw * 0.9, 0);
-      gg.addColorStop(0, E.night ? '#3b4a5c' : '#3d5a78'); gg.addColorStop(1, E.night ? '#23303e' : '#2a4058');
-      g.fillStyle = gg; g.fillRect(dx, groundY - dh, dw * 0.9, dh);
-      g.fillStyle = '#d9b26a'; g.beginPath(); g.arc(dx + dw * 0.9 - 4, groundY - dh * 0.48, 1.6, 0, TAU); g.fill();
-      band(g, dx - 2, groundY - dh - 3, dw * 0.9 + 4, 3);
-      break;
-    }
-    windowPane(g, xWall0 + w * 0.5 - ww / 2, yb - wh / 2, ww, wh, { lit: E.night && Math.round(yb) % 2 === 0 });
+  if (groundY - yPx > dh + 0.5 * m) {
+    // the ground floor: a door with a step
+    const dx = xWall0 + w * 0.22;
+    const gg = g.createLinearGradient(dx, 0, dx + dw, 0);
+    gg.addColorStop(0, E.night ? '#3b4a5c' : '#3d5a78'); gg.addColorStop(1, E.night ? '#23303e' : '#2a4058');
+    g.fillStyle = gg; g.fillRect(dx, groundY - dh, dw, dh);
+    g.fillStyle = '#d9b26a'; g.beginPath(); g.arc(dx + dw * 0.85, groundY - dh * 0.48, Math.max(1, 0.05 * m), 0, TAU); g.fill();
+    band(g, dx - 2, groundY - dh - 3, dw + 4, 3);
   }
   g.fillStyle = 'rgba(0,0,0,0.2)'; g.fillRect(xWall1 - 3, top, 3, groundY - top);
   // the slab, out to the edge, its underside in shade, and a bracket under it
-  const slab = clamp(pxPerM * 0.2, 6, 10);
+  const slab = Math.max(3, 0.2 * m);
   g.fillStyle = E.shadow;
-  g.beginPath(); g.moveTo(xWall1, yPx + slab); g.lineTo(tip, yPx + slab); g.lineTo(xWall1, yPx + slab + clamp((tip - xWall1) * 0.6, 8, 40)); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(xWall1, yPx + slab); g.lineTo(tip, yPx + slab); g.lineTo(xWall1, yPx + slab + clamp((tip - xWall1) * 0.6, 4, 40)); g.closePath(); g.fill();
   band(g, xWall1 - 1, yPx, tip - xWall1 + 1, slab);
-  // the railing along its outer edge: balusters and a handrail
-  const rh = rail ?? clamp(pxPerM * 1, 16, 40);
+  // the railing along its outer edge, a metre high: balusters and a handrail
+  const rh = m;
   const metal = E.night ? '#c9c0bb' : '#4a4145';
-  g.strokeStyle = metal; g.lineWidth = 1.4;
+  g.strokeStyle = metal; g.lineWidth = Math.max(0.8, Math.min(1.4, 0.04 * m));
   g.beginPath();
-  for (let x = xWall1 + 5; x <= tip - 2; x += 6) { g.moveTo(x, yPx); g.lineTo(x, yPx - rh); }
+  for (let x = xWall1 + 4; x <= tip - 2; x += Math.max(3, 0.12 * m)) { g.moveTo(x, yPx); g.lineTo(x, yPx - rh); }
   g.stroke();
-  g.lineWidth = 3; g.lineCap = 'round';
+  g.lineWidth = Math.max(1.5, Math.min(3, 0.06 * m)); g.lineCap = 'round';
   g.beginPath(); g.moveTo(xWall1, yPx - rh); g.lineTo(tip - 1, yPx - rh); g.lineTo(tip - 1, yPx); g.stroke();
+}
+
+/** A garden wall of brick from x0 to x1, its stone coping at y = top: what
+    someone stands on to let a ball go from a little above their reach. */
+function gardenWall(g, x0, x1, top, Y, m) {
+  softShadow(g, (x0 + x1) / 2, Y + 1, (x1 - x0) * 0.6, 5, 0.9);
+  const cop = Math.max(3, 0.1 * m);
+  bricks(g, x0, top + cop, x1 - x0, Y - top - cop, { course: clamp(0.075 * m, 2, 7), seed: 19 });
+  band(g, x0 - 2, top, x1 - x0 + 4, cop);
+}
+
+/** A person `H` px tall at the scene's own scale: the shared thrower,
+    scaled down when the scene makes a person smaller than it draws one. */
+function person(g, X, Y, H, P, opts) {
+  if (H >= THROWER_MIN) return thrower(g, X, Y, H, P, opts);
+  const s = H / THROWER_MIN;
+  g.save(); g.translate(X, Y); g.scale(s, s); thrower(g, 0, 0, THROWER_MIN, P, opts); g.restore();
+}
+function handOf(H, aim) {
+  if (H >= THROWER_MIN) return throwerHand(H, aim);
+  const q = throwerHand(THROWER_MIN, aim), s = H / THROWER_MIN;
+  return { x: q.x * s, y: q.y * s };
 }
 
 /** A displacement bracket up the side: ground to a height, ends capped. */
@@ -231,33 +252,41 @@ export function render(canvas, cam, o) {
   // ── the frame: the ground to a little above the highest it gets, and room
   // over the start for the head of whoever lets it go
   const top = Math.max(f.top, 0.5);
-  const groundY = Math.round(h - (phone ? 100 : 84)), topY = phone ? hr.h + 14 : 60;
-  // The person is drawn at their real size when the frame is wide enough to
-  // hold a few metres, and otherwise between 50 px (the floor that keeps a
-  // face and an arm readable) and a size that leaves the ball the subject:
-  // a figure, not to scale, as every figure on this site is.
-  const ky = (groundY - topY - (f.h > 1e-6 ? THROWER_MIN * 0.3 : 0)) / (top * 1.08);
-  const TH = clamp(1.8 * ky, THROWER_MIN, phone ? 78 : 104);
+  // On a phone the ground goes up a little to free rows under it for the
+  // captions: the velocity, the impact, the convention, g.
+  const groundY = Math.round(h - (phone ? 122 : 84)), topY = phone ? hr.h + 14 : 60;
+  // Everything at one scale, the person included: an adult is 1.75 m tall
+  // here whatever that comes to in pixels (never under 14 px, a smudge).
+  const ky = (groundY - topY) / (top * 1.08);
+  const TH = Math.max(14, 1.75 * ky);
   const Y = (y) => groundY - y * ky;
-  const R = clamp(0.11 * ky, 7, 14);                   // a ball you can see; real size when the frame allows
+  const R = clamp(0.11 * ky, 6, 14);                   // a ball you can see; real size when the frame allows
 
-  // ── who lets it go, and from where: reaching up from the paving when the
-  // start is within reach, otherwise out on a balcony
+  // ── who lets it go, and from where, at true size: standing on the paving
+  // and reaching up when the start is within an adult's reach; on a low step
+  // when it is just above it; standing on a garden wall when it is a little
+  // higher; out on a balcony when it is higher than that
   const ballC = Y(f.h) - R;                            // the ball's centre at the start
   const reach = groundY - ballC;                       // how high the hand must be
-  const standing = f.h < 1e-6 || reach <= TH * 1.1;
-  let aim, hand, fyFeet;
-  if (standing) {
-    aim = clamp(Math.asin(clamp((reach / TH - 0.78) / 0.33, -1, 1)) * 180 / Math.PI, -60, 88);
-    hand = throwerHand(TH, aim); fyFeet = groundY;
+  // The arm held out forwards and up, not overhead, so the ball falls clear
+  // in front of the person rather than down past their face.
+  const OUT = 30;
+  let aim, hand, fyFeet, base = 'ground';
+  if (f.h < 1e-6 || reach <= handOf(TH, OUT).y) {
+    aim = f.h < 1e-6 ? -60 : clamp(Math.asin(clamp((reach / TH - 0.78) / 0.33, -1, 1)) * 180 / Math.PI, -60, OUT);
+    hand = handOf(TH, aim); fyFeet = groundY;
+    if (f.h < 1e-6) hand = { x: TH * 0.42, y: hand.y };     // stood back from a ball on the ground
+  } else if (reach - handOf(TH, OUT).y <= 0.6 * ky) {
+    aim = OUT; hand = handOf(TH, aim); fyFeet = ballC + hand.y; base = 'step';
   } else {
-    aim = f.u > 1e-9 ? 70 : f.u < -1e-9 ? -50 : -5;
-    hand = throwerHand(TH, aim);
-    fyFeet = Math.min(ballC + hand.y, Y(f.h) + (groundY - Y(f.h)) / 3);
+    aim = f.u > 1e-9 ? 60 : f.u < -1e-9 ? -40 : 10;
+    hand = handOf(TH, aim);
+    fyFeet = ballC + hand.y;
+    base = groundY - fyFeet < 2.6 * ky ? 'wall' : 'balcony';
   }
   const personW = hand.x + R * 0.8;                   // from the feet to the ball's line
-  const bw = standing ? 0 : clamp(TH * 1.5, 70, 150);  // the building
-  const leftRaw = standing ? personW + TH * 0.35 : personW + TH * 0.45 + bw;
+  const bw = base === 'balcony' ? Math.max(5 * ky, TH * 1.4, 40) : base === 'wall' ? Math.max(1.6 * TH, 30) : 0;
+  const leftRaw = base === 'balcony' ? personW + TH * 0.45 + bw : personW + TH * 0.4 + (base === 'wall' ? TH : 0);
   const rightRaw = LANE.label + 112;
 
   // ── across: the scale (left on a laptop, right on a phone), the place, the line, the labels
@@ -288,13 +317,21 @@ export function render(canvas, cam, o) {
 
   // ── where it starts from, and who lets it go
   const fx = cx - hand.x - R * 0.8;
-  if (!standing) {
+  if (base === 'balcony') {
     const xWall1 = fx - TH * 0.42, xWall0 = xWall1 - bw;
-    balcony(g, xWall0, xWall1, cx - R - 4, fyFeet, groundY, ky, P, { rail: clamp(TH * 0.42, 14, 40) });
+    balcony(g, xWall0, xWall1, cx - R - 4, fyFeet, groundY, ky, P);
+  } else if (base === 'wall') {
+    gardenWall(g, fx - bw * 0.75, fx + bw * 0.25, fyFeet, groundY, ky);
+  } else if (base === 'step') {
+    // a stone step under the feet
+    const sw = TH * 0.55;
+    softShadow(g, fx, groundY + 1, sw * 0.7, 4, 0.9);
+    band(g, fx - sw / 2, fyFeet, sw, groundY - fyFeet);
   }
   const pose = fired ? 1 : 0.15;
-  thrower(g, fx, fyFeet, TH, P, { pose, aim });
-  if (f.h > 1e-6) L.add('A', cx - R - 10, ballC - R - 8, { color: P.ink, align: 'right', pri: 9, size: 16, weight: 700, maxPush: 20 });
+  person(g, fx, fyFeet, TH, P, { pose, aim });
+  L.reserve({ x: fx - TH * 0.45, y: fyFeet - TH * 1.1, w: TH * 0.9, h: TH * 1.1 });
+  if (f.h > 1e-6) L.add('A', cx, ballC - R - 14, { color: P.ink, align: 'center', pri: 9, size: 16, weight: 700, maxPush: 40 });
 
   // ── the line it moves along
   stroke(g, [{ x: cx, y: groundY }, { x: cx, y: topY - 14 }], { color: P.faint, width: 1.2, dash: [4, 6] });
@@ -365,6 +402,7 @@ export function render(canvas, cam, o) {
     const old = s.flight < now.flight;
     g.save(); g.globalAlpha = old ? 0.4 : 1;
     dot(g, x, Y(s.y), 3.6, { fill: P.vel, stroke: P.surface, width: 1.3 });
+    L.reserve({ x: x - 5, y: Y(s.y) - 5, w: 10, h: 10 });
     g.restore();
     if (show.ticks && !old) {
       L.add(T`${num(tt, dp)} [s]`, x + (up ? 10 : -10), Y(s.y), { color: P.vel, align: up ? 'left' : 'right', pri: 2, size: 13, bg: false, maxPush: 20 });
@@ -387,20 +425,20 @@ export function render(canvas, cam, o) {
     // one line where there is room for it, two on a phone
     if (!phone) L.add(`${head}: ${speeds}`, hl.w + 10, groundY + 36, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
     else {
-      L.add(head, 10, groundY + 30, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
-      L.add(speeds, 10, groundY + 54, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
+      L.add(head, 10, groundY + 54, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
+      L.add(speeds, 10, groundY + 80, { color: P.ink, align: 'left', pri: 9, size: 14, weight: 700 });
     }
   }
 
   // ── the convention and g, said where the signed numbers are: on the
   // ground beyond the marks, a line of their own
   const dirUp = f.sign > 0;
-  const cy0 = phone ? groundY + 80 : groundY + 60;
+  const cy0 = phone ? groundY + 28 : groundY + 60;
   const sx = w - 22;
   arrow(g, sx, dirUp ? cy0 + 8 : cy0 - 8, sx, dirUp ? cy0 - 8 : cy0 + 8, { color: P.strong, width: 2.2, head: 8 });
   L.add(`${dirUp ? 'up' : 'down'} is positive`, sx - 12, cy0, { color: P.strong, align: 'right', pri: 8, size: 14 });
   if (Math.abs(f.g) > 1e-9) {
-    L.add(`${T`g = ${tr(f.g)} [m s^-2]`}, downwards`, phone ? 10 : hl.w + 10, cy0,
+    L.add(`${T`g = ${tr(f.g)} [m s^-2]`}, downwards`, phone ? 10 : hl.w + 10, phone ? groundY + 106 : cy0,
       { color: show.acceleration ? P.acc : P.muted, align: 'left', pri: 3, size: 14 });
   }
 
@@ -427,9 +465,12 @@ export function render(canvas, cam, o) {
     let y0 = yb - R, y1 = y0 - len;
     if (y1 > groundY - 3) { y0 -= y1 - (groundY - 3); y1 = groundY - 3; }
     arrow(g, ax, y0, ax, y1, { color: P.velVec, width: 3, head: 11 });
-    // the label at the arrow's tip when it points up, its tail when down
-    const ly = len > 0 ? y1 - 12 : y0 - 14;
-    L.add(T`v = ${sig3(now.v)} [m s^-1]`, ax + 8, ly, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700 });
+    L.reserve({ x: ax - 7, y: Math.min(y0, y1) - 6, w: 14, h: Math.abs(y1 - y0) + 12 });
+    const vt = T`v = ${sig3(now.v)} [m s^-1]`;
+    // On a phone there is no room beside the arrow that is not the marks:
+    // the velocity is a caption under the paving, in its own colour.
+    if (phone) L.add(vt, 10, groundY + 28, { color: P.vel, align: 'left', pri: 9, size: 15, weight: 700 });
+    else L.add(vt, ax + 8, len > 0 ? y1 - 12 : y0 - 14, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700 });
   }
   if (show.acceleration && t < f.tMax - 1e-9) {
     const ax = lane('acc');

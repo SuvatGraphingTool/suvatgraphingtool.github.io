@@ -38,7 +38,7 @@ const TAU = Math.PI * 2;
 function bricks(g, x, y, w, h, { course = 6, seed = 5, base = null } = {}) {
   if (w <= 0 || h <= 0) return;
   const E = env(), r = rng(seed);
-  const c = Math.max(3.5, course), bw = c * 2.3;
+  const c = Math.max(2, course), bw = c * 2.3;
   g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
   g.fillStyle = base || (E.night ? '#7a473c' : '#b4644d'); g.fillRect(x, y, w, h);
   for (let row = 0, yy = y + h; yy > y - c; row++, yy -= c) {
@@ -49,7 +49,8 @@ function bricks(g, x, y, w, h, { course = 6, seed = 5, base = null } = {}) {
       g.fillRect(xx + 0.6, yy - c + 0.6, bw - 1.2, c - 1.2);
     }
   }
-  g.strokeStyle = E.night ? 'rgba(25,15,12,0.5)' : 'rgba(236,222,206,0.55)'; g.lineWidth = 1;
+  // the mortar, where the courses are big enough to see it
+  g.strokeStyle = E.night ? 'rgba(25,15,12,0.5)' : 'rgba(236,222,206,0.55)'; g.lineWidth = c >= 3.5 ? 1 : 0.5;
   g.beginPath();
   for (let row = 0, yy = y + h; yy > y; row++, yy -= c) {
     g.moveTo(x, Math.round(yy) + 0.5); g.lineTo(x + w, Math.round(yy) + 0.5);
@@ -137,19 +138,20 @@ export function house(g, edge, sill, Y, w, from, P, { win = null, eave = null, s
   const x0 = edge - w;
   const top = from === 'roof' ? sill : (eave ?? sill - (Y - sill) * 0.45);
   softShadow(g, edge - w / 2, Y + 1, w * 0.62, 6, 0.9);
-  bricks(g, x0, top, w, Y - top, { course: clamp(storey / 7, 4, 7), seed });
+  bricks(g, x0, top, w, Y - top, { course: clamp(storey / 40, 2, 7), seed });
   // a plinth of darker brick at the foot
   g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(x0, Y - clamp(storey * 0.12, 3, 7), w, clamp(storey * 0.12, 3, 7));
   // the other windows: a column per bay, a row per storey, clear of the thrower's
-  const ww = clamp(w * 0.2, 10, 30), wh = clamp(storey * 0.45, 12, 38);
+  // windows and doors at their true size: 3 m storeys, 1 m by 1.25 m windows, 2.1 m doors
+  const ww = Math.max(3, storey * 0.33), wh = Math.max(4, storey * 0.42);
   const bays = Math.max(1, Math.floor((w - 10) / (ww * 2.1)));
-  for (let yb = Y - storey * 0.32; yb - wh > top + 8; yb -= storey) {
+  for (let yb = Y - storey * 0.3; yb - wh > top + 2; yb -= storey) {
     for (let b = 0; b < bays; b++) {
       const wx = x0 + (w / bays) * (b + 0.5) - ww / 2;
       if (win && wx + ww > win.x - 6 && wx < win.x + win.w + 6 && yb > win.y - 6 && yb - wh < win.y + win.h + 6) continue;
       // the door, on the ground floor of the first bay
       if (b === 0 && yb > Y - storey * 0.6 && w > ww * 3) {
-        const dh = clamp(storey * 0.62, 16, 44), dw = clamp(ww * 0.9, 9, 22);
+        const dh = storey * 0.7, dw = storey * 0.3;
         const dg = g.createLinearGradient(wx, 0, wx + dw, 0);
         dg.addColorStop(0, E.night ? '#3b4a5c' : '#3d5a78'); dg.addColorStop(1, E.night ? '#23303e' : '#2a4058');
         g.fillStyle = dg; g.fillRect(wx, Y - dh, dw, dh);
@@ -237,9 +239,9 @@ function stand(g, x0, x1, top, Y, H) {
 
 /** A garden wall centred on x, its top at y = top: brick, a stone coping. */
 function brickWall(g, x, top, Y, k) {
-  const tw = clamp(0.35 * k, 10, 24), cop = clamp(0.1 * k, 4, 7);
+  const tw = clamp(0.35 * k, 6, 24), cop = clamp(0.1 * k, 3, 7);
   softShadow(g, x + tw * 0.3, Y + 1, tw * 1.6, 4, 0.9);
-  bricks(g, x - tw / 2, top + cop, tw, Y - top - cop, { course: clamp(0.075 * k, 4, 7), seed: 9 });
+  bricks(g, x - tw / 2, top + cop, tw, Y - top - cop, { course: clamp(0.075 * k, 2, 7), seed: 9 });
   band(g, x - tw / 2 - 2.5, top, tw + 5, cop);
 }
 
@@ -327,33 +329,39 @@ function tree(g, x, top, Y, seed = 17) {
   }
 }
 
-/** A garden fence at x, from the ground at Y up to top: a short run of
-    pointed pickets on two rails between posts, seen across the throw, every
-    picket's point at the fence's height. */
+/** A garden fence at x, from the ground at Y up to top, running across the
+    throw a few metres either way: slim pointed pickets with daylight between
+    them, two rails behind, square posts at intervals, every picket's point
+    and every post's cap at the fence's height. */
 export function fence(g, x, top, Y, P, k = 20) {
   const E = env();
-  const run = clamp(1.4 * k, 30, 64), x0 = x - run / 2;
-  const pw = clamp(run / 8, 4, 8), gap = Math.max(1.5, pw * 0.4);
-  const wood = E.night ? ['#b39c7a', '#7a6448', '#4e3f2c'] : ['#e7dcc6', '#c2ae8c', '#8c7655'];
-  softShadow(g, x, Y + 1, run * 0.65, 4, 0.9);
-  // the rails, behind the pickets
-  g.fillStyle = wood[2];
-  for (const fr of [0.3, 0.75]) g.fillRect(x0 - 2, top + (Y - top) * fr, run + 4, clamp((Y - top) * 0.06, 3, 6));
-  for (let px = x0; px <= x0 + run - pw + 0.01; px += pw + gap) {
-    const tip = Math.min(pw * 0.6, (Y - top) * 0.2);
+  const run = clamp(3.6 * k, 70, 150), x0 = x - run / 2, hgt = Y - top;
+  const pw = clamp(0.09 * k, 3, 6), gap = pw * 1.1;
+  const wood = E.night ? ['#c2ab88', '#857052', '#4e3f2c'] : ['#efe5d0', '#c9b594', '#8c7655'];
+  softShadow(g, x, Y + 1, run * 0.55, 4, 0.9);
+  // the rails, behind the pickets, with the light on their top edge
+  for (const fr of [0.22, 0.72]) {
+    const ry = top + hgt * fr, rh = clamp(hgt * 0.05, 2.5, 5);
+    g.fillStyle = wood[2]; g.fillRect(x0, ry, run, rh);
+    g.fillStyle = withAlpha(wood[0], 0.5); g.fillRect(x0, ry, run, 1);
+  }
+  // posts, square, every metre and a half or so, capped flat at the fence's height
+  const postEvery = Math.max(26, 1.6 * k), postW = pw * 1.7;
+  const posts = [];
+  for (let px = x0; px <= x0 + run + 0.01; px += postEvery) posts.push(px);
+  for (let px = x0 + pw; px <= x0 + run - pw; px += pw + gap) {
+    if (posts.some((q) => Math.abs(q - px) < postW)) continue;
+    const tip = Math.min(pw * 0.9, hgt * 0.2);
     const pg = g.createLinearGradient(px, 0, px + pw, 0);
     pg.addColorStop(0, wood[0]); pg.addColorStop(1, wood[1]);
     g.fillStyle = pg;
     g.beginPath(); g.moveTo(px, Y); g.lineTo(px, top + tip); g.lineTo(px + pw / 2, top); g.lineTo(px + pw, top + tip); g.lineTo(px + pw, Y); g.closePath(); g.fill();
-    g.strokeStyle = withAlpha(wood[2], 0.6); g.lineWidth = 0.8; g.stroke();
-    // grain
-    g.strokeStyle = withAlpha(wood[2], 0.25);
-    g.beginPath(); g.moveTo(px + pw * 0.55, top + tip + 3); g.lineTo(px + pw * 0.5, Y - 2); g.stroke();
+    g.fillStyle = withAlpha(wood[2], 0.35); g.fillRect(px + pw - 1, top + tip, 1, hgt - tip);
   }
-  // the two posts at the ends, square-capped, no higher than the pickets
-  for (const px of [x0 - 3, x0 + run - 1]) {
-    const pg = g.createLinearGradient(px, 0, px + 4, 0); pg.addColorStop(0, wood[1]); pg.addColorStop(1, wood[2]);
-    g.fillStyle = pg; g.fillRect(px, top + 3, 4, Y - top - 3);
+  for (const px of posts) {
+    const pg = g.createLinearGradient(px - postW / 2, 0, px + postW / 2, 0); pg.addColorStop(0, wood[1]); pg.addColorStop(1, wood[2]);
+    g.fillStyle = pg; g.fillRect(px - postW / 2, top, postW, hgt);
+    g.fillStyle = wood[0]; g.fillRect(px - postW / 2 - 1, top, postW + 2, 2);
   }
 }
 
@@ -365,15 +373,15 @@ function endWall(g, x, top, Y, w, win, k) {
   const E = env();
   const bw = Math.max(40, w - x + 30);
   softShadow(g, x + 30, Y + 1, 60, 5, 0.8);
-  bricks(g, x, top, bw, Y - top, { course: clamp(0.075 * k, 4, 7), seed: 31, base: E.night ? '#6e4c43' : '#a76450' });
+  bricks(g, x, top, bw, Y - top, { course: clamp(0.075 * k, 2, 7), seed: 31, base: E.night ? '#6e4c43' : '#a76450' });
   // the roof, running back from the eave over the wall
   const rise = Math.min(top - 6, bw * 0.45, (Y - top) * 0.6);
   if (rise > 8) tiledRoof(g, x - 8, x + 2 * bw, top, top - rise);
   else band(g, x - 3, top - 5, bw + 6, 6);
   // a storey's windows along the side, beyond the one it is aimed at
-  const storey = clamp(3 * k, 30, 90), pw = clamp(storey * 0.35, 12, 30), ph = clamp(storey * 0.45, 14, 40);
+  const storey = 3 * k, pw = storey * 0.33, ph = storey * 0.42;      // true size
   for (let yb = Y - storey * 0.3; yb - ph > top + 6; yb -= storey) {
-    for (let xx = x + Math.max(60, pw * 3); xx + pw < x + bw - 4; xx += pw * 2.6) {
+    for (let xx = x + Math.max(60, pw * 3); xx + pw < x + bw - 4 && pw > 3; xx += pw * 2.6) {
       if (win && yb > win.hi - 6 && yb - ph < win.lo + 6 && xx < x + 70) continue;
       windowPane(g, xx, yb - ph, pw, ph, { lit: E.night && Math.round(xx + yb) % 3 === 0 });
     }
@@ -474,6 +482,31 @@ function cracks(g, x, y, clip, u) {
 
 /* ── the stage ─────────────────────────────────────────────────────────── */
 
+/** A person `H` px tall, at the scene's own scale: the shared thrower,
+    scaled down when the scene makes a person smaller than it will draw one,
+    so a 9 m tree stands five people tall and never shorter than the thrower. */
+function person(g, X, Y, H, P, opts) {
+  if (H >= THROWER_MIN) return thrower(g, X, Y, H, P, opts);
+  const s = H / THROWER_MIN;
+  g.save(); g.translate(X, Y); g.scale(s, s); thrower(g, 0, 0, THROWER_MIN, P, opts); g.restore();
+}
+function handOf(H, aim) {
+  if (H >= THROWER_MIN) return throwerHand(H, aim);
+  const q = throwerHand(THROWER_MIN, aim), s = H / THROWER_MIN;
+  return { x: q.x * s, y: q.y * s };
+}
+/** A measured length for a tag: in centimetres under 10 cm, so a near miss
+    reads as one (0.0596 m is 6.0 cm), otherwise three significant figures. */
+const len = (x) => (Math.abs(x) < 0.1 ? T`${num(x * 100, Math.abs(x) < 0.01 ? 2 : 1)} [cm]` : T`${sig3(x)} [m]`);
+/** Keep labels off a drawn line: small boxes along it. */
+function reserveLine(L, pts, r = 6) {
+  let last = null;
+  for (const p of pts) {
+    if (last && Math.hypot(p.x - last.x, p.y - last.y) < r * 1.5) continue;
+    L.reserve({ x: p.x - r, y: p.y - r, w: 2 * r, h: 2 * r }); last = p;
+  }
+}
+
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
   if (!f || f.kind !== 'target') return null;
@@ -496,48 +529,61 @@ export function render(canvas, cam, o) {
   if (f.win) ys.push(f.win.hi * 1.1);
   if (Pt) { if (Pt.d != null) xs.push(Pt.d); if (Pt.H != null) ys.push(Pt.H); if (faceTop != null) ys.push(faceTop * 1.35); }
   if (f.flag != null) xs.push(f.flag);
+  // the thing at the point has a width of its own: a tree's crown, a fence's run
+  if (Pt?.d != null && Pt.H != null) xs.push(Pt.d + ({ tree: 0.36 * Pt.H, fence: 1.9, wall: 0.25 }[kind] ?? 0));
   const xMax = Math.max(...xs) * 1.04 || 1, yMax = Math.max(...ys, xMax * 0.05) * 1.08;
   const elevated = F.h0 > 1e-9;
   const inHouse = elevated && f.from !== 'stand';
 
   // The scene goes beside the readouts or below them, whichever draws it
-  // larger; on a phone it takes the whole width. Room on the left for the
-  // thrower (and the launch height's dimension), below for the distances.
-  const leftPx = 46 + (elevated ? 52 : 0);
-  // a wall it hits is the end of a building that runs back: room for it
-  const rightPx = kind === 'face' ? (phone ? 70 : 120) : (phone ? 40 : 64);
-  // On a phone the readouts cover the top left down to ~330 px: the ground
-  // goes to the bottom, so the launch and the thrower stand below them.
-  const areas = phone ? [{ left: 12 + leftPx, right: w - rightPx, top: 92, bottom: h - 90 }]
-    : [{ left: HUD + 16 + leftPx, right: w - rightPx, top: 72, bottom: h - 80 },
-       { left: 24 + leftPx, right: w - rightPx, top: HUD_H + 16, bottom: h - 80 }];
+  // larger; on a phone it takes the whole width with the ground low, under
+  // the readouts. Below the ground: the distances, then what happened —
+  // beside the thing on a laptop, as captions on a phone, where there is no
+  // room beside anything.
+  let leftPx = 24 + (elevated ? 56 : 0);
+  // (and beyond the thing, room for its height's dimension and label)
+  const rightPx = kind === 'face' ? (phone ? 56 : 120) : (phone ? 52 : 72);
+  const below = phone ? 136 : 96;
+  const areasFor = () => (phone ? [{ left: 10 + leftPx, right: w - rightPx, top: 96, bottom: h - below }]
+    : [{ left: HUD + 16 + leftPx, right: w - rightPx, top: 72, bottom: h - below },
+       { left: 24 + leftPx, right: w - rightPx, top: HUD_H + 16, bottom: h - below }]);
   const fitWith = (houseM, extraM) => {
     let best = null;
-    for (const a of areas) {
+    for (const a of areasFor()) {
       if (a.bottom - a.top < 60) continue;
-      const fs = fitSide({ xLo: -houseM, xHi: xMax, yLo: 0, yHi: yMax + extraM }, a, { sky: phone ? 1 : 0.45 });
+      const fs = fitSide({ xLo: -houseM, xHi: xMax, yLo: 0, yHi: yMax + extraM }, a, { sky: phone ? 1 : 0.75 });
       if (!best || fs.k > best.k) best = fs;
     }
     return best;
   };
   let houseM = 0, extraM = 0, fs = fitWith(0, 0);
   if (!fs) return null;
-  let TH = clamp(1.75 * fs.k, THROWER_MIN, 64);
+  // the person at the scene's scale: 1.75 m, and never a smudge
+  const MIN_H = 14;
+  let TH = Math.max(MIN_H, 1.75 * fs.k);
+  if (!inHouse) {
+    // the person (and a stand) behind the launch, at true size, then the launch height's label
+    leftPx = 24 + (elevated ? 56 : 0) + TH * 0.9;
+    fs = fitWith(0, 0); TH = Math.max(MIN_H, 1.75 * fs.k);
+  }
   if (inHouse) {
-    // a house wide enough for its thrower, with its roof in the frame
-    for (let i = 0; i < 3; i++) {
-      houseM = Math.max(F.h0 * 0.9, 3, (1.9 * TH) / fs.k);
-      extraM = f.from === 'roof' ? 0 : (houseM * 0.42 + (1.3 * TH) / fs.k);
-      extraM = Math.max(0, F.h0 + extraM - yMax);
+    for (let i = 0; i < 2; i++) {
+      houseM = Math.max(F.h0 * 0.9, 4.5, (2.4 * TH) / fs.k);
+      extraM = Math.max(0, F.h0 + houseM * 0.42 + 1.2 - yMax);
       fs = fitWith(houseM, extraM);
-      TH = clamp(1.75 * fs.k, THROWER_MIN, 64);
+      TH = Math.max(MIN_H, 1.75 * fs.k);
     }
   }
   const { k, X, Y } = fs, oy = Y(0);
+  const caps = [];                                   // phone: what happened, under the ground
+  const say = (text, color, x, y, opt = {}) => {
+    if (phone) caps.push({ text, color });
+    else L.add(text, x, y, { color, pri: 9, size: 14, weight: 700, ...opt });
+  };
 
   // ── the place: sky, far trees, the lawn
   landscape(g, w, h, oy, { far: 'trees', seed: 21 });
-  foreground(g, w, oy + 70, h);
+  foreground(g, w, oy + 60, h);
   const step = niceStep(xMax, phone ? 5 : 7);
   for (let x = step; x <= xMax; x += step) {
     stroke(g, [{ x: X(x), y: oy }, { x: X(x), y: oy + 6 }], { color: P.axis, width: 1.4 });
@@ -545,47 +591,43 @@ export function render(canvas, cam, o) {
   }
   L.add(T`x [m]`, w - 14, oy + 16, { color: P.muted, align: 'right', pri: 3, size: 13, bg: false, maxPush: 0 });
 
-  // ── where it leaves from, and who throws it
+  // ── where it leaves from, and who throws it: the hand at the launch
   const lx = X(0), ly = Y(F.h0);
-  const hand = throwerHand(TH, aim);
-  let fx = lx - hand.x, fy = ly + hand.y;                // the hand at the launch
-  // Standing on a roof or a stand, the feet go no lower than a third of the
-  // way down from the launch: on a small frame a 50 px thrower is several
-  // metres tall, and a roof dropped by all of that would no longer read as
-  // the height the paper gives. The ball then leaves at the chest.
-  const feetOn = Math.min(fy, ly + Math.max(0, oy - ly) / 3);
-  let win = null, structLeft = fx - TH * 0.4;
+  const hand = handOf(TH, aim);
+  let fx = lx - hand.x, fy = ly + hand.y;
+  let win = null, structLeft = fx - TH * 0.4, structTop = fy - TH * 1.05;
+  const pose = fired ? clamp(0.55 + 0.45 * t / Math.max(1e-6, 0.05 * f.tMax), 0, 1) : 0;
   if (inHouse) {
-    const hw = houseM * k;
+    const hw = houseM * k, storey = 3 * k;
     if (f.from === 'window') {
-      const edge = lx - Math.max(4, TH * 0.1);
-      const sill = Math.min(oy - 8, fy - TH * 0.45);
+      const edge = lx - Math.max(2, TH * 0.1);
+      const sill = Math.min(oy - 4, fy - TH * 0.45);
       const wt = fy - TH * (1.12 + 0.3 * Math.max(0, Math.sin(aim * Math.PI / 180)));
-      win = { x: fx - TH * 0.34, y: wt, w: edge - 2 - (fx - TH * 0.34), h: sill - wt };
-      house(g, edge, sill, oy, hw, 'window', P, { win, eave: wt - Math.max(10, TH * 0.18), storey: clamp(3 * k, 34, 70) });
+      win = { x: fx - TH * 0.34, y: wt, w: edge - 1 - (fx - TH * 0.34), h: sill - wt };
+      const eave = wt - Math.max(3, 0.35 * k);
+      house(g, edge, sill, oy, hw, 'window', P, { win, eave, storey });
       g.save(); g.beginPath(); g.rect(win.x, win.y, win.w, win.h); g.rect(edge, 0, w, sill); g.clip();
-      thrower(g, fx, fy, TH, P, { pose: fired ? 1 : 0, aim });
+      person(g, fx, fy, TH, P, { pose: fired ? 1 : 0, aim });
       g.restore();
       openFrame(g, win);
-      structLeft = edge - hw;
+      structLeft = edge - hw; structTop = eave - hw * 0.42;
     } else {
-      fy = Math.min(feetOn, oy - 16);
+      fy = Math.min(fy, oy - 4);
       const edge = fx + TH * 0.3;
-      house(g, edge, fy, oy, hw, 'roof', P, { storey: clamp(3 * k, 34, 70) });
+      house(g, edge, fy, oy, hw, 'roof', P, { storey });
+      person(g, fx, fy, TH, P, { pose, aim });
       structLeft = edge - hw;
     }
-  } else if (elevated && feetOn < oy - 14 && oy - ly > TH * 0.7) {
-    fy = feetOn;
+  } else if (elevated && fy < oy - 4) {
     stand(g, fx - TH * 0.55, fx + TH * 0.3, fy, oy, TH);
+    person(g, fx, fy, TH, P, { pose, aim });
     structLeft = fx - TH * 0.55;
   } else {
-    fx = lx - hand.x * 0.8 - 6; fy = oy;
-    structLeft = fx - TH * 0.3;
+    fx = lx - hand.x * 0.8 - Math.max(2, TH * 0.08); fy = oy;
+    person(g, fx, fy, TH, P, { pose, aim });
+    structLeft = fx - TH * 0.3; structTop = fy - TH * 1.05;
   }
-  if (!(inHouse && f.from === 'window')) {
-    const pose = fired ? clamp(0.55 + 0.45 * t / Math.max(1e-6, 0.05 * f.tMax), 0, 1) : 0;
-    thrower(g, fx, fy, TH, P, { pose, aim });
-  }
+  L.reserve({ x: structLeft, y: Math.min(structTop, fy - TH * 1.05), w: lx - structLeft + 2, h: oy - Math.min(structTop, fy - TH * 1.05) });
   if (elevated) {
     // the launch height, as a dimension line beside whatever it is thrown from
     const dx = structLeft - 12;
@@ -609,32 +651,36 @@ export function render(canvas, cam, o) {
     if (F.span.from > 1e-9) L.add(T`${sig3(F.span.from)} [m]`, a, hy - 14, { color: P.mark, align: 'center', pri: 8, size: 14, weight: 700 });
     L.add(T`${tr(Pt.H)} [m]`, a + 8, (hy + oy) / 2, { color: P.mark, align: 'left', pri: 6, size: 14 });
   }
-  let faceWin = null, half = 8;                 // half: how far the thing reaches either side of the point
+  let faceWin = null, half = 4;                 // half: how far the thing reaches either side of the point
   if (Pt && Pt.d != null) {
     const px = X(Pt.d), H = Pt.H;
     const top = H != null ? Y(H) : null;
-    if (kind === 'wall' && H != null) { brickWall(g, px, top, oy, k); half = clamp(0.35 * k, 10, 24) / 2 + 2; }
+    let boxTop = top;
+    if (kind === 'wall' && H != null) { brickWall(g, px, top, oy, k); half = clamp(0.35 * k, 6, 24) / 2 + 2; }
     else if (kind === 'face') {
       const ft = Y(Math.min(yMax * 0.95, faceTop * 1.35));
       if (f.win) faceWin = { hi: Y(f.win.hi), lo: Y(f.win.lo) };
       endWall(g, px, ft, oy, w, faceWin, k);
+      L.reserve({ x: px, y: ft, w: w - px, h: oy - ft });
       if (f.win) {
-        // named below the window, on the near side of the wall, clear of the path
+        // named below the window, on the near side of the wall
         const struck = F.at?.reached && t >= F.at.t - 1e-9;
-        L.add(struck && f.win.breaks === true ? 'the window breaks' : struck && f.win.breaks === false ? 'the window holds' : 'a window',
-          px - 10, Math.min(oy - 12, faceWin.lo + 16), { color: P.ink, align: 'right', pri: 7, size: 13, weight: 700 });
+        if (!struck || f.win.breaks == null) L.add('a window', px - 10, Math.min(oy - 12, faceWin.lo + 16), { color: P.ink, align: 'right', pri: 7, size: 13, weight: 700 });
+        else say(f.win.breaks ? 'the window breaks' : 'the window holds', P.ink, px - 10, Math.min(oy - 12, faceWin.lo + 16), { align: 'right', size: 13 });
       }
-      half = 4;
-    } else if (kind === 'fence' && H != null) { fence(g, px, top, oy, P, k); half = clamp(1.4 * k, 30, 64) / 2 + 2; }
+      half = 2;
+    } else if (kind === 'fence' && H != null) { fence(g, px, top, oy, P, k); half = clamp(3.6 * k, 70, 150) / 2; }
     else if (kind === 'net' && H != null) { tennisNet(g, px, top, oy); half = 7; }
-    else if (kind === 'tree' && H != null) { tree(g, px, top, oy); half = clamp((oy - top) * 0.66, 26, 180) * 0.45; }
-    else if (H != null) { targetBoard(g, px, top, oy, clamp(0.45 * k, 9, 16)); half = clamp(0.45 * k, 9, 16); }
+    else if (kind === 'tree' && H != null) { tree(g, px, top, oy); half = clamp((oy - top) * 0.66, 26, 180) * 0.5; }
+    else if (H != null) { const rb = clamp(0.45 * k, 7, 16); targetBoard(g, px, top, oy, rb); half = rb; boxTop = top - rb; }
+    if (boxTop != null && kind !== 'face') L.reserve({ x: px - half, y: boxTop, w: 2 * half, h: oy - boxTop });
     // its height, as a dimension line just beyond it
     if (H != null && H > 1e-9) {
       const dx = px + (kind === 'face' ? -16 : half + 10);
       stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.muted, width: 1.2 });
       for (const yy of [oy, top]) stroke(g, [{ x: dx - 4, y: yy }, { x: dx + 4, y: yy }], { color: P.muted, width: 1.2 });
-      L.add(T`${tr(H)} [m]`, dx + (kind === 'face' ? -6 : 6), (oy + top) / 2, { color: P.strong, align: kind === 'face' ? 'right' : 'left', pri: 5, size: 14 });
+      L.add(T`${tr(H)} [m]`, dx + (kind === 'face' ? -11 : 11), (oy + top) / 2, { color: P.strong, align: kind === 'face' ? 'right' : 'left', pri: 6, size: 14, maxPush: 60 });
+      L.reserve({ x: dx - 5, y: top - 2, w: 10, h: oy - top + 4 });
     }
     // its distance, along the ground below
     const dy = oy + 34;
@@ -646,15 +692,16 @@ export function render(canvas, cam, o) {
   if (f.flag != null) {
     const fx2 = X(f.flag);
     flagAt(g, fx2, oy, 34, P);
+    L.reserve({ x: fx2 - 3, y: oy - 34, w: 22, h: 34 });
     L.add(`mark ${T`${tr(f.flag)} [m]`}`, fx2 + 8, oy - 50, { color: P.mark, align: 'center', pri: 6, size: 13, weight: 700, maxPush: 20 });
   }
 
   // ── the other answer's path, faint and solid, with its angle
+  const mine = paths[0].map((p) => ({ x: X(p.x), y: Y(p.y) }));
   if (O) {
     const op = paths[1].map((p) => ({ x: X(p.x), y: Y(p.y) }));
     stroke(g, op, { color: P.vel, width: 1.6, alpha: 0.28 });
     // its angle where it is furthest from the path flown, so it names this one
-    const mine = paths[0].map((p) => ({ x: X(p.x), y: Y(p.y) }));
     let at = op[Math.floor(op.length / 2)], far = -1;
     for (const q of op.slice(8, -8)) {
       const dmin = Math.min(...mine.map((m) => Math.hypot(m.x - q.x, m.y - q.y)));
@@ -662,9 +709,11 @@ export function render(canvas, cam, o) {
     }
     L.add(T`theta = ${num(O.theta, 2, { trim: true })}°`, at.x, at.y + 14, { color: P.muted, align: 'center', pri: 4, size: 13 });
   }
-  // ── the path flown: all of it faintly, the part flown strongly
-  stroke(g, paths[0].map((p) => ({ x: X(p.x), y: Y(p.y) })), { color: P.vel, width: 1.6, alpha: 0.3 });
-  stroke(g, f.path(120, t).map((p) => ({ x: X(p.x), y: Y(p.y) })), { color: P.vel, width: 2.8 });
+  // ── the path flown: all of it faintly, the part flown strongly; labels keep off it
+  stroke(g, mine, { color: P.vel, width: 1.6, alpha: 0.3 });
+  const flown = f.path(120, t).map((p) => ({ x: X(p.x), y: Y(p.y) }));
+  stroke(g, flown, { color: P.vel, width: 2.8 });
+  reserveLine(L, flown, 5);
 
   // ── its angle at the launch
   const th = F.theta * Math.PI / 180, R = 36;
@@ -687,7 +736,7 @@ export function render(canvas, cam, o) {
     const ax = X(F.apex.x), ay = Y(F.apex.y);
     stroke(g, [{ x: ax, y: ay }, { x: ax, y: oy }], { color: P.disp, width: 1.4, alpha: 0.7 });
     dot(g, ax, ay, 4.5, { fill: P.card, stroke: P.disp, width: 2 });
-    L.add(T`H_max = ${sig3(F.apex.y)} [m]`, ax, ay - 16, { color: P.disp, align: 'center', pri: 6, size: 14, weight: 700 });
+    L.add(T`H_max = ${sig3(F.apex.y)} [m]`, ax, ay - 18, { color: P.disp, align: 'center', pri: 6, size: 14, weight: 700 });
   }
 
   // ── at the point, once the ball has got there
@@ -709,21 +758,23 @@ export function render(canvas, cam, o) {
       flash(g, px - 4, py, age, life * 0.6, { radius: 20 });
       if (inWin && f.win.breaks === false) pulse(g, px, py, age, life, P.mark, { radius: 22 });
       dot(g, px, py, 8, { stroke: P.mark, width: 2.4 });
-      const txt = f.kindOf === 'face' ? `hits at ${T`${sig3(at.y)} [m]`}, ${T`t = ${sig3(at.t)} [s]`}` : `hits ${T`${sig3(-at.clear)} [m]`} below the top`;
-      L.add(txt, px - 14, py - 18, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700 });
+      L.reserve({ x: px - 10, y: py - 10, w: 20, h: 20 });
+      const txt = f.kindOf === 'face' ? `hits at ${len(at.y)}, ${T`t = ${sig3(at.t)} [s]`}` : `hits ${len(-at.clear)} below the top`;
+      say(txt, P.mark, px - half - 14, py - 22, { align: 'right' });
     } else if (at.clear != null && Math.abs(at.clear) > 1e-6 && kind !== 'point') {
       // the gap over the top, as a marker beside it
       const gx = px - half - 6, gy0 = Y(Pt.H);
       stroke(g, [{ x: gx, y: gy0 }, { x: gx, y: py }], { color: P.mark, width: 2 });
       for (const yy of [gy0, py]) stroke(g, [{ x: gx - 4, y: yy }, { x: gx + 4, y: yy }], { color: P.mark, width: 2 });
-      // above where it crosses, clear of the dimension on the far side
-      L.add(`clears by ${T`${sig3(at.clear)} [m]`}`, px, Math.min(py, gy0) - 24, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700 });
+      L.reserve({ x: gx - 5, y: Math.min(py, gy0), w: 10, h: Math.abs(gy0 - py) });
+      say(`clears by ${len(at.clear)}`, P.mark, gx - 10, (gy0 + py) / 2, { align: 'right' });
     } else {
       { const { age, life } = ageOf(t, at.t, f.tMax); pulse(g, px, py, age, life, P.mark, { radius: 20 }); }
       dot(g, px, py, 8, { stroke: P.mark, width: 2.4 });
+      L.reserve({ x: px - 10, y: py - 10, w: 20, h: 20 });
       const txt = kind === 'point' && at.clear != null && Math.abs(at.clear) > 1e-6
-        ? `${T`${sig3(Math.abs(at.clear))} [m]`} ${at.clear > 0 ? 'above' : 'below'}, ${T`t = ${sig3(at.t)} [s]`}` : T`t = ${sig3(at.t)} [s]`;
-      L.add(txt, px - 14, py - 18, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700 });
+        ? `${len(Math.abs(at.clear))} ${at.clear > 0 ? 'above' : 'below'}, ${T`t = ${sig3(at.t)} [s]`}` : T`t = ${sig3(at.t)} [s]`;
+      say(txt, P.mark, px - half - 14, py - 22, { align: 'right' });
     }
   }
   // ── where it lands, once it has: dust, how far, and how far from the mark
@@ -737,12 +788,11 @@ export function render(canvas, cam, o) {
       const a = X(Math.min(F.R, f.flag)), b = X(Math.max(F.R, f.flag)), yy = oy + 8;
       stroke(g, [{ x: a, y: yy }, { x: b, y: yy }], { color: P.mark, width: 2.4 });
       for (const xx of [a, b]) stroke(g, [{ x: xx, y: yy - 5 }, { x: xx, y: yy + 5 }], { color: P.mark, width: 2.4 });
-      text += `, ${T`${sig3(Math.abs(f.flagGap))} [m]`} ${f.flagGap > 0 ? 'short of' : 'past'} the mark`;
+      text += `, ${len(Math.abs(f.flagGap))} ${f.flagGap > 0 ? 'short of' : 'past'} the mark`;
       cx = (a + b) / 2;
     }
     // under the ground, below the distances, where nothing else is written
-    const roomBelow = h - oy > 80;
-    L.add(text, cx, roomBelow ? oy + 64 : oy - 18, { color: P.mark, align: 'center', pri: 8, size: 14, weight: 700 });
+    say(text, P.mark, cx, oy + 66, { align: 'center', pri: 8 });
   }
 
   // ── the ball, its velocity and its acceleration
@@ -764,7 +814,7 @@ export function render(canvas, cam, o) {
       arrow(g, bx + v.x * vl, by, bx + v.x * vl, by - v.y * vl, { color: P.velVec, width: 2, head: 9 });
     }
     arrow(g, bx, by, bx + v.x * vl, by - v.y * vl, { color: P.velVec, width: 3, head: 12 });
-    L.add(T`${sig3(f.speed(t))} [m s^-1]`, bx + v.x * vl + 10, by - v.y * vl, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700 });
+    L.add(T`${sig3(f.speed(t))} [m s^-1]`, bx + v.x * vl + 10, by - v.y * vl, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700, maxPush: 80 });
   }
   if (show.acceleration) arrow(g, bx, by, bx, by + 40, { color: P.acc, width: 2.4, head: 10 });
   // a ball that has hit a wall rests against its face, not inside it
@@ -772,6 +822,9 @@ export function render(canvas, cam, o) {
   const sy = !F.hits && t >= F.tGround - 1e-9 ? Math.min(by, oy - rBall) : by;
   if (sy > oy - rBall * 3) softShadow(g, sx, oy + 1, rBall * 1.3, 2.5, 0.8);
   ballAt(g, sx, sy, rBall);
+
+  // ── on a phone, what happened, in captions under the distances
+  caps.forEach((c, i) => L.add(c.text, 12, oy + 68 + i * 22, { color: c.color, align: 'left', pri: 10, size: 14, weight: 700 }));
 
   L.draw(g, w, h);
   return null;
