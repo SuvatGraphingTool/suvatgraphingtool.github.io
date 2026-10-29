@@ -325,6 +325,15 @@ lands; how far it has dropped at the second strip, and whether a strip set
 `drop` lower is broken at its centre (within half a millimetre); the floor,
 when the height is given. `benchWorking` writes each. Used by: `off-the-bench`.
 
+### Through two points, in a letter — `js/core/clears.js`
+
+`solveClears({ P, Q, beyond, u, a, g })` — from O on the ground, it just clears
+a wall Pa away and Qa high and lands `beyond`·a past it. Both points in
+2U²y = 2UVx − gx² give 2UV = gRa and U² = ga·P(R − P)⁄(2Q), so
+tan θ = RQ⁄(P(R − P)) with no a in it; the speed or a fixes the other, then the
+greatest height (in a and in metres) and the time. The motion is `flight`.
+`ka(c)` (exported) writes c·a as notation source. Used by: `wall-in-a-letter`.
+
 ## Notation — `js/notation.js`
 
 `vec(i)`, `vec r` — a vector, in bold (HTML `<b class="m-vec">`, canvas
@@ -361,6 +370,14 @@ went through) and `launcher` (magnets and ball bearings) — all exported. The
 gap between the strips and how much lower the second is as dimension lines;
 where the second is broken ringed, with how far from its centre. With a table,
 the floor and how far out it lands. Kit `bench`. Used by: `off-the-bench`.
+
+### Over a brick wall, in a letter — `js/render/clears.js`
+
+Sky and level ground (`sky`, `groundStrip` from heights.js), O and the angle,
+`brickWall(g, x, top, Y, wPx, P)` (exported), the path grazing its top (ringed
+"just clears"), the greatest height; each length a dimension line labelled in
+the letter and in metres at once (a = 70.2 m). Kit `clears`. Used by:
+`wall-in-a-letter`.
 
 
 ### A parachute jump — `js/render/jump.js`

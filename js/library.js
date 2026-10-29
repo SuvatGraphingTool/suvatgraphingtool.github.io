@@ -347,4 +347,26 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: the speed from the strips, the time to the second, how far it has dropped there, and, when the paper sets the second strip lower, how far from its centre it breaks it.',
     } },
+  { id: 'wall-in-a-letter', group: 'library', kit: 'clears',
+    name: 'Over the wall, in a letter',
+    sub: 'it just clears a wall and lands beyond it, every length in terms of a — the angle needs no a at all',
+    note: 'Projected from the ground, a ball just clears a wall and lands beyond it, every length a multiple of one letter a. Put both points into the path 2U²y = 2UVx − gx² and the letter cancels: the angle comes from the two points alone. One number more, the speed or a itself, fixes the other, the greatest height and the time in the air.',
+    params: { g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 },
+    place: 'Side on: level ground, a brick wall, and where it lands',
+    sources: [
+      { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '13(b)(c)(d)' },
+    ],
+    tags: ['wall', 'just clears', 'in terms of a', 'letter', 'algebra', 'symbolic', 'equation of the path', 'trajectory', 'angle of projection',
+           'projectile', 'greatest height', 'mechanics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['A particle moving freely under gravity', 'no air resistance and no spin; the ball has no size, so "just clears" means its centre grazes the top of the wall.'],
+        ['Projected from ground level', 'from O itself; a real throw or kick leaves from some height above the ground.'],
+        ['A wall with no thickness', 'the top is one point; a real wall has a top the ball must clear all the way across.'],
+      ],
+      caveat: 'What the engine did compute is above: the angle from the two points, the speed or a from the other, the greatest height and the time in the air.',
+    } },
 ];

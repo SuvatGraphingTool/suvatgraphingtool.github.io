@@ -924,6 +924,18 @@ group('Off the bench (9PH0/01 J18 Q18b)', () => {
   ok(/>0</.test(c.stripRows[c.stripRows.length - 1].r) && !/10/.test(c.stripRows[c.stripRows.length - 1].r.replace(/<[^>]+>/g, '')), 'at its centre the residual is 0, not noise');
 });
 
+group('Over the wall, in a letter (H240/03 J22 Q13)', () => {
+  const r = KITS.clears.solve({ g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 });
+  ok(r.ok && Math.abs(r.theta - 33.69) < 0.01, 'tan θ = 2/3: 33.7° (MS)', r.reason);
+  ok(Math.abs(r.a - 70.2) < 0.01 && Math.abs(r.Hmax - 46.8) < 0.01, 'a = 70.2, greatest height 2a/3 = 46.8 m (MS)');
+  const back = KITS.clears.solve({ g: 9.8, P: 1, Q: 0.5, beyond: 3, a: 70.2 });
+  ok(back.ok && Math.abs(back.u - 54.6) < 1e-6, 'given a, the speed comes back');
+  const f = r.f; ok(Math.abs(f.pos(f.tWall).y - f.wall.H) < 1e-9 && Math.abs(f.pos(r.T).y) < 1e-9, 'the path passes the top of the wall and lands at 4a');
+  const none = KITS.clears.solve({ g: 9.8, P: 1, Q: 0.5, beyond: 3 });
+  ok(!none.ok && /33\.69/.test(none.reason.replace(/<[^>]+>/g, '')), 'with neither the speed nor a, it still gives the angle');
+  ok(!KITS.clears.solve({ g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 50, a: 70 }).ok, 'the speed and a together are refused');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

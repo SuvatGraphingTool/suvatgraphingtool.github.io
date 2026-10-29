@@ -460,6 +460,22 @@ group('The Past-paper library: off the bench, everything it says', () => {
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
+group('The Past-paper library: over the wall in a letter, everything it says', () => {
+  const K = KITS.clears;
+  const bag = [];
+  for (const k of [{ g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 }, { g: 9.8, P: 1, Q: 0.5, beyond: 3, a: 70.2 }, { g: 9.81, P: 2, Q: 0.7, beyond: 1.3, u: 30 }, { g: 9.8, P: 1, Q: 0.5, beyond: 3 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('What Ask Suvat says it read, and what the engine made of it', () => {
   const READINGS = [
     { scenario: 'platform-angle', h: 25, s: 100, g: 9.8, angle: { degrees: 45 }, asks: ['speed of projection'] },

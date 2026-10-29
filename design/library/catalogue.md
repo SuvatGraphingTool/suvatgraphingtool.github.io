@@ -84,7 +84,7 @@ this library: *covered* names the one of the twelve that does it.
 | 48 | OCR A | H240/03 | Jun 2019 | 7 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Cyclist from rest at 1.5 m/s² for 4 s, then steady; distance in 10 s | – | **candidate**: several stages along a line, one after another |
 | 49 | OCR A | H240/03 | Jun 2019 | 8 | [paper](https://www.ocr.org.uk/Images/621201-question-paper-pure-mathematics-and-mechanics.pdf) | Flight 2.4 s, horizontal velocity 5d/3, just clears a wall at d; speed 16 over the wall | 9.8 | **candidate**: symbolic (the wall and the landing in terms of a letter); `over-the-wall` takes numbers, and a launch fixed by two points is not yet a mode |
 | 50 | OCR A | H240/03 | Jun 2022 | 9 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | A overtakes B (12 m/s) at 20 m/s, slows to 8 m/s over 30 s; when B re-overtakes | – | **built**: `two-on-a-road` (B overtakes at t = 45 s) |
-| 51 | OCR A | H240/03 | Jun 2022 | 13 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | Just clears a wall of height a/2 at x = a, lands at 4a; angle; a given 54.6 m/s; max height | 9.8 | **candidate**: symbolic (the wall and the landing in terms of a letter); `over-the-wall` takes numbers, and a launch fixed by two points is not yet a mode |
+| 51 | OCR A | H240/03 | Jun 2022 | 13 | [paper](https://www.ocr.org.uk/Images/676849-question-paper-pure-mathematics-and-mechanics.pdf) | Just clears a wall of height a/2 at x = a, lands at 4a; angle; a from a speed of 54.6 m/s; max height | 9.8 | **built**: `wall-in-a-letter` (tan θ = 2/3, 33.7°; a = 70.2; H = 2a/3 = 46.8 m) |
 | 52 | OCR A | H240/03 | Jun 2023 | 8 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | a = 3i−2j, v = 6i at t = 4; speed at t = 0 | – | **built**: `vectors-ij` (u = −6i + 8j, speed 10) |
 | 53 | OCR A | H240/03 | Jun 2023 | 12 | [paper](https://www.ocr.org.uk/Images/703870-question-paper-pure-mathematics-and-mechanics.pdf) | 39 m/s from 20 m up, sin θ = 5/13; max height; time to land (part (d) out of scope) | 10 | **covered** by `platform-angle` |
 | 54 | OCR | 4728 M1 (legacy) | Jun 2011 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-OCR/June%202011%20QP%20-%20M1%20OCR.pdf) | Driver's v-t graph: car trip, then walks back to a shop, later jogs to the car; time in shop | – | **built**: `there-and-back` (2.5 and 7.5 m s⁻²; 225 m; 13 s in the shop) |
@@ -592,3 +592,21 @@ table: a table, the floor, the height and how far out it lands.
 **What the student varies.** Bench or table; the speed, or the strips' gap and
 time, or the height and how far out it lands; how much lower the second strip
 is; the height of the edge; g.
+
+### `wall-in-a-letter` — Over the wall, in a letter
+
+**Papers.** OCR A H240/03 Jun 2022 Q13(b)(c)(d) (from O on level ground it
+just clears a wall half of a high, a from O, and lands 3a beyond it: the angle
+33.7°; with a speed of 54.6 m s⁻¹, a = 70.2; the greatest height 2a/3 = 46.8 m).
+Part (a), deriving the path, is its first working row; (e) is the model card.
+
+**Why it is built.** Every length is a letter, and the launch is fixed by two
+points on the path rather than given: `over-the-wall` takes numbers and one
+point. Here the letter cancels and the angle is found from the shape alone.
+
+**The stage.** Side on: sky, level ground, O with the angle, a brick wall the
+path just grazes, where it lands, the greatest height; each length labelled in
+the letter and in metres at once.
+
+**What the student varies.** Where the wall is, how high, and how far beyond it
+it lands (each a multiple of a); then the speed, or a; g.
