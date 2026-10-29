@@ -654,7 +654,7 @@ export const LIBRARY = [
     note: 'A ball kicked or thrown straight up from just above the floor, indoors. Its greatest height comes from v² = u² + 2as at the top, or its speed from the greatest height it reached outside. Under a ceiling: if it gets that high, when and how fast it meets the ceiling; if not, how far below it turns.',
     params: { g: 9.8, h: 0.9, u: 14, C: 11.5 },
     place: 'Side on: a sports hall, its floor and ceiling, the kicker',
-    example: { g: 9.8, h: 0.9, top: 10.9 },
+    example: { g: 9.8, h: 0.9, top: 10.9, C: 11.5 },
     sources: [
       { board: 'WJEC', paper: '2300U20-1 Unit 2', session: 'Jun 2019', q: '8' },
     ],
