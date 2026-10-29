@@ -785,8 +785,8 @@ displacement to find the times of (0 by default); a time to ask about.
 ### `past-two-marks` — Falling past two marks
 
 **Papers.** AQA 7357/2 Jun 2023 Q13 (a ball falls freely past M at u and N at
-3u: M to N takes 2u⁄g, and MN = 4u²⁄g, so M is more than 4u²⁄g above the
-ground).
+3u: M to N takes 2u⁄g, and MN = 4u²⁄g; the app says M is higher than that
+above the ground, as N is above it).
 
 **Why it is built.** The twelve drop from a height to the ground; nothing
 starts the clock part-way down, works between two marks the ball passes, or

@@ -45,7 +45,7 @@ export const marks = {
   render: stage.render,
 
   hud(f, t) {
-    const u = f.letters ? ['× u²/g', '× u', '× u/g'] : ['m', 'm s⁻¹', 's'];
+    const u = f.letters ? [`× ${T`u^2/g`}`, '× u', `× ${T`u/g`}`] : ['m', 'm s⁻¹', 's'];
     return {
       left: [
         { k: 'Fallen', v: num(f.pos(t), 3), unit: u[0], hue: 'disp' },
@@ -57,8 +57,8 @@ export const marks = {
 
   /* Vertical, down positive: solid (rule 2); M and N ringed. */
   graphs(f, t, P) {
-    const u = f.letters ? ['× u²/g', '× u', '× g'] : ['m', 'm s⁻¹', 'm s⁻²'];
-    const nt = f.letters ? ' (t × u/g)' : '';
+    const u = f.letters ? [`× ${T`u^2/g`}`, '× u', '× g'] : ['m', 'm s⁻¹', 'm s⁻²'];
+    const nt = f.letters ? ` (t × ${T`u/g`})` : '';
     const pts = [[f.tM, f.yM], [f.tN, f.yN]].map(([tt, y]) => ({ t: tt, y, color: P.mark }));
     return [
       { canvas: 'g-s', title: `Distance fallen–time${nt}`, unit: u[0], tMax: f.tMax, t, points: pts, series: [{ label: 's', fn: f.pos, color: P.disp, dash: null }] },

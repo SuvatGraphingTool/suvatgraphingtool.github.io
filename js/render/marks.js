@@ -46,14 +46,14 @@ export function render(canvas, cam, o) {
   // the release point and the two marks, as level lines with their distances
   const lab = (c) => (f.letters ? T`${inLetters(c, 'u^2', 'g')}` : T`${tr(c)} [m]`);
   dot(g, bx, Y(0), 4, { fill: P.ink, stroke: P.ink, width: 1 });
-  L.add('let go from rest', bx + 14, Y(0), { color: P.ink, align: 'left', pri: 5, size: 13 });
+  L.add(f.yM < 1e-9 ? 'let go from rest at M' : 'let go from rest', bx + 14, Y(0) - (f.yM < 1e-9 ? 16 : 0), { color: P.ink, align: 'left', pri: 5, size: 13 });
   for (const [n, y] of [['M', f.yM], ['N', f.yN]]) {
     stroke(g, [{ x: edge - 50, y: Y(y) }, { x: bx + 60, y: Y(y) }], { color: P.mark, width: 1.4, dash: [5, 4] });
     L.add(n, edge - 58, Y(y), { color: P.mark, align: 'right', pri: 9, size: 16, weight: 700 });
   }
   // dimension lines: release to M, M to N
   const dx = bx + 80;
-  for (const [a, b, c] of [[0, f.yM, f.yM], [f.yM, f.yN, f.yN - f.yM]]) {
+  for (const [a, b, c] of [[0, f.yM, f.yM], [f.yM, f.yN, f.yN - f.yM]].filter(([a0, b0]) => b0 - a0 > 1e-9)) {
     stroke(g, [{ x: dx, y: Y(a) }, { x: dx, y: Y(b) }], { color: P.ink, width: 1.2, alpha: 0.8 });
     for (const yy of [Y(a), Y(b)]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.2, alpha: 0.8 });
     L.add(lab(c), dx + 10, (Y(a) + Y(b)) / 2, { color: P.ink, align: 'left', pri: 7, size: 14, weight: 700 });
@@ -63,7 +63,7 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: bx, y: Y(0) }, { x: bx, y: Y(y) }], { color: P.disp, width: 2.4, alpha: 0.6 });
   for (const [tm, ym] of [[f.tM, f.yM], [f.tN, f.yN]]) if (t >= tm - 1e-9) {
     dot(g, bx, Y(ym), 8, { stroke: P.mark, width: 2.2 });
-    L.add(f.letters ? T`v = ${Math.abs(f.vel(tm) - 1) < 1e-9 ? 'u' : `${tr(f.vel(tm))}u`}` : T`${tr(f.vel(tm), 3)} [m s^-1]`, bx - 14, Y(ym) - 12, { color: P.vel, align: 'right', pri: 7, size: 13, weight: 700 });
+    L.add(f.letters ? T`v = ${tm === f.tM ? f.vLabel.M : f.vLabel.N}` : T`${tr(f.vel(tm), 3)} [m s^-1]`, bx - 14, Y(ym) - 12, { color: P.vel, align: 'right', pri: 7, size: 13, weight: 700 });
   }
   if (show.velocity !== false && v > 1e-9) {
     const vMax = f.vel(f.tMax), len = (v / vMax) * 60;

@@ -33,6 +33,9 @@ const UNIT = { s: 'm', u: 'm s^-1', v: 'm s^-1', a: 'm s^-2', t: 's' };
 export function solveMarks(k0 = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   const look = k0.look === 'cliff' ? 'cliff' : 'window';
+  const typedNums = ['vM', 'vN', 't', 'h', 'H'].filter((x) => have(k0[x]));
+  if (k0.mode === 'letters' && typedNums.length) return fail('In letters only the multiple of u is used: clear the boxes for numbers, or choose numbers.');
+  if (k0.mode !== 'letters' && have(k0.k)) return fail('A multiple of u is for working in letters: choose letters, or clear it.');
   if (k0.mode === 'letters') {
     const kq = k0.k;
     if (!have(kq)) return fail('Still needed: the speed at N as a multiple of the speed u at M — 3 for "3u".');
@@ -49,7 +52,7 @@ export function solveMarks(k0 = {}) {
       `Dropped from rest, it was let go ${M`${inLetters(0.5, 'u^2', 'g')}`} above M.`];
     // the motion, in units of u/g and u²/g: from rest, to a little past N
     const t0 = 1, tEnd = 1 + tL;
-    const f = { kind: 'marks', look, letters: true, tMax: tEnd * 1.08, tM: t0, tN: tEnd, yM: 0.5, yN: 0.5 + hL, g: 1, ground: null,
+    const f = { kind: 'marks', look, letters: true, vLabel: { M: 'u', N: `${num(kq, 3, { trim: true })}u` }, tMax: tEnd * 1.08, tM: t0, tN: tEnd, yM: 0.5, yN: 0.5 + hL, g: 1, ground: null,
       pos: (t) => 0.5 * t * t, vel: (t) => t, acc: () => 1 };
     return { ok: true, mode: 'marks', letters: true, kq, tL, hL, rows, aboveRows, groundRows: [], notes, derived: [M`t = ${inLetters(tL, 'u', 'g')}`], f };
   }
@@ -63,12 +66,15 @@ export function solveMarks(k0 = {}) {
   if (n < 2) return fail('Still needed: two of the speed at M, the speed at N, the time from M to N and the distance between them.');
   if (n > 2) return fail('Give two of the speed at M, the speed at N, the time and the distance — the other two are found from them.');
   for (const [key, v] of Object.entries(given)) if (key !== 'a' && !(v >= 0)) return fail('Speeds, the time and the distance are given as sizes: downwards, all positive.');
+  if (given.t === 0 || given.s === 0) return fail('M and N are two different marks: the time and the distance between them are more than 0.');
+  if (have(given.v) && have(given.s) && !have(given.u) && given.v * given.v < 2 * g * given.s) return fail(`Falling ${M`${d(given.s)} [m]`} from rest already gives more than ${M`${d(given.v)} [m s^-1]`}: it cannot be that slow at N.`);
   if (have(given.u) && have(given.v) && !(given.v > given.u)) return fail('Falling freely it speeds up: the speed at N must be more than at M.');
   const r = solve(given);
   if (!r.ok) return fail(r.error);
   const V = r.values;
   if (!(V.t > 0) || V.u < -1e-9) return fail('No fall from M to N fits those numbers: with these it would be rising at M.');
   const rows = r.steps.map((sp) => ({ f: sp.formula, s: sp.substitution, r: M`${sp.target} = ${d(snap(sp.value))} [${UNIT[sp.target]}]` }));
+  const rooted = r.steps.some((sp) => sp.roots && sp.roots.length === 2);
   const above = snap(V.u * V.u / (2 * g));
   const aboveRows = [{ f: M`v^2 = u^2 + 2as`, s: M`${d(snap(V.u))}^2 = 0 + 2 * ${d(g)}s`, r: M`s = ${d(above)} [m]` }];
   const groundRows = [];
@@ -81,7 +87,8 @@ export function solveMarks(k0 = {}) {
     groundRows.push({ f: M`t = (v - u)/a`, s: M`(${d(ground.v)} - ${d(snap(V.u))})/${d(g)}`, r: M`t = ${d(ground.t)} [s]` });
   }
   const notes = [`From M to N: ${M`${d(snap(V.s))} [m]`} in ${M`${d(snap(V.t))} [s]`}, from ${M`${d(snap(V.u))}`} to ${M`${d(snap(V.v))} [m s^-1]`}.`,
-    `Dropped from rest, it was let go ${M`${d(above)} [m]`} above M.`];
+    above < 1e-9 ? 'It is at rest at M: M is where it was let go.' : `Dropped from rest, it was let go ${M`${d(above)} [m]`} above M.`];
+  if (rooted) notes.push('Down is positive and it is falling, so of the two roots the speed is the positive one.');
   if (ground) notes.push(`It reaches the ground ${M`${d(ground.t)} [s]`} after M, at ${M`${d(ground.v)} [m s^-1]`}.`);
   const tM = V.u / g, tN = tM + V.t;
   const tEnd = ground ? tM + ground.t : tN * 1.1;

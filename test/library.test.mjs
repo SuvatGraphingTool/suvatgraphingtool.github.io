@@ -1122,6 +1122,10 @@ group('Falling past two marks (AQA 7357/2 J23 Q13)', () => {
   ok(!K.solve({ g: 9.8, vM: 5, vN: 8, t: 1 }).ok, 'three numbers given is refused');
   ok(!K.solve({ g: 9.8, vM: 5, vN: 8, H: 1 }).ok, 'N underground is refused');
   ok(!K.solve({ mode: 'letters', k: 1 }).ok, 'a multiple not above 1 is refused');
+  ok(!K.solve({ mode: 'letters', k: 3, H: 10 }).ok && !K.solve({ g: 9.8, h: 2, t: 0.2, k: 3 }).ok, 'boxes for the other mode are refused, not ignored');
+  ok(!K.solve({ g: 9.8, vN: 2, h: 10 }).ok && /cannot be that slow/.test(K.solve({ g: 9.8, vN: 2, h: 10 }).reason), 'a speed at N too slow for the fall: said why');
+  const top = K.solve({ g: 9.8, vM: 0, t: 1 });
+  ok(top.ok && /at rest at M/.test(top.notes.join(' ')), 'released at M: said so');
 });
 
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }

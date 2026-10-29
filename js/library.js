@@ -577,7 +577,7 @@ export const LIBRARY = [
     sub: 'a ball falls past the top and bottom of a window — how fast, how long, and from how high was it dropped?',
     note: 'A ball falling freely past two marks one above the other: the top and bottom of a window, or two points on a cliff. Two of the speed at the upper mark, the speed at the lower, the time between and the distance between fix the other two; then how far above the upper mark it was dropped from rest, and when it reaches the ground. Or in letters: the speed at the lower mark a multiple of u, the time and distance in u and g.',
     params: { mode: 'letters', k: 3 },
-    place: 'Side on: a building wall with a window, the ball falling past it',
+    place: 'Side on: a building wall with a window (or a cliff with two marks), the ball falling past it',
     sources: [
       { board: 'AQA', paper: '7357/2', session: 'Jun 2023', q: '13' },
     ],
