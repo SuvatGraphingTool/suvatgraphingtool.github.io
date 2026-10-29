@@ -58,7 +58,7 @@ export function render(canvas, cam, o) {
     const x = m.pos(t), v = m.vel(t), L0 = 56;
     car(g, X(x), Y, L0, P, { dir: 1, ring: i ? colors[i] : null, phase: phaseFor('car', L0, X(x) - X(0)) });
     // its name under its own lane, clear of the readouts and of the car
-    L.add(`Model ${i + 1}: ${m.say}`, X(0), Y + 30, { color: colors[i], align: 'left', pri: 7, size: 13, weight: 700 });
+    L.add(`Model ${i + 1}: ${m.does}`, X(0), Y + 30, { color: colors[i], align: 'left', pri: 7, size: 13, weight: 700 });
     if (show.velocity !== false && v > 1e-6) {
       arrow(g, X(x) + 6, Y - 34, X(x) + 6 + (v / f.u) * 60, Y - 34, { color: P.velVec, width: 2.4, head: 9, dash: [5, 4] });
       L.add(T`${tr(v, 2)} [m s^-1]`, X(x) + 12 + (v / f.u) * 60, Y - 34, { color: P.vel, align: 'left', pri: 6, size: 13, weight: 700 });

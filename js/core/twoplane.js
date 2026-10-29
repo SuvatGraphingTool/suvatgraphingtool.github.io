@@ -31,7 +31,8 @@ export const UNITS = { km: { len: 'km', time: 'h', speed: 'km h^-1', speedText: 
 /** c0 + c1 t as the coefficient of one unit vector: (2 − 4t). */
 function lin(c0, c1) {
   const parts = [];
-  if (!tiny(c0)) parts.push(d(c0));
+  // the sign written as source, so "−4" is a minus and a 4, never a glyph
+  if (!tiny(c0)) parts.push(`${c0 < 0 ? '-' : ''}${d(Math.abs(c0))}`);
   if (!tiny(c1)) {
     const body = `${Math.abs(Math.abs(c1) - 1) < EPS ? '' : d(Math.abs(c1))}t`;
     parts.push(parts.length ? `${c1 < 0 ? '-' : '+'} ${body}` : `${c1 < 0 ? '-' : ''}${body}`);
@@ -226,7 +227,9 @@ export function solveTwoPlane(k0 = {}) {
   }
   if (!derived.length) derived.push(`A at ${M`${d(heads.find((h) => h.who === 'A')?.sp ?? 0)} [${U.speed}]`}`);
 
-  const times = answers.flatMap((a) => a.times || [a.t]).filter((t) => have(t) && t >= 0);
+  // the sightings and a later position given are moments too: shown and ringed
+  if (k.find === 'B') for (const sg of sights) answers.push({ kind: 'sight', t: sg.t });
+  const times = [...answers.flatMap((a) => a.times || [a.t]), ...(have(k.A?.t1) ? [k.A.t1] : [])].filter((t) => have(t) && t >= 0);
   // long enough to show every moment asked about, and a little after
   const tMax = times.length ? Math.max(0.2, ...times.map((t) => t * 1.4 + 0.05)) : 1;
   const f = {

@@ -25,7 +25,7 @@ function lane(spec, say, note) {
   const r = solveJourney(spec);
   if (!r.ok) return null;
   const tEnd = r.f.tMax, xEnd = r.f.pos(tEnd).x;
-  return { say, note, r, tSign: snap(tEnd), vSign: snap(r.f.vel(tEnd).x), xEnd: snap(xEnd),
+  return { say, does: note ? null : say, note, r, tSign: snap(tEnd), vSign: snap(r.f.vel(tEnd).x), xEnd: snap(xEnd),
     pos: (t) => r.f.pos(Math.min(t, tEnd)).x, vel: (t) => (t >= tEnd ? r.f.vel(tEnd).x : r.f.vel(t).x), acc: (t) => (t >= tEnd ? 0 : r.f.accel(t)) };
 }
 
@@ -50,7 +50,7 @@ export function solveModels(k = {}) {
       `Braking from the moment it is seen, it is still above the limit when it reaches the sign: it needs ${M`${d(snap(toLimit))} [m]`} to slow to it.`)
     : lane({ u, D, stages: [{ kind: 'down', a, v: limit }, { kind: 'hold' }] }, 'slows to the limit, then holds it', null));
   // model 3: reacts first
-  const say3 = react > 0 ? 'reacts, slows to the limit, holds it' : 'no reaction time: as model 2';
+  const say3 = react > 0 ? 'reacts, slows to the limit, holds it' : 'with no reaction time, as model 2';
   if (thinking >= D - 1e-9) {
     models.push(lane({ u, D, stages: [{ kind: 'hold' }] }, say3, `It passes the sign during the reaction time: in ${M`${d(react)} [s]`} at ${M`${d(u)} [m s^-1]`} it covers ${M`${d(snap(thinking))} [m]`}.`));
   } else if (thinking + toLimit > D + 1e-9) {
@@ -60,8 +60,11 @@ export function solveModels(k = {}) {
     models.push(lane({ u, D, stages: [...(react > 0 ? [{ kind: 'hold', t: react }] : []), { kind: 'down', a, v: limit }, { kind: 'hold' }] }, say3, null));
   }
   if (models.some((m) => !m)) return fail('Those numbers do not fit one of the models.');
+  // a lane that cannot do what its model says is named by what it does
+  const doing = ['stops short of the sign', 'still above the limit at the sign', thinking >= D - 1e-9 ? 'passes the sign while reacting' : 'still above the limit at the sign'];
+  models.forEach((m, i) => { if (!m.does) m.does = doing[i]; });
   const notes = models.map((m, i) => (m.note ? `Model ${i + 1}: ${m.note}${m.xEnd >= D - 1e-9 ? ` It reaches the sign at ${M`t = ${d(m.tSign)} [s]`}, at ${M`${d(m.vSign)} [m s^-1]`}.` : ''}`
-    : `Model ${i + 1}, which ${m.say}, reaches the sign at ${M`t = ${d(m.tSign)} [s]`}, at ${M`${d(m.vSign)} [m s^-1]`}.`));
+    : `Model ${i + 1} (${m.say}) reaches the sign at ${M`t = ${d(m.tSign)} [s]`}, at ${M`${d(m.vSign)} [m s^-1]`}.`));
   const derived = models.map((m, i) => (m.note && m.xEnd < D - 1e-9 ? `model ${i + 1}: stops ${M`${d(snap(D - m.xEnd))} [m]`} short`
     : `model ${i + 1}: ${M`t = ${d(m.tSign)} [s]`}, ${M`${d(m.vSign)} [m s^-1]`}`));
   return { ok: true, models, D, u, limit, notes, derived };

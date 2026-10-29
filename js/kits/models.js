@@ -80,7 +80,7 @@ export const models = {
   ending(solved) {
     const M3 = solved.models;
     const cell = (x) => `<b>${tr(x)}</b>`;
-    const rows = M3.map((m, i) => `<div class="ph-row" role="row" data-key="${['first', 'second', 'third'][i]}"><span class="ph-name" role="cell"><b>Model ${i + 1}</b><em>${m.say}</em></span>
+    const rows = M3.map((m, i) => `<div class="ph-row" role="row" data-key="${['first', 'second', 'third'][i]}"><span class="ph-name" role="cell"><b>Model ${i + 1}</b><em>${m.does}</em></span>
       <span role="cell">${cell(m.tSign)}</span><span role="cell">${cell(m.vSign)}</span></div>`).join('');
     return {
       eyebrow: `Three models, one sign`,

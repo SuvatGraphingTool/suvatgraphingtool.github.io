@@ -895,6 +895,16 @@ group('Braking for a sign: three models', () => {
   ok(g.every((x) => x.series.length === 3 && x.series.every((s) => s.dash)), 'three models on each graph, dashed along the road');
 });
 
+group('Audit 8', () => {
+  const w = twoPlaneWorking(solveTwoPlane({ A: { v: { x: 1, y: 0 } }, B: { r0: { x: -3, y: -4 }, v: { x: 0, y: 0 } } })).flatMap((s) => s.rows).map((r) => strip(r.r || '')).join(' ');
+  ok(!/\+\s*\(−/.test(w), 'a lone negative part is written with a minus, not + (−4j)', w);
+  const lh = solveTwoPlane({ units: 'km', A: { r0: { x: -2, y: 9 }, r1: { x: 4, y: 6 }, t1: 0.6 }, find: 'B', at: { sights: [{ due: 'E', t: 1.8 }, { due: 'NE', t: 2 }] } });
+  ok(lh.ok && lh.f.tMax >= 2 && /B is at/.test(KITS.twoplane.ending(lh).title), 'the lighthouse run reaches both sightings, and the ending says where it is', lh.reason);
+  const sh = KITS.models.solve({ u: 25, D: 60, a: 6, limit: 13, react: 0.2 });
+  ok(sh.ok && sh.models.every((m) => m.does), 'every lane says what it does');
+  ok(!/which with no|which no/.test(KITS.models.solve({ u: 25, D: 48, a: 6, limit: 13 }).notes.join(' ')), 'no reaction time reads cleanly');
+});
+
 function e23F0() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }); }
 function e23F() { return solveTarget({ g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' }).shown; }
 function w19F() { return flight({ ux: 30, uy: -1.4, h0: 2.4, g: 9.8 }, { d: 12, H: 0.9 }, 'net'); }

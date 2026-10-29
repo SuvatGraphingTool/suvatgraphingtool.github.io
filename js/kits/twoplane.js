@@ -4,9 +4,9 @@
 // lays out what the engine answered (rule 4).
 
 import { solveTwoPlane, twoPlaneWorking } from '../core/twoplane.js';
-import { COMPASS } from '../core/plane.js';
+import { COMPASS, vsrc } from '../core/plane.js';
 import * as stage from '../render/twoplane.js';
-import { M, num } from '../notation.js';
+import { M, T, num } from '../notation.js';
 
 const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const part = (key, col, c, what, hint) => ({ key, col, label: `${M`vec ${c}`} part of ${what}`, aria: `${col}: the ${c} part of ${what}`, placeholder: '—', hint });
@@ -116,7 +116,9 @@ export const twoplane = {
   ending(solved) {
     const a = solved.answers.find((x) => x.kind === 'p') ? `p = ${tr(solved.p)}.`
       : solved.answers.find((x) => x.kind === 'due') ? `${tr(solved.answers.find((x) => x.kind === 'due').dist)} ${solved.U.len} apart at t = ${tr(solved.answers.find((x) => x.kind === 'due').t)} ${solved.U.time}.`
-        : solved.answers.find((x) => x.kind === 'apart')?.times.length ? `At t = ${solved.answers.find((x) => x.kind === 'apart').times.map((x) => tr(x)).join(' and ')} ${solved.U.time}.` : 'Their tracks, from O.';
+        : solved.answers.find((x) => x.kind === 'apart')?.times.length ? `At t = ${solved.answers.find((x) => x.kind === 'apart').times.map((x) => tr(x)).join(' and ')} ${solved.U.time}.`
+          : solved.f.lighthouse ? `B is at ${T`${vsrc(solved.B.r0)}`} ${solved.U.len}.`
+            : solved.pre.length ? `A’s velocity is ${T`${vsrc(solved.A.v)}`} ${solved.U.speedText}.` : 'Their tracks, from O.';
     return {
       eyebrow: `Two, at constant velocities`,
       title: a,
