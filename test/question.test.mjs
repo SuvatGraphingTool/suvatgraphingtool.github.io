@@ -370,5 +370,20 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(toPlace({ understood: true, scenario: 'platform', summary: 'x', h: 60 }, 'ball pushed off a 60 m cliff, how fast was it pushed if it lands 30 m out').boxes.u === undefined, 'nor a question asking how fast');
 }
 
+// QA 1 Nov: "A starts from rest at 2 m/s², B passes at 6 m/s: when does A catch B, how far have they gone" —
+// read with answer "time" and "distance", both parts said "Not one this app works out for you"
+{
+  const { fromReader } = await import('../js/parts/answers.js');
+  const ps = fromReader('two-on-a-road', [
+    { label: 'a', asks: 'when does A catch B', answer: 'time' },
+    { label: 'b', asks: 'how far have they gone', answer: 'distance' },
+    { label: 'c', asks: 'how fast is A going when it passes B', answer: 'speed' },
+  ]);
+  ok(ps[0].find === 'events.overtake.t', 'a "time" for when one catches the other is the meeting');
+  ok(ps[1].find === 'events.overtake.x', 'and how far, where it happens');
+  ok(!ps[2].find, 'a speed asked "when it passes" is never answered with the time it passes');
+  ok(fromReader('two-on-a-road', [{ label: 'a', asks: 'when are they level', answer: 'meeting2' }])[0].find === 'events.overtake.t', 'a numbered key that is not there is read as its kind');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

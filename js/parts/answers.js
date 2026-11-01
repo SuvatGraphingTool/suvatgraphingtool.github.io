@@ -87,9 +87,17 @@ export function fromReader(id, raw, boxes = []) {
     // of the kind its words ask for — a sketch, or the only speed there is
     const words = String(r.asks ?? '').toLowerCase();
     const only = (k) => { const m = offer.filter((a) => a.kind === k); return m.length === 1 ? m[0] : null; };
+    // a kind named for a key ("time" where the key is "meeting"), and "when do they
+    // meet / catch up / draw level" — the one meeting there is
+    const meets = /\b(when|catch(es)?|meet|level|overtakes?|pass(es)?|collide)\b/.test(words);
+    const named = ['speed', 'time', 'height', 'distance', 'acceleration', 'angle'].filter((k) => words.includes(k));
+    const asKind = (k) => only(k) || (k === 'time' && meets ? only('meeting') : null);
     const hit = offer.find((a) => a.key === r.answer)
       || (/sketch|graph/.test(words) ? only('graph') : null)
-      || ['speed', 'time', 'height', 'distance', 'acceleration', 'angle'].map((k) => (words.includes(k) ? only(k) : null)).find(Boolean);
+      || (typeof r.answer === 'string' ? asKind(r.answer.replace(/\d+$/, '')) : null)
+      || named.map(asKind).find(Boolean)
+      // "when does A catch B", with no other kind asked for
+      || (meets && !named.some((k) => k !== 'time') && !/^(speed|height|distance|acceleration|angle)/.test(r.answer || '') ? only('meeting') : null);
     const base = hit ? (hit.part || hit) : null;
     const p = base
       // with no words of its own, a part says what it is — never another paper's numbers

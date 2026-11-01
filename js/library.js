@@ -107,6 +107,9 @@ export const LIBRARY = [
       { label: 'a', kind: 'acceleration', ask: 'What is the acceleration of A while it slows down?', find: 'A.a', sym: 'a_A', unit: 'm s^-2', at: 'A.tau', step: 'change of speed', paper: -0.4 },
       { label: 'b', kind: 'meeting', ask: 'When does B draw level with A and overtake it?', find: 'events.overtake.t', sym: 't', unit: 's', trim: true, at: 'events.overtake.t', step: 'overtakes', uses: ['a'], paper: 45 },
     ],
+    answers: [
+      { kind: 'distance', say: 'how far from the start they are when one passes the other', find: 'events.overtake.x', sym: 'x', unit: 'm', trim: true, at: 'events.overtake.t', step: 'overtakes' },
+    ],
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '9' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2013', q: '5', part: 'the motorbike' },
