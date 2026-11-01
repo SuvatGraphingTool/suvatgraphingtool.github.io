@@ -1459,6 +1459,26 @@ group('Two apples, one tree: AQA 7357/2 Jun 2024 Q16', async () => {});
   ok(!solveApples({ A: { t: -1 }, B: { t: 0.6 }, g: 9.8 }).ok && !solveApples({ B: { t: 0.6 }, g: 9.8 }).ok, 'a negative or missing time is refused');
 }
 
+group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () => {});
+{
+  const { solveBridge, bridgeWorking } = await import('../js/core/bridge.js');
+  const s = solveBridge({ V: 4, T: 2.4, drop: 3.6, g: 9.8 });
+  ok(s.ok && near(s.uy, 10.26, 1e-9), '(b) the vertical component is 10.26 m s⁻¹', s.reason);
+  ok(near(s.u, 11.0, 0.05) && near(s.alpha, 68.7, 0.05), '(c) u = 11.0 m s⁻¹ at 68.7° above the horizontal', `${s.u} ${s.alpha}`);
+  ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
+  ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
+  ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
+  for (const id of ['from-the-bridge', 'two-apples']) {
+    const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit], a = K.solve(K.read(e.example));
+    for (const p of (e.parts || []).filter((p) => p.paper != null)) {
+      const v = String(p.find).split('.').reduce((o, k) => o?.[k], a);
+      ok(near(v, p.paper, p.tol ?? 0.005), `${id} part (${p.label}): the engine's ${p.find} is the paper's ${p.paper}`, v);
+    }
+  }
+  ok(!solveBridge({ V: 4, T: 1, drop: -20, g: 9.8 }).ok, 'caught above the throw is refused: the runner is below the bridge');
+  ok(!solveBridge({ V: 0, T: 2.4, drop: 3.6, g: 9.8 }).ok && !solveBridge({ V: 4, T: 0, drop: 3.6, g: 9.8 }).ok && !solveBridge({ V: 4, T: 2.4, g: 9.8 }).ok, 'no speed, no time or no drop is refused');
+}
+
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 

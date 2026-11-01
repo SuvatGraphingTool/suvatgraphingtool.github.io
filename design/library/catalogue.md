@@ -125,6 +125,7 @@ this library: *covered* names the one of the twelve that does it.
 | 89 | WJEC | 2300U20-1 Unit 2 (AS) | Jun 2019 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-2/June%202019%20QP%20-%20Unit%202%20WJEC%20Maths%20AS-level.pdf) | Kicked up from 0.9 m to 10.9 m: u = 14; time to the ground; in an 11.5 m sports hall, does a lighter ball hit the ceiling? | 9.8 | **built**: `under-the-ceiling` (u = 14; 2.9 s; turns 0.6 m below the ceiling) |
 | 90 | AQA | 7357/2 | Jun 2024 | 16 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202024%20QP.pdf) | Two apples at rest on different branches fall at the same instant; first lands at 0.5 s, second 0.1 s later; show the vertical distance between them is about 54 cm | 9.8 | **built** → `two-apples` |
 | 91 | AQA | 7357/2 | Jun 2024 | 19 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202024%20QP.pdf) | A toy shoots balls up at 7 m/s: verify a 2.5 m greatest height; then between 0° and 11° from the vertical, the least greatest height k | 9.8 | **covered** by the twelve: `up` gives the 2.5 m greatest height straight up; `arc` at 79° to the horizontal (11° from the vertical) gives 2.41 m — the least, since the vertical part of 7 m s⁻¹ is smallest at the widest angle |
+| 92 | OCR MEI | H640/01 | Jun 2024 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202024%20QP.pdf) | From a bridge, a ball thrown just as a runner at a steady 4 m/s passes below; caught 2.4 s later, 3.6 m below the throw; the vertical component, then the speed and angle | 9.8 | **built** → `from-the-bridge` |
 
 ## Built, and why it is built the way it is
 
@@ -405,6 +406,32 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `from-the-bridge` — From the bridge, to the runner
+
+**Papers.** OCR MEI H640/01 Jun 2024 Q14 (a ball thrown from a footbridge as a
+runner at a steady 4 m s⁻¹ passes beneath, caught 2.4 s later 3.6 m below the
+point of projection: vertical component 10.26 m s⁻¹, speed 11.0 m s⁻¹, angle
+68.7°).
+
+**Why the twelve cannot.** They take the throw and say where it lands; here
+the throw is the unknown, and its horizontal part comes from a second body —
+the runner who keeps pace with it. `catch-it` takes a known throw and finds
+the catcher.
+
+**How it is solved.** js/core/bridge.js: across, the ball and the runner start
+level and meet at the catch, so u_x = V; up, s = ut + ½at² with s = −drop at
+t = T gives u_y; then u = √(u_x² + u_y²) and tan α = u_y⁄u_x. The twelve's
+`flight` draws it from the point of projection.
+
+**The stage.** Side on along the road: a concrete footbridge end on (deck,
+parapet, pier), lamp posts, the road; the thrower on the deck with her hand
+at the point of projection, the runner (in stone) passing beneath and running
+on to the catch; the path in the displacement hue, the ball's velocity (across
+dashed, up solid) and the runner's (across, dashed); the drop as a bracket, a
+ring at the catch, the distance along the road.
+
+**Parts.** (a) out (modelling, in words); (b) `uy`; (c) `u` and `alpha`.
 
 ### `two-apples` — Two apples, one tree
 

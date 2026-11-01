@@ -503,7 +503,7 @@ export function motorcycle(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, bra
     the ground goes by (FIGURES.runner.cycle is matched to the sweep), so she
     neither skates nor moonwalks. `still` stands her upright, for a runner at
     rest. */
-export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still = false } = {}) {
+export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still = false, reach = null } = {}) {
   const ink = ring || P.strong;
   const thigh = L * 0.25, shin = L * 0.26, upper = L * 0.16, fore = L * 0.15;
   const hx = -L * 0.2;
@@ -557,7 +557,14 @@ export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still =
     limb(g, [HIP, SH], shirt, lw * 2.1);
     limb(g, [HIP, { x: HIP.x + (SH.x - HIP.x) * 0.18, y: HIP.y + (SH.y - HIP.y) * 0.18 }], shorts, lw * 2.15);
     limb(g, near, skin, lw); limb(g, near.slice(0, 2), shorts, lw * 1.15);
-    const A = arm(a, 1); limb(g, A, skin, lw * 0.8); limb(g, A.slice(0, 2), shirt, lw * 0.95);
+    // `reach`, a point on the canvas: the near hand goes out to it (a catch), as far as the arm allows
+    let A = arm(a, 1);
+    if (reach) {
+      const T0 = { x: (reach.x - X) * dir, y: reach.y - Y }, dx = T0.x - SH.x, dy = T0.y - SH.y, dd = Math.hypot(dx, dy) || 1;
+      const m = Math.min(dd, (upper + fore) * 0.98), Tt = { x: SH.x + (dx / dd) * m, y: SH.y + (dy / dd) * m };
+      A = [SH, joint(SH, Tt, upper, fore, -1), Tt];
+    }
+    limb(g, A, skin, lw * 0.8); limb(g, A.slice(0, 2), shirt, lw * 0.95);
     // shoes
     for (const leg of [far, near]) { g.fillStyle = '#2b2628'; g.beginPath(); g.ellipse(leg[2].x + lw * 0.4, leg[2].y - lw * 0.2, lw * 0.75, lw * 0.4, 0, 0, TAU); g.fill(); }
     // the head, lit from the left, with hair
