@@ -175,7 +175,7 @@ export const LIBRARY = [
     place: 'Side on: the launch, the point, and the ground',
     example: { g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' },
     parts: [
-      { label: 'a', kind: 'show', ask: 'Show how long the ball takes to reach the point. The paper has it in terms of the angle; this is the steeper one.', find: 'shown.at.t', sym: 't', unit: 's', at: 'shown.at.t', step: 'at the point' },
+      { label: 'a', kind: 'show', ask: 'How long does the ball take to reach the point? In terms of the angle, the working shows it; the number is for the angle on the stage.', find: 'shown.at.t', sym: 't', unit: 's', at: 'shown.at.t', step: 'at the point' },
       { label: 'b', kind: 'angle', ask: 'Find the two angles of projection that pass through the point.', find: ['found.values.0', 'found.values.1'], sym: 'alpha', suffix: '°', at: 'shown.at.t', step: 'angle', paper: [71.57, 45] },
       { label: 'c', kind: 'height', ask: 'What is the greatest height the ball can reach on its way to the point?', find: 'flights.0.topBefore', sym: 'H', unit: 'm', trim: true, at: 'flights.0.apex.t', step: 'top of its path', uses: ['b'], paper: 36 },
     ],
@@ -245,7 +245,7 @@ export const LIBRARY = [
     example: { start: 'down', h: 5, U: 3.5, y: 5, T: 0.87, stop: 'y', g: 9.8 },
     parts: [
       { label: 'i', kind: 'speed', ask: 'How fast is the ball moving when it hits the ground?', find: 'extras.vIn1', unit: 'm s^-1', at: 'extras.t1', step: 'down to the ground', paper: 10.5 },
-      { label: 'ii', kind: 'speed', ask: 'It passes its starting point on the way up 0.87 s after the bounce. How fast does it rebound?', find: 'extras.vOut1', unit: 'm s^-1', dp: 1, at: 'end', step: 'bounce', paper: 10.0 },
+      { label: 'ii', kind: 'speed', ask: 'It passes its starting point on the way up 0.87 s after the bounce. How fast does it rebound?', find: 'extras.vOut1', unit: 'm s^-1', dp: 1, at: 'extras.t1', step: 'bounce', paper: 10.0 },
     ],
     sources: [
       { board: 'OCR', paper: '4728 M1', session: 'Jun 2014', q: '1', part: 'all' },
@@ -328,11 +328,11 @@ export const LIBRARY = [
     parts: [
       { label: 'a', out: 'explaining what modelling the ball as a particle means: words, not a number' },
       { label: 'b', kind: 'velocity', ask: 'Find the vertical component of the ball’s initial velocity.',
-        find: 'uy', sym: 'u_y', unit: 'm s^-1', dp: 2, at: 'end', step: 'vertical component', paper: 10.26, tol: 0.01 },
-      { label: 'c', kind: 'speed', ask: 'Find the speed of projection.',
-        find: 'u', sym: 'u', unit: 'm s^-1', dp: 1, at: 'end', step: 'speed and the angle', paper: 11.0, tol: 0.05 },
+        find: 'uy', sym: 'u_y', unit: 'm s^-1', dp: 2, at: 0, step: 'vertical component', paper: 10.26, tol: 0.01 },
+      { label: 'c i', kind: 'speed', ask: 'Find the speed of projection.',
+        find: 'u', sym: 'u', unit: 'm s^-1', dp: 1, at: 0, step: 'speed and the angle', paper: 11.0, tol: 0.05 },
       { label: 'c ii', kind: 'angle', ask: 'Find the angle of projection above the horizontal.',
-        find: 'alpha', sym: 'alpha', unit: '°', dp: 1, at: 'end', step: 'speed and the angle', paper: 68.7, tol: 0.05 },
+        find: 'alpha', sym: 'alpha', suffix: '°', dp: 1, at: 0, step: 'speed and the angle', paper: 68.7, tol: 0.05 },
     ],
     sources: [
       { board: 'OCR MEI', paper: 'H640/01', session: 'Jun 2024', q: '14', part: '(b), (c)' },
@@ -420,7 +420,7 @@ export const LIBRARY = [
     example: { T: 60, back: 4, 's1.who': 'car', 's1.v': 15, 's1.t': 6, 's2.who': 'car', 's2.v': 15, 's2.t': 11, 's3.who': 'car', 's3.v': 0, 's3.t': 2,
       's4.who': 'foot', 's4.u': -2, 's4.v': -2, 's4.t': 20, 's5.who': 'foot', 's5.u': 0, 's5.v': 0, 's6.who': 'foot', 's6.u': 5, 's6.v': 5 },
     parts: [
-      { label: 'i', kind: 'acceleration', ask: 'What are the car’s acceleration at the start and its acceleration as it stops?', find: ['S.0.a', 'S.2.a'], sym: 'a', unit: 'm s^-2', trim: true, at: 'S.2.t1', step: 'each segment', paper: [2.5, -7.5] },
+      { label: 'i', kind: 'acceleration', ask: 'What is the car’s acceleration as it sets off, and as it stops?', find: ['S.0.a', 'S.2.a'], sym: 'a', unit: 'm s^-2', trim: true, at: 'S.2.t1', step: 'each segment', paper: [2.5, -7.5] },
       { label: 'ii', kind: 'distance', ask: 'How far does the car travel?', find: 'X', sym: 's', unit: 'm', trim: true, at: 'S.2.t1', step: 'each segment', paper: 225 },
       { label: 'iii', kind: 'time', ask: 'How long is the driver in the shop?', find: 'S.4.t', sym: 't', unit: 's', trim: true, at: 'S.4.t1', step: 'times left', uses: ['ii'], paper: 13 },
     ],
@@ -509,7 +509,7 @@ export const LIBRARY = [
     parts: [
       { label: 'a', kind: 'speed', ask: 'In the first model the car slows steadily all the way to the sign. How fast is it going there?', find: 'models.0.vSign', unit: 'm s^-1', trim: true, at: 'models.0.tSign', step: 'model 1: the whole', paper: 7 },
       { label: 'b', kind: 'time', ask: 'In the second it slows to the limit and holds it. How long does it take to reach the sign?', find: 'models.1.tSign', sym: 't', unit: 's', at: 'models.1.tSign', step: 'model 2: the whole', paper: 2.77 },
-      { label: 'c', kind: 'time', ask: 'In the third the driver reacts for 0.2 s first. How long does it take now?', find: 'models.2.tSign', sym: 't', unit: 's', at: 'models.2.tSign', step: 'model 3: the whole', paper: 2.58 },
+      { label: 'c', kind: 'time', ask: 'In the third the driver takes 0.2 s to react, still at 25 m s⁻¹, before braking. How long does it take now?', find: 'models.2.tSign', sym: 't', unit: 's', at: 'models.2.tSign', step: 'model 3: the whole', paper: 2.58 },
     ],
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Oct 2021', q: '3' },
@@ -535,8 +535,8 @@ export const LIBRARY = [
     place: 'Side on: a laboratory bench, two strips of foil on clamp stands',
     example: { look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 },
     parts: [
-      { label: 'iii', kind: 'speed', ask: 'How fast does the ball bearing leave the bench, from the two strips 0.50 m apart and 0.14 s?', find: 'u', unit: 'm s^-1', at: 0, step: 'speed it leaves', paper: 3.6, tol: 0.05 },
-      { label: 'iv', kind: 'distance', ask: 'How far has it dropped at the second strip? Is that the strip’s centre, 8 cm lower?', find: 'fall', sym: 's_y', unit: 'm', dp: 4, at: 't2', step: 'second strip', uses: ['iii'], paper: 0.096 },
+      { label: 'iii', kind: 'speed', ask: 'It breaks two strips 0.50 m apart, 0.14 s apart. How fast does it leave the bench?', find: 'u', unit: 'm s^-1', at: 0, step: 'speed it leaves', paper: 3.6, tol: 0.05 },
+      { label: 'iv', kind: 'distance', ask: 'How far has it dropped at the second strip? Is that the strip’s centre, 8 cm lower?', find: 'fall', sym: 's_y', unit: 'm', dp: 3, at: 't2', step: 'second strip', uses: ['iii'], paper: 0.096 },
     ],
     sources: [
       { board: 'Edexcel', paper: '9PH0/01', session: 'Jun 2018', q: '18(b)(iii)(iv)' },
@@ -562,9 +562,11 @@ export const LIBRARY = [
     place: 'Side on: level ground, a brick wall, and where it lands',
     example: { g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 },
     parts: [
+      { label: 'a', out: 'deriving the equation of the path, which the working does in letters' },
       { label: 'b', kind: 'angle', ask: 'At what angle is the ball projected?', find: 'theta', sym: 'theta', suffix: '°', dp: 1, at: 'f.tWall', step: 'angle', paper: 33.7 },
       { label: 'c', kind: 'distance', ask: 'It is projected at 54.6 m s⁻¹. Find $a$.', find: 'a', sym: 'a', unit: 'm', dp: 1, at: 'f.tWall', step: 'length a', uses: ['b'], paper: 70.2 },
       { label: 'd', kind: 'height', ask: 'What is the greatest height of the ball?', find: 'Hmax', sym: 'H', unit: 'm', dp: 1, at: 'f.tApex', step: 'greatest height', uses: ['c'], paper: 46.8 },
+      { label: 'e', out: 'a comment on the model, in words' },
     ],
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '13(b)(c)(d)' },
@@ -654,7 +656,7 @@ export const LIBRARY = [
     place: 'From above: a plane, i east and j north',
     example: { 'u.x': 2, 'u.y': -3, k2: 'r', t2: 2, 'p2.x': 7, 'p2.y': -10, 'a2.x': 4, 'a2.y': 8.8, dir: 'NE' },
     parts: [
-      { label: 'a', kind: 'acceleration', ask: 'Find the acceleration from the two moments the paper gives.', find: ['a.x', 'a.y'], vec: true, sym: 'vec a', unit: 'm s^-2', at: 'T', step: 'from what the paper gives', paper: [1.5, -2] },
+      { label: 'a', kind: 'acceleration', ask: 'Find the acceleration, from its velocity at $O$ and its position 2 s later.', find: ['a.x', 'a.y'], vec: true, sym: 'vec a', unit: 'm s^-2', at: 'T', step: 'from what the paper gives', paper: [1.5, -2] },
       { label: 'b', kind: 'time', ask: 'After the acceleration changes, how long until the particle is moving north-east?', find: 'dirAfter', sym: 't', unit: 's', trim: true, at: 'tDir', step: 'paper asks', uses: ['a'], paper: 2.5 },
     ],
     sources: [
@@ -686,7 +688,7 @@ export const LIBRARY = [
       { label: 'i', kind: 'time', ask: 'Find the time $T$ missing from the graph.', find: 'blankT', sym: 'T', unit: 's', trim: true, at: 'blankT', step: 'corner left blank', paper: 1.75 },
       { label: 'ii', kind: 'velocity', ask: 'What is the velocity at $t = 2$, at $t = 8$ and at $t = 9$?', find: ['f.asked.0.v', 'f.asked.1.v', 'f.asked.2.v'], sym: 'v', unit: 'm s^-1', trim: true, at: 9, step: 'velocity at each', paper: [-4, 4, 4] },
       { label: 'iii', kind: 'distance', ask: 'How far does it travel in the first 10 seconds?', find: 'dist', sym: 'd', unit: 'm', trim: true, at: 'f.tEnd', step: 'distance travelled', paper: 25 },
-      { label: 'iv', kind: 'time', ask: 'After $t = 10$ it slows steadily. When is its speed $4 [m s^-1]$ again?', find: 'tail.ts.0', sym: 't', unit: 's', trim: true, at: 'tail.ts.0', step: 'after', paper: 12 },
+      { label: 'iv', kind: 'time', ask: 'After $t = 10$, $x = 20t - t^2 - 96$. When is its speed $4 [m s^-1]$ again?', find: 'tail.ts.0', sym: 't', unit: 's', trim: true, at: 'tail.ts.0', step: 'after', paper: 12 },
     ],
     sources: [
       { board: 'OCR', paper: '4728 M1', session: 'Jun 2014', q: '5' },
@@ -740,7 +742,7 @@ export const LIBRARY = [
     example: { k: 0.5, when: 'top' },
     parts: [
       { label: 'a', kind: 'time', ask: 'How long after $Q$ is projected do the two collide?', find: 'tau', sym: 't', suffix: 'U/g', trim: true, at: 'f.tc', step: 'collide', paper: 1 },
-      { label: 'b', kind: 'height', ask: 'How far above $O$ are they when they collide?', find: 'yc', sym: 'h', trim: true, at: 'f.tc', step: 'collide', uses: ['a'], paper: 0 },
+      { label: 'b', kind: 'height', ask: 'How far above $O$ are they when they collide?', find: 'yc', sym: 'h', trim: true, at: 'f.tc', step: 'collide', uses: ['a'], paper: 0, note: 'They meet at $O$ itself.' },
     ],
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2020', q: '3' },
@@ -767,8 +769,8 @@ export const LIBRARY = [
     example: { askT: 96, 'A1.kind': 'up', 'A1.t': 30, 'A1.v': 20, 'A2.kind': 'hold', 'A2.t': 120, 'A3.kind': 'down', 'A3.t': 30, 'A3.v': 0,
       'B1.kind': 'up', 'B1.t': 90, 'B2.kind': 'down', 'B2.t': 90, 'B2.v': 0 },
     parts: [
-      { label: 'a', kind: 'acceleration', ask: 'What is the acceleration of the second train?', find: 'B.J.a.1', sym: 'a', unit: 'm s^-2', dp: 3, at: 'B.J.t.1', step: 'train b: the area', paper: 0.370 },
-      { label: 'b', kind: 'time', ask: 'At what times are the two trains moving at the same speed?', find: ['eq.0', 'eq.1'], sym: 't', unit: 's', trim: true, at: 'eq.1', step: 'same speed', uses: ['a'], paper: [54, 126] },
+      { label: 'a', kind: 'acceleration', ask: 'What is the acceleration of the second train while it speeds up?', find: 'B.J.a.1', sym: 'a', unit: 'm s^-2', dp: 3, at: 'B.J.t.1', step: 'train b: the area', paper: 0.370 },
+      { label: 'b', kind: 'time', ask: 'At what times, while both are moving, do the two trains have the same speed?', find: ['eq.0', 'eq.1'], sym: 't', unit: 's', trim: true, at: 'eq.1', step: 'same speed', uses: ['a'], paper: [54, 126] },
       { label: 'c', kind: 'distance', ask: 'How far apart are the trains 96 s after they set off?', find: 'gap', sym: 'd', unit: 'm', dp: 1, at: 96, step: 'how far apart', paper: 73.3 },
     ],
     sources: [
@@ -822,7 +824,7 @@ export const LIBRARY = [
     place: 'A (t, v) graph above, the line with its start O below',
     example: { v0: 0, 'p1.t': 4, 'p1.v': -2, 'p2.t': 6, 'p2.v': 2, 'p3.t': 11, 'p3.v': 2, 'p4.t': 13, 'p4.v': -4, 'p5.t': 16, 'p5.v': -4, 'p6.t': 20, 'p6.v': 0 },
     parts: [
-      { label: 'a', kind: 'acceleration', ask: 'What is the greatest size of the acceleration, and when?', find: 'aMax', sym: 'a', unit: 'm s^-2', trim: true, span: ['S.3.t0', 'S.3.t1'], step: 'greatest acceleration', paper: 3 },
+      { label: 'a', kind: 'acceleration', ask: 'What is the greatest size of the acceleration? The band on the clock shows when.', find: 'aMax', sym: 'abs(a)', unit: 'm s^-2', trim: true, span: ['S.3.t0', 'S.3.t1'], step: 'greatest acceleration', paper: 3 },
       { label: 'b', kind: 'time', ask: 'At what times is it back where it started?', find: ['times.0', 'times.1'], sym: 't', unit: 's', trim: true, at: 'times.1', step: 'back where it started', paper: [8, 14] },
     ],
     sources: [

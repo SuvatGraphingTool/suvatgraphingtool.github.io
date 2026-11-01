@@ -14,17 +14,18 @@ import { byId } from '../scenarios.js';
     launch (or road) solution with the flight as `f`. */
 export const LAUNCH_ANSWERS = [
   { key: 'flight', kind: 'time', say: 'time of flight', find: 'f.tFlight', sym: 't', unit: 's', at: 'end', step: 'time of flight' },
-  { key: 'top', kind: 'height', say: 'greatest height above the ground', find: 'f.apexHeight', sym: 'H', unit: 'm', at: 'f.tApex' },
-  { key: 'tTop', kind: 'time', say: 'time to the greatest height', find: 'f.tApex', sym: 't', unit: 's', at: 'f.tApex' },
-  { key: 'range', kind: 'distance', say: 'horizontal distance to where it lands', find: 'f.range', sym: 'x', unit: 'm', at: 'end' },
-  { key: 'vLand', kind: 'speed', say: 'speed as it lands', find: 'f.vLanding', unit: 'm s^-1', at: 'end' },
+  { key: 'top', kind: 'height', say: 'greatest height above the GROUND (not above the launch)', find: 'f.apexHeight', sym: 'H', unit: 'm', at: 'f.tApex', step: 'greatest height' },
+  { key: 'rise', kind: 'height', say: 'greatest height above the point it was launched from', find: 'f.apexRise', sym: 'H', unit: 'm', at: 'f.tApex', step: 'greatest height' },
+  { key: 'tTop', kind: 'time', say: 'time to the greatest height', find: 'f.tApex', sym: 't', unit: 's', at: 'f.tApex', step: 'greatest height' },
+  { key: 'range', kind: 'distance', say: 'horizontal distance to where it lands', find: 'f.range', sym: 'x', unit: 'm', at: 'end', step: 'horizontal' },
+  { key: 'vLand', kind: 'speed', say: 'speed as it lands', find: 'f.vLanding', unit: 'm s^-1', at: 'end', step: 'time of flight' },
   { key: 'u', kind: 'speed', say: 'speed of projection', find: 'params.u', sym: 'u', unit: 'm s^-1', at: 0 },
   { key: 'theta', kind: 'angle', say: 'angle of projection', find: 'params.theta', sym: 'theta', suffix: '°', dp: 1, at: 0 },
 ];
 export const ROAD_ANSWERS = [
   { key: 's', kind: 'distance', say: 'the distance between the two points', find: 'five.s.value', sym: 's', unit: 'm', at: 'end' },
-  { key: 'u', kind: 'speed', say: 'the speed at the first point', find: 'five.u.value', sym: 'u', unit: 'm s^-1', at: 0 },
-  { key: 'v', kind: 'speed', say: 'the speed at the second point', find: 'five.v.value', sym: 'v', unit: 'm s^-1', at: 'end' },
+  { key: 'u', kind: 'speed', say: 'the velocity at the first point', find: 'five.u.value', sym: 'u', unit: 'm s^-1', at: 0 },
+  { key: 'v', kind: 'speed', say: 'the velocity at the second point', find: 'five.v.value', sym: 'v', unit: 'm s^-1', at: 'end' },
   { key: 'a', kind: 'acceleration', say: 'the acceleration', find: 'five.a.value', sym: 'a', unit: 'm s^-2', at: 'end' },
   { key: 't', kind: 'time', say: 'the time between the two points', find: 'five.t.value', sym: 't', unit: 's', at: 'end' },
 ];
@@ -91,7 +92,8 @@ export function fromReader(id, raw, boxes = []) {
       || ['speed', 'time', 'height', 'distance', 'acceleration', 'angle'].map((k) => (words.includes(k) ? only(k) : null)).find(Boolean);
     const base = hit ? (hit.part || hit) : null;
     const p = base
-      ? { ...base, label, ask: clip(r.asks, 160) || base.say || base.ask, prose: true }
+      // with no words of its own, a part says what it is — never another paper's numbers
+      ? { ...base, label, ask: clip(r.asks, 160) || (hit.say && !/\d/.test(hit.say) ? hit.say : `The ${base.kind}`), prose: true }
       : { label, kind: 'other', ask: clip(r.asks, 160) || 'This part', prose: true };
     // a sketch read from another paper says only where it is drawn
     if (base?.kind === 'graph') p.say = 'It is drawn on the stage: the graphs are the motion the engine found.';

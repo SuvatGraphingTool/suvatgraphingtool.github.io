@@ -10,7 +10,7 @@
 export const live = (parts) => (parts || []).filter((p) => !p.out);
 
 /** `(a)`, `(ii)`. */
-export const tag = (p) => `(${p.label})`;
+export const tag = (p) => String(p.label).split(/[ .]+/).map((x) => `(${x})`).join('');
 
 /**
  * Look a dotted path up in what an engine answered. A segment that meets an

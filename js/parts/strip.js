@@ -77,6 +77,7 @@ export function stripHTML(parts, runs, k, steps) {
     const run = runs[k], p = run.part, step = steps?.[stepOf(p, steps || [])];
     body = `<p class="pask"><b class="plab">${tag(p)}</b> ${askHTML(p)}</p>
       <p class="pans">${answerHTML(run)}</p>
+      ${p.note ? `<p class="plean">${askHTML({ ask: p.note })}</p>` : ''}
       ${leansHTML(run, runs)}
       ${p.given && Object.keys(p.given).length ? '<p class="plean"><span class="plean-i" aria-hidden="true">+</span>This part adds to what is given, and the motion is solved again.</p>' : ''}
       ${step ? `<details class="pwork"><summary>Working: ${step.title}</summary>${rowHTML(step)}</details>` : ''}`;

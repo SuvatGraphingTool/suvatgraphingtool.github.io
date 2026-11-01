@@ -98,7 +98,7 @@ parts: [
 
 | field | what it is |
 |---|---|
-| `label` | `'a'`, `'b'`, `'ii'`… — shown as (a), (b), (ii) |
+| `label` | `'a'`, `'b'`, `'ii'`, `'c ii'`… — shown as (a), (b), (ii), (c)(ii) |
 | `ask` | what the part asks, in our OWN words (the papers are copyrighted). Prose; any maths in it goes between `$` signs and is set by `js/notation.js` (`'the velocity at $t = 2$'`) |
 | `kind` | what it answers: `time` `height` `distance` `displacement` `speed` `velocity` `acceleration` `angle` `position` `meeting` `time-above` `area` `show` (a "show that"), `graph` (a sketch: no `find`, the stage is the answer, `say` tells the student where to look), `other`. The reader matches on it |
 | `find` | which engine output answers it: a dotted path into the kit's `solve()` answer (`'meet.t'`, `'f.tFlight'`, `'answers.0.value'`). A segment `name(3)` calls the engine's own function there (`'f.startOf(3)'`, `'f.posA(10).x'`). A segment that meets an array is an index if it is a number, else the element whose `key`, `name`, `id` or `kind` it is (`'extras.tMeet'`, `'events.overtake.t'`). A list of paths for a part with two answers (`['x.0', 'x.1']`: two times) |
@@ -110,6 +110,7 @@ parts: [
 | `carry` | `{ box: 'a' }` — from this part on, the box takes part (a)'s answer: the ENGINE's value, never a typed one. The part says so: "using t = 3.5 s from (a)" |
 | `uses` | `['a']` — the part leans on (a)'s answer without changing a box; it says so the same way |
 | `paper` | the mark scheme's answer (a number, or a list for `find` lists), for `test/library.test.mjs` only; `tol` its tolerance (default: half the last place the paper gives). Never shown as the app's answer — rule 4 |
+| `note` | one line said under the answer, notation between `$` signs (`'They meet at $O$ itself.'`) |
 | `out` | instead of everything else: the part is out of scope, and why. It shows as a dimmed chip |
 
 A scenario may also list `answers`: more outputs in the same shape (with `say`

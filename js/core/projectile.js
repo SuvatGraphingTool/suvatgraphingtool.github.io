@@ -78,6 +78,7 @@ export function flight({ u, theta, h, g }) {
     tFlight, tMax: bounded, infinite: !isFinite(tFlight),
     tApex: apexInFlight ? tApex : (uy > 0 ? tApex : 0),
     apexHeight: Math.max(h, apexHeight),
+    apexRise: Math.max(h, apexHeight) - h,   // the same top, measured from the launch
     apexInFlight,
     range,
     vLanding,
