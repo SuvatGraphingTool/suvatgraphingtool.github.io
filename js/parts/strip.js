@@ -8,10 +8,12 @@
 
 import { M, num, mathHTML } from '../notation.js';
 import { tag, leansOn, stepOf } from './parts.js';
+import { tidyProse } from '../ai/readout.js';
 
 const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
-/** A part's question: prose, with any maths in it written between $ signs and set by the notation module. */
-export const askHTML = (p) => String(p.ask ?? '').split('$').map((x, i) => (i % 2 ? mathHTML(x) : esc(x))).join('');
+/** A part's question: prose, with any maths in it written between $ signs and set by the notation module.
+    A part read from a student's question (`prose`) is their words, escaped and tidied. */
+export const askHTML = (p) => p.prose ? tidyProse(p.ask) : String(p.ask ?? '').split('$').map((x, i) => (i % 2 ? mathHTML(x) : esc(x))).join('');
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /** One answer, typeset: `t = 3.50 s`, two of them joined by "and". */
@@ -94,7 +96,7 @@ export function ticksHTML(runs, solved, k) {
   const f = (t) => Math.min(Math.max(t / tMax, 0), 1);
   const at = new Map();
   runs.forEach((r, i) => {
-    if (!r || r.solved !== solved || !r.moment) return;
+    if (!r || r.solved !== solved || !r.moment || (!r.part.find && r.part.kind !== 'graph')) return;
     const key = f(r.moment.t).toFixed(3);
     if (!at.has(key)) at.set(key, { f: f(r.moment.t), runs: [], i, span: r.moment.span });
     const g = at.get(key);
@@ -126,4 +128,10 @@ export function markGraphs(specs, run, color) {
 /** The part's card at the head of the working panel. */
 export function workingCardHTML(run) {
   return `<div class="pcardw"><p class="pcardw-h"><b>${tag(run.part)}</b> ${askHTML(run.part)}</p><p class="pans">${answerHTML(run)}</p></div>`;
+}
+
+/** Ask Suvat's reply to a question in parts: each part and the engine's answer to it. */
+export function replyHTML(runs) {
+  const rows = (runs || []).filter(Boolean).map((r) => `<li><b class="plab">${tag(r.part)}</b> <span class="preply-q">${askHTML(r.part)}</span> <span class="pans">${answerHTML(r)}</span></li>`);
+  return rows.length ? `<ol class="preply" aria-label="The question, part by part">${rows.join('')}</ol>` : '';
 }

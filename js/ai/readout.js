@@ -123,12 +123,15 @@ export function solutionHTML(steps, { moment } = {}) {
    turned into what this site prints (v^2 → v², sqrt → √, * → ×, a hyphen
    before a number → a minus sign), and the lightest markdown is honoured:
    paragraphs, bullets and bold. */
-export function proseHTML(text) {
-  const tidy = (s) => esc(s)
+/** One line of the model's prose, escaped and tidied: no ^2, no sqrt, no hyphen for a minus. */
+export const tidyProse = (s) => esc(s)
+    .replace(/\bm\/s(\^2|²)/g, 'm s⁻²').replace(/\bm\/s\b/g, 'm s⁻¹')
     .replace(/\^\(?-1\)?/g, '⁻¹').replace(/\^\(?-2\)?/g, '⁻²').replace(/\^2\b/g, '²').replace(/\^3\b/g, '³')
     .replace(/\bsqrt\s*\(/g, '√(').replace(/ \* /g, ' × ').replace(/ \/ /g, ' ÷ ').replace(/&lt;=/g, '≤').replace(/&gt;=/g, '≥')
     .replace(/(^|[\s(=])-(\d)/g, '$1−$2')
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+export function proseHTML(text) {
+  const tidy = tidyProse;
   const blocks = String(text || '').trim().split(/\n\s*\n/);
   return blocks.map((b) => {
     const lines = b.split('\n').map((l) => l.trim()).filter(Boolean);

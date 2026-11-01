@@ -154,7 +154,7 @@ group('Ask Suvat — every scenario the reader can choose is one the app has', (
   const ids = SCENARIOS.map((x) => x.id);
   ok(APP_SCENARIOS.every((id) => ids.includes(id)), 'toApp only names real scenarios');
   ok(ids.every((id) => APP_SCENARIOS.includes(id)), 'and every scenario can be chosen');
-  ok(SCENARIO_IDS.filter((x) => x !== 'other').join() === APP_SCENARIOS.join(),
+  ok(SCENARIO_IDS.filter((x) => x !== 'other' && x !== 'library').join() === APP_SCENARIOS.join(),
      "the Worker's schema offers exactly the same list");
 });
 
@@ -267,6 +267,46 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const plain = toApp({ ...asked, scenario: 'up' });
   ok(plain.id === 'up', 'straight up with no line stays Thrown straight up');
 });
+
+/* ── Ask Suvat: a question in parts, and the Past-paper library ─────────── */
+{
+  const fs = await import('node:fs');
+  const { source } = await import('../tools/reader-catalogue.mjs');
+  const { LIBRARY_IDS } = await import('../worker/src/library.js');
+  const { LIBRARY } = await import('../js/library.js');
+  const { KITS } = await import('../js/kits/index.js');
+  const { fromReader, answersFor, boxesOf } = await import('../js/parts/answers.js');
+  const { walk } = await import('../js/parts/parts.js');
+  const { byId } = await import('../js/scenarios.js');
+  group('Ask Suvat — the reader is told the library as it is, and its parts come back as the app’s', () => {
+    ok(fs.readFileSync(new URL('../worker/src/library.js', import.meta.url), 'utf8') === source(),
+       'worker/src/library.js is what tools/reader-catalogue.mjs makes today (run it after changing a scenario)');
+    ok(LIBRARY_IDS.join() === LIBRARY.map((s) => s.id).join(), 'it names every library scenario, and nothing else');
+    for (const s of LIBRARY) {
+      const keys = answersFor(s).map((a) => a.key);
+      ok(new Set(keys).size === keys.length && keys.every((k) => /^[a-z]+\d*$/.test(k)), `${s.id}: its answer keys are its own, and look like no box or label`);
+      const K = KITS[s.kit];
+      const r = K.solve(K.read(s.example));
+      for (const a of answersFor(s).filter((x) => x.part.find && !s.parts.includes(x.part))) {
+        const [p] = fromReader(s.id, [{ label: 'a', asks: a.say, answer: a.key }]);
+        const run = walk(() => r, {}, [p])[0];
+        ok(run.answer.ok, `${s.id}: its extra answer “${a.say}” is there in the engine’s solution`);
+      }
+    }
+    // a reading Gemma returned for CIE 9709/43 J17 Q5, replayed
+    const rd = [{ label: 'i', asks: 'time after B is projected when they collide', answer: 'time2' }, { label: 'ii', asks: 'height above O at which they collide', answer: 'height' }];
+    const ps = fromReader('pair-vertical', rd, boxesOf(KITS.pair).map((f) => f.key));
+    const K = KITS.pair, runs = walk((b) => K.solve(K.read(b)), { 'A.h': 0, 'A.u': 12, 'B.h': 0, 'B.u': 20, 'B.t0': 2, g: 10 }, ps);
+    ok(Math.abs(runs[0].answer.values[0] - 1 / 7) < 1e-9, 'CIE 9709/43 J17 Q5 (i), read by the reader: 1/7 s after B — as the mark scheme');
+    // and the original twelve: a kicked ball, three parts
+    const arc = fromReader('arc', [{ label: 'a', asks: 'greatest height', answer: 'top' }, { label: 'b', asks: 'time of flight', answer: 'flight' }, { label: 'c', asks: 'the impulse', answer: 'nope' }]);
+    ok(arc.length === 3 && arc[0].find === 'f.apexHeight' && arc[1].find === 'f.tFlight' && !arc[2].find && arc[2].say, 'a projectile’s parts map to the flight’s own answers; one it cannot give says so');
+    ok(fromReader('arc', [{ label: 'b', asks: 'x', answer: 'top', uses: ['zz'] }])[0].uses === undefined, 'a part cannot lean on a part that is not there');
+    ok(fromReader('pair-vertical', [{ label: 'a', asks: 'x', given: { 'B.t0': 2, evil: 1, 'A.u': {} } }], ['B.t0', 'A.u'])[0].given['B.t0'] === 2
+       && Object.keys(fromReader('pair-vertical', [{ label: 'a', asks: 'x', given: { 'B.t0': 2, evil: 1 } }], ['B.t0'])[0].given).length === 1, 'a part’s given only sets boxes the scenario has');
+    ok(byId('arc') && fromReader('nope', []) === null, 'an unknown scenario reads as no parts');
+  });
+}
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

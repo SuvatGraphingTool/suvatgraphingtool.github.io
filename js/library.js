@@ -28,6 +28,10 @@ export const LIBRARY = [
       { label: 'ii', kind: 'speed', ask: 'By how much do their speeds differ at the instant they collide?',
         find: 'extras.dSpeed', unit: 'm s^-1', at: 'meet.t', step: 'how fast', uses: ['i'], paper: 10 },
     ],
+    answers: [
+      { kind: 'time', say: 'the time from when A sets off to the collision', find: 'meet.t', sym: 't', unit: 's', dp: 3, trim: true, at: 'meet.t', step: 'heights are equal' },
+      { kind: 'time', say: 'the time from when B sets off to the collision', find: 'extras.tB', sym: 't', unit: 's', dp: 3, trim: true, at: 'meet.t', step: 'own clock' },
+    ],
     sources: [
       { board: 'CIE', paper: '9709/42', session: 'Oct/Nov 2019', q: '5' },
       { board: 'CIE', paper: '9709/43', session: 'May/Jun 2017', q: '5' },
@@ -58,6 +62,12 @@ export const LIBRARY = [
       { label: 'a', kind: 'graph', ask: 'Sketch the speed–time graph of the car from A to B.', say: 'The speed–time graph is drawn under the road: four straight pieces, flat, down, flat, up.', at: 'end' },
       { label: 'b', kind: 'time', ask: 'For how long does the car slow down?', find: 'J.t2', sym: 't_2', unit: 's', trim: true, at: 'f.startOf(3)', step: 'each stage', paper: 30 },
       { label: 'c', kind: 'time', ask: 'How long does the whole journey from A to B take?', find: 'J.T', sym: 'T', unit: 's', trim: true, at: 'end', step: 'whole journey', uses: ['b'], paper: 155 },
+    ],
+    reader: 'Stages are numbered 1, 2, 3 in order, and each has its own boxes: k1 says what stage 1 does, t1 its time; a stage that speeds up or slows down also has v1, the speed it ENDS at (0 when it stops), and a1 if its rate is given; a stage that holds its speed has only its k and t. From rest, up to 20 in 30 s, hold 120 s, down to rest in 30 s: n 3, u 0, k1 up, v1 20, t1 30, k2 hold, t2 120, k3 down, v3 0, t3 30.',
+    answers: [
+      { kind: 'distance', say: 'the whole distance from A to B', find: 'J.D', sym: 'D', unit: 'm', trim: true, at: 'end', step: 'area' },
+      { kind: 'time', say: 'the whole time from A to B', find: 'J.T', sym: 'T', unit: 's', trim: true, at: 'end', step: 'whole journey' },
+      { kind: 'speed', say: 'the greatest speed', find: 'J.V', sym: 'V', unit: 'm s^-1', trim: true, at: 'end', step: 'each stage' },
     ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2012', q: '4' },

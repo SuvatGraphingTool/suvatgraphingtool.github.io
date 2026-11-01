@@ -32,9 +32,10 @@ import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
-import { readoutHTML, solutionHTML } from './ai/readout.js';
+import { readoutHTML, solutionHTML, esc } from './ai/readout.js';
 import { walk, stepOf } from './parts/parts.js';
-import { stripHTML, ticksHTML, markGraphs, workingCardHTML } from './parts/strip.js';
+import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML } from './parts/strip.js';
+import { fromReader, boxesOf } from './parts/answers.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -421,6 +422,7 @@ function chooseScenario(id, { example = false } = {}) {
   state.who = 'lorry';               // and what it is that moves along the road
   state.kit = {};                    // a library scenario's own boxes
   state.runs = null; state.part = -1; state.stopAt = null;   // a question in parts, see js/parts/
+  state.readerParts = null;          // the parts Ask Suvat read, when they replace the scenario's own
   renderParts();
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
   if (PREFILL && example && !scenario.exhibit) applyExample(scenario.example);
@@ -945,7 +947,8 @@ function recomputeKit() {
   // A QUESTION IN PARTS: every part solved by this same engine, each with the
   // boxes it adds (js/parts/parts.js). The stage starts on the whole motion.
   const base = solved, boxes = { ...state.kit };
-  state.runs = scenario.parts ? walk((b) => (sameKitBoxes(b, boxes) ? base : K.solve(K.read(b))), boxes, scenario.parts) : null;
+  const parts = state.readerParts || scenario.parts;
+  state.runs = parts ? walk((b) => (sameKitBoxes(b, boxes) ? base : K.solve(K.read(b))), boxes, parts) : null;
   state.part = -1; state.stopAt = null;
   renderParts();
   syncRate(); refreshSteps(); dirty = true;
@@ -955,11 +958,28 @@ const sameKitBoxes = (a, b) => Object.keys(a).length === Object.keys(b).length &
 
 /** The part strip and the clock's ticks, for the motion on the stage. */
 function renderParts() {
-  const on = !!(state.runs && kit() && solved?.ok);
+  const on = !!(state.runs && traj && solved?.ok);
   $('parts').hidden = !on; $('pticks').hidden = !on;
   if (!on) return;
-  $('parts').innerHTML = stripHTML(scenario.parts, state.runs, state.part, kit().working(solved, state.t));
-  $('pticks').innerHTML = ticksHTML(state.runs, solved, state.part);
+  const parts = state.runs.map((r, i) => r?.part ?? (state.readerParts || scenario.parts)[i]);
+  $('parts').innerHTML = stripHTML(parts, state.runs, state.part, stepsNow());
+  $('pticks').innerHTML = ticksHTML(state.runs, partSolved(), state.part);
+}
+/** What the parts are answered from: a kit's solution, or a launch's with its flight as `f`. */
+const partSolved = () => (kit() ? solved : state.runs?.find(Boolean)?.solved);
+/** The working panel's steps for the motion on the stage. */
+function stepsNow() {
+  return kit() ? kit().working(solved, state.t)
+    : scenario?.descent ? descentWorking(traj, state.t)
+    : scenario?.road ? roadWorking(solved)
+    : buildWorking(traj, state.t);
+}
+/** The original twelve, with parts read by Ask Suvat: one motion, so every part shares it. */
+function originalParts() {
+  state.part = -1; state.stopAt = null;
+  const one = traj && solved?.ok ? { ...solved, f: traj } : null;
+  state.runs = state.readerParts && one ? walk(() => one, {}, state.readerParts) : null;
+  renderParts();
 }
 
 /**
@@ -974,8 +994,8 @@ function showPart(k, { play = false } = {}) {
   hideDone(); closeResolve(); state.pre = null;
   const run = k >= 0 ? state.runs[k] : state.runs.find(Boolean);
   if (!run?.solved?.ok) return;
-  const fresh = solved !== run.solved;
-  solved = run.solved; traj = solved.f;
+  const fresh = !!kit() && solved !== run.solved;
+  if (fresh) { solved = run.solved; traj = solved.f; }
   state.part = k;
   if (k < 0) { state.stopAt = null; state.playing = false; setPlayIcon(false); state.t = 0; }
   else {
@@ -1019,6 +1039,10 @@ function showDerived(r) {
 }
 
 function recompute() {
+  recomputeOne();
+  if (!kit()) originalParts();
+}
+function recomputeOne() {
   if (kit()) return recomputeKit();
   if (scenario?.descent) return recomputeDescent();
   if (scenario?.road) return recomputeRoad();
@@ -2823,11 +2847,8 @@ function renderWorking() {
   }
   // A descent's working is its three phases, each one solved on its own, and
   // it comes from the engine that solved them. See descentWorking().
-  const run = kit() && state.part >= 0 ? state.runs?.[state.part] : null;
-  const steps = kit() ? kit().working(solved, state.t)
-    : scenario?.descent ? descentWorking(traj, state.t)
-    : scenario?.road ? roadWorking(solved)
-    : buildWorking(traj, state.t);
+  const run = state.part >= 0 ? state.runs?.[state.part] : null;
+  const steps = stepsNow();
   // a part on show heads the working, and lights the step that answers it
   const lit = run ? stepOf(run.part, steps) : -1;
   if (run) parts.push(workingCardHTML(run));
@@ -2893,7 +2914,7 @@ function draw() {
   if (state.extras.graphs) {
     const P = palette();
     const specs = kit() ? kit().graphs(traj, state.t, P) : graphSpecs(traj, state.t, P);
-    if (kit() && state.part >= 0) markGraphs(specs, state.runs?.[state.part], P.mark);
+    if (state.part >= 0) markGraphs(specs, state.runs?.[state.part], P.mark);
     for (const spec of specs) drawGraph($(spec.canvas), spec);
   }
   renderHud(); renderWorking(); renderResolve(R);
@@ -3239,10 +3260,13 @@ for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) 
    recompute, where solveLaunch works out the rest or says what is missing.
    Nothing on this route calculates a flight that the engine did not. */
 function applyReading(x, { graph = true, solve = false } = {}) {
+  if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
   const r = toApp(x);
   if (!r.ok) return r;
   chooseScenario(r.id);
   closeIntro();
+  // a question in parts: each part answered by the engine, on the stage and here
+  state.readerParts = fromReader(r.id, x.parts);
   Object.assign(state.given, r.given);
   if (r.theta !== undefined && !scenario.lockAngle && !scenario.noAngle && !scenario.aimAtTarget) {
     state.theta = r.theta;
@@ -3261,6 +3285,7 @@ function applyReading(x, { graph = true, solve = false } = {}) {
   const above = traj && scenario.dragLine && state.markers?.heightLine != null
     ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
   let html = readoutHTML(r, { name: scenario.name, solved, above });
+  if (state.runs) html += replyHTML(state.runs);
   // SOLVE: the engine's own working, the same steps the working panel shows.
   if (solve && traj && solved?.ok) {
     const steps = scenario.road ? roadWorking(solved)
@@ -3271,6 +3296,36 @@ function applyReading(x, { graph = true, solve = false } = {}) {
   // GRAPH: the reply offers the flight; the flight and its graphs are drawn
   // on the stage, not in the chat. Off, the reply is words only, like any chat.
   return { ok: true, runnable: !!traj && graph, html };
+}
+/**
+ * A question the reader matched to a Past-paper library scenario: its boxes
+ * filled with what the question gives (only boxes that scenario has), its
+ * parts read, and the reply the engine's answer to each part.
+ */
+function applyLibrary(x, { graph = true } = {}) {
+  const s = byId(x.library);
+  if (!s?.kit) return { ok: false, error: 'That reads as an exam question the Past-paper library has no scenario for yet. Pick the closest one and type the numbers in.' };
+  chooseScenario(s.id);
+  closeIntro();
+  const fields = boxesOf(KITS[s.kit], s.example);
+  const keys = new Set([...fields.map((f) => f.key), ...Object.keys(s.example || {}), 'g']);
+  const choice = new Set(fields.filter((f) => f.type === 'choice').map((f) => f.key));
+  state.kit = {};
+  for (const [k, v] of Object.entries(x.boxes && typeof x.boxes === 'object' ? x.boxes : {})) {
+    if (!keys.has(k) || v == null) continue;
+    if (choice.has(k)) state.kit[k] = String(v);
+    else if (typeof v === 'number' && isFinite(v)) state.kit[k] = v;
+    else if (typeof v === 'string' && /^-?[\d.]+(\/[\d.]+)?$/.test(v.trim())) state.kit[k] = /\//.test(v) ? v.trim() : Number(v);
+  }
+  state.readerParts = fromReader(s.id, x.parts, [...keys]);
+  buildValuesScreen();              // which recomputes, and solves each part
+  refreshSteps();
+  const head = `<p class="ro-eyebrow">Read as, from the Past-paper library</p><h3 class="ro-name">${esc(s.name)}</h3>`
+    + (typeof x.summary === 'string' && x.summary ? `<p class="ro-sum">${esc(x.summary)}</p>` : '');
+  const body = solved?.ok
+    ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
+    : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
+  return { ok: true, runnable: !!traj && graph, html: head + body };
 }
 /** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
 function showFlight() {

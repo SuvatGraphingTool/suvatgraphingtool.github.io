@@ -13,9 +13,11 @@
 // The schema is deliberately small. The whole response is ~80–150 tokens,
 // which is most of why this is fast.
 
+import { LIBRARY_IDS, LIBRARY_GUIDE, ORIGINAL_ANSWERS } from './library.js';
+
 export const SCENARIO_IDS = [
   'up', 'arc', 'dropped', 'down', 'platform-down', 'platform', 'platform-angle',
-  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'other',
+  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'library', 'other',
 ];
 
 export const EXTRACTION_SCHEMA = {
@@ -59,6 +61,14 @@ export const EXTRACTION_SCHEMA = {
     aChute: { type: 'number', description: 'parachute only: deceleration once it opens, m/s², positive' },
     vTerm: { type: 'number', description: 'parachute only: the steady speed under the canopy, m/s' },
 
+    // ── the Past-paper library, and a question in parts ─────────────────
+    library: { type: 'string', enum: LIBRARY_IDS, description: 'scenario "library" only: which library scenario, by its id.' },
+    boxes: { type: 'object', description: 'scenario "library" only: the GIVEN values, keyed exactly as that scenario lists its boxes: {"A.h":0,"A.u":20}.' },
+    parts: {
+      type: 'array',
+      items: { type: 'object' },
+      description: 'A question in parts (a), (b), (c) or (i), (ii): one object per part, in order — {"label":"a","asks":"time to the top","answer":"tTop"}. answer is a key from the answers listed for the scenario, when one fits; given is {box: value} for a value that only this part adds (library only); uses lists earlier labels whose answer this part uses.',
+    },
     asks: {
       type: 'array',
       items: { type: 'string' },
@@ -99,6 +109,8 @@ WHAT YOU DO
    monkey         a projectile aimed straight at a target that drops as it is fired
    road           a car, lorry, train, cyclist or particle moving along a straight HORIZONTAL
                   road or line with constant acceleration — no gravity in the question
+   library        one of the Past-paper library's scenarios below fits it better than all of
+                  these: set library to its id and put the given values in boxes
    other          anything else about motion that none of these fit
 2. Return the values that are GIVEN.
 
@@ -163,6 +175,26 @@ RULES
   because the app sets the maths itself.
 - Set confidence to low if values are unclear, handwritten, or partly cut off.
 
+THE PAST-PAPER LIBRARY
+Exam situations the twelve above cannot set up: two objects, a bounce, stages, i and j
+vectors, graphs to read, answers in letters. When one fits, return scenario "library",
+library: its id, and boxes: each GIVEN value keyed exactly as its boxes say. Choice boxes
+take one of the words in [ ]. Leave out a box the question asks you to find. Prefer the
+twelve for one plain projectile or one vehicle on a road.
+${LIBRARY_GUIDE}
+
+A QUESTION IN PARTS
+Most exam questions have parts: (a), (b), (c) or (i), (ii). Return parts: one object per
+part, in order, with label ("a", "ii"), asks (what it asks, a short phrase in your own
+words) and answer: the key of the answer it wants, from the answers listed for the
+scenario you chose. These are the answers of the twelve:
+${ORIGINAL_ANSWERS}
+For a library scenario use the keys after "answers:" in its entry — an answer is never a
+box name. If no key fits a part, leave answer out. A part that adds a value of its own ("B is now dropped 2 s later") puts
+it in given, keyed as a box. A part that says "using your answer to (a)" has uses: ["a"].
+A part about another topic (impulse, forces, energy) is still listed, with no answer.
+The values every part shares go in the top level (or in boxes), never only in a part.
+
 EXAMPLES
 "A ball is projected from the top of a 25 m cliff at 45° above the horizontal and lands 100 m from the foot of the cliff. Take g = 9.8. Find the speed of projection."
 → {"understood":true,"confidence":"high","scenario":"platform-angle","summary":"A ball is projected at 45° from a 25 m cliff and lands 100 m away.","h":25,"angleDegrees":45,"s":100,"g":9.8,"asks":["speed of projection"]}
@@ -190,11 +222,23 @@ EXAMPLES
 → {"understood":true,"confidence":"high","scenario":"up","summary":"A ball is thrown vertically upwards at 20 m/s.","h":0,"u":20,"asks":["greatest height"]}
 (no g — it is on Earth, and the app fills in Earth's gravity; nothing to ask the student)
 
+"A is projected up from the ground at 20 m/s. One second later B is dropped from 40 m above A, on the same vertical line. Take g = 10. (i) Find the height at which they collide. (ii) Find the difference in their speeds then."
+→ {"understood":true,"confidence":"high","scenario":"library","library":"pair-vertical","summary":"A is thrown up at 20 m/s; B is dropped from 40 m a second later.","boxes":{"A.h":0,"A.u":20,"B.h":40,"B.u":0,"B.t0":1,"g":10},"parts":[{"label":"i","asks":"height where they collide","answer":"i"},{"label":"ii","asks":"difference in their speeds","answer":"ii","uses":["i"]}]}
+
+"A car passes A at 20 m/s and keeps that speed for 25 s. It then slows at 0.4 m/s² to 8 m/s, travels at 8 m/s for 60 s, and speeds up to pass B at 20 m/s. AB = 1960 m. (a) Find how long it spends slowing down. (b) Find the time from A to B."
+→ {"understood":true,"confidence":"high","scenario":"library","library":"journey-stages","summary":"A car from A to B in four stages, 1960 m.","boxes":{"n":"4","u":20,"k1":"hold","t1":25,"k2":"down","v2":8,"a2":0.4,"k3":"hold","t3":60,"k4":"up","v4":20,"D":1960,"who":"car"},"parts":[{"label":"a","asks":"time spent slowing down","answer":"time1"},{"label":"b","asks":"time from A to B","answer":"time2"}]}
+A stage that holds its speed takes only its time t; a stage that speeds up or slows down takes its end speed v and its time t or its rate a.
+
+"A ball is kicked from the ground at 25 m/s at 40° to the horizontal. (a) Find the greatest height. (b) Find the time of flight. (c) Find the range."
+→ {"understood":true,"confidence":"high","scenario":"arc","summary":"A ball is kicked from the ground at 25 m/s at 40°.","h":0,"u":25,"angleDegrees":40,"parts":[{"label":"a","asks":"greatest height","answer":"top"},{"label":"b","asks":"time of flight","answer":"flight"},{"label":"c","asks":"range","answer":"range","uses":["b"]}]}
+
 Be brief. Only the fields you are sure about. Unless the student says otherwise, it all
 happens on Earth: leave g out and read the question — never ask where it happens.
 
 Answer with ONE JSON object and nothing else. understood, confidence, scenario and
-summary are always present; every other field only when the question gives it.
+summary are always present; every other field only when the question gives it. A
+question with parts (a), (b) or (i), (ii) ALWAYS has parts, one per part, each with its
+answer key when one fits.
 FIELDS
 ${FIELDS}`;
 
@@ -263,4 +307,5 @@ BOARD EXAMPLE
 IN BOARD MODE, EVERY ANSWER ABOUT A MOTION CARRIES title, label, frames AND notes, as well as
 understood, confidence, scenario, summary and the given values. An answer without notes leaves
 the student's board with nothing written on it. Unless the student says otherwise, it happens
-on Earth: leave g out, never ask where. Answer with ONE JSON object and nothing else.`;
+on Earth: leave g out, never ask where. The whiteboard draws the twelve only: never use
+scenario "library", and leave out boxes and parts. Answer with ONE JSON object and nothing else.`;
