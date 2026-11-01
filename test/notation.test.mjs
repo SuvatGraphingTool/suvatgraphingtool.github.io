@@ -1256,5 +1256,54 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
   });
 }
 
+/* ── the composer: a scene Ask Suvat put together from the app's pieces ──
+   Everything it can show — the engine kit's words in each place's own, the
+   readouts it renames, the ending it rewrites, the veil's steps and every
+   refusal — swept like the rest. */
+{
+  const { compose, check: checkRecipe } = await import('../js/compose/recipe.js');
+  const { steps } = await import('../js/compose/reveal.js');
+  group('The composer: every place, every refusal, everything it says', () => {
+    const bag = [];
+    let said = 0;
+    const base = { engine: 'projectile', objects: [{ figure: 'car' }] };
+    const RECIPES = [
+      { ...base, backdrop: 'cliff', numbers: { h: 40, u: 15, theta: 0 } },
+      { ...base, backdrop: 'bridge', objects: [{ figure: 'cyclist' }], numbers: { h: 12, u: 7, theta: -10, level: -5 } },
+      { ...base, backdrop: 'house', objects: [{ figure: 'ball' }], numbers: { h: 8, u: 10, theta: 30, level: 2 } },
+      { ...base, backdrop: 'ground', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 20, theta: 35 } },
+      { ...base, backdrop: 'road', objects: [{ figure: 'motorcycle' }], numbers: { h: 0, u: 20, theta: 25, g: 9.8 } },
+      { ...base, backdrop: 'sea', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 12, theta: 50 } },
+      { ...base, backdrop: 'hall', objects: [{ figure: 'ball' }], numbers: { h: 1.5, u: 9, theta: 60 } },
+      { ...base, backdrop: 'orchard', objects: [{ figure: 'ball' }], numbers: { h: 4, u: 0, theta: 0 } },
+      { ...base, backdrop: 'tower', objects: [{ figure: 'stone' }], numbers: { u: 15, theta: 90, t: 6 } },
+      { ...base, backdrop: 'ground', objects: [{ figure: 'ball' }], numbers: { u: 10, theta: 90, t: 1.5 } },
+    ];
+    for (const R of RECIPES) {
+      const c = compose(R);
+      if (!c.ok) { said++; check('refused', c.reason, bag); continue; }
+      const K = c.kit, r = K.solve(K.read(c.boxes));
+      check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+      for (const x of steps(c.scenario.recipe)) { said++; check('veil', x.say, bag); }
+      for (const x of [...(r.derived || []), ...(r.notes || []), r.reason]) if (x) { said++; check('engine', x, bag); }
+      if (!r.ok) continue;
+      for (const st of K.working(r, r.f.tMax / 2)) {
+        check('title', st.title, bag);
+        for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+        if (st.note) check('note', st.note, bag);
+      }
+      const e = K.ending(r, c.scenario.ending);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+    }
+    const no = { ...base, backdrop: 'cliff', numbers: { h: 40 } };
+    for (const R of [{ ...no, backdrop: 'moon' }, { ...no, engine: 'warp' }, { ...no, objects: [{ figure: 'ship' }] }, { ...no, numbers: { h: -150000 } },
+      { ...no, numbers: { mass: 3 } }, { ...no, numbers: { h: 'x' } }, { ...no, numbers: { theta: 120 } }, { ...no, objects: [] }, { ...no, engine: 'pair' },
+      { ...no, backdrop: 'ground', numbers: { h: 0, u: 5, theta: -20 } }, { ...no, backdrop: 'orchard', numbers: { h: 3 } }]) { said++; check('refusal', checkRecipe(R).reason, bag); }
+    ok(said > 150, `the sweep reaches the composer's own words (${said} lines)`);
+    ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+  });
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

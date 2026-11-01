@@ -35,6 +35,12 @@ export const PLACES = {
   // or from a height above it with nothing drawn under the throw — the
   // composer's ground, road and hall (js/compose/)
   ground:  { word: 'start', top: 'where it starts', below: 'the ground', lands: 'lands', foot: 'where it started', level: true },
+  water:   { word: 'start', top: 'where it starts', below: 'the sea', lands: 'hits the sea', foot: 'where it started', level: true },
+  road:    { word: 'start', top: 'where it starts', below: 'the road', lands: 'lands on the road', foot: 'where it started', level: true },
+  track:   { word: 'start', top: 'where it starts', below: 'the track', lands: 'lands by the track', foot: 'where it started', level: true },
+  floor:   { word: 'start', top: 'where it starts', below: 'the floor', lands: 'lands on the floor', foot: 'where it started', level: true },
+  house:   { word: 'house', top: 'the roof', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the house' },
+  tree:    { word: 'tree', top: 'the branch', below: 'the ground', lands: 'hits the ground', foot: 'straight below the branch' },
 };
 
 /**
@@ -76,7 +82,13 @@ export function solveHeight(k0 = {}) {
   const r = solveLaunch({ u, v: k.v, t: k.t, s: k.s, g: k.g, theta: k.theta, h: k.h });
   // the twelve's solver speaks of the ground; here it is the place's own
   if (!r.ok) return fail(String(r.reason).replace(/\bthe ground\b/g, Pl.below).replace(/\bthe launch point\b/g, Pl.from || 'where it was thrown from'));
-  const hh = have(k.h) ? k.h : snap(r.f.params.h);
+  let hh = have(k.h) ? k.h : snap(r.f.params.h);
+  // from level ground a height found from the time is 0 to within rounding
+  if (Pl.level && !have(k.h) && Math.abs(hh) < 1e-6 * Math.max(1, Math.abs(r.f.params.u || 0) * (k.t || 1))) hh = 0;
+  // a time in the air the launch it found does not take is not that launch
+  if (!have(k.h) && have(k.t) && Math.abs(r.f.tFlight - k.t) > 1e-6 * Math.max(1, k.t)) {
+    return fail(`Thrown like that it is not back down to ${Pl.below} at ${M`t = ${d(k.t)} [s]`}: check the time, or give the height it starts at.`);
+  }
   if (have(k0.tTop) && have(k.t) && k0.tTop >= k.t - 1e-9) return fail(`The time to the top, ${M`${d(k0.tTop)} [s]`}, is not before the ${M`${d(k.t)} [s]`} it takes to land: it must reach its top first.`);
   if (!(hh > 0) && !(Pl.level && hh === 0)) return fail(`Landing then, it would have started at or below ${Pl.below}: that time is too short for a fall from ${Pl.top}.`);
   k = { ...k, h: hh };

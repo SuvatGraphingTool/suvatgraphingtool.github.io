@@ -23,11 +23,13 @@
 import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH } from './registry.js';
 import { KITS } from '../kits/index.js';
 import { GRAVITY } from '../scenarios.js';
+import { num } from '../notation.js';
 import * as stage from '../render/composed.js';
 
 const isNum = (x) => typeof x === 'number' && isFinite(x);
 const word = (x) => (typeof x === 'string' ? x.trim().toLowerCase() : '');
-const clip = (x, n) => String(x ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+// what the reader wrote is shown as text: no markup gets through
+const clip = (x, n) => String(x ?? '').replace(/[<>&"`]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 const listOf = (o) => Object.keys(o).join(', ');
 /** A sentence's first letter up. */
 const Up = (s) => s.replace(/^./, (c) => c.toUpperCase());
@@ -61,6 +63,7 @@ export function check(raw) {
   for (const o of objs) {
     const figure = word(o.figure), F = FIGURES[figure];
     if (!F) return no(`There is no figure called “${clip(o.figure, 30)}”. The figures are: ${listOf(FIGURES)}.`);
+    if (B.only && !B.only.includes(figure)) return no(`From ${B.at} only ${B.only.map((k) => FIGURES[k].label).join(', ')} can fall: not ${F.label}.`);
     if (!F.views.includes(E.view)) {
       return no(`${Up(F.label)} is drawn ${F.views.includes('plan') ? 'from above' : 'side on'}, and ${E.label.toLowerCase()} is seen ${E.view === 'plan' ? 'from above' : 'side on'}.`);
     }
@@ -70,16 +73,21 @@ export function check(raw) {
   const numbers = {};
   const given = raw.numbers && typeof raw.numbers === 'object' ? raw.numbers : {};
   for (const [k, v] of Object.entries(given)) {
-    if (!(k in E.boxes)) return no(`“${clip(k, 20)}” is not a value ${E.label.toLowerCase()} takes. It takes: ${Object.keys(E.boxes).join(', ')}.`);
+    const say = E.names?.[k];
+    if (!(k in E.boxes)) return no(`The scene was given a value ${E.label.toLowerCase()} does not use (${clip(k, 20)}). It uses ${Object.values(E.names || {}).join(', ')}.`);
     if (v == null) continue;
-    if (!isNum(v)) return no(`The value for ${k} should be a number; the recipe has “${clip(v, 20)}”.`);
-    if (Math.abs(v) > HUGE) return no(`${v} for ${k} is far too big to be right: check the question.`);
+    if (!isNum(v)) return no(`${Up(say)} should be a number; the recipe has “${clip(v, 20)}”.`);
+    if (Math.abs(v) > HUGE) return no(`${num(v)} for ${say} is far too big to be right: check the question.`);
     numbers[k] = v;
   }
   // what each engine cannot do without, said in its own words
   if (engine === 'projectile') {
     if (isNum(numbers.h) && numbers.h < 0) return no('The height it starts at is above what it lands on: give it as a positive number.');
-    if (B.edge && isNum(numbers.h) && numbers.h === 0) return no(`Launched from ${B.label.toLowerCase().replace(/^an? /, 'the ')}, it starts above the ground: the height cannot be 0.`);
+    if (B.edge && isNum(numbers.h) && numbers.h === 0) return no(`Launched from ${B.at.replace(/^an? /, 'the ')}, it starts above the ground: the height cannot be 0.`);
+    // from the ground itself it has to leave it: upwards, and moving
+    if (!B.edge && numbers.h === 0 && ((isNum(numbers.theta) && numbers.theta <= 0) || numbers.u === 0)) {
+      return no('From the ground it must be launched upwards: give a speed, and an angle above 0°.');
+    }
     if (isNum(numbers.theta) && Math.abs(numbers.theta) > 90) return no('The angle is between −90° (straight down) and 90° (straight up).');
     if (isNum(numbers.g) && !(numbers.g > 0)) return no('g is the size of the acceleration: a positive number.');
   }
@@ -106,7 +114,7 @@ export function titleOf(r) {
 
 /** The same recipe always gets the same id, so asking twice opens one scene. */
 function idOf(r) {
-  const s = JSON.stringify([r.backdrop, r.engine, r.objects.map((o) => o.figure), r.numbers]);
+  const s = JSON.stringify([r.title, r.backdrop, r.engine, r.objects, r.numbers]);
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
   return `composed-${(h >>> 0).toString(36)}`;
@@ -140,7 +148,14 @@ export function compose(raw) {
     // from level ground or a ledge there is no edge to be out from
     hud: (f, t, o) => {
       const out = base.hud(f, t, o);
-      if (!B.edge) for (const row of out.left) if (/edge/.test(row.k)) row.k = 'Across from the start';
+      const from = !B.edge ? 'Across from the start' : ['house', 'tree'].includes(B.place) ? `Out from the ${B.at.replace(/^an? /, '')}` : null;
+      if (from) for (const row of out.left) if (/edge/.test(row.k)) row.k = from;
+      return out;
+    },
+    // launched from the ground, the card says so rather than "from 0 m"
+    ending: (solved, e) => {
+      const out = base.ending(solved, e);
+      if (solved?.h === 0) out.eyebrow = `From ${solved.Pl.below}`;
       return out;
     },
     thumb: () => stage.thumb(r),

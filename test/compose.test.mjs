@@ -61,7 +61,7 @@ group('From level ground, and from a house: the place word fits', () => {
   ok(g.c.ok && g.solved.ok, 'a ball kicked from the ground (h = 0) solves');
   near(g.solved.T, 2 * 20 * 0.5 / 9.8, 1e-9, 'its time of flight, 2u sin θ / g');
   const h = run({ backdrop: 'house', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 8, u: 10, theta: 0 } });
-  ok(h.solved.ok && /lands/.test(h.solved.notes.join(' ')) && !/tower|cliff/.test(h.solved.notes.join(' ')), 'from a house roof it “lands”, never off a tower');
+  ok(h.solved.ok && /hits the ground/.test(h.solved.notes.join(' ')) && /from the house/.test(h.solved.notes.join(' ')) && !/tower|cliff/.test(h.solved.notes.join(' ')), 'from a house roof it hits the ground, out from the house — never a tower');
 });
 
 group('Refused, with a reason a student can read', () => {
@@ -72,7 +72,7 @@ group('Refused, with a reason a student can read', () => {
   no({ ...CAR, objects: [{ figure: 'ship' }] }, /from above/, 'a ship side on');
   no({ ...CAR, objects: [] }, /moves 1 thing/, 'nothing that moves');
   no({ ...CAR, objects: [{ figure: 'car' }, { figure: 'lorry' }] }, /moves 1 thing/, 'two things for a one-thing engine');
-  no({ ...CAR, numbers: { h: 40, mass: 900 } }, /not a value/, 'a number the engine does not take');
+  no({ ...CAR, numbers: { h: 40, mass: 900 } }, /does not use \(mass\)\. It uses the height, the speed/, 'a number the engine does not take, in words');
   no({ ...CAR, numbers: { h: 'forty' } }, /should be a number/, 'a word for a number');
   no({ ...CAR, numbers: { h: -40 } }, /positive/, 'a negative height');
   no({ ...CAR, numbers: { h: 0, u: 15 } }, /cannot be 0/, 'a cliff with no height');
@@ -81,6 +81,24 @@ group('Refused, with a reason a student can read', () => {
   no({ ...CAR, effects: ['fireworks'] }, /no effect called/, 'an unknown effect');
   no({ ...CAR, engine: 'pair', objects: [{ figure: 'ball' }, { figure: 'ball' }] }, /does not draw it yet/, 'an engine the stage does not draw yet');
   no(null, /empty/, 'no recipe at all');
+  no({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 10, theta: 0 } }, /launched upwards/, 'along the ground, it never leaves it');
+  no({ backdrop: 'orchard', engine: 'projectile', objects: [{ figure: 'car' }], numbers: { h: 3 } }, /only a ball/, 'a car falling from a tree');
+  no({ ...CAR, numbers: { h: -150000 } }, /−1.500 × 10⁵ for the height/, 'a huge number said as a number, with a real minus sign');
+  ok(check({ ...CAR, title: 'A <img src=x onerror=alert(1)>', objects: [{ figure: 'car', name: '<b>x</b>' }] }).recipe.title.indexOf('<') < 0, 'markup from the reader never gets through');
+});
+
+group('Each place in its own words', () => {
+  const words = (backdrop, numbers) => run({ backdrop, engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { u: 10, theta: 40, g: 9.8, ...numbers } }).solved.notes.join(' ');
+  ok(/hits the sea/.test(words('sea', { h: 0 })), 'over the open sea it hits the sea');
+  ok(/on the road/.test(words('road', { h: 0 })), 'on a road it lands on the road');
+  ok(/on the floor/.test(words('hall', { h: 1 })), 'in a hall it lands on the floor');
+  const g = run({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { u: 10, theta: 90, t: 1.5, g: 9.8 } });
+  ok(!g.solved.ok && /not back down/.test(g.solved.reason), 'a time in the air the launch does not take is refused, not replaced');
+  const lv = run({ backdrop: 'tower', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 20, u: 15, theta: 60, level: 5, g: 9.8 } });
+  const c = lv.c; COMPOSED.push(c.scenario);
+  const parts = fromReader(c.scenario.id, [{ label: 'a', asks: 'when 5 m above', answer: 'time3' }, { label: 'b', asks: 'and again', answer: 'time4' }], Object.keys(c.boxes));
+  ok(answerOf(parts[0], lv.solved).ok && answerOf(parts[1], lv.solved).values[0] > answerOf(parts[0], lv.solved).values[0], 'a height a part asks about is answered twice, up then down');
+  COMPOSED.length = 0;
 });
 
 group('The veil names only the recipe’s own pieces', () => {

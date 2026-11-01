@@ -22,18 +22,19 @@
 /** Where it happens. `place` is the engine's word for it (js/core/height.js
     PLACES); `below` is what it lands on; `edge` says the place has a top
     something is launched from, so it needs a height, and `at` names that
-    top in a title ("A car off a cliff"). */
+    top in a title ("A car off a cliff"); `only` lists the figures it takes
+    (an apple falls from a tree; a car does not). */
 export const BACKDROPS = {
   cliff:   { label: 'A sea cliff', what: 'a rock cliff with the sea below it', place: 'cliff', below: 'sea', edge: true, at: 'a cliff' },
   tower:   { label: 'A tower', what: 'a stone tower standing on level ground, fields behind', place: 'tower', below: 'ground', edge: true, at: 'a tower' },
   bridge:  { label: 'A bridge', what: 'a stone arch bridge over a river', place: 'bridge', below: 'river', edge: true, at: 'a bridge' },
-  house:   { label: 'A house and a fence', what: 'a house with a garden fence: from a window or the roof', place: 'ground', below: 'ground', edge: true, at: 'a house' },
+  house:   { label: 'A house and a fence', what: 'a house with a garden fence: from a window or the roof', place: 'house', below: 'ground', edge: true, at: 'a house' },
   ground:  { label: 'Level ground', what: 'open grass with fields and trees behind', place: 'ground', below: 'ground' },
-  sea:     { label: 'The open sea', what: 'open water to the horizon', place: 'ground', below: 'sea' },
-  road:    { label: 'A road', what: 'a straight tarmac road with verges', place: 'ground', below: 'road' },
-  rails:   { label: 'A railway', what: 'a railway line on ballast and sleepers', place: 'ground', below: 'rails' },
-  orchard: { label: 'An orchard', what: 'apple trees in grass', place: 'ground', below: 'ground', edge: true, at: 'a tree' },
-  hall:    { label: 'A sports hall', what: 'an indoor hall with a wooden floor and high windows', place: 'ground', below: 'floor' },
+  sea:     { label: 'The open sea', what: 'open water to the horizon', place: 'water', below: 'sea' },
+  road:    { label: 'A road', what: 'a straight tarmac road with verges', place: 'road', below: 'road' },
+  rails:   { label: 'A railway', what: 'a railway line on ballast and sleepers', place: 'track', below: 'rails' },
+  orchard: { label: 'An orchard', what: 'apple trees in grass', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['ball', 'stone', 'particle'] },
+  hall:    { label: 'A sports hall', what: 'an indoor hall with a wooden floor and high windows', place: 'floor', below: 'floor' },
 };
 
 /** What moves. `m` is its real length in metres (a ball's diameter, a
@@ -84,6 +85,9 @@ export const ENGINES = {
       level: 'a height above where it starts that a part asks about, m (negative below it)',
       g: 'g, only if the question states it',
     },
+    // the same boxes as a student reads them, for a refusal
+    names: { h: 'the height', u: 'the speed', theta: 'the angle', v: 'the landing speed', s: 'the distance out', t: 'the time in the air',
+      tTop: 'the time to the top', level: 'a height asked about', g: 'g' },
   },
   stages: { label: 'Along a line, in stages', kit: 'journey', view: 'road', objects: [1, 1], ready: false,
     what: 'one vehicle or person along a straight road or track, speeding up, holding a speed and slowing in turn', boxes: {} },
@@ -110,6 +114,8 @@ export const PROJECTILE_ANSWERS = [
   { kind: 'speed', say: 'speed it is launched at', find: 'params.u', sym: 'u', unit: 'm s^-1', at: 0 },
   { kind: 'angle', say: 'angle it is launched at', find: 'params.theta', sym: 'theta', suffix: '°', dp: 1, at: 0 },
   { kind: 'height', say: 'height it started from (when found from the time in the air)', find: 'h', sym: 'h', unit: 'm', at: 0 },
+  { kind: 'time', say: 'when it is first at the height a part asks about (numbers.level)', find: 'level.times.0', sym: 't', unit: 's', at: 'level.times.0', step: 'above the throw' },
+  { kind: 'time', say: 'when it is there again, on the way down', find: 'level.times.1', sym: 't', unit: 's', at: 'level.times.1', step: 'above the throw' },
 ];
 export const ANSWERS = { projectile: PROJECTILE_ANSWERS };
 
