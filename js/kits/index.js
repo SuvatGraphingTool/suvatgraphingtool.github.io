@@ -36,5 +36,6 @@ import { lift } from './lift.js';
 import { rocket } from './rocket.js';
 import { runway } from './runway.js';
 import { river } from './river.js';
+import { wind } from './wind.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket, runway, river };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket, runway, river, wind };

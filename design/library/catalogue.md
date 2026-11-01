@@ -133,6 +133,7 @@ this library: *covered* names the one of the twelve that does it.
 | 97 | Edexcel | 6677/01 M1 | Jan 2008 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202008%20QP.pdf) | A firework rocket from rest rises 27 m in 3 s at constant a, then burns out: a, its speed at 3 s, its height at 5 s | 9.8 | **built** → `firework-rocket` |
 | 98 | Edexcel | 6677/01 M1 | Jun 2005 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202005%20QP.pdf) | An aircraft from A at 2 m/s, constant a, leaves the 1.2 km runway at C 20 s later at 74 m/s: a, BC | – | **built** → `take-off` (a setting: the twelve's SUVAT on an airfield, and the runway left over) |
 | 99 | AQA | MM1B | Jun 2009 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202009%20QP%20-%20M1%20AQA.pdf) | A boat crosses a 16 m river flowing at 1.2 m/s straight to the point opposite in 10 s: resultant speed, speed through the water, angle to the bank | – | **built** → `across-the-river` |
+| 100 | AQA | MM1B | Jun 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202010%20QP%20-%20M1%20AQA.pdf) | An aeroplane flies due north at 100 m/s relative to air moving due east at 30 m/s: resultant speed, bearing | – | **built** → `flying-in-a-wind` |
 
 ## Built, and why it is built the way it is
 
@@ -413,6 +414,27 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `flying-in-a-wind` — Flying in a wind
+
+**Papers.** AQA MM1B Jun 2010 Q5 (due north at 100 m s⁻¹ through air moving due
+east at 30 m s⁻¹: 104.4 m s⁻¹ over the ground on a bearing of 017°).
+
+**Why the twelve cannot.** No scenario adds a velocity through a medium to the
+medium's own, and none answers in bearings. `across-the-river` is the same
+idea across a channel; this one is open sky, any headings, and bearings.
+
+**How it is solved.** js/core/wind.js: a bearing θ is sin θ i + cos θ j; the
+velocity over the ground is V(sin θ, cos θ) + W(sin φ, cos φ); its size and its
+bearing tan⁻¹(v_x⁄v_y). Given a track instead, the heading that cancels the
+wind across it.
+
+**The stage.** From above: farmland below with cloud shadows drifting with the
+wind; the airliner pointing on its heading while it moves along its track,
+a contrail behind; a compass and the velocity triangle on a card, both fixed
+while the map pans.
+
+**Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
 
 ### `across-the-river` — Across the river
 

@@ -1468,7 +1468,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit], a = K.solve(K.read(e.example));
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       const v = String(p.find).split('.').reduce((o, k) => o?.[k], a);
@@ -1516,6 +1516,15 @@ group('Above the roof: CIE 9709/42 Oct/Nov 2020 Q5', async () => {});
   ok(back.ok && near(back.above, 4, 1e-9), 'from the height, back to 4 s above the roof');
   ok(roofWorking(s)[0].rows.length === 3, 'the working starts with the roof from the time above it');
   ok(!solveRoof({ u: 40, above: 9, B: { u: 20 }, g: 10 }).ok && !solveRoof({ u: 40, h: 90, B: { u: 20 }, g: 10 }).ok, 'longer than the whole flight, or a roof it never reaches, is refused');
+}
+
+group('Flying in a wind: AQA MM1B Jun 2010 Q5', async () => {});
+{
+  const { solveWind, windWorking } = await import('../js/core/wind.js');
+  const s = solveWind({ V: 100, heading: 0, W: 30, wind: 90 });
+  ok(s.ok && near(s.R, 104.4, 0.01) && Math.round(s.bearing) === 17, '(a) 104.4 m s⁻¹, (b) bearing 017°', s.reason);
+  for (const track of [0, 90, 180, 270, 350]) { const t = solveWind({ V: 100, track, W: 30, wind: 90 }); ok(t.ok && near(((t.bearing - track) % 360 + 360) % 360 % 359.999, 0, 1e-6) && windWorking(t)[0].rows.length === 5, `holding a track of ${track}°: the heading found, the ground track is ${track}°`, t.reason || t.bearing); }
+  ok(!solveWind({ V: 20, track: 90, W: 30, wind: 270 }).ok, 'a headwind faster than the aircraft along the track is refused');
 }
 
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
