@@ -6,8 +6,14 @@ named). Readings come from Gemma on a local `wrangler dev`, never live Gemini. W
 Gemma's daily allowance is used up, the reading is written by hand as Gemma
 returns it and replayed through the chat with a canned reader.
 
-Workers AI's 10,000 free neurons a day are shared with the live reader, so local
-testing spends the live site's allowance too.
+**The reader budget.** Workers AI's 10,000 free neurons a day are the live site's
+allowance too: a local `wrangler dev` on Gemma spends exactly what real students
+use. On 1 Nov, QA used it up, and students fell back to Gemini's 20 a day.
+- No more than about 30 Gemma calls a day on QA. The rest belongs to users.
+- Never a Gemini call.
+- Once the allowance is gone, stop every reader call until 00:00 UTC. Until then, QA
+  replays hand-written or saved extractions through `SUVAT.applyReading`, or through
+  the chat with the reader's fetch stubbed.
 
 ## 1 November 2026
 
@@ -27,6 +33,7 @@ testing spends the live site's allowance too.
 | now make it 20 m (a follow-up), a cliff | Read afresh at 20 m: t = 2.02 s. | — |
 | a person jumping off a 10 m board at 7 m/s *(the user)* | The reply and the strip showed (a)(b)(c) for a one-line question. | Parts only when the question is marked: the worker drops parts unless the typed words carry (a), a), (i), "part b" or "a 2 part question". A photo or PDF is trusted. The page gives an example's reading none either. The prompt says so, and its single-ask example lost its part. Test. |
 | (a) a stone dropped from a 20 m tower: time? (b) now thrown up at 5 m/s from it: time? *(the user: "give me one scenario, then … an option to see the second one")* | One stage for both. | A part that changes the set-up carries `scene`: what it changes, or a whole reading. A composer `recipe` part counts too. (a)'s set-up opens first. The reply answers (b) in its own scene (2.59 s) with "Next: part (b)", and the strip's dashed (b) chip and "Next: part (b)" open it on the stage; the (a) chip goes back. One mechanism for the twelve, the library and the composer. Test. |
+| every reading, Graph on and off *(the lead's check)* | A cliff, an arc, a composed car off a cliff and a two-set-up question each offered "Show me the flight/scene", and pressing it opened the stage. | — |
 
 For the lead: on a laptop, beside the Display panel (a 436 px stage), the HUD's four cards cover most of the Two on a road scene and the well's figure.
 
