@@ -793,69 +793,103 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .transport input[type='range'] { flex: 1; }
 
 /* ── a question in parts — js/parts/strip.js ────────────────────────────
-   One card over the transport: the parts as chips, the one on show with its
-   answer, and the button that plays on to the next one. The clock carries a
-   lettered tick at each part's moment. */
+   One card over the transport: the parts as a stepper, the one on show with
+   its answer, and the button that plays on to the next. The part on show is
+   --mark everywhere it appears: its chip, its letter, its tick on the clock,
+   its ring on the graphs and its step in the working. */
 .scrub-wrap { flex: 1; min-width: 0; position: relative; }
 .pticks { position: absolute; left: 12px; right: 12px; top: 0; height: 0; pointer-events: none; }
 .ptick {
-  position: absolute; left: calc(var(--f) * 100%); top: -13px; transform: translateX(-50%);
-  min-width: 22px; height: 22px; padding: 0 5px; border-radius: var(--r-pill);
-  font: italic var(--w-semi) 13px/20px var(--font-serif); color: var(--ink-strong);
+  position: absolute; left: calc(var(--f) * 100%); top: -30px; transform: translateX(-50%);
+  height: 24px; padding: 0 7px; border-radius: var(--r-pill); white-space: nowrap;
+  font: var(--w-semi) 13px/22px var(--font-serif); color: var(--ink-strong);
   background: var(--card); border: 1.5px solid var(--mark); pointer-events: auto; cursor: pointer;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow); transition: background 120ms, color 120ms;
 }
-.ptick::after { content: ''; position: absolute; left: 50%; top: 100%; width: 1.5px; height: 6px; background: var(--mark); }
+.ptick:hover { background: var(--hover); }
+/* the stem runs down to a notch on the track, so the thumb stops on the notch, not under the pill */
+.ptick::after { content: ''; position: absolute; left: 50%; top: 100%; width: 2px; height: 16px; margin-left: -1px; background: var(--mark); border-radius: 1px; }
 .ptick[aria-pressed='true'] { background: var(--mark); color: var(--surface); }
 .pband { position: absolute; top: 12px; height: 4px; left: calc(var(--a) * 100%); width: calc((var(--b) - var(--a)) * 100%); background: var(--mark); opacity: .55; border-radius: 2px; }
 .pstrip {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-4); align-items: center;
-  margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4);
+  position: relative;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-5); align-items: center;
+  margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-5);
   background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow);
 }
 .pstrip[hidden] { display: none; }
-.pstrip + .transport { padding-top: var(--sp-5); }
-.pchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pstrip:not([hidden]) + .transport { padding-top: var(--sp-8); }
+/* the parts as a stepper: round chips on a line, the ones already shown dotted */
+.pchips { position: relative; display: flex; gap: 10px; }
+.pchips::before { content: ''; position: absolute; left: 18px; right: 18px; top: 50%; height: 2px; margin-top: -1px; background: var(--border); }
 .pchip {
-  min-width: 44px; height: 40px; padding: 0 var(--sp-2); border-radius: var(--r-pill);
-  border: 1px solid var(--border); background: var(--surface); color: var(--ink-strong);
-  font: italic var(--w-semi) var(--fs-base) var(--font-serif); cursor: pointer; transition: background 120ms, transform 120ms;
+  position: relative; width: 38px; height: 38px; padding: 0; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--ink-strong);
+  font: italic var(--w-semi) var(--fs-sm) var(--font-serif); cursor: pointer;
+  transition: background 120ms, border-color 120ms, transform 120ms;
 }
-.pchip:hover:not(:disabled) { background: var(--hover); }
-.pchip:active:not(:disabled) { transform: scale(.96); }
-.pchip[aria-pressed='true'] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.pchip.wide { width: auto; min-width: 38px; padding: 0 10px; border-radius: var(--r-pill); }
+.pchip:hover:not(:disabled) { border-color: var(--mark); }
+.pchip:active:not(:disabled) { transform: scale(.94); }
+.pchip[aria-pressed='true'] { background: var(--mark); color: var(--surface); border-color: var(--mark); box-shadow: 0 0 0 4px color-mix(in srgb, var(--mark) 20%, transparent); }
+.pchip[data-done='true']::after { content: ''; position: absolute; right: 1px; top: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--mark); border: 1.5px solid var(--card); }
 .pchip[data-none='true'] { border-style: dashed; }
-.pchip:disabled { opacity: .45; border-style: dashed; cursor: not-allowed; }
-.pnow { min-width: 0; }
-.pnow > * { animation: part-in 260ms ease-out; }
+.pchip:disabled { cursor: not-allowed; color: var(--ink-muted); text-decoration: line-through; opacity: .75; border-style: dashed; }
+.pnow { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--sp-5); align-items: center; }
+.pnow > * { grid-column: 1; animation: part-in 260ms ease-out; }
+.pnow > .pans { grid-column: 2; grid-row: 1 / span 4; align-self: center; }
 @keyframes part-in { from { transform: translateY(5px); } }
 @media (prefers-reduced-motion: reduce) { .pnow > * { animation: none; } }
 .pask { margin: 0; font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.45; }
-.plab { font-family: var(--font-serif); font-style: italic; color: var(--accent); margin-right: 2px; }
-.pans { margin: 4px 0 0; font-size: var(--fs-lg); font-weight: var(--w-semi); color: var(--accent); line-height: 1.3; }
+.plab { font-family: var(--font-serif); font-style: italic; color: var(--mark); margin-right: 2px; }
+.pans {
+  margin: 0; font-size: var(--fs-xl); font-weight: var(--w-semi); color: var(--ink-strong); line-height: 1.25;
+  padding: 6px var(--sp-4); border-radius: var(--r-lg); white-space: nowrap;
+  background: color-mix(in srgb, var(--mark) 12%, var(--card)); border-left: 3px solid var(--mark);
+}
 .pand { font-size: var(--fs-sm); color: var(--ink-muted); font-weight: var(--w-body); }
-.pans-none, .pans-say { font-size: var(--fs-sm); color: var(--ink-muted); font-weight: var(--w-body); }
+.pans-none, .pans-say { font-size: var(--fs-sm); color: var(--ink-muted); font-weight: var(--w-body); white-space: normal; }
+.pans:has(.pans-none, .pans-say) { background: none; border-left-color: var(--border); max-width: 30ch; }
 .plean { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; }
 .plean-i { display: inline-block; width: 1.2em; color: var(--mark); font-weight: var(--w-bold); }
 .plean .m { color: var(--ink-strong); }
 .pout { margin: 6px 0 0; font-size: var(--fs-xs); color: var(--ink-faint); line-height: 1.5; }
+/* the intro: every part on one line each, like the paper */
+.plist { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
+.plist li { font-size: var(--fs-xs); color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist li b { font-family: var(--font-serif); font-style: italic; color: var(--ink-strong); margin-right: 4px; }
+/* the working opens over the stage, never pushing it down */
 .pwork { margin-top: 6px; }
 .pwork summary { font-size: var(--fs-xs); color: var(--ink-muted); cursor: pointer; width: fit-content; }
 .pwork summary:hover { color: var(--ink-strong); }
-.prow { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--r-lg); padding: var(--sp-2) var(--sp-3); margin-top: 6px; overflow-x: auto; }
+.pwork-body {
+  position: absolute; z-index: 5; left: 0; right: 0; bottom: calc(100% + 8px);
+  max-height: min(320px, 45vh); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow-lg);
+  padding: var(--sp-2) var(--sp-4);
+}
+.prow { padding: var(--sp-2) 0; border-top: 1px solid var(--border-soft); overflow-x: auto; }
+.prow:first-child { border-top: 0; }
+.prow .eq-f, .prow .eq-s { font-size: var(--fs-sm); }
+.prow .m-sub, .prow .m-sup { font-size: max(13px, .8em); }
 .pgo .pnext { flex: none; padding: 0 var(--sp-5); }
 @media (max-width: 680px) {
-  .pstrip { grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
-  .pgo .pnext { width: 100%; }
+  .pstrip { grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-3); padding: var(--sp-3); }
+  .pchips { overflow-x: auto; }
+  .pnow { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr); }
+  .pnow > .pans { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 4px; }
+  .pgo { grid-column: 2; grid-row: 1; }
+  .pgo .pnext { min-height: 44px; padding: 0 var(--sp-4); }
+  .plist { display: none; }
 }
 /* the part on show heads the working panel, and its step is lit */
-.pcardw { border-left: 3px solid var(--mark); background: var(--accent-soft); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4); }
+.pcardw { border-left: 3px solid var(--mark); background: color-mix(in srgb, var(--mark) 10%, var(--card)); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4); }
 .pcardw-h { margin: 0; font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.45; }
-.pcardw-h b { font-family: var(--font-serif); font-style: italic; color: var(--accent); }
-.pcardw .pans { font-size: var(--fs-base); }
+.pcardw-h b { font-family: var(--font-serif); font-style: italic; color: var(--mark); }
+.pcardw .pans { font-size: var(--fs-base); background: none; border: 0; padding: 0; margin-top: 4px; white-space: normal; }
 .step[data-part='on'] { position: relative; }
 .step[data-part='on']::before { content: ''; position: absolute; left: -12px; top: 0; bottom: 0; width: 3px; border-radius: 2px; background: var(--mark); }
-.step[data-part='on'] .eq { border-color: var(--mark); }
+.step[data-part='on'] .eq { border-color: var(--mark); box-shadow: 0 0 0 3px color-mix(in srgb, var(--mark) 18%, transparent); }
 /* One clock for four panes. It carries typeset maths, so it is filled with
    innerHTML — see CLAUDE.md rule 1 — and it is given a fixed width in figures
    so the Replay button beside it does not shuffle as the seconds tick. */

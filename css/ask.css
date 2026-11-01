@@ -314,7 +314,7 @@
 .preply { list-style: none; padding: 0; margin: var(--sp-3) 0 0; display: grid; gap: var(--sp-2); }
 .preply > li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--sp-2); row-gap: 2px;
   padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--border-soft); }
-.preply .plab { grid-row: span 2; font-family: var(--font-serif); font-style: italic; color: var(--accent); }
+.preply .plab { grid-row: span 2; align-self: start; padding-top: 1px; font-size: var(--fs-base); font-family: var(--font-serif); font-style: italic; color: var(--mark); }
 .preply-q { font-size: var(--fs-sm); color: var(--ink-strong); }
-.preply .pans { font-size: var(--fs-base); font-weight: var(--w-semi); color: var(--accent-hi); }
+.preply .pans { font-size: var(--fs-base); font-weight: var(--w-semi); color: var(--ink-strong); background: none; border: 0; padding: 0; white-space: normal; }
 .preply .pans-none, .preply .pans-say { font-size: var(--fs-xs); color: var(--ink-muted); font-weight: var(--w-body); }

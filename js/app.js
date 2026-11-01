@@ -1007,6 +1007,8 @@ function showPart(k, { play = false } = {}) {
   }
   if (fresh) cam.fit = true;
   syncRate(); renderParts(); dirty = true;
+  // the working panel, if it is open, scrolls its lit step into view
+  requestAnimationFrame(() => document.querySelector('#working .step[data-part="on"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
 }
 $('parts').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-part]');

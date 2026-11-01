@@ -142,7 +142,7 @@ export const LIBRARY = [
     example: { 'u.x': -1, 'u.y': 3, 'a.x': 0.1, 'a.y': -0.2, 'at.due': 'E', 'at.moving': 'SE' },
     parts: [
       { label: 'a', kind: 'time', ask: 'When is the particle due east of the origin $O$?', find: 'answers.due.t', sym: 't', unit: 's', trim: true, at: 'answers.due.t', step: 'due east', paper: 30 },
-      { label: 'b', kind: 'speed', ask: 'How fast is it moving at the moment it heads south-east?', find: 'answers.moving.speed', unit: 'm s^-1', at: 'answers.moving.t', step: 'south-east', paper: 1.41 },
+      { label: 'b', kind: 'speed', ask: 'How fast is it moving at the moment it heads south-east?', sym: 'abs(vec v)', find: 'answers.moving.speed', unit: 'm s^-1', at: 'answers.moving.t', step: 'south-east', paper: 1.41 },
     ],
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jun 2012', q: '7' },
@@ -211,8 +211,8 @@ export const LIBRARY = [
     place: 'A ball over horizontal ground',
     example: { start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down' },
     parts: [
-      { label: 'a', kind: 'speed', ask: 'How fast is the ball moving just before it first strikes the ground?', find: 'extras.vIn1', unit: 'm s^-1', at: 'extras.t1', step: 'down to the ground', paper: 6.26 },
-      { label: 'b', kind: 'speed', ask: 'How fast is it moving just after it leaves the ground, if it rises to 1.5 m?', find: 'extras.vOut1', unit: 'm s^-1', at: 'extras.t1', step: 'bounce', paper: 5.42 },
+      { label: 'a', kind: 'speed', ask: 'How fast is the ball moving just before it first strikes the ground?', sym: 'v', find: 'extras.vIn1', unit: 'm s^-1', at: 'extras.t1', step: 'down to the ground', paper: 6.26 },
+      { label: 'b', kind: 'speed', ask: 'How fast is it moving just after it leaves the ground, if it rises to 1.5 m?', sym: 'v', find: 'extras.vOut1', unit: 'm s^-1', at: 'extras.t1', step: 'bounce', paper: 5.42 },
       { label: 'c', out: 'the impulse on the ball needs momentum, which is another chapter' },
       { label: 'd', kind: 'graph', ask: 'Sketch the velocity–time graph from release to the second impact.', say: 'The velocity–time graph is drawn: a straight line down to the impact, a jump, then the same gradient again.', at: 'end' },
       { label: 'e', kind: 'time', ask: 'How long is it from release to the second impact?', find: 'f.tMax', sym: 't', unit: 's', at: 'end', step: 'from the start', uses: ['b'], paper: 1.75 },
@@ -244,8 +244,8 @@ export const LIBRARY = [
     place: 'A ball over horizontal ground',
     example: { start: 'down', h: 5, U: 3.5, y: 5, T: 0.87, stop: 'y', g: 9.8 },
     parts: [
-      { label: 'i', kind: 'speed', ask: 'How fast is the ball moving when it hits the ground?', find: 'extras.vIn1', unit: 'm s^-1', at: 'extras.t1', step: 'down to the ground', paper: 10.5 },
-      { label: 'ii', kind: 'speed', ask: 'It passes its starting point on the way up 0.87 s after the bounce. How fast does it rebound?', find: 'extras.vOut1', unit: 'm s^-1', dp: 1, at: 'extras.t1', step: 'bounce', paper: 10.0 },
+      { label: 'i', kind: 'speed', ask: 'How fast is the ball moving when it hits the ground?', sym: 'v', find: 'extras.vIn1', unit: 'm s^-1', at: 'extras.t1', step: 'down to the ground', paper: 10.5 },
+      { label: 'ii', kind: 'speed', ask: 'It passes its starting point on the way up 0.87 s after the bounce. How fast does it rebound?', sym: 'v', find: 'extras.vOut1', unit: 'm s^-1', dp: 1, at: 'extras.t1', step: 'bounce', paper: 10.0 },
     ],
     sources: [
       { board: 'OCR', paper: '4728 M1', session: 'Jun 2014', q: '1', part: 'all' },
@@ -387,7 +387,7 @@ export const LIBRARY = [
     example: { place: 'tower', h: 49, u: 14.7, theta: 90, g: 9.8 },
     parts: [
       { label: 'a', kind: 'height', ask: 'What is the greatest height of the ball above the ground?', find: 'top', sym: 'H', unit: 'm', dp: 1, at: 'f.tApex', paper: 60.0 },
-      { label: 'b', kind: 'speed', ask: 'How fast is it moving when it hits the ground?', find: 'vL', unit: 'm s^-1', dp: 1, at: 'end', paper: 34.3 },
+      { label: 'b', kind: 'speed', ask: 'How fast is it moving when it hits the ground?', sym: 'v', find: 'vL', unit: 'm s^-1', dp: 1, at: 'end', paper: 34.3 },
       { label: 'c', kind: 'time', ask: 'How long is it in the air?', find: 'T', sym: 't', unit: 's', trim: true, at: 'end', paper: 5 },
     ],
     sources: [
@@ -475,8 +475,8 @@ export const LIBRARY = [
     place: 'A column of sky from the aircraft to the fields',
     example: { g: 10, D: 550, t1: 3, a2: 12, t2: 2 },
     parts: [
-      { label: 'a', kind: 'speed', ask: 'How fast is the parachutist falling when the parachute opens?', find: 'J.v1', unit: 'm s^-1', trim: true, at: 'J.t1', step: 'each stage', paper: 30 },
-      { label: 'b', kind: 'speed', ask: 'What steady speed does the parachute slow the fall to?', find: 'J.v2', unit: 'm s^-1', trim: true, at: 'f.startOf(3)', step: 'each stage', uses: ['a'], paper: 6 },
+      { label: 'a', kind: 'speed', ask: 'How fast is the parachutist falling when the parachute opens?', sym: 'v', find: 'J.v1', unit: 'm s^-1', trim: true, at: 'J.t1', step: 'each stage', paper: 30 },
+      { label: 'b', kind: 'speed', ask: 'What steady speed does the parachute slow the fall to?', sym: 'v', find: 'J.v2', unit: 'm s^-1', trim: true, at: 'f.startOf(3)', step: 'each stage', uses: ['a'], paper: 6 },
       { label: 'c', kind: 'time', ask: 'How long is it from leaving the aircraft to reaching the ground?', find: 'J.T', sym: 'T', unit: 's', dp: 1, at: 'end', step: 'whole jump', uses: ['b'], paper: 83.2 },
     ],
     sources: [
@@ -503,9 +503,9 @@ export const LIBRARY = [
     place: 'A map from above: the sea, east and north',
     example: { units: 'km', 'A.r0.x': 2, 'A.r0.y': -8, 'A.v.x': -4, 'A.v.y': 8, 'B.r0.x': 18, 'B.r0.y': 12, 'B.v.x': -6, 'B.v.y': -8, due: 'W' },
     parts: [
-      { label: 'a', kind: 'speed', ask: 'What is the speed of the first boat?', find: 'heads.0.sp', unit: 'km h^-1', at: 0, step: 'speed and bearing', paper: 8.94 },
+      { label: 'a', kind: 'speed', ask: 'What is the speed of the first boat?', sym: 'v', find: 'heads.0.sp', unit: 'km h^-1', at: 0, step: 'speed and bearing', paper: 8.94 },
       { label: 'b', kind: 'time', ask: 'When is the first boat due west of the second?', find: 'answers.0.t', sym: 't', unit: 'h', trim: true, at: 'answers.0.t', step: 'in that direction', paper: 1.25 },
-      { label: 'c', kind: 'distance', ask: 'How far apart are the boats at that moment?', find: 'answers.0.dist', unit: 'km', trim: true, at: 'answers.0.t', step: 'in that direction', uses: ['b'], paper: 13.5 },
+      { label: 'c', kind: 'distance', ask: 'How far apart are the boats at that moment?', sym: 'd', find: 'answers.0.dist', unit: 'km', trim: true, at: 'answers.0.t', step: 'in that direction', uses: ['b'], paper: 13.5 },
     ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jan 2012', q: '7' },
@@ -534,7 +534,7 @@ export const LIBRARY = [
     place: 'Three lanes of one road, a speed-limit sign ahead',
     example: { u: 25, D: 48, a: 6, limit: 13, react: 0.2 },
     parts: [
-      { label: 'a', kind: 'speed', ask: 'In the first model the car slows steadily all the way to the sign. How fast is it going there?', find: 'models.0.vSign', unit: 'm s^-1', trim: true, at: 'models.0.tSign', step: 'model 1: the whole', paper: 7 },
+      { label: 'a', kind: 'speed', ask: 'In the first model the car slows steadily all the way to the sign. How fast is it going there?', sym: 'v', find: 'models.0.vSign', unit: 'm s^-1', trim: true, at: 'models.0.tSign', step: 'model 1: the whole', paper: 7 },
       { label: 'b', kind: 'time', ask: 'In the second it slows to the limit and holds it. How long does it take to reach the sign?', find: 'models.1.tSign', sym: 't', unit: 's', at: 'models.1.tSign', step: 'model 2: the whole', paper: 2.77 },
       { label: 'c', kind: 'time', ask: 'In the third the driver takes 0.2 s to react, still at 25 m s⁻¹, before braking. How long does it take now?', find: 'models.2.tSign', sym: 't', unit: 's', at: 'models.2.tSign', step: 'model 3: the whole', paper: 2.58 },
     ],
@@ -562,7 +562,7 @@ export const LIBRARY = [
     place: 'Side on: a laboratory bench, two strips of foil on clamp stands',
     example: { look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 },
     parts: [
-      { label: 'iii', kind: 'speed', ask: 'It breaks two strips 0.50 m apart, 0.14 s apart. How fast does it leave the bench?', find: 'u', unit: 'm s^-1', at: 0, step: 'speed it leaves', paper: 3.6, tol: 0.05 },
+      { label: 'iii', kind: 'speed', ask: 'It breaks two strips 0.50 m apart, 0.14 s apart. How fast does it leave the bench?', sym: 'u', find: 'u', unit: 'm s^-1', at: 0, step: 'speed it leaves', paper: 3.6, tol: 0.05 },
       { label: 'iv', kind: 'distance', ask: 'How far has it dropped at the second strip? Is that the strip’s centre, 8 cm lower?', find: 'fall', sym: 's_y', unit: 'm', dp: 3, at: 't2', step: 'second strip', uses: ['iii'], paper: 0.096 },
     ],
     sources: [
@@ -623,7 +623,7 @@ export const LIBRARY = [
       { label: 'b', kind: 'acceleration', ask: 'What is its acceleration while it slows?', find: 'S.0.a', sym: 'a', unit: 'm s^-2', trim: true, at: 'S.0.t1', step: 'stage 1', uses: ['a'], paper: -0.2 },
       { label: 'c', kind: 'acceleration', ask: 'It then covers 1820 m in 70 s, speeding up steadily. What is its acceleration?', find: 'S.1.a', sym: 'a', unit: 'm s^-2', trim: true, at: 'S.1.t1', step: 'stage 2', paper: 0.4 },
       { label: 'd', kind: 'speed', ask: 'How fast is it going at the end?', find: 'S.1.v', sym: 'v', unit: 'm s^-1', trim: true, at: 'S.1.t1', step: 'stage 2', uses: ['c'], paper: 40 },
-      { label: 'e', kind: 'speed', ask: 'What is its average speed over the whole motion?', find: 'avg', unit: 'm s^-1', dp: 1, at: 'end', step: 'the whole', paper: 22.4 },
+      { label: 'e', kind: 'speed', ask: 'What is its average speed over the whole motion?', sym: 'v', find: 'avg', unit: 'm s^-1', dp: 1, at: 'end', step: 'the whole', paper: 22.4 },
     ],
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '1' },
@@ -934,7 +934,7 @@ export const LIBRARY = [
     parts: [
       { label: 'a', kind: 'show', ask: 'Kicked up from 0.9 m, it rises to 10.9 m. Show its speed when kicked is 14 m s⁻¹.', find: 'u', sym: 'u', unit: 'm s^-1', trim: true, at: 'tTop', step: 'greatest height', paper: 14 },
       { label: 'b', kind: 'time', ask: 'How long is it until the ball reaches the ground?', find: 'f.tMax', sym: 't', unit: 's', at: 'end', step: 'back down', uses: ['a'], paper: 2.9, tol: 0.05 },
-      { label: 'c', kind: 'height', ask: 'In a sports hall 11.5 m high, how far below the ceiling does it turn?', find: 'f.gap', unit: 'm', dp: 1, at: 'tTop', step: 'ceiling', paper: 0.6 },
+      { label: 'c', kind: 'height', ask: 'In a sports hall 11.5 m high, how far below the ceiling does it turn?', sym: 'd', find: 'f.gap', unit: 'm', dp: 1, at: 'tTop', step: 'ceiling', paper: 0.6 },
     ],
     sources: [
       { board: 'WJEC', paper: '2300U20-1 Unit 2', session: 'Jun 2019', q: '8' },

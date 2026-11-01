@@ -62,9 +62,10 @@ function rowHTML(step) {
  */
 export function stripHTML(parts, runs, k, steps) {
   const n = runs.filter(Boolean).length;
+  const wide = (p) => (tag(p).length > 4 ? ' wide' : '');
   const chips = parts.map((p, i) => p.out
-    ? `<button class="pchip" type="button" disabled title="${esc(p.out)}" aria-label="Part ${esc(p.label)}: not in this app — ${esc(p.out)}">${tag(p)}</button>`
-    : `<button class="pchip" type="button" data-part="${i}" aria-pressed="${i === k}"${runs[i]?.answer.ok ? '' : ' data-none="true"'}>${tag(p)}</button>`).join('');
+    ? `<button class="pchip${wide(p)}" type="button" disabled title="Not in this app: ${esc(p.out)}" aria-label="Part ${esc(p.label)}: not in this app — ${esc(p.out)}">${tag(p)}</button>`
+    : `<button class="pchip${wide(p)}" type="button" data-part="${i}" aria-pressed="${i === k}"${i < k ? ' data-done="true"' : ''}${runs[i]?.part.find || runs[i]?.part.kind === 'graph' ? '' : ' data-none="true"'} aria-label="Part ${esc(p.label)}">${tag(p)}</button>`).join('');
   const next = runs.findIndex((r, i) => r && i > k);
   const go = next >= 0
     ? `<button class="fire sm pnext" type="button" data-part="${next}" data-play="true">Show me part ${tag(parts[next])}</button>`
@@ -72,7 +73,8 @@ export function stripHTML(parts, runs, k, steps) {
   let body;
   if (k < 0) {
     body = `<p class="pask"><b>This question has ${WORDS[n] ?? n} part${n === 1 ? '' : 's'}.</b>
-      Step through them: each one stops the motion at its own moment, with the working.</p>`;
+      Each one stops the motion at its own moment, with its working.</p>
+      <ol class="plist">${parts.map((p) => `<li><b>${tag(p)}</b>${p.out ? `<i>not in this app — ${esc(p.out)}</i>` : askHTML(p)}</li>`).join('')}</ol>`;
   } else {
     const run = runs[k], p = run.part, step = steps?.[stepOf(p, steps || [])];
     body = `<p class="pask"><b class="plab">${tag(p)}</b> ${askHTML(p)}</p>
@@ -80,34 +82,32 @@ export function stripHTML(parts, runs, k, steps) {
       ${p.note ? `<p class="plean">${askHTML({ ask: p.note })}</p>` : ''}
       ${leansHTML(run, runs)}
       ${p.given && Object.keys(p.given).length ? '<p class="plean"><span class="plean-i" aria-hidden="true">+</span>This part adds to what is given, and the motion is solved again.</p>' : ''}
-      ${step ? `<details class="pwork"><summary>Working: ${step.title}</summary>${rowHTML(step)}</details>` : ''}`;
+      ${step ? `<details class="pwork"><summary>Working: ${step.title}</summary><div class="pwork-body">${rowHTML(step)}</div></details>` : ''}`;
   }
-  const outs = parts.filter((p) => p.out);
-  const outNote = outs.length && k < 0
-    ? `<p class="pout">${outs.map((p) => `${tag(p)} ${esc(p.out)}`).join(' · ')}</p>` : '';
+  const outNote = '';
   return `<div class="pchips" role="group" aria-label="Parts of the question">${chips}</div>
     <div class="pnow" aria-live="polite">${body}${outNote}</div>
     <div class="pgo">${go}</div>`;
 }
 
-/** The ticks on the clock, one for each moment a part on this motion stops at — parts that share a moment share a tick. */
+/** The ticks on the clock, one for each moment a part on this motion stops
+    at. Parts whose moments are close share a tick, so no two pills overlap. */
 export function ticksHTML(runs, solved, k) {
   const tMax = solved?.f?.tMax;
   if (!(tMax > 0)) return '';
   const f = (t) => Math.min(Math.max(t / tMax, 0), 1);
-  const at = new Map();
-  runs.forEach((r, i) => {
-    if (!r || r.solved !== solved || !r.moment || (!r.part.find && r.part.kind !== 'graph')) return;
-    const key = f(r.moment.t).toFixed(3);
-    if (!at.has(key)) at.set(key, { f: f(r.moment.t), runs: [], i, span: r.moment.span });
-    const g = at.get(key);
-    g.runs.push(r);
-    if (i === k) g.i = i;
-  });
-  return [...at.values()].map((g) => {
-    const band = g.span ? `<span class="pband" style="--a:${f(g.span[0])};--b:${f(g.span[1])}"></span>` : '';
-    const names = g.runs.map((r) => r.part.label);
-    return `${band}<button class="ptick" type="button" data-part="${g.i}" aria-pressed="${g.runs.some((r) => r.k === k)}" style="--f:${g.f}" aria-label="Go to part${names.length > 1 ? 's' : ''} ${names.map(esc).join(' and ')}">${names.map(esc).join('·')}</button>`;
+  const on = runs.filter((r) => r && r.solved === solved && r.moment && (r.part.find || r.part.kind === 'graph'))
+    .map((r) => ({ r, f: f(r.moment.t) })).sort((x, y) => x.f - y.f);
+  const groups = [];
+  for (const x of on) {
+    const g = groups[groups.length - 1];
+    if (g && x.f - g.f0 < 0.06) g.items.push(x); else groups.push({ f0: x.f, items: [x] });
+  }
+  return groups.map((g) => {
+    const rs = g.items.map((x) => x.r), at = g.items.reduce((a, x) => a + x.f, 0) / g.items.length;
+    const lead = rs.find((r) => r.k === k) || rs[0];
+    const bands = rs.filter((r) => r.moment.span).map((r) => `<span class="pband" style="--a:${f(r.moment.span[0])};--b:${f(r.moment.span[1])}"></span>`).join('');
+    return `${bands}<button class="ptick" type="button" data-part="${lead.k}" aria-pressed="${rs.some((r) => r.k === k)}" style="--f:${at}" aria-label="Go to part${rs.length > 1 ? 's' : ''} ${rs.map((r) => esc(r.part.label)).join(' and ')}">${rs.map((r) => tag(r.part)).join('')}</button>`;
   }).join('');
 }
 
