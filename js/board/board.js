@@ -22,6 +22,7 @@
 
 import { readBlueprint, solveBoard } from './blueprint.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from './frames.js';
+import { createInk } from './ink.js';
 import { readText, READER } from '../ai/capture.js';
 import { esc } from '../ai/readout.js';
 import * as scene from '../render/scene.js';
@@ -72,6 +73,8 @@ export function createBoard({ open } = {}) {
   const vp = $('bd-vp'), world = $('bd-world');
   const form = $('bd-form'), text = $('bd-text'), send = $('bd-send');
   const cam = { x: 0, y: 0, z: 1 };
+  // the student's own drawing, on the same camera (js/board/ink.js)
+  const ink = createInk({ vp, cam });
   let fly = null;                        // the camera's way to a cluster, while it goes
   const clusters = [];
   const history = [];
@@ -91,6 +94,7 @@ export function createBoard({ open } = {}) {
     vp.style.backgroundSize = `${s}px ${s}px`;
     vp.style.backgroundPosition = `${cam.x}px ${cam.y}px`;
     $('bd-zoom').textContent = `${Math.round(cam.z * 100)}%`;
+    ink.render();
   }
   function zoomAt(k, px, py) {
     const z = clamp(cam.z * k, Z_MIN, Z_MAX);
@@ -662,9 +666,9 @@ export function createBoard({ open } = {}) {
 
   return {
     /** The board is on screen: start drawing. */
-    show() { active = true; for (const c of clusters) c.dirty = true; wake(); requestAnimationFrame(() => text.focus()); },
+    show() { active = true; ink.show(); for (const c of clusters) c.dirty = true; wake(); requestAnimationFrame(() => text.focus()); },
     /** It is not: stop. */
-    hide() { active = false; },
+    hide() { active = false; ink.hide(); },
     /** Build a board from a blueprint without asking the model — for tests and replays. */
     build(x, words = '') {
       const c = sketch(words); const bp = readBlueprint(x);
@@ -672,7 +676,7 @@ export function createBoard({ open } = {}) {
     },
     /** Fly to the nth cluster. */
     focus(n) { const c = clusters.at(n); if (c) frameOn(c, { now: true }); },
-    redraw() { for (const c of clusters) c.dirty = true; wake(); },
+    redraw() { for (const c of clusters) c.dirty = true; wake(); ink.render(); },
   };
 }
 

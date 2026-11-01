@@ -319,6 +319,8 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
     ['Anywhere', [[`${MAC ? '⌘' : 'Ctrl'} K`, 'Search or jump to'], ['/', 'Search'], ['G then H', 'Ask Suvat'], ['G then S', 'Scenarios'],
       ['G then P', 'Past papers'], ['G then W', 'Whiteboard'], ['T', 'Switch theme'], ['?', 'This sheet']]],
     ['Values', [['Enter', 'Launch']]],
+    ['Whiteboard', [['V', 'Move the board'], ['P', 'Pen'], ['H', 'Highlighter'], ['A', 'Arrow'], ['E', 'Eraser'],
+      ['Shift', 'Hold for a straight line, in 15° steps'], [`${MAC ? '⌘' : 'Ctrl'} Z`, 'Undo'], [`${MAC ? '⌘' : 'Ctrl'} Shift Z`, 'Redo']]],
     ['Flight', [['Space', 'Play or pause'], ['← →', 'Step through time'], ['R', 'Resolve this instant'], ['D', 'Display options'], ['Esc', 'Close a card']]],
   ];
   const ks = document.createElement('div');
