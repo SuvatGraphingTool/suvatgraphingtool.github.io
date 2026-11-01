@@ -103,6 +103,10 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
       parts.push(crumb(st === 'values' ? 'Values' : 'Flight', '', true));
     }
     $('crumbs').innerHTML = parts.join(SEP);
+    // the tab says where you are, then the name: "Whiteboard | SUVAT"
+    const here = st === 'scenario' ? home[view()] : st === 'board' ? 'Whiteboard' : st === 'chat' ? 'Ask Suvat'
+      : s ? s.name.replace(/<[^>]+>/g, '') : home[navFor()];
+    document.title = here ? `${here} | SUVAT` : 'SUVAT';
   }
   $('crumbs').addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');

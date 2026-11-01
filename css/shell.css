@@ -62,7 +62,7 @@ kbd.kbd {
 }
 .brand:hover .logo { transform: rotate(-6deg) scale(1.06); }
 .brand:active .logo { transform: scale(.92); transition-duration: 80ms; }
-.brand-word { font-size: 19px; font-weight: 700; color: var(--ink); background: none; -webkit-background-clip: initial; background-clip: initial; }
+.brand-word { font-size: 18px; font-weight: 700; letter-spacing: .06em; color: var(--ink); background: none; -webkit-background-clip: initial; background-clip: initial; }
 @supports (background-clip: text) or (-webkit-background-clip: text) {
   .brand-word { background: none; color: var(--ink); }
   :root[data-theme='light'] .brand-word { background-image: none; }
@@ -539,14 +539,31 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
   box-shadow: 0 8px 24px -10px rgba(0,0,0,.45);
 }
 .hbox-v { font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Resolve: the app's main move, so it is the one control with some depth — a
+   glass of its own colour, lighter at the top and deeper at the foot, never a
+   new hue. */
 .askat-btn {
-  background: var(--primary); background-image: none; color: var(--on-primary); border: none;
+  background-color: var(--primary); color: var(--on-primary); border: none;
+  background-image: linear-gradient(170deg,
+    color-mix(in srgb, var(--primary) 82%, white) 0%,
+    var(--primary) 46%,
+    color-mix(in srgb, var(--primary) 84%, black) 100%);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--on-primary) 22%, transparent),
+              inset 0 -1px 0 color-mix(in srgb, var(--primary) 70%, black),
+              0 6px 18px -8px color-mix(in srgb, var(--primary) 70%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2);
   font-size: var(--fs-sm); font-weight: 600; border-radius: var(--r-lg);
-  transition: background var(--dur-1), transform var(--dur-3) var(--spring);
+  transition: background-color var(--dur-1), box-shadow var(--dur-2), transform var(--dur-3) var(--spring);
 }
-.askat-btn:hover { background: var(--primary-hi); background-image: none; }
+.askat-btn:hover {
+  background-color: var(--primary-hi);
+  background-image: linear-gradient(170deg,
+    color-mix(in srgb, var(--primary-hi) 76%, white) 0%,
+    var(--primary-hi) 50%,
+    color-mix(in srgb, var(--primary-hi) 86%, black) 100%);
+}
 .askat-btn:active { transform: scale(.96); }
-.askat-btn[aria-pressed='true'] { background-image: none; outline: 2px solid var(--ring); outline-offset: 2px; }
+.askat-btn[aria-pressed='true'] { outline: 2px solid var(--ring); outline-offset: 2px; }
 
 .transport { gap: var(--sp-3); padding-top: var(--sp-3); }
 .play {
