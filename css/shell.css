@@ -648,20 +648,38 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .intro-h, .done-h { letter-spacing: -0.025em; font-weight: 600; }
 .intro-acts, .done-acts, .res-acts { gap: var(--sp-2); }
 
-/* THE LANDING CARD, docked rather than dropped on top. It used to blur the
-   whole stage the moment the ball landed; now it slides up into the corner
-   and leaves the picture you just watched where you can still see it. */
+/* THE LANDING CARD, in the middle of the screen (the user, 1 Nov: "like the
+   previous site"): when the motion finishes it pops up over everything, and
+   everything else is blurred behind it. Its back button, top left, puts the
+   picture back. */
 .done {
-  inset: auto var(--sp-3) var(--sp-3) auto; max-height: calc(100% - 2 * var(--sp-3)); width: min(560px, calc(100% - 2 * var(--sp-3)));
-  padding: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; place-items: end;
-  animation: none; pointer-events: none;
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+  padding: var(--sp-4); overflow-y: auto; pointer-events: auto;
+  background: color-mix(in srgb, var(--bg, #000) 38%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1); backdrop-filter: blur(10px) saturate(1.1);
+  animation: done-fade var(--dur-3) ease-out both;
 }
+@keyframes done-fade { from { opacity: 0; } }
+.done[hidden] { display: none; }
 .done-card {
-  width: 100%; max-height: 100%; overflow-y: auto; padding: var(--sp-5); pointer-events: auto;
-  animation: dock-in var(--dur-4) var(--spring-soft) both;
+  position: relative; width: min(720px, 100%); max-height: calc(100dvh - 2 * var(--sp-4)); overflow-y: auto;
+  padding: var(--sp-6) var(--sp-6) var(--sp-5); pointer-events: auto;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .6), 0 2px 8px rgba(0, 0, 0, .25);
+  animation: done-pop var(--dur-4) var(--spring-soft) both;
 }
-@keyframes dock-in { from { opacity: 0; transform: translateY(16px) scale(.98); } }
-.done { top: 92px; }
+@keyframes done-pop { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+.done-card .done-head { padding-left: 44px; }
+.done-back {
+  position: absolute; top: var(--sp-4); left: var(--sp-4); width: 34px; height: 34px;
+  display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--border-soft);
+  background: var(--hover); color: var(--ink); cursor: pointer;
+  transition: background var(--dur-1), transform var(--dur-3) var(--spring);
+}
+.done-back:hover { background: var(--card-hover); }
+.done-back:active { transform: scale(.92); }
+.done-back:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.done-back svg { width: 18px; height: 18px; }
+@media (prefers-reduced-motion: reduce) { .done, .done-card { animation: none; } }
 .done-five { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .dcell { border-radius: var(--r-lg); background: var(--hover); border: 1px solid var(--border-soft); padding: 10px 6px; }
 .dcell[data-given='false'] { background: var(--card-hover); border-color: var(--border-strong); box-shadow: var(--highlight); }
@@ -914,7 +932,6 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
   .transport { gap: var(--sp-2); }
   #replay { padding: 0 10px; }
   .speed-pop { right: -48px; }
-  .done { inset: auto var(--sp-2) var(--sp-2) var(--sp-2); width: auto; }
   .cmdk { padding-top: var(--sp-4); }
 }
 @media (pointer: coarse) { .tbtn, .ghost { height: 40px; } .nav-i { height: 40px; } }

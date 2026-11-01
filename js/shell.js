@@ -142,6 +142,17 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
   document.fonts?.ready.then(sync);
   sync();
 
+  /* ── the landing card: over the whole page, and its back button ─────────
+     The stage is its own stacking context, so a card inside it can only ever
+     sit in it: the canvas drew over it and nothing outside the stage blurred.
+     Lifted to the body it covers the page; app.js finds it by id as before. */
+  for (const id of ['done', 'exdone']) { const el = $(id); if (el) document.body.append(el); }
+  /* and its back button presses the card's own close */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest?.('.done-back');
+    if (b) $(b.dataset.close)?.click();
+  });
+
   /* ── the drawer, on a phone ─────────────────────────────────────────── */
   function openSide() { app.dataset.side = 'open'; $('menu-btn').setAttribute('aria-expanded', 'true'); }
   function closeSide() { if (app.dataset.side !== 'open') return; app.dataset.side = 'closed'; $('menu-btn').setAttribute('aria-expanded', 'false'); }
