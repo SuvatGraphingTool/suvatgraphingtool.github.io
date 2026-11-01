@@ -289,8 +289,9 @@ export function createAsk({ apply, run, edit, show, scene }) {
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
 
     // Typeset maths arrives as markup, so it goes in with innerHTML (rule 1).
-    // With Graph off it is a conversation, so there is nothing to open.
-    const acts = modes.graph
+    // EVERY READING THAT RUNS CAN BE VIEWED (the user, 1 Nov): the buttons no
+    // longer hang on the Graph switch, which only decides whether the graphs open.
+    const acts = r.runnable || modes.graph
       ? `<div class="ask-acts">
         <button type="button" class="fire sm ask-run"${r.runnable ? '' : ' disabled'}>${r.composed ? 'Show me the scene' : 'Show me the flight'}</button>
         <button type="button" class="ghost sm ask-edit">${r.runnable ? 'Check the values' : 'Add the missing values'}</button>

@@ -3406,7 +3406,7 @@ function readOne(x, { graph = true, solve = false } = {}) {
   }
   // GRAPH: the reply offers the flight; the flight and its graphs are drawn
   // on the stage, not in the chat. Off, the reply is words only, like any chat.
-  return { ok: true, runnable: !!traj && graph, html };
+  return { ok: true, runnable: !!traj, html };
 }
 /**
  * A question the reader matched to a Past-paper library scenario: its boxes
@@ -3448,7 +3448,7 @@ function applyLibrary(x, { graph = true } = {}) {
   const body = solved?.ok
     ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
-  return { ok: true, runnable: !!traj && graph, html: head + libraryGiven(fields, gAssumed, x.summary, x.example === true && !!s.example) + body };
+  return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed, x.summary, x.example === true && !!s.example) + body };
 }
 /**
  * What Ask Suvat read into a library scenario's boxes, listed the way the
@@ -3520,7 +3520,7 @@ function applyComposed(x, { graph = true } = {}) {
   const body = solved?.ok
     ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
-  return { ok: true, runnable: !!traj && graph, composed: !!traj, html: head + body + more };
+  return { ok: true, runnable: !!traj, composed: !!traj, html: head + body + more };
 }
 /** A composed scene, kept with the boxes and parts it was read with. */
 const scenes = new Map();
