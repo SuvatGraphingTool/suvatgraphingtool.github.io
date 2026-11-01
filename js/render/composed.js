@@ -328,7 +328,8 @@ function column(canvas, o) {
   // ── the frame: the place, the line and room for its labels, at one scale
   let F = null;
   for (let it = 0, k = 6; it < 4; it++) {
-    const left = (R.backdrop === 'house' ? houseW(k) + 40 : TH(k) + 90) / k;
+    // a house is cropped at the frame's edge: its corner is what matters
+    const left = (R.backdrop === 'house' ? Math.min(houseW(k), 150) + 40 : TH(k) + 90) / k;
     // at least five metres of height, so a drop from someone's hand is seen
     // in its room rather than filling the stage
     const box = { xLo: -left, xHi: GAP + 150 / k, yLo: 0, yHi: Math.max(5, yTop + (TH(k) + 24) / k) };
@@ -338,24 +339,41 @@ function column(canvas, o) {
   }
   const { k, X, Y } = F, oy = Y(0), x0 = X(0), top = Y(H0);
   const phase = t * 1.3, th = TH(k);
-  // the line is just past the edge, where a hand held out over it lets go
-  const lx = B.edge || H0 > 0 ? x0 + Math.max(10, th * 0.12) : X(GAP);
+  const R0 = Math.max(8, Math.min(16, k * 0.11));     // a ball you can see, to scale where it can be
+  // held at arm's length at hand height, the arm is straight out in front;
+  // otherwise the line is clear of the edge, room for a ball each side
+  const held = byHand ? starts.findIndex((y0) => y0 > 0) : -1;
+  const aimOf = (u0) => (u0 > 1e-9 ? 60 : u0 < -1e-9 ? -30 : 0);
+  let hh = th, feet = 0;
+  if (held >= 0) {
+    const per = throwerHand(100, aimOf(movers[held].at(0).v));
+    hh = clamp((oy - Y(starts[held])) / (per.y / 100), THROWER_MIN * 0.8, 3 * k);
+    feet = X(GAP * 0.4);
+  }
+  // from the top: a person stands behind the parapet, an arm held out over
+  // the edge, the hand at the top's height — so the line is that far out
+  const topper = held < 0 ? starts.findIndex((y0) => y0 > 0 && Math.abs(y0 - H0) < 1e-9) : -1;
+  const reach = topper >= 0 ? throwerHand(100, aimOf(movers[topper].at(0).v)) : null;
+  const lx = held >= 0 ? feet + hh * (throwerHand(100, aimOf(movers[held].at(0).v)).x / 100)
+    : reach ? x0 - 4 + th * (reach.x / 100) + Math.max(0, 2 * R0 + 8 - th * (reach.x / 100))
+    : B.edge || H0 > 0 ? x0 + 4 * R0 + 12 : X(GAP);
   scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax: GAP, phase, houseW, byHand });
 
-  // ── the people who let them go: on the edge for one that starts at the top,
-  // on the ground below for one that starts on the ground
+  // ── who lets them go. Held at hand height: a person, the ball in the hand
+  // held out in front. Thrown from the top or the ground: the thrower, as the
+  // library's stages draw one, wound up and then through. Simply dropped from
+  // the top: no one — it rests on the edge until it falls.
   movers.forEach((m, i) => {
-    const y0 = starts[i], u0 = m.at(0).v, aim = u0 > 1e-9 ? 90 : -90;
-    const pose = fired ? clamp(0.55 + t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
-    const per = throwerHand(100, aim);
-    if (y0 > 0 && byHand) {
-      const hh = clamp((oy - Y(y0)) / (per.y / 100), THROWER_MIN * 0.8, 3 * k);
-      thrower(g, lx - hh * (per.x / 100), oy, hh, P, { dir: 1, pose, aim });
-    } else if (y0 > 0 && Math.abs(y0 - H0) < 1e-9) {
-      thrower(g, Math.min(x0 - th * 0.08, lx - th * (per.x / 100)), top, th, P, { dir: 1, pose, aim });
-    } else if (y0 === 0) {
-      thrower(g, lx + th * 0.55, oy, th, P, { dir: -1, pose, aim });
+    const u0 = m.at(0).v;
+    if (i === held) thrower(g, feet, oy, hh, P, { dir: 1, pose: 1, aim: aimOf(u0) });
+    else if (i === topper) {
+      // standing behind the parapet: only what is above the roof line shows
+      g.save(); g.beginPath(); g.rect(0, 0, w, top + R0 + 2); g.rect(x0, 0, w, top + th * 0.2); g.clip();
+      const fx = lx - th * (reach.x / 100), fy = top + th * (reach.y / 100);
+      thrower(g, Math.min(fx, x0 - 4), fy, th, P, { dir: 1, pose: 1, aim: aimOf(u0) });
+      g.restore();
     }
+    // launched from the ground: the ball alone, as a textbook draws it
   });
 
   // ── the line they move on, faint, and the height of the place
@@ -379,34 +397,42 @@ function column(canvas, o) {
   if (pair && f.meet && t >= f.meet.t - 1e-9) {
     const my = Y(f.meet.x), a = ageAt(f.meet.t), life = f.meet.t >= f.tMax - 1e-9 ? SETTLE : short;
     for (const e of R.effects) {
-      if (e === 'flash') flash(g, lx, my, a, life, { radius: 30 });
-      else if (e === 'ring') pulse(g, lx, my, a, life, P.mark);
+      if (e === 'flash') { flash(g, lx, my, a, life, { radius: 52 }); pulse(g, lx, my, a, life, P.second, { radius: 48 }); }
+      else if (e === 'ring') pulse(g, lx, my, a, life, P.mark, { radius: 48 });
     }
-    stroke(g, [{ x: lx - 40, y: my }, { x: lx + 60, y: my }], { color: P.mark, width: 1.6, alpha: 0.9, dash: [5, 4] });
-    L.add(T`h = ${sig3(f.meet.x)} [m]`, lx + 66, my - 9, { color: P.mark, align: 'left', pri: 9, size: 14, weight: 700 });
-    L.add(T`t = ${sig3(f.meet.t)} [s]`, lx + 66, my + 11, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 });
+    // where they met stays marked: a ring, a dashed level across the stage,
+    // and its height as a dimension from the ground
+    dot(g, lx, my, R0 + 7, { stroke: P.mark, width: 2.6 });
+    stroke(g, [{ x: x0 - 30, y: my }, { x: w - 12, y: my }], { color: P.mark, width: 1.4, alpha: 0.75, dash: [6, 5] });
+    const dx = lx + R0 * 2 + 70;
+    stroke(g, [{ x: dx, y: oy }, { x: dx, y: my }], { color: P.mark, width: 1.4, alpha: 0.9 });
+    for (const yy of [oy, my]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.mark, width: 1.4, alpha: 0.9 });
+    L.add(T`h = ${sig3(f.meet.x)} [m]`, dx + 10, (oy + my) / 2, { color: P.mark, align: 'left', pri: 9, size: 15, weight: 700 });
+    L.add(T`t = ${sig3(f.meet.t)} [s]`, dx + 10, my - 14, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 });
   }
   if (!pair) {
     for (const im of f.impacts || []) {
       if (t < im.t - 1e-9) continue;
       const a = ageAt(im.t), life = im.t >= f.tMax - 1e-9 ? SETTLE : short;
       for (const e of R.effects) {
-        if (e === 'ring') pulse(g, lx, oy, a, life, P.mark, { radius: 26 });
-        else if (e === 'dust') dust(g, lx, oy, a, life, { size: 1.2, n: 12 });
+        if (e === 'ring') { pulse(g, lx, oy, a, life, P.mark, { radius: 40 }); dust(g, lx, oy, a, life, { size: 1, n: 10 }); }
+        else if (e === 'dust') dust(g, lx, oy, a, life, { size: 1.4, n: 14 });
         else if (e === 'flash') flash(g, lx, oy - 4, a, life);
       }
       if (a >= 0 && a < life) squashAt = { a, life };
     }
     // the greatest height after each bounce, marked as it is reached
+    // each on its own tick, its label pinned beside it at its own height
     for (const im of (f.impacts || []).filter((x) => x.tTop != null && t >= x.tTop - 1e-9 && x.H > 1e-9)) {
-      const hy = Y(im.H);
-      stroke(g, [{ x: lx - 22, y: hy }, { x: lx + 22, y: hy }], { color: P.disp, width: 1.4, alpha: 0.85 });
-      L.add(T`${sig3(im.H)} [m]`, lx + 28, hy, { color: P.disp, align: 'left', pri: 6, size: 13, weight: 700 });
+      const hy = Y(im.H), tx = lx + R0 * 2 + 40;
+      stroke(g, [{ x: lx - 14, y: hy }, { x: tx, y: hy }], { color: P.disp, width: 1.4, alpha: 0.85, dash: [4, 3] });
+      L.add(T`${sig3(im.H)} [m]`, tx + 6, hy, { color: P.disp, align: 'left', pri: 6, size: 13, weight: 700, maxPush: 6 });
     }
   }
 
   // ── each one: a trail of where it has just been, the ball, its velocity
-  const off = pair ? [-6, 6] : [0];
+  // two on one line: side by side, touching where they meet, both clear of the wall
+  const off = pair ? [-R0 - 1, R0 + 1] : [0];
   const vMax = Math.max(1e-6, ...movers.flatMap((m) => [0, 0.25, 0.5, 0.75, 1].map((q) => Math.abs(m.at(q * f.tMax).v))));
   const vl = clamp(Math.min(h * 0.16, 90), 34, 90) / vMax;
   movers.forEach((m, i) => {
@@ -416,19 +442,22 @@ function column(canvas, o) {
       if (tt < 0 || !fired) continue;
       dot(g, x, Y(m.at(tt).y), 2.2, { fill: withAlpha(i ? P.second : P.vel, 0.08 + 0.05 * (8 - j)) });
     }
-    const R0 = clamp(k * PIECES[m.kind].m * 0.5, 5.5, 16);
     g.save();
-    if (squashAt) { const s = squash(squashAt.a, squashAt.life); g.translate(x, y + R0); g.scale(s.sx, s.sy); g.translate(-x, -y - R0); }
-    if (m.kind === 'stone') pebble(g, x, y, R0);
+    // a bounce squashes it flat against the floor and it springs back
+    if (squashAt) { const s = squash(squashAt.a, squashAt.life); g.translate(x, y + R0); g.scale(1 + (s.sx - 1) * 2.2, 1 + (s.sy - 1) * 2.2); g.translate(-x, -y - R0); }
+    if (m.kind === 'stone') { pebble(g, x, y, R0); if (ring) dot(g, x, y, R0 + 3, { stroke: ring, width: 2.4 }); }
     else if (m.kind === 'particle') particle(g, x, y, R0 * 2, P, { ring });
     else ballAt(g, x, y, R0, ring);
     g.restore();
-    if (pair) L.add(m.n, x + (i ? 14 : -14), y, { color: i ? P.second : P.ink, align: i ? 'left' : 'right', pri: 9, size: 14, weight: 800 });
+    // letters and arrows on the open side, away from the wall
+    if (pair) L.add(m.n, i ? x + R0 + 6 : x - R0 - 6, y - R0 - 8, { color: i ? P.second : P.ink, align: i ? 'left' : 'right', pri: 9, size: 14, weight: 800 });
     if (show.velocity !== false && Math.abs(q.v) > 1e-6 && fired) {
-      const ty = y - q.v * vl, ax = x + (pair ? (i ? 16 : -16) : 16);
+      const ax = lx + R0 * 2 + 14 + (pair ? i * 18 : 0);
+      // never through the ground: at a bounce the arrow is cut at the floor
+      const ty = Math.min(oy - 2, y - q.v * vl);
       arrow(g, ax, y, ax, ty, { color: withAlpha(P.card, 0.8), width: 7, head: 14 });
       arrow(g, ax, y, ax, ty, { color: P.velVec, width: 3, head: 11 });
-      L.add(T`${sig3(Math.abs(q.v))} [m s^-1]`, ax + (i || !pair ? 10 : -10), (y + ty) / 2, { color: P.vel, align: i || !pair ? 'left' : 'right', pri: 7, size: 14, weight: 700 });
+      if (Math.abs(ty - y) > 6) L.add(T`${sig3(Math.abs(q.v))} [m s^-1]`, ax + 10, (y + ty) / 2, { color: P.vel, align: 'left', pri: 7, size: 14, weight: 700 });
     }
     if (show.acceleration && fired) arrow(g, x, y, x, y + 36, { color: P.acc, width: 2.4, head: 10 });
   });
