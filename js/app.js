@@ -3380,16 +3380,17 @@ function applyLibrary(x, { graph = true } = {}) {
   const body = solved?.ok
     ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
-  return { ok: true, runnable: !!traj && graph, html: head + libraryGiven(fields, gAssumed, x.summary) + body };
+  return { ok: true, runnable: !!traj && graph, html: head + libraryGiven(fields, gAssumed, x.summary, x.example === true && !!s.example) + body };
 }
 /**
  * What Ask Suvat read into a library scenario's boxes, listed the way the
  * twelve's reply lists them: each value and where it came from — the
  * question, or an assumption (Earth's g; a jump's angle when none was given).
  */
-function libraryGiven(fields, gAssumed, summary = '') {
+function libraryGiven(fields, gAssumed, summary = '', example = false) {
   const plain = (h) => String(h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
   const angleAssumed = /No angle was given/.test(summary || '');
+  const atRest = /No speed was given/.test(summary || '');
   const rows = [];
   for (const f of fields) {
     const v = state.kit[f.key];
@@ -3404,7 +3405,10 @@ function libraryGiven(fields, gAssumed, summary = '') {
       shown = isFinite(n) ? M`${num(n, 2, { trim: true })}` : esc(String(v));
     }
     const how = f.key === 'g' && gAssumed ? 'assumed · on Earth'
-      : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given' : 'in the question';
+      : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given'
+      : f.key === 'u' && atRest ? 'assumed · no speed was given'
+      // "surprise me": the numbers are the paper's, not anything the student said
+      : example ? 'from the paper' : 'in the question';
     rows.push(`<li class="ro-row" data-how="${how.startsWith('assumed') ? 'assumed' : 'given'}">
       <span class="ro-val">${esc(plain(f.label))}: ${shown}</span><span class="ro-how">${how}</span></li>`);
   }

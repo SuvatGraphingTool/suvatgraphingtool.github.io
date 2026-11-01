@@ -23,6 +23,8 @@ testing spends the live site's allowance too.
 | a stone into a well; a footballer's kick at 35°; vectors, "surprise me"; arc, road, a rocket in parts | Right scenario; every answer checked by hand (2.02 s, 19.8 m s⁻¹; 31.04 m, 5.43 m; t = 30 s, \|v\| = √2; 2.04 s, 35.31 m, 5.10 m; −6.25 m s⁻², 4 s; 81.55 m, 8.15 s). | — |
 | two runners: A from rest at 2 m/s², B passes at a steady 6 m/s — when does A catch B, how far have they gone | Read with answer "time" and "distance", both parts said "Not one this app works out for you". The engine had them (6 s, 36 m). | A kind named for a key ("time" where the key is "meeting") and "when does … catch / meet / draw level" find the one meeting. Two on a road gains a distance answer: how far along the pass is. A speed asked "when it passes" is never given the time. Test. |
 | hiya whats the capital of france | A friendly chat reply, no scene opened. | — |
+| surprise me → a lift | The reply listed every number as "in the question", though the student asked none. | An example's numbers are labelled "from the paper". A ball let go with no speed shows u = 0 as "assumed · no speed was given". Checked in the page (app.js has no node test). |
+| now make it 20 m (a follow-up), a cliff | Read afresh at 20 m: t = 2.02 s. | — |
 
 For the lead: on a laptop, beside the Display panel (a 436 px stage), the HUD's four cards cover most of the Two on a road scene and the well's figure.
 
