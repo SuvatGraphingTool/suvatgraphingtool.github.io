@@ -62,9 +62,12 @@ export function createAsk({ apply, run, edit, show }) {
   let opening = false;              // a view transition has been asked for
   function openChat({ instant = false } = {}) {
     if (inChat()) return;
+    // A view transition runs its swap a frame or more later. If the student
+    // has gone somewhere else by then ("Show me the flight"), it stays there.
+    const whence = app.dataset.step;
     const swap = () => {
       opening = false;
-      if (inChat()) return;
+      if (inChat() || app.dataset.step !== whence) return;
       show('chat'); dock(); follow(true);
       text.focus({ preventScroll: true });
     };

@@ -458,8 +458,7 @@ function chooseScenario(id, { example = false } = {}) {
     recompute();
     if (traj) { state.launched = true; state.firedBefore = false; state.t = 0; state.playing = false; }
     buildLive();
-    go('flight');
-    if (scenario.intro) openIntro();
+    if (!stayPut) { go('flight'); if (scenario.intro) openIntro(); }
   } else {
     // buildLive() runs for EVERY scenario now, not only the exhibits. It is
     // the one place that decides which stage controls this situation can
@@ -467,9 +466,15 @@ function chooseScenario(id, { example = false } = {}) {
     // on the way out of one of those left that answer in place for whatever
     // was picked next.
     buildLive();
-    go('values');
+    if (!stayPut) go('values');
   }
 }
+/* A READING STAYS IN THE CHAT. Ask Suvat's answer is shown where the question
+   was asked, and the stage waits for "Show me the flight" — so picking the
+   scenario for a reading sets it up without going to its screen. Going there
+   and then back to the chat was a flash of the values screen on every
+   answer. Set only while applyReading runs. */
+let stayPut = false;
 
 /**
  * A scenario's `example`, put in the boxes (PREFILL only). A library entry's
@@ -2481,7 +2486,6 @@ function renderHud() {
   // In the window there is no corner for a readout to sit in, and the clock
   // is in the transport where all four panes share it.
   if (windowed()) { $('hud-left').innerHTML = ''; $('hud-right').innerHTML = ''; return; }
-  const p = traj.pos(state.t), v = traj.vel(state.t);
   const b = (k, val, unit, hue) =>
     `<div class="hbox"${hue ? ` data-hue="${hue}"` : ''}><div class="hbox-k">${k}</div>
      <div class="hbox-v">${val}<small>${unit}</small></div></div>`;
@@ -2492,6 +2496,9 @@ function renderHud() {
     $('hud-right').innerHTML = r.right.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
     return;
   }
+  // AFTER the kit's turn: a kit's motion need not have a pos() — two
+  // trains, two particles — and asking for one first threw every frame.
+  const p = traj.pos(state.t), v = traj.vel(state.t);
   // In a straight line the horizontal distance is always zero, so show the
   // signed displacement along the line instead — that is the s being solved.
   if (scenario?.road) {
@@ -2980,8 +2987,11 @@ function frame(now) {
     }
     dirty = true;
   }
-  if (dirty) draw();
+  // ONE BAD FRAME MUST NOT STOP THE CLOCK. The next frame is asked for
+  // first, so a throw in draw() is one frame lost, not a stage that never
+  // draws again — which is how a library kit left the next scenario black.
   requestAnimationFrame(frame);
+  if (dirty) draw();
 }
 
 /* ── options ────────────────────────────────────────────────────────── */
@@ -3268,7 +3278,11 @@ for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) 
    exactly the route a typed question takes: chooseScenario, the five, and
    recompute, where solveLaunch works out the rest or says what is missing.
    Nothing on this route calculates a flight that the engine did not. */
-function applyReading(x, { graph = true, solve = false } = {}) {
+function applyReading(x, opts) {
+  stayPut = true;
+  try { return readInto(x, opts); } finally { stayPut = false; }
+}
+function readInto(x, { graph = true, solve = false } = {}) {
   if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
   if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph });
   const r = toApp(x);
