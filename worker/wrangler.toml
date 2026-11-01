@@ -5,7 +5,7 @@ compatibility_date = "2026-09-01"
 [vars]
 # Lock the Worker to your site. Comma separated, no trailing slash.
 # Leave empty ONLY while testing locally.
-ALLOWED_ORIGINS = "https://suvat-ai.suvatgraphingtool.workers.dev,https://suvatgraphingtool.github.io,http://localhost:4173,http://localhost:4199"
+ALLOWED_ORIGINS = "https://suvat-ai.suvatgraphingtool.workers.dev,https://suvat-redesign.suvatgraphingtool.workers.dev,https://suvatgraphingtool.github.io,http://localhost:4173,http://localhost:4199"
 # Which models read the questions, first choice first. Gemma on Cloudflare ("@cf/") goes
 # first: about 2–3 s, a few hundred a day free, and no Google queue — but it reads no PDFs,
 # which go straight on to Gemini. Then the Gemini models. A busy one hands on to the next,
