@@ -180,6 +180,12 @@ Engines the composed stage draws:
   with that reason: the library's own scenarios already draw a road, rails or
   a map with the figure chosen.
 
+A part that is another place or another motion carries its own `recipe`
+(`{ label, asks, answer, recipe }`). `scenesOf(parts)` in recipe.js splits
+them: the main scene steps through the rest; each scene of its own is composed
+and registered, its part answered by its own engine in the chat reply, with
+"Show me this scene" (`showScene(id)` in app.js) opening it behind its veil.
+
 `worker/src/composeplace.js` `toComposed()` runs after the lead's `toPlace()`:
 a library pair-vertical or bounce reading whose words name a tower, building,
 house or hall becomes a composed recipe with that backdrop — the same boxes,

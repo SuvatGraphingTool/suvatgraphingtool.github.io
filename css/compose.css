@@ -3,6 +3,11 @@
    Ask Suvat orb breathing in the middle, the pieces named as they go in.
    Then the veil lifts from the top down and the scene comes sharp. */
 
+/* a part of the question in a scene of its own, under the reply's answers */
+.ro-scene { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent); }
+.ro-scene .ro-name { font-size: var(--fs-base); margin: 2px 0 var(--sp-2); }
+.ro-scene .ask-scene { margin-top: var(--sp-2); }
+
 @property --cr-lift { syntax: '<percentage>'; inherits: true; initial-value: -30%; }
 
 .cmp-reveal {

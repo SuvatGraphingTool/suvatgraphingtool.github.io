@@ -209,6 +209,10 @@ house, a hall, a tree), compose them with that backdrop so the student sees it.
   numbers  the GIVEN values only, keyed by the engine's numbers below; leave out what is asked.
            A word box takes one of its words: "start":"drop"
   effects  optional
+A part that changes only a number ("now at 20 m/s") puts it in given, keyed as the engine's
+numbers. A part about another place or another motion ("(c) a second ball is kicked from
+the ground…") carries its own recipe inside that part, with its answer key from that
+recipe's engine: {"label":"c","asks":"...","answer":"distance","recipe":{...}}.
 Driven, rolled or ridden off an edge is launched horizontally: theta 0. Give the height of
 the edge in h. Leave g out unless the question states it. A recipe's parts take their
 answer keys from its engine's answers below — never a number.

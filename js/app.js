@@ -13,7 +13,7 @@ import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
-import { compose } from './compose/recipe.js';
+import { compose, scenesOf } from './compose/recipe.js';
 import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
@@ -37,6 +37,7 @@ import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML, esc } from './ai/readout.js';
 import { walk, stepOf } from './parts/parts.js';
 import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML } from './parts/strip.js';
+import { answerOf } from './parts/parts.js';
 import { fromReader, boxesOf } from './parts/answers.js';
 
 const $ = (id) => document.getElementById(id);
@@ -3368,21 +3369,53 @@ function applyLibrary(x, { graph = true } = {}) {
 function applyComposed(x, { graph = true } = {}) {
   const c = compose(x.recipe);
   if (!c.ok) return { ok: false, error: `Suvat could not put that scene together: ${c.reason}` };
-  if (!byId(c.scenario.id)) COMPOSED.push(c.scenario);
-  KITS[c.scenario.id] = c.kit;
-  const s = byId(c.scenario.id);
+  const s = register(c, null);
+  // a part that is another place or another motion has a scene of its own
+  const { main, scenes } = scenesOf(x.parts);
+  scenes.forEach((sc) => { if (sc.c.ok) register(sc.c, [sc.part]); });
   chooseScenario(s.id);
   closeIntro();
   state.kit = { ...c.boxes };
-  state.readerParts = fromReader(s.id, x.parts, Object.keys(c.boxes));
+  state.readerParts = fromReader(s.id, main, Object.keys(c.boxes));
   buildValuesScreen();              // which recomputes, and solves each part
   refreshSteps();
+  // each scene of its own: its part answered by its engine, and the way to it
+  const more = scenes.map((sc) => {
+    const label = `(${esc(String(sc.part.label || '').replace(/[^A-Za-z0-9]/g, '').toLowerCase())})`;
+    if (!sc.c.ok) return `<div class="ro-scene"><p class="ro-eyebrow">Part ${label} needs a scene of its own</p><div class="ro-engine" data-ok="false">${esc(sc.c.reason)}</div></div>`;
+    const sid = sc.c.scenario.id, k = KITS[sid], sv = k.solve(k.read(sc.c.boxes));
+    const p = fromReader(sid, [sc.part], Object.keys(sc.c.boxes))?.[0];
+    const body = sv.ok && p ? replyHTML([{ part: p, answer: answerOf(p, sv) }])
+      : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${sv.reason || ''}</div>`;
+    return `<div class="ro-scene"><p class="ro-eyebrow">Part ${label}, in a scene of its own</p><h4 class="ro-name">${esc(sc.c.scenario.name)}</h4>${body}`
+      + `<button type="button" class="ghost sm ask-scene" data-id="${sid}">Show me this scene</button></div>`;
+  }).join('');
   const head = `<p class="ro-eyebrow">Drawn for your question</p><h3 class="ro-name">${esc(s.name)}</h3>`
     + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;
   const body = solved?.ok
     ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
-  return { ok: true, runnable: !!traj && graph, composed: !!traj, html: head + body };
+  return { ok: true, runnable: !!traj && graph, composed: !!traj, html: head + body + more };
+}
+/** A composed scene, kept with the boxes and parts it was read with. */
+const scenes = new Map();
+function register(c, parts) {
+  if (!byId(c.scenario.id)) COMPOSED.push(c.scenario);
+  KITS[c.scenario.id] = c.kit;
+  scenes.set(c.scenario.id, { boxes: c.boxes, parts });
+  return byId(c.scenario.id);
+}
+/** "Show me this scene": a part's own composed scene, on the stage behind its veil. */
+function showScene(id) {
+  const sc = scenes.get(id);
+  if (!sc || !byId(id)) return;
+  chooseScenario(id);
+  closeIntro();
+  state.kit = { ...sc.boxes };
+  state.readerParts = sc.parts ? fromReader(id, sc.parts, Object.keys(sc.boxes)) : null;
+  buildValuesScreen();
+  refreshSteps();
+  if (traj) showFlight(); else go('values');
 }
 /** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
 function showFlight() {
@@ -3406,6 +3439,7 @@ function showFlight() {
 const ask = createAsk({
   apply: applyReading,
   run: showFlight,
+  scene: showScene,
   edit: () => go('values'),
   show: go,
 });
