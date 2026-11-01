@@ -85,8 +85,9 @@ export function solveHeight(k0 = {}) {
   let hh = have(k.h) ? k.h : snap(r.f.params.h);
   // from level ground a height found from the time is 0 to within rounding
   if (Pl.level && !have(k.h) && Math.abs(hh) < 1e-6 * Math.max(1, Math.abs(r.f.params.u || 0) * (k.t || 1))) hh = 0;
-  // a time in the air the launch it found does not take is not that launch
-  if (!have(k.h) && have(k.t) && Math.abs(r.f.tFlight - k.t) > 1e-6 * Math.max(1, k.t)) {
+  // from level ground, a time in the air the launch it found does not take is
+  // not that launch (above the ground, that shows as a height below it, below)
+  if (Pl.level && !have(k.h) && have(k.t) && Math.abs(r.f.tFlight - k.t) > 1e-6 * Math.max(1, k.t)) {
     return fail(`Thrown like that it is not back down to ${Pl.below} at ${M`t = ${d(k.t)} [s]`}: check the time, or give the height it starts at.`);
   }
   if (have(k0.tTop) && have(k.t) && k0.tTop >= k.t - 1e-9) return fail(`The time to the top, ${M`${d(k0.tTop)} [s]`}, is not before the ${M`${d(k.t)} [s]`} it takes to land: it must reach its top first.`);
