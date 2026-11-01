@@ -12,7 +12,7 @@
 // The pieces named are the ones the recipe really used (js/compose/
 // registry.js); the veil claims nothing else. Reduced motion: a short fade.
 
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES } from './registry.js';
+import { BACKDROPS, FIGURES, EFFECTS } from './registry.js';
 
 /** The Spark, Ask Suvat's mark: the one `#spark` symbol in index.html. */
 const SPARK = '<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><use href="#spark"/></svg>';
@@ -21,13 +21,14 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 /** What the veil says, step by step: [{ say, chip }], from the recipe. */
 export function steps(R) {
-  const B = BACKDROPS[R.backdrop], E = ENGINES[R.engine], out = [];
-  out.push({ say: `Placing ${B.label.toLowerCase()}`, chip: R.backdrop });
+  const B = BACKDROPS[R.backdrop], out = [];
+  const bare = (s) => s.replace(/^(an?|the) /i, '');
+  out.push({ say: `Placing ${B.label.toLowerCase()}`, chip: bare(B.label.toLowerCase()) });
   const below = BELOW[B.below];
-  if (below && !B.label.toLowerCase().includes(B.below)) out.push({ say: `Laying out ${below}`, chip: B.below });
-  for (const o of R.objects) out.push({ say: `Bringing in ${FIGURES[o.figure].label}`, chip: o.figure });
-  out.push({ say: `Working out the motion: ${E.label.toLowerCase()}`, chip: R.engine });
-  for (const e of R.effects) out.push({ say: `Adding ${EFFECTS[e].label}`, chip: e });
+  if (below && !B.label.toLowerCase().includes(B.below)) out.push({ say: `Laying out ${below}`, chip: bare(below) });
+  for (const o of R.objects) out.push({ say: `Bringing in ${FIGURES[o.figure].label}`, chip: bare(FIGURES[o.figure].label) });
+  out.push({ say: 'Working out the motion', chip: 'the motion' });
+  for (const e of R.effects) out.push({ say: `Adding ${EFFECTS[e].label}`, chip: bare(EFFECTS[e].label) });
   out.push({ say: 'Scaling it to the numbers', chip: null });
   return out;
 }

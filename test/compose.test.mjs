@@ -82,7 +82,7 @@ group('Refused, with a reason a student can read', () => {
   no({ ...CAR, engine: 'pair', objects: [{ figure: 'ball' }, { figure: 'ball' }] }, /does not draw it yet/, 'an engine the stage does not draw yet');
   no(null, /empty/, 'no recipe at all');
   no({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 10, theta: 0 } }, /launched upwards/, 'along the ground, it never leaves it');
-  no({ backdrop: 'orchard', engine: 'projectile', objects: [{ figure: 'car' }], numbers: { h: 3 } }, /only a ball/, 'a car falling from a tree');
+  no({ backdrop: 'orchard', engine: 'projectile', objects: [{ figure: 'car' }], numbers: { h: 3 } }, /only an apple, a ball, a stone or a particle can fall: not a car/, 'a car falling from a tree');
   no({ ...CAR, numbers: { h: -150000 } }, /−1.500 × 10⁵ for the height/, 'a huge number said as a number, with a real minus sign');
   ok(check({ ...CAR, title: 'A <img src=x onerror=alert(1)>', objects: [{ figure: 'car', name: '<b>x</b>' }] }).recipe.title.indexOf('<') < 0, 'markup from the reader never gets through');
 });

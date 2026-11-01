@@ -63,7 +63,10 @@ export function check(raw) {
   for (const o of objs) {
     const figure = word(o.figure), F = FIGURES[figure];
     if (!F) return no(`There is no figure called “${clip(o.figure, 30)}”. The figures are: ${listOf(FIGURES)}.`);
-    if (B.only && !B.only.includes(figure)) return no(`From ${B.at} only ${B.only.map((k) => FIGURES[k].label).join(', ')} can fall: not ${F.label}.`);
+    if (B.only && !B.only.includes(figure)) {
+      const can = B.only.map((k) => FIGURES[k].label);
+      return no(`From ${B.at} only ${can.slice(0, -1).join(', ')} or ${can[can.length - 1]} can fall: not ${F.label}.`);
+    }
     if (!F.views.includes(E.view)) {
       return no(`${Up(F.label)} is drawn ${F.views.includes('plan') ? 'from above' : 'side on'}, and ${E.label.toLowerCase()} is seen ${E.view === 'plan' ? 'from above' : 'side on'}.`);
     }
@@ -108,7 +111,8 @@ export function titleOf(r) {
   const F = FIGURES[r.objects[0].figure], B = BACKDROPS[r.backdrop];
   if (r.title) return Up(r.title);
   const what = Up(F.label);
-  if (r.engine === 'projectile') return B.edge ? `${what} off ${B.at}` : `${what}, launched`;
+  const where = `${{ hall: 'in', sea: 'over' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
+  if (r.engine === 'projectile') return B.edge ? `${what} off ${B.at}` : `${what} ${F.thrown ? 'thrown' : 'launched'} ${where}`;
   return `${what}: ${ENGINES[r.engine].label.toLowerCase()}`;
 }
 
@@ -144,12 +148,20 @@ export function compose(raw) {
     rows: (base.rows || []).filter((row) => !(row.fields || []).some((f) => f.key === 'place')),
     read: (vals) => base.read({ ...vals, place: boxes.place ?? vals.place }),
     render: (canvas, cam, o) => stage.render(canvas, cam, { ...o, recipe: r }),
+    // the landing plays out on the clock after the motion stops, and the
+    // ending card waits for it
+    busy: () => stage.settling(),
+    settle: stage.SETTLE,
     // the readouts are the engine kit's, in the words of the place: launched
     // from level ground or a ledge there is no edge to be out from
     hud: (f, t, o) => {
       const out = base.hud(f, t, o);
       const from = !B.edge ? 'Across from the start' : ['house', 'tree'].includes(B.place) ? `Out from the ${B.at.replace(/^an? /, '')}` : null;
       if (from) for (const row of out.left) if (/edge/.test(row.k)) row.k = from;
+      // on a phone the readouts cover the stage's top: the height and the speed
+      if (typeof matchMedia === 'function' && matchMedia('(max-width: 560px)').matches && out.left.length > 2) {
+        out.left = [out.left[0], out.left[out.left.length - 1]];
+      }
       return out;
     },
     // launched from the ground, the card says so rather than "from 0 m"

@@ -2956,10 +2956,15 @@ function frame(now) {
     const tStop = Math.max(traj.tMax, scenario?.exhibit && second ? second.tMax : 0);
     if (state.t >= tStop) {
       state.t = tStop; state.playing = false; setPlayIcon(false);
-      showEnding();                     // only ever on a flight that ran its course
+      // a kit whose landing plays on after the motion stops (a composed
+      // scene's splash) opens the ending once it has, not over it
+      const settle = kit()?.settle;
+      if (settle) setTimeout(() => { if (!state.playing && state.t >= tStop) showEnding(); }, settle * 1000);
+      else showEnding();                // only ever on a flight that ran its course
     }
     dirty = true;
   }
+  if (kit()?.busy?.()) dirty = true;    // and keeps drawing while it does
   // The angle figure travels too, on its own screen, and it is the only thing
   // on that screen that moves — so it is asked every frame rather than being
   // hung off `dirty`, which belongs to the canvas.
@@ -3350,7 +3355,7 @@ function applyComposed(x, { graph = true } = {}) {
   state.readerParts = fromReader(s.id, x.parts, Object.keys(c.boxes));
   buildValuesScreen();              // which recomputes, and solves each part
   refreshSteps();
-  const head = `<p class="ro-eyebrow">Composed from the app’s pieces</p><h3 class="ro-name">${esc(s.name)}</h3>`
+  const head = `<p class="ro-eyebrow">Drawn for your question</p><h3 class="ro-name">${esc(s.name)}</h3>`
     + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;
   const body = solved?.ok
     ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)

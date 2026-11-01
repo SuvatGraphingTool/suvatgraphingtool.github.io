@@ -33,14 +33,15 @@ export const BACKDROPS = {
   sea:     { label: 'The open sea', what: 'open water to the horizon', place: 'water', below: 'sea' },
   road:    { label: 'A road', what: 'a straight tarmac road with verges', place: 'road', below: 'road' },
   rails:   { label: 'A railway', what: 'a railway line on ballast and sleepers', place: 'track', below: 'rails' },
-  orchard: { label: 'An orchard', what: 'apple trees in grass', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['ball', 'stone', 'particle'] },
+  orchard: { label: 'An orchard', what: 'apple trees in grass', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['apple', 'ball', 'stone', 'particle'] },
   hall:    { label: 'A sports hall', what: 'an indoor hall with a wooden floor and high windows', place: 'floor', below: 'floor' },
 };
 
 /** What moves. `m` is its real length in metres (a ball's diameter, a
     person's height), so it is drawn to scale where the scale allows; `min`
     is the least it is drawn, in px, so it always reads. `thrown` things
-    leave a person's hand; the rest move by themselves. `views` are the
+    leave a person's hand; a `small` one (an apple) falls by itself; the
+    rest move by themselves. `views` are the
     views it is drawn in: side on, or from above (a ship, a robot). */
 export const FIGURES = {
   car:      { label: 'a car', m: 4.4, min: 58, views: ['side'] },
@@ -52,6 +53,7 @@ export const FIGURES = {
   ball:     { label: 'a ball', m: 0.22, min: 12, views: ['side'], thrown: true },
   stone:    { label: 'a stone', m: 0.08, min: 11, views: ['side'], thrown: true },
   particle: { label: 'a particle', m: 0.1, min: 10, views: ['side', 'plan'], thrown: true },
+  apple:    { label: 'an apple', m: 0.08, min: 12, views: ['side'], small: true },
   ship:     { label: 'a ship', m: 60, min: 40, views: ['plan'] },
   robot:    { label: 'a robot', m: 0.6, min: 30, views: ['plan'] },
 };
