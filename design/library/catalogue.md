@@ -129,6 +129,7 @@ this library: *covered* names the one of the twelve that does it.
 | 93 | OCR MEI | H640/01 | Jun 2023 | 15 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202023%20QP.pdf) | A projectile from level ground: show the range is 2u² sin θ cos θ / g; the acute angles for which the greatest height exceeds the range | – | **built** → `higher-than-far` |
 | 94 | Edexcel | IAL WME01 | Jun 2015 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202015%20QP.pdf) | A stone dropped from h; one second later another thrown down at 19.6 m/s from the same height; both land together: h | 9.8 | **built** → `land-together` |
 | 95 | CIE | 9709/42 | Oct/Nov 2020 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w20_qp_42.pdf) | Thrown up at 40 m/s beside a building, above its roof for 4 s: h; a second from the roof at 20 m/s one second later: when level | 10 | **built** → `above-the-roof` |
+| 96 | CIE | 9709/41 | May/Jun 2016 | 1 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s16_qp_41.pdf) | A lift up from rest at 0.9 m/s² for 3 s, steady 6 s, slowing to rest in 4 s: v–t sketch, total distance | – | **built** → `the-lift` (a setting: the journey's engine in a lift shaft) |
 
 ## Built, and why it is built the way it is
 
@@ -409,6 +410,27 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `the-lift` — The lift
+
+**Papers.** CIE 9709/41 May/Jun 2016 Q1 (a lift up from rest at 0.9 m s⁻² for
+3 s, steady for 6 s, then slowing uniformly to rest in 4 s: top speed
+2.7 m s⁻¹, total distance 25.65 m).
+
+**Why it is built.** A setting scenario: the physics is `journey-stages`'
+(three stages, rest to rest), but the place is a lift shaft and the motion is
+vertical — the journey's road would not look like the paper.
+
+**How it is solved.** js/core/journey.js `solveJourney` with the three-stage
+names (a1, t1, t2, t3): the trapezium and its area.
+
+**The stage.** A building cut away: floors every 3 m with rooms, windows,
+landing doors and floor numbers; the dark shaft, the pulley, the cables and a
+counterweight going down as the car goes up; a lit steel car with a
+passenger; the height risen as a bracket; velocity and acceleration arrows
+(vertical, solid); a ring at each change of stage and at the stop.
+
+**Parts.** (i) the v–t sketch → the graph; (ii) `f.range`, 25.65 m.
 
 ### `above-the-roof` — Above the roof
 
