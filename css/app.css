@@ -61,7 +61,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 }
 .brand {
   display: inline-flex; align-items: center; gap: 8px;
-  font-size: var(--fs-lg); font-weight: var(--w-bold); letter-spacing: -0.01em;
+  font-size: var(--fs-lg); font-weight: var(--w-bold); letter-spacing: 0.09em;
   color: var(--accent); justify-self: start;
   /* Montserrat has an 800, so the weight comes from the face itself. */
   font-weight: 800;
