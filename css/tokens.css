@@ -1,198 +1,162 @@
 /* tokens.css — the design system. Roles only; components never use raw hex.
-   THE THEME (23 October 2026, the AI version): Sunset Horizon — warm cream and
-   white by day, a deep plum dusk by night, the coral #FF7E5F and the peach
-   #FEB47B of a low sun, Montserrat for the interface, Merriweather for the
-   maths, a 0.625rem radius and a soft, wide shadow. The chrome takes the
-   theme's values, converted from its OKLCH to hex.
-   The physics palette was searched again for these grounds rather than kept:
-   colour means a quantity on this site, so velocity is the theme's coral and
-   the other hues were chosen to stay apart from it under colour blindness
-   (see the note above them).
-   Values moved off the theme for legibility, each one for a measured reason:
-     · --on-accent is the theme's own dark ink, not white, in BOTH modes —
-       white on #FF7E5F is 2.5:1; #3D3436 on it is 4.8:1, #2A2024 is 6.3:1
-     · light --accent (text, borders, rings) is the theme's deep coral #B35340,
-       its own secondary-foreground — the bright coral is 2.6:1 on white, so
-       it is kept for fills (--accent-fill), where the ink sits on it instead
-     · light --on-secondary is #A2493A, a step under the theme's #B35340,
-       which is 4.4:1 on the secondary tint and just misses AA
-     · --bad text is #C81E2C by day and #FF8A8A by night — the theme's
-       #E63946 is 4.2:1 on white and 3.8:1 on the plum; it is kept for
-       --bad-line, where it is a stroke and not text
-     · dark --ink-faint is the theme's ink at 58% — 4.7:1 on the card */
+
+   THE REDESIGN (1 November 2026, the `redesign` branch). Linear's discipline
+   with SUVAT's warmth: a near-black, near-silent interface in which type and
+   hairlines do the work, and one warm note — the orange of the main logo —
+   spent only on the brand and on Ask Suvat. Everything else is ink on surface.
+
+   Locked before any pixel:
+     · Type     Inter for the interface (tight tracking on display sizes, open
+                leading on body), Merriweather for the maths (css/math.css).
+     · Space    a 4 px base; the steps are 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80.
+     · Radius   6 on a control, 10 on a card, 14 on a surface that floats.
+     · Motion   120 ms for a hover, 200 for a change of state, and a spring
+                for anything that is pressed, toggled or opened.
+     · Colour   chrome is monochrome. Colour means a quantity (rule 2): the
+                physics hues below are the validated set, unchanged — the new
+                grounds are darker and lighter than the old, so every contrast
+                figure in the old notes only went up.
+
+   Contrast (WCAG, measured): dark — ink 18.7, muted 6.1, faint 4.7 on the
+   card; light — ink 18.9, muted 6.2, faint 4.8 on white. The orange text step
+   is 8.1:1 on the dark ground and 4.6:1 on white. */
 
 :root {
-  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font: 'Inter', 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Inter', 'Inter Variable', system-ui, sans-serif;
   --font-serif: 'Merriweather', Georgia, serif;
-  --font-mono: 'Ubuntu Mono', ui-monospace, monospace;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
 
-  /* Type. 13px floor — nothing on this site is smaller, canvas labels included. */
-  --fs-xs: 13px; --fs-sm: 15px; --fs-base: 17px; --fs-lg: 20px;
-  --fs-xl: 24px; --fs-2xl: 30px; --fs-3xl: 38px; --fs-hero: 44px;
+  /* Type. 13 px floor — nothing on this site is smaller, canvas labels included. */
+  --fs-xs: 13px; --fs-sm: 14px; --fs-base: 15px; --fs-lg: 17px;
+  --fs-xl: 20px; --fs-2xl: 24px; --fs-3xl: 32px; --fs-hero: 56px;
+  --track-hero: -0.035em; --track-h: -0.022em; --track-ui: -0.006em;
+  --lh-body: 1.6; --lh-tight: 1.1;
 
-  /* ── weight ───────────────────────────────────────────────────────────
-     THE SMALL TEXT CARRIES A LITTLE MORE, AND NOTHING ELSE CHANGES. The whole
-     page was moved up a step once — body 400 to 500 — and that was more than
-     was wanted: at 17 px and above, regular is the right weight and the page
-     read heavy. So the three steps below are the ones this site always had,
-     and there is a fourth for the one size that genuinely needed it.
-
-     13 px and 15 px is where a regular weight stops being light and starts
-     being faint: the hints under the boxes, the engine's sentence about what
-     it worked out, the note on a scenario card, the units beside a readout.
-     Those take --w-small. Anything that sets its own weight keeps it, and
-     anything at --fs-base or above is untouched. The list is in css/app.css,
-     right under the body rule, and it is the complete inventory of the two
-     small sizes rather than a sample.
-
-     The maths has its own step again, in css/math.css: a serif at equal
-     nominal weight carries less ink than a sans. */
-  --w-body: 400; --w-small: 500; --w-semi: 600; --w-bold: 700;
+  --w-body: 400; --w-small: 450; --w-semi: 550; --w-bold: 650;
 
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
-  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px; --sp-16: 64px; --sp-20: 80px;
 
-  /* The theme's radius is 0.625rem, and it is the CARD radius. Its buttons,
-     chips and inputs sit two pixels inside it (shadcn's rounded-md), so
-     --r-pill — what every button, chip and toggle on this site asks for — is
-     that, and the name is kept so nothing has to be re-pointed. Big surfaces
-     (dialogs, the scenario cards, the graphs) go four pixels outside it.
-     Circles that are circles say 50% and are unaffected. */
-  --radius: 0.625rem;
-  --r-sm: 6px; --r-md: calc(var(--radius) - 2px); --r-lg: var(--radius);
-  --r-xl: calc(var(--radius) + 4px); --r-pill: calc(var(--radius) - 2px);
+  --radius: 10px;
+  --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-2xl: 14px; --r-pill: 6px;
 
-  /* dark (default) — the plum dusk */
-  --surface: #2A2024;
-  --card: #392F35;
-  --card-hover: #41363C;
-  --input: rgba(242,233,228,0.04);
-  --border: #463A41;
-  --border-soft: #33292E;
-  --hover: rgba(242,233,228,0.06);
+  /* Motion. --spring overshoots by about two per cent and settles: the click
+     of a switch, not a bounce. */
+  --ease: cubic-bezier(.25,.46,.45,.94);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067, 1.077 24.1%, 1.06 27.2%, 1.003 34.2%, 0.989 38.3%, 0.991 46.2%, 1.001 61.5%, 1);
+  --spring-soft: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms; --dur-4: 480ms;
 
-  /* Measured on --surface / --card:
-       ink     13.2 / 10.8     muted  9.5 / 7.8
-       strong  11.5 /  9.4     faint  5.4 / 4.7 */
-  --ink: #F2E9E4;
-  --ink-strong: #E6DAD4;
-  --ink-muted: #D7C6BC;
-  --ink-faint: rgba(242,233,228,0.58);
+  --sidebar-w: 248px; --top-h: 52px;
 
-  --accent: #FF7E5F;       /* the theme's coral — 6.3:1 on the plum, so it is text here too */
-  --accent-hi: #FFA088;
-  --accent-fill: #FF7E5F;  /* what a filled control is painted in */
-  --accent-soft: rgba(255,126,95,0.16);
-  /* The whiteboard's sticky notes: the peach, deepened for night. */
-  --sticky: #4A3830; --sticky-edge: #6B4E3F;
-  --on-accent: #2A2024;
-  --glow: #FF7E5F;         /* the card spotlight: the site's coral, never a card's own accent */
-  --sunset: linear-gradient(100deg, #FF7E5F, #FEB47B);   /* coral into peach, the theme's two warm notes */
-  --secondary: #463A41; --secondary-hi: #514449; --on-secondary: #F2E9E4;
+  /* ── night: the default ─────────────────────────────────────────────── */
+  --surface: #08090A;
+  --sidebar: #0B0C0E;
+  --card: #111214;
+  --card-hover: #16171A;
+  --elev: #18191C;            /* a popover, a dialog: one step above a card */
+  --input: rgba(255,255,255,0.025);
+  --border: rgba(255,255,255,0.09);
+  --border-soft: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.16);
+  --hover: rgba(255,255,255,0.045);
+  --press: rgba(255,255,255,0.07);
+  --highlight: inset 0 1px 0 rgba(255,255,255,0.04);   /* the lit top edge of a raised thing */
+  --frost: rgba(11,12,14,0.72);
 
-  /* ── the physics palette ────────────────────────────────────────────
-     Velocity, displacement and acceleration take the three best-separated
-     hues because they appear side by side. The second object and the markers
-     take the rest, which rarely sit next to each other.
+  --ink: #F7F8F8;
+  --ink-strong: #D0D3D8;
+  --ink-muted: #8A8F98;
+  --ink-faint: #7C818A;
 
-     Velocity gets TWO shades of the one hue, and the difference is a
-     hierarchy rather than a decoration. The traced trajectory is where the
-     object has been — a long stroke, drawn in --vel. The velocity vector is
-     what it is doing now, one short arrow, and it takes --vel-vec: the shade
-     with more contrast against this theme's background, so it reads as the
-     live quantity sitting on top of its own history. Same hue, so the colour
-     still says "velocity"; different value, so the two never merge.
+  /* The one primary control is ink, not colour — white on night. */
+  --primary: #F7F8F8; --primary-hi: #FFFFFF; --on-primary: #08090A;
 
-     THE SUNSET HUES, 23 October 2026, chosen by search rather than by eye:
-     velocity was fixed at the theme's coral, and every teal, cyan, sky, blue,
-     indigo, violet, purple and fuchsia step that clears 4.5:1 on both grounds
-     was paired against it, simulated under protanopia, deuteranopia and
-     tritanopia (Machado 2009, severity 1.0, CIEDE2000), and the pair with the
-     best worst case was kept. Then the second object and the marker the same
-     way, against all three.
-       worst quantity pair   teal <-> violet  dE 24.3   (Oxanium set 20.3)
-       worst any pair        teal <-> stone   dE 11.8   (Oxanium set  8.1)
-       normal vision, worst                   dE 22.4   (floor 15)
-     Contrast on the plum ground: velocity 6.3, teal 10.7, violet 5.8,
-     stone 7.3, lime 12.1 — on the card, 5.1 / 8.7 / 4.7 / 5.9 / 9.8.
-     Re-run the check before changing any of them. */
-  --vel:    #FF7E5F;     /* velocity, and the path it has flown — the theme's coral */
-  --vel-vec: #FEB47B;    /* the vector now — the theme's peach, lighter, for a night sky */
-  --disp:   #5EEAD4;     /* displacement      — teal   */
-  --acc:    #A78BFA;     /* acceleration      — violet */
-  --second: #BBADA6;     /* a second object   — warm stone, the theme's neutral */
-  --mark:   #BEF264;     /* targets, fences, lines — lime */
+  /* THE WARM NOTE: the main logo's orange. Brand, Ask Suvat, the focus ring. */
+  --brand-1: #F9A86A; --brand-2: #E8722C; --brand-3: #B8461A;
+  --brand: linear-gradient(180deg, var(--brand-1), var(--brand-2) 55%, var(--brand-3));
+  --accent: #F0954F;
+  --accent-hi: #F7B07A;
+  --accent-fill: #E8722C;
+  --accent-soft: rgba(240,149,79,0.12);
+  --ring: rgba(240,149,79,0.55);
+  --on-accent: #1A0D05;
+  --glow: #F0954F;
+  --sunset: linear-gradient(100deg, var(--brand-1), var(--brand-2));
+  --secondary: rgba(255,255,255,0.06); --secondary-hi: rgba(255,255,255,0.10); --on-secondary: #F7F8F8;
+  --sticky: #2A2418; --sticky-edge: #4A3E25;
 
-  --good: #34d399; --good-fill: rgba(52,211,153,0.15);
-  --bad:  #FF8A8A; --bad-fill:  rgba(230,57,70,0.18); --bad-line: #E63946;
+  /* PHYSICS — the validated set, unchanged (see the notes on the ai branch and
+     design/theme.js). Colour is the quantity, dash is the direction. */
+  --vel:    #FF7E5F;
+  --vel-vec: #FEB47B;
+  --disp:   #5EEAD4;
+  --acc:    #A78BFA;
+  --second: #BBADA6;
+  --mark:   #BEF264;
 
-  /* The grid is meant to be READ, not merely sensed. 7% was invisible. */
-  --grid:       rgba(242,233,228,0.13);
-  --grid-major: rgba(242,233,228,0.26);
-  --axis:       rgba(242,233,228,0.45);
-  /* A BOX-SHADOW, for the chrome. The scenery's shadow COLOUR is
-     --scene-shadow: they were both called --shadow, declared in that order,
-     so the colour won and every `box-shadow: var(--shadow)` in app.css
-     resolved to a bare colour — an invalid box-shadow, and therefore no
-     shadow at all on six kinds of card.
-     The theme's shadow is one soft drop pulled in at the sides (the -3px
-     spread) with a hairline under it; on the plum it needs more weight to
-     read at all. */
-  --shadow: 0 6px 12px -3px hsl(0 0% 0% / 0.30), 0 1px 2px -4px hsl(0 0% 0% / 0.30);
-  --shadow-lg: 0 6px 12px -3px hsl(0 0% 0% / 0.30), 0 18px 40px -8px hsl(0 0% 0% / 0.45);
-  --scrim: #2A2024;      /* what a dialog dims the stage with */
+  --good: #4CC38A; --good-fill: rgba(76,195,138,0.12);
+  --bad:  #FF8A8A; --bad-fill:  rgba(235,87,87,0.12); --bad-line: #EB5757;
+
+  --grid:       rgba(255,255,255,0.07);
+  --grid-major: rgba(255,255,255,0.15);
+  --axis:       rgba(255,255,255,0.38);
+
+  --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-lg: 0 0 0 1px rgba(255,255,255,0.06), 0 16px 48px -8px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.35);
+  --scrim: #000000;
 }
 
 :root[data-theme='light'] {
-  --surface: #FFF9F5;   /* the theme's cream */
+  --surface: #FBFBFC;
+  --sidebar: #F5F5F6;
   --card: #FFFFFF;
-  --card-hover: #FFF5F1;
-  --input: rgba(255,224,214,0.30);
-  --border: #FFE0D6;
-  --border-soft: #FFEDE6;
-  --hover: #FFF0EB;
+  --card-hover: #F7F7F8;
+  --elev: #FFFFFF;
+  --input: #FFFFFF;
+  --border: rgba(15,16,17,0.10);
+  --border-soft: rgba(15,16,17,0.07);
+  --border-strong: rgba(15,16,17,0.18);
+  --hover: rgba(15,16,17,0.04);
+  --press: rgba(15,16,17,0.07);
+  --highlight: inset 0 1px 0 rgba(255,255,255,0.6);
+  --frost: rgba(251,251,252,0.78);
 
-  /* Measured on --surface / --card:
-       ink     11.5 / 12.1     muted  6.4 / 6.7
-       strong   7.9 /  8.2     faint  4.6 / 4.8 (the theme's own muted) */
-  --ink: #3D3436;
-  --ink-strong: #574C4F;
-  --ink-muted: #625A5C;
-  --ink-faint: #78716C;
+  --ink: #0F1011;
+  --ink-strong: #2B2D31;
+  --ink-muted: #5C6168;
+  --ink-faint: #6A6F77;
 
-  --accent: #B35340;      /* the theme's deep coral: 5.0:1 on the card */
-  --accent-hi: #8A3A2B;   /* 6.5:1 on --accent-soft, for text on the tint */
-  --accent-fill: #FF7E5F; /* the theme's coral, with the dark ink on it */
-  --accent-soft: #FFE6DD;
-  --sticky: #FFE9C7; --sticky-edge: #F5CF9A;
-  --on-accent: #3D3436;
-  --glow: #FF7E5F;
-  --secondary: #FFEDEA; --secondary-hi: #FFE0D6; --on-secondary: #A2493A;
+  --primary: #0F1011; --primary-hi: #2B2D31; --on-primary: #FFFFFF;
 
-  /* By day: the theme's deep coral, a teal, a deep violet, plum-stone and
-     an olive lime — the same search, on the cream and the white.
-       worst quantity pair   coral <-> teal   dE 20.8   (Oxanium set 20.9, a hair under)
-       worst any pair        coral <-> lime   dE  9.7   (Oxanium set  8.1)
-       normal vision, worst                   dE 27.0
-     Teal is 3.6:1 on the card, as the cyan before it was; a darker teal
-     drops coral <-> teal under colour blindness, and separation wins, as it
-     did before. Legibility on the sky comes from the path's casing stroke. */
-  --vel:    #B35340;   /* the theme's deep coral */
-  --vel-vec: #8A3A2B;  /* the vector now — deeper, for a daylight sky */
+  --accent: #C2531B;
+  --accent-hi: #9C4114;
+  --accent-fill: #E8722C;
+  --accent-soft: rgba(232,114,44,0.10);
+  --ring: rgba(232,114,44,0.45);
+  --on-accent: #1A0D05;
+  --secondary: rgba(15,16,17,0.05); --secondary-hi: rgba(15,16,17,0.09); --on-secondary: #0F1011;
+  --sticky: #FFF4D6; --sticky-edge: #F0D9A0;
+
+  --vel:    #B35340;
+  --vel-vec: #8A3A2B;
   --disp:   #0D9488;
   --acc:    #6D28D9;
   --second: #4A3F43;
   --mark:   #3F6212;
-  --good: #047857; --good-fill: rgba(52,211,153,0.18);
-  --bad:  #C81E2C; --bad-fill:  rgba(230,57,70,0.10); --bad-line: #E63946;
+  --good: #047857; --good-fill: rgba(4,120,87,0.08);
+  --bad:  #C81E2C; --bad-fill:  rgba(200,30,44,0.07); --bad-line: #E63946;
 
-  --grid:       rgba(61,52,54,0.11);
-  --grid-major: rgba(61,52,54,0.22);
-  --axis:       rgba(61,52,54,0.45);
-  --shadow: 0 6px 12px -3px hsl(0 0% 0% / 0.09), 0 1px 2px -4px hsl(0 0% 0% / 0.09);
-  --shadow-lg: 0 6px 12px -3px hsl(0 0% 0% / 0.09), 0 18px 40px -8px hsl(12 40% 30% / 0.22);
-  --scrim: #3D3436;
+  --grid:       rgba(15,16,17,0.07);
+  --grid-major: rgba(15,16,17,0.15);
+  --axis:       rgba(15,16,17,0.40);
+  --shadow: 0 1px 2px rgba(15,16,17,0.06);
+  --shadow-lg: 0 0 0 1px rgba(15,16,17,0.06), 0 16px 48px -12px rgba(15,16,17,0.18), 0 4px 12px rgba(15,16,17,0.06);
+  --scrim: #0F1011;
 }
+
 
 /* ── two cards that are windows, not diagrams ─────────────────────────
    Seven of the nine scenarios happen at the stadium and share the app's
@@ -288,85 +252,42 @@
 }
 
 /* ── the place the motion happens in ──────────────────────────────────
-   A football stadium and the district round it, at 1 unit = 1 metre.
-
-   TIME OF DAY. Light is a late-afternoon match — the sun low in the west, a
-   warm band along the horizon, long shadows and cool sky-light filling them.
-   Dark is a floodlit night. Both are lit scenes with a key and a fill, not
-   flat fields of grey, because a place with no light in it has no depth.
-
-   THREE VALUE BANDS carry the section drawing, and they are the whole reason
-   a three-tier stand is legible at a glance. A section cuts material, and the
-   three roles sit at least 2:1 apart in value:
-
-     --structure-dark   cut material (poché)
-     --seat             raked seating
-     --interior         the volume behind the cut
-
-   On paper the poché is darkest and the volume behind is lightest. At night
-   that order inverts, and has to: against a near-black sky the darkest
-   possible poché is invisible, so after dark the cut material is the LIGHTEST
-   of the three — it is the edge catching the floodlights — and the unlit
-   volume behind it is the darkest. Same convention, read by another light.
-
-   COLOUR. Scenery may be colourful; it may not be LOUD. Everything here is
-   held under about 35% saturation and away from the five physics hues, and
-   the trajectory carries a casing stroke so it wins over any of it. The hue
-   that used to be kept on the shortest lead was warm orange-red, because a
-   district of orange roofs is a district arguing with the velocity vector.
-   That is no longer a risk: the district has been removed, and the brick,
-   roofing, car-paint, asphalt and park greens it needed went with it. What is
-   left is the bowl, the turf and the sky. */
+/* ── the place the motion happens in ──────────────────────────────────
+   Same roles as before (see the ai branch for the reasoning about value
+   bands); re-lit for the new grounds. Night is a cool floodlit night under a
+   blue-black sky, day is clean, slightly hazy daylight. Scenery stays under
+   about 35% saturation and away from the physics hues. */
 :root {
-  /* night */
-  /* THE THEME BY NIGHT: the plum dusk after the sun has gone — near-black at
-     the zenith, the theme's background through the middle, and the last rose
-     of the afterglow along the horizon. The turf is a muted olive, the stands
-     in the theme's plum greys. The three value bands keep their order (lit
-     cut lightest, seats, unlit interior darkest). */
-  --sky-top: #160F12; --sky-mid: #2A2024; --sky-bottom: #44292F; --haze: #3A272D;
-  --sun: #FFE3CF; --sun-glow: rgba(255,180,140,0.30);
-  --scene-shadow: rgba(0,0,0,0.42); --sky-fill: #3E3036;
-  --earth: #221A1D; --interior: #1D161A; --terrain: #2A2420;
-  --grass: #55603a; --grass-alt: #47512f; --runoff: #3a4128;
-  --pitchline: rgba(242,233,228,0.78);
-  --concrete: #3C3237; --window: #FEC9A0;
-  --glass: rgba(215,198,188,0.20); --metal: #5E5157; --net: rgba(242,233,228,0.30);
-  --seat: #463A41; --seat-alt: #3F343A; --board: #574A51;
-  --structure: #A3939A; --structure-dark: #8E7E85;
-  --roof-top: #44393F; --roof-under: #211A1D;
-  --prop: #8E7E85;
-
-  /* The object is a BALL, so it is drawn as one: lit from above-left, with a
-     seam and a rim. It is not a quantity and so does not take a quantity's
-     hue — a flat disc in velocity orange was the main reason the whole scene
-     read as a single colour. Floodlit at night, daylight by day, but leather
-     either way, so the four tones barely move between the themes. */
+  --sky-top: #05070B; --sky-mid: #0B1018; --sky-bottom: #182131; --haze: #121925;
+  --sun: #E8EEF8; --sun-glow: rgba(160,190,240,0.18);
+  --scene-shadow: rgba(0,0,0,0.5); --sky-fill: #141B27;
+  --earth: #15181D; --interior: #101318; --terrain: #20242A;
+  --grass: #3E5236; --grass-alt: #36482F; --runoff: #2C3A28;
+  --pitchline: rgba(240,244,248,0.78);
+  --concrete: #2A2F37; --window: #E9D9B8;
+  --glass: rgba(190,205,225,0.16); --metal: #4A5160; --net: rgba(240,244,248,0.30);
+  --seat: #2F3540; --seat-alt: #2A2F39; --board: #3D4452;
+  --structure: #8E98A8; --structure-dark: #7A8494;
+  --roof-top: #313744; --roof-under: #14171C;
+  --prop: #7A8494;
   --ball-hi: #fffdf6; --ball: #e9e1cf; --ball-low: #8d8370; --ball-line: #241e17;
-  --flood: #ffeec2; --far-grid: rgba(242,233,228,0.14);
+  --flood: #f4f1e6; --far-grid: rgba(240,244,248,0.10);
   --night: 1;
 }
-
 :root[data-theme='light'] {
-  /* sunset */
-  /* THE THEME BY DAY: the sun low and the sky warming from a dusty rose
-     overhead to peach at the horizon — the theme's chart-3 peach, held well
-     under the coral so the path still wins. The stands in plum-tinted
-     stone, the turf a sunlit olive. Poché darkest, seats, interior lightest —
-     the same three bands, in the theme's own warm greys. */
-  --sky-top: #F6D9CF; --sky-mid: #FCEBE2; --sky-bottom: #FFD4B8; --haze: #FBE4D8;
-  --sun: #FFF4E6; --sun-glow: rgba(254,180,123,0.55);
-  --scene-shadow: rgba(61,52,54,0.22); --sky-fill: #F6DED3;
-  --earth: #8E7A72; --interior: #EBDDD6; --terrain: #CFC6A2;
-  --grass: #A4A86E; --grass-alt: #93985F; --runoff: #878C57;
-  --pitchline: rgba(255,249,245,0.95);
-  --concrete: #DCCBC2; --window: #FFE0C4;
-  --glass: rgba(255,224,214,0.55); --metal: #B0A3A0; --net: rgba(255,249,245,0.80);
-  --seat: #9A8B8C; --seat-alt: #908183; --board: #B3A19C;
-  --structure: #E3D3CB; --structure-dark: #5E5156;
-  --roof-top: #D6C4BC; --roof-under: #9C8A86;
-  --prop: #6E6064;
+  --sky-top: #CFDDEE; --sky-mid: #E4ECF5; --sky-bottom: #F3F1EC; --haze: #E9EEF3;
+  --sun: #FFFDF6; --sun-glow: rgba(255,236,200,0.55);
+  --scene-shadow: rgba(15,16,17,0.18); --sky-fill: #DCE5EF;
+  --earth: #7E7A72; --interior: #E3E6EA; --terrain: #C9C8B4;
+  --grass: #96A574; --grass-alt: #869566; --runoff: #7D8A5E;
+  --pitchline: rgba(255,255,255,0.95);
+  --concrete: #D2D5DA; --window: #FFF1D8;
+  --glass: rgba(220,232,245,0.6); --metal: #A3A8B0; --net: rgba(255,255,255,0.80);
+  --seat: #8D939C; --seat-alt: #858B94; --board: #A8ADB5;
+  --structure: #DDE0E4; --structure-dark: #4F5560;
+  --roof-top: #C9CDD3; --roof-under: #8E939B;
+  --prop: #626873;
   --ball-hi: #ffffff; --ball: #ece5d6; --ball-low: #a2957f; --ball-line: #3d352b;
-  --flood: #fff6df; --far-grid: rgba(61,52,54,0.16);
+  --flood: #fff8e8; --far-grid: rgba(15,16,17,0.12);
   --night: 0;
 }

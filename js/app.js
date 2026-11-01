@@ -38,6 +38,7 @@ import { readoutHTML, solutionHTML, esc } from './ai/readout.js';
 import { walk, stepOf } from './parts/parts.js';
 import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML } from './parts/strip.js';
 import { fromReader, boxesOf } from './parts/answers.js';
+import { initShell } from './shell.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -2003,8 +2004,13 @@ function say(el, bad, html) {
 function launch() {
   if (!traj) return;
   closeIntro();
-  go('flight');                 // so there is a stage to blur behind the card
-  openPace();
+  // ONE PRESS, AND IT FLIES. The redesign took the speed card out of the way:
+  // Launch used to stop at "How fast should it go?" every time, a decision
+  // with a good default asked before the thing you came for. The flight runs
+  // at once; the speed is a press away in the transport bar, with the same
+  // recommendation pin, and the pane layout is in the Display panel.
+  syncRate();
+  runFlight();
 }
 
 function openPace() {
@@ -2075,10 +2081,12 @@ function syncRate() {
   const rr = lapse > 1 ? lapseNote(value, traj.tMax, lapse) : r;
   note.textContent = rr.text;
   // and the ends of the scale say what they are on this one
-  const scale = $('pace').querySelectorAll('.pace-scale span');
-  if (scale.length === 3) {
-    scale[1].textContent = lapse > 1 ? `${num(lapse / 2, 1, { trim: true })}×` : '0.5×';
-    scale[2].textContent = lapse > 1 ? `${num(lapse, 0)}× real time` : 'real time';
+  for (const host of [$('pace'), $('speed-pop')]) {
+    const scale = host.querySelectorAll('.pace-scale span, .pop-scale span');
+    if (scale.length === 3) {
+      scale[1].textContent = lapse > 1 ? `${num(lapse / 2, 1, { trim: true })}×` : '0.5×';
+      scale[2].textContent = lapse > 1 ? `${num(lapse, 0)}× real time` : 'real time';
+    }
   }
   note.dataset.ok = String(rr.ok);
   use.hidden = rr.ok;
@@ -3015,7 +3023,9 @@ function buildOptions() {
 /* ── chrome ─────────────────────────────────────────────────────────── */
 function applyTheme(mode) {
   document.documentElement.dataset.theme = mode;
-  $('theme-btn').textContent = mode === 'dark' ? 'Light' : 'Dark';
+  $('theme-label').textContent = mode === 'dark' ? 'Light' : 'Dark';
+  $('theme-btn').setAttribute('aria-label', `Switch to ${mode === 'dark' ? 'light' : 'dark'}`);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', mode === 'dark' ? '#08090A' : '#FBFBFC');
   try { localStorage.setItem('suvat-theme', mode); } catch {}
   dropToneCache();
   board?.redraw();
@@ -3120,8 +3130,15 @@ for (const b of $('lay-row').children) {
     dirty = true;
   });
 }
-$('theme-btn').addEventListener('click', () =>
-  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+// The new theme spreads out from the button that asked for it — a View
+// Transition where there is one (js/shell.js sets where it starts), an
+// instant swap where there is not or where motion is reduced.
+$('theme-btn').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (document.startViewTransition && !calm) document.startViewTransition(() => applyTheme(next));
+  else applyTheme(next);
+});
 $('options-btn').addEventListener('click', () => {
   state.options = !state.options;
   $('options-btn').setAttribute('aria-pressed', String(state.options));
@@ -3245,7 +3262,7 @@ if (lay === '1' || lay === '2' || lay === '4') state.layout = parseInt(lay, 10);
 
 let saved = null;
 try { saved = localStorage.getItem('suvat-theme'); } catch {}
-applyTheme(saved || 'light');
+applyTheme(saved || 'dark');      // the redesign is night-first
 buildScenarioScreen();
 buildOptions();
 go('scenario');
@@ -3428,3 +3445,8 @@ window.SUVAT = { state, get traj() { return traj; }, get solved() { return solve
                    if (r.ok && traj) showFlight(); else if (r.ok) go('values');
                    return r;
                  } };
+
+// The redesign's chrome — the sidebar's views, the command menu, the
+// shortcuts, the toasts. It reads state and presses the app's own buttons;
+// it calculates nothing (rule 4).
+initShell(window.SUVAT, { scenarios: SCENARIOS, library: LIBRARY, byId });
