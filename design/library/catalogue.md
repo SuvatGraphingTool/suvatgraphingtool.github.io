@@ -131,6 +131,7 @@ this library: *covered* names the one of the twelve that does it.
 | 95 | CIE | 9709/42 | Oct/Nov 2020 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w20_qp_42.pdf) | Thrown up at 40 m/s beside a building, above its roof for 4 s: h; a second from the roof at 20 m/s one second later: when level | 10 | **built** → `above-the-roof` |
 | 96 | CIE | 9709/41 | May/Jun 2016 | 1 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s16_qp_41.pdf) | A lift up from rest at 0.9 m/s² for 3 s, steady 6 s, slowing to rest in 4 s: v–t sketch, total distance | – | **built** → `the-lift` (a setting: the journey's engine in a lift shaft) |
 | 97 | Edexcel | 6677/01 M1 | Jan 2008 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202008%20QP.pdf) | A firework rocket from rest rises 27 m in 3 s at constant a, then burns out: a, its speed at 3 s, its height at 5 s | 9.8 | **built** → `firework-rocket` |
+| 98 | Edexcel | 6677/01 M1 | Jun 2005 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202005%20QP.pdf) | An aircraft from A at 2 m/s, constant a, leaves the 1.2 km runway at C 20 s later at 74 m/s: a, BC | – | **built** → `take-off` (a setting: the twelve's SUVAT on an airfield, and the runway left over) |
 
 ## Built, and why it is built the way it is
 
@@ -411,6 +412,27 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `take-off` — Take-off
+
+**Papers.** Edexcel M1 Jun 2005 Q1 (from A at 2 m s⁻¹ along a 1.2 km runway AB,
+constant acceleration, airborne at C 20 s later at 74 m s⁻¹: a = 3.6 m s⁻²,
+AC = 760 m, BC = 440 m).
+
+**Why it is built.** A setting: the take-off run is the twelve's one stretch
+of SUVAT, but the place is an airfield, and the paper asks for the runway
+left over, CB, which the road does not.
+
+**How it is solved.** js/core/runway.js: the twelve's `solve` (js/core/suvat.js)
+from any three of u, v, a, t, s, with its own working; BC = AB − AC.
+
+**The stage.** An airfield side on: a hangar, a control tower, a windsock;
+the runway with threshold stripes, a centre line and edge lights; a twin-jet
+(drawn larger than life, and saying so) rolling from A, rotating and lifting
+off at C with a ring; AC and BC as brackets; velocity and acceleration dashed
+(horizontal).
+
+**Parts.** (a) `a`, 3.6; (b) `BC`, 440 m.
 
 ### `firework-rocket` — The firework rocket
 
