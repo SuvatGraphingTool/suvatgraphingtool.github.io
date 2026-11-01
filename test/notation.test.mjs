@@ -1234,5 +1234,27 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
   ok(bag.length === 0, 'nothing on the whiteboard is written as code', bag.join('\n         '));
 });
 
+{
+  const { walk } = await import('../js/parts/parts.js');
+  const { stripHTML, workingCardHTML } = await import('../js/parts/strip.js');
+  group('A question in parts: every strip and every part card, swept', () => {
+    const bag = [];
+    let n = 0;
+    for (const s of LIBRARY.filter((x) => x.parts)) {
+      const K = KITS[s.kit];
+      const runs = walk((b) => K.solve(K.read(b)), s.example, s.parts);
+      runs.forEach((r, k) => {
+        if (!r?.solved?.ok) return;
+        n++;
+        check(`parts ${s.id} (${r.part.label})`, stripHTML(s.parts, runs, k, K.working(r.solved, r.moment.t)), bag);
+        check(`parts ${s.id} (${r.part.label}) card`, workingCardHTML(r), bag);
+      });
+      check(`parts ${s.id}`, stripHTML(s.parts, runs, -1, []), bag);
+    }
+    ok(n > 60, `the sweep reaches every part (${n})`);
+    ok(bag.length === 0, 'nothing in a part is written as code', bag.join('\n         '));
+  });
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

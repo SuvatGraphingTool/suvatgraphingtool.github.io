@@ -22,6 +22,12 @@ export const LIBRARY = [
     params: { A: { h: 0, u: 20, t0: 0 }, B: { h: 40, u: 0, t0: 1 }, g: 10 },
     place: 'One vertical line, two clocks',
     example: { 'A.h': 0, 'A.u': 20, 'B.h': 40, 'B.u': 0, 'B.t0': 1, g: 10 },
+    parts: [
+      { label: 'i', kind: 'height', ask: 'How high above the ground do the two collide?',
+        find: 'meet.x', sym: 'h', unit: 'm', at: 'meet.t', step: 'height they meet', paper: 8.75 },
+      { label: 'ii', kind: 'speed', ask: 'By how much do their speeds differ at the instant they collide?',
+        find: 'extras.dSpeed', unit: 'm s^-1', at: 'meet.t', step: 'how fast', uses: ['i'], paper: 10 },
+    ],
     sources: [
       { board: 'CIE', paper: '9709/42', session: 'Oct/Nov 2019', q: '5' },
       { board: 'CIE', paper: '9709/43', session: 'May/Jun 2017', q: '5' },
@@ -48,6 +54,11 @@ export const LIBRARY = [
     params: { u: 20, stages: [{ kind: 'hold', t: 25 }, { kind: 'down', v: 8, a: 0.4 }, { kind: 'hold', t: 60 }, { kind: 'up', v: 20 }], D: 1960 },
     place: 'A straight way from A to B',
     example: { n: '4', u: 20, k1: 'hold', t1: 25, k2: 'down', v2: 8, a2: 0.4, k3: 'hold', t3: 60, k4: 'up', v4: 20, D: 1960, who: 'car' },
+    parts: [
+      { label: 'a', kind: 'graph', ask: 'Sketch the speed–time graph of the car from A to B.', say: 'The speed–time graph is drawn under the road: four straight pieces, flat, down, flat, up.', at: 'end' },
+      { label: 'b', kind: 'time', ask: 'For how long does the car slow down?', find: 'J.t2', sym: 't_2', unit: 's', trim: true, at: 'f.startOf(3)', step: 'each stage', paper: 30 },
+      { label: 'c', kind: 'time', ask: 'How long does the whole journey from A to B take?', find: 'J.T', sym: 'T', unit: 's', trim: true, at: 'end', step: 'whole journey', uses: ['b'], paper: 155 },
+    ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2012', q: '4' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2011', q: '4' },
@@ -82,6 +93,10 @@ export const LIBRARY = [
     params: { A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } },
     place: 'Side by side: a straight road, or two parallel tracks',
     example: { 'A.u': 20, 'A.V': 8, 'A.tau': 30, 'B.u': 12 },
+    parts: [
+      { label: 'a', kind: 'acceleration', ask: 'What is the acceleration of A while it slows down?', find: 'A.a', sym: 'a_A', unit: 'm s^-2', at: 'A.tau', step: 'change of speed', paper: -0.4 },
+      { label: 'b', kind: 'meeting', ask: 'When does B draw level with A and overtake it?', find: 'events.overtake.t', sym: 't', unit: 's', trim: true, at: 'events.overtake.t', step: 'overtakes', uses: ['a'], paper: 45 },
+    ],
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '9' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2013', q: '5', part: 'the motorbike' },
@@ -115,6 +130,10 @@ export const LIBRARY = [
     params: { u: { x: -1, y: 3 }, a: { x: 0.1, y: -0.2 }, at: { moving: 'NW' } },
     place: 'A plane, seen from above: east and north',
     example: { 'u.x': -1, 'u.y': 3, 'a.x': 0.1, 'a.y': -0.2, 'at.due': 'E', 'at.moving': 'SE' },
+    parts: [
+      { label: 'a', kind: 'time', ask: 'When is the particle due east of the origin $O$?', find: 'answers.due.t', sym: 't', unit: 's', trim: true, at: 'answers.due.t', step: 'due east', paper: 30 },
+      { label: 'b', kind: 'speed', ask: 'How fast is it moving at the moment it heads south-east?', find: 'answers.moving.speed', unit: 'm s^-1', at: 'answers.moving.t', step: 'south-east', paper: 1.41 },
+    ],
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jun 2012', q: '7' },
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '7' },
@@ -145,6 +164,11 @@ export const LIBRARY = [
     params: { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' },
     place: 'Side on: the launch, the point, and the ground',
     example: { g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' },
+    parts: [
+      { label: 'a', kind: 'show', ask: 'Show how long the ball takes to reach the point. The paper has it in terms of the angle; this is the steeper one.', find: 'shown.at.t', sym: 't', unit: 's', at: 'shown.at.t', step: 'at the point' },
+      { label: 'b', kind: 'angle', ask: 'Find the two angles of projection that pass through the point.', find: ['found.values.0', 'found.values.1'], sym: 'alpha', suffix: '°', at: 'shown.at.t', step: 'angle', paper: [71.57, 45] },
+      { label: 'c', kind: 'height', ask: 'What is the greatest height the ball can reach on its way to the point?', find: 'flights.0.topBefore', sym: 'H', unit: 'm', trim: true, at: 'flights.0.apex.t', step: 'top of its path', uses: ['b'], paper: 36 },
+    ],
     sources: [
       { board: 'Edexcel', paper: '9MA0/32', session: 'Jun 2023', q: '5' },
       { board: 'WJEC', paper: '1300U40-1 Unit 4', session: 'Jun 2022', q: '10' },
@@ -176,6 +200,13 @@ export const LIBRARY = [
     params: { start: 'drop', h: 2, H: 1.5, g: 9.8, n: 2, axis: 'down' },
     place: 'A ball over horizontal ground',
     example: { start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down' },
+    parts: [
+      { label: 'a', kind: 'speed', ask: 'How fast is the ball moving just before it first strikes the ground?', find: 'extras.vIn1', unit: 'm s^-1', at: 'extras.t1', step: 'down to the ground', paper: 6.26 },
+      { label: 'b', kind: 'speed', ask: 'How fast is it moving just after it leaves the ground, if it rises to 1.5 m?', find: 'extras.vOut1', unit: 'm s^-1', at: 'extras.t1', step: 'bounce', paper: 5.42 },
+      { label: 'c', out: 'the impulse on the ball needs momentum, which is another chapter' },
+      { label: 'd', kind: 'graph', ask: 'Sketch the velocity–time graph from release to the second impact.', say: 'The velocity–time graph is drawn: a straight line down to the impact, a jump, then the same gradient again.', at: 'end' },
+      { label: 'e', kind: 'time', ask: 'How long is it from release to the second impact?', find: 'f.tMax', sym: 't', unit: 's', at: 'end', step: 'from the start', uses: ['b'], paper: 1.75 },
+    ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2014', q: '3', part: 'all but the impulse' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2018', q: '4', part: '(b) and (c); the impact speed given instead of found from the impulse' },
@@ -202,6 +233,10 @@ export const LIBRARY = [
     params: { start: 'down', h: 5, U: 3.5, y: 5, T: 0.87, stop: 'y', g: 9.8, axis: 'up' },
     place: 'A ball over horizontal ground',
     example: { start: 'down', h: 5, U: 3.5, y: 5, T: 0.87, stop: 'y', g: 9.8 },
+    parts: [
+      { label: 'i', kind: 'speed', ask: 'How fast is the ball moving when it hits the ground?', find: 'extras.vIn1', unit: 'm s^-1', at: 'extras.t1', step: 'down to the ground', paper: 10.5 },
+      { label: 'ii', kind: 'speed', ask: 'It passes its starting point on the way up 0.87 s after the bounce. How fast does it rebound?', find: 'extras.vOut1', unit: 'm s^-1', dp: 1, at: 'end', step: 'bounce', paper: 10.0 },
+    ],
     sources: [
       { board: 'OCR', paper: '4728 M1', session: 'Jun 2014', q: '1', part: 'all' },
     ],
@@ -225,6 +260,12 @@ export const LIBRARY = [
     params: { T: 2.4, kx: 5 / 3, V: 16, g: 9.8 },
     place: 'A field with a brick wall',
     example: { T: 2.4, kx: '5/3', V: 16, g: 9.8 },
+    parts: [
+      { label: 'a', kind: 'distance', ask: 'How far from O does the ball land, in terms of $d$?', find: 'R', sym: 'x', suffix: 'd', trim: true, at: 'end', step: 'where it lands', paper: 4 },
+      { label: 'b', kind: 'velocity', ask: 'What is the vertical component of the velocity it is thrown with?', find: 'V0', sym: 'u_y', unit: 'm s^-1', at: 0, step: 'where it lands', paper: 11.76 },
+      { label: 'c', kind: 'height', ask: 'How high is the wall?', find: 'H', sym: 'h', unit: 'm', dp: 3, at: 'tw', step: 'wall', uses: ['b'], paper: 5.292 },
+      { label: 'd', kind: 'distance', ask: 'Its speed as it passes over the wall is 16 m s⁻¹. Find $d$.', find: 'd', sym: 'd', unit: 'm', at: 'tw', step: 'length d', uses: ['c'], paper: 8.93 },
+    ],
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2019', q: '8', part: 'all' },
     ],
@@ -274,6 +315,11 @@ export const LIBRARY = [
     params: { place: 'cliff', h: 25, theta: 45, u: 28, g: 9.8 },
     place: 'Side on: the place it is thrown from, and what is below',
     example: { place: 'tower', h: 49, u: 14.7, theta: 90, g: 9.8 },
+    parts: [
+      { label: 'a', kind: 'height', ask: 'What is the greatest height of the ball above the ground?', find: 'top', sym: 'H', unit: 'm', dp: 1, at: 'f.tApex', paper: 60.0 },
+      { label: 'b', kind: 'speed', ask: 'How fast is it moving when it hits the ground?', find: 'vL', unit: 'm s^-1', dp: 1, at: 'end', paper: 34.3 },
+      { label: 'c', kind: 'time', ask: 'How long is it in the air?', find: 'T', sym: 't', unit: 's', trim: true, at: 'end', paper: 5 },
+    ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2010', q: '6' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2012', q: '5' },
@@ -302,6 +348,10 @@ export const LIBRARY = [
     params: { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2 }, find: 'a' },
     place: 'Side on: a beach, the thrower, the dog and the ball',
     example: { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, 'c.t0': 0.2, find: 'c.a' },
+    parts: [
+      { label: 'a', kind: 'time', ask: 'When is the ball 0.3 m above the ground on its way down?', find: 'tc', sym: 't', unit: 's', at: 'tc', step: 'when and where', paper: 2.59 },
+      { label: 'b', kind: 'acceleration', ask: 'The dog sets off from rest 0.2 s after the throw and catches the ball then. What is its acceleration?', find: 'catcher.a', sym: 'a', unit: 'm s^-2', at: 'tc', step: 'acceleration', uses: ['a'], paper: 6.34 },
+    ],
     sources: [
       { board: 'AQA', paper: '7357/2', session: 'Jun 2023', q: '20' },
     ],
@@ -326,6 +376,11 @@ export const LIBRARY = [
     place: 'A road: the car, its driver and a shop, under the velocity–time graph',
     example: { T: 60, back: 4, 's1.who': 'car', 's1.v': 15, 's1.t': 6, 's2.who': 'car', 's2.v': 15, 's2.t': 11, 's3.who': 'car', 's3.v': 0, 's3.t': 2,
       's4.who': 'foot', 's4.u': -2, 's4.v': -2, 's4.t': 20, 's5.who': 'foot', 's5.u': 0, 's5.v': 0, 's6.who': 'foot', 's6.u': 5, 's6.v': 5 },
+    parts: [
+      { label: 'i', kind: 'acceleration', ask: 'What are the car’s acceleration at the start and its acceleration as it stops?', find: ['S.0.a', 'S.2.a'], sym: 'a', unit: 'm s^-2', trim: true, at: 'S.2.t1', step: 'each segment', paper: [2.5, -7.5] },
+      { label: 'ii', kind: 'distance', ask: 'How far does the car travel?', find: 'X', sym: 's', unit: 'm', trim: true, at: 'S.2.t1', step: 'each segment', paper: 225 },
+      { label: 'iii', kind: 'time', ask: 'How long is the driver in the shop?', find: 'S.4.t', sym: 't', unit: 's', trim: true, at: 'S.4.t1', step: 'times left', uses: ['ii'], paper: 13 },
+    ],
     sources: [
       { board: 'OCR', paper: '4728 M1', session: 'Jun 2011', q: '4' },
     ],
@@ -349,6 +404,11 @@ export const LIBRARY = [
     params: { g: 10, D: 550, t1: 3, a2: 12, t2: 2 },
     place: 'A column of sky from the aircraft to the fields',
     example: { g: 10, D: 550, t1: 3, a2: 12, t2: 2 },
+    parts: [
+      { label: 'a', kind: 'speed', ask: 'How fast is the parachutist falling when the parachute opens?', find: 'J.v1', unit: 'm s^-1', trim: true, at: 'J.t1', step: 'each stage', paper: 30 },
+      { label: 'b', kind: 'speed', ask: 'What steady speed does the parachute slow the fall to?', find: 'J.v2', unit: 'm s^-1', trim: true, at: 'f.startOf(3)', step: 'each stage', uses: ['a'], paper: 6 },
+      { label: 'c', kind: 'time', ask: 'How long is it from leaving the aircraft to reaching the ground?', find: 'J.T', sym: 'T', unit: 's', dp: 1, at: 'end', step: 'whole jump', uses: ['b'], paper: 83.2 },
+    ],
     sources: [
       { board: 'Edexcel', paper: '8MA0/22 (AS)', session: 'Jun 2019', q: '1' },
     ],
@@ -372,6 +432,11 @@ export const LIBRARY = [
     params: { units: 'km', look: 'ships', A: { r0: { x: 2, y: -8 }, v: { x: -4, y: 8 } }, B: { r0: { x: 18, y: 12 }, v: { x: -6, y: -8 } }, at: { due: 'W' } },
     place: 'A map from above: the sea, east and north',
     example: { units: 'km', 'A.r0.x': 2, 'A.r0.y': -8, 'A.v.x': -4, 'A.v.y': 8, 'B.r0.x': 18, 'B.r0.y': 12, 'B.v.x': -6, 'B.v.y': -8, due: 'W' },
+    parts: [
+      { label: 'a', kind: 'speed', ask: 'What is the speed of the first boat?', find: 'heads.0.sp', unit: 'km h^-1', at: 0, step: 'speed and bearing', paper: 8.94 },
+      { label: 'b', kind: 'time', ask: 'When is the first boat due west of the second?', find: 'answers.0.t', sym: 't', unit: 'h', trim: true, at: 'answers.0.t', step: 'in that direction', paper: 1.25 },
+      { label: 'c', kind: 'distance', ask: 'How far apart are the boats at that moment?', find: 'answers.0.dist', unit: 'km', trim: true, at: 'answers.0.t', step: 'in that direction', uses: ['b'], paper: 13.5 },
+    ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jan 2012', q: '7' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2017', q: '7' },
@@ -398,6 +463,11 @@ export const LIBRARY = [
     params: { u: 25, D: 48, a: 6, limit: 13, react: 0.2 },
     place: 'Three lanes of one road, a speed-limit sign ahead',
     example: { u: 25, D: 48, a: 6, limit: 13, react: 0.2 },
+    parts: [
+      { label: 'a', kind: 'speed', ask: 'In the first model the car slows steadily all the way to the sign. How fast is it going there?', find: 'models.0.vSign', unit: 'm s^-1', trim: true, at: 'models.0.tSign', step: 'model 1: the whole', paper: 7 },
+      { label: 'b', kind: 'time', ask: 'In the second it slows to the limit and holds it. How long does it take to reach the sign?', find: 'models.1.tSign', sym: 't', unit: 's', at: 'models.1.tSign', step: 'model 2: the whole', paper: 2.77 },
+      { label: 'c', kind: 'time', ask: 'In the third the driver reacts for 0.2 s first. How long does it take now?', find: 'models.2.tSign', sym: 't', unit: 's', at: 'models.2.tSign', step: 'model 3: the whole', paper: 2.58 },
+    ],
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Oct 2021', q: '3' },
     ],
@@ -421,6 +491,10 @@ export const LIBRARY = [
     params: { look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 },
     place: 'Side on: a laboratory bench, two strips of foil on clamp stands',
     example: { look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 },
+    parts: [
+      { label: 'iii', kind: 'speed', ask: 'How fast does the ball bearing leave the bench, from the two strips 0.50 m apart and 0.14 s?', find: 'u', unit: 'm s^-1', at: 0, step: 'speed it leaves', paper: 3.6, tol: 0.05 },
+      { label: 'iv', kind: 'distance', ask: 'How far has it dropped at the second strip? Is that the strip’s centre, 8 cm lower?', find: 'fall', sym: 's_y', unit: 'm', dp: 4, at: 't2', step: 'second strip', uses: ['iii'], paper: 0.096 },
+    ],
     sources: [
       { board: 'Edexcel', paper: '9PH0/01', session: 'Jun 2018', q: '18(b)(iii)(iv)' },
     ],
@@ -444,6 +518,11 @@ export const LIBRARY = [
     params: { g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 },
     place: 'Side on: level ground, a brick wall, and where it lands',
     example: { g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 },
+    parts: [
+      { label: 'b', kind: 'angle', ask: 'At what angle is the ball projected?', find: 'theta', sym: 'theta', suffix: '°', dp: 1, at: 'f.tWall', step: 'angle', paper: 33.7 },
+      { label: 'c', kind: 'distance', ask: 'It is projected at 54.6 m s⁻¹. Find $a$.', find: 'a', sym: 'a', unit: 'm', dp: 1, at: 'f.tWall', step: 'length a', uses: ['b'], paper: 70.2 },
+      { label: 'd', kind: 'height', ask: 'What is the greatest height of the ball?', find: 'Hmax', sym: 'H', unit: 'm', dp: 1, at: 'f.tApex', step: 'greatest height', uses: ['c'], paper: 46.8 },
+    ],
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '13(b)(c)(d)' },
     ],
@@ -467,6 +546,13 @@ export const LIBRARY = [
     params: { look: 'car', stages: [{ u: 20, v: 12, s: 640 }, { s: 1820, t: 70 }] },
     place: 'Side on: a straight race track, a post where each stage begins',
     example: { 's1.u': 20, 's1.v': 12, 's1.s': 640, 's2.s': 1820, 's2.t': 70 },
+    parts: [
+      { label: 'a', kind: 'time', ask: 'How long does it take to slow from 20 to 12 m s⁻¹ over 640 m?', find: 'S.0.t', sym: 't', unit: 's', trim: true, at: 'S.0.t1', step: 'stage 1', paper: 40 },
+      { label: 'b', kind: 'acceleration', ask: 'What is its acceleration while it slows?', find: 'S.0.a', sym: 'a', unit: 'm s^-2', trim: true, at: 'S.0.t1', step: 'stage 1', uses: ['a'], paper: -0.2 },
+      { label: 'c', kind: 'acceleration', ask: 'It then covers 1820 m in 70 s, speeding up steadily. What is its acceleration?', find: 'S.1.a', sym: 'a', unit: 'm s^-2', trim: true, at: 'S.1.t1', step: 'stage 2', paper: 0.4 },
+      { label: 'd', kind: 'speed', ask: 'How fast is it going at the end?', find: 'S.1.v', sym: 'v', unit: 'm s^-1', trim: true, at: 'S.1.t1', step: 'stage 2', uses: ['c'], paper: 40 },
+      { label: 'e', kind: 'speed', ask: 'What is its average speed over the whole motion?', find: 'avg', unit: 'm s^-1', dp: 1, at: 'end', step: 'the whole', paper: 22.4 },
+    ],
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '1' },
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2019', q: '7' },
@@ -496,6 +582,11 @@ export const LIBRARY = [
     params: { A: { u: { x: 4, y: 2 }, a: { x: -0.4 } }, B: { r0: { x: 11.2 }, u: { x: 0.4, y: 0.6 }, a: { y: 0.2 } }, at: 10 },
     place: 'From above: a horizontal surface, i across and j up',
     example: { 'A.u.x': 4, 'A.u.y': 2, 'A.a.x': -0.4, 'B.r0.x': 11.2, 'B.u.x': 0.4, 'B.u.y': 0.6, 'B.a.y': 0.2, at: 10 },
+    parts: [
+      { label: 'a', kind: 'position', ask: 'Where is A after 10 seconds?', find: ['f.posA(10).x', 'f.posA(10).y'], vec: true, sym: 'vec r_A', unit: 'm', at: 10, step: 'at t=10', paper: [20, 20] },
+      { label: 'b', kind: 'meeting', ask: 'Show that the two particles collide, and find when.', find: 'tc', sym: 't', unit: 's', trim: true, at: 'tc', step: 'collide', paper: 14 },
+      { label: 'c', kind: 'position', ask: 'Where do they collide?', find: ['where.x', 'where.y'], vec: true, sym: 'vec r', unit: 'm', at: 'tc', step: 'collide', uses: ['b'], paper: [16.8, 28] },
+    ],
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jun 2014', q: '7' },
     ],
@@ -519,6 +610,10 @@ export const LIBRARY = [
     params: { u: { x: 2, y: -3 }, at2: { kind: 'r', t: 2, v: { x: 7, y: -10 } }, a2: { x: 4, y: 8.8 }, ask: { dir: 'NE' } },
     place: 'From above: a plane, i east and j north',
     example: { 'u.x': 2, 'u.y': -3, k2: 'r', t2: 2, 'p2.x': 7, 'p2.y': -10, 'a2.x': 4, 'a2.y': 8.8, dir: 'NE' },
+    parts: [
+      { label: 'a', kind: 'acceleration', ask: 'Find the acceleration from the two moments the paper gives.', find: ['a.x', 'a.y'], vec: true, sym: 'vec a', unit: 'm s^-2', at: 'T', step: 'from what the paper gives', paper: [1.5, -2] },
+      { label: 'b', kind: 'time', ask: 'After the acceleration changes, how long until the particle is moving north-east?', find: 'dirAfter', sym: 't', unit: 's', trim: true, at: 'tDir', step: 'paper asks', uses: ['a'], paper: 2.5 },
+    ],
     sources: [
       { board: 'Edexcel', paper: '9MA0/03', session: 'Jun 2018', q: '8' },
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2022', q: '6' },
@@ -544,6 +639,12 @@ export const LIBRARY = [
     place: 'A (t, x) graph above, the line with A and the particle below',
     example: { x0: 5, speed: 4, 'p1.x': 5, 'p2.t': 3, 'p2.x': 0, 'p3.t': 5, 'p3.x': 0, 'p4.t': 7, 'p4.x': -8, 'p5.t': 10, 'p5.x': 4,
       c0: -96, c1: 20, c2: -1, tailSpeed: 4, ask1: 2, ask2: 8, ask3: 9 },
+    parts: [
+      { label: 'i', kind: 'time', ask: 'Find the time $T$ missing from the graph.', find: 'blankT', sym: 'T', unit: 's', trim: true, at: 'blankT', step: 'corner left blank', paper: 1.75 },
+      { label: 'ii', kind: 'velocity', ask: 'What is the velocity at $t = 2$, at $t = 8$ and at $t = 9$?', find: ['f.asked.0.v', 'f.asked.1.v', 'f.asked.2.v'], sym: 'v', unit: 'm s^-1', trim: true, at: 9, step: 'velocity at each', paper: [-4, 4, 4] },
+      { label: 'iii', kind: 'distance', ask: 'How far does it travel in the first 10 seconds?', find: 'dist', sym: 'd', unit: 'm', trim: true, at: 'f.tEnd', step: 'distance travelled', paper: 25 },
+      { label: 'iv', kind: 'time', ask: 'After $t = 10$ it slows steadily. When is its speed $4 [m s^-1]$ again?', find: 'tail.ts.0', sym: 't', unit: 's', trim: true, at: 'tail.ts.0', step: 'after', paper: 12 },
+    ],
     sources: [
       { board: 'OCR', paper: '4728 M1', session: 'Jun 2014', q: '5' },
     ],
@@ -566,6 +667,11 @@ export const LIBRARY = [
     params: { R: { r0: { x: -2, y: 1 }, r1: { x: 9, y: 23 }, t1: 11 }, S: { r0: { x: 25, y: 25 }, v: { x: -1, y: -1 } }, side: 50 },
     place: 'From above: a square floor ABCD, centre O, two robots',
     example: { 'R.r0.x': -2, 'R.r0.y': 1, 'R.r1.x': 9, 'R.r1.y': 23, 'R.t1': 11, 'S.r0.x': 25, 'S.r0.y': 25, 'S.v.x': -1, 'S.v.y': -1, side: 50 },
+    parts: [
+      { label: 'a', kind: 'velocity', ask: 'What is the velocity of $R$, from where it is at two times?', find: ['R.v.x', 'R.v.y'], vec: true, sym: 'vec v_R', unit: 'm s^-1', at: 0, step: 'from two positions', paper: [1, 2] },
+      { label: 'b', kind: 'time', ask: 'When are the two robots closest together?', find: 'tc', sym: 't', unit: 's', at: 'tc', step: 'closest', uses: ['a'], paper: 9.69 },
+      { label: 'c', kind: 'distance', ask: 'What is the least distance between them?', find: 'dmin', sym: 'd', unit: 'm', at: 'tc', step: 'closest', uses: ['b'], paper: 9.15 },
+    ],
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2023', q: '8' },
     ],
@@ -589,6 +695,10 @@ export const LIBRARY = [
     params: { k: 0.5, when: 'top' },
     place: 'One vertical line through O, the two particles side by side',
     example: { k: 0.5, when: 'top' },
+    parts: [
+      { label: 'a', kind: 'time', ask: 'How long after $Q$ is projected do the two collide?', find: 'tau', sym: 't', suffix: 'U/g', trim: true, at: 'f.tc', step: 'collide', paper: 1 },
+      { label: 'b', kind: 'height', ask: 'How far above $O$ are they when they collide?', find: 'yc', sym: 'h', trim: true, at: 'f.tc', step: 'collide', uses: ['a'], paper: 0 },
+    ],
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2020', q: '3' },
     ],
@@ -613,6 +723,11 @@ export const LIBRARY = [
     place: 'Side on: two parallel tracks between two stations',
     example: { askT: 96, 'A1.kind': 'up', 'A1.t': 30, 'A1.v': 20, 'A2.kind': 'hold', 'A2.t': 120, 'A3.kind': 'down', 'A3.t': 30, 'A3.v': 0,
       'B1.kind': 'up', 'B1.t': 90, 'B2.kind': 'down', 'B2.t': 90, 'B2.v': 0 },
+    parts: [
+      { label: 'a', kind: 'acceleration', ask: 'What is the acceleration of the second train?', find: 'B.J.a.1', sym: 'a', unit: 'm s^-2', dp: 3, at: 'B.J.t.1', step: 'train b: the area', paper: 0.370 },
+      { label: 'b', kind: 'time', ask: 'At what times are the two trains moving at the same speed?', find: ['eq.0', 'eq.1'], sym: 't', unit: 's', trim: true, at: 'eq.1', step: 'same speed', uses: ['a'], paper: [54, 126] },
+      { label: 'c', kind: 'distance', ask: 'How far apart are the trains 96 s after they set off?', find: 'gap', sym: 'd', unit: 'm', dp: 1, at: 96, step: 'how far apart', paper: 73.3 },
+    ],
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jan 2014', q: '8' },
     ],
@@ -636,6 +751,10 @@ export const LIBRARY = [
     params: { look: 'car', gaps: [{ s: 76, t: 4 }, { s: 219, t: 6 }] },
     place: 'Side on: a straight road with posts P, Q and R',
     example: { s1: 76, t1: 4, s2: 219, t2: 6 },
+    parts: [
+      { label: 'a', kind: 'speed', ask: 'How fast is it moving as it passes the first post?', find: 'u', sym: 'u', unit: 'm s^-1', trim: true, at: 0, step: 'one acceleration', paper: 12 },
+      { label: 'b', kind: 'acceleration', ask: 'What is its acceleration?', find: 'a', sym: 'a', unit: 'm s^-2', trim: true, at: 'end', step: 'one acceleration', paper: 3.5 },
+    ],
     sources: [
       { board: 'Edexcel', paper: 'IAL WME01', session: 'Jun 2016', q: '1' },
     ],
@@ -659,6 +778,10 @@ export const LIBRARY = [
     params: { v0: 0, pts: [{ t: 4, v: -2 }, { t: 6, v: 2 }, { t: 11, v: 2 }, { t: 13, v: -4 }, { t: 16, v: -4 }, { t: 20, v: 0 }] },
     place: 'A (t, v) graph above, the line with its start O below',
     example: { v0: 0, 'p1.t': 4, 'p1.v': -2, 'p2.t': 6, 'p2.v': 2, 'p3.t': 11, 'p3.v': 2, 'p4.t': 13, 'p4.v': -4, 'p5.t': 16, 'p5.v': -4, 'p6.t': 20, 'p6.v': 0 },
+    parts: [
+      { label: 'a', kind: 'acceleration', ask: 'What is the greatest size of the acceleration, and when?', find: 'aMax', sym: 'a', unit: 'm s^-2', trim: true, span: ['S.3.t0', 'S.3.t1'], step: 'greatest acceleration', paper: 3 },
+      { label: 'b', kind: 'time', ask: 'At what times is it back where it started?', find: ['times.0', 'times.1'], sym: 't', unit: 's', trim: true, at: 'times.1', step: 'back where it started', paper: [8, 14] },
+    ],
     sources: [
       { board: 'AQA', paper: '7357/2', session: 'Jun 2018', q: '12' },
     ],
@@ -682,6 +805,10 @@ export const LIBRARY = [
     params: { mode: 'letters', k: 3 },
     place: 'Side on: a building wall with a window (or a cliff with two marks), the ball falling past it',
     example: { mode: 'letters', k: 3 },
+    parts: [
+      { label: 'a', kind: 'time', ask: 'How long does the ball take to fall from $M$ to $N$?', find: 'tL', sym: 't', suffix: 'u/g', trim: true, at: 'f.tN', step: 'from m to n', paper: 2 },
+      { label: 'b', kind: 'distance', ask: 'How far apart are $M$ and $N$?', find: 'hL', sym: 's', suffix: 'u^2/g', trim: true, at: 'f.tN', step: 'from m to n', uses: ['a'], paper: 4 },
+    ],
     sources: [
       { board: 'AQA', paper: '7357/2', session: 'Jun 2023', q: '13' },
     ],
@@ -705,6 +832,10 @@ export const LIBRARY = [
     params: { g: 9.8, A: { u: 24.5, theta: 30 }, B: { u: 24.5, theta: 30, t0: 1 }, range: true },
     place: 'Side on: level ground, a thrower at A and another at B',
     example: { g: 9.8, 'A.u': 24.5, 'A.theta': 30, 'B.u': 24.5, 'B.theta': 30, 'B.t0': 1, range: 'range' },
+    parts: [
+      { label: 'a', kind: 'distance', ask: '$B$ is where the first ball would land. How far is it from $A$?', find: 'D', sym: 'AB', unit: 'm', dp: 1, at: 0, step: 'level across', paper: 53.0 },
+      { label: 'b', kind: 'height', ask: 'The second ball is thrown from $B$ one second later. How high above the ground do they collide?', find: 'yA', sym: 'h', unit: 'm', at: 't', step: 'level across', uses: ['a'], paper: 6.43 },
+    ],
     sources: [
       { board: 'WJEC', paper: '1300U40-1 Unit 4', session: 'Jun 2018', q: '9' },
     ],
@@ -728,6 +859,11 @@ export const LIBRARY = [
     params: { g: 9.8, h: 0.9, u: 14, C: 11.5 },
     place: 'Side on: a sports hall, its floor and ceiling, the kicker',
     example: { g: 9.8, h: 0.9, top: 10.9, C: 11.5 },
+    parts: [
+      { label: 'a', kind: 'show', ask: 'Kicked up from 0.9 m, it rises to 10.9 m. Show its speed when kicked is 14 m s⁻¹.', find: 'u', sym: 'u', unit: 'm s^-1', trim: true, at: 'tTop', step: 'greatest height', paper: 14 },
+      { label: 'b', kind: 'time', ask: 'How long is it until the ball reaches the ground?', find: 'f.tMax', sym: 't', unit: 's', at: 'end', step: 'back down', uses: ['a'], paper: 2.9, tol: 0.05 },
+      { label: 'c', kind: 'height', ask: 'In a sports hall 11.5 m high, how far below the ceiling does it turn?', find: 'f.gap', unit: 'm', dp: 1, at: 'tTop', step: 'ceiling', paper: 0.6 },
+    ],
     sources: [
       { board: 'WJEC', paper: '2300U20-1 Unit 2', session: 'Jun 2019', q: '8' },
     ],

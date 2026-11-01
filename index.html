@@ -43,6 +43,8 @@
 <link rel="modulepreload" href="./js/ai/ask.js">
 <link rel="modulepreload" href="./js/board/board.js">
 <link rel="modulepreload" href="./js/ai/readout.js">
+<link rel="modulepreload" href="./js/parts/parts.js">
+<link rel="modulepreload" href="./js/parts/strip.js">
 <link rel="modulepreload" href="./js/core/suvat.js">
 <link rel="modulepreload" href="./js/kits/pair.js">
 <link rel="modulepreload" href="./js/kits/journey.js">
@@ -541,11 +543,17 @@
           </div>
         </div>
 
+        <!-- A QUESTION IN PARTS: (a) (b) (c), each stopping the motion at its
+             own moment with its answer and its working. js/parts/strip.js -->
+        <div class="pstrip" id="parts" hidden></div>
         <div class="transport">
           <button class="play" id="play" aria-label="Play">
             <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
           </button>
-          <input type="range" id="scrub" min="0" max="1" step="0.001" value="0" aria-label="Time">
+          <div class="scrub-wrap">
+            <input type="range" id="scrub" min="0" max="1" step="0.001" value="0" aria-label="Time">
+            <div class="pticks" id="pticks" hidden></div>
+          </div>
           <!-- THE ONE CLOCK, for the one scrub bar above it. On the single
                view the time sits in the readout box on the diagram, where
                there is room for it; four panes have no corner to spare, and

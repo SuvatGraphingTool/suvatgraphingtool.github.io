@@ -1467,5 +1467,62 @@ function K_never() {
   return e.real === false && /never met/.test(e.title) && !/collision ends/.test(e.body);
 }
 
+/* ── a question in parts ────────────────────────────────────────────── */
+group('A question in parts: every part of every library scenario reproduces its paper', async () => {});
+{
+  const { walk, pick, partBoxes, stepOf, live } = await import('../js/parts/parts.js');
+  const { stripHTML, ticksHTML, answerHTML } = await import('../js/parts/strip.js');
+  const KINDS = ['time', 'height', 'distance', 'displacement', 'speed', 'velocity', 'acceleration', 'angle', 'position', 'meeting', 'time-above', 'area', 'show', 'graph', 'other'];
+  const half = (v) => 0.5 * 10 ** -((String(v).split('.')[1] || '').length);
+  for (const s of LIBRARY) {
+    ok(Array.isArray(s.parts) && live(s.parts).length > 0, `${s.id} lists its first paper’s parts`);
+    if (!s.parts) continue;
+    const K = KITS[s.kit];
+    const runs = walk((b) => K.solve(K.read(b)), s.example, s.parts);
+    ok(new Set(s.parts.map((p) => p.label)).size === s.parts.length, `${s.id}: every part has its own label`);
+    for (const r of runs) {
+      if (!r) continue;
+      const p = r.part, at = `${s.id} (${p.label})`;
+      ok(!!p.ask && KINDS.includes(p.kind) && !/[<>{}]|\^|\*|sqrt|\//.test(p.ask.replace(/\$[^$]*\$/g, '')), `${at} asks in plain words, and says what it answers (${p.kind})`);
+      ok(r.solved?.ok, `${at} solves`, r.solved?.reason);
+      if (!r.solved?.ok) continue;
+      ok(r.moment && r.moment.t >= 0 && r.moment.t <= r.solved.f.tMax + 1e-9, `${at}: its moment is on the clock`);
+      if (p.step != null) ok(stepOf(p, K.working(r.solved, r.moment.t)) >= 0 || stepOf(p, K.working(r.solved, 0)) >= 0, `${at}: its working step is there ("${p.step}")`);
+      if (!p.find) { ok(p.kind === 'graph' || p.kind === 'other', `${at} is a sketch, and the stage is its answer`); continue; }
+      ok(r.answer.ok, `${at}: the engine has an answer at ${p.find}`);
+      if (p.paper == null) continue;
+      const want = [].concat(p.paper), got = r.answer.values;
+      ok(want.length === got.length && want.every((v, i) => Math.abs(got[i] - v) <= (p.tol ?? half(v)) + 1e-9),
+         `${at} gives the paper’s ${want.join(' and ')}`, `got ${got.join(', ')}`);
+      ok(!/NaN|undefined|Infinity/.test(answerHTML(r)), `${at}: the answer is set, with no NaN`);
+    }
+    for (const k of [-1, ...runs.map((r, i) => (r ? i : -1)).filter((i) => i >= 0)]) {
+      const html = stripHTML(s.parts, runs, k, K.working(runs.find(Boolean).solved, 0)) + ticksHTML(runs, runs.find(Boolean).solved, k);
+      ok(!/NaN|undefined/.test(html), `${s.id}: the strip at part ${k} has no NaN`);
+    }
+  }
+  // the pieces, on their own
+  const solved = { meet: { t: 3.5 }, extras: [{ key: 'tMeet', value: 3.5 }], answers: [{ kind: 'due', t: 30 }], f: { tMax: 4, startOf: (i) => i * 10 } };
+  ok(pick(solved, 'meet.t') === 3.5 && pick(solved, 'extras.tMeet') === 3.5 && pick(solved, 'answers.due.t') === 30 && pick(solved, 'f.startOf(3)') === 30 && pick(solved, 'nope.x') === undefined,
+     'a path finds a field, an extra by key, an answer by kind, and asks the engine’s own function');
+  const parts = [{ label: 'a', find: 'x' }, { label: 'b', given: { u: 5 }, find: 'y' }, { label: 'c', carry: { h: 'a' }, find: 'z' }];
+  const pb = partBoxes({ u: 1, h: 2 }, parts, 2, { a: { values: [7] } });
+  ok(pb.boxes.u === 5 && pb.boxes.h === 7 && pb.carried[0].from === 'a' && partBoxes({ u: 1 }, parts, 0).boxes.u === 1,
+     'a part’s boxes: the student’s, then each earlier part’s givens, then the answers it carries');
+  // a later part that adds a given, and one that carries an answer forward, re-solve with the engine
+  const K = KITS.pair;
+  const twoParts = [
+    { label: 'a', kind: 'height', ask: 'x', find: 'meet.x', at: 'meet.t' },
+    { label: 'b', kind: 'time', ask: 'x', given: { 'B.t0': 0.5 }, find: 'meet.t' },
+    { label: 'c', kind: 'time', ask: 'x', carry: { 'A.h': 'a' }, find: 'meet.t' },
+  ];
+  const ex = { 'A.h': 0, 'A.u': 20, 'B.h': 40, 'B.u': 0, 'B.t0': 1, g: 10 };
+  const rs = walk((b) => K.solve(K.read(b)), ex, twoParts);
+  const direct = K.solve(K.read({ ...ex, 'B.t0': 0.5 })), carried = K.solve(K.read({ ...ex, 'B.t0': 0.5, 'A.h': 8.75 }));
+  ok(rs[1].solved !== rs[0].solved && Math.abs(rs[1].answer.values[0] - direct.meet.t) < 1e-12, 'a part that adds a given is solved again by the engine');
+  ok(Math.abs(rs[2].answer.values[0] - carried.meet.t) < 1e-12 && rs[2].carried[0].value === 8.75, 'a part that carries (a)’s 8.75 m forward is solved with it');
+  ok(/Carries forward/.test(stripHTML(twoParts, rs, 2, [])), 'and it says so');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

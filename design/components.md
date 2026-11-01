@@ -98,10 +98,10 @@ parts: [
 | field | what it is |
 |---|---|
 | `label` | `'a'`, `'b'`, `'ii'`… — shown as (a), (b), (ii) |
-| `ask` | what the part asks, in our OWN words (the papers are copyrighted). Prose: no computer maths, quantities as words or symbols |
-| `kind` | what it answers: `time` `height` `distance` `displacement` `speed` `velocity` `acceleration` `angle` `position` `meeting` `time-above` `area` `show` (a "show that"), `other`. The reader matches on it |
-| `find` | which engine output answers it: a dotted path into the kit's `solve()` answer (`'meet.t'`, `'f.tFlight'`, `'answers.0.value'`). A segment that meets an array is an index if it is a number, else the element whose `key`, `name` or `id` it is (`'extras.tMeet'`). A list of paths for a part with two answers (`['x.0', 'x.1']`: two times) |
-| `sym`, `unit`, `dp` | how the answer is typeset: `M`${sym} = ${num(v, dp)} [${unit}]`` — `sym` is notation source (`'v'`, `'t_1'`, `'theta'`), `unit` too (`'m s^-1'`). `dp` defaults to 2. `words: { yes, no }` for an answer that is true/false |
+| `ask` | what the part asks, in our OWN words (the papers are copyrighted). Prose; any maths in it goes between `$` signs and is set by `js/notation.js` (`'the velocity at $t = 2$'`) |
+| `kind` | what it answers: `time` `height` `distance` `displacement` `speed` `velocity` `acceleration` `angle` `position` `meeting` `time-above` `area` `show` (a "show that"), `graph` (a sketch: no `find`, the stage is the answer, `say` tells the student where to look), `other`. The reader matches on it |
+| `find` | which engine output answers it: a dotted path into the kit's `solve()` answer (`'meet.t'`, `'f.tFlight'`, `'answers.0.value'`). A segment `name(3)` calls the engine's own function there (`'f.startOf(3)'`, `'f.posA(10).x'`). A segment that meets an array is an index if it is a number, else the element whose `key`, `name`, `id` or `kind` it is (`'extras.tMeet'`, `'events.overtake.t'`). A list of paths for a part with two answers (`['x.0', 'x.1']`: two times) |
+| `sym`, `unit`, `dp` | how the answer is typeset: `M`${sym} = ${num(v, dp)} [${unit}]`` — `sym` is notation source (`'v'`, `'t_1'`, `'theta'`), `unit` too (`'m s^-1'`). `dp` defaults to 2; `trim: true` drops trailing zeros. `suffix` is notation after the number, for an answer in letters (`suffix: 'u/g'` sets 2u/g; a coefficient of 1 is left out) or a degree sign. `vec: true` with two paths sets them as one vector in i and j. `words: { yes, no }` for an answer that is true/false |
 | `at` | the part's moment on the stage: a path like `find`, a number of seconds, or `'end'`. Left out: the moment of `find` if it is a time, else the end |
 | `span` | `[from, to]` instead of `at`, for an interval (a time above a line): both ends ringed, the band marked on the clock |
 | `step` | which working step answers it: text matched against the step titles (case and tags ignored), or an index into `kit.working()` |

@@ -33,6 +33,8 @@ import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML } from './ai/readout.js';
+import { walk, stepOf } from './parts/parts.js';
+import { stripHTML, ticksHTML, markGraphs, workingCardHTML } from './parts/strip.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -418,6 +420,8 @@ function chooseScenario(id, { example = false } = {}) {
   state.mark = undefined;            // the point a road question times it at
   state.who = 'lorry';               // and what it is that moves along the road
   state.kit = {};                    // a library scenario's own boxes
+  state.runs = null; state.part = -1; state.stopAt = null;   // a question in parts, see js/parts/
+  renderParts();
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
   if (PREFILL && example && !scenario.exhibit) applyExample(scenario.example);
   $('ask-at').hidden = !!scenario.road || !!scenario.kit;
@@ -926,6 +930,7 @@ function recomputeKit() {
     if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
     btn.disabled = true; btn.textContent = K.verb;
     traj = null; second = null; state.verdict = null; state.markers = {};
+    state.runs = null; renderParts();
     refreshSteps(); dirty = true; return;
   }
   if (!working()) {
@@ -937,8 +942,60 @@ function recomputeKit() {
   second = null; state.verdict = null; state.caught = null; state.markers = {};
   btn.disabled = false;
   btn.textContent = K.verb;
+  // A QUESTION IN PARTS: every part solved by this same engine, each with the
+  // boxes it adds (js/parts/parts.js). The stage starts on the whole motion.
+  const base = solved, boxes = { ...state.kit };
+  state.runs = scenario.parts ? walk((b) => (sameKitBoxes(b, boxes) ? base : K.solve(K.read(b))), boxes, scenario.parts) : null;
+  state.part = -1; state.stopAt = null;
+  renderParts();
   syncRate(); refreshSteps(); dirty = true;
 }
+
+const sameKitBoxes = (a, b) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);
+
+/** The part strip and the clock's ticks, for the motion on the stage. */
+function renderParts() {
+  const on = !!(state.runs && kit() && solved?.ok);
+  $('parts').hidden = !on; $('pticks').hidden = !on;
+  if (!on) return;
+  $('parts').innerHTML = stripHTML(scenario.parts, state.runs, state.part, kit().working(solved, state.t));
+  $('pticks').innerHTML = ticksHTML(state.runs, solved, state.part);
+}
+
+/**
+ * Show part k: its motion on the stage (solved again if the part added to the
+ * boxes), the clock at its moment, its ring on the graphs, its step lit in
+ * the working. With `play`, the motion runs on to that moment and stops —
+ * from the start if the part's motion is a new one, or the moment is behind.
+ * k = −1 is the whole motion again.
+ */
+function showPart(k, { play = false } = {}) {
+  if (!state.runs) return;
+  hideDone(); closeResolve(); state.pre = null;
+  const run = k >= 0 ? state.runs[k] : state.runs.find(Boolean);
+  if (!run?.solved?.ok) return;
+  const fresh = solved !== run.solved;
+  solved = run.solved; traj = solved.f;
+  state.part = k;
+  if (k < 0) { state.stopAt = null; state.playing = false; setPlayIcon(false); state.t = 0; }
+  else {
+    const t = run.moment.t;
+    if (play && t > 0) {
+      if (fresh || state.t >= t - 1e-9) state.t = 0;
+      state.stopAt = t; state.playing = true; setPlayIcon(true);
+    } else { state.stopAt = null; state.playing = false; setPlayIcon(false); state.t = t; }
+  }
+  if (fresh) cam.fit = true;
+  syncRate(); renderParts(); dirty = true;
+}
+$('parts').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-part]');
+  if (b) showPart(parseInt(b.dataset.part, 10), { play: b.dataset.play === 'true' });
+});
+$('pticks').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-part]');
+  if (b) showPart(parseInt(b.dataset.part, 10));
+});
 
 /* ── solve ──────────────────────────────────────────────────────────── */
 /** The angle that points the launch straight at the draggable target. */
@@ -2766,11 +2823,16 @@ function renderWorking() {
   }
   // A descent's working is its three phases, each one solved on its own, and
   // it comes from the engine that solved them. See descentWorking().
-  for (const s of (kit() ? kit().working(solved, state.t)
-                   : scenario?.descent ? descentWorking(traj, state.t)
-                   : scenario?.road ? roadWorking(solved)
-                   : buildWorking(traj, state.t))) {
-    parts.push(`<div class="step"><div class="step-h">${s.title}</div>` +
+  const run = kit() && state.part >= 0 ? state.runs?.[state.part] : null;
+  const steps = kit() ? kit().working(solved, state.t)
+    : scenario?.descent ? descentWorking(traj, state.t)
+    : scenario?.road ? roadWorking(solved)
+    : buildWorking(traj, state.t);
+  // a part on show heads the working, and lights the step that answers it
+  const lit = run ? stepOf(run.part, steps) : -1;
+  if (run) parts.push(workingCardHTML(run));
+  for (const [i, s] of steps.entries()) {
+    parts.push(`<div class="step"${i === lit ? ' data-part="on"' : ''}><div class="step-h">${s.title}</div>` +
       s.rows.map((r) => `<div class="eq"><div class="eq-f">${r.f}</div><div class="eq-s">${r.s}</div>${r.r ? `<div class="eq-r">${r.r}</div>` : ''}</div>`).join('') +
       (s.note ? `<div class="step-n">${s.note}</div>` : '') + '</div>');
   }
@@ -2831,6 +2893,7 @@ function draw() {
   if (state.extras.graphs) {
     const P = palette();
     const specs = kit() ? kit().graphs(traj, state.t, P) : graphSpecs(traj, state.t, P);
+    if (kit() && state.part >= 0) markGraphs(specs, state.runs?.[state.part], P.mark);
     for (const spec of specs) drawGraph($(spec.canvas), spec);
   }
   renderHud(); renderWorking(); renderResolve(R);
@@ -2860,6 +2923,11 @@ function frame(now) {
     // A kit whose motion lasts minutes plays it as a time-lapse, said on the
     // stage (js/kits/journey.js); every other scenario plays at state.rate.
     state.t += dt * state.rate * (kit()?.lapse?.(traj) ?? 1);
+    // "Show me part (b)" stops at part (b)'s moment, not at the end
+    if (state.stopAt != null && state.t >= state.stopAt) {
+      state.t = state.stopAt; state.stopAt = null; state.playing = false; setPlayIcon(false);
+      renderParts();
+    }
     const tStop = Math.max(traj.tMax, scenario?.exhibit && second ? second.tMax : 0);
     if (state.t >= tStop) {
       state.t = tStop; state.playing = false; setPlayIcon(false);
@@ -2971,7 +3039,7 @@ $('scrub').addEventListener('input', (e) => {
   hideDone();
   // Naming an instant ends the staging: the student has asked to be at a
   // time, and every time there is belongs to the flight.
-  state.pre = null;
+  state.pre = null; state.stopAt = null;
   state.playing = false; setPlayIcon(false);
   state.t = parseFloat(e.target.value) * traj.tMax; dirty = true;
 });
@@ -3238,4 +3306,4 @@ window.SUVAT = { state, get traj() { return traj; }, get solved() { return solve
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
                  openAskAt, closeAskAt, easeAngle, applyReading, get board() { return board; },
-                 redraw() { recompute(); draw(); } };
+                 redraw() { recompute(); draw(); }, showPart };
