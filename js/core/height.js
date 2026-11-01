@@ -62,8 +62,10 @@ export function solveHeight(k0 = {}) {
   if (!(k.theta >= -90 && k.theta <= 90)) return fail('The angle is between −90° (straight down) and 90° (straight up).');
   const steep = Math.abs(Math.abs(k.theta) - 90) < 1e-9;
   const vertical = steep;
-  // down a well, or let go from a balloon, it moves straight up or down
-  if (Pl.vertical && !vertical) return fail(`From ${Pl.top} it moves straight up or down: give the angle as 90 (up) or −90 (down)${Pl.carried ? ' — a balloon rising carries it up at its own speed' : ''}.`);
+  // down a well, or let go from a balloon, it moves straight up or down — and
+  // a drop (let go at rest) goes straight down whatever angle it was read with
+  const dropped = have(k.u) && k.u === 0 && !have(k.tTop);
+  if (Pl.vertical && !vertical && !dropped) return fail(`From ${Pl.top} it moves straight up or down: give the angle as 90 (up) or −90 (down)${Pl.carried ? ' — a balloon rising carries it up at its own speed' : ''}.`);
   if (vertical && have(k.s)) return fail('Thrown straight up or down it lands at the foot: there is no distance out to give.');
 
   // the time to the top of its path fixes the speed: there the vertical

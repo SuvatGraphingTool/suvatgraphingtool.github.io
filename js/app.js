@@ -957,7 +957,7 @@ function recomputeKit() {
   // boxes it adds (js/parts/parts.js). The stage starts on the whole motion.
   const base = solved, boxes = { ...state.kit };
   const parts = state.readerParts || scenario.parts;
-  state.runs = parts ? walk((b) => (sameKitBoxes(b, boxes) ? base : K.solve(K.read(b))), boxes, parts) : null;
+  state.runs = parts?.length ? walk((b) => (sameKitBoxes(b, boxes) ? base : K.solve(K.read(b))), boxes, parts) : null;
   state.part = -1; state.stopAt = null;
   renderParts();
   syncRate(); refreshSteps(); dirty = true;
@@ -967,7 +967,8 @@ const sameKitBoxes = (a, b) => Object.keys(a).length === Object.keys(b).length &
 
 /** The part strip and the clock's ticks, for the motion on the stage. */
 function renderParts() {
-  const on = !!(state.runs && traj && solved?.ok);
+  // a scene with no parts (a composed one may have none) has no strip at all
+  const on = !!(state.runs?.some(Boolean) && traj && solved?.ok);
   $('parts').hidden = !on; $('pticks').hidden = !on;
   if (!on) return;
   const parts = state.runs.map((r, i) => r?.part ?? (state.readerParts || scenario.parts)[i]);
@@ -3368,7 +3369,10 @@ function applyLibrary(x, { graph = true } = {}) {
   // the reader leaves g out (it is told to), so the box takes the paper's usual 9.81.
   const gAssumed = state.kit.g == null;
   if (gAssumed) state.kit.g = 9.81;
-  state.readerParts = fromReader(s.id, x.parts, [...keys]);
+  // The parts are the student's question's own. A question that asked nothing
+  // in parts gets none — never the paper's (a)(b)(c) — and only an example
+  // brings the paper's parts along with the paper's numbers.
+  state.readerParts = fromReader(s.id, x.parts, [...keys]) ?? (x.example === true ? null : []);
   buildValuesScreen();              // which recomputes, and solves each part
   refreshSteps();
   const head = `<p class="ro-eyebrow">Read as, from the Past-paper library</p><h3 class="ro-name">${esc(s.name)}</h3>`

@@ -65,6 +65,7 @@ function rowHTML(step) {
  */
 export function stripHTML(parts, runs, k, steps) {
   const n = runs.filter(Boolean).length;
+  if (!n) return '';                  // no parts, no strip: never "This question has no parts"
   const wide = (p) => (tag(p).length > 4 ? ' wide' : '');
   const chips = parts.map((p, i) => p.out
     ? `<button class="pchip${wide(p)}" type="button" disabled title="Not in this app: ${esc(p.out)}" aria-label="Part ${esc(p.label)}: not in this app — ${esc(p.out)}">${tag(p)}</button>`
@@ -90,9 +91,10 @@ export function stripHTML(parts, runs, k, steps) {
       ${step ? `<details class="pwork"><summary>Working: ${step.title}</summary><div class="pwork-body">${rowHTML(step)}</div></details>` : ''}`;
   }
   const outNote = '';
-  return `<div class="pchips" role="group" aria-label="Parts of the question">${chips}</div>
+  // .pin is the grid; the strip around it is the container its layout asks the width of
+  return `<div class="pin"><div class="pchips" role="group" aria-label="Parts of the question">${chips}</div>
     <div class="pnow" aria-live="polite">${body}${outNote}</div>
-    <div class="pgo">${go}</div>`;
+    <div class="pgo">${go}</div></div>`;
 }
 
 /** The ticks on the clock, one for each moment a part on this motion stops

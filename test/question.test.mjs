@@ -337,5 +337,38 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(toPlace({ understood: true, scenario: 'compose', recipe: { backdrop: 'cliff', engine: 'projectile', numbers: { h: 40, u: 15, theta: 0 } } }, 'car off a cliff').scenario === 'compose', 'a recipe the composer can draw is left to it');
 }
 
+// QA 1 Nov: a composed scene with no parts showed "This question has no parts. Each one stops the motion…"
+{
+  const { stripHTML } = await import('../js/parts/strip.js');
+  ok(stripHTML([], [], -1, []) === '', 'a scene with no parts has no parts strip at all');
+  ok(!/no part/.test(stripHTML([{ label: 'a', out: 'mechanics' }], [null], -1, [])), 'nor one whose only part is out of scope');
+}
+
+// QA 1 Nov: "a stone dropped down a 20 m well" read as u = 0, θ = 0 was refused ("give the angle as 90 or −90")
+{
+  const w = solveHeight({ place: 'well', h: 20, u: 0, theta: 0, g: 9.81 });
+  ok(w.ok, 'a stone let go at rest down a well is a drop, whatever angle it was read with');
+  near(w.f.tFlight, Math.sqrt(40 / 9.81), 1e-9, 'and it takes the drop\'s time, √(2h/g)');
+  ok(!solveHeight({ place: 'well', h: 20, u: 5, theta: 0, g: 9.81 }).ok, 'thrown across at 5 m s⁻¹ in a well is still refused');
+}
+
+// QA 1 Nov: what From a height still needs, settled from the student's words
+{
+  const balloon = toPlace({ understood: true, scenario: 'dropped', summary: 'A sandbag is released from a balloon at 100 m rising at 4 m/s.', h: 100, u: 4 },
+    'sandbag dropped from a hot air balloon at 100 m rising at 4 m/s');
+  ok(balloon.boxes.place === 'balloon' && balloon.boxes.theta === 90 && solveHeight({ ...balloon.boxes, g: 9.81 }).ok, 'a balloon rising at 4 m s⁻¹ carries the sandbag up, and the engine runs it (it was refused, read flat)');
+  const down = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'balloon', h: 50, u: 3, theta: 0 } }, 'a balloon descending at 3 m/s drops a bag from 50 m');
+  ok(down.boxes.theta === -90, 'one descending carries it down');
+  const well = toPlace({ understood: true, scenario: 'platform', summary: 'x', h: 30, u: 5 }, 'stone chucked into a 30m well at 5 m/s');
+  ok(well.boxes.place === 'well' && well.boxes.theta === -90, 'thrown into a well, it goes down the well');
+  const board = toPlace({ understood: true, scenario: 'up', summary: 'A diver jumps up at 3 m/s from a 10 m board.', h: 10, u: 3 }, 'diver jumps up off 10m board at 3 m/s');
+  ok(board.library === 'from-a-height' && board.boxes.place === 'board', '"off a 10m board" is the diving board');
+  ok(toPlace({ understood: true, scenario: 'up', summary: 'x', h: 2, u: 3 }, 'ball thrown up from a 2 m high whiteboard shelf').library === undefined, 'a whiteboard is not a diving board');
+  const pushed = toPlace({ understood: true, scenario: 'platform', summary: 'A ball is pushed off a 60 m cliff.', h: 60 }, 'ball pushed off a 60 m cliff');
+  ok(pushed.boxes.u === 0 && /from rest/.test(pushed.summary) && solveHeight({ ...pushed.boxes, g: 9.81 }).ok, 'pushed off with no speed anywhere, it starts from rest, said, and runs');
+  ok(toPlace({ understood: true, scenario: 'platform', summary: 'x', h: 60, s: 30 }, 'ball pushed off a 60 m cliff, it lands 30 m out').boxes.u === undefined, 'a landing distance given instead is never overruled by a speed of zero');
+  ok(toPlace({ understood: true, scenario: 'platform', summary: 'x', h: 60 }, 'ball pushed off a 60 m cliff, how fast was it pushed if it lands 30 m out').boxes.u === undefined, 'nor a question asking how fast');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

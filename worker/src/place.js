@@ -21,6 +21,8 @@ const PLACES = [
   [/\bcliff/i, 'cliff'], [/\b(tower|building|skyscraper|roof|block of flats)/i, 'tower'],
   [/\bbridge/i, 'bridge'], [/\b(well|mine ?shaft|shaft)\b/i, 'well'],
   [/\b(diving board|springboard|high board)\b/i, 'board'], [/\b(hot.air )?balloon/i, 'balloon'],
+  // "off a 10 m board", "a diver": the diving board, said the short way
+  [/\d\s*m(etres?)?\s+(high\s+)?board\b|\bdiv(er|ers|ing)\b/i, 'board'],
 ];
 // the twelve's answer keys, as from-a-height names the same answer
 const ANSWER = { top: 'height', flight: 'time', vLand: 'speed', time: 'time', speed: 'speed', height: 'height' };
@@ -76,7 +78,41 @@ function jumpUp(x, words) {
     summary: `${(x.summary || '').trim()} No angle was given, so the jump is taken as straight up: change θ to try another.`.trim() };
 }
 
+// a speed in the student's words: a number with its unit, or the word itself
+const SPEED_SAID = /m\s*\/\s*s|\bm\s*s\b|m\s*s(-1|⁻¹)|metres? (per|a) second|\bmph\b|km\s*\/?\s*h|\bspeed|\bvelocity|\bfast\b/i;
+// let go, not thrown: it starts from rest
+const LET_GO = /\b(push(ed|es)?|roll(s|ed)?|drop(s|ped)?|falls?|fell|let go|releas(e|es|ed)|knock(s|ed)?|slid(e|es)?|tip(s|ped)?)\b/i;
+
+/**
+ * What From a height still needs, settled from the student's words:
+ * - straight up or down from a well or a balloon, never across — a balloon
+ *   "rising at 4 m/s" carries what it lets go of up, one going down down;
+ * - pushed, rolled or let go with no speed anywhere in the question, it
+ *   starts from rest, and the reply says so.
+ */
+function settle(x, words) {
+  const b = x?.boxes;
+  if (x?.library !== 'from-a-height' || !b) return x;
+  const text = `${words} ${x.summary || ''}`;
+  const out = { ...x, boxes: { ...b } };
+  if ((b.place === 'well' || b.place === 'balloon') && b.u > 0 && b.theta !== 90 && b.theta !== -90) {
+    const up = /\b(up|upwards?|ris(e|es|ing)|ascend(s|ing)?|climb(s|ing)?)\b/i.test(text);
+    const down = /\b(down|downwards?|descend(s|ing)?|sink(s|ing)?|fall(s|ing)?)\b/i.test(text);
+    out.boxes.theta = b.place === 'balloon' ? (down && !up ? -90 : 90) : (up && !/\bdown\b/i.test(text) ? 90 : -90);
+  }
+  const given = ['u', 'v', 's', 't', 'tTop'].some((k) => b[k] != null);
+  if (!given && LET_GO.test(text) && !SPEED_SAID.test(words)) {
+    out.boxes.u = 0;
+    out.summary = `${(x.summary || '').trim()} No speed was given, so it starts from rest: change u to try another.`.trim();
+  }
+  return out;
+}
+
 export function toPlace(x, words = '') {
+  return settle(placed(x, words), words);
+}
+
+function placed(x, words) {
   const moved = x && fromRecipe(x, words);
   if (moved) return moved;
   x = jumpUp(x, words);

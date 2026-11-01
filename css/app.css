@@ -813,12 +813,12 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .ptick[aria-pressed='true'] { background: var(--mark); color: var(--surface); }
 .pband { position: absolute; top: 12px; height: 4px; left: calc(var(--a) * 100%); width: calc((var(--b) - var(--a)) * 100%); background: var(--mark); opacity: .55; border-radius: 2px; }
 .pstrip {
-  position: relative;
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-5); align-items: center;
+  position: relative; container: pstrip / inline-size;
   margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-5);
   background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow);
 }
 .pstrip[hidden] { display: none; }
+.pin { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-5); align-items: center; }
 .pstrip:not([hidden]) + .transport { padding-top: var(--sp-8); }
 /* the parts as a stepper: round chips on a line, the ones already shown dotted */
 .pchips { position: relative; display: flex; gap: 10px; }
@@ -876,15 +876,18 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .prow .eq-f, .prow .eq-s { font-size: var(--fs-sm); }
 .prow .m-sub, .prow .m-sup { font-size: max(13px, .8em); }
 .pgo .pnext { flex: none; padding: 0 var(--sp-5); }
-@media (max-width: 680px) {
-  .pstrip { grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-3); padding: var(--sp-3); }
+@media (max-width: 680px) { .pstrip { padding: var(--sp-3); } }
+/* a narrow strip — a phone, or the stage beside the Display panel — stacks:
+   the chips and the next button on one row, the part under them */
+@container pstrip (max-width: 620px) {
+  .pin { grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-3); }
   .pchips { overflow-x: auto; }
   .pnow { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr); }
   .pnow > .pans { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 4px; }
   .pgo { grid-column: 2; grid-row: 1; }
   .pgo .pnext { min-height: 44px; padding: 0 var(--sp-4); }
-  .plist { display: none; }
 }
+@container pstrip (max-width: 360px) { .plist { display: none; } }
 /* the part on show heads the working panel, and its step is lit */
 .pcardw { border-left: 3px solid var(--mark); background: color-mix(in srgb, var(--mark) 10%, var(--card)); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4); }
 .pcardw-h { margin: 0; font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.45; }
