@@ -70,6 +70,7 @@ A kit is an object with:
 | `jump` — `js/kits/jump.js` (engine: journey) | `parachute-stages` |
 | `twoplane` — `js/kits/twoplane.js` | `two-in-a-plane` |
 | `models` — `js/kits/models.js` (engine: journey) | `three-models` |
+| `river` — `js/kits/river.js` | `across-the-river` (engine js/core/river.js; stage js/render/river.js: a river from above, a steered boat, the velocity triangle) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
 | `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
