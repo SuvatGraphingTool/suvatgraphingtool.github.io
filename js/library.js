@@ -357,11 +357,12 @@ export const LIBRARY = [
     note: 'A projectile from level ground. Up, it is back on the ground after twice u sin θ over g; across, the range is u cos θ times that. At the top it stops rising, which gives the greatest height. Asking when the height beats the range, u and g cancel and it comes down to tan θ against 4: every angle above about 76° goes higher than it goes far, however hard it is thrown. A faint fan of arcs at other angles shows the change.',
     params: { u: 20, theta: 80, g: 9.8 },
     place: 'A park, with a ball launcher',
+    reader: 'The paper gives no numbers: use the example throw, 20 metres a second at 80 degrees, and read the angles from the working.',
     example: { u: 20, theta: 80, g: 9.8 },
     parts: [
       { label: 'a', kind: 'show', ask: 'Show that $R = (2u^2 sin theta cos theta)/g$ — and find $R$ for the throw drawn.', find: 'R', sym: 'R', unit: 'm', dp: 2, at: 'end', step: 'range' },
       { label: 'b', kind: 'angle', ask: 'For which acute angles is the greatest height more than the range?',
-        find: 'thStar', sym: 'theta_min', unit: '°', dp: 1, at: 'end', step: 'higher than it goes far', paper: 76.0, tol: 0.05 },
+        find: 'thStar', sym: 'theta', rel: '>', suffix: '°', dp: 1, at: 'end', step: 'higher than it goes far', paper: 76.0, tol: 0.05 },
     ],
     sources: [
       { board: 'OCR MEI', paper: 'H640/01', session: 'Jun 2023', q: '15', part: 'all' },

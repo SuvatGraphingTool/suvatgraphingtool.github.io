@@ -1,7 +1,7 @@
 // heightrange.js — the stage for "higher than it goes far": a launcher on a
 // park's level ground, side on at one scale both ways; faintly, the arcs at
 // 15°, 30°, 45°, 60° and 75° at the same speed; the arc at the threshold angle
-// dashed and named; the throw itself, flown strongly, with its greatest height
+// in gold and named; the throw itself, flown strongly, with its greatest height
 // and its range as brackets in the displacement hue, so the two lengths the
 // question compares stand side by side. The ball's velocity: across dashed,
 // up solid (rule 2). Dust where it lands.
@@ -72,7 +72,7 @@ export function render(canvas, cam, o) {
   grass(g, 0, w, oy, h, { seed: 17 });
   nearGrass(g, 0, w, oy, h, 31);
 
-  // ── the fan, faintly, each named at its top; the threshold dashed
+  // ── the fan, faintly, each named at its top; the threshold in gold
   const path = (a, n = 90) => { const out = []; for (let i = 0; i <= n; i++) { const q = a.pos((i / n) * a.tMax); out.push({ x: X(q.x), y: Y(q.y) }); } return out; };
   for (const a of f.fan) {
     stroke(g, path(a), { color: withAlpha(P.ink, 0.6), width: 1.2, alpha: 0.35 });
@@ -80,9 +80,9 @@ export function render(canvas, cam, o) {
     L.add(T`${num(a.theta, 0)}°`, X(top.x), Y(top.y) - 10, { color: P.muted, align: 'center', pri: 3, size: 13 });
   }
   const sp = path(f.star);
-  stroke(g, sp, { color: P.mark, width: 2, dash: [6, 5] });
+  stroke(g, sp, { color: P.mark, width: 2.2, alpha: 0.85 });
   // on a phone the threshold's top is under the readouts: it is named in the corner instead
-  if (phone) L.add(`dashed: ${num(f.thStar, 1)}°`, w - 12, area.top + 60, { color: P.mark, align: 'right', pri: 10, size: 13, weight: 700 });
+  if (phone) L.add(`gold arc: ${num(f.thStar, 1)}°`, w - 12, area.top + 60, { color: P.mark, align: 'right', pri: 10, size: 13, weight: 700 });
   else { const top = f.star.top; L.add( `${num(f.thStar, 1)}°, height ${f.ratio === 1 ? '=' : `= ${num(f.ratio, 2, { trim: true })} ×`} range`, X(top.x) + 12, Y(top.y) - 4, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 }); }
 
   // ── the throw: launcher, path, ball, velocity

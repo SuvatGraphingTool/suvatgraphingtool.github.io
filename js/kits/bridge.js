@@ -50,7 +50,7 @@ export const bridge = {
       { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax: f.tMax, t, series: [
         { label: 'ball across', tag: T`x`, fn: (tt) => f.pos(tt).x, color: P.disp, dash: [6, 4] },
         { label: 'ball up', tag: T`y`, fn: (tt) => f.pos(tt).y, color: P.disp, dash: null },
-        { label: 'runner', tag: T`"runner"`, fn: f.runner, color: P.second, dash: [2, 4] },
+        { label: 'runner', tag: T`x_R`, fn: f.runner, color: P.second, dash: [2, 4] },
       ] },
       { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [
         { label: 'across', tag: T`v_x`, fn: (tt) => f.vel(tt).x, color: P.vel, dash: [6, 4] },

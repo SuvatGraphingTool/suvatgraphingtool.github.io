@@ -104,7 +104,8 @@ export function render(canvas, cam, o) {
   tarmac(g, 0, w, oy, { depth: road });
   grass(g, 0, w, oy + road, h, { seed: 9 });
   for (const lx of [-3.0, f.xCatch + 2.3]) lampPost(g, X(lx), oy, k * 4.5, { dir: s });
-  footbridge(g, X, Y, k, -1.5, 1.1, deck, s);
+  // the thrower stands at the parapet on the side she throws, so a throw downwards clears the deck
+  footbridge(g, X, Y, k, -2.4, 0.25, deck, s);
 
   // ── the thrower: her hand at the point of projection, the ball in it until the throw
   thrower(g, X(0) - s * hand.x, Y(deck), H, P, { dir: s, pose: 1, aim: clamp(f.alpha, -60, 80) });

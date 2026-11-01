@@ -62,7 +62,7 @@ export function solveHeightRange(k = {}) {
   ];
   const notes = [
     `It goes higher than ${kTxt ? `${d3(kk)} times ` : ''}its range for every angle from ${num(thStar, 1)}° up to 90°: ${M`u`} and ${M`g`} cancel, so the answer is the same however hard it is thrown.`,
-    `At ${num(th, 1)}° and ${M`${d3(u)} [m s^-1]`} it rises ${M`${d3(H)} [m]`} and lands ${M`${d3(R)} [m]`} away, so its greatest height is ${higher ? 'more than' : Math.abs(H - kk * R) < 1e-9 ? 'exactly' : 'less than'} ${kTxt ? `${d3(kk)} times ` : ''}its range.`,
+    `At ${d3(th)}° and ${M`${d3(u)} [m s^-1]`} it rises ${M`${d3(H)} [m]`} and lands ${M`${d3(R)} [m]`} away, so its greatest height is ${higher ? 'more than' : Math.abs(H - kk * R) < 1e-9 ? 'exactly' : 'less than'} ${kTxt ? `${d3(kk)} times ` : ''}its range.`,
   ];
   const f0 = flight({ u, theta: th, h: 0, g });
   const arc = (a) => { const f = flight({ u, theta: a, h: 0, g }); return { theta: a, R: f.range, H: f.apexHeight, pos: f.pos, tMax: f.tFlight, top: f.pos(f.tApex) }; };

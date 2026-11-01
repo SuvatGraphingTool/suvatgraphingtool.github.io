@@ -68,7 +68,7 @@ export const heightrange = {
   ending(s) {
     return {
       eyebrow: 'Height against range',
-      title: `Higher than it goes far for every angle above ${num(s.thStar, 1)}°.`,
+      title: `Higher than ${s.ratio === 1 ? 'its range' : `${num(s.ratio, 2, { trim: true })} times its range`} for every angle above ${num(s.thStar, 1)}°.`,
       body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}`,
       real: true,
     };

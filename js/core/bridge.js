@@ -53,7 +53,7 @@ export function solveBridge(k = {}) {
   ];
   const notes = [];
   notes.push(`The runner and the ball start level across and meet at the catch, so across the ball keeps pace with the runner: its horizontal velocity is the runner’s ${M`${d3(V)} [m s^-1]`}.`);
-  notes.push(`Thrown at ${M`${d3(u)} [m s^-1]`}, ${num(Math.abs(alpha), 1)}° ${alpha >= 0 ? 'above' : 'below'} the horizontal, it is caught ${M`${d3(snap(V * T))} [m]`} along the road.`);
+  notes.push(`The runner catches it ${M`${d3(snap(V * T))} [m]`} along the road from the bridge.`);
   const top = uy > 0 ? snap(uy * uy / (2 * g)) : 0, tTop = uy > 0 ? snap(uy / g) : 0;
   if (uy > 0 && T > tTop) notes.push(`It rises ${M`${d3(top)} [m]`} above the point of projection, at ${M`t = ${d3(tTop)} [s]`}, before it comes down to the runner.`);
   // the twelve's projectile, from the point of projection (h = 0: heights are

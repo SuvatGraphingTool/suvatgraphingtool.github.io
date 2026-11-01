@@ -1001,7 +1001,8 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   const pick = (e) => {
     const { markers, scenario, traj, t, fired } = active();
     const m = cam._map;
-    if (!m) return null;
+    // a library stage's view (kitview.js) maps pointer to layout only: nothing on it is picked
+    if (!m || !m.sx) return null;
     const w = toWorld(e);
     if (!w) return null;
     const near = (px, py, r = 26) => Math.hypot(w.sxp - px, w.syp - py) < r;
