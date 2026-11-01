@@ -19,7 +19,16 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent var(--cr-lift), #000 calc(var(--cr-lift) + 24%));
   mask-image: linear-gradient(to bottom, transparent var(--cr-lift), #000 calc(var(--cr-lift) + 24%));
 }
-.cr-snap { filter: blur(22px) saturate(1.4) brightness(1.04); transform: scale(1.08); background: var(--surface); }
+/* the copy sits on a warm wash, so before the stage has drawn the veil is
+   never a blank box; the wash is masked with it, so it lifts with it */
+.cr-snap { filter: blur(22px) saturate(1.4) brightness(1.04); transform: scale(1.08); background:
+  radial-gradient(80% 70% at 25% 30%, rgba(255,190,150,.55), transparent 70%),
+  radial-gradient(70% 60% at 80% 75%, rgba(120,160,180,.45), transparent 70%),
+  linear-gradient(180deg, #f6d9c8, #cfdde3); }
+:root:not([data-theme='light']) .cr-snap { background:
+  radial-gradient(80% 70% at 25% 30%, rgba(150,80,60,.5), transparent 70%),
+  radial-gradient(70% 60% at 80% 75%, rgba(50,80,95,.5), transparent 70%),
+  linear-gradient(180deg, #2b2226, #1c2428); }
 .cr-blur { background: color-mix(in srgb, var(--surface) 26%, transparent); }
 .cmp-reveal.is-lifting { --cr-lift: 110%; transition: --cr-lift 1100ms cubic-bezier(.45,.05,.25,1), opacity 400ms ease 900ms; opacity: 0; }
 

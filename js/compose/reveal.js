@@ -59,8 +59,16 @@ export function reveal(wrap, R, { per = 420 } = {}) {
   // the veil is the scene itself, blurred: a copy of the stage's canvas,
   // taken again while the stage settles into its new size
   const snap = el.querySelector('.cr-snap'), src = wrap.querySelector('canvas');
+  // a canvas caught mid-resize is blank: such a copy is skipped, never kept
+  const drawn = () => {
+    try {
+      const d = src.getContext('2d').getImageData(0, 0, src.width, src.height).data;
+      for (let i = 3; i < d.length; i += 4 * 997) if (d[i] > 0) return true;
+    } catch { return true; }
+    return false;
+  };
   const copy = () => {
-    if (!src?.width) return;
+    if (!src?.width || !drawn()) return;
     snap.width = src.width; snap.height = src.height;
     snap.getContext('2d').drawImage(src, 0, 0);
   };
