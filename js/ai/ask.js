@@ -401,8 +401,5 @@ function fileBase64(file) {
 }
 
 
-/** The sparkle: one four-pointed star and a small one beside it. */
-export const SPARK = `<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true">
-  <path d="M10 2.5c.55 4.6 2.9 6.95 7.5 7.5-4.6.55-6.95 2.9-7.5 7.5-.55-4.6-2.9-6.95-7.5-7.5 4.6-.55 6.95-2.9 7.5-7.5Z" fill="currentColor"/>
-  <path d="M18.5 13.5c.25 2.05 1.25 3.05 3.3 3.3-2.05.25-3.05 1.25-3.3 3.3-.25-2.05-1.25-3.05-3.3-3.3 2.05-.25 3.05-1.25 3.3-3.3Z" fill="currentColor" opacity=".85"/>
-</svg>`;
+/** The Spark: the AI's mark, drawn once in index.html as the #spark symbol. */
+export const SPARK = '<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><use href="#spark"/></svg>';
