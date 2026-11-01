@@ -123,6 +123,8 @@ this library: *covered* names the one of the twelve that does it.
 | 87 | WJEC | 1300U40-1 Unit 4 | Jun 2023 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-4/June%202023%20QP%20-%20Unit%204%20WJEC%20Maths%20A-level.pdf) | Kicked at 23 m/s, 18° at a wall 8 m away with a window 1.1–2.2 m up; does it strike it, does it break at 21 m/s? | 9.8 | **built**: `over-the-wall`, a wall it hits with a window (1.94 m up, 22.2 m s⁻¹: strikes it and breaks it) |
 | 88 | WJEC | 2300U20-1 Unit 2 (AS) | Jun 2018 | 11 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-2/June%202018%20QP%20-%20Unit%202%20WJEC%20Maths%20AS-level.pdf) | Steady 15 m/s for 2 min, rest at B in 12 s; reverses 2 m/s² for 8 s then slows at 1.6 to rest at C | – | **built**: `stage-by-stage` (AB = 1890 m; B to C in 18 s) |
 | 89 | WJEC | 2300U20-1 Unit 2 (AS) | Jun 2019 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/WJEC/Unit-2/June%202019%20QP%20-%20Unit%202%20WJEC%20Maths%20AS-level.pdf) | Kicked up from 0.9 m to 10.9 m: u = 14; time to the ground; in an 11.5 m sports hall, does a lighter ball hit the ceiling? | 9.8 | **built**: `under-the-ceiling` (u = 14; 2.9 s; turns 0.6 m below the ceiling) |
+| 90 | AQA | 7357/2 | Jun 2024 | 16 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202024%20QP.pdf) | Two apples at rest on different branches fall at the same instant; first lands at 0.5 s, second 0.1 s later; show the vertical distance between them is about 54 cm | 9.8 | **built** → `two-apples` |
+| 91 | AQA | 7357/2 | Jun 2024 | 19 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202024%20QP.pdf) | A toy shoots balls up at 7 m/s: verify a 2.5 m greatest height; then between 0° and 11° from the vertical, the least greatest height k | 9.8 | **covered** by the twelve: `up` gives the 2.5 m greatest height straight up; `arc` at 79° to the horizontal (11° from the vertical) gives 2.41 m — the least, since the vertical part of 7 m s⁻¹ is smallest at the widest angle |
 
 ## Built, and why it is built the way it is
 
@@ -403,6 +405,33 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `two-apples` — Two apples, one tree
+
+**Papers.** AQA 7357/2 Jun 2024 Q16 (two apples at rest on different branches
+fall at the same instant; the first lands after 0.5 s, the second 0.1 s
+later: they hung 1.225 m and 1.764 m up, 0.539 m — about 54 cm — apart).
+
+**Why the twelve cannot.** They drop one thing from a height they are given;
+here two fall together, the paper gives their times to the ground, and the
+answer is the distance between the heights they hung at. `pair-vertical`
+takes heights and asks when two meet; these never meet.
+
+**How it is solved.** js/core/apples.js: for each apple s = ½gt² from rest
+(or t = √(2h/g) from a height), the second's time as the first's plus "later",
+and d = s₂ − s₁; v = gt at each landing.
+
+**The stage.** An orchard side on, to scale: an apple tree whose two limbs
+reach out over the apples' twigs, a leafy crown with more apples in it, park
+trees behind; each apple falls straight down from its twig, its fall so far
+dashed, its velocity solid (vertical), landing in the grass with dust and a
+ring; the heights and d as brackets, d in centimetres as the paper asks.
+
+**Parts.** One: show that d ≈ 54 → the engine's `d` (0.539 m) and `dCm` (53.9).
+
+**Graphs.** Height–time for both (the gap constant until the first lands);
+velocity–time, the two lines on top of each other until the first stops;
+acceleration −g for each until it lands.
 
 ### `in-the-air-over-a-wall` — In the air for a time, over a wall
 

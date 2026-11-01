@@ -70,6 +70,7 @@ A kit is an object with:
 | `jump` — `js/kits/jump.js` (engine: journey) | `parachute-stages` |
 | `twoplane` — `js/kits/twoplane.js` | `two-in-a-plane` |
 | `models` — `js/kits/models.js` (engine: journey) | `three-models` |
+| `apples` — `js/kits/apples.js` | `two-apples` (engine js/core/apples.js; stage js/render/apples.js: an orchard, an apple tree to scale, a shaded apple with a stem and leaf) |
 | `flighttime` — `js/kits/flighttime.js` | `in-the-air-over-a-wall` (engine js/core/flighttime.js; stage, readouts and graphs borrowed from `clears`, in the letter d) |
 | `bounce` — `js/kits/bounce.js` | `bounce`, `back-past-the-start` (the rebound found from a later time: `T` with `y`) |
 

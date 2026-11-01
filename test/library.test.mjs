@@ -1444,6 +1444,21 @@ group('vectors-ij: Edexcel 9MA0/32 Jun 2023 Q4', () => {
   ok(/againatt=10s,wherey=10\b/.test(txt.replace(/\s/g, '')), '(b), (c) the later pass of x = 4 is at T = 10 s, where c = 10', txt);
 });
 
+group('Two apples, one tree: AQA 7357/2 Jun 2024 Q16', async () => {});
+{
+  const { solveApples, applesWorking } = await import('../js/core/apples.js');
+  const s = solveApples({ A: { t: 0.5 }, later: 0.1, g: 9.8 });
+  ok(s.ok && near(s.A.h, 1.225, 1e-9) && near(s.B.h, 1.764, 1e-9), 'they hung 1.225 m and 1.764 m up', s.reason);
+  ok(near(s.d, 0.539, 1e-9), 'd = 0.539 m: about 54 cm');
+  ok(near(s.f.posB(0.3) - s.f.posA(0.3), s.d, 1e-9), 'falling together, the gap stays d until the first lands');
+  ok(s.f.posA(0.55) === 0 && near(s.f.tMax, 0.6, 1e-9), 'the first stays on the ground; the run ends as the second lands');
+  const h = solveApples({ A: { h: 1.225 }, B: { h: 1.764 }, g: 9.8 });
+  ok(h.ok && near(h.A.t, 0.5, 1e-9) && near(h.B.t, 0.6, 1e-9), 'from the heights, the times back');
+  ok(applesWorking(s)[0].rows.length === 3, 'the working: each fall, then d');
+  ok(!solveApples({ A: { t: 0.5 }, B: { t: 0.6 }, later: 0.1, g: 9.8 }).ok, 'a time and a “later” for the second together are refused');
+  ok(!solveApples({ A: { t: -1 }, B: { t: 0.6 }, g: 9.8 }).ok && !solveApples({ B: { t: 0.6 }, g: 9.8 }).ok, 'a negative or missing time is refused');
+}
+
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 
