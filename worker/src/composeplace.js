@@ -77,6 +77,7 @@ const ANGLE_SAID = /°|\bdegrees?\b|\bangle\b|horizontal|vertical|downward|strai
 // "no angle given", "angle not stated", "an unspecified angle": none given
 const NO_ANGLE = /\b(no|without an?|not given an?)\s+(launch\s+)?angle\b[^.,;]*|\bangle\s+(is\s+)?(not\s+(given|stated|known)|unknown|unspecified|unstated)\b|\b(an?\s+)?(unspecified|unknown|unstated)\s+angle\b/gi;
 const LAUNCHES = new Set(['dropped', 'down', 'platform', 'platform-angle', 'platform-down', 'up', 'arc']);
+const LANDS_ON = /\b(?:hits?|lands?(?: on| in)?|onto|into|falls? (?:on|into)|reaches|bottom(?: of the \w+)? is|below (?:it )?is|at the (?:bottom|foot)(?: of the \w+)?(?: is)?)\s+(?:the\s+|a\s+)?(ground|grass|rocks?|land|sea|ocean|water|river|road|street|beach|sand)\b/i;
 const isNum = (v) => typeof v === 'number' && isFinite(v);
 
 export function toFigure(x, words = '') {
@@ -84,6 +85,9 @@ export function toFigure(x, words = '') {
   const text = `${words} ${x.summary || ''}`;
   const out = { ...x };
   if (!out.who) { const w = whoIn(text); if (w) out.who = w; }
+  // what it lands on, when the words say and the model did not: "hits the
+  // ground", "at the bottom is the GROUND, not sea", "lands on the road"
+  if (!out.below) { const b = String(words || text).match(LANDS_ON); if (b) out.below = b[1].toLowerCase(); }
   // only a person jumps: what moves says so, not a bystander in the sentence
   if (figureOf(out.who).figure !== 'diver' || !JUMP.test(text)) return out;
   const said = String(words || text).replace(NO_ANGLE, '');

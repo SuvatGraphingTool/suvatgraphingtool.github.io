@@ -54,7 +54,7 @@ export const height = {
     if (!solved?.ok) return [];
     // the twelve's working speaks of the ground and the launch point: here it
     // is the place's own (the sea, the river, the water in the well)
-    const Pl = PLACES[solved.place], from = Pl.from || 'where it was thrown from';
+    const Pl = solved.Pl || PLACES[solved.place], from = Pl.from || 'where it was thrown from';
     const say = (x) => (typeof x === 'string' ? x.replace(/\bthe launch point\b/g, from).replace(/\bthe ground\b/g, Pl.below) : x);
     const out = buildWorking(solved.f, t).map((sec) => ({ ...sec, title: say(sec.title), note: say(sec.note),
       rows: sec.rows.map((r) => ({ ...r, f: say(r.f), s: say(r.s), r: say(r.r) })) }));
@@ -62,7 +62,7 @@ export const height = {
     // of flight is not then worked back from it
     const kept = solved.foundH ? out.filter((x) => !/time of flight/i.test(String(x.title))) : out;
     if (solved.foundH) kept.push({ title: `The height, from the time in the air`, rows: solved.hRows,
-      note: `Measured from where it was thrown, up positive, it ends ${M`${tr(solved.h)} [m]`} below that point: so it started that high above ${PLACES[solved.place].below}.` });
+      note: `Measured from where it was thrown, up positive, it ends ${M`${tr(solved.h)} [m]`} below that point: so it started that high above ${(solved.Pl || PLACES[solved.place]).below}.` });
     out.length = 0; out.push(...kept);
     if (solved.topRows.length) out.unshift({ title: 'The speed, from the time to the top', rows: solved.topRows,
       note: `At the top of its path it has stopped rising: the vertical part of its velocity is zero.` });
@@ -75,7 +75,7 @@ export const height = {
   render: stage.render,
 
   hud(f, t) {
-    const r = f.pos(t), v = f.vel(t), below = PLACES[f.place].below;
+    const r = f.pos(t), v = f.vel(t), below = (f.Pl || PLACES[f.place]).below;
     return {
       left: [
         { k: `Height above ${below}`, v: num(r.y, 2), unit: 'm', hue: 'disp' },

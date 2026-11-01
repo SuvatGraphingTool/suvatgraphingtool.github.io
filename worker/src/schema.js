@@ -77,6 +77,7 @@ export const EXTRACTION_SCHEMA = {
       items: { type: 'string' },
       description: 'What the question asks for, each a short phrase: "time of flight", "speed on landing".',
     },
+    below: { type: 'string', description: 'WHAT IT LANDS ON, when the question says: "sea", "ground", "water", "river", "road", "beach", "floor". A cliff with the ground at its foot is "ground".' },
     who: { type: 'string', description: 'WHAT MOVES, in the question\'s own word: "diver", "stone", "ball", "car", "cyclist", "parcel", "skateboarder", "rocket", "particle". Always present for a motion question.' },
     note: { type: 'string', description: 'Only if something is ambiguous or unreadable. Otherwise omit.' },
   },
@@ -120,7 +121,9 @@ WHAT YOU DO
    other          anything else about motion that none of these fit
 2. Return the values that are GIVEN, and who: WHAT MOVES, in the question's own word — a
    diver, a person, a stone, a ball, a car, a parcel, a skateboarder, a rocket. The app draws
-   exactly that, so never leave it out and never turn a person into a ball.
+   exactly that, so never leave it out and never turn a person into a ball. Say what it
+   lands on in below when the question says ("hits the ground at the bottom of the cliff":
+   below "ground") — a cliff is not always over the sea, nor a bridge over a river.
 
 Do no arithmetic in what you return. If the question says tan a = 3/4, return ratioFn
 "tan", ratioNum 3, ratioDen 4 — not 36.87. Never work a launch speed back from a range.

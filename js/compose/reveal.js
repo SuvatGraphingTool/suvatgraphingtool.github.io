@@ -12,16 +12,16 @@
 // The pieces named are the ones the recipe really used (js/compose/
 // registry.js); the veil claims nothing else. Reduced motion: a short fade.
 
-import { BACKDROPS, FIGURES, EFFECTS } from './registry.js';
+import { FIGURES, EFFECTS, placeOf } from './registry.js';
 
 /** The Spark, Ask Suvat's mark: the one `#spark` symbol in index.html. */
 const SPARK = '<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><use href="#spark"/></svg>';
-const BELOW = { sea: 'the sea', river: 'the river', ground: 'the ground', road: 'the road', rails: 'the track', floor: 'the floor' };
+const BELOW = { sea: 'the sea', river: 'the river', pool: 'the pool', ground: 'the ground', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor' };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 /** What the veil says, step by step: [{ say, chip }], from the recipe. */
 export function steps(R) {
-  const B = BACKDROPS[R.backdrop], out = [];
+  const B = placeOf(R), out = [];
   const bare = (s) => s.replace(/^(an?|the) /i, '');
   out.push({ say: `Placing ${B.label.toLowerCase()}`, chip: bare(B.label.toLowerCase()) });
   const below = BELOW[B.below];

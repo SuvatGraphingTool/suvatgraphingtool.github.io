@@ -218,9 +218,29 @@ console.log('\nThe Worker reads a jump with no angle as straight up, and says so
   ok(top.recipe.backdrop === 'board' && top.parts[0].answer === 'height2', 'the twelve’s “rise” survives From a height to the composed height above the board');
 }
 
+console.log('\nWhat it lands on follows the question');
+{
+  const { toFigure } = await import('../worker/src/composeplace.js');
+  const { toPlace } = await import('../worker/src/place.js');
+  const w = 'ball kicked up from a cliff at 8 m/s, then hits the ground. at the bottom is the GROUND, not sea, and its 50 m high';
+  const x = toPlace(toFigure({ understood: true, scenario: 'up', h: 50, u: 8, summary: 'A ball is kicked up from a 50 m cliff at 8 m/s.', who: 'ball' }, w), w);
+  ok(x.library === 'from-a-height' && x.below === 'ground', 'the Worker reads the ground from the words and carries it along');
+  const f = fromReading(x);
+  ok(f && f.recipe.backdrop === 'cliff' && f.recipe.below === 'ground' && f.recipe.objects[0].figure === 'ball', 'a ball off a cliff over the ground: composed, the ball kept');
+  const c = compose(f.recipe), sv = c.kit.solve(c.kit.read(c.boxes));
+  ok(/hits the ground at the foot of the cliff/.test(sv.notes.join(' ')) && !/sea/.test(sv.notes.join(' ')), 'it hits the ground, and nothing says sea');
+  ok(c.scenario.recipe.effects[0] === 'dust', 'dust where it lands, not a splash');
+  const sea = toPlace(toFigure({ understood: true, scenario: 'platform', h: 30, u: 12, summary: 'A stone is thrown from a cliff into the sea.', who: 'stone' }, 'a stone thrown from a 30 m cliff into the sea'), 'a stone thrown from a 30 m cliff into the sea');
+  ok(fromReading(sea) === null, 'a cliff over the sea stays From a height’s own');
+  const road = check({ backdrop: 'bridge', below: 'road', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 12, u: 5, theta: 0 } });
+  ok(road.recipe.below === 'road' && road.recipe.effects[0] === 'dust', 'a bridge over a road lands in dust');
+  ok(!('below' in check({ backdrop: 'tower', below: 'sea', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 12 } }).recipe), 'a surface a place cannot stand over is the place’s own');
+  ok(check({ backdrop: 'bridge', below: 'water', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 12 } }).recipe.below === undefined, 'water under a bridge is its river, as drawn');
+}
+
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);
-  ok(s[0] === 'Placing a sea cliff' && s.includes('Bringing in a car') && s.includes('Adding a splash'), s.join(' / '));
+  ok(s[0] === 'Placing a cliff' && s.includes('Laying out the sea') && s.includes('Bringing in a car') && s.includes('Adding a splash'), s.join(' / '));
   ok(steps(check({ ...CAR, backdrop: 'road', numbers: { h: 3, u: 6, theta: 0 } }).recipe).some((x) => x.say === 'Adding dust'), 'a road gets dust, not a splash');
 });
 

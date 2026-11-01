@@ -1279,6 +1279,8 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
       { ...base, backdrop: 'tower', objects: [{ figure: 'stone' }], numbers: { u: 15, theta: 90, t: 6 } },
       { ...base, backdrop: 'ground', objects: [{ figure: 'ball' }], numbers: { u: 10, theta: 90, t: 1.5 } },
       { ...base, backdrop: 'board', objects: [{ figure: 'diver' }], numbers: { h: 10, u: 7, theta: 90 } },
+      { ...base, backdrop: 'cliff', below: 'ground', objects: [{ figure: 'ball' }], numbers: { h: 50, u: 8, theta: 90 } },
+      { ...base, backdrop: 'bridge', below: 'road', objects: [{ figure: 'stone' }], numbers: { h: 12, u: 5, theta: 0 } },
       { ...base, backdrop: 'air', objects: [{ figure: 'parcel' }], numbers: { h: 80, u: 0, theta: -90 } },
       { ...base, backdrop: 'air', objects: [{ figure: 'parcel' }], numbers: { u: 0, theta: -90 } },
       { ...base, backdrop: 'road', objects: [{ figure: 'skateboarder' }], numbers: { h: 2, u: 4, theta: 0 } },

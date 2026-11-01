@@ -25,9 +25,9 @@
     top in a title ("A car off a cliff"); `only` lists the figures it takes
     (an apple falls from a tree; a car does not). */
 export const BACKDROPS = {
-  cliff:   { label: 'A sea cliff', what: 'a rock cliff with the sea below it', place: 'cliff', below: 'sea', edge: true, at: 'a cliff' },
-  tower:   { label: 'A tower', what: 'a stone tower standing on level ground, fields behind', place: 'tower', below: 'ground', edge: true, at: 'a tower' },
-  bridge:  { label: 'A bridge', what: 'a stone arch bridge over a river', place: 'bridge', below: 'river', edge: true, at: 'a bridge' },
+  cliff:   { label: 'A cliff', what: 'a rock cliff with the sea below it (or the ground, or a beach)', place: 'cliff', below: 'sea', edge: true, at: 'a cliff', belows: ['sea', 'ground', 'beach'] },
+  tower:   { label: 'A tower', what: 'a stone tower standing on level ground, fields behind', place: 'tower', below: 'ground', edge: true, at: 'a tower', belows: ['ground', 'road'] },
+  bridge:  { label: 'A bridge', what: 'a stone arch bridge over a river (or over a road)', place: 'bridge', below: 'river', edge: true, at: 'a bridge', belows: ['river', 'road'] },
   house:   { label: 'A house and a fence', what: 'a house with a garden fence: from a window or the roof', place: 'house', below: 'ground', edge: true, at: 'a house' },
   ground:  { label: 'Level ground', what: 'open grass with fields and trees behind', place: 'ground', below: 'ground' },
   sea:     { label: 'The open sea', what: 'open water to the horizon', place: 'water', below: 'sea' },
@@ -184,7 +184,28 @@ export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bou
 export const MOMENTS = { pair: 'flash', bounce: 'ring' };
 
 /** The effect a landing makes on what is below, when the recipe names none. */
-export const LANDS_WITH = { sea: 'splash', river: 'splash', pool: 'splash', ground: 'dust', road: 'dust', rails: 'dust', floor: 'ring' };
+export const LANDS_WITH = { sea: 'splash', river: 'splash', pool: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring' };
+
+/** What it lands on, in a question's words, as a backdrop's `below`. */
+const UNDER = [
+  [/\b(ground|grass|rocks?|land|field|earth|floor of the valley|valley)\b/, 'ground'],
+  [/\b(sea|ocean)\b/, 'sea'], [/\b(river|stream|canal)\b/, 'river'], [/\b(road|street|tarmac|motorway)\b/, 'road'],
+  [/\b(beach|sand)\b/, 'beach'], [/\b(water|lake|pond)\b/, 'water'],
+];
+/**
+ * The surface below a backdrop, from the question's word for it: one the
+ * backdrop can stand over (`belows`), or null for its own. "Water" is the sea
+ * under a cliff and the river under a bridge.
+ */
+export function belowOf(backdrop, said) {
+  const B = BACKDROPS[backdrop], w = String(said ?? '').toLowerCase();
+  if (!B?.belows || !w) return null;
+  let hit = UNDER.find(([re]) => re.test(w))?.[1] ?? null;
+  if (hit === 'water') hit = B.belows.includes('sea') ? 'sea' : B.belows.includes('river') ? 'river' : null;
+  return hit && B.belows.includes(hit) && hit !== B.below ? hit : null;
+}
+/** A backdrop as a recipe has it: its own, with the surface below the recipe's. */
+export const placeOf = (r) => ({ ...BACKDROPS[r.backdrop], below: r.below || BACKDROPS[r.backdrop].below });
 
 /* ── what moves, as the question says it ────────────────────────────────
    The reader names what moves in the question's own word (`who`): "diver",

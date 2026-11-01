@@ -154,6 +154,7 @@ function placed(x, words) {
   // what moves, and what was assumed about it, go along with it (composeplace.js)
   if (x.who) out.who = x.who;
   if (x.assumed) out.assumed = x.assumed;
+  if (x.below) out.below = x.below;
   if (Array.isArray(x.parts)) out.parts = renamed(x.parts);
   return out;
 }

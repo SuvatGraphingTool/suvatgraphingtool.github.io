@@ -44,8 +44,18 @@ export const PLACES = {
   air:     { word: 'point it was let go', top: 'the point it is let go from', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', from: 'where it was let go' },
 };
 
+/** What it lands on, when the question says it is not the place's own: a
+    cliff with the ground at its foot, a bridge over a road. */
+export const BELOW = {
+  ground: { below: 'the ground', lands: 'hits the ground' },
+  sea:    { below: 'the sea', lands: 'hits the sea' },
+  river:  { below: 'the river', lands: 'hits the water' },
+  road:   { below: 'the road', lands: 'hits the road' },
+  beach:  { below: 'the beach', lands: 'lands on the beach' },
+};
+
 /**
- * @param k { place, h, u, theta, s, v, t, g, level }
+ * @param k { place, h, u, theta, s, v, t, g, level, below? }
  *   h      the height of the cliff or tower top above the sea or ground
  *   s      how far out it lands (thrown at an angle); v the speed it lands at;
  *          t the time in the air — any of these may stand in for u
@@ -54,7 +64,7 @@ export const PLACES = {
 export function solveHeight(k0 = {}) {
   let k = k0;
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
-  const place = PLACES[k.place] ? k.place : 'cliff', Pl = PLACES[place];
+  const place = PLACES[k.place] ? k.place : 'cliff', Pl = { ...PLACES[place], ...(BELOW[k.below] || {}) };
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
   // the height may be left for the engine when the time in the air is given
   if (!have(k.h) && !have(k.t)) return fail(`Still needed: how high ${Pl.top} is above ${Pl.below} — or the time it takes to land, to find that height.`);
@@ -138,7 +148,7 @@ export function solveHeight(k0 = {}) {
   const found = [...(have(k0.tTop) ? [M`u = ${d(snap(f.params.u))} [m s^-1]`] : []), ...(!have(k0.h) ? [M`h = ${d(k.h)} [m]`] : [])];
   const derived = [...found, ...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
   if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}`);
-  f.place = place; f.level = level; f.vertical = straight;
+  f.place = place; f.Pl = Pl; f.level = level; f.vertical = straight;
   // a balloon carries on at the speed it gave the stone (rising or falling at
   // u, unaccelerated): where the basket is at t, for the stage to draw
   if (Pl.carried) f.carrier = (t) => f.params.h + f.uy * t;

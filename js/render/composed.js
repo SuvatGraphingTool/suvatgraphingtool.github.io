@@ -25,14 +25,14 @@
 //
 // Everything that moves is read from the engine's answer (rule 4).
 
-import { BACKDROPS, FIGURES as PIECES } from '../compose/registry.js';
+import { BACKDROPS, FIGURES as PIECES, placeOf } from '../compose/registry.js';
 import { dust, pulse, flash, squash } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, sig3, withAlpha } from './util.js';
 import { thrower, throwerHand, THROWER_MIN, ballAt, drawFigure, phaseFor, particle, fence, diver, DIVER_FEET, skateboarder, SKATE_FEET, parcel } from './figures.js';
 import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, tower, bridge, divingBoard, balloon, bigSplash, pebble, fitClear } from './heights.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
-import { grass, tarmac, railBed, floorboards, interior, water, stone, env, rng, softShadow } from './scenery.js';
+import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, env, rng, softShadow } from './scenery.js';
 import { T } from '../notation.js';
 
 const HUD = 250, HUD_H = 290;
@@ -75,8 +75,24 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
   // a stone wall to stand on, a jetty over the sea, or the ground itself
   const ledge = () => { if (H0 > 0 && !byHand) wall(g, -4, x0 + 2, top, oy, k); };
   switch (R.backdrop) {
-    case 'cliff': seaScene(g, w, h, horizon(0.2), phase); seaCliff(g, -4, x0, top, oy, { phase }); break;
-    case 'bridge': riverScene(g, w, h, horizon(0.16), phase); bridge(g, -4, x0, top, oy); break;
+    case 'cliff':
+      if (R.below === 'ground' || R.below === 'beach') {
+        // the same cliff, with dry land at its foot: fields to the horizon,
+        // grass or sand below, scree where the face meets it
+        fields(g, w, horizon(0.22), oy);
+        seaCliff(g, -4, x0, top, oy, { phase });
+        if (R.below === 'beach') sandGround(g, 0, w, oy, h); else grass(g, 0, w, oy, h);
+        scree(g, x0, oy, k);
+      } else { seaScene(g, w, h, horizon(0.2), phase); seaCliff(g, -4, x0, top, oy, { phase }); }
+      break;
+    case 'bridge':
+      if (R.below === 'road') {
+        // over a road: the verge, the carriageway, the bridge on its piers
+        fields(g, w, horizon(0.16), oy);
+        tarmac(g, 0, w, oy, { depth: clamp(0.6 * k, 12, 24), verge: h - oy });
+      } else riverScene(g, w, h, horizon(0.16), phase);
+      bridge(g, -4, x0, top, oy);
+      break;
     case 'tower': {
       fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
       const tw = clamp(H0 * 0.22 * k, 34, 80);
@@ -126,7 +142,7 @@ function launch(canvas, o) {
   const { ctx: g, w, h } = fitCanvas(canvas);
   const P = palette(), L = labels();
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  const B = BACKDROPS[R.backdrop], kind = R.objects[0].figure, piece = PIECES[kind];
+  const B = placeOf(R), kind = R.objects[0].figure, piece = PIECES[kind];
   const H0 = f.params.h, phone = w < 520, wet = WET.has(B.below);
   // a person throws it, unless it falls from a tree; small things are drawn
   // as themselves at the point, vehicles and people round it
@@ -357,7 +373,7 @@ function launch(canvas, o) {
   if (show.acceleration) arrow(g, bx, by, bx, by + 40, { color: P.acc, width: 2.4, head: 10 });
 
   // ── what it lands on, named on it
-  const name = { sea: 'the sea', river: 'the river', pool: 'the water', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';
+  const name = { sea: 'the sea', river: 'the river', pool: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);
@@ -374,7 +390,7 @@ function column(canvas, o) {
   const { ctx: g, w, h } = fitCanvas(canvas);
   const P = palette(), L = labels();
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  const B = BACKDROPS[R.backdrop], phone = w < 520, pair = R.engine === 'pair';
+  const B = placeOf(R), phone = w < 520, pair = R.engine === 'pair';
   // what moves, read off the engine: a height and an upward velocity at t
   const movers = pair
     ? ['A', 'B'].map((n, i) => ({ n, kind: R.objects[i].figure, at: (tt) => { const q = f.at(tt)[n]; return { y: q.x, v: q.v }; } }))
@@ -533,6 +549,21 @@ function column(canvas, o) {
 }
 
 /* ── pieces the composer needed and the library did not have ─────────── */
+
+/** Scree at a cliff's foot on dry land: fallen rocks, larger near the face,
+    lit from the left, so the face meets the ground rather than floating. */
+export function scree(g, x0, Y, k) {
+  const E = env(), r = rng(53), n = 14;
+  g.save();
+  for (let i = 0; i < n; i++) {
+    const d = r() ** 1.6, x = x0 - 6 + d * clamp(3 * k, 30, 110), R = clamp((1 - d) * 0.5 * k, 3, 14) * (0.6 + r() * 0.6);
+    softShadow(g, x + R * 0.3, Y + 1, R * 1.2, R * 0.3, 0.7);
+    const gr = g.createLinearGradient(x - R, Y - R, x + R, Y);
+    gr.addColorStop(0, E.night ? '#7b6f68' : '#b9ab9e'); gr.addColorStop(1, E.night ? '#4a403c' : '#7f7369');
+    g.fillStyle = gr; g.beginPath(); g.ellipse(x, Y - R * 0.45, R, R * 0.62, (r() - 0.5) * 0.6, 0, Math.PI * 2); g.fill();
+  }
+  g.restore();
+}
 
 /** Rings spreading out over the water from where something went in, one
     after another, flattened by the angle we see the surface at. */

@@ -20,7 +20,7 @@
 // Nothing here calculates (CLAUDE.md rule 4). The engine solves; this file
 // only says which engine, with which boxes.
 
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, figureOf } from './registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, figureOf, belowOf, placeOf } from './registry.js';
 import { toApp } from '../core/question.js';
 import { KITS } from '../kits/index.js';
 import { GRAVITY } from '../scenarios.js';
@@ -57,8 +57,10 @@ export function check(raw) {
   if (!E) return no(`There is no engine called “${clip(raw.engine, 30) || 'nothing'}”. The engines are: ${listOf(ENGINES)}.`);
   if (!E.ready) return no(`${Up(E.label)} is one of the app’s engines, but the composed stage does not draw it yet.`);
   const backdrop = word(raw.backdrop) || (E.view === 'side' ? 'ground' : '');
-  const B = BACKDROPS[backdrop];
-  if (!B) return no(`There is no backdrop called “${clip(raw.backdrop, 30)}”. The backdrops are: ${listOf(BACKDROPS)}.`);
+  if (!BACKDROPS[backdrop]) return no(`There is no backdrop called “${clip(raw.backdrop, 30)}”. The backdrops are: ${listOf(BACKDROPS)}.`);
+  // what it lands on, when the question says it is not the place's own
+  const below = belowOf(backdrop, raw.below);
+  const B = placeOf({ backdrop, below });
   // an engine whose motion ends on solid ground (a bounce, one thrown up from
   // the foot of the place) is not set over water
   if (E.below && !E.below.includes(B.below)) {
@@ -157,7 +159,7 @@ export function check(raw) {
   // bounce rings, a landing splashes or kicks up dust
   if (!effects.length && (MOMENTS[engine] || LANDS_WITH[B.below])) effects.push(MOMENTS[engine] || LANDS_WITH[B.below]);
 
-  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, engine, objects, numbers, effects, notes } };
+  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), engine, objects, numbers, effects, notes } };
 }
 
 /** "A car off a cliff" — a title for a recipe that brought none. */
@@ -194,7 +196,7 @@ function idOf(r) {
 export function compose(raw) {
   const c = check(raw);
   if (!c.ok) return c;
-  const r = c.recipe, E = ENGINES[r.engine], B = BACKDROPS[r.backdrop], base = KITS[E.kit];
+  const r = c.recipe, E = ENGINES[r.engine], B = placeOf(r), base = KITS[E.kit];
   const id = idOf(r), name = titleOf(r);
   const who = r.objects.map((o) => FIGURES[o.figure].label).join(' and ');
   // on Earth unless the question says otherwise — the reader leaves g out
@@ -209,7 +211,9 @@ export function compose(raw) {
     id,
     voice: { h: name, sub: `Composed by Ask Suvat from the app’s own pieces: ${B.label.toLowerCase()}, ${who}, ${E.label.toLowerCase()}. Change any number and the engine works it out again.` },
     rows: (base.rows || []).filter((row) => !(row.fields || []).some((f) => f.key === 'place')),
-    read: (vals) => base.read({ ...Object.fromEntries(Object.entries(vals).map(([k, v]) => [k, frac(v)])), place: boxes.place ?? vals.place }),
+    read: (vals) => ({ ...base.read({ ...Object.fromEntries(Object.entries(vals).map(([k, v]) => [k, frac(v)])), place: boxes.place ?? vals.place }),
+      // the surface below in the engine's words: a cliff over the ground hits the ground
+      ...(r.below ? { below: r.below } : {}) }),
     render: (canvas, cam, o) => stage.render(canvas, cam, { ...o, recipe: r }),
     // the landing plays out on the clock after the motion stops, and the
     // ending card waits for it
@@ -320,9 +324,16 @@ const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] != null).
 export function fromReading(x) {
   if (!x || typeof x !== 'object' || x.understood === false) return null;
   const m = figureOf(x.who);
-  if (!m.figure || (m.exact && ['ball', 'stone', 'particle'].includes(m.figure))) return null;
+  // From a height draws its places over their own surface (a cliff over the
+  // sea); a question that says otherwise ("the ground at the bottom") is
+  // composed, whatever moves — a ball thrown by its thrower included
+  const fromHeight = x.scenario === 'library' && x.library === 'from-a-height' && x.boxes && typeof x.boxes === 'object';
+  const under = fromHeight && HEIGHT_PLACES[x.boxes.place] ? belowOf(HEIGHT_PLACES[x.boxes.place], x.below) : null;
+  const small = !m.figure || (m.exact && ['ball', 'stone', 'particle'].includes(m.figure));
+  if (small && !under) return null;
+  const figure = m.figure || 'ball';
   let backdrop, numbers, keys;
-  if (x.scenario === 'library' && x.library === 'from-a-height' && x.boxes && typeof x.boxes === 'object') {
+  if (fromHeight) {
     backdrop = HEIGHT_PLACES[x.boxes.place];
     if (!backdrop) return null;
     numbers = pick(x.boxes, ['h', 'u', 'theta', 'v', 's', 't', 'tTop', 'level', 'g']);
@@ -342,7 +353,7 @@ export function fromReading(x) {
     keys = TWELVE_KEYS;
   } else return null;
   const notes = [];
-  if (!m.exact) notes.push(nearest(m));
+  if (m.figure && !m.exact) notes.push(nearest(m));
   const carrier = `${x.summary || ''} ${x.words || ''}`.match(CARRIER);
   if (backdrop === 'air' && carrier) notes.push(`Drawn let go from a balloon: there is no ${carrier[1].toLowerCase()} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);
   if (backdrop === 'ground' && numbers.h > 0) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
@@ -357,6 +368,6 @@ export function fromReading(x) {
   }) : undefined;
   return {
     understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes,
-    recipe: { backdrop, engine: 'projectile', objects: [{ figure: m.figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
+    recipe: { backdrop, ...(under ? { below: under } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
   };
 }

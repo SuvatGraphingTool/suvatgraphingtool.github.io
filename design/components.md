@@ -210,6 +210,19 @@ let go beside a hovering balloon; a helicopter or a plane is said to be drawn
 as one). js/core/height.js gained the places `water`, `road`, `track`,
 `floor`, `house`, `tree`, `air`, each in its own words.
 
+What it lands on follows the question. The reader names it (`below`: sea,
+ground, water, river, road, beach), and the Worker reads it from the words
+when the model did not ("hits the ground", "at the bottom is the ground");
+`toPlace` carries it. js/core/height.js `BELOW` lets any place land on
+another surface in its own words ("hits the ground at the foot of the
+cliff"). A backdrop lists the surfaces it can stand over (`belows`: a cliff
+over the sea, the ground or a beach; a bridge over a river or a road; a tower
+or a house over the ground or a road); `belowOf()` reads the word, and
+`placeOf(recipe)` is the backdrop as the recipe has it. `fromReading` composes
+a From-a-height reading whose surface is not the place's own, whatever moves.
+The stage draws a cliff over fields with `scree()` at its foot, or over sand,
+and a bridge over a road; the landing kicks up dust.
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,
