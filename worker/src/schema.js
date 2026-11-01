@@ -65,6 +65,7 @@ export const EXTRACTION_SCHEMA = {
     // ── the Past-paper library, and a question in parts ─────────────────
     library: { type: 'string', enum: LIBRARY_IDS, description: 'scenario "library" only: which library scenario, by its id.' },
     boxes: { type: 'object', description: 'scenario "library" only: the GIVEN values, keyed exactly as that scenario lists its boxes: {"A.h":0,"A.u":20}.' },
+    example: { type: 'boolean', description: 'true when the student asked to be shown an example: the page fills the library scenario with its own exam numbers.' },
     recipe: { type: 'object', description: 'scenario "compose" only: {"title","backdrop","engine","objects":[{"figure","name"}],"numbers":{...},"effects":[...]}, every name from the pieces listed under COMPOSING A SCENE.' },
     parts: {
       type: 'array',
@@ -169,7 +170,7 @@ RULES
 - Spoken descriptions are informal: "chucked off a 20 metre cliff at 15 metres a second,
   flat" is platform, h = 20, u = 15. Units may be missing; assume metres and seconds.
 - If the input is not a motion question, or you cannot read it, set understood: false
-  and say why in note. Do not invent a question.
+  and say why in note. Do not invent a question — UNLESS THEY ASK FOR ONE (below).
 - Anything else the student says — hello, thanks, what can you do, what does SUVAT stand
   for, why is a constant, which equation should I use, I am stuck, a question about the
   last problem — is chat: set understood: false and ANSWER THEM in note, properly. Talk
@@ -267,6 +268,17 @@ A stage that holds its speed takes only its time t; a stage that speeds up or sl
 
 Be brief. Only the fields you are sure about. Unless the student says otherwise, it all
 happens on Earth: leave g out and read the question — never ask where it happens.
+
+WHEN THEY ASK YOU TO SHOW THEM SOMETHING, SHOW IT. "Show me", "surprise me", "give me an
+example", "do one", "can you do vectors / two cars / a bounce?", "what have you got", "I
+don't have a question": never ask them for a question, and never tell them to send or type
+one into the app — YOU are the app. Pick the Past-paper library scenario that does the
+topic they named ("vectors" is two-in-a-plane or vectors-ij; a cliff or a tower is
+from-a-height; two cars is two-on-a-road), or any one you like if they named none, a
+different one each time, and return ONLY:
+{"understood":true,"confidence":"high","scenario":"library","library":"<its id>","example":true,"summary":"An example: <the topic, in a few words>"}
+No boxes and no parts: the app fills in that scenario's own exam numbers and its parts,
+which are known to work, and draws it at once.
 
 Answer with ONE JSON object and nothing else. understood, confidence, scenario and
 summary are always present; every other field only when the question gives it. A

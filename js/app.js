@@ -3329,15 +3329,20 @@ function readInto(x, { graph = true, solve = false } = {}) {
 function applyLibrary(x, { graph = true } = {}) {
   const s = byId(x.library);
   if (!s?.kit) return { ok: false, error: 'That reads as an exam question the Past-paper library has no scenario for yet. Pick the closest one and type the numbers in.' };
+  // "show me one": the reader picks the scenario, and its own exam numbers and
+  // parts fill it — known to run, where numbers made up in the chat might not
+  if (x.example === true && s.example) x = { ...x, boxes: s.example, parts: undefined };
   chooseScenario(s.id);
   closeIntro();
   const fields = boxesOf(KITS[s.kit], s.example);
   const keys = new Set([...fields.map((f) => f.key), ...Object.keys(s.example || {}), 'g']);
-  const choice = new Set(fields.filter((f) => f.type === 'choice').map((f) => f.key));
+  // a choice takes only one of its own options: a word the scenario does not
+  // offer ("meeting" for what to find) would otherwise reach the engine as a key
+  const choice = new Map(fields.filter((f) => f.type === 'choice').map((f) => [f.key, new Set(f.options.map((o) => String(o.v)))]));
   state.kit = {};
   for (const [k, v] of Object.entries(x.boxes && typeof x.boxes === 'object' ? x.boxes : {})) {
     if (!keys.has(k) || v == null) continue;
-    if (choice.has(k)) state.kit[k] = String(v);
+    if (choice.has(k)) { if (choice.get(k).has(String(v))) state.kit[k] = String(v); }
     else if (typeof v === 'number' && isFinite(v)) state.kit[k] = v;
     else if (typeof v === 'string' && /^-?[\d.]+(\/[\d.]+)?$/.test(v.trim())) state.kit[k] = /\//.test(v) ? v.trim() : Number(v);
   }
