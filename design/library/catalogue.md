@@ -126,6 +126,7 @@ this library: *covered* names the one of the twelve that does it.
 | 90 | AQA | 7357/2 | Jun 2024 | 16 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202024%20QP.pdf) | Two apples at rest on different branches fall at the same instant; first lands at 0.5 s, second 0.1 s later; show the vertical distance between them is about 54 cm | 9.8 | **built** → `two-apples` |
 | 91 | AQA | 7357/2 | Jun 2024 | 19 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202024%20QP.pdf) | A toy shoots balls up at 7 m/s: verify a 2.5 m greatest height; then between 0° and 11° from the vertical, the least greatest height k | 9.8 | **covered** by the twelve: `up` gives the 2.5 m greatest height straight up; `arc` at 79° to the horizontal (11° from the vertical) gives 2.41 m — the least, since the vertical part of 7 m s⁻¹ is smallest at the widest angle |
 | 92 | OCR MEI | H640/01 | Jun 2024 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202024%20QP.pdf) | From a bridge, a ball thrown just as a runner at a steady 4 m/s passes below; caught 2.4 s later, 3.6 m below the throw; the vertical component, then the speed and angle | 9.8 | **built** → `from-the-bridge` |
+| 93 | OCR MEI | H640/01 | Jun 2023 | 15 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202023%20QP.pdf) | A projectile from level ground: show the range is 2u² sin θ cos θ / g; the acute angles for which the greatest height exceeds the range | – | **built** → `higher-than-far` |
 
 ## Built, and why it is built the way it is
 
@@ -406,6 +407,28 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `higher-than-far` — Higher than it goes far
+
+**Papers.** OCR MEI H640/01 Jun 2023 Q15 ((a) the range of a projectile from
+level ground is 2u² sin θ cos θ⁄g; (b) the greatest height exceeds the range
+for 76.0° < θ < 90°).
+
+**Why the twelve cannot.** They fly one throw with numbers; this compares two
+lengths for every angle at once and answers with a set of angles, in which the
+speed and g cancel.
+
+**How it is solved.** js/core/heightrange.js: the time of flight from s = 0,
+the range across, the greatest height from v_y = 0; H > kR reduces to
+tan θ > 4k. One throw (u, θ) gives the drawing and its numbers.
+
+**The stage.** A park with a ball launcher on a tripod, its barrel at θ; a
+faint fan of arcs at 15°–75° at the same speed, each named; the threshold arc
+dashed and named; the throw flown with H and R as brackets side by side; dust
+where it lands; a verdict at the end.
+
+**Parts.** (a) a show-that, answered by the working's range step (and `R` for
+the throw drawn); (b) `thStar`, 76.0°.
 
 ### `from-the-bridge` — From the bridge, to the runner
 

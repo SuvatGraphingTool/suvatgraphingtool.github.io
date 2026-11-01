@@ -1468,7 +1468,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit], a = K.solve(K.read(e.example));
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       const v = String(p.find).split('.').reduce((o, k) => o?.[k], a);
@@ -1477,6 +1477,19 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   }
   ok(!solveBridge({ V: 4, T: 1, drop: -20, g: 9.8 }).ok, 'caught above the throw is refused: the runner is below the bridge');
   ok(!solveBridge({ V: 0, T: 2.4, drop: 3.6, g: 9.8 }).ok && !solveBridge({ V: 4, T: 0, drop: 3.6, g: 9.8 }).ok && !solveBridge({ V: 4, T: 2.4, g: 9.8 }).ok, 'no speed, no time or no drop is refused');
+}
+
+group('Higher than it goes far: OCR MEI H640/01 Jun 2023 Q15', async () => {});
+{
+  const { solveHeightRange, heightRangeWorking } = await import('../js/core/heightrange.js');
+  const s = solveHeightRange({ u: 20, theta: 80, g: 9.8 });
+  ok(s.ok && near(s.thStar, 75.96, 0.01), '(b) higher than the range for θ above 76.0° (tan θ > 4)', s.reason);
+  ok(near(s.R, 400 * Math.sin(160 * Math.PI / 180) / 9.8, 1e-6) && near(s.f.range, s.R, 1e-6), '(a) R = 2u² sin θ cos θ / g, and the drawn flight lands there');
+  ok(s.higher && !solveHeightRange({ u: 20, theta: 70, g: 9.8 }).higher, 'at 80° it is higher than far; at 70° it is not');
+  ok(near(solveHeightRange({ u: 7, theta: 80, g: 9.8 }).thStar, s.thStar, 1e-12), 'the angle does not depend on the speed');
+  ok(near(solveHeightRange({ u: 20, theta: 80, ratio: 0.5, g: 9.8 }).thStar, 63.43, 0.01), 'higher than half the range: tan θ > 2');
+  ok(heightRangeWorking(s).length === 4, 'the working: the range, the height, the inequality, the throw');
+  ok(!solveHeightRange({ u: 20, theta: 95, g: 9.8 }).ok && !solveHeightRange({ theta: 80, g: 9.8 }).ok, 'an angle that is not acute, or no speed to draw, is refused');
 }
 
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
