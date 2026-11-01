@@ -136,6 +136,35 @@ every answer is what the engine says for those numbers.
 strip, the clock ticks and the working panel's part card. `js/app.js` only
 holds `state.part` and calls them.
 
+## The composer — `js/compose/`, `js/render/composed.js`
+
+Ask Suvat's answer to a question no scenario draws ("a car is driven off a
+cliff"): a RECIPE that names pieces already listed on this page, checked,
+assembled and played by the library's own route.
+
+```json
+{ "title": "A car off a cliff", "backdrop": "cliff", "engine": "projectile",
+  "objects": [{ "figure": "car", "name": "the car" }],
+  "numbers": { "h": 40, "u": 15, "theta": 0 }, "effects": ["splash"] }
+```
+
+| file | what it is |
+|---|---|
+| `js/compose/registry.js` | the pieces, as data: `BACKDROPS` (cliff, tower, bridge, house, ground, sea, road, rails, orchard, hall — each with the engine's `place` word, what is `below`, and whether it has an `edge` to launch from), `FIGURES` (car, lorry, train, cyclist, runner, motorcycle, ball, stone, particle, ship, robot — real size `m`, least drawn size `min`, `views`), `EFFECTS` (splash, dust, ring, flash), `ENGINES` (projectile, stages, overtake, pair, bounce, plane — each the kit it wraps, its view, how many objects, its `boxes`; `ready` says whether the composed stage draws it yet), `ANSWERS` per engine in the parts format |
+| `js/compose/recipe.js` | `check(recipe)` → `{ ok, recipe }` or `{ ok: false, reason }`: an unknown piece, a figure the engine's view cannot draw, a number that is not one of the engine's boxes, a negative height, an angle past 90°, a misread huge number — each refused in words. `compose(recipe)` → `{ scenario, kit, boxes }`: a scenario in the library's shape (`group: 'composed'`, `answers` from the engine) and a kit that is the engine's own kit with the composed stage, so the values screen, solve, working, readouts, graphs and parts are the engine's. g left out is Earth's (the app's 9.81) |
+| `js/compose/reveal.js` | the veil a composed scene arrives behind: a blurred copy of the stage's canvas, a sweeping light, the Ask Suvat orb, each of the recipe's pieces named and ticked as it goes in (`steps(recipe)`), then lifted from the top down onto the motion. Styles: `css/compose.css` |
+| `js/render/composed.js` | the stage. Side on, one scale both ways (`fitClear`); the backdrop from `heights.js` (`seaScene`, `seaCliff`, `riverScene`, `bridge`, `fields`, `tower`, `curtainWall`, `tree`), `target.js` (`house`), `apples.js` (`appleTree`, `apple`), `scenery.js` (`tarmac`, `railBed`, `interior`, `floorboards`, `water`); a thrown figure leaves `thrower`'s hand; a vehicle or a person is the moving thing, drawn round the engine's point, turned to its velocity, wheels turning; the landing effect at the engine's time (`bigSplash`, `dust`, `pulse`, `flash`); the path, velocity (components dashed across, solid up), acceleration, the height and the landing distance as dimension lines |
+
+`byId` finds composed scenarios (`COMPOSED` in `js/scenarios.js`); the app
+registers each kit under the scenario's id. `SUVAT.compose(recipe, parts)` in
+the console composes and plays one. The reader is told the pieces by a list
+generated from the registry: `node tools/compose-catalogue.mjs` writes
+`worker/src/compose.js`, and `test/compose.test.mjs` fails when it is stale.
+
+Engines the composed stage draws: `projectile` (js/core/height.js; its
+`ground` place takes a launch from level ground, h = 0). The others are listed
+with `ready: false` and refused with that reason until their view is drawn.
+
 ## Engine models — `js/core/`
 
 ### Numbers — `js/core/numeric.js`

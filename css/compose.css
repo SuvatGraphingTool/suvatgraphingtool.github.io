@@ -1,0 +1,89 @@
+/* compose.css — a scene Ask Suvat composed, arriving (js/compose/reveal.js).
+   The stage opens behind a veil: blurred, a light sweeping across it, the
+   Ask Suvat orb breathing in the middle, the pieces named as they go in.
+   Then the veil lifts from the top down and the scene comes sharp. */
+
+@property --cr-lift { syntax: '<percentage>'; inherits: true; initial-value: -30%; }
+
+.cmp-reveal {
+  position: absolute; inset: 0; z-index: 30; display: grid; place-items: center;
+  border-radius: inherit; overflow: hidden; pointer-events: auto;
+  opacity: 0; transition: opacity 260ms ease;
+}
+.cmp-reveal.is-on { opacity: 1; }
+
+/* the scene, blurred (a copy of the stage's own canvas), and a wash over it;
+   both masked so their top edge is where the veil has lifted to */
+.cr-snap, .cr-blur {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  -webkit-mask-image: linear-gradient(to bottom, transparent var(--cr-lift), #000 calc(var(--cr-lift) + 24%));
+  mask-image: linear-gradient(to bottom, transparent var(--cr-lift), #000 calc(var(--cr-lift) + 24%));
+}
+.cr-snap { filter: blur(22px) saturate(1.4) brightness(1.04); transform: scale(1.08); background: var(--surface); }
+.cr-blur { background: color-mix(in srgb, var(--surface) 26%, transparent); }
+.cmp-reveal.is-lifting { --cr-lift: 110%; transition: --cr-lift 1100ms cubic-bezier(.45,.05,.25,1), opacity 400ms ease 900ms; opacity: 0; }
+
+/* a soft band of light sweeping across, again and again, while it works */
+.cr-shimmer {
+  position: absolute; inset: -20%;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.34) 47%, rgba(255,214,186,.30) 52%, transparent 64%);
+  animation: cr-sweep 1.9s cubic-bezier(.4,0,.2,1) infinite;
+  mix-blend-mode: soft-light;
+}
+.cr-shimmer::after {          /* a fine grain, so the blur reads as something forming */
+  content: ''; position: absolute; inset: 0; opacity: .16;
+  background-image: radial-gradient(rgba(255,255,255,.9) 0.6px, transparent 0.8px);
+  background-size: 5px 5px; animation: cr-grain 600ms steps(3) infinite;
+}
+.is-lifting .cr-shimmer { opacity: 0; transition: opacity 400ms ease; }
+@keyframes cr-sweep { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
+@keyframes cr-grain { 33% { transform: translate(1px, 2px); } 66% { transform: translate(-2px, 1px); } }
+
+/* the card in the middle: the orb, what it is doing, the pieces ticked off */
+.cr-card {
+  position: relative; display: grid; justify-items: center; gap: var(--sp-2);
+  padding: var(--sp-5) var(--sp-6); max-width: min(420px, 88%); text-align: center;
+  border-radius: 22px; background: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.7);
+  box-shadow: 0 18px 48px rgba(120,60,40,.18), inset 0 1px 0 rgba(255,255,255,.8);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  transform: translateY(6px) scale(.98); transition: transform 420ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease;
+}
+.is-on .cr-card { transform: none; }
+.is-lifting .cr-card { opacity: 0; transform: translateY(-10px) scale(1.03); }
+.cr-orb { width: 64px; height: 64px; animation: cr-breathe 1.6s ease-in-out infinite; }
+.cr-orb::after { animation-duration: 1.6s; }
+@keyframes cr-breathe {
+  0%, 100% { transform: scale(1); box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -6px 12px rgba(138,58,43,.5), 0 4px 14px rgba(255,126,95,.42); }
+  50% { transform: scale(1.07); box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -6px 12px rgba(138,58,43,.5), 0 0 0 10px rgba(255,126,95,.12), 0 8px 30px rgba(255,126,95,.55); }
+}
+.cr-title {
+  margin: var(--sp-1) 0 0; font-size: var(--fs-lg); font-weight: var(--w-semi); color: #3a2a26;
+  background: linear-gradient(90deg, #3a2a26 0%, #3a2a26 40%, #d0694f 50%, #3a2a26 60%, #3a2a26 100%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: cr-text 2.2s linear infinite;
+}
+@keyframes cr-text { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+.cr-step { margin: 0; min-height: 1.5em; font-size: var(--fs-sm); color: #6b5148; }
+.cr-step span { display: inline-block; animation: cr-up 320ms cubic-bezier(.2,.8,.2,1); }
+@keyframes cr-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.cr-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: var(--sp-1) 0 0; padding: 0; list-style: none; }
+.cr-chips li {
+  font-size: var(--fs-xs); padding: 3px 10px; border-radius: 99px; color: #8a6d63;
+  background: rgba(255,255,255,.5); border: 1px dashed rgba(138,109,99,.45);
+  transition: background 240ms, color 240ms, border-color 240ms, transform 320ms cubic-bezier(.34,1.56,.64,1);
+}
+.cr-chips li.is-in { color: #fff; background: #d0694f; border: 1px solid #d0694f; transform: scale(1.06); }
+.cr-bar { width: 160px; height: 3px; border-radius: 99px; background: rgba(138,109,99,.18); overflow: hidden; margin-top: var(--sp-2); }
+.cr-bar i { display: block; height: 100%; background: linear-gradient(90deg, #feb47b, #ff7e5f); transform: scaleX(0); transform-origin: left; transition: transform 380ms ease; }
+
+:root:not([data-theme='light']) .cr-card { background: rgba(30,27,33,.6); border-color: rgba(255,255,255,.12); }
+:root:not([data-theme='light']) .cr-title { background-image: linear-gradient(90deg, #f3e6df 0%, #f3e6df 40%, #ffb08f 50%, #f3e6df 60%, #f3e6df 100%); }
+:root:not([data-theme='light']) .cr-step { color: #d6c3ba; }
+:root:not([data-theme='light']) .cr-chips li { color: #d6c3ba; background: rgba(255,255,255,.06); }
+:root:not([data-theme='light']) .cr-blur { background: rgba(20,17,22,.25); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cr-shimmer, .cr-orb, .cr-title, .cr-step span { animation: none; }
+  .cmp-reveal.is-lifting { transition: opacity 240ms ease; }
+}

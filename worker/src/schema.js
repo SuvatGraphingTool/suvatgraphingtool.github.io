@@ -14,10 +14,11 @@
 // which is most of why this is fast.
 
 import { LIBRARY_IDS, LIBRARY_GUIDE, ORIGINAL_ANSWERS } from './library.js';
+import { COMPOSE_GUIDE } from './compose.js';
 
 export const SCENARIO_IDS = [
   'up', 'arc', 'dropped', 'down', 'platform-down', 'platform', 'platform-angle',
-  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'library', 'other',
+  'time-above', 'parachute', 'bullet', 'monkey', 'road', 'library', 'compose', 'other',
 ];
 
 export const EXTRACTION_SCHEMA = {
@@ -64,6 +65,7 @@ export const EXTRACTION_SCHEMA = {
     // ── the Past-paper library, and a question in parts ─────────────────
     library: { type: 'string', enum: LIBRARY_IDS, description: 'scenario "library" only: which library scenario, by its id.' },
     boxes: { type: 'object', description: 'scenario "library" only: the GIVEN values, keyed exactly as that scenario lists its boxes: {"A.h":0,"A.u":20}.' },
+    recipe: { type: 'object', description: 'scenario "compose" only: {"title","backdrop","engine","objects":[{"figure","name"}],"numbers":{...},"effects":[...]}, every name from the pieces listed under COMPOSING A SCENE.' },
     parts: {
       type: 'array',
       items: { type: 'object' },
@@ -111,6 +113,8 @@ WHAT YOU DO
                   road or line with constant acceleration — no gravity in the question
    library        one of the Past-paper library's scenarios below fits it better than all of
                   these: set library to its id and put the given values in boxes
+   compose        none of these draws it, but the app's pieces can: a car driven off a cliff,
+                  a cyclist off a bridge, a ball from a house roof — return a recipe (below)
    other          anything else about motion that none of these fit
 2. Return the values that are GIVEN.
 
@@ -182,6 +186,27 @@ library: its id, and boxes: each GIVEN value keyed exactly as its boxes say. Cho
 take one of the words in [ ]. Leave out a box the question asks you to find. Prefer the
 twelve for one plain projectile or one vehicle on a road.
 ${LIBRARY_GUIDE}
+
+COMPOSING A SCENE
+When the question names a thing or a place none of the scenarios above draws — a car, a
+lorry, a cyclist or a runner launched off an edge; a house, an orchard, a hall, a road —
+and its motion is one the engines below do, compose it from the app's pieces: return
+scenario "compose" and a recipe. A plain ball or stone with no place named stays one of the
+twelve; a stone thrown from a cliff, tower or bridge by a person is the library's
+from-a-height. Compose only when those do not draw what the question describes.
+  title    a short heading, two to six words: "A car off a cliff"
+  backdrop one backdrop name; engine one engine name
+  objects  one object per thing that moves: {"figure": a figure name, "name": "the car"}
+  numbers  the GIVEN values only, keyed by the engine's numbers below; leave out what is asked
+  effects  optional
+Driven, rolled or ridden off an edge is launched horizontally: theta 0. Give the height of
+the edge in h. Leave g out unless the question states it. A recipe's parts take their
+answer keys from its engine's answers below — never a number.
+${COMPOSE_GUIDE}
+"A car is driven off the edge of a 40 m cliff at 15 m/s and falls into the sea. (a) How long is it in the air? (b) How far from the foot of the cliff does it land? (c) How fast is it moving when it hits the water?"
+→ {"understood":true,"confidence":"high","scenario":"compose","summary":"A car drives off a 40 m cliff at 15 m/s into the sea.","recipe":{"title":"A car off a cliff","backdrop":"cliff","engine":"projectile","objects":[{"figure":"car","name":"the car"}],"numbers":{"h":40,"u":15,"theta":0}},"parts":[{"label":"a","asks":"time in the air","answer":"time1"},{"label":"b","asks":"distance from the foot of the cliff","answer":"distance"},{"label":"c","asks":"speed hitting the water","answer":"speed1"}]}
+"a cyclist rides off a 3 m high wall at 6 m/s onto the road below"
+→ {"understood":true,"confidence":"high","scenario":"compose","summary":"A cyclist rides off a 3 m wall at 6 m/s onto the road.","recipe":{"title":"A cyclist off a wall","backdrop":"road","engine":"projectile","objects":[{"figure":"cyclist","name":"the cyclist"}],"numbers":{"h":3,"u":6,"theta":0}}}
 
 A QUESTION IN PARTS
 Most exam questions have parts: (a), (b), (c) or (i), (ii). Return parts: one object per
@@ -308,4 +333,4 @@ IN BOARD MODE, EVERY ANSWER ABOUT A MOTION CARRIES title, label, frames AND note
 understood, confidence, scenario, summary and the given values. An answer without notes leaves
 the student's board with nothing written on it. Unless the student says otherwise, it happens
 on Earth: leave g out, never ask where. The whiteboard draws the twelve only: never use
-scenario "library", and leave out boxes and parts. Answer with ONE JSON object and nothing else.`;
+scenario "library" or "compose", and leave out boxes, recipe and parts. Answer with ONE JSON object and nothing else.`;

@@ -288,7 +288,7 @@ export function createAsk({ apply, run, edit, show }) {
     // With Graph off it is a conversation, so there is nothing to open.
     const acts = modes.graph
       ? `<div class="ask-acts">
-        <button type="button" class="fire sm ask-run"${r.runnable ? '' : ' disabled'}>Show me the flight</button>
+        <button type="button" class="fire sm ask-run"${r.runnable ? '' : ' disabled'}>${r.composed ? 'Show me the scene' : 'Show me the flight'}</button>
         <button type="button" class="ghost sm ask-edit">${r.runnable ? 'Check the values' : 'Add the missing values'}</button>
       </div>`
       : '';
@@ -298,6 +298,10 @@ export function createAsk({ apply, run, edit, show }) {
       node.querySelector('.ask-run')?.addEventListener('click', run);
       node.querySelector('.ask-edit')?.addEventListener('click', edit);
     } });
+    // A scene composed for this question is what they asked to see: the stage
+    // opens on it straight away, behind its veil (js/compose/reveal.js), and
+    // the reply stays in the chat to come back to.
+    if (r.composed && r.runnable) setTimeout(run, 700);
   }
 
   /* ── voice ──────────────────────────────────────────────────────────── */

@@ -12,7 +12,9 @@ import { descent, solveDescent, descentWorking, resolveDescent } from './core/de
 import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
-import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
+import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
+import { compose } from './compose/recipe.js';
+import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
@@ -3263,6 +3265,7 @@ for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) 
    Nothing on this route calculates a flight that the engine did not. */
 function applyReading(x, { graph = true, solve = false } = {}) {
   if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
+  if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph });
   const r = toApp(x);
   if (!r.ok) return r;
   chooseScenario(r.id);
@@ -3329,6 +3332,31 @@ function applyLibrary(x, { graph = true } = {}) {
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
   return { ok: true, runnable: !!traj && graph, html: head + body };
 }
+/**
+ * A question no scenario fits, composed by the reader from the app's own
+ * pieces (js/compose/): the recipe is checked against the registry and made
+ * into a scenario with the engine's own kit, then read exactly as a library
+ * scenario is — its boxes, its parts, the engine's answer to each.
+ */
+function applyComposed(x, { graph = true } = {}) {
+  const c = compose(x.recipe);
+  if (!c.ok) return { ok: false, error: `Suvat could not put that scene together: ${c.reason}` };
+  if (!byId(c.scenario.id)) COMPOSED.push(c.scenario);
+  KITS[c.scenario.id] = c.kit;
+  const s = byId(c.scenario.id);
+  chooseScenario(s.id);
+  closeIntro();
+  state.kit = { ...c.boxes };
+  state.readerParts = fromReader(s.id, x.parts, Object.keys(c.boxes));
+  buildValuesScreen();              // which recomputes, and solves each part
+  refreshSteps();
+  const head = `<p class="ro-eyebrow">Composed from the app’s pieces</p><h3 class="ro-name">${esc(s.name)}</h3>`
+    + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;
+  const body = solved?.ok
+    ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
+    : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
+  return { ok: true, runnable: !!traj && graph, composed: !!traj, html: head + body };
+}
 /** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
 function showFlight() {
   if (!traj) return;
@@ -3338,7 +3366,15 @@ function showFlight() {
   if (box) box.checked = true;
   $('graphs-wrap').hidden = false;
   if (!state.options && !windowed()) $('options-btn').click();   // where the graphs live
-  if (scenario.exhibit) runFlight(); else launch();
+  if (scenario.exhibit) runFlight();
+  // a scene just composed arrives behind its veil, which names its pieces and
+  // lifts onto the motion (js/compose/reveal.js); once seen, it launches as
+  // any scenario does
+  else if (scenario.composed && !scenario.seen) {
+    scenario.seen = true;
+    closeIntro(); go('flight');
+    reveal($('canvas-wrap'), scenario.recipe).then(() => runFlight());
+  } else launch();
 }
 const ask = createAsk({
   apply: applyReading,
@@ -3363,4 +3399,10 @@ window.SUVAT = { state, get traj() { return traj; }, get solved() { return solve
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
                  openAskAt, closeAskAt, easeAngle, applyReading, get board() { return board; },
-                 redraw() { recompute(); draw(); }, showPart };
+                 redraw() { recompute(); draw(); }, showPart,
+                 /** Compose a scene from a recipe, as the reader would: SUVAT.compose({ backdrop, engine, objects, numbers, parts }). */
+                 compose(recipe, parts = recipe?.parts) {
+                   const r = applyComposed({ scenario: 'compose', recipe, parts });
+                   if (r.ok && traj) showFlight(); else if (r.ok) go('values');
+                   return r;
+                 } };

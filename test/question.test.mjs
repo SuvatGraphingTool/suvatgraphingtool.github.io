@@ -154,7 +154,7 @@ group('Ask Suvat — every scenario the reader can choose is one the app has', (
   const ids = SCENARIOS.map((x) => x.id);
   ok(APP_SCENARIOS.every((id) => ids.includes(id)), 'toApp only names real scenarios');
   ok(ids.every((id) => APP_SCENARIOS.includes(id)), 'and every scenario can be chosen');
-  ok(SCENARIO_IDS.filter((x) => x !== 'other' && x !== 'library').join() === APP_SCENARIOS.join(),
+  ok(SCENARIO_IDS.filter((x) => x !== 'other' && x !== 'library' && x !== 'compose').join() === APP_SCENARIOS.join(),
      "the Worker's schema offers exactly the same list");
 });
 

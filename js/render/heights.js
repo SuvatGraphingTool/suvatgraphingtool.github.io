@@ -101,7 +101,7 @@ function rock(g, x, y, R, seed, light, dark) {
 /* ── the far side of each place ───────────────────────────────────────── */
 
 /** The open sea to the horizon, with a misted headland and a lighthouse far off. */
-function seaScene(g, w, h, horizon, phase) {
+export function seaScene(g, w, h, horizon, phase) {
   const E = env();
   skyscape(g, 0, 0, w, horizon, { far: 'none', seed: 7 });
   // a headland across the bay, misted, on the right
@@ -126,7 +126,7 @@ function seaScene(g, w, h, horizon, phase) {
 }
 
 /** A river to its far bank: trees, a grassy bank with reeds, the water. */
-function riverScene(g, w, h, bank, phase) {
+export function riverScene(g, w, h, bank, phase) {
   const E = env(), r = rng(53);
   skyscape(g, 0, 0, w, bank - 6, { far: 'trees', seed: 9 });
   grass(g, 0, w, bank - 6, bank + 2, { seed: 4 });
@@ -182,7 +182,7 @@ function poolScene(g, w, h, far, poolX, phase) {
 }
 
 /** Fields running back to the horizon: bands of green with hedgerows and trees. */
-function fields(g, w, horizon, Y) {
+export function fields(g, w, horizon, Y) {
   const E = env(), r = rng(61);
   skyscape(g, 0, 0, w, horizon, { far: 'hills', seed: 5 });
   const D = Math.max(1, Y - horizon);
@@ -214,7 +214,7 @@ function fields(g, w, horizon, Y) {
 
 
 /** A castle's curtain wall from x0 to x1, its walkway at y = top, on the ground at Y. */
-function curtainWall(g, x0, x1, top, Y) {
+export function curtainWall(g, x0, x1, top, Y) {
   const E = env();
   if (x1 - x0 < 10) return;
   softShadow(g, (x0 + x1) / 2, Y + 1, (x1 - x0) * 0.55, 5, 0.7);
@@ -229,7 +229,7 @@ function curtainWall(g, x0, x1, top, Y) {
 
 /** A broad tree standing on the ground at (x, Y), `s` px tall: a trunk and a
     canopy of shaded clumps, lit from the left. */
-function tree(g, x, Y, s) {
+export function tree(g, x, Y, s) {
   const E = env(), r = rng(Math.round(x));
   softShadow(g, x + s * 0.1, Y + 1, s * 0.4, 3, 0.7);
   g.fillStyle = E.night ? '#3b2d26' : '#6a4e38'; g.fillRect(x - s * 0.04, Y - s * 0.45, s * 0.08, s * 0.45);
@@ -665,7 +665,7 @@ export function balloon(g, x, y, s, P, o = {}) {
 }
 
 /** The stone: a shaded, slightly irregular pebble, lit from the upper left. */
-function pebble(g, x, y, R) {
+export function pebble(g, x, y, R) {
   const E = env();
   rock(g, x, y, R, 5, E.night ? '#e5ddd2' : '#efe8de', E.night ? '#6a625b' : '#6f675f');
   g.save(); g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(x, y, R * 1.02, R * 0.9, 0, 0, TAU); g.stroke(); g.restore();
@@ -673,7 +673,7 @@ function pebble(g, x, y, R) {
 
 /** A splash that reads: a crown of water thrown up round the entry, droplets
     and spreading rings (effects.splash, enlarged). */
-function bigSplash(g, x, y, age, life, size) {
+export function bigSplash(g, x, y, age, life, size) {
   const u = phaseOf(age, life); if (u == null) return;
   splash(g, x, y, age, life, { size });
   const rise = Math.sin(Math.PI * Math.min(1, u * 1.4)), a = 0.85 * (1 - u * 0.8);

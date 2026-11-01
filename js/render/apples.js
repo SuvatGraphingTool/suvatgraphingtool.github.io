@@ -16,7 +16,7 @@ import { T, num } from '../notation.js';
 const TAU = Math.PI * 2;
 
 /** An apple, r px across its middle, at (x, y): shaded red, a stem and a leaf. */
-function apple(g, x, y, r, { ring = null, green = false, sx = 1, sy = 1 } = {}) {
+export function apple(g, x, y, r, { ring = null, green = false, sx = 1, sy = 1 } = {}) {
   const E = env();
   if (sx !== 1 || sy !== 1) { g.save(); g.translate(x, y + r * 0.85); g.scale(sx, sy); g.translate(-x, -(y + r * 0.85)); }
   softShadow(g, x, y + r * 0.9, r * 0.7, r * 0.18, 0.25);
@@ -40,7 +40,7 @@ function apple(g, x, y, r, { ring = null, green = false, sx = 1, sy = 1 } = {}) 
 
 /** The apple tree, to scale: a trunk forking into two limbs that reach out
     over the two apples' branches, and a leafy crown around them. */
-function appleTree(g, X, Y, k, xs, tops, seed) {
+export function appleTree(g, X, Y, k, xs, tops, seed) {
   const E = env(), r = rng(seed);
   const bark = E.night ? '#3e302a' : '#6b4f3b', barkLit = E.night ? '#5a463b' : '#8c6a50';
   const fork = Math.min(...tops) - 0.35, crownTop = Math.max(...tops) + 1.1;

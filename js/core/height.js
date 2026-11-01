@@ -31,6 +31,10 @@ export const PLACES = {
   board:   { word: 'diving board', top: 'the diving board', below: 'the water', lands: 'enters the water', foot: 'below the end of the board' },
   well:    { word: 'well', top: 'the top of the well', below: 'the water in the well', lands: 'hits the water', foot: 'at the bottom of the well', vertical: true },
   balloon: { word: 'balloon', top: 'the balloon', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', vertical: true, carried: true, from: 'where it was let go' },
+  // level ground: launched from the ground itself (a height of 0 is allowed),
+  // or from a height above it with nothing drawn under the throw — the
+  // composer's ground, road and hall (js/compose/)
+  ground:  { word: 'start', top: 'where it starts', below: 'the ground', lands: 'lands', foot: 'where it started', level: true },
 };
 
 /**
@@ -47,7 +51,7 @@ export function solveHeight(k0 = {}) {
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
   // the height may be left for the engine when the time in the air is given
   if (!have(k.h) && !have(k.t)) return fail(`Still needed: how high ${Pl.top} is above ${Pl.below} — or the time it takes to land, to find that height.`);
-  if (have(k.h) && !(k.h > 0)) return fail(`${Pl.top.replace(/^./, (c) => c.toUpperCase())} is above ${Pl.below}: give its height as a positive number.`);
+  if (have(k.h) && !(k.h > 0) && !(Pl.level && k.h === 0)) return fail(`${Pl.top.replace(/^./, (c) => c.toUpperCase())} is above ${Pl.below}: give its height as a positive number.`);
   if (!have(k.theta)) return fail('Still needed: the angle it is thrown at — 90 straight up, 0 across, −90 straight down.');
   if (!(k.theta >= -90 && k.theta <= 90)) return fail('The angle is between −90° (straight down) and 90° (straight up).');
   const steep = Math.abs(Math.abs(k.theta) - 90) < 1e-9;
@@ -74,7 +78,7 @@ export function solveHeight(k0 = {}) {
   if (!r.ok) return fail(String(r.reason).replace(/\bthe ground\b/g, Pl.below).replace(/\bthe launch point\b/g, Pl.from || 'where it was thrown from'));
   const hh = have(k.h) ? k.h : snap(r.f.params.h);
   if (have(k0.tTop) && have(k.t) && k0.tTop >= k.t - 1e-9) return fail(`The time to the top, ${M`${d(k0.tTop)} [s]`}, is not before the ${M`${d(k.t)} [s]`} it takes to land: it must reach its top first.`);
-  if (!(hh > 0)) return fail(`Landing then, it would have started at or below ${Pl.below}: that time is too short for a fall from ${Pl.top}.`);
+  if (!(hh > 0) && !(Pl.level && hh === 0)) return fail(`Landing then, it would have started at or below ${Pl.below}: that time is too short for a fall from ${Pl.top}.`);
   k = { ...k, h: hh };
   const f = r.f;
   if (!(f.tFlight > 0) || !isFinite(f.tFlight)) return fail(`It never comes down to ${Pl.below}.`);

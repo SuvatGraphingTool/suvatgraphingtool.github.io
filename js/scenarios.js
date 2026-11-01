@@ -266,8 +266,10 @@ export const SCENARIOS = [
     place: 'A straight, level road from A to B' },
 ];
 
-// The library's scenarios are looked up by the same door as the twelve.
-export const byId = (id) => SCENARIOS.find((s) => s.id === id) || LIBRARY.find((s) => s.id === id);
+// The library's scenarios are looked up by the same door as the twelve, and
+// so are the scenes Ask Suvat composes (js/compose/), added as they are made.
+export const COMPOSED = [];
+export const byId = (id) => SCENARIOS.find((s) => s.id === id) || LIBRARY.find((s) => s.id === id) || COMPOSED.find((s) => s.id === id);
 export const DEFAULT_SCENARIO = 'platform-angle';
 
 /** Only three fields, as asked: Earth, the Moon, and none at all. */
