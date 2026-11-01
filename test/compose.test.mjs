@@ -2,7 +2,7 @@
 // reasons, and played by the engine's own kit. Run: node test/compose.test.mjs
 import fs from 'node:fs';
 import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS } from '../js/compose/registry.js';
-import { check, compose } from '../js/compose/recipe.js';
+import { check, compose, scenesOf } from '../js/compose/recipe.js';
 import { steps } from '../js/compose/reveal.js';
 import { answersFor, fromReader } from '../js/parts/answers.js';
 import { answerOf } from '../js/parts/parts.js';
@@ -147,6 +147,24 @@ console.log('\nThe Worker moves a placed pair or bounce onto a composed scene');
   ok(sk.recipe.backdrop === 'hall' && sk.parts[0].answer === 'graph', 'a hall before a roof; a sketch part keeps its answer');
   ok(toComposed({ ...lib, summary: 'A ball is thrown up past the roof of a car.' }).scenario === 'library' && toComposed({ ...lib, summary: 'Mr Hall drops a ball 40 m above another.' }).scenario === 'library', 'a car’s roof, or Mr Hall, is no place');
 }
+
+group('A part in a scene of its own', () => {
+  const { main, scenes } = scenesOf([
+    { label: 'a', asks: 'time in the air', answer: 'time1' },
+    { label: 'b', asks: 'how far out', answer: 'distance' },
+    { label: 'c', asks: 'cyclist lands', answer: 'distance', recipe: { backdrop: 'road', engine: 'projectile', objects: [{ figure: 'cyclist' }], numbers: { h: 3, u: 6, theta: 0, g: 9.8 } } },
+    { label: 'd', asks: 'nonsense', answer: 'time1', recipe: { backdrop: 'moon', engine: 'projectile', objects: [{ figure: 'car' }] } },
+  ]);
+  ok(main.map((p) => p.label).join() === 'a,b', 'the main scene keeps (a) and (b)');
+  ok(scenes.length === 2 && !('recipe' in scenes[0].part), '(c) and (d) each a scene of their own, the recipe taken off the part');
+  const c = scenes[0].c, sv = c.kit.solve(c.kit.read(c.boxes));
+  COMPOSED.push(c.scenario);
+  const p = fromReader(c.scenario.id, [scenes[0].part], Object.keys(c.boxes))[0];
+  near(answerOf(p, sv).values[0], 6 * Math.sqrt(6 / 9.8), 1e-9, '(c) the cyclist lands 6 √(2h / g) out');
+  COMPOSED.length = 0;
+  ok(!scenes[1].c.ok && /no backdrop called/.test(scenes[1].c.reason), '(d) refused with its reason, the rest still stand');
+  ok(scenesOf(undefined).main.length === 0 && scenesOf([null]).main.length === 1, 'no parts, or a broken one, does not throw');
+});
 
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);

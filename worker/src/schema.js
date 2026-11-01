@@ -199,7 +199,9 @@ lorry, a cyclist or a runner launched off an edge; a house, an orchard, a hall, 
 and its motion is one the engines below do, compose it from the app's pieces: return
 scenario "compose" and a recipe. A plain ball or stone with no place named stays one of the
 twelve; a stone thrown from a cliff, tower or bridge by a person is the library's
-from-a-height. Compose only when those do not draw what the question describes.
+from-a-height. Compose only when those do not draw what the question describes. A diving
+board, a well and a balloon are From a height's places (board, well, balloon), never a
+backdrop to compose: anything launched from one is library from-a-height.
 Two on one vertical line, and a ball that bounces, are the library's pair-vertical and
 bounce when no place is named; when the question names where (a tower, a building, a
 house, a hall, a tree), compose them with that backdrop so the student sees it.
@@ -209,6 +211,10 @@ house, a hall, a tree), compose them with that backdrop so the student sees it.
   numbers  the GIVEN values only, keyed by the engine's numbers below; leave out what is asked.
            A word box takes one of its words: "start":"drop"
   effects  optional
+A part that changes only a number ("now at 20 m/s") puts it in given, keyed as the engine's
+numbers. A part about another place or another motion ("(c) a second ball is kicked from
+the ground…") carries its own recipe inside that part, with its answer key from that
+recipe's engine: {"label":"c","asks":"...","answer":"distance","recipe":{...}}.
 Driven, rolled or ridden off an edge is launched horizontally: theta 0. Give the height of
 the edge in h. Leave g out unless the question states it. A recipe's parts take their
 answer keys from its engine's answers below — never a number.

@@ -70,6 +70,7 @@ A kit is an object with:
 | `jump` — `js/kits/jump.js` (engine: journey) | `parachute-stages` |
 | `twoplane` — `js/kits/twoplane.js` | `two-in-a-plane` |
 | `models` — `js/kits/models.js` (engine: journey) | `three-models` |
+| `river` — `js/kits/river.js` | `across-the-river` (engine js/core/river.js; stage js/render/river.js: a river from above, a steered boat, the velocity triangle) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
 | `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
@@ -179,6 +180,12 @@ Engines the composed stage draws:
 - `stages`, `overtake` and `plane` are listed with `ready: false` and refused
   with that reason: the library's own scenarios already draw a road, rails or
   a map with the figure chosen.
+
+A part that is another place or another motion carries its own `recipe`
+(`{ label, asks, answer, recipe }`). `scenesOf(parts)` in recipe.js splits
+them: the main scene steps through the rest; each scene of its own is composed
+and registered, its part answered by its own engine in the chat reply, with
+"Show me this scene" (`showScene(id)` in app.js) opening it behind its veil.
 
 `worker/src/composeplace.js` `toComposed()` runs after the lead's `toPlace()`:
 a library pair-vertical or bounce reading whose words name a tower, building,

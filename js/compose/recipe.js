@@ -248,3 +248,22 @@ export function compose(raw) {
   };
   return { ok: true, scenario, kit, boxes };
 }
+
+/**
+ * A question whose parts are not all one scene. Most parts are about the
+ * scene the recipe composes; a part that is another place or another motion
+ * ("(c) a second ball is now kicked from the ground…") carries a recipe of
+ * its own. This splits them: the parts for the main scene, and each part
+ * with a scene of its own, composed — or refused, with its reason.
+ * @returns {{ main: object[], scenes: [{ part, c }] }}
+ */
+export function scenesOf(parts) {
+  const main = [], scenes = [];
+  for (const p of Array.isArray(parts) ? parts : []) {
+    if (p && typeof p === 'object' && p.recipe && typeof p.recipe === 'object') {
+      const { recipe, ...part } = p;
+      scenes.push({ part, c: compose(recipe) });
+    } else main.push(p);
+  }
+  return { main, scenes };
+}

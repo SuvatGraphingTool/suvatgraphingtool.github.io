@@ -27,8 +27,9 @@ const TXT_MAX = 2_000;
  * @param o.run()   show the flight
  * @param o.edit()  go to the values screen instead
  * @param o.show(step)  go to a screen — 'chat' is this one's
+ * @param o.scene(id)  a part's own composed scene, on the stage (js/compose/)
  */
-export function createAsk({ apply, run, edit, show }) {
+export function createAsk({ apply, run, edit, show, scene }) {
   const form = $('ask-form'), text = $('ask-text'), send = $('ask-send');
   const thread = $('ask-thread'), scroller = $('chat-scroll');
   const composer = $('ask-composer');
@@ -300,6 +301,7 @@ export function createAsk({ apply, run, edit, show }) {
     reply(r.html, { acts, before(node) {
       node.querySelector('.ask-run')?.addEventListener('click', run);
       node.querySelector('.ask-edit')?.addEventListener('click', edit);
+      for (const b of node.querySelectorAll('.ask-scene')) b.addEventListener('click', () => scene?.(b.dataset.id));
     } });
     // A scene composed for this question is what they asked to see: the stage
     // opens on it straight away, behind its veil (js/compose/reveal.js), and
