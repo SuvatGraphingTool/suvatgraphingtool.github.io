@@ -9,6 +9,7 @@
 import { M, num, mathHTML } from '../notation.js';
 import { tag, leansOn, stepOf } from './parts.js';
 import { tidyProse } from '../ai/readout.js';
+import { SPARK } from '../ai/ask.js';
 
 const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
 /** A part's question: prose, with any maths in it written between $ signs and set by the notation module.
@@ -74,7 +75,9 @@ export function stripHTML(parts, runs, k, steps) {
     : `<button class="tbtn sm pnext" type="button" data-part="-1">Whole motion</button>`;
   let body;
   if (k < 0) {
-    body = `<p class="pask"><b>This question has ${WORDS[n] ?? n} part${n === 1 ? '' : 's'}.</b>
+    // parts Ask Suvat read from the student's own question carry its mark
+    const read = parts.some((p) => p.prose) ? `<p class="pfrom"><span class="ai-orb sm" aria-hidden="true">${SPARK}</span>Read by Ask Suvat from your question</p>` : '';
+    body = `${read}<p class="pask"><b>This question has ${WORDS[n] ?? n} part${n === 1 ? '' : 's'}.</b>
       ${n === 1 ? 'It stops the motion at its moment, with its working.' : 'Each one stops the motion at its own moment, with its working.'}</p>
       <ol class="plist">${parts.map((p) => `<li><b>${tag(p)}</b>${p.out ? `<i>not in this app — ${esc(p.out)}</i>` : askHTML(p)}</li>`).join('')}</ol>`;
   } else {
