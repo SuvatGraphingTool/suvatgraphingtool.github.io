@@ -79,7 +79,7 @@ group('Refused, with a reason a student can read', () => {
   no({ ...CAR, numbers: { theta: 120 } }, /between −90°/, 'an angle past straight up');
   no({ ...CAR, numbers: { h: 1e9 } }, /far too big/, 'a misread number');
   no({ ...CAR, effects: ['fireworks'] }, /no effect called/, 'an unknown effect');
-  no({ ...CAR, engine: 'pair', objects: [{ figure: 'ball' }, { figure: 'ball' }] }, /does not draw it yet/, 'an engine the stage does not draw yet');
+  no({ ...CAR, engine: 'plane', objects: [{ figure: 'ship' }] }, /does not draw it yet/, 'an engine the stage does not draw yet');
   no(null, /empty/, 'no recipe at all');
   no({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 10, theta: 0 } }, /launched upwards/, 'along the ground, it never leaves it');
   no({ backdrop: 'orchard', engine: 'projectile', objects: [{ figure: 'car' }], numbers: { h: 3 } }, /only an apple, a ball, a stone or a particle can fall: not a car/, 'a car falling from a tree');
@@ -100,6 +100,42 @@ group('Each place in its own words', () => {
   ok(answerOf(parts[0], lv.solved).ok && answerOf(parts[1], lv.solved).values[0] > answerOf(parts[0], lv.solved).values[0], 'a height a part asks about is answered twice, up then down');
   COMPOSED.length = 0;
 });
+
+group('Two on one line by a tower, and a ball bouncing off a roof', () => {
+  const P = run({ backdrop: 'tower', engine: 'pair', objects: [{ figure: 'ball' }, { figure: 'ball' }], numbers: { 'A.h': 0, 'A.u': 20, 'B.h': 40, 'B.u': 0, 'B.t0': 1, g: 10 } });
+  ok(P.c.ok && P.solved.ok, 'the pair engine solves it, through its own kit');
+  // A: 20t − 5t²; B: 40 − 5(t − 1)²  →  level at t = 3.5, 8.75 m up (the paper's)
+  near(P.solved.meet.t, 3.5, 1e-9, 'they meet at');
+  near(P.solved.meet.x, 8.75, 1e-9, 'that high');
+  COMPOSED.push(P.c.scenario);
+  const pp = fromReader(P.c.scenario.id, [{ label: 'i', asks: 'height', answer: 'height' }, { label: 'ii', asks: 'difference in speeds', answer: 'speed3' }], Object.keys(P.c.boxes));
+  near(answerOf(pp[1], P.solved).values[0], 10, 1e-9, '(ii) the difference in their speeds, 25 − 15');
+  const Bo = run({ backdrop: 'house', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { start: 'drop', h: 6, e: 0.7, g: 9.8 } });
+  ok(Bo.c.ok && Bo.solved.ok, 'the bounce engine solves a ball off a roof');
+  near(Bo.solved.extras.find((x) => x.key === 'vIn1').value, Math.sqrt(2 * 9.8 * 6), 1e-9, 'it hits the ground at √(2gh)');
+  near(Bo.solved.extras.find((x) => x.key === 'H1').value, 6 * 0.49, 1e-9, 'and rises to e² h');
+  COMPOSED.length = 0;
+  const no = (r, re, label) => { const x = check(r); ok(!x.ok && re.test(x.reason), `${label}: “${x.reason}”`); };
+  no({ backdrop: 'cliff', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { h: 5 } }, /solid ground/, 'a bounce over the sea');
+  no({ backdrop: 'tower', engine: 'pair', objects: [{ figure: 'car' }, { figure: 'ball' }] }, /not a car/, 'a car on a vertical line');
+  no({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { start: 'sideways' } }, /one of: drop, down, up/, 'a start that is not a word it knows');
+  no({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { e: 1.5 } }, /between 0 and 1/, 'keeping more than all its speed');
+  ok(check({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { start: 'drop', h: 2, e: '1/3' } }).recipe.numbers.e === '1/3', 'a fraction as the paper writes it goes to the engine as typed');
+});
+
+console.log('\nThe Worker moves a placed pair or bounce onto a composed scene');
+{
+  const { toComposed } = await import('../worker/src/composeplace.js');
+  const lib = { understood: true, scenario: 'library', library: 'pair-vertical', summary: 'A ball dropped from a 40 m tower as another is thrown up.', boxes: { 'A.h': 0, 'A.u': 20, 'B.h': 40, 'B.u': 0, g: 10 },
+    parts: [{ label: 'a', asks: 'height', answer: 'height' }, { label: 'b', asks: 'difference', answer: 'speed' }] };
+  const x = toComposed(lib);
+  ok(x.scenario === 'compose' && x.recipe.backdrop === 'tower' && x.recipe.engine === 'pair', 'a tower named: composed by the tower');
+  ok(x.recipe.numbers['B.h'] === 40 && x.parts[1].answer === 'speed3', 'the boxes moved as they were, the answer keys renamed');
+  ok(check(x.recipe).ok, 'and the app takes the recipe');
+  ok(toComposed({ ...lib, summary: 'A is thrown up; B is dropped 40 m above it.' }) .scenario === 'library', 'no place named: the library’s own stage');
+  const b = toComposed({ understood: true, scenario: 'library', library: 'bounce', summary: 'A ball is dropped from the roof of a house.', boxes: { start: 'drop', h: 6, e: 0.7 }, parts: [{ label: 'a', asks: 'x', answer: 'time' }] });
+  ok(b.recipe.backdrop === 'house' && b.parts[0].answer === 'time3' && check(b.recipe).ok, 'a bounce off a roof, by the house');
+}
 
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);

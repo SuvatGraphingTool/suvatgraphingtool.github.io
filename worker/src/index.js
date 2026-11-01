@@ -9,6 +9,7 @@
 // way the interface can explain.
 
 import { toPlace } from './place.js';
+import { toComposed } from './composeplace.js';
 import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT } from './schema.js';
 
 const MODELS_DEFAULT = '@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
@@ -139,7 +140,7 @@ export default {
     const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim()).filter(Boolean)
       .map((m) => { const [name, level] = m.split(':'); return { name, level: level || env.THINKING || 'minimal' }; });
     const outcome = await race(env, models, payload);
-    if (outcome.ok) return json({ ok: true, extraction: toPlace(outcome.extraction, words), model: outcome.model }, 200, cors);
+    if (outcome.ok) return json({ ok: true, extraction: toComposed(toPlace(outcome.extraction, words), words), model: outcome.model }, 200, cors);
     const { last, lastCap, capped, gone } = outcome;
 
     if (lastCap && models.every((m) => capped.has(m.name) || gone.has(m.name))) {
