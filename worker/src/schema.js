@@ -199,7 +199,9 @@ lorry, a cyclist or a runner launched off an edge; a house, an orchard, a hall, 
 and its motion is one the engines below do, compose it from the app's pieces: return
 scenario "compose" and a recipe. A plain ball or stone with no place named stays one of the
 twelve; a stone thrown from a cliff, tower or bridge by a person is the library's
-from-a-height. Compose only when those do not draw what the question describes.
+from-a-height. Compose only when those do not draw what the question describes. A diving
+board, a well and a balloon are From a height's places (board, well, balloon), never a
+backdrop to compose: anything launched from one is library from-a-height.
 Two on one vertical line, and a ball that bounces, are the library's pair-vertical and
 bounce when no place is named; when the question names where (a tower, a building, a
 house, a hall, a tree), compose them with that backdrop so the student sees it.
