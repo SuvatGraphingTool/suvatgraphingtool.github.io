@@ -129,6 +129,7 @@ what is wrong. No scenario ships until it passes.
 
 ## Usage (the user's instruction, 29 Oct: do the same work with less usage, even if it takes longer)
 
+- **At most ONE subagent at a time, of any kind** (critic, audit or restyle). The 10-agent revamp fan-out on 29 Oct hit the user's usage limit. No parallel fan-outs; small fixes are done in the session, not by resuming a big agent.
 - At most two library sessions work at once; the rest wait their turn. The lead or the watchdog says when.
 - Critic and audit subagents run on Opus (the default model, no `model` override), one at a time. Give each a tight brief: the diff, the paper reference and what to try, so it doesn't re-explore the whole app. (Changed 29 Oct: the user wants Opus back for quality.)
 - Check numbers and wording with `read_page`, `get_page_text` and JS measurement. Judge how it LOOKS from screenshots: that is what they are for (see "How it looks").
