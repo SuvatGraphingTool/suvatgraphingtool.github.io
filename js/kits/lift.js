@@ -28,6 +28,8 @@ export const lift = {
   rows: [],
   hides: { shows: ['apex', 'ruler', 'range', 'grid', 'components'], extras: ['energy'], bounce: true },
 
+  /** Resolve reads the journey's distance as the height risen. */
+  resolveAxis: 'vertical',
   read(v) { return { a1: v.a1, t1: v.t1, t2: v.t2, t3: v.t3, a3: v.a3 }; },
   solve: solveJourney,
   working: (solved) => journeyWorking(solved),

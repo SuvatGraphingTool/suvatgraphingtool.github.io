@@ -19,6 +19,7 @@ import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
+import { resolveKit } from './kitresolve.js';
 import * as scene from './render/scene.js';
 import * as exhibit from './render/exhibit.js';
 import * as panes from './render/panes.js';
@@ -433,7 +434,9 @@ function chooseScenario(id, { example = false } = {}) {
   renderParts();
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
   if (PREFILL && example && !scenario.exhibit) applyExample(scenario.example);
-  $('ask-at').hidden = !!scenario.road || !!scenario.kit;
+  $('ask-at').hidden = false;
+  // by speed only where the projectile engine can find the instants: elsewhere, by time
+  $('at-v').closest('.askat-row').hidden = !!(scenario.road || scenario.kit || scenario.descent);
   state.firedBefore = false; ghost = null;
   state.aimed = true;                  // the hunter starts pointing at it
   // A NEW SCENARIO IS A NEW PLACE, so the view starts framed on it. Launching
@@ -2146,7 +2149,7 @@ function syncPanes() {
   const sig = JSON.stringify(solved.params);
   if (sig === paneSig) return;
   paneSig = sig;
-  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; } });
+  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; }, click: () => openResolve(state.t) });
   panes.setLayout(win, state.layout);
 }
 
@@ -2279,19 +2282,13 @@ function setPlayIcon(on) {
    instant the question chose. */
 function openResolve(t) {
   if (!traj || state.step !== 'flight') return;
-  // NOT IN THE WINDOW. The card resolves the instant you pointed at on the
-  // diagram, and in the window the gesture on every pane is pan and zoom —
-  // there is nothing to point at. What it was for is on screen instead: the
-  // three graphs carry the velocity, the height and the acceleration at the
-  // cursor, with axes to read them off.
-  if (windowed()) return;
-  // NOR ON THE ROAD. The card resolves a velocity into its two components,
-  // and a vehicle on a level road has only one. Nor on a kit's stage, which
-  // is not a single flight to resolve.
-  if (scenario?.road || kit()) return;
+  // EVERY STAGE. The road, the window and each kit's stage open it too: a
+  // motion along one line resolves to its s, v and a with the way it is
+  // going, two objects to a block each — js/kitresolve.js reads it all off
+  // the engine's motion.
   hideDone(); closeAskAt();
   state.t = clamp(t ?? state.t, 0, traj.tMax);
-  state.playing = false; setPlayIcon(false);
+  state.playing = false; setPlayIcon(false); state.pre = null;   // the window's pre-roll ends: the clock is on
   state.resolve = true; state.hover = null;
   dirty = true;
 }
@@ -2304,12 +2301,19 @@ function closeResolve() {
   dirty = true;
 }
 
+/** The card for this instant, from whichever engine the stage runs on. */
+function resolveNow() {
+  if (scenario?.descent) return resolveDescent(traj, state.t);
+  if (kit() || scenario?.road) return resolveKit(kit(), solved, traj, state.t);
+  return resolveAt(traj, state.t);
+}
+
 function renderResolve(R) {
   const box = $('resolve');
   $('canvas-wrap').dataset.resolve = R ? 'on' : 'off';
   if (!R) { box.hidden = true; return; }
 
-  $('res-title').innerHTML = `At ${M`t = ${fmt(R.t, 2)} [s]`}`;
+  $('res-title').innerHTML = R.tUnit ? `At ${M`t = ${fmt(R.t, 2)}`} ${R.tUnit}` : `At ${M`t = ${fmt(R.t, 2)} [s]`}`;
 
   const row = (q, part) => `
     <div class="rrow" data-part="${part}">
@@ -2324,9 +2328,13 @@ function renderResolve(R) {
       <div class="rb-h">${b.name}</div>
       ${R.vertical ? row(b.y, 'y') : row(b.x, 'x') + row(b.y, 'y') + row(b.r, 'r')}
     </div>`;
-  $('res-blocks').innerHTML = block(R.velocity) + block(R.displacement);
+  $('res-blocks').innerHTML = R.blocks
+    // a kit's card (js/kitresolve.js): its blocks, each with its own rows
+    ? R.blocks.map((b, i) => `<div class="rblock" data-hue="${b.hue}">
+        <div class="rb-h">${b.name}</div>${b.rows.map((q, j) => row(q, `${i}-${j}`)).join('')}</div>`).join('')
+    : block(R.velocity) + block(R.displacement);
 
-  $('res-note').textContent = R.phase
+  $('res-note').textContent = R.blocks ? R.note : R.phase
     // A descent's card has to say which PHASE this instant belongs to, because
     // u and a change twice on the way down and the formulas above quote the
     // phase's own. The engine says it; this prints it.
@@ -2367,7 +2375,7 @@ const AT_T_HINT = '';
 const AT_V_HINT = '';
 
 function openAskAt() {
-  if (!traj || state.step !== 'flight' || windowed() || scenario?.road || kit()) return;
+  if (!traj || state.step !== 'flight') return;
   hideDone(); closeResolve();
   state.playing = false; setPlayIcon(false);
   // It opens on the instant already on screen, so Resolve it always resolves
@@ -2394,7 +2402,7 @@ function closeAskAt() {
 
 /** What the object is doing at an instant the student has just named. */
 function atTimeSay(t) {
-  if (!traj) return AT_T_HINT;
+  if (!traj || kit() || scenario?.road || scenario?.descent) return AT_T_HINT;
   const v = traj.vel(t), p = traj.pos(t);
   return `${M`${fmt(Math.hypot(v.x, v.y), 2)} [m s^-1]`}, `
     + `${M`${fmt(p.y, 2)} [m]`} up`;
@@ -2900,10 +2908,12 @@ function draw() {
   // on the way in.
   if (state.step !== 'flight' || !traj) { syncPanes(); dirty = false; return; }
   syncPanes();
-  const R = state.resolve
-    ? (scenario?.descent ? resolveDescent(traj, state.t) : resolveAt(traj, state.t))
-    : null;
-  const opts = { traj, second, ghost, t: state.t, show: state.show, fired: state.launched,
+  const R = state.resolve ? resolveNow() : null;
+  // Resolve open on a library stage: its arrows on, split into components
+  // where the stage draws them (dashed across, solid up), so the card's
+  // numbers are pointed at on the picture as well.
+  const show = R && (kit() || scenario?.road) ? { ...state.show, velocity: true, components: true } : state.show;
+  const opts = { traj, second, ghost, t: state.t, show, fired: state.launched,
                  verdict: state.verdict, overview: state.overview,
                  hoverMark: state.hoverMark,
                  markers: state.markers || {}, scenario, secondLabel: scenario.second?.label,

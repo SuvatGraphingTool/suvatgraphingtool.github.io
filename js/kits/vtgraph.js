@@ -35,6 +35,7 @@ export const vtgraph = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'along',
   read(v) {
     return { v0: v.v0, pts: Array.from({ length: N }, (_, i) => ({ t: v[`p${i + 1}.t`], v: v[`p${i + 1}.v`] })), ask: { t: v.askT, s: v.askS } };
   },

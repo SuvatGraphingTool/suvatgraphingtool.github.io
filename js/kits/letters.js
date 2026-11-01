@@ -36,6 +36,9 @@ export const letters = {
   working: (solved) => lettersWorking(solved),
   render: stage.render,
 
+  /** Resolve, in units of U²/g, U, g and U/g when there are no numbers. */
+  resolveUnits: (f) => (f.num ? null : [`× ${T`U^2/g`}`, '× U', '× g', `× ${T`U/g`}`]),
+
   hud(f, t) {
     const u = f.num ? ['m', 'm s⁻¹', 's'] : ['× U²/g', '× U', '× U/g'];
     return {

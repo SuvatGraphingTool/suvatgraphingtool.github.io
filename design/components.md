@@ -47,6 +47,11 @@ A kit is an object with:
 | `thumb(scenario)` | the card's SVG sketch, from `scenario.params` |
 | `ending(solved, scenario.ending)` | `{ eyebrow, title, body }` for the ending card; the scenario's `ending` supplies what the model leaves out |
 | `dir(v)` | optional: a word for a signed velocity, said back under its box |
+| `resolveAxis` | optional: how the Resolve card reads the motion (`js/kitresolve.js`) — `'along'`, `'vertical'` or `'down'` for one line, `'map'` (east, north, a bearing), `'ij'` (i, j, the angle to i) or `'bank'` (along and across a river) from above. Blank: whichever of x and y moves |
+| `resolveUnits(f)` | optional: `[s, v, a, t]` units for a question in letters (`× U²⁄g` …), or null for metres and seconds |
+| `resolve(solved, t, f)` | optional: the card itself, `{ blocks: [{ name, hue, rows: [{ name, value, unit, formula, sub, note }] }], note }`, in place of the generic reading |
+
+**Resolve, on every stage.** The card is read by `resolveKit` (js/kitresolve.js) from the motion `f` the engine returns: `pos`/`vel`/`accel` for one object; `posA`/`posB` (with `velA`/`velB`, or a constant `A.v`/`B.v`), the pair's `at(t)`, or `yP`/`yQ` for two, a block each. A new kit — the composer's included, which spreads its engine's kit — gets Resolve for free; it only names `resolveAxis` when its coordinates cannot say which way is up. `test/library.test.mjs` opens it on every library example at half its run.
 
 | field | (added for `journey`) |
 |---|---|

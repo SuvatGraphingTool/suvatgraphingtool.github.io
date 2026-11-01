@@ -40,6 +40,7 @@ export const chain = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'along',
   read(vals) {
     const stages = Array.from({ length: N }, (_, i) => Object.fromEntries(KEYS.map(([key]) => [key, vals[`s${i + 1}.${key}`]])));
     return { look: vals.look, stages, S: vals.S, T: vals.T };

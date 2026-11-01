@@ -34,6 +34,7 @@ export const jump = {
   g: [9.8, 9.81, 10],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'down',
   read(vals) {
     return { g: vals.g, D: vals.D, T: vals.T, t1: vals.t1, v1: vals.v1, a2: vals.a2, t2: vals.t2, v2: vals.v2 };
   },

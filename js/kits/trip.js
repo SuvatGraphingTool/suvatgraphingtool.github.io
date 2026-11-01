@@ -37,6 +37,7 @@ export const trip = {
   rows: Array.from({ length: N }, (_, i) => seg(i + 1)),
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'along',
   read(vals) {
     const segs = Array.from({ length: N }, (_, i) => ({ who: vals[`s${i + 1}.who`] || (i < 3 ? 'car' : 'foot'), u: vals[`s${i + 1}.u`], v: vals[`s${i + 1}.v`], t: vals[`s${i + 1}.t`] }));
     return { segs, T: vals.T, back: vals.back };

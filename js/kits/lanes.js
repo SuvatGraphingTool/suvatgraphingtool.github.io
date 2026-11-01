@@ -67,6 +67,7 @@ export const lanes = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
   lapse: (f) => timeLapse(f.tMax),
 
+  resolveAxis: 'along',
   read(vals) {
     const p = (n) => ({ ...Object.fromEntries(KEYS.map((q) => [q, vals[`${n}.${q}`]])), ends: vals[`${n}.ends`] === 'line' });
     const where = vals.where || 'road';

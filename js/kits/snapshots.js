@@ -49,6 +49,7 @@ export const snapshots = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'map',
   read(v) {
     const vv = (key) => ({ x: v[`${key}.x`], y: v[`${key}.y`] });
     return { r0: vv('r0'), u: vv('u'), tu: v.tu, a: vv('a'), at2: { kind: v.k2 || 'r', t: v.t2, v: vv('p2') }, a2: vv('a2'), ask: { t: v.askT, dir: v.dir || null } };

@@ -22,6 +22,7 @@ import { solveTwoPlane, twoPlaneWorking } from '../js/core/twoplane.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { toLevel, rebound, timesAt } from '../js/core/stages.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
+import { resolveKit } from '../js/kitresolve.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -1591,6 +1592,25 @@ group('A question in parts: every part of every library scenario reproduces its 
   ok(Math.abs(rs[2].answer.values[0] - carried.meet.t) < 1e-12 && rs[2].carried[0].value === 8.75, 'a part that carries (a)’s 8.75 m forward is solved with it');
   ok(/Carries forward/.test(stripHTML(twoParts, rs, 2, [])), 'and it says so');
 }
+
+group('Resolve opens on every library stage, from its engine', () => {
+  for (const e of LIBRARY) {
+    const K = KITS[e.kit], s = K.solve(K.read(e.example || {}));
+    if (!s.ok) { ok(false, `${e.id}: its example runs`); continue; }
+    let R = null;
+    try { R = resolveKit(K, s, s.f, (s.f.tMax || 1) / 2); } catch (err) { ok(false, `${e.id}: Resolve threw ${err.message}`); continue; }
+    const rows = R?.blocks?.flatMap((b) => b.rows) || [];
+    ok(rows.length >= 2 && rows.every((q) => Number.isFinite(q.value) && q.unit && q.formula),
+      `${e.id}: Resolve at half its run reads real numbers (${rows.length} rows)`);
+  }
+  // the axis a kit names is the one the card reads in
+  const by = (id) => { const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit], s = K.solve(K.read(e.example)); return resolveKit(K, s, s.f, s.f.tMax / 2); };
+  ok(by('the-lift').blocks[0].rows[0].name === 'Height', 'a lift reads as a height, though its engine keeps it in x');
+  ok(by('flying-in-a-wind').blocks[0].rows[0].name === 'East', 'a map from above reads east and north');
+  ok(/bearing/.test(by('flying-in-a-wind').blocks[0].rows[2].note), 'with a bearing');
+  ok(by('two-trains').blocks.map((b) => b.name).join() === 'A: along the line,B: along the line', 'two on one line: a block each, along');
+  ok(by('two-up-letters').blocks[0].rows[0].unit.includes('U'), 'a question in letters says its unit');
+});
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

@@ -1096,6 +1096,10 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     // must not open a card nobody asked for.
     if (clicked && was?.pick && isResolve(was.pick.kind) && e
         && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) onResolve.click?.(was.pick.t);
+    // A library stage picks nothing (its view maps layout only), so a click
+    // anywhere on it is a click on the motion: Resolve at the instant shown.
+    else if (clicked && was && !cam._map?.sx && e
+        && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) onResolve.click?.(null);
   };
   canvas.addEventListener('pointerup', (e) => end(e, true));
   canvas.addEventListener('pointercancel', (e) => end(e, false));

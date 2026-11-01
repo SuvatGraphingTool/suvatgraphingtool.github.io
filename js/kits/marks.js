@@ -39,10 +39,14 @@ export const marks = {
   g: [9.8, 9.81, 10],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'down',
   read(v) { return { mode: v.mode || 'numbers', look: v.look || 'window', vM: v.vM, vN: v.vN, t: v.t, h: v.h, H: v.H, k: v.k, g: v.g }; },
   solve: solveMarks,
   working: (solved) => marksWorking(solved),
   render: stage.render,
+
+  /** Resolve, in units of u²/g, u, g and u/g when the question is in letters. */
+  resolveUnits: (f) => (f.letters ? [`× ${T`u^2/g`}`, '× u', '× g', `× ${T`u/g`}`] : null),
 
   hud(f, t) {
     const u = f.letters ? [`× ${T`u^2/g`}`, '× u', `× ${T`u/g`}`] : ['m', 'm s⁻¹', 's'];
