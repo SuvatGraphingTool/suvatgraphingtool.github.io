@@ -70,6 +70,7 @@ A kit is an object with:
 | `jump` — `js/kits/jump.js` (engine: journey) | `parachute-stages` |
 | `twoplane` — `js/kits/twoplane.js` | `two-in-a-plane` |
 | `models` — `js/kits/models.js` (engine: journey) | `three-models` |
+| `together` — `js/kits/together.js` | `land-together` (engine js/core/together.js; stage js/render/together.js: the heights `tower`, two people on its battlements, two stones landing at once) |
 | `heightrange` — `js/kits/heightrange.js` | `higher-than-far` (engine js/core/heightrange.js; stage js/render/heightrange.js: a park, a tripod launcher, a fan of arcs, H and R side by side) |
 | `bridge` — `js/kits/bridge.js` | `from-the-bridge` (engine js/core/bridge.js; stage js/render/bridge.js: a footbridge end on over a road, a thrower on the deck, a runner below) |
 | `apples` — `js/kits/apples.js` | `two-apples` (engine js/core/apples.js; stage js/render/apples.js: an orchard, an apple tree to scale, a shaded apple with a stem and leaf) |

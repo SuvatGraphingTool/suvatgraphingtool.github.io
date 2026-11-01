@@ -1468,7 +1468,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit], a = K.solve(K.read(e.example));
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       const v = String(p.find).split('.').reduce((o, k) => o?.[k], a);
@@ -1490,6 +1490,20 @@ group('Higher than it goes far: OCR MEI H640/01 Jun 2023 Q15', async () => {});
   ok(near(solveHeightRange({ u: 20, theta: 80, ratio: 0.5, g: 9.8 }).thStar, 63.43, 0.01), 'higher than half the range: tan θ > 2');
   ok(heightRangeWorking(s).length === 4, 'the working: the range, the height, the inequality, the throw');
   ok(!solveHeightRange({ u: 20, theta: 95, g: 9.8 }).ok && !solveHeightRange({ theta: 80, g: 9.8 }).ok, 'an angle that is not acute, or no speed to draw, is refused');
+}
+
+group('Land together: Edexcel IAL WME01 Jun 2015 Q4', async () => {});
+{
+  const { solveTogether, togetherWorking } = await import('../js/core/together.js');
+  const s = solveTogether({ d: 1, U: 19.6, g: 9.8 });
+  ok(s.ok && near(s.T, 1.5, 1e-9) && near(s.h, 11.025, 1e-9), 'T = 1.5 s, h = 11.025 m', s.reason);
+  ok(s.f.posA(1.5) === 0 && s.f.posB(1.5) === 0 && s.f.posA(1.4) > 0 && s.f.posB(1.4) > 0, 'both reach the ground at 1.5 s, neither before');
+  ok(s.f.posB(0.9) === 11.025, 'the second waits at the top until it is thrown');
+  const b = solveTogether({ d: 1, h: 11.025, g: 9.8 });
+  ok(b.ok && near(b.U, 19.6, 1e-9), 'from the height, the throw back: 19.6 m s⁻¹');
+  ok(!solveTogether({ d: 1, U: 9.8, g: 9.8 }).ok && !solveTogether({ d: 1, U: 5, g: 9.8 }).ok, 'thrown no faster than the first is falling, it never catches up: refused');
+  ok(!solveTogether({ d: 2, h: 11.025, g: 9.8 }).ok, 'a height the first falls before the second is thrown is refused');
+  ok(togetherWorking(s)[0].rows.length === 4, 'the working: each fall, the one equation, h');
 }
 
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }

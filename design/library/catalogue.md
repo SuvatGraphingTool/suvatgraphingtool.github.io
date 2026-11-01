@@ -127,6 +127,7 @@ this library: *covered* names the one of the twelve that does it.
 | 91 | AQA | 7357/2 | Jun 2024 | 19 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/AQA/Paper-2/QP/June%202024%20QP.pdf) | A toy shoots balls up at 7 m/s: verify a 2.5 m greatest height; then between 0° and 11° from the vertical, the least greatest height k | 9.8 | **covered** by the twelve: `up` gives the 2.5 m greatest height straight up; `arc` at 79° to the horizontal (11° from the vertical) gives 2.41 m — the least, since the vertical part of 7 m s⁻¹ is smallest at the widest angle |
 | 92 | OCR MEI | H640/01 | Jun 2024 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202024%20QP.pdf) | From a bridge, a ball thrown just as a runner at a steady 4 m/s passes below; caught 2.4 s later, 3.6 m below the throw; the vertical component, then the speed and angle | 9.8 | **built** → `from-the-bridge` |
 | 93 | OCR MEI | H640/01 | Jun 2023 | 15 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202023%20QP.pdf) | A projectile from level ground: show the range is 2u² sin θ cos θ / g; the acute angles for which the greatest height exceeds the range | – | **built** → `higher-than-far` |
+| 94 | Edexcel | IAL WME01 | Jun 2015 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202015%20QP.pdf) | A stone dropped from h; one second later another thrown down at 19.6 m/s from the same height; both land together: h | 9.8 | **built** → `land-together` |
 
 ## Built, and why it is built the way it is
 
@@ -407,6 +408,29 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `land-together` — Land together
+
+**Papers.** Edexcel IAL WME01 Jun 2015 Q4 (a stone let go from rest at height
+h; one second later another thrown straight down at 19.6 m s⁻¹ from the same
+height; both hit the ground together: T = 1.5 s, h = 11.025 m).
+
+**Why the twelve cannot.** They fly one object from a height they are given;
+here the height is the unknown, fixed by two falls that end at the same
+instant. `pair-vertical` finds when two meet in the air, not two that land
+together.
+
+**How it is solved.** js/core/together.js: down positive, ½gT² for the first
+and U(T − d) + ½g(T − d)² for the second; equal, the T² terms cancel:
+T(U − gd) = Ud − ½gd², then h = ½gT². Refused unless U > gd. Given h instead,
+T from the first fall and U from the second.
+
+**The stage.** A stone tower on a green (js/render/heights.js `tower`), two
+people on its battlements with their hands at h; the first lets go, the second
+waits the delay and throws; both stones strike the grass together with dust
+and rings; h as a bracket; each velocity solid (vertical).
+
+**Parts.** One: h → the engine's `h` (11.0 m).
 
 ### `higher-than-far` — Higher than it goes far
 
