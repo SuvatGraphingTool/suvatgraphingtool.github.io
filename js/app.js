@@ -3327,6 +3327,9 @@ function applyLibrary(x, { graph = true } = {}) {
     else if (typeof v === 'number' && isFinite(v)) state.kit[k] = v;
     else if (typeof v === 'string' && /^-?[\d.]+(\/[\d.]+)?$/.test(v.trim())) state.kit[k] = /\//.test(v) ? v.trim() : Number(v);
   }
+  // A question that never names g happens on Earth, as it does for the twelve:
+  // the reader leaves g out (it is told to), so the box takes the paper's usual 9.81.
+  if (state.kit.g == null) state.kit.g = 9.81;
   state.readerParts = fromReader(s.id, x.parts, [...keys]);
   buildValuesScreen();              // which recomputes, and solves each part
   refreshSteps();

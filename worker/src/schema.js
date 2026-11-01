@@ -184,7 +184,12 @@ Exam situations the twelve above cannot set up: two objects, a bounce, stages, i
 vectors, graphs to read, answers in letters. When one fits, return scenario "library",
 library: its id, and boxes: each GIVEN value keyed exactly as its boxes say. Choice boxes
 take one of the words in [ ]. Leave out a box the question asks you to find. Prefer the
-twelve for one plain projectile or one vehicle on a road.
+twelve for one plain projectile or one vehicle on a road — EXCEPT when the question names
+the PLACE it starts from: a cliff, a tower, a building, a bridge, a well, a diving board, a
+balloon. Then the student must SEE that place, so use library "from-a-height" with place set
+(a building is a tower; a board is a diving board), for any one ball launched from that
+height: dropped, pushed or rolled off (u 0), or thrown in any direction (theta 90 up, −90
+down, 0 flat).
 ${LIBRARY_GUIDE}
 
 COMPOSING A SCENE
@@ -222,17 +227,20 @@ The values every part shares go in the top level (or in boxes), never only in a 
 
 EXAMPLES
 "A ball is projected from the top of a 25 m cliff at 45° above the horizontal and lands 100 m from the foot of the cliff. Take g = 9.8. Find the speed of projection."
-→ {"understood":true,"confidence":"high","scenario":"platform-angle","summary":"A ball is projected at 45° from a 25 m cliff and lands 100 m away.","h":25,"angleDegrees":45,"s":100,"g":9.8,"asks":["speed of projection"]}
+→ {"understood":true,"confidence":"high","scenario":"library","library":"from-a-height","summary":"A ball is projected at 45° from a 25 m cliff and lands 100 m away.","boxes":{"place":"cliff","h":25,"theta":45,"s":100,"g":9.8},"parts":[{"label":"a","asks":"speed of projection"}]}
 (no u — it is what the question asks for; no v — it is not stated)
 
 "A particle is projected from level ground with speed 35 m/s at angle α where tan α = 3/4. Find the greatest height."
 → {"understood":true,"confidence":"high","scenario":"arc","summary":"A particle is projected from the ground at 35 m/s with tan α = 3/4.","h":0,"u":35,"ratioFn":"tan","ratioNum":3,"ratioDen":4,"asks":["greatest height"]}
 
+"a ball is just pushed off a 60 m cliff and hits the ground below"
+→ {"understood":true,"confidence":"high","scenario":"library","library":"from-a-height","summary":"A ball is pushed off a 60 m cliff from rest and falls to the ground.","boxes":{"place":"cliff","h":60,"u":0,"theta":0}}
+
 "stone chucked flat off a 20 metre cliff at 15 metres a second"
-→ {"understood":true,"confidence":"high","scenario":"platform","summary":"A stone is thrown horizontally at 15 m/s from a 20 m cliff.","h":20,"u":15}
+→ {"understood":true,"confidence":"high","scenario":"library","library":"from-a-height","summary":"A stone is thrown horizontally at 15 m/s from a 20 m cliff.","boxes":{"place":"cliff","h":20,"u":15,"theta":0}}
 
 "A stone is dropped from a tower 45 m high."
-→ {"understood":true,"confidence":"high","scenario":"dropped","summary":"A stone is dropped from a 45 m tower.","h":45}
+→ {"understood":true,"confidence":"high","scenario":"library","library":"from-a-height","summary":"A stone is dropped from a 45 m tower.","boxes":{"place":"tower","h":45,"u":0,"theta":0}}
 
 "A lorry is moving along a straight horizontal road with constant acceleration. The lorry passes a point A with speed u m/s, and 10 seconds later passes a point B with speed 34 m/s. Given that AB = 240 m, find (a) the value of u, (b) the time taken for the lorry to move from A to the mid-point of AB."
 → {"understood":true,"confidence":"high","scenario":"road","summary":"A lorry passes A, then B 10 s later at 34 m/s; AB = 240 m.","v":34,"t":10,"s":240,"atMidpoint":true,"asks":["the value of u","time from A to the mid-point of AB"]}

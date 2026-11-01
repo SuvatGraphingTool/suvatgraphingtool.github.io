@@ -3,6 +3,8 @@
 
 import { toEngine, toApp, APP_SCENARIOS, resolveAngle, speedFromRange, speedFromApex } from '../js/core/question.js';
 import { SCENARIO_IDS } from '../worker/src/schema.js';
+import { toPlace } from '../worker/src/place.js';
+import { solveHeight } from '../js/core/height.js';
 import { solveLaunch } from '../js/core/solve.js';
 import { solveRoad } from '../js/core/road.js';
 import { flight, timeAbove } from '../js/core/projectile.js';
@@ -306,6 +308,20 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
        && Object.keys(fromReader('pair-vertical', [{ label: 'a', asks: 'x', given: { 'B.t0': 2, evil: 1 } }], ['B.t0'])[0].given).length === 1, 'a part’s given only sets boxes the scenario has');
     ok(byId('arc') && fromReader('nope', []) === null, 'an unknown scenario reads as no parts');
   });
+}
+
+
+// A question that names where it starts from is shown there: the cliff scene, not the pitch.
+{
+  const cliff = toPlace({ understood: true, scenario: 'dropped', summary: 'A ball falls from a 60 m cliff.', h: 60 }, 'pushed off a 60 m cliff');
+  ok(cliff.library === 'from-a-height' && cliff.boxes.place === 'cliff' && cliff.boxes.u === 0 && cliff.boxes.theta === 0, 'pushed off a cliff: the cliff scene, from rest');
+  const r = solveHeight({ ...cliff.boxes, g: 9.81 });
+  ok(r.ok, 'and the engine runs it once g is the app\u2019s 9.81');
+  const up = toPlace({ understood: true, scenario: 'platform-angle', summary: 'Thrown up from a 30 m tower.', h: 30, u: 14, angleDegrees: 90,
+    parts: [{ label: 'a', answer: 'top' }, { label: 'b', answer: 'flight' }, { label: 'c', answer: 'vLand' }] });
+  ok(up.boxes.place === 'tower' && up.boxes.theta === 90 && up.parts.map((p) => p.answer).join() === 'height,time,speed', 'a tower throw straight up keeps its three parts, renamed');
+  ok(toPlace({ understood: true, scenario: 'arc', summary: 'From the ground.', h: 0, u: 20, angleDegrees: 30 }).scenario === 'arc', 'no place named: left as read');
+  ok(toPlace({ understood: true, scenario: 'platform-angle', summary: 'From a cliff.', h: 20, u: 10, ratioFn: 'tan', ratioNum: 3, ratioDen: 4 }).scenario === 'platform-angle', 'an angle given as a ratio stays with the twelve');
 }
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
