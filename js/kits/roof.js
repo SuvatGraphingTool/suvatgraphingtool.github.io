@@ -40,6 +40,6 @@ export const roof = {
 
   ending(s) {
     const e = pair.ending(s);
-    return { ...e, eyebrow: `A ${tr(s.h)} m building; level at t = ${tr(s.meet.t)} s`, body: `${s.notes.slice(0, 1).map((x) => `<p>${x}</p>`).join('')}${e.body}` };
+    return { ...e, eyebrow: `A ${tr(s.h)} m building`, body: `${s.notes.slice(0, 1).map((x) => `<p>${x}</p>`).join('')}${e.body}` };
   },
 };

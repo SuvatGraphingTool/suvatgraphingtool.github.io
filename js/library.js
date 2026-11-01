@@ -415,7 +415,7 @@ export const LIBRARY = [
     parts: [
       { label: 'a', kind: 'height', ask: 'Find the height of the building, given the particle is above its roof for 4 s.',
         find: 'h', sym: 'h', unit: 'm', dp: 1, span: ['t1', 't2'], step: 'roof', paper: 60, tol: 0.05 },
-      { label: 'b', kind: 'meeting', ask: 'A second particle is thrown straight up from the roof at 20 metres a second, one second later. When do the two meet, at the same height?',
+      { label: 'b', kind: 'meeting', ask: 'A second particle is thrown straight up from the roof a moment after the first. When do the two meet, at the same height?',
         find: 'meet.t', sym: 't', unit: 's', dp: 2, at: 'meet.t', step: 'meet', uses: ['a'], paper: 3.5, tol: 0.005 },
     ],
     sources: [
@@ -441,7 +441,7 @@ export const LIBRARY = [
     place: 'A building, cut away to show its lift shaft',
     example: { a1: 0.9, t1: 3, t2: 6, t3: 4 },
     parts: [
-      { label: 'i', kind: 'other', ask: 'Sketch a velocity–time graph for the motion.', say: 'The velocity–time graph below the stage: a trapezium, up for 3 s, flat for 6 s, down for 4 s.', at: 'end' },
+      { label: 'i', kind: 'other', ask: 'Sketch a velocity–time graph for the motion.', say: 'The velocity–time graph below the stage: a trapezium — speeding up, steady, then slowing to rest.', at: 'end' },
       { label: 'ii', kind: 'distance', ask: 'Find the total distance travelled by the lift.', find: 'f.range', sym: 's', unit: 'm', dp: 2, at: 'end', paper: 25.65, tol: 0.005 },
     ],
     sources: [

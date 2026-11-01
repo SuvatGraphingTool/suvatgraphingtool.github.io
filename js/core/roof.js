@@ -55,6 +55,7 @@ export function solveRoof(k = {}) {
     roofRows.push({ f: M`T = (2v)/g`, s: M`(2 * ${d3(snap(Math.sqrt(u * u - 2 * g * h)))})/${d3(g)}`, r: M`T = ${d3(above)} [s]` });
   }
   const B = k.B || {};
+  if (have(B.u) && !(B.u >= 0)) return fail('The second particle is thrown up from the roof: give its speed as 0 or more.');
   if (!have(B.u)) return fail(`The building is ${M`${d3(h)} [m]`} high, and the first is above its roof for ${M`${d3(above)} [s]`}. Still needed to go on: the second particle’s speed up from the roof.`);
   // side by side, not in one line: they pass each other, and the run goes on until just after the first is back down past the roof
   const pair = solvePair({ A: { h: 0, u, t0: 0 }, B: { h, u: B.u, t0: have(B.t0) ? B.t0 : 0 }, g, pass: true, until: snap(tTop + above / 2 + (tTop - above / 2) / 4) });

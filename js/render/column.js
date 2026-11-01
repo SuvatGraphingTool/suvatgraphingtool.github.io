@@ -380,7 +380,7 @@ export function render(canvas, cam, o) {
       pulse(g, cx, ry, a.age, a.life, P.disp, { radius: 22 });
       if (t >= tt - 1e-9) L.add(T`${name} = ${sig3(tt)} [s]`, cx - lane('down') - 10, ry + (name === 't_1' ? -14 : 14), { color: P.disp, align: 'right', pri: 9, size: 14, weight: 700 });
     }
-    if (t >= f.roof.t2 - 1e-9) L.add(T`"above the roof" T = ${sig3(f.roof.above)} [s]`, phone ? 10 : rx + 4, ry - 30, { color: P.disp, align: 'left', pri: 10, size: 14, weight: 700 });
+    if (t >= f.roof.t2 - 1e-9) L.add(`above the roof for ${T`T = ${sig3(f.roof.above)} [s]`}`, phone ? 10 : rx + 4, ry - 30, { color: P.disp, align: 'left', pri: 10, size: 14, weight: 700 });
   }
   if (met && show.velocity !== false) {
     // the velocities AT the meeting, which is what the block says

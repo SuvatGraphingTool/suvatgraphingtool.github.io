@@ -90,7 +90,9 @@ export function render(canvas, cam, o) {
   cab.addColorStop(0, '#d9dde2'); cab.addColorStop(0.5, '#aeb4bb'); cab.addColorStop(1, '#8c939b');
   g.fillStyle = cab; g.fillRect(cx0, cy1, cx1 - cx0, cy0 - cy1);
   g.fillStyle = E.night ? '#fff1c9' : '#fbf3de'; g.fillRect(cx0 + 4, cy1 + 4, cx1 - cx0 - 8, cy0 - cy1 - 8);
-  runner(g, (cx0 + cx1) / 2 + k * 0.2, cy0 - 4, Math.min(cy0 - cy1 - 10, k * 1.7), P, { still: true });
+  // the passenger, when the car is big enough to show one
+  const ph = Math.min(cy0 - cy1 - 10, k * 1.7);
+  if (ph > 8) runner(g, (cx0 + cx1) / 2 + k * 0.2, cy0 - 4, ph, P, { still: true });
   g.strokeStyle = withAlpha('#3c3f45', 0.8); g.lineWidth = 2; g.strokeRect(cx0, cy1, cx1 - cx0, cy0 - cy1);
   g.fillStyle = '#3c3f45'; g.fillRect(cx0, cy1 - 4, cx1 - cx0, 4);
 

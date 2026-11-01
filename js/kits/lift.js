@@ -7,7 +7,7 @@
 import { solveJourney, journeyWorking } from '../core/journey.js';
 import { journey } from './journey.js';
 import * as stage from '../render/lift.js';
-import { num } from '../notation.js';
+import { T, num } from '../notation.js';
 
 
 export const lift = {
@@ -26,7 +26,6 @@ export const lift = {
   ],
   cols: { up: 'Speeding up', steady: 'Steady', down: 'Slowing down' },
   rows: [],
-  g: [9.8, 9.81, 10],
   hides: { shows: ['apex', 'ruler', 'range', 'grid', 'components'], extras: ['energy'], bounce: true },
 
   read(v) { return { a1: v.a1, t1: v.t1, t2: v.t2, t3: v.t3, a3: v.a3 }; },
@@ -39,12 +38,24 @@ export const lift = {
       left: [
         { k: 'Height risen', v: num(f.pos(t).x, 2), unit: 'm', hue: 'disp' },
         { k: 'Velocity, up', v: num(f.vel(t).x, 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Acceleration, up', v: num(f.accel(t), 2), unit: 'm s⁻²', hue: 'acc' },
+        { k: 'Acceleration, up', v: num(t >= f.tMax - 1e-9 ? 0 : f.accel(t), 2), unit: 'm s⁻²', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };
   },
-  graphs: journey.graphs,
+  /* All vertical, so every line solid (rule 2); the changes of stage ringed. */
+  graphs(f, t, P) {
+    const stops = f.stages.map((st) => st.t1);
+    const at0 = (fn) => (tt) => (tt >= f.tMax - 1e-9 ? 0 : fn(tt));
+    return [
+      { canvas: 'g-s', title: 'Height risen–time', unit: 'm', tMax: f.tMax, t, points: stops.map((tt) => ({ t: tt, y: f.pos(tt).x, color: P.mark })),
+        series: [{ label: 'height risen', tag: T`s`, fn: (tt) => f.pos(tt).x, color: P.disp, dash: null }] },
+      { canvas: 'g-v', title: 'Velocity–time, up positive (the area is the height risen)', unit: 'm s⁻¹', tMax: f.tMax, t, points: stops.map((tt) => ({ t: tt, y: f.vel(tt).x, color: P.mark })),
+        series: [{ label: 'velocity', tag: T`v`, fn: (tt) => f.vel(tt).x, color: P.vel, dash: null }] },
+      { canvas: 'g-a', title: 'Acceleration–time, up positive', unit: 'm s⁻²', tMax: f.tMax, t,
+        series: [{ label: 'acceleration', tag: T`a`, fn: at0(f.accel), color: P.acc, dash: null }] },
+    ];
+  },
 
   thumb() {
     return `<svg viewBox="0 0 120 60" aria-hidden="true">
