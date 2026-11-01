@@ -214,7 +214,7 @@ console.log('\nThe Worker reads a jump with no angle as straight up, and says so
   ok(ng.assumed?.[0] === 'angle', '“angle not given” is no angle');
   const d = chain({ understood: true, scenario: 'platform-angle', h: 10, u: 7, who: 'diver', summary: 'A diver dives off a 10 m diving board at 7 m/s at an angle.' }, 'a diver dives off a 10 m diving board at 7 m/s at an angle');
   ok(d && !('theta' in d.recipe.numbers), 'an angle the question leaves to find is left for the values screen, never straight down');
-  const top = chain({ understood: true, scenario: 'up', h: 10, u: 7, who: 'diver', summary: 'A diver jumps up off a 10 m diving board.', parts: [{ label: 'a', asks: 'rise above the board', answer: 'rise' }] }, 'a diver jumps straight up at 7 m/s off a 10 m diving board');
+  const top = chain({ understood: true, scenario: 'up', h: 10, u: 7, who: 'diver', summary: 'A diver jumps up off a 10 m diving board.', parts: [{ label: 'a', asks: 'rise above the board', answer: 'rise' }] }, 'a diver jumps straight up at 7 m/s off a 10 m diving board. (a) How high above the board does she rise?');
   ok(top.recipe.backdrop === 'board' && top.parts[0].answer === 'height2', 'the twelve’s “rise” survives From a height to the composed height above the board');
 }
 
