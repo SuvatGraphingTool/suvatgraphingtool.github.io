@@ -63,24 +63,24 @@ subagent. It re-tests both scenarios with new numbers, checks them for
 consistency with the whole app, and checks nothing that already shipped has
 broken.
 
-## Shipping (the AI site only, never `main`)
+## Shipping (the REDESIGN site only — the main site for AI work since 1 Nov)
 
-1. `git fetch`, then rebase onto `origin/ai`.
+The user, 1 Nov: "we only work on this site from now on … then we merge if needed."
+Everything goes to `redesign`, live at https://suvat-redesign.suvatgraphingtool.workers.dev.
+`ai` and `main` get nothing unless the user says so. Read `design/redesign.md` first:
+chrome is monochrome, restyle only in `css/shell.css`, the Spark is Ask Suvat's only.
+
+1. `git fetch`, then rebase onto `origin/redesign`.
 2. Run every `test/*.test.mjs`.
-3. Push fast-forward with `GH_TOKEN=$(gh auth token -u SuvatGraphingTool) git push origin HEAD:ai`.
+3. Push fast-forward with `GH_TOKEN=$(gh auth token -u SuvatGraphingTool) git push origin HEAD:redesign`.
    Never force-push. Never switch gh's active account.
-4. In `/home/tr/Projects/SUVAT-new` (the `ai` checkout, shared by every
-   session), run `git pull --ff-only` and then `scripts/deploy-ai.sh`. Never
-   leave anything uncommitted there. If git reports a lock, wait a minute and
-   retry.
-5. curl https://suvat-ai.suvatgraphingtool.workers.dev and confirm the files
-   match `origin/ai`. If another session pushed in between, run the deploy
-   again, so the site always carries the latest `origin/ai`.
-6. The redesign site (https://suvat-redesign.suvatgraphingtool.workers.dev) gets every ship
-   too, but the session that owns the redesign brings it in, styled to its theme (the
-   user, 1 Nov). Don't merge into `redesign` yourself: end your report with "redesign:
-   <commits>" and the lead passes it on.
-7. Update your rows in the tick list you are working from.
+4. In `/home/tr/Projects/SUVAT-new/.claude/worktrees/redesign` (the shared `redesign`
+   checkout), run `git pull --ff-only` and then `scripts/deploy-redesign.sh`. Never leave
+   anything uncommitted there. If a ship changes `worker/`, also `cd worker && npx wrangler
+   deploy` from there, after the site. If your permissions refuse a deploy, end your report
+   with "redesign deploy needed" (or "worker deploy needed") and the lead runs it.
+5. curl the live site and confirm the files match `origin/redesign`.
+6. Update your rows in the tick list you are working from.
 
 Several sessions push to `ai` at once. Keep commits small, rebase often, keep
 edits to shared files (`js/app.js`, `js/library.js`, `js/kits/index.js`,
