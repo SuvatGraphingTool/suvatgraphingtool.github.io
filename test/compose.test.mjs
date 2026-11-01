@@ -200,6 +200,22 @@ console.log('\nThe Worker reads a jump with no angle as straight up, and says so
   ok(at.angleDegrees === 30 && !at.assumed, 'an angle the question gives is kept');
   const sk = toFigure({ understood: true, scenario: 'platform', h: 2, u: 4, who: 'skateboarder' }, 'a skateboarder rolls off a 2 m wall at 4 m/s');
   ok(sk.scenario === 'platform' && !sk.assumed, 'rolling off is not a jump: across, as read');
+  const chain = (x, words) => fromReading(toPlace(toFigure(x, words), words));
+  const girl = toFigure({ understood: true, scenario: 'platform', h: 20, u: 8, summary: 'A girl throws a ball from a 20 m tower.' }, 'a girl throws a ball horizontally from a 20 m tower at 8 m/s');
+  ok(girl.who === 'ball', 'a girl throws a ball: the ball is what moves, not the girl');
+  const she = toFigure({ understood: true, scenario: 'platform', h: 3, u: 2, who: 'she' }, 'she leaps from a 3 m ledge at 2 m/s');
+  const stunt = toFigure({ understood: true, scenario: 'platform', h: 15, u: 3, who: 'stuntman' }, 'a stuntman jumps off a 15 m bridge at 3 m/s');
+  ok(she.angleDegrees === 90 && she.assumed && stunt.angleDegrees === 90 && stunt.assumed, '“she” and “a stuntman” are people: their jumps are straight up, said');
+  const car = toFigure({ understood: true, scenario: 'platform', h: 5, u: 20, who: 'car' }, 'a car jumps off a 5 m ramp at 20 m/s while a man watches');
+  ok(car.scenario === 'platform' && !car.assumed, 'a car that “jumps”, with a man watching: still across');
+  const ups = toFigure({ understood: true, scenario: 'platform', h: 10, u: 5, who: 'she' }, 'she jumps upwards at 5 m/s from a 10 m diving board');
+  ok(ups.angleDegrees === 90 && !ups.assumed, '“upwards” is given: straight up, nothing assumed');
+  const ng = toFigure({ understood: true, scenario: 'platform', h: 10, u: 5, who: 'diver' }, 'a diver jumps at 5 m/s from a 10 m board, angle not given');
+  ok(ng.assumed?.[0] === 'angle', '“angle not given” is no angle');
+  const d = chain({ understood: true, scenario: 'platform-angle', h: 10, u: 7, who: 'diver', summary: 'A diver dives off a 10 m diving board at 7 m/s at an angle.' }, 'a diver dives off a 10 m diving board at 7 m/s at an angle');
+  ok(d && !('theta' in d.recipe.numbers), 'an angle the question leaves to find is left for the values screen, never straight down');
+  const top = chain({ understood: true, scenario: 'up', h: 10, u: 7, who: 'diver', summary: 'A diver jumps up off a 10 m diving board.', parts: [{ label: 'a', asks: 'rise above the board', answer: 'rise' }] }, 'a diver jumps straight up at 7 m/s off a 10 m diving board');
+  ok(top.recipe.backdrop === 'board' && top.parts[0].answer === 'height2', 'the twelve’s “rise” survives From a height to the composed height above the board');
 }
 
 group('The veil names only the recipe’s own pieces', () => {

@@ -328,8 +328,15 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
 // A diving board, a well, a balloon: From a height's places, never a composer refusal.
 {
   const w = 'a person jumping off a diving board no angle given, the board is 10 m high and jumps at 7 m/s';
-  const r = toPlace({ understood: true, scenario: 'compose', summary: 'A person jumps off a 10 m board.', recipe: { backdrop: 'board', engine: 'projectile', objects: [{ figure: 'person' }], numbers: { h: 10, u: 7 } } }, w);
-  ok(r.library === 'from-a-height' && r.boxes.place === 'board' && r.boxes.theta === 90 && /straight up/.test(r.summary), 'a board recipe becomes From a height, the angle-less jump straight up and said');
+  // the diving board is the composer's own place now (a person, the pool): the
+  // recipe stays composed, the jump straight up, and the reply says so
+  const { toFigure } = await import('../worker/src/composeplace.js');
+  const { check: checkRecipe, assumedNotes } = await import('../js/compose/recipe.js');
+  const r = toPlace(toFigure({ understood: true, scenario: 'compose', summary: 'A person jumps off a 10 m board.', recipe: { backdrop: 'board', engine: 'projectile', objects: [{ figure: 'person' }], numbers: { h: 10, u: 7 } } }, w), w);
+  ok(r.scenario === 'compose' && checkRecipe(r.recipe).ok && r.recipe.numbers.theta === 90 && /straight up/.test(assumedNotes(r).join(' ')),
+     'a board recipe is drawn, never "no backdrop called board"; the angle-less jump straight up and said');
+  const wl = toPlace({ understood: true, scenario: 'compose', summary: 'A stone dropped down a well.', recipe: { backdrop: 'well', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 20, u: 0 } } }, 'a stone dropped down a 20 m well');
+  ok(wl.library === 'from-a-height' && wl.boxes.place === 'well', 'a well, which only From a height draws, is From a height');
   const l = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'A person jumps.', boxes: { place: 'board', h: 10, u: 7, theta: 0 } }, w);
   ok(l.boxes.theta === 90 && /straight up/.test(l.summary), 'read as a flat launch, the jump is put straight up');
   ok(toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'board', h: 10, u: 7, theta: 30 } }, 'a diver jumps at 7 m/s at 30 degrees').boxes.theta === 30, 'an angle the student gave is kept');

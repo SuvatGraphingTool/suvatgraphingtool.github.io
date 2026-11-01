@@ -13,7 +13,7 @@ import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
-import { compose, scenesOf, fromReading } from './compose/recipe.js';
+import { compose, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
 import { figureOf } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
@@ -3528,7 +3528,7 @@ function applyComposed(x, { graph = true } = {}) {
       + `<button type="button" class="ghost sm ask-scene" data-id="${sid}">Show me this scene</button></div>`;
   }).join('');
   // what was assumed, and what is drawn as something close to it, said plainly
-  const said = [...(Array.isArray(x.notes) ? x.notes : []), ...(s.recipe.notes || [])];
+  const said = [...(Array.isArray(x.notes) ? x.notes : assumedNotes(x)), ...(s.recipe.notes || [])];
   more = said.map((n) => `<p class="ro-note">${n}</p>`).join('') + more;
   const head = `<p class="ro-eyebrow">Drawn for your question</p><h3 class="ro-name">${esc(s.name)}</h3>`
     + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;

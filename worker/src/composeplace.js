@@ -61,15 +61,21 @@ export function toComposed(x, words = '') {
 }
 
 /* ── what moves, and a jump with no angle ────────────────────────────────
-   The app draws what moves (js/compose/registry.js figureOf). This makes sure
-   the reading says what that is, from the question's own words when the model
-   left it out, and reads a person who JUMPS with no angle given the way exam
-   questions mean it: straight up, θ = 90 — marked `assumed`, so the reply
-   says so. Nothing is calculated: an angle the question did not give is set
-   to the one it means, and said. */
-const PERSON = /\b(divers?|person|man|woman|boy|girl|child|athlete|jumper|swimmer|gymnast|acrobat|skateboarder|skier|student)\b/i;
+   The app draws what moves (js/compose/registry.js figureOf — the same list
+   here, so a person is a person in both). This makes sure the reading says
+   what moves, from the question's own words when the model left it out, and
+   reads a person who JUMPS with no angle given the way exam questions mean
+   it: straight up, θ = 90 — marked `assumed`, so the reply says so. A jump
+   "upwards" or "vertically" IS given: straight up, and nothing assumed.
+   Nothing is calculated: an angle the question did not give is set to the
+   one it means, and said. */
+import { figureOf, whoIn } from '../../js/compose/registry.js';
+
 const JUMP = /\b(jump|jumps|jumped|jumping|leaps?|leapt|springs|sprang)\b/i;
-const ANGLE_SAID = /°|\bdegrees?\b|\bangle\b|horizontal|vertical|upward|downward|straight (up|down)|\b(tan|sin|cos)\b|\bflat\b|\bacross\b/i;
+const UP = /\b(straight up|upwards?|vertically( up(wards)?)?|directly up)\b/i;
+const ANGLE_SAID = /°|\bdegrees?\b|\bangle\b|horizontal|vertical|downward|straight (up|down)|\b(tan|sin|cos)\b|\bflat\b|\bacross\b/i;
+// "no angle given", "angle not stated", "an unspecified angle": none given
+const NO_ANGLE = /\b(no|without an?|not given an?)\s+(launch\s+)?angle\b[^.,;]*|\bangle\s+(is\s+)?(not\s+(given|stated|known)|unknown|unspecified|unstated)\b|\b(an?\s+)?(unspecified|unknown|unstated)\s+angle\b/gi;
 const LAUNCHES = new Set(['dropped', 'down', 'platform', 'platform-angle', 'platform-down', 'up', 'arc']);
 const isNum = (v) => typeof v === 'number' && isFinite(v);
 
@@ -77,16 +83,19 @@ export function toFigure(x, words = '') {
   if (!x || typeof x !== 'object' || !x.understood) return x;
   const text = `${words} ${x.summary || ''}`;
   const out = { ...x };
-  if (!out.who) { const m = text.match(PERSON); if (m) out.who = m[1].toLowerCase(); }
-  // "no angle given" says there is none
-  const said = String(words || text).replace(/\b(no|without an?|not given an?|unknown)\s+(launch\s+)?angle\b[^.,;]*/gi, '');
-  if (!(JUMP.test(text) && PERSON.test(`${out.who || ''} ${text}`) && !ANGLE_SAID.test(said))) return out;
+  if (!out.who) { const w = whoIn(text); if (w) out.who = w; }
+  // only a person jumps: what moves says so, not a bystander in the sentence
+  if (figureOf(out.who).figure !== 'diver' || !JUMP.test(text)) return out;
+  const said = String(words || text).replace(NO_ANGLE, '');
+  const up = UP.test(said);
+  if (!up && ANGLE_SAID.test(said)) return out;
+  const theta = 90, mark = up ? {} : { assumed: ['angle'] };
   if (LAUNCHES.has(out.scenario) && isNum(out.u) && out.u > 0 && !out.ratioFn) {
-    out.scenario = 'up'; out.angleDegrees = 90; delete out.belowHorizontal; out.assumed = ['angle'];
+    Object.assign(out, { scenario: 'up', angleDegrees: theta, ...mark }); delete out.belowHorizontal;
   } else if (out.scenario === 'library' && out.library === 'from-a-height' && out.boxes && isNum(out.boxes.u) && out.boxes.u > 0) {
-    out.boxes = { ...out.boxes, theta: 90 }; out.assumed = ['angle'];
+    Object.assign(out, { boxes: { ...out.boxes, theta }, ...mark });
   } else if (out.scenario === 'compose' && out.recipe?.engine === 'projectile' && isNum(out.recipe.numbers?.u) && out.recipe.numbers.u > 0) {
-    out.recipe = { ...out.recipe, numbers: { ...out.recipe.numbers, theta: 90 } }; out.assumed = ['angle'];
+    Object.assign(out, { recipe: { ...out.recipe, numbers: { ...out.recipe.numbers, theta } }, ...mark });
   }
   return out;
 }

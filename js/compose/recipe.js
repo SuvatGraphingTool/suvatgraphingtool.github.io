@@ -302,6 +302,13 @@ const HEIGHT_KEYS = { height: 'height1', speed: 'speed1', time: 'time1', graph: 
 /** From a height's places, as the composer's backdrops (a well is From a height's alone). */
 const HEIGHT_PLACES = { cliff: 'cliff', tower: 'tower', bridge: 'bridge', board: 'board', balloon: 'air' };
 const CARRIER = /\b(helicopter|aeroplane|airplane|aircraft|plane|drone|airship|glider)\b/i;
+const JUMPS = /\b(jump|jumps|jumped|leaps?|leapt)\b/i;
+/** What the reading assumed, said: a jump with no angle taken as straight up. */
+export function assumedNotes(x) {
+  return Array.isArray(x?.assumed) && x.assumed.includes('angle')
+    ? [`No angle was given for the jump, so it is taken as straight up, ${M`theta = 90°`}, as exam questions mean. Change ${M`theta`} on the values screen to try another.`]
+    : [];
+}
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] != null).map((k) => [k, o[k]]));
 
 /**
@@ -324,8 +331,11 @@ export function fromReading(x) {
     const r = toApp(x);
     if (!r.ok) return null;
     // dropped: straight down, from rest
-    // a height left out stays out: the values screen asks for it
-    numbers = { ...pick(r.given, ['u', 'v', 's', 't']), theta: r.theta ?? -90 };
+    // a height left out stays out: the values screen asks for it; an angle
+    // too — straight down only for what is dropped or thrown down
+    numbers = { ...pick(r.given, ['u', 'v', 's', 't']) };
+    const theta = r.theta ?? (['dropped', 'down'].includes(x.scenario) ? -90 : undefined);
+    if (theta != null) numbers.theta = theta;
     if (r.h != null) numbers.h = r.h;
     if (typeof x.g === 'number') numbers.g = x.g;
     backdrop = !(numbers.h === 0) && CARRIER.test(`${x.summary || ''} ${x.words || ''}`) ? 'air' : 'ground';
@@ -334,14 +344,16 @@ export function fromReading(x) {
   const notes = [];
   if (!m.exact) notes.push(nearest(m));
   const carrier = `${x.summary || ''} ${x.words || ''}`.match(CARRIER);
-  if (backdrop === 'air' && carrier) notes.push(`Drawn let go from a balloon: there is no ${carrier[1].toLowerCase()} yet. Only where it is let go matters to the motion.`);
-  if (Array.isArray(x.assumed) && x.assumed.includes('angle')) {
-    notes.push(`No angle was given for the jump, so it is taken as straight up, ${M`theta = 90°`}, as exam questions mean. Change ${M`theta`} on the values screen to try another.`);
-  }
+  if (backdrop === 'air' && carrier) notes.push(`Drawn let go from a balloon: there is no ${carrier[1].toLowerCase()} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);
+  if (backdrop === 'ground' && numbers.h > 0) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
+  notes.push(...assumedNotes(x));
+  if (x.scenario === 'dropped' && JUMPS.test(`${x.summary || ''} ${x.words || ''}`)) notes.push('No speed was given for the jump, so it is taken as stepping off from rest. Give the speed on the values screen if the question has one.');
   const parts = Array.isArray(x.parts) ? x.parts.map((p) => {
     if (!p || typeof p !== 'object') return p;
-    const { answer, ...rest } = p;
-    return keys[answer] ? { ...rest, answer: keys[answer] } : rest;
+    // the twelve's own key, kept by the Worker when From a height had no name for it
+    const { answer, twelve, ...rest } = p;
+    const key = (twelve && TWELVE_KEYS[twelve]) || keys[answer];
+    return key ? { ...rest, answer: key } : rest;
   }) : undefined;
   return {
     understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes,

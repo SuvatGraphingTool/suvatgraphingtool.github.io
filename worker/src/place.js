@@ -20,7 +20,7 @@ const HEIGHT_ONLY = { board: 'board', 'diving board': 'board', springboard: 'boa
 const PLACES = [
   [/\bcliff/i, 'cliff'], [/\b(tower|building|skyscraper|roof|block of flats)/i, 'tower'],
   [/\bbridge/i, 'bridge'], [/\b(well|mine ?shaft|shaft)\b/i, 'well'],
-  [/\b(diving board|springboard|high board)\b/i, 'board'], [/\b(hot.air )?balloon/i, 'balloon'],
+  [/\b(diving board|springboard|high board|(diving|high) platform)\b/i, 'board'], [/\b(hot.air )?balloon/i, 'balloon'],
   // "off a 10 m board", "a diver": the diving board, said the short way
   [/\d\s*m(etres?)?\s+(high\s+)?board\b|\bdiv(er|ers|ing)\b/i, 'board'],
 ];
@@ -31,8 +31,12 @@ const ANGLE = { dropped: () => 0, down: () => -90, platform: () => 0,
   'platform-angle': (x) => x.angleDegrees, 'platform-down': (x) => (x.angleDegrees == null ? null : -Math.abs(x.angleDegrees)),
   up: () => 90 };
 
+// the twelve's own key stays on the part (`twelve`), so an answer From a height
+// has no name for — the rise, the time to the top — is found again if the
+// reading goes on to be composed (js/compose/recipe.js fromReading)
 const renamed = (parts) => parts.map((p) => {
   const q = { ...p };
+  if (q.answer != null && !ANSWER[q.answer]) q.twelve = q.answer;
   if (q.answer != null) { if (ANSWER[q.answer]) q.answer = ANSWER[q.answer]; else delete q.answer; }
   return q;
 });
@@ -71,6 +75,7 @@ const JUMP = /\bjump|\bleap|\bsprings? (up|off)/i;
 function jumpUp(x, words) {
   const b = x?.boxes;
   if (x?.library !== 'from-a-height' || !b || !(b.u > 0)) return x;
+  if (x.assumed?.includes('angle')) return x;          // toFigure has read it and will say so
   const text = `${words} ${x.summary || ''}`;
   if (!JUMP.test(text) || ANGLE_GIVEN.test(words)) return x;
   if (b.theta === 90 && /straight up/.test(x.summary || '')) return x;

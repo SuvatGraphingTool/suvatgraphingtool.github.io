@@ -209,6 +209,21 @@ const NEAREST = [
   [/\b(dog|cat|bird|animal|squirrel|monkey|frog)\b/, 'particle'],
 ];
 /**
+ * What moves, found in a question's own words when the reader left it out:
+ * a thing that is thrown, dropped or driven first (in "a girl throws a ball"
+ * it is the ball), a person only when nothing else is named.
+ * @returns the word, or null
+ */
+export function whoIn(text) {
+  const t = String(text ?? '').toLowerCase();
+  const person = WORDS[0][0], hits = [];
+  for (const [re, f] of [...WORDS.slice(1), ...NEAREST]) { const m = t.match(re); if (m) hits.push({ at: m.index, word: m[1] || m[0], f }); }
+  if (hits.length) return hits.sort((a, b) => a.at - b.at)[0].word;
+  const p = t.match(person);
+  return p ? p[1] : null;
+}
+
+/**
  * @param who  what moves, in the question's word
  * @returns {{ figure, exact: boolean, word: string }} — `exact` false means
  *          it is drawn as the closest figure there is, and the reply says so
