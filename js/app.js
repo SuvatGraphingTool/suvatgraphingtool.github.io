@@ -3366,7 +3366,8 @@ function applyLibrary(x, { graph = true } = {}) {
   }
   // A question that never names g happens on Earth, as it does for the twelve:
   // the reader leaves g out (it is told to), so the box takes the paper's usual 9.81.
-  if (state.kit.g == null) state.kit.g = 9.81;
+  const gAssumed = state.kit.g == null;
+  if (gAssumed) state.kit.g = 9.81;
   state.readerParts = fromReader(s.id, x.parts, [...keys]);
   buildValuesScreen();              // which recomputes, and solves each part
   refreshSteps();
@@ -3375,7 +3376,38 @@ function applyLibrary(x, { graph = true } = {}) {
   const body = solved?.ok
     ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
-  return { ok: true, runnable: !!traj && graph, html: head + body };
+  return { ok: true, runnable: !!traj && graph, html: head + libraryGiven(fields, gAssumed, x.summary) + body };
+}
+/**
+ * What Ask Suvat read into a library scenario's boxes, listed the way the
+ * twelve's reply lists them: each value and where it came from — the
+ * question, or an assumption (Earth's g; a jump's angle when none was given).
+ */
+function libraryGiven(fields, gAssumed, summary = '') {
+  const plain = (h) => String(h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const angleAssumed = /No angle was given/.test(summary || '');
+  const rows = [];
+  for (const f of fields) {
+    const v = state.kit[f.key];
+    if (v == null || v === '') continue;
+    let shown;
+    if (f.type === 'choice') {
+      const o = f.options.find((q) => String(q.v) === String(v));
+      if (!o) continue;
+      shown = `<b>${esc(plain(o.label))}</b>`;
+    } else {
+      const n = typeof v === 'number' ? v : Number(v);
+      shown = isFinite(n) ? M`${num(n, 2, { trim: true })}` : esc(String(v));
+    }
+    const how = f.key === 'g' && gAssumed ? 'assumed · on Earth'
+      : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given' : 'in the question';
+    rows.push(`<li class="ro-row" data-how="${how.startsWith('assumed') ? 'assumed' : 'given'}">
+      <span class="ro-val">${esc(plain(f.label))}: ${shown}</span><span class="ro-how">${how}</span></li>`);
+  }
+  if (!fields.some((f) => f.key === 'g') && gAssumed) {
+    rows.push(`<li class="ro-row" data-how="assumed"><span class="ro-val">${M`g = 9.81 [m s^-2]`}</span><span class="ro-how">assumed · on Earth</span></li>`);
+  }
+  return rows.length ? `<ul class="ro-list">${rows.join('')}</ul>` : '';
 }
 /**
  * A question no scenario fits, composed by the reader from the app's own
