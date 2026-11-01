@@ -539,28 +539,44 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
   box-shadow: 0 8px 24px -10px rgba(0,0,0,.45);
 }
 .hbox-v { font-weight: 600; font-variant-numeric: tabular-nums; }
-/* Resolve: the app's main move, so it is the one control with some depth — a
-   glass of its own colour, lighter at the top and deeper at the foot, never a
-   new hue. */
+/* Resolve: the app's main move, in liquid glass — its own colour, but you see
+   the scene through it, blurred and brightened, with light caught along the top
+   rim and a soft glow pooling at the foot. Never a new hue. */
 .askat-btn {
-  background-color: var(--primary); color: var(--on-primary); border: none;
-  background-image: linear-gradient(170deg,
-    color-mix(in srgb, var(--primary) 82%, white) 0%,
-    var(--primary) 46%,
-    color-mix(in srgb, var(--primary) 84%, black) 100%);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--on-primary) 22%, transparent),
-              inset 0 -1px 0 color-mix(in srgb, var(--primary) 70%, black),
-              0 6px 18px -8px color-mix(in srgb, var(--primary) 70%, transparent);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2);
-  font-size: var(--fs-sm); font-weight: 600; border-radius: var(--r-lg);
-  transition: background-color var(--dur-1), box-shadow var(--dur-2), transform var(--dur-3) var(--spring);
+  position: relative; isolation: isolate; overflow: hidden;
+  color: var(--on-primary); border: 1px solid color-mix(in srgb, white 55%, transparent);
+  background: color-mix(in srgb, var(--primary) 68%, transparent);
+  background-image: none;
+  -webkit-backdrop-filter: blur(16px) saturate(1.8) brightness(1.08);
+  backdrop-filter: blur(16px) saturate(1.8) brightness(1.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85),
+              inset 0 -1px 0 rgba(255, 255, 255, .22),
+              inset 0 0 0 .5px rgba(255, 255, 255, .35),
+              inset 0 -10px 18px -12px rgba(255, 255, 255, .55),
+              0 10px 28px -12px rgba(0, 0, 0, .55), 0 1px 3px rgba(0, 0, 0, .25);
+  font-size: var(--fs-sm); font-weight: 600; border-radius: 999px; padding-inline: 18px;
+  transition: background-color var(--dur-2), box-shadow var(--dur-2), transform var(--dur-3) var(--spring);
+}
+.askat-btn::before {                 /* the light caught on the glass, upper left */
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(120% 90% at 28% -10%, rgba(255, 255, 255, .7), rgba(255, 255, 255, 0) 58%);
+  transition: transform var(--dur-3) var(--spring), opacity var(--dur-2);
+}
+.askat-btn::after {                  /* and the glow that pools at its foot */
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(to top, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 45%);
 }
 .askat-btn:hover {
-  background-color: var(--primary-hi);
-  background-image: linear-gradient(170deg,
-    color-mix(in srgb, var(--primary-hi) 76%, white) 0%,
-    var(--primary-hi) 50%,
-    color-mix(in srgb, var(--primary-hi) 86%, black) 100%);
+  background: color-mix(in srgb, var(--primary-hi) 76%, transparent); background-image: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95),
+              inset 0 -1px 0 rgba(255, 255, 255, .3),
+              inset 0 0 0 .5px rgba(255, 255, 255, .45),
+              inset 0 -10px 18px -10px rgba(255, 255, 255, .65),
+              0 14px 32px -12px rgba(0, 0, 0, .6), 0 1px 3px rgba(0, 0, 0, .25);
+}
+.askat-btn:hover::before { transform: translateX(14%); }
+@media (prefers-reduced-transparency: reduce) {
+  .askat-btn { background: var(--primary); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 .askat-btn:active { transform: scale(.96); }
 .askat-btn[aria-pressed='true'] { outline: 2px solid var(--ring); outline-offset: 2px; }

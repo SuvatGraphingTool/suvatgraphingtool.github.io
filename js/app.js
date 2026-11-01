@@ -118,6 +118,8 @@ const state = {
   // the only thing running. See the pre-roll note in js/render/drop.js.
   pre: null,
   layout: 4,                     // how many panes, for a scenario that has them
+  // (Superseded on 1 Nov: launch() now sets the recommended rate every time; the
+  // user asked for it. The note below is why it was once fixed at 0.75x.)
   // 0.75x, AND IT STAYS THERE. Every fresh flight used to be handed a rate
   // worked out from its own duration — `recommend(tMax)` — so a short flight
   // opened at 0.16x and a long one at real time, and the number under the
@@ -2011,6 +2013,11 @@ function launch() {
   // with a good default asked before the thing you came for. The flight runs
   // at once; the speed is a press away in the transport bar, with the same
   // recommendation pin, and the pane layout is in the Display panel.
+  // EVERY LAUNCH STARTS AT THE RECOMMENDED SPEED (the user, 1 Nov): a fresh set
+  // of values is a fresh flight, played at the pace its own length calls for.
+  // A speed chosen on the slider holds for the replays of that flight only.
+  state.rate = recommend(traj.tMax) / 100;
+  state.rateTouched = false;
   syncRate();
   runFlight();
 }
