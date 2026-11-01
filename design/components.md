@@ -111,6 +111,7 @@ parts: [
 | `carry` | `{ box: 'a' }` — from this part on, the box takes part (a)'s answer: the ENGINE's value, never a typed one. The part says so: "using t = 3.5 s from (a)" |
 | `uses` | `['a']` — the part leans on (a)'s answer without changing a box; it says so the same way |
 | `paper` | the mark scheme's answer (a number, or a list for `find` lists), for `test/library.test.mjs` only; `tol` its tolerance (default: half the last place the paper gives). Never shown as the app's answer — rule 4 |
+| `rel` | `'>'`, `'<'`, `'>='` or `'<='` for an answer that is a range: `θ > 76.0°` (default `=`) |
 | `note` | one line said under the answer, notation between `$` signs (`'They meet at $O$ itself.'`) |
 | `out` | instead of everything else: the part is out of scope, and why. It shows as a dimmed chip |
 

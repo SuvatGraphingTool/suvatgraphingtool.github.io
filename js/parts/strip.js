@@ -27,7 +27,9 @@ export function answerHTML(run) {
     const c = num(v, p.dp ?? 2, { trim: !!p.trim });
     const n = (c === '1' && /^[A-Za-z]/.test(p.suffix || '') ? '' : c) + (p.suffix || '');
     if (!p.sym) return p.unit ? M`${n} [${p.unit}]` : M`${n}`;
-    return p.unit ? M`${p.sym} = ${n} [${p.unit}]` : M`${p.sym} = ${n}`;
+    // an answer that is a range is said as one: θ > 76.0°
+    const rel = ['<', '>', '<=', '>='].includes(p.rel) ? p.rel : '=';
+    return p.unit ? M`${p.sym} ${rel} ${n} [${p.unit}]` : M`${p.sym} ${rel} ${n}`;
   };
   if (p.vec) {
     // a vector, in i and j: the sign between them is the j part's own
@@ -73,7 +75,7 @@ export function stripHTML(parts, runs, k, steps) {
   let body;
   if (k < 0) {
     body = `<p class="pask"><b>This question has ${WORDS[n] ?? n} part${n === 1 ? '' : 's'}.</b>
-      Each one stops the motion at its own moment, with its working.</p>
+      ${n === 1 ? 'It stops the motion at its moment, with its working.' : 'Each one stops the motion at its own moment, with its working.'}</p>
       <ol class="plist">${parts.map((p) => `<li><b>${tag(p)}</b>${p.out ? `<i>not in this app — ${esc(p.out)}</i>` : askHTML(p)}</li>`).join('')}</ol>`;
   } else {
     const run = runs[k], p = run.part, step = steps?.[stepOf(p, steps || [])];
