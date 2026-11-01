@@ -306,7 +306,7 @@ const JUMPS = /\b(jump|jumps|jumped|leaps?|leapt)\b/i;
 /** What the reading assumed, said: a jump with no angle taken as straight up. */
 export function assumedNotes(x) {
   return Array.isArray(x?.assumed) && x.assumed.includes('angle')
-    ? [`No angle was given for the jump, so it is taken as straight up, ${M`theta = 90°`}, as exam questions mean. Change ${M`theta`} on the values screen to try another.`]
+    ? [`No angle was given for the jump, so it is taken as straight up, ${M`theta = 90°`}, as an exam would take it. Change ${M`theta`} on the values screen to try another.`]
     : [];
 }
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] != null).map((k) => [k, o[k]]));

@@ -144,7 +144,11 @@ function launch(canvas, o) {
   const yTop = Math.max(apex, H0);
 
   // ── how big the moving thing is drawn: to scale, but never too small to read
-  const size = (k) => Math.min(Math.max(piece.min, piece.m * k), Math.max(piece.min, w * 0.22));
+  const size = (k) => {
+    const s0 = Math.min(Math.max(piece.min, piece.m * k), Math.max(piece.min, w * 0.22));
+    // never taller than a fifth of the place it starts from (a phone's small stage)
+    return H0 > 0 && !piece.thrown ? Math.min(s0, Math.max(26, piece.m * k, 0.2 * H0 * k)) : s0;
+  };
   const TH = (k) => Math.max(phone ? THROWER_MIN * 0.8 : THROWER_MIN, Math.min(96, 1.75 * k));
   // a house to scale: three-metre storeys, a frontage a little wider than it is tall
   const houseW = (k) => clamp(Math.max(8, H0 * 1.1) * k, 90, Math.max(90, w * 0.34));
@@ -171,7 +175,7 @@ function launch(canvas, o) {
     const p = pads(k), box = { xLo: -p.l / k, xHi: xMax + p.r / k, yLo: 0, yHi: yTop + p.t / k };
     // on a phone the readouts sit over the top of the stage: the sky takes the
     // spare height, and the place stands low, clear of them
-    F = fitClear(box, w, h, phone, phone ? 0.85 : 0.35, (fs) => clear(fs, p));
+    F = fitClear(box, w, h, phone, phone ? 0.6 : 0.35, (fs) => clear(fs, p));
     if (!F) return null;
     k = F.k;
   }
@@ -227,7 +231,8 @@ function launch(canvas, o) {
   // ── the path: all of it faintly, the part flown strongly
   const at = (p) => ({ x: X(p.x), y: Y(p.y) });
   stroke(g, pts.map(at), { color: P.vel, width: 1.8, alpha: 0.35 });
-  stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: 3 });
+  const body = ['diver', 'skateboarder', 'parcel'].includes(kind);
+  stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
   if (show.apex && f.uy > 0) {
     const q = at(f.pos(f.tApex));
@@ -275,29 +280,38 @@ function launch(canvas, o) {
       else pebble(g, bx, by, R0);
     }
   } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel') {
-    // a person or a parcel, round the engine's point. Before it goes, a person
-    // stands on the edge (feet on it); the stance gives way to the flight over
-    // the first moments, so the drawing never jumps
-    const p = fired ? t / f.tMax : 0, ease = (a, b, x) => { const u = clamp((x - a) / (b - a), 0, 1); return u * u * (3 - 2 * u); };
-    const feet = kind === 'diver' ? DIVER_FEET : kind === 'skateboarder' ? SKATE_FEET : 0;
-    const cy = by - feet * Lp * (1 - ease(0, 0.12, p));
-    if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
-    if (!fired) softShadow(g, bx, (H0 > 0 ? top : oy) + 1, Lp * 0.25, 3, 0.8);
+    const p = fired ? t / f.tMax : 0, ease = (a0, b0, x) => { const u = clamp((x - a0) / (b0 - a0), 0, 1); return u * u * (3 - 2 * u); };
+    const after = landed ? clamp(age / life, 0, 1) : 0;
+    let cx = bx, cy = by;
     g.save();
-    if (landed && wet) { g.beginPath(); g.rect(0, 0, w, oy + 2); g.clip(); }
+    if (landed && wet) { g.beginPath(); g.rect(0, 0, w, oy + 1); g.clip(); }
     if (kind === 'diver') {
-      // a jump upwards tucks and turns one and a half times, entering head
-      // first; a dive out from the edge straightens and tips over gently
+      // stands on the board's end, then the hip carries the engine's point;
+      // a jump upwards tucks and turns one and a half times to go in head
+      // first, a dive out tips over gently; in the water it is gone under
+      cy = by - DIVER_FEET * Lp * (1 - ease(0, 0.12, p)) + (landed && wet ? Lp * 1.4 * ease(0, 0.3, after) : 0);
+      if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
       const steep = Math.atan2(v0.y, v0.x) > Math.PI / 4;
       const tuck = steep ? ease(0.15, 0.35, p) * (1 - ease(0.6, 0.8, p)) : 0;
       const spin = steep ? ease(0.15, 0.85, p) * Math.PI * 3 : ease(0.05, 1, p) * Math.PI * 0.85;
-      const arms = !fired ? 0.9 : 1 - tuck;
-      diver(g, bx, cy, Lp, P, { tuck, arms, spin });
+      diver(g, cx, cy, Lp, P, { tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
     } else if (kind === 'skateboarder') {
-      skateboarder(g, bx, cy, Lp, P, { spin: 0.4 * Math.atan2(-v.y, v.x) * (fired ? 1 : 0), phase: phaseFor('car', Lp, Math.abs(bx - x0)) });
-    } else parcel(g, bx, cy, Lp, P, { spin: ease(0, 1, p) * 0.9 });
+      // the wheels carry the engine's point all the way down, the deck's front
+      // at the edge before the off, landing level on all four wheels
+      const half = Lp * 0.34;
+      cx = bx - half * (1 - ease(0, 0.1, p)); cy = by - (SKATE_FEET + 0.08) * Lp;
+      if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.35, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
+      const pitch = 0.4 * Math.atan2(-v.y, v.x) * (fired ? 1 : 0) * (1 - ease(0.88, 1, p));
+      skateboarder(g, cx, cy, Lp, P, { spin: pitch, phase: phaseFor('car', Lp, Math.abs(bx - x0)) });
+    } else {
+      // hangs on a line from the basket until it is let go; a quarter turn as
+      // it falls, so it lands flat on its base
+      cy = by - Lp * 0.36;
+      if (!fired && R.backdrop === 'air') stroke(g, [{ x: bx, y: cy - Lp * 0.36 }, { x: bx - Lp * 0.35, y: top - 2 }], { color: P.ink, width: 1.2, alpha: 0.7 });
+      if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.5, Math.max(2, Lp * 0.06), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
+      parcel(g, cx, cy, Lp, P, { spin: ease(0, 1, p) * Math.PI / 2 });
+    }
     g.restore();
-    if (landed && wet) water(g, lx - Lp * 0.5, lx + Lp * 0.5, oy, oy + 3, { phase });
   } else {
     const mid = (MIDDLE[kind] ?? 0.2) * Lp;
     // pitched with the path, but only part of the way: a car off a cliff
@@ -327,7 +341,7 @@ function launch(canvas, o) {
     // over the art. The impact velocity stays drawn at the moment of impact.
     // a person or a parcel has it beside them, never across the body
     const person = ['diver', 'skateboarder', 'parcel'].includes(kind);
-    const ox = person ? bx + Lp * 0.32 : bx + (v.x / sp) * Lp * 0.5, oyv = person ? by - Lp * 0.15 : by - (v.y / sp) * Lp * 0.5;
+    const ox = person ? bx + Lp * 0.62 : bx + (v.x / sp) * Lp * 0.5, oyv = person ? by - Lp * 0.5 : by - (v.y / sp) * Lp * 0.5;
     const tx = ox + v.x * vl, ty = oyv - v.y * vl;
     const halo = withAlpha(P.card, 0.8);
     if (show.components && Math.abs(v.x) > 1e-9) {
@@ -525,11 +539,11 @@ function column(canvas, o) {
 export function ripples(g, x, y, age, life, size = 1) {
   if (!(age >= 0) || age > life) return;
   g.save();
-  for (let i = 0; i < 3; i++) {
-    const u = (age / life) * 1.25 - i * 0.18;
+  for (let i = 0; i < 4; i++) {
+    const u = (age / life) * 1.3 - i * 0.16;
     if (u <= 0 || u >= 1) continue;
     const R = (14 + 70 * (1 - (1 - u) ** 2)) * size;
-    g.strokeStyle = `rgba(255,255,255,${0.6 * (1 - u)})`; g.lineWidth = 1.6;
+    g.strokeStyle = `rgba(255,255,255,${0.85 * (1 - u)})`; g.lineWidth = 2.5;
     g.beginPath(); g.ellipse(x, y + 1, R, R * 0.16, 0, 0, Math.PI * 2); g.stroke();
   }
   g.restore();

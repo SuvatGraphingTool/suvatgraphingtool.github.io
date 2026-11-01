@@ -4,8 +4,8 @@
    Then the veil lifts from the top down and the scene comes sharp. */
 
 /* what the scene assumed or drew as the closest thing, said under the answers */
-.ro-note { margin: var(--sp-2) 0 0; padding: 6px 10px; border-left: 2px solid color-mix(in srgb, currentColor 45%, transparent);
-           background: color-mix(in srgb, currentColor 6%, transparent); border-radius: 0 8px 8px 0; font-size: var(--fs-sm); }
+.ask-bubble .ro-note, .ro-note { margin: 10px 0 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+           border-radius: 10px; font-size: var(--fs-sm); line-height: 1.5; color: color-mix(in srgb, currentColor 78%, transparent); }
 
 /* a part of the question in a scene of its own, under the reply's answers */
 .ro-scene { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent); }

@@ -1017,48 +1017,72 @@ export function surface(g, ground, x0, x1, Y, P) {
  * the hip the feet are when standing (× H), to stand one on a board's end.
  */
 export const DIVER_FEET = 0.49;
-export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, ring = null } = {}) {
+export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, ring = null, stand = false, feet = null, swing = null } = {}) {
   const E = env(), skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
-  const suit = ring || (E.night ? '#3f5e74' : '#2f5d7c'), cap = E.night ? '#c9b8a8' : '#f2ece4';
-  const k = Math.max(0, Math.min(1, tuck)), lw = Math.max(3, H * 0.075);
-  const mix = (a, b) => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k });
+  const suit = ring || (E.night ? '#3f5e74' : '#2f5d7c'), suitHi = E.night ? '#557891' : '#3f7398', cap = E.night ? '#c9b8a8' : '#f2ece4';
+  const k = Math.max(0, Math.min(1, tuck)), lw = Math.max(3, H * 0.07);
+  const T = H * 0.3, L1 = H * 0.25, L2 = H * 0.24, UA = H * 0.165, FA = H * 0.155, FOOT = H * 0.075;
+  const at2 = (o, l, a) => ({ x: o.x + Math.cos(a) * l, y: o.y + Math.sin(a) * l });
   g.save();
   g.translate(cx, cy); g.rotate(spin * dir);
   if (dir === -1) g.scale(-1, 1);
-  // straight, and tucked: the hip stays put, everything else folds round it
-  const SH = mix({ x: 0, y: -H * 0.3 }, { x: H * 0.08, y: -H * 0.24 });
-  const KN = mix({ x: H * 0.01, y: H * 0.25 }, { x: H * 0.2, y: -H * 0.1 });
-  const FT = mix({ x: 0, y: H * DIVER_FEET }, { x: H * 0.06, y: H * 0.07 });
-  const KNf = { x: KN.x - H * 0.03 * (1 - k), y: KN.y }, FTf = { x: FT.x - H * 0.035, y: FT.y };
-  // the arms swing from the sides through in front to overhead; tucked, they
-  // hold the shins
-  const a = Math.PI / 2 - Math.max(0, Math.min(1, arms)) * Math.PI;
-  const up = H * 0.17, fore = H * 0.16;
-  const ELs = { x: SH.x + Math.cos(a) * up, y: SH.y + Math.sin(a) * up };
-  const HAs = { x: ELs.x + Math.cos(a) * fore, y: ELs.y + Math.sin(a) * fore };
-  const shin = { x: (KN.x + FT.x) / 2 + H * 0.04, y: (KN.y + FT.y) / 2 };
-  const EL = mix(ELs, { x: SH.x + H * 0.12, y: SH.y + H * 0.1 }), HA = mix(HAs, shin);
-  const ELf = { x: EL.x - H * 0.025, y: EL.y + H * 0.01 }, HAf = { x: HA.x - H * 0.03, y: HA.y + H * 0.01 };
+  // the back leans forward as the knees come up; the head bows with it
+  const lean = k * 0.55, up = -Math.PI / 2 + lean;
+  const HIP = { x: 0, y: 0 }, SH = at2(HIP, T, up), NK = at2(SH, H * 0.035, up);
+  const HEAD = at2(NK, H * 0.075, up + k * 0.5);
+  // the legs by their joints: the hip folds the thigh up to the chest, the
+  // knee folds the shin back under it — fixed lengths, knees bending forwards.
+  // Given foot targets (a skateboard's trucks), the knees are found to reach them.
+  let near, far;
+  if (feet) {
+    near = [HIP, joint(HIP, feet[0], L1, L2, 1), feet[0]];
+    far = [HIP, joint(HIP, feet[1], L1, L2, 1), feet[1]];
+  } else {
+    const th = Math.PI / 2 - k * 2.35, sh = th + k * 2.55;
+    const KN = at2(HIP, L1, th), AN = at2(KN, L2, sh);
+    near = [HIP, KN, AN];
+    far = [{ x: -H * 0.015, y: 0 }, at2({ x: -H * 0.015, y: 0 }, L1, th + 0.06), at2(at2({ x: -H * 0.015, y: 0 }, L1, th + 0.06), L2, sh + 0.06)];
+  }
+  // feet: flat on a board or a deck; pointed, in the line of the shin, in the air
+  const footOf = (leg) => {
+    const [, KN, AN] = leg, sa = Math.atan2(AN.y - KN.y, AN.x - KN.x);
+    return at2(AN, FOOT, stand || feet ? 0 : sa + 0.18);
+  };
+  // the arms: from by the sides, through in front, to overhead beside the
+  // ears (the far one a little behind); tucked, the hands hold the shins
+  const freeArm = (off) => {
+    const a0 = Math.PI / 2 + lean, a = a0 - Math.max(0, Math.min(1, arms)) * (Math.PI - 0.12) + off;
+    return at2(SH, UA + FA * 0.98, a);
+  };
+  const shin = (leg, f) => ({ x: leg[1].x + (leg[2].x - leg[1].x) * f, y: leg[1].y + (leg[2].y - leg[1].y) * f });
+  const handNear = swing ? at2(SH, UA + FA * 0.95, swing[0]) : k > 0 ? lerp(freeArm(0.1), shin(near, 0.45), k) : freeArm(0.1);
+  const handFar = swing ? at2(SH, UA + FA * 0.95, swing[1]) : k > 0 ? lerp(freeArm(-0.12), shin(far, 0.55), k) : freeArm(-0.12);
+  const armNear = [SH, joint(SH, handNear, UA, FA, -1), handNear], armFar = [SH, joint(SH, handFar, UA, FA, -1), handFar];
   // far limbs first, in shade
-  limb(g, [{ x: 0, y: 0 }, KNf, FTf], skinFar, lw);
-  limb(g, [SH, ELf, HAf], skinFar, lw * 0.8);
-  // the body in its swimsuit, the near leg and arm over it
-  limb(g, [{ x: 0, y: 0 }, SH], suit, lw * 2.1);
-  limb(g, [{ x: 0, y: 0 }, { x: SH.x * 0.25, y: SH.y * 0.25 }], suit, lw * 2.2);
-  g.fillStyle = withAlpha('#ffffff', E.night ? 0.08 : 0.18);
-  g.beginPath(); g.ellipse(SH.x * 0.5 - lw * 0.4, SH.y * 0.5, lw * 0.35, Math.abs(SH.y) * 0.32, Math.atan2(SH.x, -SH.y), 0, TAU); g.fill();
-  limb(g, [{ x: 0, y: 0 }, KN, FT], skin, lw);
-  limb(g, [SH, EL, HA], skin, lw * 0.8);
-  // the head, a swimming cap, an eye looking the way it faces
-  // on along the line of the back, and forward onto the knees when tucked
-  const len = Math.max(1e-6, Math.hypot(SH.x, SH.y)), hr = H * 0.08;
-  const hx = SH.x + (SH.x / len) * H * 0.105 + k * H * 0.05, hy = SH.y + (SH.y / len) * H * 0.105 + k * H * 0.02;
-  const hg = g.createRadialGradient(hx - hr * 0.3, hy - hr * 0.3, hr * 0.1, hx, hy, hr); hg.addColorStop(0, skin); hg.addColorStop(1, skinFar);
-  g.fillStyle = hg; g.beginPath(); g.arc(hx, hy, hr, 0, TAU); g.fill();
-  g.fillStyle = cap; g.beginPath(); g.arc(hx - hr * 0.1, hy - hr * 0.12, hr * 0.92, Math.PI * 0.95, Math.PI * 2.05); g.fill();
-  g.fillStyle = '#2b2628'; g.beginPath(); g.arc(hx + hr * 0.45, hy + hr * 0.05, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
+  limb(g, [...far, footOf(far)], skinFar, lw * 0.95);
+  limb(g, armFar, skinFar, lw * 0.75);
+  // the body: a swimsuit over the hips and the chest, with a sheen
+  limb(g, [HIP, SH], suit, lw * 2.15);
+  g.fillStyle = suit; g.beginPath(); g.ellipse(HIP.x, HIP.y + lw * 0.2, lw * 1.2, lw * 0.95, up + Math.PI / 2, 0, TAU); g.fill();
+  const CH = at2(HIP, T * 0.7, up);
+  g.beginPath(); g.ellipse(CH.x, CH.y, lw * 1.25, T * 0.28, up + Math.PI / 2, 0, TAU); g.fill();
+  g.strokeStyle = withAlpha(suitHi, 0.8); g.lineWidth = Math.max(1, lw * 0.35); g.lineCap = 'round';
+  const s0 = at2(HIP, T * 0.2, up), s1 = at2(HIP, T * 0.8, up);
+  g.beginPath(); g.moveTo(s0.x - Math.sin(up) * lw * 0.6, s0.y + Math.cos(up) * lw * 0.6); g.lineTo(s1.x - Math.sin(up) * lw * 0.6, s1.y + Math.cos(up) * lw * 0.6); g.stroke();
+  // the near leg and foot over the body, then the neck and head, then the near arm
+  limb(g, [...near, footOf(near)], skin, lw);
+  limb(g, [SH, NK], skinFar, lw * 0.8);
+  const hr = H * 0.078;
+  const hg = g.createRadialGradient(HEAD.x - hr * 0.3, HEAD.y - hr * 0.3, hr * 0.1, HEAD.x, HEAD.y, hr); hg.addColorStop(0, skin); hg.addColorStop(1, skinFar);
+  g.fillStyle = hg; g.beginPath(); g.arc(HEAD.x, HEAD.y, hr, 0, TAU); g.fill();
+  // the cap over the crown, the face to the front, an eye and an ear
+  const face = up + k * 0.5 + Math.PI / 2;
+  g.fillStyle = cap; g.beginPath(); g.arc(HEAD.x, HEAD.y, hr * 1.02, face + Math.PI * 0.62, face + Math.PI * 1.62); g.fill();
+  g.fillStyle = '#2b2628'; const ey = at2(HEAD, hr * 0.5, face - 0.35); g.beginPath(); g.arc(ey.x, ey.y, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
+  limb(g, armNear, skin, lw * 0.78);
   g.restore();
 }
+const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
 
 /**
  * A skateboarder: the same person crouched for balance, arms out, on a deck
@@ -1085,8 +1109,11 @@ export function skateboarder(g, cx, cy, H, P, { spin = 0, dir = 1, phase = 0, ri
     g.moveTo(x, deckY + wr * 1.2); g.lineTo(x + Math.cos(phase * TAU) * wr * 0.8, deckY + wr * 1.2 + Math.sin(phase * TAU) * wr * 0.8); g.stroke();
   }
   g.restore();
-  // the rider, crouched, arms out in front for balance, feet on the deck
-  diver(g, cx, cy, H, P, { tuck: 0.22, arms: 0.42, spin, dir, ring });
+  // the rider: a foot over each truck, knees bent, the near arm forward and
+  // the far one back for balance, the back leaning in over the front foot
+  diver(g, cx, cy, H, P, { tuck: 0.18, spin, dir, ring, stand: true,
+    feet: [{ x: half * 0.55, y: deckY - H * 0.02 }, { x: -half * 0.6, y: deckY - H * 0.02 }],
+    swing: [-0.35, Math.PI - 0.5] });
 }
 
 /**
