@@ -42,3 +42,14 @@ Passed to helper one (figures, composer):
 - `skateboarder` and `cat` are refused as figures;
 - a rocket on "up" is a ball;
 - a helicopter and a table have no place.
+
+## Where it stopped (1 Nov, end of day)
+
+The QA loop is paused because the user has gone home. Every fix above is on `redesign` and live; the last commit is def5123.
+- Next, after 00:00 UTC, within the budget: real Gemma readings of the user's own failures.
+  - "ball pushed off a 60 m cliff"
+  - "a person jumping off a 10 m board at 7 m/s", which must now have no parts
+  - "can you do vectors? / surprise me"
+  - a question marked (a)/(b) whose part (b) needs a set-up of its own: does Gemma return `scene`?
+- Then a coin off a table and a helicopter drop, after helper one's places land.
+- Check the worker is deployed with the parts guard (`marked` in `worker/src/place.js`).
