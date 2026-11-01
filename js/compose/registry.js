@@ -35,6 +35,8 @@ export const BACKDROPS = {
   rails:   { label: 'A railway', what: 'a railway line on ballast and sleepers', place: 'track', below: 'rails' },
   orchard: { label: 'An orchard', what: 'apple trees in grass', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['apple', 'ball', 'stone', 'particle'] },
   hall:    { label: 'A sports hall', what: 'an indoor hall with a wooden floor and high windows', place: 'floor', below: 'floor' },
+  board:   { label: 'A diving board', what: 'a diving platform on its tower over an outdoor pool', place: 'board', below: 'pool', edge: true, at: 'a diving board' },
+  air:     { label: 'In the air', what: 'open sky high above fields: let go from a hovering balloon (or a helicopter or a plane)', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
 /** What moves. `m` is its real length in metres (a ball's diameter, a
@@ -54,6 +56,9 @@ export const FIGURES = {
   stone:    { label: 'a stone', m: 0.08, min: 11, views: ['side'], thrown: true },
   particle: { label: 'a particle', m: 0.1, min: 10, views: ['side', 'plan'], thrown: true },
   apple:    { label: 'an apple', m: 0.08, min: 12, views: ['side'], small: true },
+  diver:    { label: 'a person', m: 1.75, min: 64, views: ['side'] },
+  skateboarder: { label: 'a skateboarder', m: 1.75, min: 60, views: ['side'] },
+  parcel:   { label: 'a parcel', m: 0.5, min: 22, views: ['side'] },
   ship:     { label: 'a ship', m: 60, min: 40, views: ['plan'] },
   robot:    { label: 'a robot', m: 0.6, min: 30, views: ['plan'] },
 };
@@ -179,4 +184,40 @@ export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bou
 export const MOMENTS = { pair: 'flash', bounce: 'ring' };
 
 /** The effect a landing makes on what is below, when the recipe names none. */
-export const LANDS_WITH = { sea: 'splash', river: 'splash', ground: 'dust', road: 'dust', rails: 'dust', floor: 'ring' };
+export const LANDS_WITH = { sea: 'splash', river: 'splash', pool: 'splash', ground: 'dust', road: 'dust', rails: 'dust', floor: 'ring' };
+
+/* ── what moves, as the question says it ────────────────────────────────
+   The reader names what moves in the question's own word (`who`): "diver",
+   "parcel", "skateboarder", "football". figureOf() is the one place that word
+   becomes a figure — exactly, or the closest one there is, saying so — so
+   what moves is what is drawn, everywhere; never a silent ball. */
+const WORDS = [
+  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager)\b/, 'diver'],
+  [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
+  [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
+  [/\b(car|van|vehicle|taxi|jeep)\b/, 'car'], [/\b(lorry|truck|bus)\b/, 'lorry'], [/\b(train|tram|locomotive)\b/, 'train'],
+  [/\b(cyclist|bike|bicycle|cycle)\b/, 'cyclist'], [/\b(motorcycl(e|ist)|motorbike|scooter|moped)\b/, 'motorcycle'],
+  [/\b(runner|sprinter|jogger)\b/, 'runner'],
+  [/\b(stone|pebble|rock|brick|coin|marble|key|object|mass)\b/, 'stone'],
+  [/\b(ball|football|tennis ball|cricket ball|golf ball|basketball|netball|rugby ball|shot|cannonball|snowball|dart)\b/, 'ball'],
+  [/\b(particle|bead|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
+];
+/** The figures a thing with none of its own is drawn as, and how to say so. */
+const NEAREST = [
+  [/\b(ski(er)?|snowboard(er)?|surfer|horse|rider|bmx)\b/, 'diver'],
+  [/\b(rocket|missile|projectile|shell|bullet|arrow|javelin|discus|hammer|stick|bottle|can|phone|book|bag|helmet|bomb|drop of water|raindrop|hailstone)\b/, 'particle'],
+  [/\b(dog|cat|bird|animal|squirrel|monkey|frog)\b/, 'particle'],
+];
+/**
+ * @param who  what moves, in the question's word
+ * @returns {{ figure, exact: boolean, word: string }} — `exact` false means
+ *          it is drawn as the closest figure there is, and the reply says so
+ */
+export function figureOf(who) {
+  const word = String(who ?? '').toLowerCase().replace(/[^a-z \-]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!word) return { figure: null, exact: false, word };
+  if (FIGURES[word]) return { figure: word, exact: true, word };
+  for (const [re, f] of WORDS) if (re.test(word)) return { figure: f, exact: true, word };
+  for (const [re, f] of NEAREST) if (re.test(word)) return { figure: f, exact: false, word };
+  return { figure: 'particle', exact: false, word };
+}

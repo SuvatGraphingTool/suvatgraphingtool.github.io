@@ -1261,7 +1261,7 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
    readouts it renames, the ending it rewrites, the veil's steps and every
    refusal — swept like the rest. */
 {
-  const { compose, check: checkRecipe } = await import('../js/compose/recipe.js');
+  const { compose, check: checkRecipe, fromReading } = await import('../js/compose/recipe.js');
   const { steps } = await import('../js/compose/reveal.js');
   group('The composer: every place, every refusal, everything it says', () => {
     const bag = [];
@@ -1278,6 +1278,11 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
       { ...base, backdrop: 'orchard', objects: [{ figure: 'ball' }], numbers: { h: 4, u: 0, theta: 0 } },
       { ...base, backdrop: 'tower', objects: [{ figure: 'stone' }], numbers: { u: 15, theta: 90, t: 6 } },
       { ...base, backdrop: 'ground', objects: [{ figure: 'ball' }], numbers: { u: 10, theta: 90, t: 1.5 } },
+      { ...base, backdrop: 'board', objects: [{ figure: 'diver' }], numbers: { h: 10, u: 7, theta: 90 } },
+      { ...base, backdrop: 'air', objects: [{ figure: 'parcel' }], numbers: { h: 80, u: 0, theta: -90 } },
+      { ...base, backdrop: 'air', objects: [{ figure: 'parcel' }], numbers: { u: 0, theta: -90 } },
+      { ...base, backdrop: 'road', objects: [{ figure: 'skateboarder' }], numbers: { h: 2, u: 4, theta: 0 } },
+      { ...base, backdrop: 'ground', objects: [{ figure: 'rocket' }], numbers: { h: 0, u: 30, theta: 80 } },
       { engine: 'pair', backdrop: 'tower', objects: [{ figure: 'ball' }, { figure: 'stone' }], numbers: { 'A.h': 0, 'A.u': 20, 'B.h': 40, 'B.u': 0, 'B.t0': 1, g: 10 } },
       { engine: 'pair', backdrop: 'house', objects: [{ figure: 'ball' }, { figure: 'ball' }], numbers: { 'A.h': 8, 'A.u': -3, 'B.h': 0, 'B.u': 12 } },
       { engine: 'bounce', backdrop: 'house', objects: [{ figure: 'ball' }], numbers: { start: 'drop', h: 6, e: 0.7, n: 3 } },
@@ -1305,6 +1310,11 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
     for (const R of [{ ...no, backdrop: 'moon' }, { ...no, engine: 'warp' }, { ...no, objects: [{ figure: 'ship' }] }, { ...no, numbers: { h: -150000 } },
       { ...no, numbers: { mass: 3 } }, { ...no, numbers: { h: 'x' } }, { ...no, numbers: { theta: 120 } }, { ...no, objects: [] }, { ...no, engine: 'plane' },
       { ...no, backdrop: 'ground', numbers: { h: 0, u: 5, theta: -20 } }, { ...no, backdrop: 'orchard', numbers: { h: 3 } }]) { said++; check('refusal', checkRecipe(R).reason, bag); }
+    for (const x of [
+      { understood: true, scenario: 'library', library: 'from-a-height', summary: 'A person jumps off a 10 m board.', boxes: { place: 'board', h: 10, u: 7, theta: 90 }, who: 'person', assumed: ['angle'] },
+      { understood: true, scenario: 'dropped', h: 80, summary: 'A parcel is dropped from a helicopter.', who: 'parcel' },
+      { understood: true, scenario: 'up', h: 0, u: 30, who: 'rocket' },
+    ]) for (const n of fromReading(x).notes) { said++; check('reply note', n, bag); }
     ok(said > 150, `the sweep reaches the composer's own words (${said} lines)`);
     ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
   });

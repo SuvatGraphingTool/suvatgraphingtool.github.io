@@ -136,7 +136,8 @@ function placed(x, words) {
   if (!x || !x.understood || !(x.scenario in ANGLE) || x.ratioFn) return x;
   const text = `${words} ${x.summary || ''}`;
   const hit = PLACES.find(([re]) => re.test(text));
-  if (!hit || !(x.h > 0)) return x;
+  // a height left out is asked for on the values screen, at the place itself
+  if (!hit || (x.h != null && !(x.h > 0))) return x;
   const theta = ANGLE[x.scenario](x);
   if (theta == null) return x;
   const boxes = { place: hit[1], h: x.h, theta };
@@ -145,6 +146,9 @@ function placed(x, words) {
   if (x.scenario === 'down' || x.scenario === 'dropped') delete boxes.s;
   const out = { understood: true, confidence: x.confidence, scenario: 'library', library: 'from-a-height',
     summary: x.summary, boxes };
+  // what moves, and what was assumed about it, go along with it (composeplace.js)
+  if (x.who) out.who = x.who;
+  if (x.assumed) out.assumed = x.assumed;
   if (Array.isArray(x.parts)) out.parts = renamed(x.parts);
   return out;
 }

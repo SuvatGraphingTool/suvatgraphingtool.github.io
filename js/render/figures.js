@@ -1002,3 +1002,109 @@ export function surface(g, ground, x0, x1, Y, P) {
   else if (ground === 'track') runningTrack(g, x0, x1, Y, P);
   else roadway(g, x0, x1, Y, P);
 }
+
+/* ── a person in the air: the diver, and the skateboarder ──────────────── */
+
+/**
+ * A person who jumps or dives, drawn round the hip (cx, cy) — near enough the
+ * centre of mass the engine moves — so a stage can turn them with the flight.
+ * H is their height in px. Two dials blend the pose, so it moves smoothly:
+ *   tuck  0 straight, 1 knees pulled to the chest, the arms round the shins
+ *   arms  0 down by the sides, 0.5 straight out in front, 1 straight overhead
+ * `spin` turns the whole body (radians, clockwise). In a swimsuit, skin lit
+ * from the left, the far limbs in shade, a swimming cap; no text, so a
+ * mirrored one (dir: -1) never reads backwards. DIVER_FEET is how far below
+ * the hip the feet are when standing (× H), to stand one on a board's end.
+ */
+export const DIVER_FEET = 0.49;
+export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, ring = null } = {}) {
+  const E = env(), skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
+  const suit = ring || (E.night ? '#3f5e74' : '#2f5d7c'), cap = E.night ? '#c9b8a8' : '#f2ece4';
+  const k = Math.max(0, Math.min(1, tuck)), lw = Math.max(3, H * 0.075);
+  const mix = (a, b) => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k });
+  g.save();
+  g.translate(cx, cy); g.rotate(spin * dir);
+  if (dir === -1) g.scale(-1, 1);
+  // straight, and tucked: the hip stays put, everything else folds round it
+  const SH = mix({ x: 0, y: -H * 0.3 }, { x: H * 0.08, y: -H * 0.24 });
+  const KN = mix({ x: H * 0.01, y: H * 0.25 }, { x: H * 0.2, y: -H * 0.1 });
+  const FT = mix({ x: 0, y: H * DIVER_FEET }, { x: H * 0.06, y: H * 0.07 });
+  const KNf = { x: KN.x - H * 0.03 * (1 - k), y: KN.y }, FTf = { x: FT.x - H * 0.035, y: FT.y };
+  // the arms swing from the sides through in front to overhead; tucked, they
+  // hold the shins
+  const a = Math.PI / 2 - Math.max(0, Math.min(1, arms)) * Math.PI;
+  const up = H * 0.17, fore = H * 0.16;
+  const ELs = { x: SH.x + Math.cos(a) * up, y: SH.y + Math.sin(a) * up };
+  const HAs = { x: ELs.x + Math.cos(a) * fore, y: ELs.y + Math.sin(a) * fore };
+  const shin = { x: (KN.x + FT.x) / 2 + H * 0.04, y: (KN.y + FT.y) / 2 };
+  const EL = mix(ELs, { x: SH.x + H * 0.12, y: SH.y + H * 0.1 }), HA = mix(HAs, shin);
+  const ELf = { x: EL.x - H * 0.025, y: EL.y + H * 0.01 }, HAf = { x: HA.x - H * 0.03, y: HA.y + H * 0.01 };
+  // far limbs first, in shade
+  limb(g, [{ x: 0, y: 0 }, KNf, FTf], skinFar, lw);
+  limb(g, [SH, ELf, HAf], skinFar, lw * 0.8);
+  // the body in its swimsuit, the near leg and arm over it
+  limb(g, [{ x: 0, y: 0 }, SH], suit, lw * 2.1);
+  limb(g, [{ x: 0, y: 0 }, { x: SH.x * 0.25, y: SH.y * 0.25 }], suit, lw * 2.2);
+  g.fillStyle = withAlpha('#ffffff', E.night ? 0.08 : 0.18);
+  g.beginPath(); g.ellipse(SH.x * 0.5 - lw * 0.4, SH.y * 0.5, lw * 0.35, Math.abs(SH.y) * 0.32, Math.atan2(SH.x, -SH.y), 0, TAU); g.fill();
+  limb(g, [{ x: 0, y: 0 }, KN, FT], skin, lw);
+  limb(g, [SH, EL, HA], skin, lw * 0.8);
+  // the head, a swimming cap, an eye looking the way it faces
+  // on along the line of the back, and forward onto the knees when tucked
+  const len = Math.max(1e-6, Math.hypot(SH.x, SH.y)), hr = H * 0.08;
+  const hx = SH.x + (SH.x / len) * H * 0.105 + k * H * 0.05, hy = SH.y + (SH.y / len) * H * 0.105 + k * H * 0.02;
+  const hg = g.createRadialGradient(hx - hr * 0.3, hy - hr * 0.3, hr * 0.1, hx, hy, hr); hg.addColorStop(0, skin); hg.addColorStop(1, skinFar);
+  g.fillStyle = hg; g.beginPath(); g.arc(hx, hy, hr, 0, TAU); g.fill();
+  g.fillStyle = cap; g.beginPath(); g.arc(hx - hr * 0.1, hy - hr * 0.12, hr * 0.92, Math.PI * 0.95, Math.PI * 2.05); g.fill();
+  g.fillStyle = '#2b2628'; g.beginPath(); g.arc(hx + hr * 0.45, hy + hr * 0.05, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
+  g.restore();
+}
+
+/**
+ * A skateboarder: the same person crouched for balance, arms out, on a deck
+ * with its wheels, drawn round the hip (cx, cy) like the diver. `phase` turns
+ * the wheels. The deck is under the feet: SKATE_FEET × H below the hip.
+ */
+export const SKATE_FEET = 0.44;
+export function skateboarder(g, cx, cy, H, P, { spin = 0, dir = 1, phase = 0, ring = null } = {}) {
+  const E = env();
+  g.save();
+  g.translate(cx, cy); g.rotate(spin * dir);
+  if (dir === -1) g.scale(-1, 1);
+  const deckY = H * SKATE_FEET + H * 0.02, half = H * 0.34, wr = Math.max(2.2, H * 0.032);
+  // the deck: a board with kicked-up ends, grip tape on top, trucks and wheels
+  g.fillStyle = E.night ? '#6a5144' : '#9a6b45';
+  g.beginPath(); g.moveTo(-half, deckY - H * 0.04); g.quadraticCurveTo(-half * 0.92, deckY, -half * 0.8, deckY);
+  g.lineTo(half * 0.8, deckY); g.quadraticCurveTo(half * 0.92, deckY, half, deckY - H * 0.04);
+  g.lineTo(half * 0.98, deckY - H * 0.01); g.lineTo(-half * 0.98, deckY - H * 0.01); g.closePath(); g.fill();
+  g.fillStyle = '#2b2628'; g.fillRect(-half * 0.8, deckY - H * 0.016, half * 1.6, H * 0.012);
+  for (const x of [-half * 0.62, half * 0.62]) {
+    g.fillStyle = E.night ? '#8d8a8f' : '#b7b4b9'; g.fillRect(x - wr * 0.9, deckY, wr * 1.8, wr * 0.6);
+    g.fillStyle = E.night ? '#d7c8a8' : '#efe3c4'; g.beginPath(); g.arc(x, deckY + wr * 1.2, wr, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.beginPath();
+    g.moveTo(x, deckY + wr * 1.2); g.lineTo(x + Math.cos(phase * TAU) * wr * 0.8, deckY + wr * 1.2 + Math.sin(phase * TAU) * wr * 0.8); g.stroke();
+  }
+  g.restore();
+  // the rider, crouched, arms out in front for balance, feet on the deck
+  diver(g, cx, cy, H, P, { tuck: 0.22, arms: 0.42, spin, dir, ring });
+}
+
+/**
+ * A parcel: a cardboard box `L` px across, drawn round its centre (cx, cy),
+ * turned by `spin`: lit from the left, packing tape across both ways, a
+ * label. No text on it.
+ */
+export function parcel(g, cx, cy, L, P, { spin = 0 } = {}) {
+  const E = env(), w = L, h = L * 0.72;
+  g.save();
+  g.translate(cx, cy); g.rotate(spin);
+  const bg = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+  bg.addColorStop(0, E.night ? '#9a7a58' : '#d4a873'); bg.addColorStop(1, E.night ? '#6e5640' : '#a87d4f');
+  g.fillStyle = bg; g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, Math.max(1.5, L * 0.05)); g.fill();
+  g.strokeStyle = 'rgba(60,40,20,0.55)'; g.lineWidth = 1.2; g.stroke();
+  g.fillStyle = withAlpha('#f3e7c9', E.night ? 0.55 : 0.75);
+  g.fillRect(-w / 2, -h * 0.08, w, h * 0.16); g.fillRect(-w * 0.08, -h / 2, w * 0.16, h);
+  g.fillStyle = E.night ? '#d8d2c6' : '#fbf8f1'; g.fillRect(w * 0.14, h * 0.14, w * 0.26, h * 0.2);
+  g.fillStyle = 'rgba(0,0,0,0.35)'; for (let i = 0; i < 3; i++) g.fillRect(w * 0.17, h * (0.18 + i * 0.05), w * 0.18, 1);
+  g.restore();
+}

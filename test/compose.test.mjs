@@ -1,8 +1,8 @@
 // compose.test.mjs — the composer: recipes held to the registry, refused with
 // reasons, and played by the engine's own kit. Run: node test/compose.test.mjs
 import fs from 'node:fs';
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS } from '../js/compose/registry.js';
-import { check, compose, scenesOf } from '../js/compose/recipe.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, figureOf } from '../js/compose/registry.js';
+import { check, compose, scenesOf, fromReading } from '../js/compose/recipe.js';
 import { steps } from '../js/compose/reveal.js';
 import { answersFor, fromReader } from '../js/parts/answers.js';
 import { answerOf } from '../js/parts/parts.js';
@@ -68,7 +68,7 @@ group('Refused, with a reason a student can read', () => {
   const no = (r, re, label) => { const x = check(r); ok(!x.ok && re.test(x.reason), `${label}: “${x.reason}”`); };
   no({ ...CAR, backdrop: 'moon' }, /no backdrop called “moon”/, 'an unknown backdrop');
   no({ ...CAR, engine: 'warp' }, /no engine called/, 'an unknown engine');
-  no({ ...CAR, objects: [{ figure: 'dragon' }] }, /no figure called/, 'an unknown figure');
+  ok(check({ ...CAR, objects: [{ figure: 'dragon' }] }).recipe.notes[0] === 'Drawn as a particle: there is no dragon figure yet.', 'a thing with no figure: the closest, said so');
   no({ ...CAR, objects: [{ figure: 'ship' }] }, /from above/, 'a ship side on');
   no({ ...CAR, objects: [] }, /moves 1 thing/, 'nothing that moves');
   no({ ...CAR, objects: [{ figure: 'car' }, { figure: 'lorry' }] }, /moves 1 thing/, 'two things for a one-thing engine');
@@ -165,6 +165,42 @@ group('A part in a scene of its own', () => {
   ok(!scenes[1].c.ok && /no backdrop called/.test(scenes[1].c.reason), '(d) refused with its reason, the rest still stand');
   ok(scenesOf(undefined).main.length === 0 && scenesOf([null]).main.length === 1, 'no parts, or a broken one, does not throw');
 });
+
+group('What moves is what is drawn', () => {
+  const f = (w) => figureOf(w);
+  ok(f('diver').figure === 'diver' && f('a person').figure === 'diver' && f('she').figure === 'diver', 'a diver, a person, she: a person');
+  ok(f('skateboarder').figure === 'skateboarder' && f('parcel').figure === 'parcel' && f('football').figure === 'ball' && f('pebble').figure === 'stone', 'skateboarder, parcel, football, pebble');
+  ok(!f('rocket').exact && f('rocket').figure === 'particle', 'a rocket has no figure yet: the closest, and not exact');
+  ok(f('').figure === null, 'nothing named: nothing assumed');
+  // the user's own question, as the Worker hands it on
+  const d = fromReading({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'A person jumps off a 10 m diving board at 7 m/s.',
+    boxes: { place: 'board', h: 10, theta: 90, u: 7 }, who: 'person', assumed: ['angle'] });
+  ok(d.recipe.backdrop === 'board' && d.recipe.objects[0].figure === 'diver', 'a person off a diving board: a diver, over the pool');
+  ok(/taken as straight up/.test(d.notes.join(' ')), 'and the reply says the jump is taken as straight up');
+  const dv = compose(d.recipe), sv = dv.kit.solve(dv.kit.read(dv.boxes));
+  near(sv.top, 10 + 49 / (2 * 9.81), 1e-9, 'it rises to 10 + u²/2g above the water');
+  ok(fromReading({ understood: true, scenario: 'platform', h: 20, u: 5, who: 'stone' }) === null, 'a stone stays where it was: the twelve, or From a height');
+  const p = fromReading({ understood: true, scenario: 'dropped', summary: 'A parcel is dropped from a helicopter.', who: 'parcel' });
+  ok(p.recipe.backdrop === 'air' && !('h' in p.recipe.numbers) && /no helicopter yet/.test(p.notes.join(' ')), 'a parcel from a helicopter: from the air, its height asked for, the helicopter said');
+  const sk = fromReading({ understood: true, scenario: 'platform', h: 2, u: 4, who: 'skateboarder' });
+  ok(sk.recipe.objects[0].figure === 'skateboarder' && compose(sk.recipe).scenario.name === 'A skateboarder off a wall', 'a skateboarder off a 2 m wall');
+  const r = fromReading({ understood: true, scenario: 'up', h: 0, u: 30, who: 'rocket', parts: [{ label: 'a', asks: 'top', answer: 'top' }] });
+  ok(/no rocket figure yet/.test(r.notes.join(' ')) && r.parts[0].answer === 'height1', 'a rocket drawn as a particle, said; the twelve’s answer key renamed');
+});
+
+console.log('\nThe Worker reads a jump with no angle as straight up, and says so');
+{
+  const { toFigure } = await import('../worker/src/composeplace.js');
+  const { toPlace } = await import('../worker/src/place.js');
+  const words = 'a person jumping off a diving board, no angle given, the board is 10 m high and they jump at 7 m/s';
+  const x = toPlace(toFigure({ understood: true, scenario: 'platform', h: 10, u: 7, summary: 'A person jumps off a 10 m diving board at 7 m/s.' }, words), words);
+  ok(x.library === 'from-a-height' && x.boxes.place === 'board' && x.boxes.theta === 90, 'the user’s question: From a height’s board, straight up');
+  ok(x.who === 'person' && x.assumed?.[0] === 'angle', 'who moves and what was assumed go along with it');
+  const at = toFigure({ understood: true, scenario: 'platform-angle', h: 10, u: 7, angleDegrees: 30, who: 'diver' }, 'a diver jumps at 30° from a 10 m board at 7 m/s');
+  ok(at.angleDegrees === 30 && !at.assumed, 'an angle the question gives is kept');
+  const sk = toFigure({ understood: true, scenario: 'platform', h: 2, u: 4, who: 'skateboarder' }, 'a skateboarder rolls off a 2 m wall at 4 m/s');
+  ok(sk.scenario === 'platform' && !sk.assumed, 'rolling off is not a jump: across, as read');
+}
 
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);

@@ -139,7 +139,7 @@ export function riverScene(g, w, h, bank, phase) {
 /** An outdoor pool seen from its side: the far deck, a hedge and trees beyond,
     the water with lane ropes in perspective, and the near deck left of
     `poolX`, where the diving stand is. */
-function poolScene(g, w, h, far, poolX, phase) {
+export function poolScene(g, w, h, far, poolX, phase) {
   const E = env(), C = tones();
   skyscape(g, 0, 0, w, far - 14, { far: 'trees', seed: 12 });
   // a clipped hedge and the far deck

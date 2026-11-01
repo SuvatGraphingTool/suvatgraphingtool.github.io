@@ -28,8 +28,8 @@
 import { BACKDROPS, FIGURES as PIECES } from '../compose/registry.js';
 import { dust, pulse, flash, squash } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, sig3, withAlpha } from './util.js';
-import { thrower, throwerHand, THROWER_MIN, ballAt, drawFigure, phaseFor, particle, fence } from './figures.js';
-import { seaScene, riverScene, fields, curtainWall, tree, seaCliff, tower, bridge, bigSplash, pebble, fitClear } from './heights.js';
+import { thrower, throwerHand, THROWER_MIN, ballAt, drawFigure, phaseFor, particle, fence, diver, DIVER_FEET, skateboarder, SKATE_FEET, parcel } from './figures.js';
+import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, tower, bridge, divingBoard, balloon, bigSplash, pebble, fitClear } from './heights.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
 import { grass, tarmac, railBed, floorboards, interior, water, stone, env, rng, softShadow } from './scenery.js';
@@ -40,7 +40,7 @@ const trimmed = (s) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, ''
 /** Half a figure's drawn height, as a fraction of its drawn length L — so it
     is drawn round the engine's point, not standing on it. */
 const MIDDLE = { car: 0.16, lorry: 0.2, train: 0.11, cyclist: 0.45, motorcycle: 0.3, runner: 0.5 };
-const WET = new Set(['sea', 'river']);
+const WET = new Set(['sea', 'river', 'pool']);
 
 /* ── the landing, played out after the motion stops ───────────────────
    Playback stops at the moment it lands, so an effect timed only by the
@@ -61,6 +61,9 @@ export function render(canvas, cam, o) {
   if (R.engine === 'pair' || R.engine === 'bounce') return column(canvas, o);
   return null;
 }
+
+/** How long a diving stand's board is drawn, for its height in px. */
+const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 
 /** The backdrop and the place things start from, for either stage: the
     library's own scenery for the recipe's backdrop, its top at `top` (H0 m),
@@ -96,6 +99,20 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
       break;
     }
     case 'sea': seaScene(g, w, h, horizon(0.2), phase); jetty(g, -4, x0 + 2, H0 > 0 ? top : oy - 4, oy, h, k); break;
+    case 'board': {
+      // From a height's own diving stand over its pool, the board's tip at the edge
+      const len = boardLen(k, oy - top), sx = x0 - len;
+      poolScene(g, w, h, oy - clamp((oy - 40) * 0.18, 26, 80), sx + clamp(len * 0.18, 12, 26) + 10, phase);
+      divingBoard(g, sx, x0, top, oy, h);
+      break;
+    }
+    case 'air': {
+      // high over fields, let go from beside a hovering balloon's basket
+      fields(g, w, horizon(0.3), oy); grass(g, 0, w, oy, h);
+      const bs = Math.max(26, 0.75 * k);
+      balloon(g, x0 - bs * 0.31 - 6, top, bs, P, { groundY: oy });
+      break;
+    }
     case 'road': fields(g, w, horizon(0.25), oy); tarmac(g, 0, w, oy, { depth: clamp(0.6 * k, 12, 24), verge: h - oy }); ledge(); break;
     case 'rails': fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy + 18, h); railBed(g, 0, w, oy); ledge(); break;
     case 'hall': interior(g, 0, 0, w, oy); floorboards(g, 0, w, oy, h); ledge(); break;
@@ -135,10 +152,12 @@ function launch(canvas, o) {
   // ── the frame: the motion and the room its pieces need, at one scale
   const pads = (k) => {
     const body = thrown ? TH(k) : size(k);
-    const place = R.backdrop === 'house' ? houseW(k) + 30 : R.backdrop === 'orchard' ? 2.4 * k : 0;
+    const place = R.backdrop === 'house' ? houseW(k) + 30 : R.backdrop === 'orchard' ? 2.4 * k
+      : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 1.4 : 0;
     const head = (thrown && !byHand ? TH(k) : size(k) * 0.6) + 16 - (yTop - H0) * k;
     // an orchard's crown stands well above the branch
-    const crown = R.backdrop === 'orchard' ? 1.9 * k + 16 - (yTop - H0) * k : 0;
+    const crown = R.backdrop === 'orchard' ? 1.9 * k + 16 - (yTop - H0) * k
+      : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 2.95 + 12 - (yTop - H0) * k : 0;
     return { l: Math.max(body * 0.9, place) + 80, r: 70 + (small ? 22 : size(k) * 0.55), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown) };
   };
   // the readouts are cards over the stage: the path may pass behind them, but
@@ -179,7 +198,9 @@ function launch(canvas, o) {
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {
     // beside the place, never across it: outside the house's front, behind the thrower
-    const dx = R.backdrop === 'house' ? x0 - houseW(k) - 16 : (thrown ? feet - th * 0.3 : x0 - size(k) * 0.65) - 14;
+    const dx = R.backdrop === 'house' ? x0 - houseW(k) - 16 : R.backdrop === 'board' ? x0 - boardLen(k, oy - top) - 26
+      : R.backdrop === 'air' ? x0 - Math.max(26, 0.75 * k) * 1.25 - 20
+      : (thrown ? feet - th * 0.3 : x0 - size(k) * 0.65) - 14;
     stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.ink, width: 1.4, alpha: 0.9 });
     for (const yy of [oy, top]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
     L.add(T`${trimmed(sig3(H0))} [m]`, dx - 8, (oy + top) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700 });
@@ -223,7 +244,10 @@ function launch(canvas, o) {
   if (landed) {
     for (const e of R.effects) {
       // a car hitting the water at speed throws up a column, not a ripple
-      if (e === 'splash' && wet) bigSplash(g, lx, oy, age, life, Math.max(clamp(k / 5, phone ? 1 : 1.5, phone ? 1.5 : 2.6), small ? 0 : size(k) / 26));
+      if (e === 'splash' && wet) {
+        bigSplash(g, lx, oy, age, life, Math.max(clamp(k / 5, phone ? 1 : 1.5, phone ? 1.5 : 2.6), small ? 0 : size(k) / 26));
+        ripples(g, lx, oy, age, life, Math.max(1, (small ? 12 : size(k) * 0.5) / 18));
+      }
       else if (e === 'dust' && !wet) dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k) / 30), n: 22 });
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
@@ -250,6 +274,30 @@ function launch(canvas, o) {
       else if (kind === 'particle') particle(g, bx, by, R0 * 2, P);
       else pebble(g, bx, by, R0);
     }
+  } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel') {
+    // a person or a parcel, round the engine's point. Before it goes, a person
+    // stands on the edge (feet on it); the stance gives way to the flight over
+    // the first moments, so the drawing never jumps
+    const p = fired ? t / f.tMax : 0, ease = (a, b, x) => { const u = clamp((x - a) / (b - a), 0, 1); return u * u * (3 - 2 * u); };
+    const feet = kind === 'diver' ? DIVER_FEET : kind === 'skateboarder' ? SKATE_FEET : 0;
+    const cy = by - feet * Lp * (1 - ease(0, 0.12, p));
+    if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
+    if (!fired) softShadow(g, bx, (H0 > 0 ? top : oy) + 1, Lp * 0.25, 3, 0.8);
+    g.save();
+    if (landed && wet) { g.beginPath(); g.rect(0, 0, w, oy + 2); g.clip(); }
+    if (kind === 'diver') {
+      // a jump upwards tucks and turns one and a half times, entering head
+      // first; a dive out from the edge straightens and tips over gently
+      const steep = Math.atan2(v0.y, v0.x) > Math.PI / 4;
+      const tuck = steep ? ease(0.15, 0.35, p) * (1 - ease(0.6, 0.8, p)) : 0;
+      const spin = steep ? ease(0.15, 0.85, p) * Math.PI * 3 : ease(0.05, 1, p) * Math.PI * 0.85;
+      const arms = !fired ? 0.9 : 1 - tuck;
+      diver(g, bx, cy, Lp, P, { tuck, arms, spin });
+    } else if (kind === 'skateboarder') {
+      skateboarder(g, bx, cy, Lp, P, { spin: 0.4 * Math.atan2(-v.y, v.x) * (fired ? 1 : 0), phase: phaseFor('car', Lp, Math.abs(bx - x0)) });
+    } else parcel(g, bx, cy, Lp, P, { spin: ease(0, 1, p) * 0.9 });
+    g.restore();
+    if (landed && wet) water(g, lx - Lp * 0.5, lx + Lp * 0.5, oy, oy + 3, { phase });
   } else {
     const mid = (MIDDLE[kind] ?? 0.2) * Lp;
     // pitched with the path, but only part of the way: a car off a cliff
@@ -277,7 +325,9 @@ function launch(canvas, o) {
   if (show.velocity !== false && sp > 1e-6) {
     // from a vehicle's nose, not buried in its door; on a halo, so it reads
     // over the art. The impact velocity stays drawn at the moment of impact.
-    const ox = bx + (v.x / sp) * Lp * 0.5, oyv = by - (v.y / sp) * Lp * 0.5;
+    // a person or a parcel has it beside them, never across the body
+    const person = ['diver', 'skateboarder', 'parcel'].includes(kind);
+    const ox = person ? bx + Lp * 0.32 : bx + (v.x / sp) * Lp * 0.5, oyv = person ? by - Lp * 0.15 : by - (v.y / sp) * Lp * 0.5;
     const tx = ox + v.x * vl, ty = oyv - v.y * vl;
     const halo = withAlpha(P.card, 0.8);
     if (show.components && Math.abs(v.x) > 1e-9) {
@@ -293,7 +343,7 @@ function launch(canvas, o) {
   if (show.acceleration) arrow(g, bx, by, bx, by + 40, { color: P.acc, width: 2.4, head: 10 });
 
   // ── what it lands on, named on it
-  const name = { sea: 'the sea', river: 'the river', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';
+  const name = { sea: 'the sea', river: 'the river', pool: 'the water', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);
@@ -469,6 +519,21 @@ function column(canvas, o) {
 }
 
 /* ── pieces the composer needed and the library did not have ─────────── */
+
+/** Rings spreading out over the water from where something went in, one
+    after another, flattened by the angle we see the surface at. */
+export function ripples(g, x, y, age, life, size = 1) {
+  if (!(age >= 0) || age > life) return;
+  g.save();
+  for (let i = 0; i < 3; i++) {
+    const u = (age / life) * 1.25 - i * 0.18;
+    if (u <= 0 || u >= 1) continue;
+    const R = (14 + 70 * (1 - (1 - u) ** 2)) * size;
+    g.strokeStyle = `rgba(255,255,255,${0.6 * (1 - u)})`; g.lineWidth = 1.6;
+    g.beginPath(); g.ellipse(x, y + 1, R, R * 0.16, 0, 0, Math.PI * 2); g.stroke();
+  }
+  g.restore();
+}
 
 /** A plain stone wall from x0 to the edge, its top at `top`, on the ground
     at Y: dressed courses lit from the left and a coping along its top — a

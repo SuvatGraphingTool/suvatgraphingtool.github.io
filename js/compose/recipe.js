@@ -20,10 +20,11 @@
 // Nothing here calculates (CLAUDE.md rule 4). The engine solves; this file
 // only says which engine, with which boxes.
 
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS } from './registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, figureOf } from './registry.js';
+import { toApp } from '../core/question.js';
 import { KITS } from '../kits/index.js';
 import { GRAVITY } from '../scenarios.js';
-import { num } from '../notation.js';
+import { num, M } from '../notation.js';
 import * as stage from '../render/composed.js';
 
 const isNum = (x) => typeof x === 'number' && isFinite(x);
@@ -69,10 +70,18 @@ export function check(raw) {
   if (objs.length < lo || objs.length > hi) {
     return no(`${Up(E.label)} moves ${lo === hi ? lo : `${lo} to ${hi}`} ${lo === 1 && hi === 1 ? 'thing' : 'things'}; the recipe has ${objs.length}.`);
   }
-  const objects = [];
+  const objects = [], notes = [];
   for (const o of objs) {
-    const figure = word(o.figure), F = FIGURES[figure];
-    if (!F) return no(`There is no figure called “${clip(o.figure, 30)}”. The figures are: ${listOf(FIGURES)}.`);
+    // the question's own word for it, drawn as itself or as the closest figure
+    // there is — and then the reply says so
+    let figure = word(o.figure);
+    if (!FIGURES[figure]) {
+      const m = figureOf(figure);
+      if (!m.figure) return no(`The recipe does not say what moves. The figures are: ${listOf(FIGURES)}.`);
+      if (!m.exact) notes.push(nearest(m));
+      figure = m.figure;
+    }
+    const F = FIGURES[figure];
     if (B.only && !B.only.includes(figure)) {
       const can = B.only.map((k) => FIGURES[k].label);
       return no(`From ${B.at} only ${can.slice(0, -1).join(', ')} or ${can[can.length - 1]} can fall: not ${F.label}.`);
@@ -148,7 +157,7 @@ export function check(raw) {
   // bounce rings, a landing splashes or kicks up dust
   if (!effects.length && (MOMENTS[engine] || LANDS_WITH[B.below])) effects.push(MOMENTS[engine] || LANDS_WITH[B.below]);
 
-  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, engine, objects, numbers, effects } };
+  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, engine, objects, numbers, effects, notes } };
 }
 
 /** "A car off a cliff" — a title for a recipe that brought none. */
@@ -157,7 +166,13 @@ export function titleOf(r) {
   if (r.title) return Up(r.title);
   const what = Up(F.label);
   const where = `${{ hall: 'in', sea: 'over' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
-  if (r.engine === 'projectile') return B.edge ? `${what} off ${B.at}` : `${what} ${F.thrown ? 'thrown' : 'launched'} ${where}`;
+  if (r.engine === 'projectile') {
+    if (r.backdrop === 'air') return `${what} let go from the air`;
+    if (B.edge) return `${what} off ${B.at}`;
+    // from a height with no edge of its own, it is a wall that is drawn
+    if (r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off a wall`;
+    return `${what} ${F.thrown ? 'thrown' : 'launched'} ${where}`;
+  }
   const by = B.edge ? `by ${B.at}` : where;
   if (r.engine === 'pair') return `Two on one line ${by}: when do they meet?`;
   if (r.engine === 'bounce') return `${what} bouncing ${by}`;
@@ -266,4 +281,70 @@ export function scenesOf(parts) {
     } else main.push(p);
   }
   return { main, scenes };
+}
+
+/** "Drawn as a particle: there is no rocket figure yet." */
+function nearest(m) {
+  return `Drawn as ${FIGURES[m.figure].label}: there is no ${clip(m.word, 30)} figure yet.`;
+}
+
+/* ── a reading whose mover is not a ball ─────────────────────────────────
+   The twelve draw a ball on the pitch, and From a height a stone from a
+   thrower's hand. When the question says a diver, a parcel or a skateboarder
+   moves, that is what must be drawn: the reading is made a composed scene
+   with that figure, in that place, on the same height engine (CLAUDE.md
+   rule 4: the numbers are moved, never changed). A ball or a stone stays
+   where it was. */
+const LAUNCHES = ['up', 'arc', 'dropped', 'down', 'platform-down', 'platform', 'platform-angle'];
+/** The answer keys of the twelve, and of From a height, as the composed projectile names the same answer. */
+const TWELVE_KEYS = { flight: 'time1', range: 'distance', vLand: 'speed1', top: 'height1', rise: 'height2', tTop: 'time2', u: 'speed2', theta: 'angle' };
+const HEIGHT_KEYS = { height: 'height1', speed: 'speed1', time: 'time1', graph: 'graph' };
+/** From a height's places, as the composer's backdrops (a well is From a height's alone). */
+const HEIGHT_PLACES = { cliff: 'cliff', tower: 'tower', bridge: 'bridge', board: 'board', balloon: 'air' };
+const CARRIER = /\b(helicopter|aeroplane|airplane|aircraft|plane|drone|airship|glider)\b/i;
+const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] != null).map((k) => [k, o[k]]));
+
+/**
+ * @param x  the reader's extraction, with `who` (what moves) and perhaps
+ *           `assumed` (['angle'] when a jump's angle was not given)
+ * @returns a compose reading { scenario: 'compose', recipe, parts, notes, … },
+ *          or null to leave the reading as it was
+ */
+export function fromReading(x) {
+  if (!x || typeof x !== 'object' || x.understood === false) return null;
+  const m = figureOf(x.who);
+  if (!m.figure || (m.exact && ['ball', 'stone', 'particle'].includes(m.figure))) return null;
+  let backdrop, numbers, keys;
+  if (x.scenario === 'library' && x.library === 'from-a-height' && x.boxes && typeof x.boxes === 'object') {
+    backdrop = HEIGHT_PLACES[x.boxes.place];
+    if (!backdrop) return null;
+    numbers = pick(x.boxes, ['h', 'u', 'theta', 'v', 's', 't', 'tTop', 'level', 'g']);
+    keys = HEIGHT_KEYS;
+  } else if (LAUNCHES.includes(x.scenario)) {
+    const r = toApp(x);
+    if (!r.ok) return null;
+    // dropped: straight down, from rest
+    // a height left out stays out: the values screen asks for it
+    numbers = { ...pick(r.given, ['u', 'v', 's', 't']), theta: r.theta ?? -90 };
+    if (r.h != null) numbers.h = r.h;
+    if (typeof x.g === 'number') numbers.g = x.g;
+    backdrop = !(numbers.h === 0) && CARRIER.test(`${x.summary || ''} ${x.words || ''}`) ? 'air' : 'ground';
+    keys = TWELVE_KEYS;
+  } else return null;
+  const notes = [];
+  if (!m.exact) notes.push(nearest(m));
+  const carrier = `${x.summary || ''} ${x.words || ''}`.match(CARRIER);
+  if (backdrop === 'air' && carrier) notes.push(`Drawn let go from a balloon: there is no ${carrier[1].toLowerCase()} yet. Only where it is let go matters to the motion.`);
+  if (Array.isArray(x.assumed) && x.assumed.includes('angle')) {
+    notes.push(`No angle was given for the jump, so it is taken as straight up, ${M`theta = 90°`}, as exam questions mean. Change ${M`theta`} on the values screen to try another.`);
+  }
+  const parts = Array.isArray(x.parts) ? x.parts.map((p) => {
+    if (!p || typeof p !== 'object') return p;
+    const { answer, ...rest } = p;
+    return keys[answer] ? { ...rest, answer: keys[answer] } : rest;
+  }) : undefined;
+  return {
+    understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes,
+    recipe: { backdrop, engine: 'projectile', objects: [{ figure: m.figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
+  };
 }

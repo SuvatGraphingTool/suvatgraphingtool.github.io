@@ -13,7 +13,8 @@ import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
-import { compose, scenesOf } from './compose/recipe.js';
+import { compose, scenesOf, fromReading } from './compose/recipe.js';
+import { figureOf } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
@@ -3370,6 +3371,11 @@ function sceneLinks() {
   };
 }
 function readOne(x, { graph = true, solve = false } = {}) {
+  // what moves is what is drawn: a diver, a parcel, a skateboarder launched
+  // as one of the twelve or From a height becomes a composed scene with that
+  // figure in that place, on the same engine (js/compose/recipe.js)
+  const drawn = fromReading(x);
+  if (drawn) return applyComposed(drawn, { graph });
   if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
   if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph });
   const r = toApp(x);
@@ -3492,6 +3498,12 @@ function libraryGiven(fields, gAssumed, summary = '', example = false) {
  * scenario is — its boxes, its parts, the engine's answer to each.
  */
 function applyComposed(x, { graph = true } = {}) {
+  // the reader's own word for what moves wins over a ball it put in the recipe
+  const who = figureOf(x.who);
+  if (who.figure && !['ball', 'stone', 'particle'].includes(who.figure) && x.recipe?.objects?.length === 1
+      && ['ball', 'stone', 'particle'].includes(String(x.recipe.objects[0]?.figure).toLowerCase())) {
+    x = { ...x, recipe: { ...x.recipe, objects: [{ ...x.recipe.objects[0], figure: who.figure }] } };
+  }
   const c = compose(x.recipe);
   if (!c.ok) return { ok: false, error: `Suvat could not put that scene together: ${c.reason}` };
   const s = register(c, null);
@@ -3505,7 +3517,7 @@ function applyComposed(x, { graph = true } = {}) {
   buildValuesScreen();              // which recomputes, and solves each part
   refreshSteps();
   // each scene of its own: its part answered by its engine, and the way to it
-  const more = scenes.map((sc) => {
+  let more = scenes.map((sc) => {
     const label = `(${esc(String(sc.part.label || '').replace(/[^A-Za-z0-9]/g, '').toLowerCase())})`;
     if (!sc.c.ok) return `<div class="ro-scene"><p class="ro-eyebrow">Part ${label} needs a scene of its own</p><div class="ro-engine" data-ok="false">${esc(sc.c.reason)}</div></div>`;
     const sid = sc.c.scenario.id, k = KITS[sid], sv = k.solve(k.read(sc.c.boxes));
@@ -3515,6 +3527,9 @@ function applyComposed(x, { graph = true } = {}) {
     return `<div class="ro-scene"><p class="ro-eyebrow">Part ${label}, in a scene of its own</p><h4 class="ro-name">${esc(sc.c.scenario.name)}</h4>${body}`
       + `<button type="button" class="ghost sm ask-scene" data-id="${sid}">Show me this scene</button></div>`;
   }).join('');
+  // what was assumed, and what is drawn as something close to it, said plainly
+  const said = [...(Array.isArray(x.notes) ? x.notes : []), ...(s.recipe.notes || [])];
+  more = said.map((n) => `<p class="ro-note">${n}</p>`).join('') + more;
   const head = `<p class="ro-eyebrow">Drawn for your question</p><h3 class="ro-name">${esc(s.name)}</h3>`
     + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;
   const body = solved?.ok

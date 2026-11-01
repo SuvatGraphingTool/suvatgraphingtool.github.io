@@ -193,6 +193,34 @@ a library pair-vertical or bounce reading whose words name a tower, building,
 house or hall becomes a composed recipe with that backdrop — the same boxes,
 the parts' answer keys renamed to the composed engine's.
 
+What moves is what is drawn. The reader names it (`who`, in the question's
+own word); `figureOf(who)` in registry.js maps the word to a figure, exactly
+(diver, person, she → `diver`; parcel, box → `parcel`; football → `ball`) or
+as the closest one there is, and then the reply says so ("Drawn as a particle:
+there is no rocket figure yet"). `fromReading(x)` in recipe.js turns a reading
+of the twelve's launches or of From a height whose mover is not a ball or a
+stone into a composed scene with that figure in that place, the numbers moved
+unchanged; `app.js` `readInto` tries it first. In the Worker,
+`toFigure()` (composeplace.js) fills `who` from the words if the model left it
+out, and reads a person who JUMPS with no angle as straight up (θ = 90),
+marking `assumed: ['angle']` so the reply says so; `toPlace` carries `who` and
+`assumed` along. Places the composer added: `board` (From a height's diving
+stand over its pool — `poolScene`, `divingBoard`), `air` (high over fields,
+let go beside a hovering balloon; a helicopter or a plane is said to be drawn
+as one). js/core/height.js gained the places `water`, `road`, `track`,
+`floor`, `house`, `tree`, `air`, each in its own words.
+
+Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
+— a person in a swimsuit and cap, drawn round the hip so a stage can turn
+them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,
+`arms` 0–1 swings them from the sides through in front to overhead; on the
+composed stage a jump upwards tucks and turns one and a half times to enter
+head first, a dive out tips over gently, and the entry splashes with
+`ripples()` spreading. `DIVER_FEET` stands one on a board. `skateboarder(…)`
+— the same person crouched on a deck with trucks and turning wheels
+(`SKATE_FEET`). `parcel(g, cx, cy, L, P, { spin })` — a taped cardboard box
+with a label.
+
 Pieces the composer added (composed.js): `wall(g, x0, edge, top, Y, k)` — a
 dressed stone wall with a coping; `jetty(g, x0, edge, deck, Y, bottom, k)` — a
 timber jetty on piles over the sea. figures.js gained `airborne` (no ground

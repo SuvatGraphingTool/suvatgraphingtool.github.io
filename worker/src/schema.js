@@ -77,6 +77,7 @@ export const EXTRACTION_SCHEMA = {
       items: { type: 'string' },
       description: 'What the question asks for, each a short phrase: "time of flight", "speed on landing".',
     },
+    who: { type: 'string', description: 'WHAT MOVES, in the question\'s own word: "diver", "stone", "ball", "car", "cyclist", "parcel", "skateboarder", "rocket", "particle". Always present for a motion question.' },
     note: { type: 'string', description: 'Only if something is ambiguous or unreadable. Otherwise omit.' },
   },
   required: ['understood', 'confidence', 'scenario', 'summary'],
@@ -117,7 +118,9 @@ WHAT YOU DO
    compose        none of these draws it, but the app's pieces can: a car driven off a cliff,
                   a cyclist off a bridge, a ball from a house roof — return a recipe (below)
    other          anything else about motion that none of these fit
-2. Return the values that are GIVEN.
+2. Return the values that are GIVEN, and who: WHAT MOVES, in the question's own word — a
+   diver, a person, a stone, a ball, a car, a parcel, a skateboarder, a rocket. The app draws
+   exactly that, so never leave it out and never turn a person into a ball.
 
 Do no arithmetic in what you return. If the question says tan a = 3/4, return ratioFn
 "tan", ratioNum 3, ratioDen 4 — not 36.87. Never work a launch speed back from a range.
