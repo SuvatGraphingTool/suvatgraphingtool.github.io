@@ -76,7 +76,12 @@ broken.
 5. curl https://suvat-ai.suvatgraphingtool.workers.dev and confirm the files
    match `origin/ai`. If another session pushed in between, run the deploy
    again, so the site always carries the latest `origin/ai`.
-6. Update your rows in the tick list you are working from.
+6. Then carry it into the redesign site (the user, 1 Nov: "I want the loops to go in this
+   as well"): `scripts/sync-redesign.sh`. It merges `origin/ai` into `redesign` in its own
+   detached worktree, tests, pushes and deploys https://suvat-redesign.suvatgraphingtool.workers.dev.
+   Never touch `.claude/worktrees/redesign`: someone designs in it. A conflict stops the
+   script with nothing pushed; report it to the lead instead of resolving the redesign's files.
+7. Update your rows in the tick list you are working from.
 
 Several sessions push to `ai` at once. Keep commits small, rebase often, keep
 edits to shared files (`js/app.js`, `js/library.js`, `js/kits/index.js`,
