@@ -147,26 +147,30 @@ export const PROJECTILE_ANSWERS = [
   { kind: 'height', say: 'height it started from (when found from the time in the air)', find: 'h', sym: 'h', unit: 'm', at: 0 },
   { kind: 'time', say: 'when it is first at the height a part asks about (numbers.level)', find: 'level.times.0', sym: 't', unit: 's', at: 'level.times.0', step: 'above the throw' },
   { kind: 'time', say: 'when it is there again, on the way down', find: 'level.times.1', sym: 't', unit: 's', at: 'level.times.1', step: 'above the throw' },
+  { kind: 'graph', say: 'a sketch of the graphs: the stage draws them' },
 ];
 /** Two on one vertical line: the pair engine's answers (js/core/pair.js). */
 export const PAIR_ANSWERS = [
-  { kind: 'time', say: 'when they meet, from when the first sets off', find: 'extras.tMeet', sym: 't', unit: 's', at: 'meet.t', step: 'meet' },
+  { kind: 'time', say: 'when they meet, on the clock from t = 0', find: 'extras.tMeet', sym: 't', unit: 's', at: 'meet.t', step: 'meet' },
   { kind: 'height', say: 'how high above the ground they meet', find: 'extras.yMeet', sym: 'h', unit: 'm', at: 'meet.t', step: 'meet' },
   { kind: 'speed', say: 'speed of the first when they meet', find: 'extras.speedA', unit: 'm s^-1', at: 'meet.t' },
   { kind: 'speed', say: 'speed of the second when they meet', find: 'extras.speedB', unit: 'm s^-1', at: 'meet.t' },
   { kind: 'speed', say: 'the difference in their speeds when they meet', find: 'extras.dSpeed', unit: 'm s^-1', at: 'meet.t' },
-  { kind: 'time', say: 'how long the second has been moving when they meet', find: 'extras.tB', sym: 't', unit: 's', at: 'meet.t' },
+  { kind: 'time', say: 'how long the second has been moving when they meet (when it sets off later)', find: 'extras.tB', sym: 't', unit: 's', at: 'meet.t' },
+  { kind: 'time', say: 'how long the first has been moving when they meet (when it sets off later)', find: 'extras.tA', sym: 't', unit: 's', at: 'meet.t' },
+  { kind: 'graph', say: 'a sketch of the graphs: the stage draws them' },
 ];
 /** A ball that bounces: the bounce engine's answers (js/core/bounce.js). */
 export const BOUNCE_ANSWERS = [
   { kind: 'time', say: 'when it first hits the ground', find: 'extras.t1', sym: 't', unit: 's', at: 'extras.t1' },
   { kind: 'speed', say: 'speed just before the first impact', find: 'extras.vIn1', sym: 'v', unit: 'm s^-1', at: 'extras.t1' },
   { kind: 'speed', say: 'speed just after the first impact (it rebounds with)', find: 'extras.vOut1', sym: 'v', unit: 'm s^-1', at: 'extras.t1' },
-  { kind: 'height', say: 'greatest height after the first bounce', find: 'extras.H1', sym: 'H', unit: 'm' },
-  { kind: 'time', say: 'time from the first impact to the second', find: 'extras.gap1', sym: 't', unit: 's' },
+  { kind: 'height', say: 'greatest height after the first bounce', find: 'extras.H1', sym: 'H', unit: 'm', at: 'impacts.0.tTop' },
+  { kind: 'time', say: 'time from the first impact to the second', find: 'extras.gap1', sym: 't', unit: 's', span: ['extras.t1', 'extras.t2'] },
   { kind: 'time', say: 'when it hits the ground a second time', find: 'extras.t2', sym: 't', unit: 's', at: 'extras.t2' },
   { kind: 'speed', say: 'speed just before the second impact', find: 'extras.vIn2', sym: 'v', unit: 'm s^-1', at: 'extras.t2' },
-  { kind: 'height', say: 'greatest height after the second bounce', find: 'extras.H2', sym: 'H', unit: 'm' },
+  { kind: 'height', say: 'greatest height after the second bounce', find: 'extras.H2', sym: 'H', unit: 'm', at: 'impacts.1.tTop' },
+  { kind: 'graph', say: 'a sketch of the velocity–time (or another) graph: the stage draws them' },
 ];
 export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bounce: BOUNCE_ANSWERS };
 

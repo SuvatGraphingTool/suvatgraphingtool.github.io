@@ -120,7 +120,15 @@ group('Two on one line by a tower, and a ball bouncing off a roof', () => {
   no({ backdrop: 'tower', engine: 'pair', objects: [{ figure: 'car' }, { figure: 'ball' }] }, /not a car/, 'a car on a vertical line');
   no({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { start: 'sideways' } }, /one of: drop, down, up/, 'a start that is not a word it knows');
   no({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { e: 1.5 } }, /between 0 and 1/, 'keeping more than all its speed');
-  ok(check({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { start: 'drop', h: 2, e: '1/3' } }).recipe.numbers.e === '1/3', 'a fraction as the paper writes it goes to the engine as typed');
+  ok(check({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { start: 'drop', h: 2, e: '1/3' } }).recipe.numbers.e === '1/3', 'a fraction as the paper writes it stays as typed in the box');
+  const half = run({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { start: 'up', h: 1.2, U: 5, e: '1/2', g: 9.8 } });
+  ok(half.solved.ok, 'and the engine solves with it: e = 1/2 is a half');
+  near(half.solved.extras.find((x) => x.key === 'vOut1').value, half.solved.extras.find((x) => x.key === 'vIn1').value / 2, 1e-9, 'it rebounds with half its speed');
+  no({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { e: '3/2' } }, /between 0 and 1/, 'a fraction more than 1');
+  no({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { e: '1/0' } }, /nothing below the line/, 'a fraction over 0');
+  ok(check({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'ball' }], numbers: { h: '2', n: '2' } }).recipe.numbers.h === 2, 'a number written as text is that number');
+  no({ backdrop: 'tower', engine: 'pair', objects: [{ figure: 'ball' }, { figure: 'ball' }], numbers: { 'B.t0': -1 } }, /a time from the start/, 'a start before the clock');
+  ok(check({ backdrop: 'tower', engine: 'pair', objects: [{ figure: 'ball' }, { figure: 'ball' }] }).recipe.objects.map((o) => o.name).join() === 'the first ball,the second ball', 'two unnamed are told apart');
 });
 
 console.log('\nThe Worker moves a placed pair or bounce onto a composed scene');
@@ -135,6 +143,9 @@ console.log('\nThe Worker moves a placed pair or bounce onto a composed scene');
   ok(toComposed({ ...lib, summary: 'A is thrown up; B is dropped 40 m above it.' }) .scenario === 'library', 'no place named: the library’s own stage');
   const b = toComposed({ understood: true, scenario: 'library', library: 'bounce', summary: 'A ball is dropped from the roof of a house.', boxes: { start: 'drop', h: 6, e: 0.7 }, parts: [{ label: 'a', asks: 'x', answer: 'time' }] });
   ok(b.recipe.backdrop === 'house' && b.parts[0].answer === 'time3' && check(b.recipe).ok, 'a bounce off a roof, by the house');
+  const sk = toComposed({ understood: true, scenario: 'library', library: 'bounce', summary: 'A ball is dropped in a sports hall from a roof beam 8 m up.', boxes: { start: 'drop', h: 8 }, parts: [{ label: 'd', asks: 'sketch the velocity–time graph', answer: 'graph' }] });
+  ok(sk.recipe.backdrop === 'hall' && sk.parts[0].answer === 'graph', 'a hall before a roof; a sketch part keeps its answer');
+  ok(toComposed({ ...lib, summary: 'A ball is thrown up past the roof of a car.' }).scenario === 'library' && toComposed({ ...lib, summary: 'Mr Hall drops a ball 40 m above another.' }).scenario === 'library', 'a car’s roof, or Mr Hall, is no place');
 }
 
 group('The veil names only the recipe’s own pieces', () => {

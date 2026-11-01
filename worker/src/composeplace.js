@@ -13,10 +13,13 @@
 //
 // Nothing is calculated here: values are moved, never changed (rule 4).
 
+// indoors first ("in the sports hall … a roof 8 m high" is a hall); a roof
+// only as a house's or a building's, never a car's
 const PLACES = [
-  [/\b(tower|building|block of flats|skyscraper|church|lighthouse|cliff-top tower)\b/i, 'tower'],
-  [/\b(house|roof|window of a house|bedroom window)\b/i, 'house'],
-  [/\b(sports hall|gym(nasium)?|hall)\b/i, 'hall'],
+  [/\b(sports hall|school hall|indoor hall|gym(nasium)?)\b/i, 'hall'],
+  [/\b(tower|building|block of flats|skyscraper|church|lighthouse)\b/i, 'tower'],
+  [/\b(house|bungalow|cottage|roof of (a|the) (house|home|building|garage))\b/i, 'house'],
+  [/\b(tree|branch)\b/i, 'orchard'],
 ];
 const ENGINE = { 'pair-vertical': 'pair', bounce: 'bounce' };
 const BOXES = {
@@ -25,11 +28,11 @@ const BOXES = {
 };
 /** The library scenario's answer keys, as the composed engine names the same answer. */
 const KEYS = {
-  pair: { height: 'height', speed: 'speed3', time1: 'time1', time2: 'time2' },
-  bounce: { speed1: 'speed1', speed2: 'speed2', time: 'time3', height1: 'height1' },
+  pair: { height: 'height', speed: 'speed3', time1: 'time1', time2: 'time2', graph: 'graph' },
+  bounce: { speed1: 'speed1', speed2: 'speed2', time: 'time3', graph: 'graph' },
 };
-const TITLE = { pair: { tower: 'Two by a tower', house: 'Two by a house', hall: 'Two in a sports hall' },
-  bounce: { tower: 'A ball bouncing by a tower', house: 'A ball off a roof, bouncing', hall: 'A ball bouncing in a sports hall' } };
+const TITLE = { pair: { tower: 'Two by a tower', house: 'Two by a house', hall: 'Two in a sports hall', orchard: 'Two by a tree' },
+  bounce: { tower: 'A ball bouncing by a tower', house: 'A ball off a roof, bouncing', hall: 'A ball bouncing in a sports hall', orchard: 'A ball from a tree, bouncing' } };
 
 /** A library pair-vertical or bounce reading that names its place, composed in that place. */
 export function toComposed(x, words = '') {
