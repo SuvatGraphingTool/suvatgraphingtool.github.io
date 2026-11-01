@@ -119,6 +119,7 @@ export const LIBRARY = [
       { board: 'AQA', paper: 'MM1B', session: 'Jun 2012', q: '7' },
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '7' },
       { board: 'Edexcel', paper: '9MA0/32', session: 'Oct 2020', q: '2' },
+      { board: 'Edexcel', paper: '9MA0/32', session: 'Jun 2023', q: '4' },
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2023', q: '8' },
     ],
     tags: ['vector', 'vectors', 'i', 'j', 'ij', 'i and j', 'unit vector', 'unit vectors', 'column vector', 'position vector',

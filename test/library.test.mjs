@@ -1436,6 +1436,14 @@ group('In the air for a time, over a wall: OCR H240/03 Jun 2019 Q8', async () =>
   ok(!solveFlightTime({ T: 2.4, kx: 5 / 3, V: 16, d: 9, g: 9.8 }).ok, 'the speed and d together are refused: one fixes the other');
 }
 
+group('vectors-ij: Edexcel 9MA0/32 Jun 2023 Q4', () => {
+  const at5 = solvePlane({ r0: { x: 44, y: -10 }, u: { x: -16, y: -3 }, a: { x: 2.4, y: 1 }, at: { t: 5 } });
+  ok(at5.ok && /4\.472/.test(at5.notes.join(' ').replace(/<[^>]+>/g, '')), '(a) its speed at B is 4.47 m s⁻¹');
+  const c = solvePlane({ r0: { x: 44, y: -10 }, u: { x: -16, y: -3 }, a: { x: 2.4, y: 1 }, at: { x: 4 } });
+  const txt = c.notes.join(' ').replace(/<[^>]+>/g, '');
+  ok(/againatt=10s,wherey=10\b/.test(txt.replace(/\s/g, '')), '(b), (c) the later pass of x = 4 is at T = 10 s, where c = 10', txt);
+});
+
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
 function e30() { return solveJourney({ a1: 0.5, a3: 0.25, T: 300, D: 6300 }); }
 

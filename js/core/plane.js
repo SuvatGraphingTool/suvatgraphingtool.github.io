@@ -277,18 +277,21 @@ function passes(P, c, X) {
       ? `Its ${M`${sym}`}-coordinate is ${M`${d(X)}`} only at the start, ${M`t = 0`}: it leaves that line and does not come back.`
       : `Its ${M`${sym}`}-coordinate never reaches ${M`${d(X)}`}.` };
   }
-  const t = ts[0], r = P.pos(t);
+  const t = ts[0], r = P.pos(t), r2 = ts.length > 1 ? P.pos(ts[1]) : null;
+  // the other coordinate at a pass: "find c" may be at either one
+  const otherRow = (tt, rr) => ({ f: M`${o} = ${o}_0 + u_${o}t + ½a_${o}t^2`,
+    s: M`${[P.r0[o] ? d(P.r0[o]) : '', P.u[o] ? `${sgn(P.u[o])} * ${d(tt)}` : '', P.a[o] ? `½ * ${sgn(P.a[o])} * ${d(tt)}^2` : ''].filter(Boolean).join(' + ') || '0'}`,
+    r: M`${o} = ${d(rr[o])} [m]` });
   return {
     ...base, ok: true, t, r, times: ts,
     rows: [
       { f: M`${sym} = ${sym}_0 + u_${sym}t + ½a_${sym}t^2`, s: M`${d(X)} = ${poly([r0, u, a / 2])}`,
         r: ts.length > 1 ? M`t = ${d(ts[0])} [s] "or" t = ${d(ts[1])} [s]` : M`t = ${d(t)} [s]` },
-      { f: M`${o} = ${o}_0 + u_${o}t + ½a_${o}t^2`,
-        s: M`${[P.r0[o] ? d(P.r0[o]) : '', P.u[o] ? `${sgn(P.u[o])} * ${d(t)}` : '', P.a[o] ? `½ * ${sgn(P.a[o])} * ${d(t)}^2` : ''].filter(Boolean).join(' + ') || '0'}`,
-        r: M`${o} = ${d(r[o])} [m]` },
+      otherRow(t, r),
+      ...(r2 ? [otherRow(ts[1], r2)] : []),
     ],
     short: `${M`${sym} = ${d(X)}`} at ${M`t = ${d(t)} [s]`}, where ${M`${o} = ${d(r[o])}`}`,
-    text: `It passes ${M`${sym} = ${d(X)}`} ${ts.length > 1 ? 'first ' : ''}at ${M`t = ${d(t)} [s]`}, where ${M`${o} = ${d(r[o])}`}${ts.length > 1 ? `, and again at ${M`t = ${d(ts[1])} [s]`}` : ''}.`,
+    text: `It passes ${M`${sym} = ${d(X)}`} ${ts.length > 1 ? 'first ' : ''}at ${M`t = ${d(t)} [s]`}, where ${M`${o} = ${d(r[o])}`}${r2 ? `, and again at ${M`t = ${d(ts[1])} [s]`}, where ${M`${o} = ${d(r2[o])}`}` : ''}.`,
   };
 }
 
