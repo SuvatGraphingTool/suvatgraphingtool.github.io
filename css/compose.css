@@ -60,12 +60,22 @@
 }
 .is-on .cr-card { transform: none; }
 .is-lifting .cr-card { opacity: 0; transform: translateY(-10px) scale(1.03); }
-.cr-orb { width: 64px; height: 64px; animation: cr-breathe 1.6s ease-in-out infinite; }
-.cr-orb::after { animation-duration: 1.6s; }
-@keyframes cr-breathe {
-  0%, 100% { transform: scale(1); box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -6px 12px rgba(138,58,43,.5), 0 4px 14px rgba(255,126,95,.42); }
-  50% { transform: scale(1.07); box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -6px 12px rgba(138,58,43,.5), 0 0 0 10px rgba(255,126,95,.12), 0 8px 30px rgba(255,126,95,.55); }
+.cr-mark { position: relative; width: 92px; height: 92px; display: grid; place-items: center; }
+/* the Spark, large on its dark tile, glowing and breathing while it works */
+.cr-glow {
+  position: absolute; inset: -42px; border-radius: 50%; filter: blur(6px);
+  background: radial-gradient(circle, rgba(249,140,60,.6) 0%, rgba(236,95,23,.22) 42%, rgba(236,95,23,0) 70%);
+  animation: cr-glow 1.8s ease-in-out infinite;
 }
+.cr-orb {
+  width: 92px; height: 92px;
+  box-shadow: 0 10px 34px rgba(236,95,23,.45), 0 0 0 1px rgba(255,214,186,.18);
+  animation: cr-breathe 1.8s ease-in-out infinite;
+}
+.cr-orb svg { width: 72%; height: 72%; filter: drop-shadow(0 0 8px rgba(249,140,60,.85)); animation: cr-sway 3.6s ease-in-out infinite; }
+@keyframes cr-glow { 50% { transform: scale(1.16); opacity: .75; } }
+@keyframes cr-breathe { 50% { transform: scale(1.05); box-shadow: 0 14px 44px rgba(236,95,23,.65), 0 0 0 6px rgba(249,140,60,.14); } }
+@keyframes cr-sway { 25% { transform: rotate(-7deg) scale(1.03); } 75% { transform: rotate(7deg) scale(1.03); } }
 .cr-title {
   margin: var(--sp-1) 0 0; font-size: var(--fs-lg); font-weight: var(--w-semi); color: #3a2a26;
   background: linear-gradient(90deg, #3a2a26 0%, #3a2a26 40%, #d0694f 50%, #3a2a26 60%, #3a2a26 100%);
@@ -93,6 +103,6 @@
 :root:not([data-theme='light']) .cr-blur { background: rgba(20,17,22,.25); }
 
 @media (prefers-reduced-motion: reduce) {
-  .cr-shimmer, .cr-orb, .cr-title, .cr-step span { animation: none; }
+  .cr-shimmer, .cr-orb, .cr-orb svg, .cr-glow, .cr-title, .cr-step span { animation: none; }
   .cmp-reveal.is-lifting { transition: opacity 240ms ease; }
 }

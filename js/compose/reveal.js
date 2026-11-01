@@ -1,9 +1,10 @@
 // reveal.js — the moment a composed scene arrives.
 //
 // Ask Suvat has put a scene together from the app's pieces. Rather than cut
-// to it, the stage opens behind a veil: the scene blurred and shimmering, the
-// Ask Suvat orb in the middle, and a line that names each piece as it goes in
-// — "Placing a sea cliff", "Bringing in a car", "Adding a splash" — the
+// to it, the stage opens behind a veil: the scene blurred and shimmering,
+// the Spark (Ask Suvat's mark) large and glowing in the middle, and a line
+// that names each piece as it goes in — "Placing a sea cliff", "Bringing in
+// a car", "Adding a splash" — the
 // recipe's own pieces, in order, each ticked off below it. Then the veil
 // lifts from the top down, the way an image generator resolves its picture,
 // and the motion plays.
@@ -13,7 +14,8 @@
 
 import { BACKDROPS, FIGURES, EFFECTS, ENGINES } from './registry.js';
 
-const ORB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2.5c.55 4.6 2.9 6.95 7.5 7.5-4.6.55-6.95 2.9-7.5 7.5-.55-4.6-2.9-6.95-7.5-7.5 4.6-.55 6.95-2.9 7.5-7.5Z" fill="currentColor"/><path d="M18.5 13.5c.25 2.05 1.25 3.05 3.3 3.3-2.05.25-3.05 1.25-3.3 3.3-.25-2.05-1.25-3.05-3.3-3.3 2.05-.25 3.05-1.25 3.3-3.3Z" fill="currentColor" opacity=".85"/></svg>';
+/** The Spark, Ask Suvat's mark: the one `#spark` symbol in index.html. */
+const SPARK = '<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><use href="#spark"/></svg>';
 const BELOW = { sea: 'the sea', river: 'the river', ground: 'the ground', road: 'the road', rails: 'the track', floor: 'the floor' };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -49,7 +51,7 @@ export function reveal(wrap, R, { per = 420 } = {}) {
     <div class="cr-blur"></div>
     <div class="cr-shimmer" aria-hidden="true"></div>
     <div class="cr-card">
-      <span class="ai-orb cr-orb" aria-hidden="true">${ORB}</span>
+      <span class="cr-mark" aria-hidden="true"><span class="cr-glow"></span><span class="ai-orb cr-orb">${SPARK}</span></span>
       <p class="cr-title">Creating your scene</p>
       <p class="cr-step"><span>${esc(list[0].say)}</span></p>
       <ul class="cr-chips" aria-hidden="true">${list.filter((s) => s.chip).map((s) => `<li>${esc(s.chip)}</li>`).join('')}</ul>
