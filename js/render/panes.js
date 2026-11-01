@@ -226,7 +226,7 @@ export function layout(win) {
 function attach(win, p, hooks) {
   const { canvas } = win.el.get(p.id);
   const v = () => win.views.get(p.id);
-  let drag = false, lx = 0, ly = 0;
+  let drag = false, lx = 0, ly = 0, down = null;
   const size = () => {
     const r = canvas.getBoundingClientRect();
     return [Math.max(1, r.width), Math.max(1, r.height)];
@@ -235,7 +235,7 @@ function attach(win, p, hooks) {
   win._onChange = hooks.change;
   canvas.style.cursor = 'grab';
   canvas.addEventListener('pointerdown', (e) => {
-    drag = true; lx = e.clientX; ly = e.clientY;
+    drag = true; lx = e.clientX; ly = e.clientY; down = { x: lx, y: ly };
     canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing';
   });
   canvas.addEventListener('pointermove', (e) => {
@@ -245,12 +245,15 @@ function attach(win, p, hooks) {
     lx = e.clientX; ly = e.clientY;
     hooks.change?.();
   });
-  const end = (e) => {
+  const end = (e, clicked) => {
     drag = false; canvas.style.cursor = 'grab';
     if (e && canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+    // a press that did not move is a click on the motion: Resolve, at the instant shown
+    if (clicked && down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) hooks.click?.();
+    down = null;
   };
-  canvas.addEventListener('pointerup', end);
-  canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('pointerup', (e) => end(e, true));
+  canvas.addEventListener('pointercancel', (e) => end(e, false));
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const r = canvas.getBoundingClientRect();

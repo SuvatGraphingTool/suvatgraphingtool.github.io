@@ -893,3 +893,7 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
 
 /* the bento says what each one is; the full grid says everything */
 .bento .pc-note { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Resolve in the window too: the button stays when the readouts stand down */
+.canvas-wrap[data-panes='on'] .hud-r { display: flex; z-index: 3; top: auto; bottom: var(--sp-3); }
+.canvas-wrap[data-panes='on'] #hud-right { display: none; }

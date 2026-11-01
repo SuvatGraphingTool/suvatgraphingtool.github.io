@@ -35,6 +35,7 @@ export const posts = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'along',
   read(v) {
     return { u: v.u, a: v.a, look: v.look, gaps: [1, 2, 3].map((i) => ({ s: v[`s${i}`], t: v[`t${i}`] })) };
   },

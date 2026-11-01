@@ -34,6 +34,7 @@ export const models = {
   rows: [],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration', 'ticks'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'along',
   read(vals) { return { u: vals.u, D: vals.D, a: vals.a, limit: vals.limit, react: vals.react }; },
   solve(k) {
     const r = solveModels(k);

@@ -41,6 +41,7 @@ export const robots = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'ij',
   read(v) {
     const vv = (key) => (v[`${key}.x`] != null || v[`${key}.y`] != null ? { x: v[`${key}.x`] ?? 0, y: v[`${key}.y`] ?? 0 } : undefined);
     const R = { r0: vv('R.r0') || { x: 0, y: 0 } };

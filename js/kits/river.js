@@ -26,6 +26,7 @@ export const river = {
   rows: [],
   hides: { shows: ['apex', 'ruler', 'range', 'grid', 'components'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'bank',
   read(v) { return { d: v.d, w: v.w, T: v.T, V: v.V, alpha: v.alpha }; },
   solve: solveRiver,
   working: (solved) => riverWorking(solved),

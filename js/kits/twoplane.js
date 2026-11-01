@@ -59,6 +59,7 @@ export const twoplane = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration', 'ticks'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'map',
   read(vals) {
     const v2 = (p) => ({ x: vals[`${p}.x`], y: vals[`${p}.y`] });
     return { units: vals.units || 'km', look: vals.look || 'ships', find: vals.find || null,

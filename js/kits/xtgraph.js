@@ -38,6 +38,7 @@ export const xtgraph = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'along',
   read(v) {
     return { x0: v.x0, speed: v.speed, pts: Array.from({ length: N }, (_, i) => ({ t: v[`p${i + 1}.t`], x: v[`p${i + 1}.x`] })),
       tail: { c0: v.c0, c1: v.c1, c2: v.c2, speed: v.tailSpeed }, ask: { ts: [v.ask1, v.ask2, v.ask3] } };

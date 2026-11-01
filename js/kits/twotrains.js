@@ -37,6 +37,7 @@ export const twotrains = {
   rows: [...Array.from({ length: N }, (_, i) => stageRow('A', i + 1)), ...Array.from({ length: N }, (_, i) => stageRow('B', i + 1))],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'along',
   read(v) {
     // every row as typed, blanks included: the engine refuses a gap rather than shifting stages up
     const spec = (n) => {

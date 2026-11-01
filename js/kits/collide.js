@@ -34,6 +34,7 @@ export const collide = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
+  resolveAxis: 'ij',
   read(vals) {
     const v = (n, key) => ({ x: vals[`${n}.${key}.x`], y: vals[`${n}.${key}.y`] });
     const p = (n) => ({ r0: v(n, 'r0'), u: v(n, 'u'), a: v(n, 'a') });
