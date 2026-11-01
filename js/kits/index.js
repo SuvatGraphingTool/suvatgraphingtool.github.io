@@ -33,5 +33,6 @@ import { heightrange } from './heightrange.js';
 import { together } from './together.js';
 import { roof } from './roof.js';
 import { lift } from './lift.js';
+import { rocket } from './rocket.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket };
