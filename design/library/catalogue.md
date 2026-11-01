@@ -129,6 +129,8 @@ this library: *covered* names the one of the twelve that does it.
 | 93 | OCR MEI | H640/01 | Jun 2023 | 15 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202023%20QP.pdf) | A projectile from level ground: show the range is 2u² sin θ cos θ / g; the acute angles for which the greatest height exceeds the range | – | **built** → `higher-than-far` |
 | 94 | Edexcel | IAL WME01 | Jun 2015 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202015%20QP.pdf) | A stone dropped from h; one second later another thrown down at 19.6 m/s from the same height; both land together: h | 9.8 | **built** → `land-together` |
 | 95 | CIE | 9709/42 | Oct/Nov 2020 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w20_qp_42.pdf) | Thrown up at 40 m/s beside a building, above its roof for 4 s: h; a second from the roof at 20 m/s one second later: when level | 10 | **built** → `above-the-roof` |
+| 96 | CIE | 9709/41 | May/Jun 2016 | 1 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s16_qp_41.pdf) | A lift up from rest at 0.9 m/s² for 3 s, steady 6 s, slowing to rest in 4 s: v–t sketch, total distance | – | **built** → `the-lift` (a setting: the journey's engine in a lift shaft) |
+| 97 | Edexcel | 6677/01 M1 | Jan 2008 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202008%20QP.pdf) | A firework rocket from rest rises 27 m in 3 s at constant a, then burns out: a, its speed at 3 s, its height at 5 s | 9.8 | **built** → `firework-rocket` |
 
 ## Built, and why it is built the way it is
 
@@ -409,6 +411,50 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `firework-rocket` — The firework rocket
+
+**Papers.** Edexcel M1 Jan 2008 Q2 (from rest it rises 27 m in 3 s at constant
+acceleration, then burns out: a = 6 m s⁻², 18 m s⁻¹ at burn-out, 43.4 m up at
+t = 5 s).
+
+**Why the twelve cannot.** They launch with a speed and fly under g alone;
+here the first stage is driven by the rocket's own acceleration, and the free
+flight starts where that stage ends.
+
+**How it is solved.** js/core/rocket.js: s = ½aT² and v = aT for the burn
+(from whichever of s, a or v is given); then a = −g from the burn-out height
+and speed: the top from v² = u² + 2as, the landing and any asked height from
+s = ut + ½at².
+
+**The stage.** A field at dusk, a launch stake; a flame and streaming sparks
+while it burns, a puff at burn-out, a smoke trail after; a burst of stars at
+the top; the spent stick landing; the burn-out height across, the height as a
+bracket; velocity and acceleration arrows (vertical, solid), the acceleration
+flipping at burn-out; the asked moment ringed.
+
+**Parts.** (a) `a`, 6; (b) `v1`, 18; (c) `atY`, 43.4 m.
+
+### `the-lift` — The lift
+
+**Papers.** CIE 9709/41 May/Jun 2016 Q1 (a lift up from rest at 0.9 m s⁻² for
+3 s, steady for 6 s, then slowing uniformly to rest in 4 s: top speed
+2.7 m s⁻¹, total distance 25.65 m).
+
+**Why it is built.** A setting scenario: the physics is `journey-stages`'
+(three stages, rest to rest), but the place is a lift shaft and the motion is
+vertical — the journey's road would not look like the paper.
+
+**How it is solved.** js/core/journey.js `solveJourney` with the three-stage
+names (a1, t1, t2, t3): the trapezium and its area.
+
+**The stage.** A building cut away: floors every 3 m with rooms, windows,
+landing doors and floor numbers; the dark shaft, the pulley, the cables and a
+counterweight going down as the car goes up; a lit steel car with a
+passenger; the height risen as a bracket; velocity and acceleration arrows
+(vertical, solid); a ring at each change of stage and at the stop.
+
+**Parts.** (i) the v–t sketch → the graph; (ii) `f.range`, 25.65 m.
 
 ### `above-the-roof` — Above the roof
 

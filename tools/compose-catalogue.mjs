@@ -12,7 +12,12 @@ import { compose } from '../js/compose/recipe.js';
 import { answersFor } from '../js/parts/answers.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const sample = { projectile: { backdrop: 'cliff', objects: [{ figure: 'car' }] } };
+/** One recipe per engine, to ask the app which answers it offers. */
+const sample = {
+  projectile: { backdrop: 'cliff', objects: [{ figure: 'car' }] },
+  pair: { backdrop: 'tower', objects: [{ figure: 'ball' }, { figure: 'ball' }] },
+  bounce: { backdrop: 'hall', objects: [{ figure: 'ball' }] },
+};
 
 export function catalogue() {
   const ready = Object.entries(ENGINES).filter(([, E]) => E.ready);

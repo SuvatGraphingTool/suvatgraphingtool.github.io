@@ -20,13 +20,18 @@
 // Nothing here calculates (CLAUDE.md rule 4). The engine solves; this file
 // only says which engine, with which boxes.
 
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH } from './registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS } from './registry.js';
 import { KITS } from '../kits/index.js';
 import { GRAVITY } from '../scenarios.js';
 import { num } from '../notation.js';
 import * as stage from '../render/composed.js';
 
 const isNum = (x) => typeof x === 'number' && isFinite(x);
+/** "1/3" as the paper writes it: [1, 3], or null. */
+const FRAC = /^\s*(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*$/;
+const parts = (v) => { const m = typeof v === 'string' && v.match(FRAC); return m ? [Number(m[1]), Number(m[2])] : null; };
+/** The kit reads a fraction as the flighttime kit does: the number it stands for. */
+const frac = (v) => { const p = parts(v); return p ? p[0] / p[1] : v; };
 const word = (x) => (typeof x === 'string' ? x.trim().toLowerCase() : '');
 // what the reader wrote is shown as text: no markup gets through
 const clip = (x, n) => String(x ?? '').replace(/[<>&"`]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
@@ -53,6 +58,11 @@ export function check(raw) {
   const backdrop = word(raw.backdrop) || (E.view === 'side' ? 'ground' : '');
   const B = BACKDROPS[backdrop];
   if (!B) return no(`There is no backdrop called “${clip(raw.backdrop, 30)}”. The backdrops are: ${listOf(BACKDROPS)}.`);
+  // an engine whose motion ends on solid ground (a bounce, one thrown up from
+  // the foot of the place) is not set over water
+  if (E.below && !E.below.includes(B.below)) {
+    return no(`${Up(E.label)} needs solid ground below: ${B.label.toLowerCase()} has ${({ sea: 'the sea', river: 'a river' })[B.below] || B.below} under it.`);
+  }
 
   const objs = Array.isArray(raw.objects) ? raw.objects.filter((o) => o && typeof o === 'object') : [];
   const [lo, hi] = E.objects;
@@ -67,18 +77,43 @@ export function check(raw) {
       const can = B.only.map((k) => FIGURES[k].label);
       return no(`From ${B.at} only ${can.slice(0, -1).join(', ')} or ${can[can.length - 1]} can fall: not ${F.label}.`);
     }
+    if (E.figures && !E.figures.includes(figure)) {
+      const can = E.figures.map((k) => FIGURES[k].label);
+      return no(`${Up(E.label)} is for ${can.slice(0, -1).join(', ')} or ${can[can.length - 1]}: not ${F.label}.`);
+    }
     if (!F.views.includes(E.view)) {
       return no(`${Up(F.label)} is drawn ${F.views.includes('plan') ? 'from above' : 'side on'}, and ${E.label.toLowerCase()} is seen ${E.view === 'plan' ? 'from above' : 'side on'}.`);
     }
-    objects.push({ figure, name: clip(o.name, 30) || F.label.replace(/^an? /, 'the ') });
+    objects.push({ figure, name: clip(o.name, 30) });
   }
+  // unnamed, they are told apart: "the first ball", "the second ball"
+  objects.forEach((o, i) => {
+    const noun = FIGURES[o.figure].label.replace(/^an? /, '');
+    if (!o.name) o.name = objects.length > 1 ? `the ${['first', 'second'][i]} ${noun}` : `the ${noun}`;
+  });
 
   const numbers = {};
   const given = raw.numbers && typeof raw.numbers === 'object' ? raw.numbers : {};
-  for (const [k, v] of Object.entries(given)) {
+  for (let [k, v] of Object.entries(given)) {
     const say = E.names?.[k];
     if (!(k in E.boxes)) return no(`The scene was given a value ${E.label.toLowerCase()} does not use (${clip(k, 20)}). It uses ${Object.values(E.names || {}).join(', ')}.`);
     if (v == null) continue;
+    // a choice box takes only its own words
+    if (E.choices?.[k]) {
+      const w = word(String(v));
+      if (!E.choices[k].includes(w)) return no(`${Up(say)} is one of: ${E.choices[k].join(', ')}; the recipe has “${clip(v, 20)}”.`);
+      numbers[k] = w;
+      continue;
+    }
+    // a fraction as the paper writes it ("1/3") goes to the kit as typed,
+    // which reads it as its number; a number written as text is that number
+    const pq = parts(v);
+    if (pq) {
+      if (!(pq[1] > 0)) return no(`${Up(say)} has nothing below the line: check the question.`);
+      numbers[k] = v.replace(/\s+/g, '');
+      continue;
+    }
+    if (typeof v === 'string' && /^\s*-?\d+(\.\d+)?\s*$/.test(v)) v = Number(v);
     if (!isNum(v)) return no(`${Up(say)} should be a number; the recipe has “${clip(v, 20)}”.`);
     if (Math.abs(v) > HUGE) return no(`${num(v)} for ${say} is far too big to be right: check the question.`);
     numbers[k] = v;
@@ -92,8 +127,16 @@ export function check(raw) {
       return no('From the ground it must be launched upwards: give a speed, and an angle above 0°.');
     }
     if (isNum(numbers.theta) && Math.abs(numbers.theta) > 90) return no('The angle is between −90° (straight down) and 90° (straight up).');
-    if (isNum(numbers.g) && !(numbers.g > 0)) return no('g is the size of the acceleration: a positive number.');
   }
+  if (engine === 'pair' || engine === 'bounce') {
+    for (const k of ['h', 'A.h', 'B.h']) if (isNum(numbers[k]) && numbers[k] < 0) return no(`${Up(E.names[k])} is measured up from the ground: give it as a positive number.`);
+    for (const k of ['A.t0', 'B.t0']) if (isNum(numbers[k]) && numbers[k] < 0) return no(`${Up(E.names[k])} is a time from the start: give it as 0 or more.`);
+    for (const k of ['e', 'n', 'U', 'V', 'w', 'H', 'T']) if (isNum(numbers[k]) && numbers[k] < 0) return no(`${Up(E.names[k])} is a size: give it as a positive number.`);
+    const e = parts(numbers.e);
+    if ((isNum(numbers.e) && numbers.e > 1) || (e && e[0] > e[1])) return no('A ball keeps at most all its speed at a bounce: the fraction is between 0 and 1.');
+    if (isNum(numbers.n) && !(Number.isInteger(numbers.n) && numbers.n >= 1 && numbers.n <= 6)) return no('The impacts to watch are a whole number from 1 to 6.');
+  }
+  if (isNum(numbers.g) && !(numbers.g > 0)) return no('g is the size of the acceleration: a positive number.');
 
   const effects = [];
   for (const e of Array.isArray(raw.effects) ? raw.effects : []) {
@@ -101,7 +144,9 @@ export function check(raw) {
     if (!EFFECTS[n]) return no(`There is no effect called “${clip(e, 20)}”. The effects are: ${listOf(EFFECTS)}.`);
     if (!effects.includes(n)) effects.push(n);
   }
-  if (!effects.length && LANDS_WITH[B.below]) effects.push(LANDS_WITH[B.below]);
+  // what its moments make, unless the recipe says: a meeting flashes, a
+  // bounce rings, a landing splashes or kicks up dust
+  if (!effects.length && (MOMENTS[engine] || LANDS_WITH[B.below])) effects.push(MOMENTS[engine] || LANDS_WITH[B.below]);
 
   return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, engine, objects, numbers, effects } };
 }
@@ -113,6 +158,9 @@ export function titleOf(r) {
   const what = Up(F.label);
   const where = `${{ hall: 'in', sea: 'over' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
   if (r.engine === 'projectile') return B.edge ? `${what} off ${B.at}` : `${what} ${F.thrown ? 'thrown' : 'launched'} ${where}`;
+  const by = B.edge ? `by ${B.at}` : where;
+  if (r.engine === 'pair') return `Two on one line ${by}: when do they meet?`;
+  if (r.engine === 'bounce') return `${what} bouncing ${by}`;
   return `${what}: ${ENGINES[r.engine].label.toLowerCase()}`;
 }
 
@@ -146,7 +194,7 @@ export function compose(raw) {
     id,
     voice: { h: name, sub: `Composed by Ask Suvat from the app’s own pieces: ${B.label.toLowerCase()}, ${who}, ${E.label.toLowerCase()}. Change any number and the engine works it out again.` },
     rows: (base.rows || []).filter((row) => !(row.fields || []).some((f) => f.key === 'place')),
-    read: (vals) => base.read({ ...vals, place: boxes.place ?? vals.place }),
+    read: (vals) => base.read({ ...Object.fromEntries(Object.entries(vals).map(([k, v]) => [k, frac(v)])), place: boxes.place ?? vals.place }),
     render: (canvas, cam, o) => stage.render(canvas, cam, { ...o, recipe: r }),
     // the landing plays out on the clock after the motion stops, and the
     // ending card waits for it
@@ -167,7 +215,7 @@ export function compose(raw) {
     // launched from the ground, the card says so rather than "from 0 m"
     ending: (solved, e) => {
       const out = base.ending(solved, e);
-      if (solved?.h === 0) out.eyebrow = `From ${solved.Pl.below}`;
+      if (r.engine === 'projectile' && solved?.h === 0) out.eyebrow = `From ${solved.Pl.below}`;
       return out;
     },
     thumb: () => stage.thumb(r),
@@ -186,11 +234,16 @@ export function compose(raw) {
       realTitle: 'What the model leaves out',
       realLead: 'The model the scene is drawn from. None of this was computed; it is what the numbers were taken to mean.',
       why: [
-        [`${Up(r.objects[0].name)} is a particle`, 'it has no size and does not spin or tumble: only g acts on it once it is launched. The drawing turns it to face the way it moves; the engine does not.'],
+        [`${Up(r.objects.map((o) => o.name).join(' and '))} ${r.objects.length > 1 ? 'are particles' : 'is a particle'}`, {
+          projectile: 'it has no size and does not spin or tumble: only g acts on it once it is launched. The drawing turns it to face the way it moves; the engine does not.',
+          pair: 'no size, no spin: only g acts on them in the air, and they meet when they are at the same height.',
+          bounce: 'no size, no spin: only g acts on it in the air, and it bounces straight back up.',
+        }[r.engine]],
         ['No air resistance', 'nothing slows it but gravity, however fast or far it goes.'],
+        ...(r.engine === 'bounce' ? [['An instant bounce', 'the ball is in contact with the ground for no time at all, and keeps the same fraction of its speed every time.']] : []),
         [`${Up(B.label.toLowerCase())} is drawn to the scale of the motion`, 'the heights and distances on the stage are the engine’s own.'],
       ],
-      caveat: 'What the engine did compute is above: the launch from what you gave, the time in the air, where it lands and how fast.',
+      caveat: 'What the engine did compute is above, from what you gave: every moment and speed is its own.',
     },
   };
   return { ok: true, scenario, kit, boxes };

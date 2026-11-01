@@ -95,10 +95,39 @@ export const ENGINES = {
     what: 'one vehicle or person along a straight road or track, speeding up, holding a speed and slowing in turn', boxes: {} },
   overtake: { label: 'Two along one line', kit: 'lanes', view: 'road', objects: [2, 2], ready: false,
     what: 'two along a straight road or track, each with its own start, speed and acceleration: when and where they meet or overtake', boxes: {} },
-  pair: { label: 'Two in one vertical line', kit: 'pair', view: 'side', objects: [2, 2], ready: false,
-    what: 'two thrown up or dropped on the same vertical line: when and where they meet', boxes: {} },
-  bounce: { label: 'A ball that bounces', kit: 'bounce', view: 'side', objects: [1, 1], ready: false,
-    what: 'a ball dropped or thrown down that bounces, losing speed at each bounce', boxes: {} },
+  pair: {
+    label: 'Two in one vertical line', kit: 'pair', view: 'side', objects: [2, 2], ready: true,
+    what: 'two things thrown up, thrown down or dropped on the same vertical line — one from the top of the place, one from the ground below it, or both: when and where they meet',
+    figures: ['ball', 'stone', 'particle'], below: ['ground', 'road', 'floor'],
+    boxes: {
+      'A.h': 'height the first object (objects[0]) starts at, m (0 on the ground)',
+      'A.u': 'its velocity at the start, m/s, up positive (negative thrown down, 0 dropped)',
+      'A.t0': 'when it sets off, s (blank: at once)',
+      'B.h': 'the same for the second object (objects[1])', 'B.u': 'its velocity at the start, up positive', 'B.t0': 'when it sets off, s',
+      g: 'g, only if the question states it',
+    },
+    names: { 'A.h': 'the first one’s height', 'A.u': 'the first one’s velocity', 'A.t0': 'when the first one sets off',
+      'B.h': 'the second one’s height', 'B.u': 'the second one’s velocity', 'B.t0': 'when the second one sets off', g: 'g' },
+  },
+  bounce: {
+    label: 'A ball that bounces', kit: 'bounce', view: 'side', objects: [1, 1], ready: true,
+    what: 'a ball dropped, thrown down or thrown up that bounces on the ground or floor, keeping a fraction of its speed at each bounce',
+    figures: ['ball', 'particle'], below: ['ground', 'road', 'floor'],
+    boxes: {
+      start: 'how it sets off: drop | down | up',
+      h: 'height it starts from, m', U: 'speed it is thrown with, m/s (a size)', V: 'speed it hits the ground with, m/s',
+      w: 'speed it rebounds with, m/s', H: 'greatest height after the bounce, m',
+      e: 'fraction of its speed it keeps at a bounce ("half its speed" is 0.5)',
+      n: 'impacts to watch (2 for "until it hits the ground a second time"), up to 6',
+      y: 'a height a part asks about, m', T: 'time after the bounce it is at that height, s',
+      stop: 'y to stop the run the first time it is back at that height', axis: 'sign convention: up | down (the paper’s)',
+      g: 'g, only if the question states it',
+    },
+    choices: { start: ['drop', 'down', 'up'], stop: ['y'], axis: ['up', 'down'] },
+    names: { start: 'how it sets off', h: 'the height', U: 'the speed it is thrown with', V: 'the speed it hits the ground with',
+      w: 'the speed it rebounds with', H: 'the height after the bounce', e: 'the fraction it keeps', n: 'the impacts to watch',
+      y: 'a height asked about', T: 'the time after the bounce', stop: 'where to stop', axis: 'the sign convention', g: 'g' },
+  },
   plane: { label: 'Moving in a plane, in i and j', kit: 'plane', view: 'plan', objects: [1, 1], ready: false,
     what: 'one ship, robot or particle moving across a flat surface with velocity and acceleration in i and j, seen from above', boxes: {} },
 };
@@ -118,8 +147,36 @@ export const PROJECTILE_ANSWERS = [
   { kind: 'height', say: 'height it started from (when found from the time in the air)', find: 'h', sym: 'h', unit: 'm', at: 0 },
   { kind: 'time', say: 'when it is first at the height a part asks about (numbers.level)', find: 'level.times.0', sym: 't', unit: 's', at: 'level.times.0', step: 'above the throw' },
   { kind: 'time', say: 'when it is there again, on the way down', find: 'level.times.1', sym: 't', unit: 's', at: 'level.times.1', step: 'above the throw' },
+  { kind: 'graph', say: 'a sketch of the graphs: the stage draws them' },
 ];
-export const ANSWERS = { projectile: PROJECTILE_ANSWERS };
+/** Two on one vertical line: the pair engine's answers (js/core/pair.js). */
+export const PAIR_ANSWERS = [
+  { kind: 'time', say: 'when they meet, on the clock from t = 0', find: 'extras.tMeet', sym: 't', unit: 's', at: 'meet.t', step: 'meet' },
+  { kind: 'height', say: 'how high above the ground they meet', find: 'extras.yMeet', sym: 'h', unit: 'm', at: 'meet.t', step: 'meet' },
+  { kind: 'speed', say: 'speed of the first when they meet', find: 'extras.speedA', unit: 'm s^-1', at: 'meet.t' },
+  { kind: 'speed', say: 'speed of the second when they meet', find: 'extras.speedB', unit: 'm s^-1', at: 'meet.t' },
+  { kind: 'speed', say: 'the difference in their speeds when they meet', find: 'extras.dSpeed', unit: 'm s^-1', at: 'meet.t' },
+  { kind: 'time', say: 'how long the second has been moving when they meet (when it sets off later)', find: 'extras.tB', sym: 't', unit: 's', at: 'meet.t' },
+  { kind: 'time', say: 'how long the first has been moving when they meet (when it sets off later)', find: 'extras.tA', sym: 't', unit: 's', at: 'meet.t' },
+  { kind: 'graph', say: 'a sketch of the graphs: the stage draws them' },
+];
+/** A ball that bounces: the bounce engine's answers (js/core/bounce.js). */
+export const BOUNCE_ANSWERS = [
+  { kind: 'time', say: 'when it first hits the ground', find: 'extras.t1', sym: 't', unit: 's', at: 'extras.t1' },
+  { kind: 'speed', say: 'speed just before the first impact', find: 'extras.vIn1', sym: 'v', unit: 'm s^-1', at: 'extras.t1' },
+  { kind: 'speed', say: 'speed just after the first impact (it rebounds with)', find: 'extras.vOut1', sym: 'v', unit: 'm s^-1', at: 'extras.t1' },
+  { kind: 'height', say: 'greatest height after the first bounce', find: 'extras.H1', sym: 'H', unit: 'm', at: 'impacts.0.tTop' },
+  { kind: 'time', say: 'time from the first impact to the second', find: 'extras.gap1', sym: 't', unit: 's', span: ['extras.t1', 'extras.t2'] },
+  { kind: 'time', say: 'when it hits the ground a second time', find: 'extras.t2', sym: 't', unit: 's', at: 'extras.t2' },
+  { kind: 'speed', say: 'speed just before the second impact', find: 'extras.vIn2', sym: 'v', unit: 'm s^-1', at: 'extras.t2' },
+  { kind: 'height', say: 'greatest height after the second bounce', find: 'extras.H2', sym: 'H', unit: 'm', at: 'impacts.1.tTop' },
+  { kind: 'graph', say: 'a sketch of the velocity–time (or another) graph: the stage draws them' },
+];
+export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bounce: BOUNCE_ANSWERS };
+
+/** What an engine's moments make, when the recipe names no effect: two
+    meeting collide, a bounce rings the ground. */
+export const MOMENTS = { pair: 'flash', bounce: 'ring' };
 
 /** The effect a landing makes on what is below, when the recipe names none. */
 export const LANDS_WITH = { sea: 'splash', river: 'splash', ground: 'dust', road: 'dust', rails: 'dust', floor: 'ring' };

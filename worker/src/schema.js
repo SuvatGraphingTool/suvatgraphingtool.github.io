@@ -200,10 +200,14 @@ and its motion is one the engines below do, compose it from the app's pieces: re
 scenario "compose" and a recipe. A plain ball or stone with no place named stays one of the
 twelve; a stone thrown from a cliff, tower or bridge by a person is the library's
 from-a-height. Compose only when those do not draw what the question describes.
+Two on one vertical line, and a ball that bounces, are the library's pair-vertical and
+bounce when no place is named; when the question names where (a tower, a building, a
+house, a hall, a tree), compose them with that backdrop so the student sees it.
   title    a short heading, two to six words: "A car off a cliff"
   backdrop one backdrop name; engine one engine name
   objects  one object per thing that moves: {"figure": a figure name, "name": "the car"}
-  numbers  the GIVEN values only, keyed by the engine's numbers below; leave out what is asked
+  numbers  the GIVEN values only, keyed by the engine's numbers below; leave out what is asked.
+           A word box takes one of its words: "start":"drop"
   effects  optional
 Driven, rolled or ridden off an edge is launched horizontally: theta 0. Give the height of
 the edge in h. Leave g out unless the question states it. A recipe's parts take their
@@ -211,6 +215,8 @@ answer keys from its engine's answers below — never a number.
 ${COMPOSE_GUIDE}
 "A car is driven off the edge of a 40 m cliff at 15 m/s and falls into the sea. (a) How long is it in the air? (b) How far from the foot of the cliff does it land? (c) How fast is it moving when it hits the water?"
 → {"understood":true,"confidence":"high","scenario":"compose","summary":"A car drives off a 40 m cliff at 15 m/s into the sea.","recipe":{"title":"A car off a cliff","backdrop":"cliff","engine":"projectile","objects":[{"figure":"car","name":"the car"}],"numbers":{"h":40,"u":15,"theta":0}},"parts":[{"label":"a","asks":"time in the air","answer":"time1"},{"label":"b","asks":"distance from the foot of the cliff","answer":"distance"},{"label":"c","asks":"speed hitting the water","answer":"speed1"}]}
+"A ball is dropped from the top of a 40 m tower. At the same moment a second ball is thrown up from the ground at the foot of the tower at 20 m/s. Take g = 10. Find where they meet."
+→ {"understood":true,"confidence":"high","scenario":"compose","summary":"One ball dropped from a 40 m tower as another is thrown up at 20 m/s.","recipe":{"title":"Two balls by a tower","backdrop":"tower","engine":"pair","objects":[{"figure":"ball","name":"the thrown ball"},{"figure":"ball","name":"the dropped ball"}],"numbers":{"A.h":0,"A.u":20,"B.h":40,"B.u":0,"g":10}},"parts":[{"label":"a","asks":"height where they meet","answer":"height"}]}
 "a cyclist rides off a 3 m high wall at 6 m/s onto the road below"
 → {"understood":true,"confidence":"high","scenario":"compose","summary":"A cyclist rides off a 3 m wall at 6 m/s onto the road.","recipe":{"title":"A cyclist off a wall","backdrop":"road","engine":"projectile","objects":[{"figure":"cyclist","name":"the cyclist"}],"numbers":{"h":3,"u":6,"theta":0}}}
 

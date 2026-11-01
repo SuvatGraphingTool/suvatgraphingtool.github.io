@@ -70,6 +70,8 @@ A kit is an object with:
 | `jump` — `js/kits/jump.js` (engine: journey) | `parachute-stages` |
 | `twoplane` — `js/kits/twoplane.js` | `two-in-a-plane` |
 | `models` — `js/kits/models.js` (engine: journey) | `three-models` |
+| `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
+| `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
 | `roof` — `js/kits/roof.js` | `above-the-roof` (engine js/core/roof.js, which hands the two particles to js/core/pair.js; stage, readouts and graphs borrowed from `pair`) |
 | `together` — `js/kits/together.js` | `land-together` (engine js/core/together.js; stage js/render/together.js: the heights `tower`, two people on its battlements, two stones landing at once) |
 | `heightrange` — `js/kits/heightrange.js` | `higher-than-far` (engine js/core/heightrange.js; stage js/render/heightrange.js: a park, a tripod launcher, a fan of arcs, H and R side by side) |
@@ -161,9 +163,31 @@ the console composes and plays one. The reader is told the pieces by a list
 generated from the registry: `node tools/compose-catalogue.mjs` writes
 `worker/src/compose.js`, and `test/compose.test.mjs` fails when it is stale.
 
-Engines the composed stage draws: `projectile` (js/core/height.js; its
-`ground` place takes a launch from level ground, h = 0). The others are listed
-with `ready: false` and refused with that reason until their view is drawn.
+Engines the composed stage draws:
+- `projectile` (js/core/height.js; its places `ground`, `water`, `road`,
+  `track`, `floor`, `house`, `tree` take a launch from level ground, h = 0,
+  and say each place in its own words) — `launch()` in composed.js.
+- `pair` and `bounce` (the library's pair and bounce kits, their own boxes,
+  including word boxes like `start: drop | down | up`) — `column()` in
+  composed.js: the place at x = 0, the line just past its edge, whoever lets
+  go standing on the edge (or on the ground below, or holding it at hand
+  height in a hall), a trail, a meeting that flashes with its height and time
+  marked, a bounce that rings the ground and squashes the ball, the height
+  after each bounce marked as it is reached. They take only solid ground below
+  (`below`) and only small things (`figures`).
+- `stages`, `overtake` and `plane` are listed with `ready: false` and refused
+  with that reason: the library's own scenarios already draw a road, rails or
+  a map with the figure chosen.
+
+`worker/src/composeplace.js` `toComposed()` runs after the lead's `toPlace()`:
+a library pair-vertical or bounce reading whose words name a tower, building,
+house or hall becomes a composed recipe with that backdrop — the same boxes,
+the parts' answer keys renamed to the composed engine's.
+
+Pieces the composer added (composed.js): `wall(g, x0, edge, top, Y, k)` — a
+dressed stone wall with a coping; `jetty(g, x0, edge, deck, Y, bottom, k)` — a
+timber jetty on piles over the sea. figures.js gained `airborne` (no ground
+shadow under a figure in the air).
 
 ## Engine models — `js/core/`
 

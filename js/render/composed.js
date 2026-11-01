@@ -26,7 +26,7 @@
 // Everything that moves is read from the engine's answer (rule 4).
 
 import { BACKDROPS, FIGURES as PIECES } from '../compose/registry.js';
-import { dust, pulse, flash } from './effects.js';
+import { dust, pulse, flash, squash } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, sig3, withAlpha } from './util.js';
 import { thrower, throwerHand, THROWER_MIN, ballAt, drawFigure, phaseFor, particle, fence } from './figures.js';
 import { seaScene, riverScene, fields, curtainWall, tree, seaCliff, tower, bridge, bigSplash, pebble, fitClear } from './heights.js';
@@ -58,7 +58,49 @@ export function render(canvas, cam, o) {
   const { traj: f, recipe: R } = o;
   if (!f || !R) return null;
   if (R.engine === 'projectile') return launch(canvas, o);
+  if (R.engine === 'pair' || R.engine === 'bounce') return column(canvas, o);
   return null;
+}
+
+/** The backdrop and the place things start from, for either stage: the
+    library's own scenery for the recipe's backdrop, its top at `top` (H0 m),
+    its edge at x0, the ground or the water at oy. */
+function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand }) {
+  const P = palette();
+  const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
+  // the place it is launched from, where the backdrop has no edge of its own:
+  // a stone wall to stand on, a jetty over the sea, or the ground itself
+  const ledge = () => { if (H0 > 0 && !byHand) wall(g, -4, x0 + 2, top, oy, k); };
+  switch (R.backdrop) {
+    case 'cliff': seaScene(g, w, h, horizon(0.2), phase); seaCliff(g, -4, x0, top, oy, { phase }); break;
+    case 'bridge': riverScene(g, w, h, horizon(0.16), phase); bridge(g, -4, x0, top, oy); break;
+    case 'tower': {
+      fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
+      const tw = clamp(H0 * 0.22 * k, 34, 80);
+      curtainWall(g, -4, x0 - tw + 2, oy - clamp((oy - top) * 0.28, 30, 110), oy);
+      for (const [dx, s] of [[60, 1], [104, 0.75], [150, 0.9], [-tw - 26, 0.8]]) if (x0 + dx < w - 10 && x0 + dx > 0) tree(g, x0 + dx, oy, clamp((oy - top) * 0.16, 26, 60) * s);
+      tower(g, x0, top, oy, tw);
+      break;
+    }
+    case 'house': {
+      fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
+      fence(g, x0 + 30, w + 4, oy - 2, clamp(1.2 * k, 16, 34));
+      house(g, x0, top, oy, houseW(k), 'roof', P, { storey: Math.max(20, 3 * k) });
+      break;
+    }
+    case 'orchard': {
+      fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
+      for (const [dx, s] of [[-2.6 * k - 40, 0.8], [xMax * k + 90, 0.9]]) if (x0 + dx > 0 && x0 + dx < w) tree(g, x0 + dx, oy, clamp(H0 * k * 0.9, 40, 140) * s);
+      // the tree it falls from, its crown round the branch it hangs from
+      if (H0 > 0) appleTree(g, (x) => X(x - 1.2), Y, k, [1.2, 1.2], [H0, H0], 11);
+      break;
+    }
+    case 'sea': seaScene(g, w, h, horizon(0.2), phase); jetty(g, -4, x0 + 2, H0 > 0 ? top : oy - 4, oy, h, k); break;
+    case 'road': fields(g, w, horizon(0.25), oy); tarmac(g, 0, w, oy, { depth: clamp(0.6 * k, 12, 24), verge: h - oy }); ledge(); break;
+    case 'rails': fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy + 18, h); railBed(g, 0, w, oy); ledge(); break;
+    case 'hall': interior(g, 0, 0, w, oy); floorboards(g, 0, w, oy, h); ledge(); break;
+    default: fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h); ledge();
+  }
 }
 
 /** A launch from a place, side on: the projectile engine (js/core/height.js). */
@@ -118,40 +160,7 @@ function launch(canvas, o) {
   const phase = t * 1.3;
 
   // ── the backdrop, and the place it is launched from
-  const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
-  // the place it is launched from, where the backdrop has no edge of its own:
-  // a stone wall to stand on, a jetty over the sea, or the ground itself
-  const ledge = () => { if (H0 > 0 && !byHand) wall(g, -4, x0 + 2, top, oy, k); };
-  switch (R.backdrop) {
-    case 'cliff': seaScene(g, w, h, horizon(0.2), phase); seaCliff(g, -4, x0, top, oy, { phase }); break;
-    case 'bridge': riverScene(g, w, h, horizon(0.16), phase); bridge(g, -4, x0, top, oy); break;
-    case 'tower': {
-      fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
-      const tw = clamp(H0 * 0.22 * k, 34, 80);
-      curtainWall(g, -4, x0 - tw + 2, oy - clamp((oy - top) * 0.28, 30, 110), oy);
-      for (const [dx, s] of [[60, 1], [104, 0.75], [150, 0.9], [-tw - 26, 0.8]]) if (x0 + dx < w - 10 && x0 + dx > 0) tree(g, x0 + dx, oy, clamp((oy - top) * 0.16, 26, 60) * s);
-      tower(g, x0, top, oy, tw);
-      break;
-    }
-    case 'house': {
-      fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
-      fence(g, x0 + 30, w + 4, oy - 2, clamp(1.2 * k, 16, 34));
-      house(g, x0, top, oy, houseW(k), 'roof', P, { storey: Math.max(20, 3 * k) });
-      break;
-    }
-    case 'orchard': {
-      fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
-      for (const [dx, s] of [[-2.6 * k - 40, 0.8], [xMax * k + 90, 0.9]]) if (x0 + dx > 0 && x0 + dx < w) tree(g, x0 + dx, oy, clamp(H0 * k * 0.9, 40, 140) * s);
-      // the tree it falls from, its crown round the branch it hangs from
-      if (H0 > 0) appleTree(g, (x) => X(x - 1.2), Y, k, [1.2, 1.2], [H0, H0], 11);
-      break;
-    }
-    case 'sea': seaScene(g, w, h, horizon(0.2), phase); jetty(g, -4, x0 + 2, H0 > 0 ? top : oy - 4, oy, h, k); break;
-    case 'road': fields(g, w, horizon(0.25), oy); tarmac(g, 0, w, oy, { depth: clamp(0.6 * k, 12, 24), verge: h - oy }); ledge(); break;
-    case 'rails': fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy + 18, h); railBed(g, 0, w, oy); ledge(); break;
-    case 'hall': interior(g, 0, 0, w, oy); floorboards(g, 0, w, oy, h); ledge(); break;
-    default: fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h); ledge();
-  }
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand });
 
   // ── who throws it: at the edge, wound up before the throw, through after it
   const v0 = f.vel(0), aim = (Math.atan2(v0.y, v0.x) * 180) / Math.PI;
@@ -287,6 +296,174 @@ function launch(canvas, o) {
   const name = { sea: 'the sea', river: 'the river', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
+  L.draw(g, w, h);
+  return null;
+}
+
+/** Motion on one vertical line beside a place, side on: two that meet (the
+    pair engine, js/core/pair.js) or a ball that bounces (js/core/bounce.js).
+    The place stands at x = 0, the line a little beyond its edge; heights are
+    to scale. A meeting flashes, a bounce rings the ground and squashes the
+    ball — each at the engine's own time. */
+function column(canvas, o) {
+  const { traj: f, t: tRaw, show = {}, fired = true, recipe: R } = o;
+  const { ctx: g, w, h } = fitCanvas(canvas);
+  const P = palette(), L = labels();
+  const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
+  const B = BACKDROPS[R.backdrop], phone = w < 520, pair = R.engine === 'pair';
+  // what moves, read off the engine: a height and an upward velocity at t
+  const movers = pair
+    ? ['A', 'B'].map((n, i) => ({ n, kind: R.objects[i].figure, at: (tt) => { const q = f.at(tt)[n]; return { y: q.x, v: q.v }; } }))
+    : [{ n: '', kind: R.objects[0].figure, at: (tt) => { const q = f.at(tt); return { y: q.y, v: q.vUp }; } }];
+  const starts = movers.map((m) => m.at(0).y);
+  const H0 = Math.max(0, ...starts);               // the top of the place
+  const n = 200, ys = [];
+  for (let i = 0; i <= n; i++) for (const m of movers) ys.push(m.at((i / n) * f.tMax).y);
+  const yTop = Math.max(H0, ...ys);
+  const GAP = 1.2;                                  // the line, this far out from the edge (m)
+  const byHand = !B.edge && H0 > 0 && H0 <= 2.6;
+  const TH = (k) => Math.max(phone ? THROWER_MIN * 0.8 : THROWER_MIN, Math.min(96, 1.75 * k));
+  const houseW = (k) => clamp(Math.max(8, H0 * 1.1) * k, 90, Math.max(90, w * 0.34));
+
+  // ── the frame: the place, the line and room for its labels, at one scale
+  let F = null;
+  for (let it = 0, k = 6; it < 4; it++) {
+    // a house is cropped at the frame's edge: its corner is what matters
+    const left = (R.backdrop === 'house' ? Math.min(houseW(k), 150) + 40 : TH(k) + 90) / k;
+    // at least five metres of height, so a drop from someone's hand is seen
+    // in its room rather than filling the stage
+    const box = { xLo: -left, xHi: GAP + 150 / k, yLo: 0, yHi: Math.max(5, yTop + (TH(k) + 24) / k) };
+    F = fitClear(box, w, h, phone, phone ? 0.85 : 0.35, () => true);
+    if (!F) return null;
+    k = F.k;
+  }
+  const { k, X, Y } = F, oy = Y(0), x0 = X(0), top = Y(H0);
+  const phase = t * 1.3, th = TH(k);
+  const R0 = Math.max(8, Math.min(16, k * 0.11));     // a ball you can see, to scale where it can be
+  // held at arm's length at hand height, the arm is straight out in front;
+  // otherwise the line is clear of the edge, room for a ball each side
+  const held = byHand ? starts.findIndex((y0) => y0 > 0) : -1;
+  const aimOf = (u0) => (u0 > 1e-9 ? 60 : u0 < -1e-9 ? -30 : 0);
+  let hh = th, feet = 0;
+  if (held >= 0) {
+    const per = throwerHand(100, aimOf(movers[held].at(0).v));
+    hh = clamp((oy - Y(starts[held])) / (per.y / 100), THROWER_MIN * 0.8, 3 * k);
+    feet = X(GAP * 0.4);
+  }
+  // from the top: a person stands behind the parapet, an arm held out over
+  // the edge, the hand at the top's height — so the line is that far out
+  const topper = held < 0 ? starts.findIndex((y0) => y0 > 0 && Math.abs(y0 - H0) < 1e-9) : -1;
+  const reach = topper >= 0 ? throwerHand(100, aimOf(movers[topper].at(0).v)) : null;
+  const lx = held >= 0 ? feet + hh * (throwerHand(100, aimOf(movers[held].at(0).v)).x / 100)
+    : reach ? x0 - 4 + th * (reach.x / 100) + Math.max(0, 2 * R0 + 8 - th * (reach.x / 100))
+    : B.edge || H0 > 0 ? x0 + 4 * R0 + 12 : X(GAP);
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax: GAP, phase, houseW, byHand });
+
+  // ── who lets them go. Held at hand height: a person, the ball in the hand
+  // held out in front. Thrown from the top or the ground: the thrower, as the
+  // library's stages draw one, wound up and then through. Simply dropped from
+  // the top: no one — it rests on the edge until it falls.
+  movers.forEach((m, i) => {
+    const u0 = m.at(0).v;
+    if (i === held) thrower(g, feet, oy, hh, P, { dir: 1, pose: 1, aim: aimOf(u0) });
+    else if (i === topper) {
+      // standing behind the parapet: only what is above the roof line shows
+      g.save(); g.beginPath(); g.rect(0, 0, w, top + R0 + 2); g.rect(x0, 0, w, top + th * 0.2); g.clip();
+      const fx = lx - th * (reach.x / 100), fy = top + th * (reach.y / 100);
+      thrower(g, Math.min(fx, x0 - 4), fy, th, P, { dir: 1, pose: 1, aim: aimOf(u0) });
+      g.restore();
+    }
+    // launched from the ground: the ball alone, as a textbook draws it
+  });
+
+  // ── the line they move on, faint, and the height of the place
+  stroke(g, [{ x: lx, y: oy }, { x: lx, y: Y(yTop) - 8 }], { color: P.ink, width: 1, alpha: 0.25, dash: [3, 5] });
+  if (H0 > 0) {
+    const dx = (R.backdrop === 'house' ? x0 - houseW(k) : x0 - th * 0.9) - 16;
+    stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.ink, width: 1.4, alpha: 0.9 });
+    for (const yy of [oy, top]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
+    L.add(T`${trimmed(sig3(H0))} [m]`, dx - 8, (oy + top) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700 });
+  }
+  if (!phone) { L.reserve({ x: 0, y: 0, w: HUD, h: HUD_H - 40 }); L.reserve({ x: w - 130, y: 0, w: 130, h: 56 }); }
+
+  // ── the moments: where they meet, or each bounce
+  const end = t >= f.tMax - 1e-9;
+  if (!end) clock.at = null; else if (clock.at == null) clock.at = performance.now();
+  const late = end ? Math.min(SETTLE * 0.999, (performance.now() - clock.at) / 1000) : -1;
+  // an earlier moment plays on the motion's own clock; the last on the wall clock
+  const ageAt = (tc) => (tc >= f.tMax - 1e-9 ? late : t - tc);
+  const short = Math.max(0.25, Math.min(0.8, f.tMax / 6));
+  let squashAt = null;
+  if (pair && f.meet && t >= f.meet.t - 1e-9) {
+    const my = Y(f.meet.x), a = ageAt(f.meet.t), life = f.meet.t >= f.tMax - 1e-9 ? SETTLE : short;
+    for (const e of R.effects) {
+      if (e === 'flash') { flash(g, lx, my, a, life, { radius: 52 }); pulse(g, lx, my, a, life, P.second, { radius: 48 }); }
+      else if (e === 'ring') pulse(g, lx, my, a, life, P.mark, { radius: 48 });
+    }
+    // where they met stays marked: a ring, a dashed level across the stage,
+    // and its height as a dimension from the ground
+    dot(g, lx, my, R0 + 7, { stroke: P.mark, width: 2.6 });
+    stroke(g, [{ x: x0 - 30, y: my }, { x: w - 12, y: my }], { color: P.mark, width: 1.4, alpha: 0.75, dash: [6, 5] });
+    const dx = lx + R0 * 2 + 70;
+    stroke(g, [{ x: dx, y: oy }, { x: dx, y: my }], { color: P.mark, width: 1.4, alpha: 0.9 });
+    for (const yy of [oy, my]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.mark, width: 1.4, alpha: 0.9 });
+    L.add(T`h = ${sig3(f.meet.x)} [m]`, dx + 10, (oy + my) / 2, { color: P.mark, align: 'left', pri: 9, size: 15, weight: 700 });
+    L.add(T`t = ${sig3(f.meet.t)} [s]`, dx + 10, my - 14, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 });
+  }
+  if (!pair) {
+    for (const im of f.impacts || []) {
+      if (t < im.t - 1e-9) continue;
+      const a = ageAt(im.t), life = im.t >= f.tMax - 1e-9 ? SETTLE : short;
+      for (const e of R.effects) {
+        if (e === 'ring') { pulse(g, lx, oy, a, life, P.mark, { radius: 40 }); dust(g, lx, oy, a, life, { size: 1, n: 10 }); }
+        else if (e === 'dust') dust(g, lx, oy, a, life, { size: 1.4, n: 14 });
+        else if (e === 'flash') flash(g, lx, oy - 4, a, life);
+      }
+      if (a >= 0 && a < life) squashAt = { a, life };
+    }
+    // the greatest height after each bounce, marked as it is reached
+    // each on its own tick, its label pinned beside it at its own height
+    for (const im of (f.impacts || []).filter((x) => x.tTop != null && t >= x.tTop - 1e-9 && x.H > 1e-9)) {
+      const hy = Y(im.H), tx = lx + R0 * 2 + 40;
+      stroke(g, [{ x: lx - 14, y: hy }, { x: tx, y: hy }], { color: P.disp, width: 1.4, alpha: 0.85, dash: [4, 3] });
+      L.add(T`${sig3(im.H)} [m]`, tx + 6, hy, { color: P.disp, align: 'left', pri: 6, size: 13, weight: 700, maxPush: 6 });
+    }
+  }
+
+  // ── each one: a trail of where it has just been, the ball, its velocity
+  // two on one line: side by side, touching where they meet, both clear of the wall
+  const off = pair ? [-R0 - 1, R0 + 1] : [0];
+  const vMax = Math.max(1e-6, ...movers.flatMap((m) => [0, 0.25, 0.5, 0.75, 1].map((q) => Math.abs(m.at(q * f.tMax).v))));
+  const vl = clamp(Math.min(h * 0.16, 90), 34, 90) / vMax;
+  movers.forEach((m, i) => {
+    const x = lx + off[i], q = m.at(t), y = Y(q.y), ring = i === 1 ? P.second : null;
+    for (let j = 8; j >= 1; j--) {
+      const tt = t - j * f.tMax / 90;
+      if (tt < 0 || !fired) continue;
+      dot(g, x, Y(m.at(tt).y), 2.2, { fill: withAlpha(i ? P.second : P.vel, 0.08 + 0.05 * (8 - j)) });
+    }
+    g.save();
+    // a bounce squashes it flat against the floor and it springs back
+    if (squashAt) { const s = squash(squashAt.a, squashAt.life); g.translate(x, y + R0); g.scale(1 + (s.sx - 1) * 2.2, 1 + (s.sy - 1) * 2.2); g.translate(-x, -y - R0); }
+    if (m.kind === 'stone') { pebble(g, x, y, R0); if (ring) dot(g, x, y, R0 + 3, { stroke: ring, width: 2.4 }); }
+    else if (m.kind === 'particle') particle(g, x, y, R0 * 2, P, { ring });
+    else ballAt(g, x, y, R0, ring);
+    g.restore();
+    // letters and arrows on the open side, away from the wall
+    if (pair) L.add(m.n, i ? x + R0 + 6 : x - R0 - 6, y - R0 - 8, { color: i ? P.second : P.ink, align: i ? 'left' : 'right', pri: 9, size: 14, weight: 800 });
+    if (show.velocity !== false && Math.abs(q.v) > 1e-6 && fired) {
+      const ax = lx + R0 * 2 + 14 + (pair ? i * 18 : 0);
+      // never through the ground: at a bounce the arrow is cut at the floor
+      const ty = Math.min(oy - 2, y - q.v * vl);
+      arrow(g, ax, y, ax, ty, { color: withAlpha(P.card, 0.8), width: 7, head: 14 });
+      arrow(g, ax, y, ax, ty, { color: P.velVec, width: 3, head: 11 });
+      if (Math.abs(ty - y) > 6) L.add(T`${sig3(Math.abs(q.v))} [m s^-1]`, ax + 10, (y + ty) / 2, { color: P.vel, align: 'left', pri: 7, size: 14, weight: 700 });
+    }
+    if (show.acceleration && fired) arrow(g, x, y, x, y + 36, { color: P.acc, width: 2.4, head: 10 });
+  });
+
+  const name = { road: 'the road', floor: 'the floor' }[B.below] || 'the ground';
+  L.add(name, w - 14, oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
   L.draw(g, w, h);
   return null;
 }
