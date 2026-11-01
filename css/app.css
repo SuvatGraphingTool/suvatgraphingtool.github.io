@@ -835,6 +835,8 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .pchip[aria-pressed='true'] { background: var(--mark); color: var(--surface); border-color: var(--mark); box-shadow: 0 0 0 4px color-mix(in srgb, var(--mark) 20%, transparent); }
 .pchip[data-done='true']::after { content: ''; position: absolute; right: 1px; top: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--mark); border: 1.5px solid var(--card); }
 .pchip[data-none='true'] { border-style: dashed; }
+/* a part with a set-up of its own: its chip opens that set-up */
+.pchip.other { border-style: dashed; color: var(--ink-muted); background: transparent; }
 .pchip:disabled { cursor: not-allowed; color: var(--ink-muted); text-decoration: line-through; opacity: .75; border-style: dashed; }
 .pnow { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--sp-5); align-items: center; }
 .pnow > * { grid-column: 1; animation: part-in 260ms ease-out; }

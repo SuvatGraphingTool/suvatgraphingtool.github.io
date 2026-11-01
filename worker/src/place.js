@@ -108,8 +108,23 @@ function settle(x, words) {
   return out;
 }
 
+// a question marked in parts: (a), b), (ii), "part b" — the only kind that has parts
+const MARKED = /\(\s*(?:[a-h]|i{1,3}|iv|vi{0,3})\s*\)|(?:^|[\s.;:?])(?:[a-h]|i{1,3}|iv)\s*\)|(?:^|\n)\s*(?:[a-h]|i{1,3}|iv)\s*[.:]\s|\bparts?\s+(?:[a-h]|i{1,3}|iv|one|two|three|1|2|3)\b|\b(?:two|three|four|2|3|4)[- ]part\b/i;
+
+/**
+ * Parts only when the question has them. A student who types one question
+ * ("a person jumping off a 10 m board at 7 m/s") gets the engine's answers
+ * plainly, never (a)(b)(c) a reader made up. A photo or a PDF is the paper
+ * itself, and the reader is trusted to see its parts there.
+ */
+function marked(x, words) {
+  if (!x || !Array.isArray(x.parts) || !String(words || '').trim() || MARKED.test(words)) return x;
+  const { parts, ...rest } = x;
+  return rest;
+}
+
 export function toPlace(x, words = '') {
-  return settle(placed(x, words), words);
+  return settle(placed(marked(x, words), words), words);
 }
 
 function placed(x, words) {

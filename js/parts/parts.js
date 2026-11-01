@@ -136,3 +136,20 @@ export function walk(solveBoxes, base, parts) {
   });
   return runs;
 }
+
+/* A part with a set-up of its own (see readInto in js/app.js): its label as the
+   reader parts are labelled, whether it has one, and the reading it opens. */
+export const labelOf = (p) => String(p?.label ?? '').replace(/[^A-Za-z0-9]/g, '').toLowerCase().slice(0, 5);
+export const ownScene = (p) => p && typeof p === 'object' && ((p.scene && typeof p.scene === 'object') || (p.recipe && typeof p.recipe === 'object'));
+/** A part's own reading: the question's, with what the part changes — or a whole one of its own. */
+export function sceneOf(x, p) {
+  const { scene, recipe, ...part } = p;
+  const sc = recipe ? { scenario: 'compose', recipe } : { ...scene };
+  const base = { understood: true, confidence: x.confidence, summary: typeof p.asks === 'string' && p.asks ? p.asks : x.summary, parts: [part] };
+  if (sc.scenario || sc.library) return { ...sc, ...(sc.library && !sc.scenario ? { scenario: 'library' } : {}), ...base };
+  const top = { ...x };
+  for (const k of ['parts', 'summary', 'note', 'example']) delete top[k];
+  if (top.scenario === 'library') return { ...top, ...base, boxes: { ...(top.boxes || {}), ...(sc.boxes || sc) } };
+  if (top.scenario === 'compose') return { ...top, ...base, recipe: { ...top.recipe, numbers: { ...(top.recipe?.numbers || {}), ...(sc.numbers || sc) } } };
+  return { ...top, ...sc, ...base };
+}

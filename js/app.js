@@ -35,7 +35,7 @@ import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML, esc } from './ai/readout.js';
-import { walk, stepOf } from './parts/parts.js';
+import { walk, stepOf, labelOf, ownScene, sceneOf } from './parts/parts.js';
 import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML } from './parts/strip.js';
 import { answerOf } from './parts/parts.js';
 import { fromReader, boxesOf } from './parts/answers.js';
@@ -974,7 +974,7 @@ function renderParts() {
   $('parts').hidden = !on; $('pticks').hidden = !on;
   if (!on) return;
   const parts = state.runs.map((r, i) => r?.part ?? (state.readerParts || scenario.parts)[i]);
-  $('parts').innerHTML = stripHTML(parts, state.runs, state.part, stepsNow());
+  $('parts').innerHTML = stripHTML(parts, state.runs, state.part, stepsNow(), sceneLinks());
   $('pticks').innerHTML = ticksHTML(state.runs, partSolved(), state.part);
 }
 /** What the parts are answered from: a kit's solution, or a launch's with its flight as `f`. */
@@ -1023,6 +1023,8 @@ function showPart(k, { play = false } = {}) {
   requestAnimationFrame(() => document.querySelector('#working .step[data-part="on"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
 }
 $('parts').addEventListener('click', (e) => {
+  const s = e.target.closest('button[data-scene]');
+  if (s) { openPart(parseInt(s.dataset.scene.slice(5), 10)); return; }
   const b = e.target.closest('button[data-part]');
   if (b) showPart(parseInt(b.dataset.part, 10), { play: b.dataset.play === 'true' });
 });
@@ -3308,7 +3310,66 @@ function applyReading(x, opts) {
   stayPut = true;
   try { return readInto(x, opts); } finally { stayPut = false; }
 }
-function readInto(x, { graph = true, solve = false } = {}) {
+
+/* A QUESTION WHOSE PARTS NEED SET-UPS OF THEIR OWN. "(b) The stone is now
+   thrown up from the same tower": part (b) is another motion, so it is
+   another scenario, with its own values. A part that carries a `scene` (what
+   it changes, or a whole reading) or a composer's `recipe` is set aside; the
+   question's first set-up opens, and the chat and the strip offer "Next:
+   part (b)", which opens that part's own. One mechanism for the twelve, the
+   library and the composer. Each scene is read and solved by the same route
+   as any reading — nothing here calculates. */
+let chain = { main: null, list: [], at: -1, order: [], here: [] };
+function readInto(x, opts = {}) {
+  if (opts.part || !Array.isArray(x?.parts) || !x.parts.some(ownScene)) {
+    if (!opts.part) chain = { main: null, list: [], at: -1, order: [], here: [] };
+    return readOne(x, opts);
+  }
+  chain = { main: null, list: [], at: -1, order: [], here: [] };
+  const all = x.parts.filter((p) => p && typeof p === 'object');
+  let main = { ...x, parts: all.filter((p) => !ownScene(p)) };
+  let list = all.filter(ownScene).map((p) => ({ label: labelOf(p), asks: String(p.asks ?? ''), x: sceneOf(x, p) }));
+  // every part a set-up of its own: the first one is the question's
+  if (!main.parts.length) { const first = list.shift(); main = { ...first.x, summary: x.summary }; }
+  // each later part read and solved in its own scene first, for the reply;
+  // then the first set-up, last, so it is the one on the stage
+  list = list.map((c) => {
+    const r = readOne(c.x, { ...opts, solve: false });
+    return { ...c, html: r.ok ? (solved?.ok && state.runs ? replyHTML(state.runs) : '<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> Open it and fill in what is missing.</div>')
+      : `<div class="ro-engine" data-ok="false">${esc(r.error || '')}</div>` };
+  });
+  chain = { main, list, at: -1, order: all.map(labelOf), here: main.parts.map(labelOf) };
+  const r = readOne(main, opts);
+  if (r.ok) {
+    r.html += list.map((c, i) => `<div class="ro-scene"><p class="ro-eyebrow">Part (${esc(c.label)}), with a set-up of its own</p>${c.html}`
+      + `<button type="button" class="ghost sm ask-scene" data-id="part:${i}">${i ? 'Then' : 'Next'}: part (${esc(c.label)})</button></div>`).join('');
+  }
+  renderParts();
+  return r;
+}
+/** "Next: part (b)": that part's own set-up on the stage; −1 is the question's first. */
+function openPart(i) {
+  const c = i < 0 ? { x: chain.main } : chain.list[i];
+  if (!c?.x) return;
+  applyReading(c.x, { part: true });
+  chain.at = i;
+  renderParts();
+  if (traj) showFlight(); else go('values');
+}
+/** The strip's view of the other set-ups: every label in order, where each one is, and the next. */
+function sceneLinks() {
+  if (!chain.list.length) return null;
+  const where = {};
+  for (const l of chain.here) where[l] = -1;
+  chain.list.forEach((c, i) => { where[c.label] = i; });
+  const n = chain.at + 1;
+  return {
+    order: chain.order.filter((l) => l in where),
+    elsewhere: Object.fromEntries(Object.entries(where).filter(([, i]) => i !== chain.at).map(([l, i]) => [l, `part:${i}`])),
+    next: n < chain.list.length ? { label: chain.list[n].label, id: `part:${n}` } : null,
+  };
+}
+function readOne(x, { graph = true, solve = false } = {}) {
   if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
   if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph });
   const r = toApp(x);
@@ -3377,9 +3438,9 @@ function applyLibrary(x, { graph = true } = {}) {
   const gAssumed = state.kit.g == null;
   if (gAssumed) state.kit.g = 9.81;
   // The parts are the student's question's own. A question that asked nothing
-  // in parts gets none — never the paper's (a)(b)(c) — and only an example
-  // brings the paper's parts along with the paper's numbers.
-  state.readerParts = fromReader(s.id, x.parts, [...keys]) ?? (x.example === true ? null : []);
+  // in parts gets none — never the paper's (a)(b)(c), an example's included:
+  // the user, 1 Nov, "only … when the questions explicitly states".
+  state.readerParts = fromReader(s.id, x.parts, [...keys]) ?? [];
   buildValuesScreen();              // which recomputes, and solves each part
   refreshSteps();
   const head = `<p class="ro-eyebrow">Read as, from the Past-paper library</p><h3 class="ro-name">${esc(s.name)}</h3>`
@@ -3503,7 +3564,7 @@ function showFlight() {
 const ask = createAsk({
   apply: applyReading,
   run: showFlight,
-  scene: showScene,
+  scene: (id) => (/^part:-?\d+$/.test(id) ? openPart(parseInt(id.slice(5), 10)) : showScene(id)),
   edit: () => go('values'),
   show: go,
 });

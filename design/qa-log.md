@@ -25,6 +25,8 @@ testing spends the live site's allowance too.
 | hiya whats the capital of france | A friendly chat reply, no scene opened. | — |
 | surprise me → a lift | The reply listed every number as "in the question", though the student asked none. | An example's numbers are labelled "from the paper". A ball let go with no speed shows u = 0 as "assumed · no speed was given". Checked in the page (app.js has no node test). |
 | now make it 20 m (a follow-up), a cliff | Read afresh at 20 m: t = 2.02 s. | — |
+| a person jumping off a 10 m board at 7 m/s *(the user)* | The reply and the strip showed (a)(b)(c) for a one-line question. | Parts only when the question is marked: the worker drops parts unless the typed words carry (a), a), (i), "part b" or "a 2 part question". A photo or PDF is trusted. The page gives an example's reading none either. The prompt says so, and its single-ask example lost its part. Test. |
+| (a) a stone dropped from a 20 m tower: time? (b) now thrown up at 5 m/s from it: time? *(the user: "give me one scenario, then … an option to see the second one")* | One stage for both. | A part that changes the set-up carries `scene`: what it changes, or a whole reading. A composer `recipe` part counts too. (a)'s set-up opens first. The reply answers (b) in its own scene (2.59 s) with "Next: part (b)", and the strip's dashed (b) chip and "Next: part (b)" open it on the stage; the (a) chip goes back. One mechanism for the twelve, the library and the composer. Test. |
 
 For the lead: on a laptop, beside the Display panel (a 436 px stage), the HUD's four cards cover most of the Two on a road scene and the well's figure.
 

@@ -61,25 +61,37 @@ function rowHTML(step) {
 
 /**
  * The strip. `k` is the part on show, −1 for none yet; `steps` is the kit's
- * working for the motion on the stage.
+ * working for the motion on the stage. `more`, when some parts have set-ups
+ * of their own: every label in order, `elsewhere` {label: id} for the parts
+ * in another set-up, and `next`, the next set-up to open.
  */
-export function stripHTML(parts, runs, k, steps) {
+export function stripHTML(parts, runs, k, steps, more = null) {
   const n = runs.filter(Boolean).length;
   if (!n) return '';                  // no parts, no strip: never "This question has no parts"
   const wide = (p) => (tag(p).length > 4 ? ' wide' : '');
-  const chips = parts.map((p, i) => p.out
+  const away = more ? Object.keys(more.elsewhere) : [];
+  // a part in another set-up: its chip opens that set-up
+  const other = (l) => `<button class="pchip other${wide({ label: l })}" type="button" data-scene="${esc(more.elsewhere[l])}" aria-label="Part ${esc(l)}: open its own set-up">${tag({ label: l })}</button>`;
+  const own = parts.map((p, i) => p.out
     ? `<button class="pchip${wide(p)}" type="button" disabled title="Not in this app: ${esc(p.out)}" aria-label="Part ${esc(p.label)}: not in this app — ${esc(p.out)}">${tag(p)}</button>`
-    : `<button class="pchip${wide(p)}" type="button" data-part="${i}" aria-pressed="${i === k}"${i < k ? ' data-done="true"' : ''}${runs[i]?.part.find || runs[i]?.part.kind === 'graph' ? '' : ' data-none="true"'} aria-label="Part ${esc(p.label)}">${tag(p)}</button>`).join('');
+    : `<button class="pchip${wide(p)}" type="button" data-part="${i}" aria-pressed="${i === k}"${i < k ? ' data-done="true"' : ''}${runs[i]?.part.find || runs[i]?.part.kind === 'graph' ? '' : ' data-none="true"'} aria-label="Part ${esc(p.label)}">${tag(p)}</button>`);
+  const chips = more
+    ? more.order.map((l) => (more.elsewhere[l] ? other(l) : own[parts.findIndex((p) => String(p.label) === l)] ?? '')).join('')
+    : own.join('');
   const next = runs.findIndex((r, i) => r && i > k);
   const go = next >= 0
     ? `<button class="fire sm pnext" type="button" data-part="${next}" data-play="true">Show me part ${tag(parts[next])}</button>`
+    : more?.next ? `<button class="fire sm pnext" type="button" data-scene="${esc(more.next.id)}">Next: part ${tag({ label: more.next.label })}</button>`
     : `<button class="tbtn sm pnext" type="button" data-part="-1">Whole motion</button>`;
   let body;
   if (k < 0) {
     // parts Ask Suvat read from the student's own question carry its mark
     const read = parts.some((p) => p.prose) ? `<p class="pfrom"><span class="ai-orb sm" aria-hidden="true">${SPARK}</span>Read by Ask Suvat from your question</p>` : '';
-    body = `${read}<p class="pask"><b>This question has ${WORDS[n] ?? n} part${n === 1 ? '' : 's'}.</b>
-      ${n === 1 ? 'It stops the motion at its moment, with its working.' : 'Each one stops the motion at its own moment, with its working.'}</p>
+    const all = n + away.length;
+    const here = away.length ? (n === 1 ? `Part ${tag(parts.find((p, i) => runs[i]))} is on the stage now.` : `${WORDS[n] ?? n} of them are on the stage now.`.replace(/^./, (c) => c.toUpperCase())) : '';
+    const there = away.length ? ` ${away.map((l) => tag({ label: l })).join(away.length === 2 ? ' and ' : ', ')} ${away.length === 1 ? 'has' : 'have'} a set-up of ${away.length === 1 ? 'its own: its chip opens it' : 'their own: each chip opens its own'}.` : '';
+    body = `${read}<p class="pask"><b>This question has ${WORDS[all] ?? all} part${all === 1 ? '' : 's'}.</b>
+      ${away.length ? here + there : n === 1 ? 'It stops the motion at its moment, with its working.' : 'Each one stops the motion at its own moment, with its working.'}</p>
       <ol class="plist">${parts.map((p) => `<li><b>${tag(p)}</b>${p.out ? `<i>not in this app — ${esc(p.out)}</i>` : askHTML(p)}</li>`).join('')}</ol>`;
   } else {
     const run = runs[k], p = run.part, step = steps?.[stepOf(p, steps || [])];

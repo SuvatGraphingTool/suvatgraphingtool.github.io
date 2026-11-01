@@ -385,5 +385,33 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(fromReader('two-on-a-road', [{ label: 'a', asks: 'when are they level', answer: 'meeting2' }])[0].find === 'events.overtake.t', 'a numbered key that is not there is read as its kind');
 }
 
+// The user, 1 Nov: "why does it give me 3 part options its just one" — parts only when the question is marked in parts
+{
+  const x = { understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'board', h: 10, u: 7, theta: 90 },
+    parts: [{ label: 'a', asks: 'time', answer: 'time' }, { label: 'b', asks: 'speed', answer: 'speed' }, { label: 'c', asks: 'height', answer: 'height' }] };
+  ok(!toPlace(x, 'a person jumping off a 10 m board at 7 m/s').parts, 'a one-line question keeps no parts a reader made up');
+  ok(!toPlace(x, 'how long does it take and how fast does it hit the water').parts, 'nor two asks in one sentence');
+  ok(toPlace(x, '(a) find the time (b) find the speed (c) the height').parts?.length === 3, '(a) (b) (c) keep their parts');
+  ok(toPlace(x, 'i) time ii) speed').parts && toPlace(x, 'a) time b) speed').parts && toPlace(x, 'do part b').parts, 'and i), a) and "part b"');
+  ok(toPlace(x, '').parts?.length === 3, 'a photo or a PDF (no words) is trusted to have its parts');
+  ok(!toPlace(x, 'a ball (mass 2 kg) is thrown up').parts, 'a bracket that is not a label is not a part');
+}
+// The user, 1 Nov: "give me one scenario, then … an option to see the second one" — a part with a set-up of its own
+{
+  const { sceneOf, ownScene, labelOf } = await import('../js/parts/parts.js');
+  const lib = { understood: true, confidence: 'high', scenario: 'library', library: 'from-a-height', summary: 'A stone from a 20 m tower.', boxes: { place: 'tower', h: 20, u: 0, theta: 0 } };
+  const b = { label: '(b)', asks: 'time when thrown up at 5 m/s', answer: 'time', scene: { boxes: { u: 5, theta: 90 } } };
+  const s = sceneOf(lib, b);
+  ok(ownScene(b) && !ownScene({ label: 'a' }) && labelOf(b) === 'b', 'a part with a scene has a set-up of its own');
+  ok(s.library === 'from-a-height' && s.boxes.h === 20 && s.boxes.u === 5 && s.boxes.theta === 90 && s.parts.length === 1 && !s.parts[0].scene, 'its reading is the question\'s, with what it changes, and only its own part');
+  ok(solveHeight({ ...s.boxes, g: 9.81 }).ok, 'and the engine runs it');
+  const up = sceneOf({ understood: true, scenario: 'up', summary: 'x', h: 0, u: 20, example: true }, { label: 'b', asks: 'at 30', scene: { u: 30 } });
+  ok(up.scenario === 'up' && up.u === 30 && up.h === 0 && !up.example, 'one of the twelve takes the changed field');
+  const rc = sceneOf({ scenario: 'compose', recipe: { engine: 'projectile', numbers: { h: 40, u: 15 } } }, { label: 'c', recipe: { engine: 'projectile', numbers: { h: 0, u: 20, theta: 30 } } });
+  ok(rc.scenario === 'compose' && rc.recipe.numbers.h === 0, 'a part with a recipe of its own is that composed scene');
+  const other = sceneOf(lib, { label: 'b', scene: { scenario: 'up', u: 12 } });
+  ok(other.scenario === 'up' && other.u === 12 && !other.boxes, 'a whole reading of its own is another situation, not the question\'s');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

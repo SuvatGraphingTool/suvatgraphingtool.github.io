@@ -70,7 +70,7 @@ export const EXTRACTION_SCHEMA = {
     parts: {
       type: 'array',
       items: { type: 'object' },
-      description: 'A question in parts (a), (b), (c) or (i), (ii): one object per part, in order — {"label":"a","asks":"time to the top","answer":"tTop"}. answer is a key from the answers listed for the scenario, when one fits; given is {box: value} for a value that only this part adds (library only); uses lists earlier labels whose answer this part uses.',
+      description: 'A question in parts (a), (b), (c) or (i), (ii): one object per part, in order — {"label":"a","asks":"time to the top","answer":"tTop"}. answer is a key from the answers listed for the scenario, when one fits; given is {box: value} for a value that only this part adds (library only); scene is what this part changes when it needs a set-up of its own; uses lists earlier labels whose answer this part uses. Only for a question marked in parts.',
     },
     asks: {
       type: 'array',
@@ -227,21 +227,27 @@ ${COMPOSE_GUIDE}
 → {"understood":true,"confidence":"high","scenario":"compose","summary":"A cyclist rides off a 3 m wall at 6 m/s onto the road.","recipe":{"title":"A cyclist off a wall","backdrop":"road","engine":"projectile","objects":[{"figure":"cyclist","name":"the cyclist"}],"numbers":{"h":3,"u":6,"theta":0}}}
 
 A QUESTION IN PARTS
-Most exam questions have parts: (a), (b), (c) or (i), (ii). Return parts: one object per
+Only a question that is MARKED in parts — (a), (b), (c) or (i), (ii) — has parts. A question
+that asks one thing, or asks two things in one sentence, has none: leave parts out, and the
+app gives the engine's answers plainly. A marked question: return parts, one object per
 part, in order, with label ("a", "ii"), asks (what it asks, a short phrase in your own
 words) and answer: the key of the answer it wants, from the answers listed for the
 scenario you chose. These are the answers of the twelve:
 ${ORIGINAL_ANSWERS}
 For a library scenario use the keys after "answers:" in its entry — an answer is never a
-box name. If no key fits a part, leave answer out. A part that adds a value of its own ("B is now dropped 2 s later") puts
-it in given, keyed as a box. A part that says "using your answer to (a)" has uses: ["a"].
+box name. If no key fits a part, leave answer out. A part that changes the set-up — a new height or speed
+("B is now dropped 2 s later", "the ball is now thrown from 30 m"), another object or another
+situation — carries scene: what that part changes, keyed as the top level is ({"h":30} for one
+of the twelve, {"boxes":{"h":30}} for a library scenario), or a whole reading of its own
+(scenario and its fields, library and boxes, or a recipe) when the situation is another one.
+The app opens part (a)'s set-up first and offers the next part's own. A part that says "using your answer to (a)" has uses: ["a"].
 A part about another topic (impulse, forces, energy) is still listed, with no answer.
 The values every part shares go in the top level (or in boxes), never only in a part.
 
 EXAMPLES
 "A ball is projected from the top of a 25 m cliff at 45° above the horizontal and lands 100 m from the foot of the cliff. Take g = 9.8. Find the speed of projection."
-→ {"understood":true,"confidence":"high","scenario":"library","library":"from-a-height","summary":"A ball is projected at 45° from a 25 m cliff and lands 100 m away.","boxes":{"place":"cliff","h":25,"theta":45,"s":100,"g":9.8},"parts":[{"label":"a","asks":"speed of projection"}]}
-(no u — it is what the question asks for; no v — it is not stated)
+→ {"understood":true,"confidence":"high","scenario":"library","library":"from-a-height","summary":"A ball is projected at 45° from a 25 m cliff and lands 100 m away.","boxes":{"place":"cliff","h":25,"theta":45,"s":100,"g":9.8},"asks":["speed of projection"]}
+(no u — it is what the question asks for; no v — it is not stated; no parts — it is not marked (a), (b))
 
 "A particle is projected from level ground with speed 35 m/s at angle α where tan α = 3/4. Find the greatest height."
 → {"understood":true,"confidence":"high","scenario":"arc","summary":"A particle is projected from the ground at 35 m/s with tan α = 3/4.","h":0,"u":35,"ratioFn":"tan","ratioNum":3,"ratioDen":4,"asks":["greatest height"]}
@@ -257,6 +263,9 @@ EXAMPLES
 
 "A lorry is moving along a straight horizontal road with constant acceleration. The lorry passes a point A with speed u m/s, and 10 seconds later passes a point B with speed 34 m/s. Given that AB = 240 m, find (a) the value of u, (b) the time taken for the lorry to move from A to the mid-point of AB."
 → {"understood":true,"confidence":"high","scenario":"road","summary":"A lorry passes A, then B 10 s later at 34 m/s; AB = 240 m.","v":34,"t":10,"s":240,"atMidpoint":true,"asks":["the value of u","time from A to the mid-point of AB"]}
+
+"(a) A stone is dropped from a 20 m tower. Find the time it takes to reach the ground. (b) The stone is now thrown upwards at 5 m/s from the same tower. Find the time it takes now."
+→ {"understood":true,"confidence":"high","scenario":"library","library":"from-a-height","summary":"A stone is dropped from a 20 m tower; then thrown up at 5 m/s from it.","boxes":{"place":"tower","h":20,"u":0,"theta":0},"parts":[{"label":"a","asks":"time to reach the ground","answer":"time"},{"label":"b","asks":"time when thrown up at 5 m/s","answer":"time","scene":{"boxes":{"u":5,"theta":90}}}]}
 
 "A car decelerates uniformly from 20 m/s to rest over 50 m."
 → {"understood":true,"confidence":"high","scenario":"road","summary":"A car brakes from 20 m/s to rest in 50 m.","u":20,"v":0,"s":50}
@@ -289,7 +298,7 @@ topic they named ("vectors" is two-in-a-plane or vectors-ij; a cliff or a tower 
 from-a-height; two cars is two-on-a-road), or any one you like if they named none, a
 different one each time, and return ONLY:
 {"understood":true,"confidence":"high","scenario":"library","library":"<its id>","example":true,"summary":"An example: <the topic, in a few words>"}
-No boxes and no parts: the app fills in that scenario's own exam numbers and its parts,
+No boxes and no parts: the app fills in that scenario's own exam numbers,
 which are known to work, and draws it at once.
 
 Answer with ONE JSON object and nothing else. understood, confidence, scenario and
