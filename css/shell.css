@@ -589,7 +589,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
   margin: var(--sp-8) 0 var(--sp-2); padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-soft);
 }
 .opts > .otitle:first-child, .opts > .lay:first-child .otitle { margin-top: 0; }
-#bounce-wrap .otitle { margin-top: var(--sp-8); }
+#bounce-wrap .otitle, #graphs-wrap .otitle, #working-wrap .otitle { margin-top: var(--sp-8); }
 .checks { gap: 0; }
 .gcell { border-radius: var(--r-xl); border-color: var(--border-soft); box-shadow: var(--highlight); background: var(--card); }
 .eq { border-radius: var(--r-lg); background: var(--card); border-color: var(--border-soft); }
@@ -729,6 +729,42 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
   .ink-bar { left: var(--sp-2); top: var(--sp-2); }
   .ink-style { left: calc(100% + 6px); }
 }
+
+/* ── the composer's reveal — js/compose/reveal.js ──────────────────────
+   "Creating your scene", in the redesign's own materials: a neutral blur
+   of the stage, the frosted card every floating thing here uses, ink type
+   with a quiet light passing through it, and progress in ink, not coral.
+   The Spark keeps its warm glow — it is the AI's mark. */
+.cr-snap, :root:not([data-theme='light']) .cr-snap {
+  background: radial-gradient(70% 60% at 30% 25%, color-mix(in srgb, var(--accent-fill) 10%, transparent), transparent 70%),
+              linear-gradient(180deg, var(--card), var(--surface));
+  filter: blur(22px) saturate(1.1);
+}
+.cr-blur, :root:not([data-theme='light']) .cr-blur { background: color-mix(in srgb, var(--surface) 40%, transparent); }
+.cr-shimmer { background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--ink) 10%, transparent) 50%, transparent 65%); mix-blend-mode: normal; }
+.cr-shimmer::after { opacity: .07; background-image: radial-gradient(color-mix(in srgb, var(--ink) 80%, transparent) 0.6px, transparent 0.8px); }
+.cr-card, :root:not([data-theme='light']) .cr-card {
+  padding: var(--sp-8) var(--sp-8) var(--sp-6); border-radius: var(--r-2xl);
+  background: color-mix(in srgb, var(--elev) 88%, transparent); border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3); backdrop-filter: blur(20px) saturate(1.3);
+  transition: transform var(--dur-4) var(--spring-soft), opacity var(--dur-3) var(--ease);
+}
+.cr-mark { width: 64px; height: 64px; }
+.cr-orb { width: 64px; height: 64px; }
+.cr-glow { inset: -36px; opacity: .55; }
+.cr-title, :root:not([data-theme='light']) .cr-title {
+  font-size: var(--fs-xl); font-weight: 600; letter-spacing: -0.02em; color: var(--ink);
+  background-image: linear-gradient(90deg, var(--ink) 0%, var(--ink) 40%, var(--ink-faint) 50%, var(--ink) 60%, var(--ink) 100%);
+}
+.cr-step, :root:not([data-theme='light']) .cr-step { color: var(--ink-muted); }
+.cr-chips li, :root:not([data-theme='light']) .cr-chips li {
+  color: var(--ink-faint); background: transparent; border: 1px dashed var(--border-strong); font-weight: 500;
+  transition: background var(--dur-2), color var(--dur-2), border-color var(--dur-2), transform var(--dur-3) var(--spring);
+}
+.cr-chips li.is-in { color: var(--on-primary); background: var(--primary); border: 1px solid var(--primary); transform: scale(1.04); }
+.cr-bar { background: var(--border); height: 3px; }
+.cr-bar i { background: var(--primary); transition: transform 380ms var(--ease-out); }
 
 /* ── the command menu and the shortcuts sheet ─────────────────────────── */
 .cmdk {
