@@ -94,7 +94,7 @@ export function check(raw) {
 
   const numbers = {};
   const given = raw.numbers && typeof raw.numbers === 'object' ? raw.numbers : {};
-  for (const [k, v] of Object.entries(given)) {
+  for (let [k, v] of Object.entries(given)) {
     const say = E.names?.[k];
     if (!(k in E.boxes)) return no(`The scene was given a value ${E.label.toLowerCase()} does not use (${clip(k, 20)}). It uses ${Object.values(E.names || {}).join(', ')}.`);
     if (v == null) continue;
