@@ -128,6 +128,7 @@ this library: *covered* names the one of the twelve that does it.
 | 92 | OCR MEI | H640/01 | Jun 2024 | 14 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202024%20QP.pdf) | From a bridge, a ball thrown just as a runner at a steady 4 m/s passes below; caught 2.4 s later, 3.6 m below the throw; the vertical component, then the speed and angle | 9.8 | **built** → `from-the-bridge` |
 | 93 | OCR MEI | H640/01 | Jun 2023 | 15 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/OCR-MEI/Paper-1/QP/June%202023%20QP.pdf) | A projectile from level ground: show the range is 2u² sin θ cos θ / g; the acute angles for which the greatest height exceeds the range | – | **built** → `higher-than-far` |
 | 94 | Edexcel | IAL WME01 | Jun 2015 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/Edexcel-IAL/Mechanics/M1/QP/June%202015%20QP.pdf) | A stone dropped from h; one second later another thrown down at 19.6 m/s from the same height; both land together: h | 9.8 | **built** → `land-together` |
+| 95 | CIE | 9709/42 | Oct/Nov 2020 | 5 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w20_qp_42.pdf) | Thrown up at 40 m/s beside a building, above its roof for 4 s: h; a second from the roof at 20 m/s one second later: when level | 10 | **built** → `above-the-roof` |
 
 ## Built, and why it is built the way it is
 
@@ -408,6 +409,26 @@ a greatest height); which of two answers to fly; a mark on the ground.
 ground. Not yet: symbolic papers (OCR H240/03 Jun 2019 Q8; OCR H240/03 Jun
 2022 Q13, where the wall and the landing are in terms of a), and a launch fixed
 by two points rather than one point and one number.
+
+### `above-the-roof` — Above the roof
+
+**Papers.** CIE 9709/42 Oct/Nov 2020 Q5 ((a) up at 40 m s⁻¹ beside a building,
+above its roof for 4 s: h = 60 m; (b) a second particle up from the roof at
+20 m s⁻¹ one second later: level at t = 3.5 s).
+
+**Why the twelve cannot.** They find when a throw is at a given height; here
+the height is the unknown, fixed by how long the throw spends above it.
+`pair-vertical` takes the building's height as given.
+
+**How it is solved.** js/core/roof.js: the top at u/g; above the roof for T,
+so at the roof's level T/2 either side of it; s = ut + ½at² at the first gives
+h. Then js/core/pair.js `solvePair` with A from the ground and B from the
+roof: equal heights, one linear equation in t.
+
+**The stage, graphs.** The vertical pair's (js/render/column.js): the lit brick
+tower, a person on the roof, the meeting ringed at the balls.
+
+**Parts.** (a) `h`, 60 m; (b) `meet.t`, 3.5 s, using (a).
 
 ### `land-together` — Land together
 

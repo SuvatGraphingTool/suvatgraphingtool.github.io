@@ -192,14 +192,16 @@ export function solvePair(k = {}) {
         + (ownSay ? ` — ${ownSay}.` : '.'),
     };
     say = moment.text;
-    watched = 'Stopped at the collision';
-    tMax = meet.t;
+    // side by side (`pass`), they are level and go on past each other: the run
+    // goes on to `until`; otherwise they are in one line and collide
+    watched = k.pass ? 'Level with each other, side by side' : 'Stopped at the collision';
+    tMax = k.pass && typeof k.until === 'number' && k.until > meet.t ? k.until : meet.t;
   } else {
     ({ outcome, say, why, watched, tMax } = neverMet(A, B, g));
     notes.push(say);
   }
 
-  const f = pairMotion(A, B, tMax, meet);
+  const f = pairMotion(A, B, tMax, meet, !!k.pass);
   const derived = meet
     ? [M`t = ${d(meet.t, 3)} [s]`, ...moment.own.map((r) => `${M`${d(r.t, 3)} [s]`} after ${r.name} sets off`),
        `${M`${d(meet.x)} [m]`} up`]
@@ -265,7 +267,7 @@ function neverMet(A, B, g) {
 /* ── the motion, in the shape the transport asks for ────────────────────
    The clock, the scrubber and the replay need a tMax and a path; the stage
    and the graphs read the two particles themselves. */
-function pairMotion(A, B, tMax, meet) {
+function pairMotion(A, B, tMax, meet, pass = false) {
   const clampT = (t) => Math.min(Math.max(t, 0), tMax);
   // The highest either gets before the run ends: a start, an apex reached in
   // time, or where it is at the end. The stage frames this, not the apex a
@@ -276,14 +278,14 @@ function pairMotion(A, B, tMax, meet) {
   const at = (t) => {
     const c = clampT(t);
     const s = { A: A.state(c), B: B.state(c) };
-    if (meet && c >= meet.t - 1e-12) {
+    if (meet && !pass && c >= meet.t - 1e-12) {
       s.A = { ...s.A, x: meet.x, v: meet.vA };
       s.B = { ...s.B, x: meet.x, v: meet.vB };
     }
     return s;
   };
   const f = {
-    kind: 'pair', A, B, meet, tMax, tFlight: tMax, top,
+    kind: 'pair', A, B, meet, tMax, tFlight: tMax, top, pass,
     params: { g: A.g, h: Math.max(A.h, B.h), u: A.u, theta: 90 },
     pos: (t) => ({ x: 0, y: at(t).A.x }),
     vel: (t) => ({ x: 0, y: at(t).A.v }),

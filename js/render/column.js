@@ -224,7 +224,8 @@ export function render(canvas, cam, o) {
       const aim = p.u > 1e-9 ? 60 : p.u < -1e-9 ? -40 : -4;
       const hand = handOf(TH, aim);
       const yH = Y(p.h);                                 // the ball's centre at the start
-      const feet = Math.min(yH + hand.y, Y(p.h) + (groundY - Y(p.h)) / 3);
+      // above-the-roof: the roof is the paper's height, exactly; otherwise the hand is
+      const feet = f.roof ? Y(f.roof.h) : Math.min(yH + hand.y, Y(p.h) + (groundY - Y(p.h)) / 3);
       const fx = cx + side * (hand.x + BALL * 0.7);
       // the whole tower on the canvas: on a phone it takes what width is left
       const tw = phone ? Math.max(40, Math.min(towerW, side > 0 ? w - 6 - (cx + towerGap) : cx - towerGap - 6)) : towerW;
@@ -266,13 +267,15 @@ export function render(canvas, cam, o) {
     const my = Y(meet.x);
     stroke(g, [{ x: phone ? 0 : rx, y: my }, { x: w - (phone ? 0 : 24), y: my }], { color: P.mark, width: 1.8, dash: [7, 5] });
     // the ring spreads from the two balls, where they meet, at the engine's time
-    { const { age, life } = ageOf(t, meet.t, f.tMax); pulse(g, cx, my, age, life, P.mark, { radius: 40 }); }
-    for (let i = 0; i < 8; i++) {
+    const ml = ageOf(t, meet.t, f.tMax);
+    pulse(g, cx, my, ml.age, ml.life, P.mark, { radius: 40 });
+    // side by side they pass on: the burst fades with the ring
+    if (!f.pass || ml.age <= ml.life) for (let i = 0; i < 8; i++) {
       const an = (i / 8) * TAU;
       stroke(g, [{ x: cx + Math.cos(an) * 16, y: my + Math.sin(an) * 16 },
                  { x: cx + Math.cos(an) * 25, y: my + Math.sin(an) * 25 }], { color: P.mark, width: 2.4 });
     }
-    const where = `they meet ${T`${sig3(meet.x)} [m]`} up`, when = T`t = ${sig3(meet.t)} [s]`;
+    const where = `${f.pass ? 'level' : 'they meet'} ${T`${sig3(meet.x)} [m]`} up`, when = T`t = ${sig3(meet.t)} [s]`;
     if (phone) L.add(`${where}, ${when}`, 10, groundY + 22, { color: P.mark, align: 'left', pri: 10, size: 15, weight: 700 });
     else {
       // one block beside the meeting: where, when, and each one's velocity there
@@ -309,7 +312,7 @@ export function render(canvas, cam, o) {
   // ── the gap between them, while both are in the air
   const now = f.at(t);
   const yA = Y(now.A.x), yB = Y(now.B.x);
-  if (!met && Math.abs(yA - yB) > 14) {
+  if ((!met || f.pass) && Math.abs(yA - yB) > 14) {
     const apart = `apart ${T`${sig3(Math.abs(f.gap(t)))} [m]`}`;
     if (phone) {
       // between the line and whatever stands on its right, and said under the ground
@@ -339,7 +342,8 @@ export function render(canvas, cam, o) {
     const y = Y(s.x);
     const held = s.stage?.kind === 'held' || s.stage === null;
     if (show.velocity !== false && Math.abs(s.v) > 1e-6) {
-      const len = clamp(Math.abs(s.v) * vLen, 14, 160) * Math.sign(s.v);
+      // an arrow pointing down stops short of the grass
+      const len = Math.max(clamp(Math.abs(s.v) * vLen, 14, 160) * Math.sign(s.v), -(groundY - 6 - y));
       const ax = cx + side * lane('arrow');
       arrow(g, ax, y, ax, y - len, { color: P.velVec, width: 3, head: 11 });
       L.reserve({ x: ax - 7, y: Math.min(y, y - len) - 6, w: 14, h: Math.abs(len) + 12 });
@@ -348,7 +352,7 @@ export function render(canvas, cam, o) {
       // in one place, stacked to the side with the meeting's own numbers
       let ly = y - len - Math.sign(len) * 12;
       if (ly > groundY - 10) ly = Math.max(ly, groundY + 16);
-      if (!met) L.add(T`${sig3(s.v)} [m s^-1]`, ax + side * 8, ly, {
+      if (!met || f.pass) L.add(T`${sig3(s.v)} [m s^-1]`, ax + side * 8, ly, {
         color: P.vel, align: side < 0 ? 'right' : 'left', pri: 7, size: 15, weight: 700 });
     }
     if (show.acceleration && !held && s.stage && Math.abs(p.g) > 1e-9) {
@@ -367,8 +371,20 @@ export function render(canvas, cam, o) {
   };
   draw(A, now.A, -1, null, 'A');
   draw(B, now.B, 1, P.second, 'B');
+  // above the roof: its level, and the first particle crossing it on the way up and down
+  if (f.roof) {
+    const ry = Y(f.roof.h);
+    stroke(g, [{ x: phone ? 0 : rx, y: ry }, { x: cx + 30, y: ry }], { color: P.disp, width: 1.4, alpha: 0.8, dash: [3, 4] });
+    for (const [tt, name] of [[f.roof.t1, 't_1'], [f.roof.t2, 't_2']]) {
+      const a = ageOf(t, tt, f.tMax);
+      pulse(g, cx, ry, a.age, a.life, P.disp, { radius: 22 });
+      if (t >= tt - 1e-9) L.add(T`${name} = ${sig3(tt)} [s]`, cx - lane('down') - 10, ry + (name === 't_1' ? -14 : 14), { color: P.disp, align: 'right', pri: 9, size: 14, weight: 700 });
+    }
+    if (t >= f.roof.t2 - 1e-9) L.add(T`"above the roof" T = ${sig3(f.roof.above)} [s]`, phone ? 10 : rx + 4, ry - 30, { color: P.disp, align: 'left', pri: 10, size: 14, weight: 700 });
+  }
   if (met && show.velocity !== false) {
-    const vA = T`${sig3(now.A.v)} [m s^-1]`, vB = T`${sig3(now.B.v)} [m s^-1]`;
+    // the velocities AT the meeting, which is what the block says
+    const vA = T`${sig3(meet.vA)} [m s^-1]`, vB = T`${sig3(meet.vB)} [m s^-1]`;
     if (phone) L.add(`A ${vA}, B ${vB}`, 10, groundY + 47, { color: P.vel, align: 'left', pri: 9, size: 15, weight: 700 });
     else {
       const y0 = clamp(Y(meet.x) - 16, topY + 12, groundY - 14 - 3 * 25);

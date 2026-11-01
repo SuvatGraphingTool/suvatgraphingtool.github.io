@@ -1468,7 +1468,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit], a = K.solve(K.read(e.example));
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       const v = String(p.find).split('.').reduce((o, k) => o?.[k], a);
@@ -1504,6 +1504,18 @@ group('Land together: Edexcel IAL WME01 Jun 2015 Q4', async () => {});
   ok(!solveTogether({ d: 1, U: 9.8, g: 9.8 }).ok && !solveTogether({ d: 1, U: 5, g: 9.8 }).ok, 'thrown no faster than the first is falling, it never catches up: refused');
   ok(!solveTogether({ d: 2, h: 11.025, g: 9.8 }).ok, 'a height the first falls before the second is thrown is refused');
   ok(togetherWorking(s)[0].rows.length === 4, 'the working: each fall, the one equation, h');
+}
+
+group('Above the roof: CIE 9709/42 Oct/Nov 2020 Q5', async () => {});
+{
+  const { solveRoof, roofWorking } = await import('../js/core/roof.js');
+  const s = solveRoof({ u: 40, above: 4, B: { u: 20, t0: 1 }, g: 10 });
+  ok(s.ok && near(s.h, 60, 1e-9), '(a) the building is 60 m high', s.reason);
+  ok(near(s.meet.t, 3.5, 1e-9), '(b) they are level at t = 3.5 s');
+  const back = solveRoof({ u: 40, h: 60, B: { u: 20, t0: 1 }, g: 10 });
+  ok(back.ok && near(back.above, 4, 1e-9), 'from the height, back to 4 s above the roof');
+  ok(roofWorking(s)[0].rows.length === 3, 'the working starts with the roof from the time above it');
+  ok(!solveRoof({ u: 40, above: 9, B: { u: 20 }, g: 10 }).ok && !solveRoof({ u: 40, h: 90, B: { u: 20 }, g: 10 }).ok, 'longer than the whole flight, or a roof it never reaches, is refused');
 }
 
 function ocrE() { return solvePlane({ vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 } }); }
