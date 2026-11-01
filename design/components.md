@@ -73,6 +73,53 @@ A kit is an object with:
 | `flighttime` — `js/kits/flighttime.js` | `in-the-air-over-a-wall` (engine js/core/flighttime.js; stage, readouts and graphs borrowed from `clears`, in the letter d) |
 | `bounce` — `js/kits/bounce.js` | `bounce`, `back-past-the-start` (the rebound found from a later time: `T` with `y`) |
 
+## A question in parts — `parts` on a scenario, `js/parts/`
+
+Most papers ask two, three or four things about one motion. A library
+scenario lists them in `parts`, from its FIRST paper (the one `example` holds),
+and the stage steps through them: (a) (b) (c) buttons over the transport, and
+"Show me part (b)" plays on to that part's moment and stops there. The part's
+moment is ringed on every graph, its working step is lit in the working panel,
+and its answer is the engine's own number with the real numbers substituted.
+
+```js
+parts: [
+  { label: 'a', kind: 'time', ask: 'How long after A is thrown do the two collide?',
+    find: 'meet.t', sym: 't', unit: 's', dp: 3, at: 'meet.t', step: 'meet', paper: 3.5 },
+  { label: 'b', kind: 'height', ask: 'How high above the ground are they then?',
+    find: 'meet.x', sym: 'h', unit: 'm', at: 'meet.t', uses: ['a'], paper: 8.75 },
+  { label: 'c', kind: 'time', ask: 'B is now dropped 2 s after A. When do they meet?',
+    given: { 'B.t0': 2 }, find: 'meet.t', sym: 't', unit: 's', at: 'meet.t', paper: 2.75 },
+  { label: 'd', out: 'needs momentum, which is another chapter' },
+]
+```
+
+| field | what it is |
+|---|---|
+| `label` | `'a'`, `'b'`, `'ii'`… — shown as (a), (b), (ii) |
+| `ask` | what the part asks, in our OWN words (the papers are copyrighted). Prose: no computer maths, quantities as words or symbols |
+| `kind` | what it answers: `time` `height` `distance` `displacement` `speed` `velocity` `acceleration` `angle` `position` `meeting` `time-above` `area` `show` (a "show that"), `other`. The reader matches on it |
+| `find` | which engine output answers it: a dotted path into the kit's `solve()` answer (`'meet.t'`, `'f.tFlight'`, `'answers.0.value'`). A segment that meets an array is an index if it is a number, else the element whose `key`, `name` or `id` it is (`'extras.tMeet'`). A list of paths for a part with two answers (`['x.0', 'x.1']`: two times) |
+| `sym`, `unit`, `dp` | how the answer is typeset: `M`${sym} = ${num(v, dp)} [${unit}]`` — `sym` is notation source (`'v'`, `'t_1'`, `'theta'`), `unit` too (`'m s^-1'`). `dp` defaults to 2. `words: { yes, no }` for an answer that is true/false |
+| `at` | the part's moment on the stage: a path like `find`, a number of seconds, or `'end'`. Left out: the moment of `find` if it is a time, else the end |
+| `span` | `[from, to]` instead of `at`, for an interval (a time above a line): both ends ringed, the band marked on the clock |
+| `step` | which working step answers it: text matched against the step titles (case and tags ignored), or an index into `kit.working()` |
+| `given` | `{ box: value }` — boxes this part adds or changes, from this part on, keyed as `example` is. Leave it out when the example already holds everything |
+| `carry` | `{ box: 'a' }` — from this part on, the box takes part (a)'s answer: the ENGINE's value, never a typed one. The part says so: "using t = 3.5 s from (a)" |
+| `uses` | `['a']` — the part leans on (a)'s answer without changing a box; it says so the same way |
+| `paper` | the mark scheme's answer (a number, or a list for `find` lists), for `test/library.test.mjs` only; `tol` its tolerance (default: half the last place the paper gives). Never shown as the app's answer — rule 4 |
+| `out` | instead of everything else: the part is out of scope, and why. It shows as a dimmed chip |
+
+The boxes for part (k) are the student's boxes at launch, then every earlier
+part's `given` and `carry`, in order. A part whose boxes differ from the one
+before re-solves. With the student's own numbers the parts still step, and
+every answer is what the engine says for those numbers.
+
+`js/parts/parts.js` is pure (lookups and merges, no physics): `pick`,
+`partBoxes`, `answerOf`, `momentOf`, `stepOf`. `js/parts/strip.js` draws the
+strip, the clock ticks and the working panel's part card. `js/app.js` only
+holds `state.part` and calls them.
+
 ## Engine models — `js/core/`
 
 ### Numbers — `js/core/numeric.js`
