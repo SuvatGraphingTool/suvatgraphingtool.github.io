@@ -971,3 +971,18 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
 .ro-res { list-style: none; margin: var(--sp-1) 0 0; padding: 0; display: grid; gap: 2px; }
 .ro-res li { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 480px) { .ro-how { white-space: normal; } }
+
+/* On a phone the clock and the Resolve button stack in the corner, so the
+   readouts down the left keep their room (js/render/util.js hudBoxes) */
+@media (max-width: 520px) {
+  .canvas-wrap:not([data-panes='on']) .hud-r { flex-direction: column; align-items: flex-end; }
+}
+
+/* five parts or more: the chips take a row of their own sooner, so the part
+   being read keeps the width (css/app.css stacks at 620 px for any count) */
+@container pstrip (max-width: 960px) {
+  .pin:has(.pchips > :nth-child(5)) { grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-3); }
+  .pin:has(.pchips > :nth-child(5)) .pchips { overflow-x: auto; }
+  .pin:has(.pchips > :nth-child(5)) .pnow { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr) auto; }
+  .pin:has(.pchips > :nth-child(5)) .pgo { grid-column: 2; grid-row: 1; }
+}

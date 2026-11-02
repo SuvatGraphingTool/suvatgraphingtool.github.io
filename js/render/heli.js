@@ -104,8 +104,8 @@ export function render(canvas, cam, o) {
   const box = { xLo: Math.min(...all.map((p) => p.x)), xHi: Math.max(...all.map((p) => p.x)), yLo: Math.min(...all.map((p) => p.y)), yHi: Math.max(...all.map((p) => p.y)) };
   const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
   for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(0, sp * 0.25 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
-  const S = clamp(Math.min(w, h) * 0.26, 72, 120), pad = S * 0.6;
-  const hudBoxes = hudOf(w, ROWS);
+  const S = clamp(Math.min(w, h) * 0.2, 60, 96), pad = S * 1.1;   // room all round for the helicopter and its arrow
+  const hudBoxes = hudOf(w, phone ? 3 : ROWS);   // as js/kits/heli.js shows them
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 20), cY = h - cR - (phone ? 14 : 22);
   const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
   const F = fitPlanAround(box, all, { left: pad, right: w - pad, top: pad, bottom: h - pad }, { avoid: [...hudBoxes.map((b) => ({ ...b, h: b.h + 40 })), compassBox], margin: pad * 0.7 });   // the lighthouse stands 40 px above its point
@@ -114,7 +114,7 @@ export function render(canvas, cam, o) {
   // ── the sea, the lighthouse's rock and the rock as islands in it
   const phase = (t / Math.max(f.tMax, 1e-9)) * 160;
   const L0 = px(f.r0), R0 = f.rock ? px(f.rock) : null;
-  seaFromAbove(g, 0, 0, w, h, { phase, avoid: [...pts.map(px), { x: X(0), y: Y(0) }], coast: true, hud: true, islands: [{ x: L0.x, y: L0.y + 6, r: 30 }] });
+  seaFromAbove(g, 0, 0, w, h, { phase, avoid: [...pts.map(px), { x: X(0), y: Y(0) }, L0, ...(R0 ? [R0] : [])].flatMap((q) => [q, { x: q.x + 50, y: q.y }, { x: q.x - 50, y: q.y }]), coast: true, hud: true, islands: [{ x: L0.x, y: L0.y + 6, r: 30 }] });
 
   const Q = placer(g, w, h);
   const hold = (b) => { L.reserve(b); Q.box(b); };
@@ -129,7 +129,7 @@ export function render(canvas, cam, o) {
     jTop: X(0) < hudBoxes[0].x + hudBoxes[0].w + 10 ? hudBoxes[0].h + 14 : 16 });
   for (const b of gridWords) hold(b);
 
-  if (R0) { rockTop(g, R0.x, R0.y, 15, phase); hold({ x: R0.x - 16, y: R0.y - 14, w: 32, h: 28 }); Q.add('the rock', R0.x, R0.y, { color: P.ink, pri: 7, size: 13, weight: 700 }); }
+  if (R0) { rockTop(g, R0.x, R0.y, 15, phase); hold({ x: R0.x - 16, y: R0.y - 14, w: 32, h: 28 }); Q.add('the rock', R0.x, R0.y, { color: P.ink, pri: 9, size: 13, weight: 700 }); }
   lighthouseAbove(g, L0.x, L0.y, 34, { beam: (t / Math.max(f.tMax, 1e-9)) * TAU * 3 + 1 });
   hold({ x: L0.x - 16, y: L0.y - 40, w: 32, h: 48 });
   Q.add('lighthouse', L0.x, L0.y - 16, { color: P.ink, pri: 7, size: 13, weight: 700 });
@@ -139,7 +139,19 @@ export function render(canvas, cam, o) {
   const so = []; for (let i = 0; i <= 80; i++) so.push(px(f.pos((i / 80) * t)));
   if (t > 0) { stroke(g, so, { color: cssVar('--surface', '#131210'), width: 5.5, alpha: 0.4 }); stroke(g, so, { color: P.disp, width: 3 }); }
 
-  // ── each asked moment, once the clock reaches it
+  // ── the helicopter, its downwash on the water, and its arrows
+  const p = px(f.pos(t)), v = f.vel(t), spd = Math.hypot(v.x, v.y);
+  const nose = spd > 1e-9 ? Math.atan2(-v.y, v.x) : Math.atan2(-f.a.y, f.a.x);
+  const rot = (t / Math.max(f.tMax, 1e-9)) * TAU * 40;
+  for (let i = 0; i < 3; i++) {
+    const u = ((phase / 25 + i / 3) % 1), R = S * (0.35 + u * 0.55);
+    g.strokeStyle = `rgba(255,255,255,${(1 - u) * 0.4})`; g.lineWidth = 1.6; g.beginPath(); g.arc(p.x + S * 0.3, p.y + S * 0.4, R, 0, TAU); g.stroke();
+  }
+  heliTop(g, p.x, p.y, S, nose, rot);
+  hold({ x: p.x - S * 0.5, y: p.y - S * 0.5, w: S, h: S });
+
+  // ── each asked moment, once the clock reaches it: drawn over the helicopter,
+  //    which is over the rock at the very moment the paper asks about
   const at = (ta) => t >= ta - 1e-9 ? ageOf(t, ta, f.tMax) : null;
   if (A.D) {
     const e = at(A.D.t);
@@ -172,34 +184,23 @@ export function render(canvas, cam, o) {
         // the average velocity: the straight line from the lighthouse to the rock
         const u = phaseOf(e.age, e.life * 0.6), grow = u == null ? 1 : 1 - (1 - u) ** 3;
         const end = { x: L0.x + (R0.x - L0.x) * grow, y: L0.y + (R0.y - L0.y) * grow };
-        arrow(g, L0.x, L0.y, end.x, end.y, { color: P.mark, width: 2.4, head: 11 });
+        arrow(g, L0.x, L0.y, end.x, end.y, { color: P.mark, width: 2.4, head: 11, dash: [9, 5] });   // dashed: not the path it flew
         Q.line([L0, R0], 8);
         Q.add(T`"over the rock," t = ${s3(A.P.t)} [s]`, R0.x, R0.y, { color: P.mark, pri: 9, size: 14, weight: 700 });
-        Q.add(T`"average velocity" ${s3(A.P.avs)} [m s^-1]`, (L0.x + R0.x) / 2, (L0.y + R0.y) / 2, { color: P.mark, pri: 8, size: 13, weight: 700 });
+        Q.add(T`"average velocity" ${s3(A.P.avs)} [m s^-1]`, (L0.x + R0.x) / 2, (L0.y + R0.y) / 2, { color: P.mark, pri: 10, size: 13, weight: 700 });
       }
     }
   }
-
-  // ── the helicopter, its downwash on the water, and its arrows
-  const p = px(f.pos(t)), v = f.vel(t), spd = Math.hypot(v.x, v.y);
-  const nose = spd > 1e-9 ? Math.atan2(-v.y, v.x) : Math.atan2(-f.a.y, f.a.x);
-  const rot = (t / Math.max(f.tMax, 1e-9)) * TAU * 40;
-  for (let i = 0; i < 3; i++) {
-    const u = ((phase / 25 + i / 3) % 1), R = S * (0.35 + u * 0.55);
-    g.strokeStyle = `rgba(255,255,255,${(1 - u) * 0.4})`; g.lineWidth = 1.6; g.beginPath(); g.arc(p.x + S * 0.3, p.y + S * 0.4, R, 0, TAU); g.stroke();
-  }
-  heliTop(g, p.x, p.y, S, nose, rot);
-  hold({ x: p.x - S * 0.5, y: p.y - S * 0.5, w: S, h: S });
 
   if (A.T) {
     const e = at(A.T.t);
     if (e) {
       const q = px(f.pos(A.T.t)); pulse(g, q.x, q.y, e.age, e.life, P.mark, { radius: 40 }); dot(g, q.x, q.y, 5, { fill: P.mark, stroke: cssVar('--surface', '#131210'), width: 2 });
-      Q.add(T`t = ${s3(A.T.t)} [s]: ${s3(A.T.speed)} [m s^-1] "on" ${three(A.T.bearing)}°`, q.x, q.y, { color: P.mark, pri: 8, size: 13, weight: 700 });
+      Q.add(T`t = ${s3(A.T.t)} [s], ${s3(A.T.speed)} [m s^-1] "on" ${three(A.T.bearing)}°`, q.x, q.y, { color: P.mark, pri: 8, size: 13, weight: 700 });
     }
   }
   if (show.velocity !== false && spd > 1e-9) {
-    const len = clamp(S * 1.1, 56, 110), ux = v.x / spd, uy = v.y / spd;
+    const len = clamp(S * 0.85, 48, 84), ux = v.x / spd, uy = v.y / spd;
     if (show.components) {
       arrow(g, p.x, p.y, p.x + ux * len, p.y, { color: P.vel, width: 2.4, head: 9, dash: [6, 4] });
       arrow(g, p.x, p.y, p.x, p.y - uy * len, { color: P.vel, width: 2.4, head: 9 });

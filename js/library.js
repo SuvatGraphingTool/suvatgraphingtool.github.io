@@ -14,6 +14,10 @@
 // paper, keyed as the boxes are; js/app.js puts them in only while its
 // PREFILL switch is on (for testing), and otherwise every box starts empty.
 
+// AQA MM1B Jun 2011 Q7's helicopter: hovering over the lighthouse (the origin
+// here), then a steady 0.5i + 0.375j, asked at 20 s and at 500 m out; no rock.
+const H11 = { 'r0.x': 0, 'r0.y': 0, 'u.x': 0, 'u.y': 0, 'a.x': 0.5, 'a.y': 0.375, T: 20, D: 500, 'P.x': '', 'P.y': '' };
+
 export const LIBRARY = [
   { id: 'pair-vertical', group: 'library', kit: 'pair',
     name: 'Two in one vertical line',
@@ -581,9 +585,11 @@ export const LIBRARY = [
     example: { 'r0.x': 500, 'r0.y': 200, 'u.x': -17.5, 'u.y': -27, 'a.x': 0.5, 'a.y': 0.6, 'P.x': 200, 'P.y': -400 },
     parts: [
       { label: 'a', kind: 'time', ask: 'Show that the helicopter passes directly over the rock, and find how long it takes to get there from the lighthouse.', find: 'answers.P.t', sym: 't', unit: 's', trim: true, at: 'answers.P.t', step: 'side by side', paper: 40 },
-      { label: 'b', kind: 'speed', ask: 'Find the eastward part of its average velocity from the lighthouse to the rock.', find: 'answers.P.av.x', sym: 'v_x', unit: 'm s^-1', at: 'answers.P.t', step: 'side by side', paper: -7.5 },
-      { label: 'c', kind: 'speed', ask: 'And its northward part.', find: 'answers.P.av.y', sym: 'v_y', unit: 'm s^-1', at: 'answers.P.t', step: 'side by side', paper: -15 },
-      { label: 'd', kind: 'speed', ask: 'A helicopter hovering at the origin sets off with acceleration $0.5vec i + 0.375vec j$. Find its speed after 20 seconds.', given: { 'r0.x': 0, 'r0.y': 0, 'u.x': 0, 'u.y': 0, 'a.x': 0.5, 'a.y': 0.375, T: 20 }, find: 'answers.T.speed', sym: 'v', unit: 'm s^-1', at: 'answers.T.t', step: 'side by side', paper: 12.5 },
+      { label: 'b', kind: 'speed', ask: 'Find its average velocity from the lighthouse to the rock, and its size.', find: 'answers.P.avs', sym: 'abs(vec v)', unit: 'm s^-1', at: 'answers.P.t', step: 'side by side', paper: 16.77, tol: 0.01 },
+      { label: 'c', kind: 'speed', ask: 'Find its average speed from the lighthouse to the rock. Is it the size of its average velocity?', find: 'answers.P.sp', sym: 'v', unit: 'm s^-1', at: 'answers.P.t', step: 'side by side' },
+      { label: 'd', kind: 'speed', ask: 'Another sets off from hovering over a lighthouse, accelerating at 0.5 m s⁻² east and 0.375 m s⁻² north. Its speed 20 s later?', given: H11, find: 'answers.T.speed', sym: 'v', unit: 'm s^-1', at: 'answers.T.t', step: 'side by side', paper: 12.5 },
+      { label: 'e', kind: 'angle', ask: 'On what bearing is it travelling then, to the nearest degree?', given: H11, find: 'answers.T.bearing', sym: 'theta', suffix: '°', dp: 0, at: 'answers.T.t', step: 'side by side', paper: 53, tol: 0.5 },
+      { label: 'f', kind: 'time', ask: 'How long after setting off is it 500 metres from where it started?', given: H11, find: 'answers.D.t', sym: 't', unit: 's', trim: true, at: 'answers.D.t', step: 'side by side', paper: 40 },
     ],
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jun 2013', q: '8', part: 'all' },

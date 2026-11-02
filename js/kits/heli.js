@@ -41,16 +41,16 @@ export const heli = {
 
   hud(f, t) {
     const p = f.pos(t), v = f.vel(t), s = Math.hypot(v.x, v.y);
-    return {
-      left: [
+    // on a phone the three that place it, so the sea keeps room for the lighthouse
+    const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 560px)').matches;
+    const left = [
         { k: 'East of O', v: num(p.x, 1), unit: 'm', hue: 'disp' },
         { k: 'North of O', v: num(p.y, 1), unit: 'm', hue: 'disp' },
         { k: 'Speed', v: num(s, 2), unit: 'm s⁻¹', hue: 'vel' },
         { k: 'Bearing', v: s > 1e-9 ? three((Math.atan2(v.x, v.y) * 180) / Math.PI) : '—', unit: '°', hue: 'vel' },
         { k: 'From the start', v: num(Math.hypot(p.x - f.r0.x, p.y - f.r0.y), 1), unit: 'm', hue: 'disp' },
-      ],
-      right: [{ k: 'Time', v: num(t, 1), unit: 's' }],
-    };
+    ];
+    return { left: phone ? left.slice(0, 3) : left, right: [{ k: 'Time', v: num(t, 1), unit: 's' }] };
   },
 
   /* East dashed (horizontal), north solid (vertical) — rule 2. */

@@ -78,6 +78,7 @@ function blocksFor(o, t, tMax, K, U) {
     // from above, the position vector r from the origin the question names;
     // side on, the displacement from where it started, as the twelve's card
     const r = flat ? p : { x: p.x - p0.x, y: p.y - p0.y }, dist = Math.hypot(r.x, r.y);
+    const acc0 = o.acc ? o.acc(t) : null, acc = acc0 && typeof acc0 === 'object' && fin(acc0.x) && fin(acc0.y) ? acc0 : null;
     const from = o.from ?? K?.resolveFrom ?? 'O';
     return [
       { name: `${who}velocity`, hue: 'vel', rows: [
@@ -89,7 +90,15 @@ function blocksFor(o, t, tMax, K, U) {
         { name: flat ? nx : 'Horizontal', value: r.x, unit: U.s, formula: M`x`, sub: d(r.x), note: flat ? `From ${from}.` : 'From where it started.', hue: 'disp', part: 'x' },
         { name: flat ? ny : 'Vertical', value: r.y, unit: U.s, formula: M`y`, sub: d(r.y), note: flat ? `From ${from}.` : 'Up from where it started.', hue: 'disp', part: 'y' },
         { name: 'Distance', value: dist, unit: U.s, formula: M`sqrt(x^2 + y^2)`, sub: d(dist), note: flat ? `In a straight line from ${from}.` : 'In a straight line from where it started.', hue: 'disp', part: 'r' },
+        // from above, where it set off is not O: how far it is from there too
+        ...(flat && Math.hypot(p0.x, p0.y) > 1e-9 ? [(() => { const s0 = Math.hypot(p.x - p0.x, p.y - p0.y); return { name: 'From where it started', value: s0, unit: U.s, formula: M`abs(vec r - vec r_0)`, sub: d(s0), note: 'The size of its displacement.', hue: 'disp', part: 'r' }; })()] : []),
       ] },
+      // from above, a constant acceleration in two parts too, where the engine gives one
+      ...(flat && acc && Math.hypot(acc.x, acc.y) > 1e-9 ? [{ name: `${who}acceleration`, hue: 'acc', rows: [
+        { name: nx, value: acc.x, unit: U.a, formula: M`a_x`, sub: d(acc.x), note: '', hue: 'acc', part: 'x' },
+        { name: ny, value: acc.y, unit: U.a, formula: M`a_y`, sub: d(acc.y), note: '', hue: 'acc', part: 'y' },
+        { name: 'Size', value: Math.hypot(acc.x, acc.y), unit: U.a, formula: M`sqrt(a_x^2 + a_y^2)`, sub: d(Math.hypot(acc.x, acc.y)), note: '', hue: 'acc', part: 'r' },
+      ] }] : []),
     ];
   }
   // along one line: s, v and a, read off whichever coordinate moves

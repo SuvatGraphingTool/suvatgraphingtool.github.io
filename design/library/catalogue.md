@@ -466,8 +466,10 @@ flashes and the straight line from the lighthouse draws in as the average
 velocity; the circle of the distance from the start; a compass fixed while the
 map pans.
 
-**Parts.** (a) `answers.P.t`, 40; (b) `answers.P.av.x`, −7.5; (c)
-`answers.P.av.y`, −15; (d) from hovering, `answers.T.speed`, 12.5.
+**Parts.** Jun 2013: (a) `answers.P.t`, 40; (b) `answers.P.avs`, 16.8, the size
+of −7.5i − 15j; (c) `answers.P.sp`, 17.0, against it: not the same, the path
+curves. Jun 2011, from hovering, no rock: (d) `answers.T.speed`, 12.5; (e)
+`answers.T.bearing`, 053°; (f) `answers.D.t`, 40.
 
 ### `across-the-river` — Across the river
 

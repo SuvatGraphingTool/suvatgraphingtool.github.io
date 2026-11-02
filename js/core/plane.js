@@ -83,7 +83,7 @@ export function planeMotion({ r0, u, a }, tMax) {
 
 /** c0 + c1 t as the i or j part of a vector: (1 + t)i, 2j, −3j — a
     bracket only when there are two terms to hold together. */
-function vecSum(cx, cy) {
+export function vecSum(cx, cy) {
   const one = (cs, e) => {
     const c = [...cs, 0, 0].slice(0, 3);
     const n = c.filter((x) => !tiny(x)).length;
