@@ -30,6 +30,8 @@ export const lift = {
 
   /** Resolve reads the journey's distance as the height risen. */
   resolveAxis: 'vertical',
+  /** Resolve as the readouts: once it has stopped at the top, nothing accelerates it. */
+  resolveObjects: (f) => [{ name: '', pos: f.pos, vel: f.vel, acc: (t) => (t >= f.tMax - 1e-9 ? 0 : f.accel(t)) }],
   resolveFrom: 'where it started',
   read(v) { return { a1: v.a1, t1: v.t1, t2: v.t2, t3: v.t3, a3: v.a3 }; },
   solve: solveJourney,

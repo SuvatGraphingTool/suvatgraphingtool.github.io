@@ -226,7 +226,7 @@ export function layout(win) {
 function attach(win, p, hooks) {
   const { canvas } = win.el.get(p.id);
   const v = () => win.views.get(p.id);
-  let drag = false, lx = 0, ly = 0, down = null, later = 0;
+  let drag = false, lx = 0, ly = 0, down = null, later = 0, lastUp = -1e9;
   const size = () => {
     const r = canvas.getBoundingClientRect();
     return [Math.max(1, r.width), Math.max(1, r.height)];
@@ -251,7 +251,11 @@ function attach(win, p, hooks) {
     if (e && canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     // a press that did not move is a click on the motion: Resolve, at the instant shown
     // held a moment: a second press is a double-click, which re-frames
-    if (clicked && down && e.detail < 2 && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) later = setTimeout(() => hooks.click?.(), 280);
+    if (clicked && down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) {
+      const dbl = e.timeStamp - lastUp < 400;
+      lastUp = e.timeStamp; clearTimeout(later);
+      if (!dbl) later = setTimeout(() => hooks.click?.(), 280);
+    }
     down = null;
   };
   canvas.addEventListener('pointerup', (e) => end(e, true));

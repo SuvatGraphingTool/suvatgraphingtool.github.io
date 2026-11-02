@@ -41,7 +41,7 @@ const three = (b) => String(Math.round(((b % 360) + 360) % 360) % 360).padStart(
 /** Side on, as the twelve's card says it: an angle above or below the horizontal, and which way. */
 function side(v) {
   const up = Math.atan2(Math.abs(v.y), Math.abs(v.x)) * 180 / Math.PI;
-  const way = v.x < -1e-9 ? ', moving back towards the start' : '';
+  const way = v.x < -1e-9 ? ', moving to the left' : '';
   return Math.abs(v.y) < 1e-9 ? `Horizontal${way}.` : Math.abs(v.x) < 1e-9 ? `Straight ${v.y > 0 ? 'up' : 'down'}.` : `${d(up, 1)}° ${v.y > 0 ? 'above' : 'below'} the horizontal${way}.`;
 }
 
@@ -72,7 +72,7 @@ function blocksFor(o, t, tMax, K, U) {
       : ['Horizontal component', 'Vertical component', 'Dashed on the stage: across.', 'Solid on the stage: up and down. Up is positive.'];
     const how = sp < 1e-9 ? 'At rest.'
       : map || (ij && K?.resolveBearing) ? `On a bearing of ${three(bearing)}°.`
-      : ij ? `At ${d((angle + 360) % 360, 1)}° to ${M`vec i`}, turning towards ${M`vec j`}.`
+      : ij ? `At ${d((angle + 360) % 360, 1)}° to ${M`vec i`}, measured anticlockwise from ${M`vec i`}.`
       : bank ? (Math.abs(v.x) < 1e-9 ? 'Straight across.' : `At ${d(Math.abs(Math.atan2(v.y, Math.abs(v.x)) * 180 / Math.PI), 1)}° to the bank, carried ${v.x > 0 ? 'downstream' : 'upstream'}.`)
       : side(v);
     // from above, the position vector r from the origin the question names;
@@ -87,7 +87,7 @@ function blocksFor(o, t, tMax, K, U) {
       ] },
       { name: `${who}${flat ? 'position' : 'displacement'}`, hue: 'disp', rows: [
         { name: flat ? nx : 'Horizontal', value: r.x, unit: U.s, formula: M`x`, sub: d(r.x), note: flat ? `From ${from}.` : 'From where it started.', hue: 'disp', part: 'x' },
-        { name: flat ? ny : 'Vertical', value: r.y, unit: U.s, formula: M`y`, sub: d(r.y), note: flat ? '' : 'Up from where it started.', hue: 'disp', part: 'y' },
+        { name: flat ? ny : 'Vertical', value: r.y, unit: U.s, formula: M`y`, sub: d(r.y), note: flat ? `From ${from}.` : 'Up from where it started.', hue: 'disp', part: 'y' },
         { name: 'Distance', value: dist, unit: U.s, formula: M`sqrt(x^2 + y^2)`, sub: d(dist), note: flat ? `In a straight line from ${from}.` : 'In a straight line from where it started.', hue: 'disp', part: 'r' },
       ] },
     ];

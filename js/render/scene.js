@@ -1052,7 +1052,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   };
 
   const isResolve = (k) => k === 'ball' || k === 'path';
-  let later = 0;   // a click on a library stage, waiting to see it is not a double-click
+  let later = 0, lastUp = -1e9;   // a click, waiting to see it is not a double-click
 
   // The cursor used to say `grab` for the sky, the height line and the target
   // alike, so a draggable handle felt exactly like empty canvas. Now each
@@ -1096,13 +1096,16 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     if (e && canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     // A click is a press that did not move. Anything that moved was a pan, and
     // must not open a card nobody asked for.
-    if (clicked && was?.pick && isResolve(was.pick.kind) && e
-        && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) onResolve.click?.(was.pick.t);
+    if (!clicked || !was || !e || Math.hypot(e.clientX - was.x, e.clientY - was.y) >= 5) return;
+    // Held a moment, and a second click soon after is a double-click, which
+    // re-frames: neither of its two clicks opens the card.
+    const dbl = e.timeStamp - lastUp < 400;
+    lastUp = e.timeStamp; clearTimeout(later);
+    if (dbl) return;
+    if (was.pick && isResolve(was.pick.kind)) { const tt = was.pick.t; later = setTimeout(() => onResolve.click?.(tt), 280); }
     // A library stage picks nothing (its view maps layout only), so a click
     // anywhere on it is a click on the motion: Resolve at the instant shown.
-    // Held a moment: a second press is a double-click, which re-frames.
-    else if (clicked && was && !cam._map?.sx && e && e.detail < 2
-        && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) later = setTimeout(() => onResolve.click?.(null), 280);
+    else if (!cam._map?.sx) later = setTimeout(() => onResolve.click?.(null), 280);
   };
   canvas.addEventListener('pointerup', (e) => end(e, true));
   canvas.addEventListener('pointercancel', (e) => end(e, false));
