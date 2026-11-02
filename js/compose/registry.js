@@ -70,6 +70,7 @@ export const BACKDROPS = {
   lake:    { label: 'A lake', what: 'a lake among wooded hills, reeds, a rowing boat and ducks; from its shingle shore, or (from a height) the end of a timber jetty, or a rocky bluff above about 2 m', place: 'lake', below: 'river', art: true, on: 'at a lake', high: 'the end of a jetty', higher: [2, 'a bluff over a lake'] },
   island:  { label: 'A tropical island', what: 'a tropical island: white sand, palms and a deep blue lagoon inside the reef; from a height, the crown of a palm tree a coconut falls from, or the deck of a beach hut on stilts for anything thrown', place: 'island', below: 'beach', art: true, on: 'on a tropical island', high: 'the deck of a beach hut', lands: 'sand' },
   skatepark: { label: 'A skatepark', what: 'a skatepark: smooth concrete, a funbox and its rail, a graffiti wall; from a height, a concrete ledge with its stair set (to about 4 m) or the roof of the skate shop', place: 'skatepark', below: 'road', art: true, on: 'in a skatepark', high: 'a ledge in a skatepark', higher: [4, 'the roof of the skate shop'] },
+  circus:  { label: 'A circus', what: 'inside a circus big top: the canvas in blue and cream, spotlights, the audience, the ring’s curb and its sawdust; from a height, the trapeze platform on its rigging pole', place: 'circus', below: 'floor', art: true, on: 'in a circus ring', high: 'the trapeze platform', lands: 'dust' },
   carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
   volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
   quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
@@ -383,7 +384,7 @@ export const placeOf = (r) => ({ ...BACKDROPS[r.backdrop], below: r.below || BAC
    becomes a figure — exactly, or the closest one there is, saying so — so
    what moves is what is drawn, everywhere; never a silent ball. */
 const WORDS = [
-  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager|astronaut|spaceman|spacewoman|cosmonaut)\b/, 'diver'],
+  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager|astronaut|spaceman|spacewoman|cosmonaut|human cannonball|trapeze artist)\b/, 'diver'],
   [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
   [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
   [/\b(sandbag|sand ?bag|sack|bag of (sand|flour)|ballast)\b/, 'sandbag'], [/\b(bucket|pail)\b/, 'bucket'],
@@ -430,6 +431,8 @@ const NEAREST = [
 export function whoIn(text) {
   const t = String(text ?? '').toLowerCase();
   const person = WORDS[0][0], hits = [];
+  // a human cannonball is a person, never the cannonball
+  if (/\bhuman cannonball\b/.test(t)) return 'human cannonball';
   for (const [re, f] of [...WORDS.slice(1), ...NEAREST]) { const m = t.match(re); if (m) hits.push({ at: m.index, word: m[1] || m[0], f }); }
   // "a bird drops a fish", "a plane releases a package": what is let go
   // moves, not what lets it go
@@ -490,6 +493,7 @@ const ONLY_HERE = [
   [/\b(?:into|across|over|on|from|beside|by)\s+(?:a|the)\s+(lake|pond|loch|lagoon|mere)\b/, 'lake'],
   [/\b(palm tree|coconut palm|desert island|tropical island|coconut)\b/, 'island'],
   [/\b(skate ?park|half-?pipe|skate ramp|quarter-?pipe)\b/, 'skatepark'],
+  [/\b(circus|big top|trapeze|human cannonball|circus ring|ringmaster)\b/, 'circus'],
   [/\b(tennis court|centre court|grass court|hard court|clay court|tennis match|tennis player)\b/, 'court'],
   [/\b(basketball (?:court|hoop|player|ring|net|arena)|netball (?:court|hoop|post|ring)|(?:through|into|at) the (?:hoop|ring)|free throw|jump shot|slam dunk)\b/, 'arena'],
   // on a beach, but not a cliff, pier or harbour over one ("off the cliff onto the beach" is the cliff's)
@@ -498,7 +502,7 @@ const ONLY_HERE = [
   [/\b(?:on|from)\s+(?:a|an|the|another)\s+(planet|asteroid|alien world|exoplanet)\b|\b(planet x|planet [a-z]\b|another planet)\b/, 'planet'],
   [/\b(building site|construction site|scaffold(?:ing)?|tower crane|crane)\b/, 'site'],
   [/\b(golf course|fairway|golf green|putting green|tee(?:ing)? ground|tee box|raised tee|on(?:to)? (?:a|the) green|chip(?:s|ped)? (?:a|the) (?:golf )?ball|golfer)\b/, 'golf'],
-  [/\b(athletics stadium|athletics track|running track|shot put|shot-put|putts? the shot|javelin throw|discus|hammer throw|throws the hammer|olympic stadium|in the stadium)\b/, 'stadium'],
+  [/\b(long jump(?:er)?|triple jump(?:er)?|athletics stadium|athletics track|running track|shot put|shot-put|putts? the shot|javelin throw|discus|hammer throw|throws the hammer|olympic stadium|in the stadium)\b/, 'stadium'],
   [new RegExp(`${FROM}(quay|quayside|harbour wall|jetty|dock|harbour)\\b`), 'harbour'],
   [new RegExp(`${FROM}(ledge|mountain|mountainside|peak|crag|mountain ledge|rock|boulder|outcrop)\\b`), 'mountain'],
   [new RegExp(`${FROM}(table|desk|bench|worktop|counter|shelf|workbench)\\b(?!\\s+(?:of|tennis))`), 'table'],

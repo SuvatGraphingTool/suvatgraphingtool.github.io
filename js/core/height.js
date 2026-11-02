@@ -73,6 +73,7 @@ export const PLACES = {
   lake:    { word: 'start', top: 'where it starts', below: 'the lake', lands: 'goes into the lake', foot: 'where it started', level: true },
   island:  { word: 'start', top: 'where it starts', below: 'the sand', lands: 'lands on the sand', foot: 'where it started', level: true },
   skatepark: { word: 'start', top: 'where it starts', below: 'the concrete', lands: 'lands on the concrete', foot: 'where it started', level: true },
+  circus:  { word: 'start', top: 'where it starts', below: 'the ring', lands: 'lands in the ring', foot: 'where it started', level: true },
   // a dolphin or a fish leaping from the water at the foot of a place
   pool:    { word: 'start', top: 'where it leaves the water', below: 'the water', lands: 'goes back into the water', foot: 'where it left the water', level: true, from: 'where it left the water' },
   site:    { word: 'scaffold', top: 'the top of the scaffolding', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the scaffolding' },

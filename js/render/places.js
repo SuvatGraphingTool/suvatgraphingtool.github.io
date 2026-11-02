@@ -1239,8 +1239,21 @@ function stadium(g, c) {
   g.fillStyle = withAlpha('#ffffff', n ? 0.5 : 0.85); for (let i = 0; i <= 6; i++) g.fillRect(0, horizon + i * lane, w, 1);
   // the infield
   mownTurf(g, w, horizon + lane * 6, h, n, { line: false });
+  // a long jump: the runway up to the take-off board where it leaves, the sand pit
+  // from a metre past the board to beyond where it lands, raked, its kerb
+  const jump = c.who === 'diver' && !(H0 > 0);
+  if (jump && X) {
+    const land = (c.clearX || [])[0] ?? X(8), yF = oy - clamp((oy - horizon) * 0.1, 4, 12), yN = oy + clamp((h - oy) * 0.18, 5, 18), s2 = 0.3;
+    const quad = (a, b, col) => { g.fillStyle = col; g.beginPath(); g.moveTo(a + (oy - yF) * s2, yF); g.lineTo(b + (oy - yF) * s2, yF); g.lineTo(b - (yN - oy) * s2, yN); g.lineTo(a - (yN - oy) * s2, yN); g.closePath(); g.fill(); };
+    quad(-20, x0, red);
+    quad(x0 - clamp(0.2 * k, 4, 10), x0, n ? '#c8c8c8' : '#ffffff');
+    const p0 = X(1), p1 = Math.max(land + clamp(2 * k, 20, 80), X(1) + 40);
+    quad(p0 - 4, p1 + 4, n ? '#4a4a46' : '#a8a8a2');
+    quad(p0, p1, n ? '#8a7a5a' : '#e2cc96');
+    g.strokeStyle = withAlpha(n ? '#5a4a30' : '#b89a5a', 0.7); g.lineWidth = 1; for (let x = p0 + 6; x < p1; x += 9) { g.beginPath(); g.moveTo(x + (oy - yF) * s2, yF + 2); g.lineTo(x - (yN - oy) * s2, yN - 2); g.stroke(); }
+  }
   // the throwing arcs, every ten metres out from where it is thrown
-  if (X) {
+  if (X && !jump) {
     g.strokeStyle = withAlpha('#ffffff', n ? 0.4 : 0.75); g.lineWidth = 1.4;
     // out to just past where it lands, never a tangle of them
     const land = (c.clearX || [])[0] ?? w, step = (land - X(0)) / (X(10) - X(0)) > 8 ? 20 : 10;
@@ -2594,5 +2607,56 @@ function skatepark(g, c) {
   }
 }
 
+/* ── a circus ───────────────────────────────────────────────────────────── */
+
+/** A circus big top from inside: the canvas in blue and yellow panels rising
+    to the king poles, spotlights, the audience on its tiers, the ring's curb
+    and its sawdust; from a height, the trapeze platform on its rigging pole
+    with the rope ladder up to it. */
+function circus(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), r = rng(269), horizon = oy - clamp((oy - 40) * 0.28, 40, 140);
+  // the canvas: panels in blue and cream rising to the peak, dark at the top
+  const peak = { x: clamp(x0 + (w - x0) * 0.45, w * 0.35, w * 0.65), y: -h * 0.4 };
+  for (let i = -6, j = 0; i <= 18; i++, j++) {
+    const x = (i / 12) * w, x2 = ((i + 1) / 12) * w;
+    g.fillStyle = j % 2 ? '#2a4a8a' : '#e8dcc0'; g.beginPath(); g.moveTo(peak.x, peak.y); g.lineTo(x, horizon); g.lineTo(x2, horizon); g.closePath(); g.fill();
+  }
+  const dark = g.createLinearGradient(0, 0, 0, horizon); dark.addColorStop(0, 'rgba(8,10,20,0.85)'); dark.addColorStop(0.6, 'rgba(8,10,20,0.45)'); dark.addColorStop(1, 'rgba(8,10,20,0.25)');
+  g.fillStyle = dark; g.fillRect(0, 0, w, horizon);
+  // the king poles and the spotlights' beams, crossing over the ring
+  g.fillStyle = '#c8c0a8'; for (const px of [peak.x - w * 0.18, peak.x + w * 0.18]) if (px > 0 && px < w) g.fillRect(px - 3, 0, 6, horizon);
+  for (const [sx, tx] of [[w * 0.08, peak.x + w * 0.1], [w * 0.92, peak.x - w * 0.12]]) {
+    const gr = g.createLinearGradient(sx, 0, tx, oy); gr.addColorStop(0, 'rgba(255,248,220,0.35)'); gr.addColorStop(1, 'rgba(255,248,220,0.05)');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(sx - 6, 0); g.lineTo(sx + 6, 0); g.lineTo(tx + w * 0.08, oy); g.lineTo(tx - w * 0.08, oy); g.closePath(); g.fill();
+    g.fillStyle = '#fffaf0'; g.beginPath(); g.arc(sx, 4, 6, 0, TAU); g.fill();
+  }
+  // the audience on its tiers round the far side
+  const bh = clamp((horizon - 20) * 0.35, 24, 110), b0 = horizon - bh;
+  g.fillStyle = '#1e2230'; g.fillRect(0, b0, w, bh);
+  const rows = []; for (let y = b0 + 8; y < horizon - 4; y += clamp(bh / 7, 6, 14)) rows.push({ y, s: clamp(bh / 10, 4, 10) });
+  crowd(g, 0, w, rows, r, false);
+  g.fillStyle = withAlpha('#0e1118', 0.3); g.fillRect(0, b0, w, bh);
+  // the ring: its painted curb across the back, the sawdust floor, the curb along the front
+  const curb = clamp(0.5 * k, 6, 16);
+  g.fillStyle = '#2f5fa8'; g.fillRect(0, horizon - curb, w, curb); g.fillStyle = '#e8c547'; for (let x = 0; x < w; x += 40) g.fillRect(x, horizon - curb * 0.65, 20, curb * 0.3);
+  const sg = g.createLinearGradient(0, horizon, 0, h); sg.addColorStop(0, '#c8a870'); sg.addColorStop(1, '#a8885a');
+  g.fillStyle = sg; g.fillRect(0, horizon, w, h - horizon);
+  g.fillStyle = withAlpha('#6a5030', 0.4); for (let i = 0; i < (w * (h - horizon)) / 70; i++) g.fillRect(r() * w, horizon + r() * (h - horizon), 2, 1);
+  const ny = oy + clamp((h - oy) * 0.55, 14, 60);
+  if (ny < h) { g.fillStyle = '#2f5fa8'; g.fillRect(0, ny, w, Math.min(curb * 1.4, h - ny)); g.fillStyle = '#e8c547'; for (let x = 20; x < w; x += 40) g.fillRect(x, ny + curb * 0.4, 20, curb * 0.4); }
+  if (!(H0 > 0)) return;
+  // the trapeze platform on its rigging pole, the rope ladder hanging from it, the bar beside it
+  const H = oy - top, pw = clamp(1.4 * k, 18, 56), pole = x0 - pw - 4;
+  g.fillStyle = '#c8ccd2'; g.fillRect(pole - 3, top - clamp(2.5 * k, 26, 90), 6, oy - top + clamp(2.5 * k, 26, 90));
+  g.fillStyle = '#8a9098'; g.fillRect(pole - pw * 0.2, top, x0 - pole + pw * 0.2, clamp(0.25 * k, 4, 9));
+  g.strokeStyle = '#e8c547'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(pole, top - clamp(1.1 * k, 12, 40)); g.lineTo(x0 - 2, top - clamp(1.1 * k, 12, 40)); g.moveTo(x0 - 2, top); g.lineTo(x0 - 2, top - clamp(1.1 * k, 12, 40)); g.stroke();
+  g.strokeStyle = '#d8c8a0'; g.lineWidth = 1.5; const lx = pole - pw * 0.5;
+  g.beginPath(); g.moveTo(lx, top); g.lineTo(lx, oy); g.moveTo(lx + 8, top); g.lineTo(lx + 8, oy); for (let y = top + 8; y < oy; y += 9) { g.moveTo(lx, y); g.lineTo(lx + 8, y); } g.stroke();
+  // the trapeze hanging on its ropes behind the platform, waiting
+  const ty = top - clamp(0.5 * k, 6, 18), tx = pole - clamp(2.5 * k, 26, 90);
+  if (tx > 10) { g.strokeStyle = '#d8c8a0'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(tx - 10, 0); g.lineTo(tx - 10, ty); g.moveTo(tx + 10, 0); g.lineTo(tx + 10, ty); g.stroke(); g.strokeStyle = '#c8ccd2'; g.lineWidth = 3; g.beginPath(); g.moveTo(tx - 12, ty); g.lineTo(tx + 12, ty); g.stroke(); }
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus };

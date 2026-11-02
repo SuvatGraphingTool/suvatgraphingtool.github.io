@@ -391,6 +391,8 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
   ok(check({ backdrop: 'castle', engine: 'projectile', objects: [{ figure: 'egg' }], numbers: { h: 15, u: 0, theta: -90 } }).recipe?.effects.join() === 'splat', 'an egg splats');
   ok(check({ backdrop: 'court', engine: 'projectile', objects: [{ figure: 'tennisBall' }], numbers: { h: 2.5, u: 25, theta: 0 } }).recipe?.effects.join() === 'chalk', 'a tennis ball on a court kicks up chalk');
   const jet = check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'water' }], numbers: { h: 1, u: 10, theta: 40 } }).recipe;
+  ok(figureOf(whoIn('A human cannonball is fired from a cannon at 15 m/s')).figure === 'diver' && placeIn('A human cannonball is fired from a cannon in the circus')?.backdrop === 'circus', 'a human cannonball is a person, in the circus');
+  ok(titleOf(check({ backdrop: 'stadium', engine: 'projectile', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 9, theta: 22 } }).recipe) === 'A long jumper in an athletics stadium' && check({ backdrop: 'stadium', engine: 'projectile', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 9, theta: 22 } }).recipe.effects.join() === 'sand', 'a long jumper lands in the sand pit');
   ok(whoIn('A diver jumps from a board 10 m above the water') === 'diver' && whoIn('In a cricket match, a ball is hit') !== 'grasshopper', 'water below and a cricket match never take over what moves');
   ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });

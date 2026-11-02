@@ -182,7 +182,9 @@ export function check(raw) {
   const dry = !['sea', 'river', 'pool', 'well'].includes(B.below), own = dry && objects.map((o) => FIGURES[o.figure].lands).find(Boolean);
   // a ball kicked on a football pitch goes in the goal: its net bulges
   const goalward = backdrop === 'pitch' && objects.some((o) => ['football', 'ball'].includes(o.figure)) ? 'net' : null;
-  const lands = MOMENTS[engine] || own || goalward || B.lands || LANDS_WITH[B.below];
+  // a long jumper lands in the stadium's sand pit
+  const pit = backdrop === 'stadium' && objects.some((o) => o.figure === 'diver') && !(numbers.h > 0) ? 'sand' : null;
+  const lands = MOMENTS[engine] || own || goalward || pit || B.lands || LANDS_WITH[B.below];
   if (!effects.length && lands) effects.push(lands);
   if (objects.some((o) => o.figure === 'rocket' || o.figure === 'firework') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
   // with nothing asked: a vehicle down on dry ground skids and smokes as it
@@ -241,6 +243,8 @@ export function titleOf(r) {
     // (an archer's arrow is loosed from the hand's height too)
     const byHand = (F.thrown || r.objects[0].figure === 'arrow') && r.objects[0].figure !== 'golfBall' && r.numbers.h > 0 && r.numbers.h <= (r.objects[0].figure === 'tennisBall' ? 3.4 : 2.6);
     if (byHand && r.backdrop === 'ground') return `${what} ${F.verb || 'thrown'}`;
+    // a person leaping off level ground in a stadium is a long jumper
+    if (r.backdrop === 'stadium' && r.objects[0].figure === 'diver' && !(r.numbers.h > 0)) return 'A long jumper in an athletics stadium';
     // (a coconut let go from rest falls from its palm)
     if (r.backdrop === 'island' && r.objects[0].figure === 'coconut' && r.numbers.h > 0 && !(r.numbers.u > 0)) return `${what} falling from a palm tree`;
     if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${(B.higher && r.numbers.h > B.higher[0] ? B.higher[1] : B.high) || 'a wall'}`;
