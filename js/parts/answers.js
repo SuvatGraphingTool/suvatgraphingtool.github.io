@@ -44,9 +44,12 @@ export function answersFor(s) {
   if (!s) return [];
   if (s.kit) {
     const all = [...(s.parts || []).filter((p) => !p.out), ...(s.answers || [])];
+    // an answer may carry its own key, so one added later never renumbers the
+    // keys readings already use (the composer's distance stays "distance")
     const count = {}, seen = {};
-    for (const p of all) count[p.kind] = (count[p.kind] || 0) + 1;
+    for (const p of all) if (!p.key) count[p.kind] = (count[p.kind] || 0) + 1;
     return all.map((p) => {
+      if (p.key) return { key: p.key, kind: p.kind, say: p.ask || p.say, part: p };
       seen[p.kind] = (seen[p.kind] || 0) + 1;
       return { key: count[p.kind] > 1 ? `${p.kind}${seen[p.kind]}` : p.kind, kind: p.kind, say: p.ask || p.say, part: p };
     });

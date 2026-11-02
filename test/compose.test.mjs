@@ -99,6 +99,14 @@ group('Each place in its own words', () => {
   const parts = fromReader(c.scenario.id, [{ label: 'a', asks: 'when 5 m above', answer: 'time3' }, { label: 'b', asks: 'and again', answer: 'time4' }], Object.keys(c.boxes));
   ok(answerOf(parts[0], lv.solved).ok && answerOf(parts[1], lv.solved).values[0] > answerOf(parts[0], lv.solved).values[0], 'a height a part asks about is answered twice, up then down');
   COMPOSED.length = 0;
+  // a hoop at the height asked: how far out it passes it, on the way down
+  const hoop = run({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'basketball' }], numbers: { h: 2.1, u: 8, theta: 50, level: 0.95, g: 9.81 } });
+  COMPOSED.push(hoop.c.scenario);
+  const hk = answersFor(hoop.c.scenario).map((x) => x.key);
+  ok(hk.includes('distance') && hk.includes('distance2'), `the hoop's distance is distance2, and the landing's stays distance: ${hk.join(', ')}`);
+  const hp = fromReader(hoop.c.scenario.id, [{ label: 'a', asks: 'how far away is the hoop', answer: 'distance2' }], Object.keys(hoop.c.boxes));
+  near(answerOf(hp[0], hoop.solved).values[0], 5.49, 0.01, 'the hoop is 5.49 m out, the engine’s level.xDown');
+  COMPOSED.length = 0;
 });
 
 group('Two on one line by a tower, and a ball bouncing off a roof', () => {

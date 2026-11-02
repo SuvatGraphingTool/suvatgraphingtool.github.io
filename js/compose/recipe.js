@@ -371,7 +371,11 @@ function nearest(m) {
 const LAUNCHES = ['up', 'arc', 'dropped', 'down', 'platform-down', 'platform', 'platform-angle'];
 /** The answer keys of the twelve, and of From a height, as the composed projectile names the same answer. */
 const TWELVE_KEYS = { flight: 'time1', range: 'distance', vLand: 'speed1', top: 'height1', rise: 'height2', tTop: 'time2', u: 'speed2', theta: 'angle' };
-const HEIGHT_KEYS = { height: 'height1', speed: 'speed1', time: 'time1', graph: 'graph' };
+// From a height's answer keys (js/library.js, numbered by js/parts/answers.js)
+// as the composed launch's: the greatest height, the landing speed, the time
+// in the air, how far out it lands, how far out it passes a hoop, the height
+// found from the time (the older single keys kept for readings that use them)
+const HEIGHT_KEYS = { height: 'height1', height1: 'height1', speed: 'speed1', time: 'time1', distance: 'distance', distance1: 'distance', distance2: 'distance2', height2: 'height3', graph: 'graph' };
 /** From a height's places, as the composer's backdrops (a well is From a height's alone). */
 const BALLISH = ['ball', 'stone', 'particle', 'football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball'];
 // From a height's own places, and every place the composer draws, by the
