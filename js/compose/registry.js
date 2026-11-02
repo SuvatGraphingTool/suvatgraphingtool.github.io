@@ -51,6 +51,9 @@ export const BACKDROPS = {
   canyon:  { label: 'A canyon', what: 'the rim of a canyon: banded red rock walls, a river far below in the gorge', place: 'canyon', below: 'river', edge: true, at: 'the rim of a canyon', art: true },
   waterfall: { label: 'A waterfall', what: 'the top of a waterfall in a wooded gorge: the river pours down the rock face into a plunge pool', place: 'waterfall', below: 'river', edge: true, at: 'the top of a waterfall', art: true },
   lighthouse: { label: 'A lighthouse', what: 'a lighthouse on a rock in the sea, white and red; from the gallery round its lantern', place: 'lighthouse', below: 'sea', edge: true, at: 'a lighthouse', art: true },
+  pitch:   { label: 'A football pitch', what: 'a football stadium: a striped pitch, the stand across with its crowd and floodlights; from a height, a stand’s upper tier', place: 'pitch', below: 'ground', art: true, on: 'on a football pitch', high: 'the upper tier of a stand', lands: 'divot' },
+  golf:    { label: 'A golf course', what: 'a golf course: the fairway, a bunker, the green with its flag, trees and a clubhouse beyond; from a height, a raised tee', place: 'golf', below: 'ground', art: true, on: 'on a golf course', high: 'a raised tee' },
+  stadium: { label: 'An athletics stadium', what: 'an athletics stadium: the infield with white arcs every ten metres, red lanes, the stand across; from a height, a stand’s upper tier', place: 'stadium', below: 'ground', art: true, on: 'in an athletics stadium', high: 'the upper tier of a stand', lands: 'divot' },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from what carries it: a hovering balloon, a helicopter, a plane, a drone or a bird ("carrier")', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
@@ -80,7 +83,7 @@ export const FIGURES = {
   bucket:   { label: 'a bucket', m: 0.35, min: 20, views: ['side'] },
   rocket:   { label: 'a rocket', m: 1, min: 34, views: ['side'] },
   firework: { label: 'a firework', m: 0.8, min: 34, views: ['side'] },
-  arrow:    { label: 'an arrow', m: 0.75, min: 34, views: ['side'] },
+  arrow:    { label: 'an arrow', m: 0.75, min: 34, views: ['side'], verb: 'shot' },
   ship:     { label: 'a ship', m: 60, min: 40, views: ['plan'] },
   robot:    { label: 'a robot', m: 0.6, min: 30, views: ['plan'] },
   // the props (js/render/props.js): each drawn as itself, thrown, kicked or dropped
@@ -137,6 +140,7 @@ export const EFFECTS = {
   leaves: { label: 'leaves', what: 'where it lands on a forest floor' },
   sand:   { label: 'a spray of sand', what: 'where it lands in sand' },
   mud:    { label: 'mud', what: 'where it lands in mud, on a building site' },
+  net:    { label: 'a goal net', what: 'a goal where it lands: its net bulges as the ball meets it' },
   burst:  { label: 'a firework burst', what: 'at the top of a firework’s flight' },
 };
 
@@ -391,6 +395,8 @@ const ONLY_HERE = [
   [new RegExp(`(?:${FROM}(?:(?:edge|rim|side|top|lip) of (?:a|the)\\s+)?|\\b(?:into|across|over)\\s+(?:a|the)\\s+)(canyon|gorge|ravine)\\b`), 'canyon'],
   [new RegExp(`${FROM}(?:(?:top|edge|lip) of (?:a|the)\\s+)?(waterfall)\\b`), 'waterfall'],
   [/\b(building site|construction site|scaffold(?:ing)?|tower crane|crane)\b/, 'site'],
+  [/\b(golf course|fairway|golf green|tee(?:ing)? ground|tee box|raised tee|on the green)\b/, 'golf'],
+  [/\b(athletics stadium|athletics track|running track|shot put|shot-put|putts? the shot|javelin throw|discus|hammer throw|throws the hammer|olympic stadium|in the stadium)\b/, 'stadium'],
   [new RegExp(`${FROM}(quay|quayside|harbour wall|jetty|dock|harbour)\\b`), 'harbour'],
   [new RegExp(`${FROM}(ledge|mountain|mountainside|peak|crag|mountain ledge)\\b`), 'mountain'],
   [new RegExp(`${FROM}(table|desk|bench|worktop|counter|shelf|workbench)\\b(?!\\s+(?:of|tennis))`), 'table'],

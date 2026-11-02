@@ -10,11 +10,12 @@
 // Nothing here changes a number on screen.
 
 import { withAlpha } from './util.js';
-import { env, rng } from './scenery.js';
+import { env, rng, softShadow } from './scenery.js';
 import { phaseOf } from './effects.js';
 
 const TAU = Math.PI * 2;
 const ease = (u) => 1 - (1 - u) ** 3;
+const lerp = (a, b, t) => a + (b - a) * t;
 // past its life it holds its last frame: what it left stays
 const held = (age, life) => (age >= 0 ? Math.min(age, life) / life : null);
 
@@ -328,5 +329,41 @@ export function burst(g, x, y, age, life, o = {}) {
     // by day each star is ringed dark, so it shows on a pale sky
     if (!night) { g.strokeStyle = withAlpha('#3a2a3a', 0.45 * (1 - u) * tw); g.lineWidth = 0.8; g.stroke(); }
   }
+  g.restore();
+}
+
+/** A goal seen side on at G = { x, back, bar, y }: the front post at x up to
+    the crossbar at `bar`, the net's roof sloping back and down to the
+    ground at `back`, its mesh drawn in. Once it is struck (age ≥ 0) the back
+    of the net bulges out where the ball meets it and swings back, settling. */
+export function goal(g, G, age = -1, life = 1, o = {}) {
+  const E = env(), { x, back, bar, y } = G, H = y - bar;
+  const p = age >= 0 ? Math.min(1, age / life) : null;
+  // the bulge: out fast, back past and settling, as a net does
+  const b = p == null ? 0 : Math.exp(-p * 5) * Math.cos(p * 14) * (o.size ?? 1) * Math.min(18, (back - x) * 0.5);
+  const top = { x: x + (back - x) * 0.35, y: bar + H * 0.05 }, low = y - H * 0.35;
+  const backAt = (t) => { const yy = lerp(top.y, y, t), d = Math.exp(-(((yy - low) / (H * 0.3)) ** 2)); return { x: lerp(top.x, back, t) + b * d, y: yy }; };
+  g.save();
+  // the mesh: lines from the bar back over the roof and down the back
+  g.strokeStyle = withAlpha(E.night ? '#d8dce0' : '#ffffff', 0.7); g.lineWidth = 0.8;
+  const n = 7;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, q = backAt(t);
+    g.beginPath(); g.moveTo(x, lerp(bar, y, t)); g.lineTo(q.x, q.y); g.stroke();
+  }
+  g.beginPath(); g.moveTo(x, bar); g.lineTo(top.x, top.y);
+  for (let i = 0; i <= 12; i++) { const q = backAt(i / 12); g.lineTo(q.x, q.y); }
+  g.stroke();
+  for (let i = 1; i < 4; i++) {
+    const f = i / 4; g.beginPath(); g.moveTo(lerp(x, top.x, f), lerp(bar, top.y, f));
+    for (let j = 1; j <= 8; j++) { const q = backAt(j / 8); g.lineTo(lerp(x + (q.x - x) * 0.0, q.x, f), lerp(lerp(bar, y, j / 8), q.y, f)); }
+    g.stroke();
+  }
+  // the frame: white posts, round, lit on the left; the stanchion at the back
+  const pw = Math.max(2.5, H * 0.05);
+  g.fillStyle = E.night ? '#d6d8dc' : '#ffffff'; g.fillRect(x - pw / 2, bar, pw, H); g.fillRect(x - pw / 2, bar - pw / 2, Math.max(pw, (back - x) * 0.12), pw);
+  g.fillStyle = withAlpha('#000000', 0.2); g.fillRect(x + pw * 0.15, bar, pw * 0.35, H);
+  g.strokeStyle = withAlpha(E.night ? '#b8bcc2' : '#e8eaec', 0.9); g.lineWidth = 1.4; g.beginPath(); g.moveTo(top.x, top.y); g.lineTo(back, y); g.stroke();
+  softShadow(g, (x + back) / 2, y + 1, (back - x) * 0.6, 3, 0.5);
   g.restore();
 }

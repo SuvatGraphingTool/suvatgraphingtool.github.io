@@ -33,9 +33,9 @@ import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, t
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
-import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst } from './impacts.js';
+import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal } from './impacts.js';
 import { ANIMALS, FEET, javelin } from './animals.js';
-import { golfer, kicker, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
+import { golfer, kicker, archer, archerHand, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
@@ -299,17 +299,23 @@ function launch(canvas, o) {
   let th = TH(k), feet = R.backdrop === 'well' ? x0 - 26 - 13 - 10 - th * 0.18 : x0 - th * (f.vertical ? 0.5 : 0.2), stand = top;
   if (byHand) {
     // sized so the hand is at the launch point, feet on the floor
-    const per = throwerHand(100, aim);
+    const per = kind === 'arrow' ? archerHand(100, aim) : throwerHand(100, aim);
     th = clamp((oy - top) / (per.y / 100), THROWER_MIN * 0.8, 3 * k);
     feet = x0 - th * (per.x / 100); stand = oy;
   }
   // the second of two stands behind the first, holding what it throws
   const sh = m.i ? behind(k) : 0;
   feet -= sh;
+  // an archer stands with the bow hand over where the arrow leaves from
+  const shoots = thrown && kind === 'arrow';
+  if (shoots) feet = x0 - archerHand(th, aim).x - sh;
   // a golf ball is struck by a golfer, a football kicked: the ball where
   // the engine starts it, at the club's head or the boot
   const striker = !byHand && (kind === 'golfBall' ? golfer : kind === 'football' ? kicker : null);
-  if (thrown && striker) {
+  if (shoots) {
+    const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.05 * f.tMax), 0, 1) : 0;
+    archer(g, feet, stand, th, P, { pose, aim, ring: m.ring });
+  } else if (thrown && striker) {
     const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.12 * f.tMax), 0, 1) : 0;
     striker(g, x0 - th * (kind === 'golfBall' ? GOLF_BALL_AT : KICK_BALL_AT) - sh, stand, th, P, { pose, ring: m.ring });
   } else if (thrown) {
@@ -344,6 +350,17 @@ function launch(canvas, o) {
   }
 
   // ── where it lands, once it has: the recipe's effect, at the engine's time
+  // a goal where it lands, when the recipe has one: the front post where the
+  // path comes down through 1.8 m (under the bar), the net just behind the
+  // landing; its back bulges when the ball meets it
+  if (R.effects.includes('net') && m.i === 0) {
+    const end0 = f.pos(f.tMax);
+    let gm = end0.x - 2.5;
+    for (let j = pts.length - 1; j >= 0; j--) if (pts[j].y > 1.8) { gm = Math.max(pts[j].x, end0.x - 3); break; }
+    gm = Math.max(gm, end0.x * 0.5);
+    const gx = X(gm), back = Math.max(X(end0.x + 0.8), gx + 14);
+    goal(g, { x: gx, back, bar: oy - Math.max(24, 2.44 * k), y: oy }, t >= f.tMax - 1e-9 && clock.at != null ? (performance.now() - clock.at) / 1000 : -1, SETTLE);
+  }
   const later = [];
   // thrown out on the open side only, never across the face it fell beside
   const openSide = (draw) => { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } draw(); g.restore(); };
@@ -362,6 +379,7 @@ function launch(canvas, o) {
       else if (e === 'dust' && !wet) dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k, piece) / 30), n: 22 });
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
+      else if (e === 'net') continue;
       else if (wet) continue;
       // what a landing does to dry ground, sized to what lands and drawn over
       // it, so it is seen: it sits in its crater, half in the snow
@@ -409,7 +427,14 @@ function launch(canvas, o) {
   let bx = X(r.x) - sh * held * held * (3 - 2 * held), by = Y(r.y);
   // thrown from the hand: a thrower drawn larger than the scale (so it can be
   // seen) holds it in its hand, and it eases onto the engine's path as it goes
-  if (byHand && thrown && small) {
+  // an archer's arrow is to the archer: about the length of its draw
+  const arrowLen = shoots ? clamp(th * 0.62, 30, 64) : Math.max(44, size(k, piece));
+  if (shoots) {
+    // nocked on the string, its point just past the bow, until it is loosed
+    const hp = archerHand(th, aim), q = 1 - clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1), e = q * q * (3 - 2 * q);
+    const a0 = Math.atan2(v0.y, v0.x), L = arrowLen;
+    bx += (feet + hp.x - Math.cos(a0) * L * 0.3 - X(0)) * e; by += (stand - hp.y + Math.sin(a0) * L * 0.3 - Y(H0)) * e;
+  } else if (byHand && thrown && small) {
     const hp = throwerHand(th, aim), q = 1 - clamp(t / Math.max(1e-6, 0.08 * f.tMax), 0, 1), e = q * q * (3 - 2 * q);
     bx += (feet + hp.x - X(0)) * e; by += (stand - hp.y - Y(H0)) * e;
   }
@@ -431,7 +456,7 @@ function launch(canvas, o) {
         const L = size(k, piece), ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), back = landed ? L * 0.35 : 0;
         javelin(g, bx - Math.cos(ang) * back, by - Math.sin(ang) * back, L, ang);
       }
-      else if (kind === 'arrow') arrowShaft(g, bx, by, Math.max(44, size(k, piece)), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
+      else if (kind === 'arrow') arrowShaft(g, bx, by, arrowLen, fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
       else if (piece.prop) {
         // a ball to scale, never smaller than reads; resting on the turf or the
         // tee one radius up before it is struck and once it has landed
@@ -586,7 +611,7 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = R.backdrop === 'waterfall' ? 'the plunge pool' : { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const name = { waterfall: 'the plunge pool', pitch: 'the pitch', stadium: 'the infield' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);

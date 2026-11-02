@@ -175,7 +175,9 @@ export function check(raw) {
   // (or what it is: a water balloon bursts, a dropped phone cracks — on dry ground;
   // leaves on a forest floor, sand in a desert, mud on a building site)
   const dry = !['sea', 'river', 'pool', 'well'].includes(B.below), own = dry && objects.map((o) => FIGURES[o.figure].lands).find(Boolean);
-  const lands = MOMENTS[engine] || own || B.lands || LANDS_WITH[B.below];
+  // a ball kicked on a football pitch goes in the goal: its net bulges
+  const goalward = backdrop === 'pitch' && objects.some((o) => ['football', 'ball'].includes(o.figure)) ? 'net' : null;
+  const lands = MOMENTS[engine] || own || goalward || B.lands || LANDS_WITH[B.below];
   if (!effects.length && lands) effects.push(lands);
   if (objects.some((o) => o.figure === 'rocket' || o.figure === 'firework') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
   // a firework bursts at the top of its flight, when it goes up at all
@@ -209,8 +211,9 @@ export function titleOf(r) {
     // from a height with no edge of its own, it is a wall that is drawn
     // (a place that draws a ledge of its own says so)
     // thrown from a hand's height, the thrower stands on the ground: no wall
-    const byHand = F.thrown && r.numbers.h > 0 && r.numbers.h <= 2.6;
-    if (byHand && r.backdrop === 'ground') return `${what} thrown`;
+    // (an archer's arrow is loosed from the hand's height too)
+    const byHand = (F.thrown || r.objects[0].figure === 'arrow') && r.numbers.h > 0 && r.numbers.h <= 2.6;
+    if (byHand && r.backdrop === 'ground') return `${what} ${F.verb || 'thrown'}`;
     if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${B.high || 'a wall'}`;
     const how = F.verb || (F.thrown ? 'thrown' : F.animal ? 'leaping' : 'launched');
     return r.backdrop === 'ground' ? `${what} ${how} from the ground` : `${what} ${how} ${where}`;

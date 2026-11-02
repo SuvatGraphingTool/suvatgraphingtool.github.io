@@ -106,3 +106,54 @@ export function kicker(g, X, Y, H, P, { pose = 0, ring = null } = {}) {
   limb(g, [sh, { x: (sh.x + armN.x) / 2, y: sh.y + H * 0.08 }], shirt, H * 0.065);
   head(g, sh.x + H * 0.03, sh.y - H * 0.09, H * 0.075, C, null);
 }
+
+/** Where an archer's bow hand is, from the feet, at H px tall aiming `aim`
+    degrees above the horizontal: the arrow rests there. */
+export function archerHand(H, aim = 20) {
+  const a = (Math.max(-60, Math.min(80, aim)) * Math.PI) / 180, sh = { x: H * 0.02, y: H * 0.79 };
+  return { x: sh.x + Math.cos(a) * H * 0.4, y: sh.y + Math.sin(a) * H * 0.4 };
+}
+
+/** An archer side on, feet apart, the bow arm out along `aim` (degrees up),
+    a recurve bow upright across it, the string drawn back to the cheek;
+    `pose` 0 at full draw, past 0.5 loosed — the string straight again, the
+    drawing hand flung back past the ear. A quiver at the hip. */
+export function archer(g, X, Y, H, P, { pose = 0, aim = 20, ring = null } = {}) {
+  const C = colours(ring), u = Math.max(0, Math.min(1, pose)), loosed = u > 0.5;
+  const E = env(), a = (Math.max(-60, Math.min(80, aim)) * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
+  softShadow(g, X, Y + 1, H * 0.3, H * 0.05, 0.8);
+  const back = { x: X - H * 0.12, y: Y }, front = { x: X + H * 0.13, y: Y };
+  const hip = { x: X, y: Y - H * 0.5 }, sh = { x: X + H * 0.02, y: Y - H * 0.79 };
+  const thigh = H * 0.25, shin = H * 0.26;
+  const bowHand = { x: sh.x + ca * H * 0.4, y: sh.y - sa * H * 0.4 };
+  // the bow: a recurve across the line of the arrow, its limbs curving back
+  // toward the archer and flicking forward at the tips
+  const nx = -sa, ny = -ca, L = H * 0.42, flex = loosed ? 0.12 : 0.24;
+  const tip = (s) => ({ x: bowHand.x + nx * L * s - ca * L * flex, y: bowHand.y + ny * L * s + sa * L * flex });
+  const top = tip(1), bot = tip(-1);
+  // the string: to the drawing hand at the cheek, or straight once loosed
+  const cheek = { x: sh.x + H * 0.05 + ca * H * 0.02, y: sh.y - H * 0.06 };
+  const draw = loosed ? { x: cheek.x - H * 0.1, y: cheek.y - H * 0.02 } : cheek;
+  // the far leg, the quiver at the hip, then the body
+  limb(g, [hip, knee(hip, back, thigh, shin, -1), back], C.trousers, H * 0.08);
+  g.fillStyle = E.night ? '#5a4632' : '#7a5636'; g.save(); g.translate(hip.x - H * 0.06, hip.y - H * 0.02); g.rotate(-0.35);
+  g.fillRect(-H * 0.035, -H * 0.2, H * 0.07, H * 0.24);
+  g.fillStyle = '#e8e2d6'; for (let i = 0; i < 3; i++) g.fillRect(-H * 0.03 + i * H * 0.022, -H * 0.25, H * 0.012, H * 0.06);
+  g.restore();
+  limb(g, [hip, knee(hip, front, thigh, shin, 1), front], C.trousers, H * 0.085);
+  for (const F of [back, front]) { g.fillStyle = C.shoe; g.beginPath(); g.ellipse(F.x + H * 0.03, F.y - H * 0.015, H * 0.06, H * 0.025, 0, 0, TAU); g.fill(); }
+  limb(g, [hip, sh], C.shirt, H * 0.17);
+  // the string, then the bow over it
+  g.strokeStyle = E.night ? '#d8d4cc' : '#f4f1ea'; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(top.x, top.y); if (!loosed) g.lineTo(draw.x, draw.y); g.lineTo(bot.x, bot.y); g.stroke();
+  g.strokeStyle = E.night ? '#8a6a4a' : '#5a3a22'; g.lineWidth = Math.max(1.8, H * 0.025); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(top.x + ca * L * 0.08, top.y - sa * L * 0.08); g.quadraticCurveTo(bowHand.x + ca * L * flex, bowHand.y - sa * L * flex, bot.x + ca * L * 0.08, bot.y - sa * L * 0.08); g.stroke();
+  g.fillStyle = '#2b2628'; g.beginPath(); g.arc(bowHand.x, bowHand.y, H * 0.025, 0, TAU); g.fill();
+  // the bow arm straight out; the drawing arm folded back to the cheek
+  limb(g, [sh, bowHand], C.skin, H * 0.055);
+  const elbow = { x: draw.x - H * 0.12, y: draw.y + (loosed ? -H * 0.02 : H * 0.02) };
+  limb(g, [{ x: sh.x - H * 0.01, y: sh.y + H * 0.01 }, elbow, draw], C.skinFar, H * 0.05);
+  limb(g, [sh, { x: lerp(sh.x, elbow.x, 0.5), y: lerp(sh.y, elbow.y, 0.5) }], C.shirt, H * 0.07);
+  g.fillStyle = C.skin; g.beginPath(); g.arc(draw.x, draw.y, H * 0.03, 0, TAU); g.fill();
+  head(g, sh.x + H * 0.04, sh.y - H * 0.11, H * 0.075, C, null);
+}

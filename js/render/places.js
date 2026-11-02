@@ -1019,5 +1019,203 @@ function lighthouse(g, c) {
   softShadow(g, cx, foot + 1, Wb * 0.7, 3, 0.6);
 }
 
+/* ── sports grounds ─────────────────────────────────────────────────────── */
+
+/** A crowd on tiers: heads and shoulders in a seeded scatter of colours,
+    row by row between x0 and x1 along each tier's line. */
+function crowd(g, x0, x1, rows, r, n) {
+  const shirts = n ? ['#5a5560', '#6a5a50', '#4a5a6a', '#7a6a5a', '#8a8890'] : ['#c94f4f', '#4f86c9', '#e8c547', '#f2f0ea', '#5fae7a', '#2f3340', '#d98a4a', '#8a5bb0'];
+  const skin = n ? ['#7d6253', '#5e483c'] : ['#d9a988', '#a87a5a', '#7a4e36', '#e6bfa0'];
+  for (const { y, s } of rows) {
+    for (let x = x0 + r() * s; x < x1; x += s * (0.9 + r() * 0.5)) {
+      if (r() < 0.12) continue;
+      g.fillStyle = shirts[Math.floor(r() * shirts.length)]; g.fillRect(x - s * 0.4, y - s * 0.5, s * 0.8, s * 0.6);
+      g.fillStyle = skin[Math.floor(r() * skin.length)]; g.beginPath(); g.arc(x, y - s * 0.75, s * 0.28, 0, TAU); g.fill();
+    }
+  }
+}
+
+/** The stand across the ground, along the horizon: a long roofed stand
+    with its tiers and crowd, an advertising board along its foot and a
+    floodlight pylon at each end. */
+function farStand(g, w, horizon, r, n, { tall = 60 } = {}) {
+  const base = horizon, top = base - tall, roof = top - tall * 0.25;
+  // the floodlight pylons, behind the stand's ends
+  for (const px of [w * 0.06, w * 0.94]) {
+    g.strokeStyle = n ? '#5a5e66' : '#9aa0a8'; g.lineWidth = 2; g.beginPath(); g.moveTo(px, base); g.lineTo(px, roof - tall * 0.9); g.stroke();
+    g.fillStyle = n ? '#2c2e33' : '#6a7078'; g.fillRect(px - 12, roof - tall * 0.9 - 10, 24, 12);
+    g.fillStyle = n ? '#fff6d8' : '#f2f4f6'; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) g.fillRect(px - 10 + i * 5.5, roof - tall * 0.9 - 8 + j * 5, 4, 3.5);
+    if (n) { const lg = g.createRadialGradient(px, roof - tall * 0.9 - 4, 0, px, roof - tall * 0.9 - 4, 70); lg.addColorStop(0, 'rgba(255,246,216,0.45)'); lg.addColorStop(1, 'rgba(255,246,216,0)'); g.fillStyle = lg; g.fillRect(px - 70, roof - tall * 0.9 - 74, 140, 140); }
+  }
+  // the stand: a raked bowl of seats, the roof over it on its trusses
+  g.fillStyle = n ? '#3a3c44' : '#8c9098'; g.beginPath(); g.moveTo(0, base); g.lineTo(0, top); g.lineTo(w, top); g.lineTo(w, base); g.closePath(); g.fill();
+  const rows = []; for (let y = base - 8, s = 4.2; y > top + 4; y -= s * 1.25, s *= 0.94) rows.push({ y, s });
+  crowd(g, 0, w, rows, r, n);
+  g.fillStyle = withAlpha('#000000', 0.18); g.fillRect(0, top, w, tall * 0.2);
+  g.fillStyle = n ? '#2a2c32' : '#d8dce0'; g.fillRect(-2, roof, w + 4, tall * 0.14);
+  g.fillStyle = n ? '#1e2026' : '#5a5e66'; g.fillRect(-2, roof + tall * 0.14, w + 4, top - roof - tall * 0.14);
+  g.strokeStyle = n ? '#4a4e56' : '#b8bcc2'; g.lineWidth = 1; g.beginPath();
+  for (let x = 20; x < w; x += 60) { g.moveTo(x, roof + tall * 0.14); g.lineTo(x + 30, top); g.lineTo(x + 60, roof + tall * 0.14); }
+  g.stroke();
+  // the boards along its foot, panels in turn
+  const bh = Math.max(6, tall * 0.12), boards = n ? ['#3a4a6a', '#5a3a3a', '#3a5a4a'] : ['#2f5fa8', '#c8383a', '#2fa36b', '#f2b705'];
+  for (let x = 0, i = 0; x < w; x += 70, i++) { g.fillStyle = boards[i % boards.length]; g.fillRect(x, base - bh, 70, bh); g.fillStyle = withAlpha('#ffffff', n ? 0.25 : 0.7); g.fillRect(x + 14, base - bh * 0.62, 40, bh * 0.25); }
+}
+
+/** A pitch's or a field's turf from y0 down to y1: mown in stripes that
+    widen toward the viewer, a white line along its far edge. */
+function mownTurf(g, w, y0, y1, n, { lo = '#5f9a48', hi = '#6fae55', line = true } = {}) {
+  const L = n ? '#2f4a2c' : lo, Hc = n ? '#36542f' : hi;
+  g.fillStyle = L; g.fillRect(0, y0, w, y1 - y0);
+  for (let y = y0, i = 0, d = 4; y < y1; y += d, d *= 1.32, i++) if (i % 2) { g.fillStyle = Hc; g.fillRect(0, y, w, d); }
+  if (line) { g.fillStyle = withAlpha('#ffffff', n ? 0.5 : 0.85); g.fillRect(0, y0 + 2, w, 1.5); }
+}
+
+/** A grandstand to throw from: its upper tier cantilevered out to its front
+    edge at x0, `top` up, a lower tier set back under it, crowd on both, a
+    roof over. What leaves from the front edge falls clear of the tiers. */
+function grandstand(g, x0, top, oy, k, r, n) {
+  const H = oy - top, depth = clamp(H * 0.9, 60, 260), conc = n ? '#5a5c62' : '#a8acb2', concLo = n ? '#3a3c42' : '#7a7e86';
+  // the lower tier, under the overhang, stepping up away from the pitch
+  const lowFront = x0 - clamp(H * 0.18, 12, 60), lowTop = top + H * 0.45;
+  g.fillStyle = concLo; g.beginPath(); g.moveTo(lowFront, oy); g.lineTo(lowFront - depth * 0.7, lowTop); g.lineTo(-4, lowTop); g.lineTo(-4, oy); g.closePath(); g.fill();
+  const rowsLo = []; for (let i = 1, s = 5; i < 12; i++) { const t = i / 12, y = lerp(oy, lowTop, t); rowsLo.push({ y, s }); }
+  g.save(); g.beginPath(); g.moveTo(lowFront, oy); g.lineTo(lowFront - depth * 0.7, lowTop); g.lineTo(-4, lowTop); g.lineTo(-4, oy); g.closePath(); g.clip();
+  for (const { y } of rowsLo) { g.fillStyle = withAlpha('#ffffff', 0.12); g.fillRect(-4, y, lowFront + 4, 1); }
+  g.restore();
+  for (const row of rowsLo) crowd(g, -4, lowFront - (oy - row.y) * (depth * 0.7) / (oy - lowTop) - 4, [row], r, n);
+  // the upper tier: its underside a soffit in shadow, its raked face with crowd
+  g.fillStyle = withAlpha('#000000', 0.35); g.fillRect(-4, lowTop - 4, lowFront + 4, 6);
+  g.fillStyle = conc; g.beginPath(); g.moveTo(x0, top); g.lineTo(x0, top + H * 0.08); g.lineTo(-4, lowTop - 2); g.lineTo(-4, top - H * 0.35); g.closePath(); g.fill();
+  g.fillStyle = concLo; g.beginPath(); g.moveTo(x0, top + H * 0.08); g.lineTo(-4, lowTop - 2); g.lineTo(-4, lowTop + 4); g.lineTo(x0 - 4, top + H * 0.12); g.closePath(); g.fill();
+  // the front of the upper tier: a parapet with the edge it leaves from
+  g.fillStyle = n ? '#7a7c82' : '#d8dce0'; g.fillRect(x0 - clamp(1.2 * k, 10, 30), top - clamp(0.4 * k, 3, 10), clamp(1.2 * k, 10, 30), clamp(0.4 * k, 3, 10) + 2);
+  // crowd up the upper tier, behind the front
+  const rowsUp = []; for (let i = 1, s = 4.5; i < 9; i++) { const t = i / 9; rowsUp.push({ y: lerp(top - 2, top - H * 0.33, t), s, x1: lerp(x0 - clamp(2 * k, 20, 60), -4, t) }); }
+  for (const row of rowsUp) crowd(g, -4, row.x1, [row], r, n);
+  // the roof over the back, on its columns
+  g.fillStyle = n ? '#2a2c32' : '#5a5e66'; g.fillRect(-4, top - H * 0.45, x0 * 0.7, clamp(0.4 * k, 4, 10));
+  g.strokeStyle = n ? '#4a4e56' : '#8a8e96'; g.lineWidth = 2; g.beginPath(); g.moveTo(x0 * 0.1, top - H * 0.45); g.lineTo(x0 * 0.1, top - H * 0.33); g.stroke();
+  softShadow(g, x0 - depth * 0.3, oy + 2, depth * 0.6, 5, 0.6);
+}
+
+/** A football stadium: the stand across the pitch with its crowd and
+    floodlights, the pitch mown in stripes; from a height, the front of the
+    near stand's upper tier. */
+function pitch(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(157);
+  const horizon = oy - clamp((oy - 40) * 0.32, 40, 170);
+  sky(g, w, horizon - 60, x0, { far: 'none', seed: 91, clouds: 2 });
+  if (n) { g.fillStyle = withAlpha('#2a3550', 0.5); g.fillRect(0, 0, w, horizon); }
+  farStand(g, w, horizon, r, n, { tall: clamp((horizon - 20) * 0.35, 30, 90) });
+  mownTurf(g, w, horizon, h, n);
+  if (n) { const fl = g.createLinearGradient(0, horizon, 0, h); fl.addColorStop(0, 'rgba(255,246,216,0.12)'); fl.addColorStop(1, 'rgba(255,246,216,0)'); g.fillStyle = fl; g.fillRect(0, horizon, w, h - horizon); }
+  // the near touchline
+  g.fillStyle = withAlpha('#ffffff', n ? 0.5 : 0.85); g.fillRect(0, oy + clamp((h - oy) * 0.5, 14, 60), w, 2.5);
+  if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
+}
+
+/** A golf course: a tree line with a clubhouse beyond, the fairway mown in
+    stripes between the rough, a bunker clear of where it lands, and the
+    green with its pin and flag a little beyond the landing; from a height,
+    a raised tee on its wall of railway sleepers. */
+function golf(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(163);
+  const horizon = oy - clamp((oy - 40) * 0.3, 36, 150);
+  sky(g, w, horizon, x0, { far: 'none', seed: 101, clouds: 3 });
+  // the clubhouse, white with a dark roof, clear of the flight
+  const cx = clamp(x0 * 0.5, 20, w * 0.25), cw = clamp(6 * k, 50, 120), ch = cw * 0.35;
+  g.fillStyle = n ? '#8a8a90' : '#f4f1ea'; g.fillRect(cx, horizon - ch, cw, ch);
+  g.fillStyle = n ? '#3a3036' : '#5a4038'; g.beginPath(); g.moveTo(cx - 6, horizon - ch); g.lineTo(cx + cw * 0.5, horizon - ch * 1.7); g.lineTo(cx + cw + 6, horizon - ch); g.closePath(); g.fill();
+  g.fillStyle = n ? withAlpha(E.window, 0.85) : '#4a5a6a'; for (let i = 0; i < 5; i++) g.fillRect(cx + cw * 0.08 + i * cw * 0.19, horizon - ch * 0.7, cw * 0.1, ch * 0.35);
+  // the tree line: rounded crowns, darker below, along the far edge
+  for (let x = -10 + r() * 20; x < w + 20; x += 18 + r() * 22) {
+    if (x > cx - 10 && x < cx + cw + 10 && r() < 0.8) continue;
+    const R = 12 + r() * 14, ty = horizon - R * 0.6;
+    g.fillStyle = n ? '#1c2a1c' : '#3f6a3a'; g.beginPath(); g.arc(x, ty, R, 0, TAU); g.fill();
+    g.fillStyle = n ? '#243424' : '#4f7c45'; g.beginPath(); g.arc(x - R * 0.25, ty - R * 0.25, R * 0.6, 0, TAU); g.fill();
+  }
+  // the rough, then the fairway in its stripes, then the near rough
+  const rg = g.createLinearGradient(0, horizon, 0, h); rg.addColorStop(0, n ? '#2a3a26' : '#5b7f3e'); rg.addColorStop(1, n ? '#223020' : '#4c6d33');
+  g.fillStyle = rg; g.fillRect(0, horizon, w, h - horizon);
+  const fw0 = lerp(horizon, oy, 0.35), fw1 = oy + clamp((h - oy) * 0.4, 10, 50);
+  g.save(); g.beginPath(); g.rect(0, fw0, w, fw1 - fw0); g.clip();
+  mownTurf(g, w, fw0, h, n, { lo: '#7ab351', hi: '#86bf5c', line: false });
+  g.restore();
+  // the fairway's edge, a shade darker where it meets the rough
+  g.fillStyle = withAlpha('#000000', 0.12); g.fillRect(0, fw1, w, 3);
+  // the near rough: tufts of long grass, larger toward the viewer, a few
+  // daisies and a scatter of fallen leaves
+  g.lineWidth = 1.2;
+  for (let i = 0; i < (w * (h - fw1)) / 90; i++) {
+    const x = r() * w, y = fw1 + 4 + r() * (h - fw1 - 4), s = 3 + ((y - fw1) / Math.max(1, h - fw1)) * 7;
+    g.strokeStyle = r() < 0.5 ? (n ? '#1a2618' : '#3e5c2a') : (n ? '#34482e' : '#6e9450');
+    g.beginPath(); g.moveTo(x - s * 0.4, y - s); g.lineTo(x, y); g.lineTo(x + s * 0.1, y - s * 1.2); g.moveTo(x, y); g.lineTo(x + s * 0.5, y - s * 0.9); g.stroke();
+  }
+  if (!n) for (let i = 0; i < w / 40; i++) { const x = r() * w, y = fw1 + 10 + r() * (h - fw1 - 10); g.fillStyle = '#f6f4ee'; g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fill(); g.fillStyle = '#e8c547'; g.fillRect(x - 0.5, y - 0.5, 1, 1); }
+  // a bunker: raked sand in a hollow with a turf lip, never where it lands
+  const bx = x0 + (w - x0) * 0.3;
+  if (clearOf(bx, c, 90)) {
+    const bw = clamp(5 * k, 50, 140);
+    g.fillStyle = n ? '#6e6250' : '#e8d6a6'; g.beginPath(); g.ellipse(bx, oy - 2, bw / 2, bw * 0.08, 0, 0, TAU); g.fill();
+    g.strokeStyle = withAlpha(n ? '#4a4030' : '#c9b07c', 0.8); g.lineWidth = 1; for (let i = -2; i <= 2; i++) { g.beginPath(); g.ellipse(bx, oy - 2, bw * (0.3 + i * 0.03), bw * 0.04, 0, Math.PI, TAU); g.stroke(); }
+    g.fillStyle = withAlpha('#000000', 0.18); g.beginPath(); g.ellipse(bx, oy - 2 - bw * 0.04, bw / 2, bw * 0.04, 0, Math.PI, TAU); g.fill();
+  }
+  // the green round where it lands, and the pin just beyond, its flag waving
+  const land = (c.clearX || [])[0];
+  if (land != null && land > x0 + 20) {
+    const gw = clamp(10 * k, 70, 220);
+    g.fillStyle = n ? '#3a5a32' : '#9ccc6a'; g.beginPath(); g.ellipse(land + gw * 0.1, oy, gw / 2, clamp(gw * 0.05, 4, 10), 0, 0, TAU); g.fill();
+    g.strokeStyle = withAlpha('#ffffff', n ? 0.05 : 0.2); g.lineWidth = 1; g.beginPath(); g.ellipse(land + gw * 0.1, oy, gw / 2, clamp(gw * 0.05, 4, 10), 0, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
+    const px = land + clamp(2.5 * k, 22, 60), ph = clamp(2.2 * k, 26, 60);
+    g.fillStyle = '#1b1d22'; g.beginPath(); g.ellipse(px, oy, 3.5, 1.4, 0, 0, TAU); g.fill();
+    g.strokeStyle = n ? '#c8c8cc' : '#f4f4f4'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(px, oy); g.lineTo(px, oy - ph); g.stroke();
+    const wv = Math.sin(phase * 4) * 2;
+    g.fillStyle = n ? '#b8a040' : '#f2c21b'; g.beginPath(); g.moveTo(px, oy - ph); g.quadraticCurveTo(px + ph * 0.18, oy - ph + wv - 2, px + ph * 0.36, oy - ph + ph * 0.1 + wv); g.lineTo(px, oy - ph + ph * 0.24); g.closePath(); g.fill();
+  }
+  if (H0 > 0) {
+    // the raised tee: a bank of turf on a wall of railway sleepers
+    const tw = clamp(H0 * k * 1.2, 60, 220), sl = n ? '#4a3a2c' : '#6e5038', slHi = n ? '#5a4a3a' : '#8a6a4a';
+    g.fillStyle = n ? '#2c3e28' : '#6a9a48'; g.beginPath(); g.moveTo(x0, top); g.lineTo(x0 - tw, top); g.quadraticCurveTo(x0 - tw - (oy - top) * 0.6, lerp(top, oy, 0.4), x0 - tw - (oy - top) * 1.4, oy + 2); g.lineTo(x0, oy + 2); g.closePath(); g.fill();
+    const sh = clamp(0.25 * k, 4, 10);
+    for (let y = top, i = 0; y < oy; y += sh, i++) { g.fillStyle = i % 2 ? sl : slHi; g.fillRect(x0 - clamp(1.2 * k, 10, 30), y, clamp(1.2 * k, 10, 30), Math.min(sh, oy - y)); g.fillStyle = withAlpha('#000000', 0.3); g.fillRect(x0 - clamp(1.2 * k, 10, 30), y + sh - 1, clamp(1.2 * k, 10, 30), 1); }
+    g.fillStyle = n ? '#3a5a32' : '#9ccc6a'; g.fillRect(x0 - tw, top - 2, tw, 3);
+    // the tee markers either side
+    g.fillStyle = '#e8e8ea'; g.beginPath(); g.arc(x0 - tw * 0.85, top - 3, 3, 0, TAU); g.fill();
+  }
+}
+
+/** An athletics stadium: the stand across with its crowd and floodlights,
+    the far straight's red lanes, the infield turf with white arcs every
+    ten metres from where it is thrown; the near track along the front;
+    from a height, the front of the near stand. */
+function stadium(g, c) {
+  const { w, h, k, X, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(167);
+  const horizon = oy - clamp((oy - 40) * 0.34, 44, 180);
+  sky(g, w, horizon - 60, x0, { far: 'none', seed: 111, clouds: 2 });
+  if (n) { g.fillStyle = withAlpha('#2a3550', 0.5); g.fillRect(0, 0, w, horizon); }
+  farStand(g, w, horizon, r, n, { tall: clamp((horizon - 20) * 0.35, 30, 90) });
+  // the far straight: red lanes, white lines
+  const lane = clamp((oy - horizon) * 0.06, 3, 10), red = n ? '#7a3a34' : '#c0533e';
+  g.fillStyle = red; g.fillRect(0, horizon, w, lane * 6);
+  g.fillStyle = withAlpha('#ffffff', n ? 0.5 : 0.85); for (let i = 0; i <= 6; i++) g.fillRect(0, horizon + i * lane, w, 1);
+  // the infield
+  mownTurf(g, w, horizon + lane * 6, h, n, { line: false });
+  // the throwing arcs, every ten metres out from where it is thrown
+  if (X) {
+    g.strokeStyle = withAlpha('#ffffff', n ? 0.4 : 0.75); g.lineWidth = 1.4;
+    for (let d = 10; X(d) < w + 40; d += 10) { const R = X(d) - X(0); g.beginPath(); g.ellipse(X(0), oy, R, clamp(R * 0.04, 3, 14), 0, Math.PI * 1.12, Math.PI * 1.88); g.stroke(); g.beginPath(); g.ellipse(X(0), oy, R, clamp(R * 0.04, 3, 14), 0, Math.PI * 0.05, Math.PI * 0.35); g.stroke(); }
+  }
+  // the near track along the front of the frame
+  const ny = oy + clamp((h - oy) * 0.45, 16, 70);
+  // the near track: six lanes along the bottom of the frame, no more
+  const nb = Math.min(h - ny, lane * 14);
+  if (ny < h) { g.fillStyle = red; g.fillRect(0, h - nb, w, nb); g.fillStyle = withAlpha('#ffffff', n ? 0.5 : 0.85); for (let y = h - nb, i = 0; y < h && i < 8; y += lane * (1.6 + i * 0.4), i++) g.fillRect(0, y, w, 1.5); }
+  if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium };

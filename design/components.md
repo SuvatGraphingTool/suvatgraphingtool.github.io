@@ -341,6 +341,28 @@ sparks at the launch; after its burst, only the charred tube and stick fall,
 tumbling); it trails smoke and bursts by default. A backdrop's `lands`
 (forest leaves, desert sand, site mud) is its landing's effect.
 
+
+Batch 8, the sports grounds. Places `pitch` (a football stadium: the stand
+across with its crowd, roof and floodlight pylons, advertising boards, the
+pitch mown in stripes; from a height, `grandstand()`: an upper tier
+cantilevered out to its front edge over a lower tier set back, crowd on
+both), `golf` (a tree line and a clubhouse, the fairway in stripes between
+the rough, a bunker clear of the landing, the green round where it lands
+and the pin just beyond, its flag waving; from a height, a raised tee on a
+wall of railway sleepers) and `stadium` (athletics: the far straight's red
+lanes, the infield with white arcs every ten metres out from the throw, the
+near track along the foot of the frame). Helpers `crowd()`, `farStand()`,
+`mownTurf()`. Effect `net` in `impacts.js` as `goal(g, G, age, life)`: a
+goal side on, its front post where the path comes down through 1.8 m and
+its net just behind the landing, the back bulging and swinging back when
+the ball meets it; a football (or a ball) on a pitch goes in the goal by
+default, anything else digs a divot. `archer(…, { pose, aim, ring })` and
+`archerHand(H, aim)` in `athletes.js`: an arrow is shot by an archer, the
+bow arm out along the aim, the string drawn to the cheek and loosed; the
+arrow sits on the bow (sized to the archer) and eases onto the engine's
+path. Golf and athletics words (`fairway`, `tee box`, `shot put`, `athletics
+track`…) name their places; football words keep the app's own pitch.
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,
