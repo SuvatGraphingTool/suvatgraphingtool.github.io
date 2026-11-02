@@ -334,7 +334,7 @@ function launch(canvas, o) {
   const swing = m.going ? clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1) : 0;
   // a tennis ball is served, a baseball or a cricket ball batted: where the racquet or the bat meets it
   // (at hand height only: from a stand or a wall it is thrown, never batted)
-  const hits = thrown && (byHand || !(H0 > 0)) && (kind === 'tennisBall' ? SERVE_AT : kind === 'baseball' || kind === 'cricketBall' ? BAT_AT : kind === 'basketball' ? SHOOT_AT : null);
+  const hits = thrown && (byHand || !(H0 > 0)) && (kind === 'tennisBall' ? SERVE_AT : kind === 'baseball' || kind === 'cricketBall' ? BAT_AT : kind === 'basketball' ? (byHand ? SHOOT_AT : null) : null);
   // at a well, the thrower stands at the well head, clear of the shaft
   let th = TH(k), feet = R.backdrop === 'well' ? x0 - 26 - 13 - 10 - th * 0.18 : x0 - th * (f.vertical ? 0.5 : 0.2), stand = top;
   if (byHand) {
@@ -357,7 +357,7 @@ function launch(canvas, o) {
     // the racquet or the bat meets it at the engine's point (rule 4) as the clock starts
     // (a shooter holds the ball up at the release point until it goes: the ball is at the engine's start)
     const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.06 * f.tMax), 0, 1) : kind === 'basketball' ? 0.5 : 0;
-    (kind === 'tennisBall' ? server : kind === 'basketball' ? shooter : batter)(g, feet, stand, th, P, { pose, ring: m.ring, bat: kind === 'cricketBall' ? 'cricket' : 'baseball' });
+    (kind === 'tennisBall' ? server : kind === 'basketball' ? shooter : batter)(g, feet, stand, th, P, { pose, ring: m.ring, bat: kind === 'cricketBall' ? 'cricket' : 'baseball', ball: kind === 'basketball' ? { x: X(0), y: Y(H0) } : null });
   } else if (shoots) {
     const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.05 * f.tMax), 0, 1) : 0;
     archer(g, feet, stand, th, P, { pose, aim, ring: m.ring });

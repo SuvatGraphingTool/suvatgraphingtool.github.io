@@ -235,8 +235,8 @@ const head_ = head;
     SHOOT_AT (0.5), and the wrist flicked through, arm held up (1). The guide
     hand comes off the ball at the release. In a vest and shorts. */
 export const SHOOT_AT = { x: 0.16, y: 1.2 };
-export function shooter(g, X, Y, H, P, { pose = 0, ring = null } = {}) {
-  const C = colours(ring), E = env(), u = Math.max(0, Math.min(1, pose)), vest = ring || (E.night ? '#3a4a7a' : '#2f5fa8');
+export function shooter(g, X, Y, H, P, { pose = 0, ring = null, ball = null } = {}) {
+  const C = colours(ring), E = env(), u = Math.max(0, Math.min(1, pose)), vest = ring || (E.night ? '#3a4a7a' : '#2f5fa8'), shorts = E.night ? '#1e2236' : '#1b2a4a';
   const ext = Math.min(1, u / 0.5);
   softShadow(g, X, Y + 1, H * 0.28, H * 0.05, 0.8);
   // the legs: knees bent at the start, straightening to the release
@@ -246,22 +246,23 @@ export function shooter(g, X, Y, H, P, { pose = 0, ring = null } = {}) {
   limb(g, [hip, knee(hip, back, thigh, shin, 1), back], C.skinFar, H * 0.065);
   limb(g, [hip, knee(hip, front, thigh, shin, 1), front], C.skin, H * 0.07);
   for (const F of [back, front]) { g.fillStyle = '#f2f2f0'; g.beginPath(); g.ellipse(F.x + H * 0.03, F.y - H * 0.015, H * 0.065, H * 0.028, 0, 0, TAU); g.fill(); g.strokeStyle = '#2b2628'; g.lineWidth = 1; g.stroke(); }
-  // the shorts and the vest, its number panel plain
-  g.fillStyle = vest; g.beginPath(); g.moveTo(hip.x - H * 0.1, hip.y - H * 0.02); g.lineTo(hip.x + H * 0.1, hip.y - H * 0.02); g.lineTo(hip.x + H * 0.12, hip.y + H * 0.16); g.lineTo(hip.x - H * 0.12, hip.y + H * 0.16); g.closePath(); g.fill();
-  const sh = { x: hip.x + H * 0.03, y: hip.y - H * 0.3 };
-  limb(g, [hip, sh], vest, H * 0.17);
-  g.fillStyle = withAlpha('#ffffff', 0.85); g.fillRect(sh.x - H * 0.04, sh.y + H * 0.08, H * 0.08, H * 0.05);
-  // the shooting hand: from the forehead up and forward to the release point, then the wrist flicks over
-  const rel = { x: X + SHOOT_AT.x * H, y: Y - SHOOT_AT.y * H };
-  const start = { x: sh.x + H * 0.1, y: sh.y - H * 0.14 + sink * 0.2 };
-  const hand = u <= 0.5 ? { x: lerp(start.x, rel.x, ext), y: lerp(start.y, rel.y, ext) } : rel;
-  const elbow = { x: lerp(sh.x + H * 0.14, (sh.x + hand.x) / 2 + H * 0.02, ext), y: lerp(sh.y - H * 0.02, (sh.y + hand.y) / 2, ext) };
-  // the guide hand at the ball's side, coming away at the release
-  const guide = u < 0.5 ? { x: hand.x - H * 0.05, y: hand.y + H * 0.02 } : { x: sh.x + H * 0.08, y: sh.y - H * 0.22 };
-  limb(g, [sh, { x: (sh.x + guide.x) / 2 - H * 0.03, y: (sh.y + guide.y) / 2 }, guide], C.skinFar, H * 0.05);
+  // the shorts, darker than the vest, a leg each, to the knee
+  for (const F of [back, front]) { const kn = knee(hip, F, thigh, shin, 1); limb(g, [hip, { x: lerp(hip.x, kn.x, 0.75), y: lerp(hip.y, kn.y, 0.75) }], shorts, H * 0.1); }
+  const sh = { x: hip.x + H * 0.06, y: hip.y - H * 0.27 };
+  limb(g, [hip, { x: sh.x - H * 0.01, y: sh.y }], vest, H * 0.17);
+  g.fillStyle = withAlpha('#ffffff', 0.85); g.fillRect(sh.x - H * 0.05, sh.y + H * 0.08, H * 0.08, H * 0.05);
+  head(g, sh.x - H * 0.01, sh.y - H * 0.12, H * 0.075, C, null);
+  // the shooting hand: from the forehead up and forward to the release point (or to where the ball
+  // is, if the figure is drawn larger than to scale), then the wrist flicks over
+  const rel = ball ?? { x: X + SHOOT_AT.x * H, y: Y - SHOOT_AT.y * H };
+  const start = { x: sh.x + H * 0.08, y: sh.y - H * 0.12 + sink * 0.2 };
+  const hand = u <= 0.5 && !ball ? { x: lerp(start.x, rel.x, ext), y: lerp(start.y, rel.y, ext) } : rel;
+  const elbow = { x: lerp(sh.x + H * 0.14, (sh.x + hand.x) / 2 + H * 0.03, ext), y: lerp(sh.y - H * 0.02, (sh.y + hand.y) / 2 + H * 0.02, ext) };
+  // the guide hand on the ball's side, its elbow out behind; it drops away once the ball goes
+  const holding = u <= 0.5, guide = holding ? { x: hand.x - H * 0.07, y: hand.y + H * 0.06 } : { x: sh.x + H * 0.12, y: sh.y - H * 0.05 };
+  limb(g, [sh, { x: holding ? guide.x - H * 0.12 : sh.x + H * 0.04, y: holding ? (sh.y + guide.y) / 2 : sh.y + H * 0.08 }, guide], C.skinFar, H * 0.05);
   limb(g, [sh, elbow, hand], C.skin, H * 0.055);
-  // the wrist flicked through after the release: the fingers pointing down
-  if (u > 0.5) { const f = (u - 0.5) / 0.5; g.strokeStyle = C.skin; g.lineWidth = H * 0.04; g.lineCap = 'round'; g.beginPath(); g.moveTo(hand.x, hand.y); g.lineTo(hand.x + H * 0.05, hand.y + H * 0.04 * f); g.stroke(); }
-  head_(g, sh.x + H * 0.03, sh.y - H * 0.1, H * 0.075, C, E.night ? '#3a3036' : '#2b2628');
+  // the wrist flicked through after the release: the fingers bent down
+  if (u > 0.5) { const f = (u - 0.5) / 0.5, a = lerp(0, Math.PI / 3, f); g.strokeStyle = C.skin; g.lineWidth = H * 0.05; g.lineCap = 'round'; g.beginPath(); g.moveTo(hand.x, hand.y); g.lineTo(hand.x + Math.cos(a) * H * 0.07, hand.y + Math.sin(a) * H * 0.07); g.stroke(); }
 }
 
