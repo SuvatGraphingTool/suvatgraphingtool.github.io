@@ -34,7 +34,7 @@ const ringed = (g, x, y, L, ring) => { if (!ring) return; g.strokeStyle = ring; 
 
 /** A four-legged runner (a cat, a dog): crouched, stretched out, reaching
     down; its tail out behind, its head up and forward. */
-function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears, tail, snout }) {
+function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears, tail, snout, head = null }) {
   const s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land));
   // gathered on its haunches before the spring: tail end low, head up
   g.save(); g.translate(x, y); g.rotate(spin - (1 - s) * (1 - d) * 0.22);
@@ -69,6 +69,8 @@ function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears,
   if (ears === 'pointed') for (const dx of [-0.35, 0.2]) { g.beginPath(); g.moveTo(hx + hr * dx - hr * 0.3, hy - hr * 0.6); g.lineTo(hx + hr * dx, hy - hr * 1.45); g.lineTo(hx + hr * dx + hr * 0.3, hy - hr * 0.55); g.closePath(); g.fill(); }
   else { g.beginPath(); g.ellipse(hx - hr * 0.3, hy - hr * 0.1, hr * 0.32, hr * 0.7, 0.5 - s * 0.6, 0, TAU); g.fill(); }
   eye(g, hx + hr * 0.4, hy - hr * 0.2, hr * 0.13);
+  // what this animal's head has of its own (a goat's horns and beard)
+  if (head) head(g, hx, hy, hr);
   g.restore();
 }
 
@@ -82,6 +84,18 @@ export function cat(g, x, y, L, P, o = {}) {
 export function dog(g, x, y, L, P, o = {}) {
   const E = env();
   quadruped(g, x, y, L, { ...o, fur: E.night ? '#9a6e4a' : '#b9824f', furLo: E.night ? '#614330' : '#7c5233', ears: 'floppy', tail: { w: 0.055, lift: 0.08 }, snout: 0.6 });
+  ringed(g, x, y, L, o.ring);
+}
+
+/** A goat: an off-white shaggy coat, swept-back horns and a beard, a
+    short tail; sure-footed, it springs from a rock. */
+export function goat(g, x, y, L, P, o = {}) {
+  const E = env();
+  quadruped(g, x, y, L, { ...o, fur: E.night ? '#b8b2a8' : '#ebe5d8', furLo: E.night ? '#7a746c' : '#a8a092', ears: 'pointed', tail: { w: 0.04, lift: 0.14 }, snout: 0.5, head: (g2, hx, hy, hr) => {
+    g2.strokeStyle = E.night ? '#6a6058' : '#8a7a64'; g2.lineWidth = hr * 0.22; g2.lineCap = 'round';
+    for (const dx of [-0.1, 0.12]) { g2.beginPath(); g2.moveTo(hx + hr * dx, hy - hr * 0.7); g2.quadraticCurveTo(hx + hr * (dx - 0.2), hy - hr * 1.6, hx - hr * (0.9 - dx), hy - hr * 1.3); g2.stroke(); }
+    g2.fillStyle = E.night ? '#8a847a' : '#c8c0b0'; g2.beginPath(); g2.moveTo(hx + hr * 1.1, hy + hr * 0.6); g2.lineTo(hx + hr * 1.3, hy + hr * 1.35); g2.lineTo(hx + hr * 0.85, hy + hr * 0.65); g2.closePath(); g2.fill();
+  } });
   ringed(g, x, y, L, o.ring);
 }
 
@@ -240,9 +254,9 @@ export function fish(g, x, y, L, P, { ang = 0, phase = 0, ring = null } = {}) {
   g.restore();
 }
 
-export const ANIMALS = { cat, dog, monkey, frog, kangaroo };
+export const ANIMALS = { cat, dog, monkey, frog, kangaroo, goat };
 /** What leaps from the water and swims along its path, drawn along it. */
 export const SWIMMERS = { dolphin, fish };
 /** How far below its middle each one's feet reach, as a fraction of L: the
     stage stands it on the edge and the ground with this. */
-export const FEET = { cat: 0.38, dog: 0.38, monkey: 0.44, frog: 0.24, kangaroo: 0.33 };
+export const FEET = { cat: 0.38, dog: 0.38, monkey: 0.44, frog: 0.24, kangaroo: 0.33, goat: 0.4 };

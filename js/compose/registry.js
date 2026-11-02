@@ -90,6 +90,8 @@ export const FIGURES = {
   stone:    { label: 'a stone', m: 0.08, min: 11, views: ['side'], thrown: true },
   particle: { label: 'a particle', m: 0.1, min: 10, views: ['side', 'plan'], thrown: true },
   apple:    { label: 'an apple', m: 0.08, min: 12, views: ['side'], small: true },
+  hailstone: { label: 'a hailstone', m: 0.03, min: 10, views: ['side'], small: true, prop: true },
+  raindrop: { label: 'a raindrop', m: 0.004, min: 10, views: ['side'], small: true, prop: true },
   coin:     { label: 'a coin', m: 0.025, min: 11, views: ['side'], thrown: true },
   marble:   { label: 'a marble', m: 0.016, min: 10, views: ['side'], thrown: true },
   diver:    { label: 'a person', m: 1.75, min: 64, views: ['side'] },
@@ -125,6 +127,7 @@ export const FIGURES = {
   frog:     { label: 'a frog', m: 0.12, min: 24, views: ['side'], animal: true },
   bird:     { label: 'a bird', m: 0.4, min: 46, views: ['side'], flier: true },
   kangaroo: { label: 'a kangaroo', m: 1.6, min: 52, views: ['side'], animal: true },
+  goat:     { label: 'a goat', m: 1.2, min: 46, views: ['side'], animal: true },
   dolphin:  { label: 'a dolphin', m: 2.5, min: 64, views: ['side'], swims: true },
   fish:     { label: 'a fish', m: 0.7, min: 40, views: ['side'], swims: true },
 };
@@ -138,6 +141,7 @@ export const CARRIERS = {
   plane:      { label: 'a plane', words: /\b(aeroplane|airplane|aircraft|plane|glider|jet|bomber)\b/ },
   drone:      { label: 'a drone', words: /\b(drone|quadcopter)\b/ },
   bird:       { label: 'a bird', words: /\b(bird|eagle|seagull|gull|hawk|crow|pelican|heron|osprey|owl)\b/ },
+  cloud:      { label: 'a cloud', words: /\b(storm cloud|thundercloud|rain cloud|cloud)\b/ },
 };
 /** What sends it off, drawn at the launch point instead of a person: a
     recipe's `launcher`. `verb` is how a title says it goes. */
@@ -370,7 +374,7 @@ const WORDS = [
   [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
   [/\b(javelin)\b/, 'javelin'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
   [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],
-  [/\b(kangaroo|wallaby)\b/, 'kangaroo'], [/\b(dolphin|porpoise|orca|killer whale)\b/, 'dolphin'], [/\b(fish|salmon|trout|flying fish)\b/, 'fish'],
+  [/\b(kangaroo|wallaby)\b/, 'kangaroo'], [/\b(goat|ibex|chamois|deer|sheep|lamb)\b/, 'goat'], [/\b(hailstone|hail ?stones?|hail)\b/, 'hailstone'], [/\b(raindrop|rain ?drop|drop of water|drop of rain)\b/, 'raindrop'], [/\b(dolphin|porpoise|orca|killer whale)\b/, 'dolphin'], [/\b(fish|salmon|trout|flying fish)\b/, 'fish'],
   [/\b(bus|coach|minibus)\b/, 'bus'], [/\b(tractor|quad bike)\b/, 'tractor'], [/\b(speedboat|speed boat|motorboat|motor boat|powerboat)\b/, 'speedboat'],
   [/\b(jet ?ski|water scooter)\b/, 'jetski'], [/\b(ski jumper|skier|ski)\b/, 'skier'], [/\b(snowboard(?:er)?)\b/, 'snowboarder'],
   [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
@@ -383,7 +387,7 @@ const WORDS = [
 const NEAREST = [
   [/\b(dart|crossbow bolt|spear)\b/, 'arrow'],
   [/\b(surfer|bmx)\b/, 'diver'],
-  [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone|nut|clam|mussel|prey|mouse)\b/, 'particle'],
+  [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|nut|clam|mussel|prey|mouse)\b/, 'particle'],
   [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|locust)\b/, 'frog'],
   [/\b(animal|bat|insect|bee)\b/, 'particle'],
 ];
@@ -456,7 +460,7 @@ const ONLY_HERE = [
   [/\b(golf course|fairway|golf green|putting green|tee(?:ing)? ground|tee box|raised tee|on(?:to)? (?:a|the) green|chip(?:s|ped)? (?:a|the) (?:golf )?ball|golfer)\b/, 'golf'],
   [/\b(athletics stadium|athletics track|running track|shot put|shot-put|putts? the shot|javelin throw|discus|hammer throw|throws the hammer|olympic stadium|in the stadium)\b/, 'stadium'],
   [new RegExp(`${FROM}(quay|quayside|harbour wall|jetty|dock|harbour)\\b`), 'harbour'],
-  [new RegExp(`${FROM}(ledge|mountain|mountainside|peak|crag|mountain ledge)\\b`), 'mountain'],
+  [new RegExp(`${FROM}(ledge|mountain|mountainside|peak|crag|mountain ledge|rock|boulder|outcrop)\\b`), 'mountain'],
   [new RegExp(`${FROM}(table|desk|bench|worktop|counter|shelf|workbench)\\b(?!\\s+(?:of|tennis))`), 'table'],
   [new RegExp(`${FROM}(balcony|window|house|bungalow|roof)\\b(?!\\s+of)`), 'house'],
   [/\b(?:in|inside)\s+(?:a|the)\s+(sports hall|gym(?:nasium)?)\b|\b(basketball court|netball court|badminton court|indoor court)\b/, 'hall'],

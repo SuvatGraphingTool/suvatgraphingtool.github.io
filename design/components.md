@@ -486,7 +486,13 @@ night, lobed old flows on the plain, its rock's smoke under the flown path;
 the quarry's far wall recedes in hazed grey benches with rubble on each
 ledge, its near face warmer and darker with shadowed steps, its pool and
 truck placed clear of the whole flight; the landings are named "the
-street", "the plain", "the quarry floor".
+street", "the plain", "the quarry floor". Then: carrier `cloud` (a rain cloud,
+billowing domes lit from above over a flat dark base, rain streaking from it,
+lightning now and then at night; "falling from a cloud"); props `hailstone`
+and `raindrop` (fall by themselves, no thrower); animal `goat` (a shaggy
+off-white coat, swept-back horns and a beard, through `quadruped`'s new
+`head` hook); a rock, a boulder or an outcrop it leaves from is the
+mountain's ledge ("A goat off a rock").
 
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn

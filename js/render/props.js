@@ -153,7 +153,20 @@ function volleyball(g, x, y, R, spin) {
   rim(g, x, y, R, 'rgba(0,0,0,0.45)');
 }
 
-export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball };
+/** A hailstone: a lump of clouded ice, layered, catching the light. */
+function hailstone(g, x, y, R) {
+  sphere(g, x, y, R, '#ffffff', '#dfeaf2', '#8fa6b8');
+  g.strokeStyle = 'rgba(255,255,255,0.7)'; g.lineWidth = 1; g.beginPath(); g.arc(x, y, R * 0.55, 0, TAU); g.stroke();
+  rim(g, x, y, R, 'rgba(60,90,120,0.6)');
+}
+/** A raindrop: a falling drop, round below, drawn out to a point above. */
+function raindrop(g, x, y, R) {
+  const gr = g.createRadialGradient(x - R * 0.3, y, R * 0.1, x, y, R * 1.2); gr.addColorStop(0, '#e8f4ff'); gr.addColorStop(0.6, '#7ab4e0'); gr.addColorStop(1, '#3a6a9a');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(x, y - R * 2); g.quadraticCurveTo(x + R, y - R * 0.4, x + R, y + R * 0.1); g.arc(x, y + R * 0.1, R, 0, Math.PI); g.quadraticCurveTo(x - R, y - R * 0.4, x, y - R * 2); g.fill();
+  g.strokeStyle = 'rgba(30,60,90,0.5)'; g.lineWidth = 1; g.stroke();
+}
+
+export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball, hailstone, raindrop };
 
 /** Draw a prop by name at (x, y), R px, turned by spin, ringed for B. */
 export function drawProp(g, kind, x, y, R, spin = 0, ring = null, o = {}) {

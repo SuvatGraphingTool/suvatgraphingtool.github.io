@@ -14,6 +14,7 @@ const TAU = Math.PI * 2;
 /** How long each is drawn at k px a metre (a real length, never too small),
     and how far above the point it lets go from it reaches. */
 export function carrierSize(kind, k, w) {
+  if (kind === 'cloud') return { s: clamp(w * 0.32, 160, 420), up: clamp(w * 0.32, 160, 420) * 0.32 };
   const s = kind === 'helicopter' ? clamp(12 * k, 80, w * 0.3) : kind === 'plane' ? clamp(12 * k, 130, w * 0.32)
     : kind === 'drone' ? clamp(0.9 * k, 66, 100) : clamp(0.9 * k, 62, 92);
   const up = kind === 'helicopter' ? s * 0.42 : kind === 'plane' ? s * 0.26 : kind === 'drone' ? s * 0.42 : s * 0.55;
@@ -162,5 +163,25 @@ export function bird(g, x, y, s, P, { phase = 0, fold = null } = {}) {
 }
 const lerpPt = (a, b, t) => a + (b - a) * t;
 
+/** A rain cloud, its base at the point it lets go from: billowing domes
+    lit from above, a flat dark base, rain or hail streaking from it, a
+    flicker of lightning now and then at night. `s` px across. */
+export function cloud(g, x, y, s, P, { phase = 0 } = {}) {
+  const E = env(), n = E.night, base = y - s * 0.02;
+  const puffs = [[-0.36, 0.1, 0.17], [-0.2, 0.2, 0.22], [0, 0.26, 0.25], [0.2, 0.19, 0.21], [0.37, 0.09, 0.15], [-0.08, 0.1, 0.2], [0.12, 0.08, 0.18]];
+  // rain streaks below it, slanting with the wind
+  g.strokeStyle = withAlpha(n ? '#8a9aaa' : '#7a8a9a', 0.45); g.lineWidth = 1;
+  for (let i = 0; i < 26; i++) { const rx = x + (i / 25 - 0.5) * s * 0.75, off = ((phase * 90 + i * 23) % 60); g.beginPath(); g.moveTo(rx - off * 0.15, base + off); g.lineTo(rx - (off + 12) * 0.15, base + off + 12); g.stroke(); }
+  for (const [dx, dy, r] of puffs) {
+    const cx = x + dx * s, cy = base - dy * s, R = r * s;
+    const gr = g.createRadialGradient(cx - R * 0.2, cy - R * 0.5, R * 0.1, cx, cy, R);
+    gr.addColorStop(0, n ? '#8a8e98' : '#f4f6f8'); gr.addColorStop(0.6, n ? '#5a5e68' : '#c8ccd4'); gr.addColorStop(1, n ? '#3a3e48' : '#8a909c');
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fill();
+  }
+  // the flat, dark base
+  g.fillStyle = n ? '#2e323c' : '#6a707c'; g.beginPath(); g.ellipse(x, base - s * 0.02, s * 0.45, s * 0.05, 0, 0, TAU); g.fill();
+  if (n && Math.sin(phase * 3.1) > 0.97) { g.strokeStyle = 'rgba(255,250,220,0.9)'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + s * 0.2, base); g.lineTo(x + s * 0.16, base + s * 0.12); g.lineTo(x + s * 0.22, base + s * 0.14); g.lineTo(x + s * 0.17, base + s * 0.28); g.stroke(); }
+}
+
 /** Every carrier this file draws, by the registry's name. */
-export const CARRIER_ART = { helicopter, plane, drone, bird };
+export const CARRIER_ART = { helicopter, plane, drone, bird, cloud };

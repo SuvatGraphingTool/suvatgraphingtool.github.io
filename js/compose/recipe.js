@@ -225,7 +225,7 @@ export function titleOf(r) {
   const what = Up(F.label);
   const where = B.on || `${{ hall: 'in', sea: F.swims ? 'from' : 'over', forest: 'in' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
   if (r.engine === 'projectile') {
-    if (r.backdrop === 'air') return `${what} let go from ${r.carrier && r.carrier !== 'balloon' ? carrierName(r) : 'the air'}`;
+    if (r.backdrop === 'air') return `${what} ${r.carrier === 'cloud' ? 'falling from' : 'let go from'} ${r.carrier && r.carrier !== 'balloon' ? carrierName(r) : 'the air'}`;
     if (r.backdrop === 'well') return `${what} down a well`;
     if (r.launcher) return `${what} ${LAUNCHERS[r.launcher].verb} ${LAUNCHERS[r.launcher].label}`;
     if (r.backdrop === 'volcano') return `${what} thrown out of a volcano’s crater`;
@@ -274,7 +274,7 @@ export function compose(raw) {
   const r = c.recipe, E = ENGINES[r.engine], B = placeOf(r), base = KITS[E.kit];
   const id = idOf(r), name = titleOf(r);
   const who = r.objects.map((o) => FIGURES[o.figure].label).join(' and ');
-  const what = r.backdrop === 'air' ? `open sky high above fields, ${carrierName(r)} letting it go` : B.what;
+  const what = r.backdrop === 'air' ? `open sky high above fields, ${carrierName(r)} ${r.carrier === 'cloud' ? 'it falls from' : 'letting it go'}` : B.what;
   // on Earth unless the question says otherwise — the reader leaves g out
   // then — at the app's own Earth value, as the twelve are
   // on the Moon or Mars, its own g unless the question gives one
