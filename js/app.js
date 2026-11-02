@@ -430,6 +430,7 @@ function chooseScenario(id, { example = false } = {}) {
   state.h = undefined;
   state.descent = {};
   state.mark = undefined;            // the point a road question times it at
+  state.atTime = undefined;          // or the time it asks about
   state.who = 'lorry';               // and what it is that moves along the road
   state.kit = {};                    // a library scenario's own boxes
   state.runs = null; state.part = -1; state.stopAt = null;   // a question in parts, see js/parts/
@@ -790,6 +791,7 @@ function buildRoadExtras() {
   $('x-mark').addEventListener('input', (e) => {
     const v = parseValue(e.target.value);
     state.mark = v !== undefined && isFinite(v) ? v : undefined;
+    if (state.mark != null) state.atTime = undefined;
     $('x-mid').setAttribute('aria-pressed', 'false');
     recompute();
   });
@@ -1177,7 +1179,7 @@ function recomputeOne() {
 function recomputeRoad() {
   const g = state.given;
   const fig = FIGURES[state.who] || FIGURES.lorry;
-  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, who: fig.noun, brakes: fig.brakes, turns: !!fig.turns });
+  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, at: state.atTime, who: fig.noun, brakes: fig.brakes, turns: !!fig.turns });
   const msg = $('solve-msg'), btn = $('launch');
   if (!solved.ok) {
     if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
@@ -3448,7 +3450,7 @@ function readOne(x, { graph = true, solve = false } = {}) {
   if (r.markers.heightLine != null && state.markers) state.markers.heightLine = r.markers.heightLine;
   if (r.markers.target && state.markers) state.markers.target = r.markers.target;
   if (scenario.descent) state.descent = { ...r.descent };
-  if (scenario.road) { state.mark = r.mark; state.who = r.who || 'lorry'; }
+  if (scenario.road) { state.mark = r.mark; state.atTime = r.at; state.who = r.who || 'lorry'; }
   buildValuesScreen();              // which recomputes
   // The answer is shown in the chat, where the question was asked (js/ai/
   // ask.js opens it); the flight waits for the student to ask for it.
@@ -3582,9 +3584,10 @@ function askedHTML(id, x, solvedLike) {
     // of two answers the question's words cannot tell apart, the one they both come to:
     // from the ground, the greatest height above it and above the launch are one
     if (!p.find && p.either) {
-      const all = p.either.map((q) => ({ q, a: answerOf(q, solvedLike) }));
-      const same = all.every(({ a }) => a.ok && a.values.length === all[0].a.values.length
-        && a.values.every((v, i) => Math.abs(v - all[0].a.values[i]) <= 1e-9 * Math.max(1, Math.abs(v))));
+      // (one with no value here — the time from when B sets off, when both set off together — does not count)
+      const all = p.either.map((q) => ({ q, a: answerOf(q, solvedLike) })).filter(({ a }) => a.ok);
+      const same = all.every(({ a }) => a.values.length === all[0].a.values.length
+        && a.values.every((v, i) => Math.abs(v - all[0].a.values[i]) <= 1e-6 * Math.max(1, Math.abs(v))));
       if (!all.length || !same) return '';
       p = { ...all[0].q, label: p.label, ask: p.ask, prose: true };
     }

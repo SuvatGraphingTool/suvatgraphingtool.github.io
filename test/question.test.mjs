@@ -687,6 +687,19 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const TK = KITS[byId('over-the-wall').kit], wv = TK.solve(TK.read({ ...wall.boxes, g: 9.81 }));
   ok(wp[0].find === 'shown.at.t' && wp[1].find === 'shown.at.y', 'the time to reach the wall and the height it hits it at');
   ok(Math.abs(wv.shown.at.t - 1.4505) < 1e-4 && Math.abs(wv.shown.at.y - 6.4628) < 1e-4, '1.45 s and 6.46 m');
+  // round 8 (hand-written): a time past the motion, a cliff from where it lands
+  const roadWords = 'A particle moving in a straight line with constant deceleration passes O at 20 m/s and comes to rest 4 s later. (a) Find the deceleration. (b) Find its distance from O 6 s after passing O.';
+  const rd = toPlace({ understood: true, scenario: 'road', summary: 'x', u: 20, v: 0, t: 4, parts: [{ label: 'a', asks: 'deceleration', answer: 'a' }, { label: 'b', asks: 'distance from O after 6 s' }] }, roadWords);
+  ok(rd.atTime === 6 && rd.t === 4, 'a time the question asks about, not the motion’s own t: atTime 6');
+  const rs = solveRoad({ u: 20, v: 0, t: 4, at: 6 });
+  ok(rs.ok && rs.moment.byTime && rs.moment.s === 30 && rs.moment.v === -10, 'and 6 s after O it is 30 m from O, moving back at 10 m s⁻¹');
+  ok(one('road', 'distance from O after 6 s')?.find === 'moment.s' && one('road', 'distance travelled')?.find === 'five.s.value', '"after 6 s" is the moment’s distance; a plain distance is the whole one');
+  const { toApp } = await import('../js/core/question.js');
+  ok(toApp({ understood: true, scenario: 'road', summary: 'x', u: 20, v: 0, t: 4, atTime: 6 }).at === 6, 'the page reads atTime');
+  const cliffH = toPlace({ understood: true, scenario: 'platform-angle', summary: 'x', u: 20, angleDegrees: 35, s: 50, below: 'sea', asks: ['height of the cliff'] }, 'A stone is thrown from the top of a vertical cliff at 20 m/s at 35° above the horizontal and lands in the sea 50 m from the foot of the cliff. Find the height of the cliff.');
+  const cv = HK.solve(HK.read({ ...cliffH.boxes, g: 9.81 }));
+  ok(cv.ok && Math.abs(cv.h - 10.676) < 1e-3, 'a cliff’s height from where the stone lands: 10.68 m');
+  ok(one('from-a-height', 'height of the cliff')?.find === 'h', '"the height of the cliff" is the height it starts from');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

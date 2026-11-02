@@ -51,6 +51,7 @@ export const EXTRACTION_SCHEMA = {
     a: { type: 'number', description: 'road only: the acceleration in m/s². NEGATIVE when it is slowing down (braking, decelerating, retarding). Only if given.' },
     atMidpoint: { type: 'boolean', description: 'road only: true if a part asks about the mid-point between the two points.' },
     atDisplacement: { type: 'number', description: 'road only: a distance from the first point that a part asks about (not the mid-point).' },
+    atTime: { type: 'number', description: 'road only: a time from the first point that a part asks about, other than t itself ("its distance from O 6 s after passing O").' },
     apexAboveLaunch: { type: 'number', description: 'Greatest height ABOVE THE LAUNCH POINT, if GIVEN.' },
 
     // ── what only some scenarios need ───────────────────────────────────

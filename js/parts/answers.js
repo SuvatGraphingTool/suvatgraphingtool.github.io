@@ -31,6 +31,9 @@ export const ROAD_ANSWERS = [
   // the moment the question times: its mid-point, or a mark it names
   { key: 'tMid', kind: 'time', say: 'the time from the first point to the mid-point (or the mark)', find: 'moment.t', sym: 't', unit: 's', at: 'moment.t' },
   { key: 'vMid', kind: 'speed', say: 'the speed at the mid-point (or the mark)', find: 'moment.v', sym: 'v', unit: 'm s^-1', at: 'moment.t' },
+  // a time the question asks about, past the end of the motion too ("its distance from O after 6 s")
+  { key: 'sAt', kind: 'distance', say: 'how far from the first point it is at the time asked (after so many seconds)', find: 'moment.s', sym: 's', unit: 'm', at: 'moment.t', when: '\\b(after|at t ?=|at time)\\b' },
+  { key: 'vAt', kind: 'speed', say: 'its velocity at the time asked (after so many seconds)', find: 'moment.v', sym: 'v', unit: 'm s^-1', at: 'moment.t', when: '\\b(after|at t ?=|at time)\\b' },
 ];
 
 /**
@@ -107,7 +110,7 @@ export function fromReader(id, raw, boxes = []) {
       // the road's mid-point answers only where a mid-point or a mark is asked about
       // an answer with a `when` is offered only to the words it names ("the hoop")
       const m = offer.filter((a) => a.kind === k && (!/Mid$/.test(a.key || '') || /mid-?point|\bmark\b|halfway/.test(words))
-        && (!a.part?.when || new RegExp(a.part.when, 'i').test(words)));
+        && (!(a.part || a).when || new RegExp((a.part || a).when, 'i').test(words)));
       // "how far away is the hoop": the hoop's distance, never where it lands — unless the answer is about a hoop
       const thing = /\bhow far away (?:is|are) (?:the|a|an) ([a-z]+)/.exec(words)?.[1];
       if (m.length < 2) return m[0] && (!thing || String(m[0].say || '').toLowerCase().includes(thing)) ? m[0] : null;

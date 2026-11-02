@@ -19,6 +19,7 @@
 
 import { solve as solveFive, NAMES, UNITS } from './suvat.js';
 import { M, num, signed } from '../notation.js';
+import { snap } from './numeric.js';
 
 const FIVE = ['s', 'u', 'v', 'a', 't'];
 // Which three to lean on when more than three are given: the ones a road
@@ -108,7 +109,8 @@ export function timeToReach(f, s1) {
 
 /**
  * Any three of the five, and optionally a point to time it at.
- * @param k  { s, u, v, a, t, mark }  mark: metres from A, or 'mid'
+ * @param k  { s, u, v, a, t, mark, at }  mark: metres from A, or 'mid'; at: a time
+ *           from A the question asks about, other than t ("its distance from O after 6 s")
  * @returns the shape of solveLaunch: { ok, reason?, mode, params, f, derived,
  *          notes, five, extras, moment, convention, steps, ... }
  */
@@ -187,8 +189,22 @@ export function solveRoad(k = {}) {
     } else notes.push(q.reason);
   }
 
+  // A time the question asks about: where it is and how fast then, with the
+  // same acceleration — past its own t too, as the equations allow
+  if (moment == null && have(k.at) && k.at > EPS) {
+    const T = k.at, uu = V.u, aa = V.a;
+    const sT = snap(uu * T + 0.5 * aa * T * T), vT = snap(uu + aa * T);
+    moment = { t: T, s: sT, v: vT, byTime: true,
+      text: `At ${M`t = ${d(T)} [s]`} it is ${M`${d(Math.abs(sT))} [m]`} ${sT < 0 ? 'behind' : 'from'} the start, moving at ${M`${d(vT)} [m s^-1]`}.` };
+    markStep = { t: T, v: vT, rows: [
+      { f: M`s = ut + ½at^2`, s: M`${d(uu)} * ${d(T)} + ½ * ${sb(aa)} * ${d(T)}^2`, r: eqv('s', sT) },
+      { f: M`v = u + at`, s: M`${d(uu)} + ${sb(aa)} * ${d(T)}`, r: eqv('v', vT) },
+    ] };
+  }
+
   const derived = r.steps.map((st) => eqv(st.target, st.value));
-  if (moment) derived.push(`to ${moment.mid ? 'the mid-point' : 'that point'}, ${M`t = ${d(moment.t)} [s]`}`);
+  if (moment?.byTime) derived.push(moment.text);
+  else if (moment) derived.push(`to ${moment.mid ? 'the mid-point' : 'that point'}, ${M`t = ${d(moment.t)} [s]`}`);
 
   const five = {};
   for (const x of FIVE) {
@@ -229,9 +245,10 @@ export function roadWorking(solved) {
   }
   if (solved.markStep) {
     out.push({
-      title: solved.moment.mid ? 'To the mid-point of AB' : 'To that point',
+      title: solved.moment.byTime ? 'At the time asked about' : solved.moment.mid ? 'To the mid-point of AB' : 'To that point',
       rows: solved.markStep.rows,
-      note: Math.abs(solved.params.a) > EPS
+      note: solved.moment.byTime ? 'The same acceleration all the way: past the end of the motion too, the equations still say where it is.'
+        : Math.abs(solved.params.a) > EPS
         ? 'A quadratic in t has two roots. The one wanted is the first positive one: the other is before it set off, or after it stopped being watched.'
         : 'No acceleration, so it covers equal distances in equal times.',
     });

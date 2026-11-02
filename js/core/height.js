@@ -95,6 +95,14 @@ export function solveHeight(k0 = {}) {
   // diver, a car): "where the diver started", never "where it was thrown from"
   const place = PLACES[k.place] ? k.place : 'cliff', Pl = { ...PLACES[place], ...(BELOW[k.below] || {}), ...(k.from ? { from: k.from } : {}) };
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
+  // "lands 50 m from the foot of the cliff: find the height": how far out it
+  // lands and the launch give the time in the air, t = s/(u cos θ), and that the height
+  const sRows = [];
+  if (!have(k.h) && !have(k.t) && have(k.s) && k.s > 0 && have(k.u) && k.u > 0 && have(k.theta) && Math.abs(Math.abs(k.theta) - 90) > 1e-9) {
+    const tt = snap(k.s / (k.u * Math.cos(k.theta * Math.PI / 180)));
+    sRows.push({ f: M`t = s/(u cos theta)`, s: M`${d(k.s)}/(${d(k.u)} cos ${d(k.theta)}°)`, r: M`t = ${d(tt)} [s]` });
+    k = { ...k, t: tt };
+  }
   // the height may be left for the engine when the time in the air is given
   if (!have(k.h) && !have(k.t)) return fail(`Still needed: how high ${Pl.top} is above ${Pl.below} — or the time it takes to land, to find that height.`);
   if (have(k.h) && !(k.h > 0) && !(Pl.level && k.h === 0)) return fail(`${Pl.top.replace(/^./, (c) => c.toUpperCase())} is above ${Pl.below}: give its height as a positive number.`);
@@ -190,7 +198,7 @@ export function solveHeight(k0 = {}) {
   return {
     ok: true, mode: 'height', axis: straight ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical: straight, topRows, foundH: !have(k0.h),
     // the height, worked from the time in the air: s = u_y t − ½gt², and h = −s
-    hRows: have(k0.h) ? [] : [
+    hRows: have(k0.h) ? [] : [...sRows,
       { f: M`s = u_y t - ½gt^2`, s: M`${d(snap(f.uy))} * ${d(k.t)} - ½ * ${d(k.g)} * ${d(k.t)}^2`, r: M`s = ${d(-k.h)} [m]` },
       { f: M`h = -s`, s: '', r: M`h = ${d(k.h)} [m]` },
     ],

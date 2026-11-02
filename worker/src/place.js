@@ -228,7 +228,7 @@ function lanes(x) {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(timed(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words)), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(atTimed(timed(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words)), words);
 }
 
 /**
@@ -294,6 +294,19 @@ function timed(x, words) {
   const all = [...String(words || '').matchAll(/(\d+(?:\.\d+)?)\s*(?:s|secs?|seconds)\b(?!\s*[²2^-])/gi)].map((m) => Number(m[1]));
   const t = [...new Set(all)];
   return t.length === 1 && t[0] > 0 ? { ...x, t: t[0] } : x;
+}
+
+/**
+ * "Its distance from O 6 s after passing O", where the motion's own t is 4 s:
+ * a time the question asks about, as `atTime`. One time in the words that is
+ * not t, said as "after" or "at t =", is that time.
+ */
+function atTimed(x, words) {
+  if (x?.scenario !== 'road' || x.atTime != null || x.atDisplacement != null || x.atMidpoint) return x;
+  if (!/\bafter\b|\bat t ?=|\bat time\b/i.test(words)) return x;
+  const all = [...String(words || '').matchAll(/(\d+(?:\.\d+)?)\s*(?:s|secs?|seconds)\b(?!\s*[²2^-])/gi)].map((m) => Number(m[1]));
+  const other = [...new Set(all)].filter((t) => t > 0 && t !== x.t);
+  return other.length === 1 && x.t != null ? { ...x, atTime: other[0] } : x;
 }
 
 /**
