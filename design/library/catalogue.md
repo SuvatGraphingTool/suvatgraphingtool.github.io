@@ -137,6 +137,7 @@ this library: *covered* names the one of the twelve that does it.
 | 101 | AQA | MM1B | Jun 2013 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202013%20QP%20-%20M1%20AQA.pdf) | A helicopter at constant height passes over a lighthouse with a given velocity and constant acceleration (i east, j north): position vector, does it pass over a rock, when; average velocity; is its size the average speed | – | **built** → `over-the-rock` |
 | 102 | AQA | MM1B | Jun 2011 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202011%20QP%20-%20M1%20AQA.pdf) | A helicopter hovering over a lighthouse sets off with constant acceleration: speed and bearing at a time; how long until it is a given distance from its start | – | **built** → `over-the-rock` |
 | 103 | CIE | 9709/41 | May/Jun 2017 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | Constant deceleration along ABCD, speeds 20, 12, 6 at A, B, C: ratio AB : BC; rests at D with AD = 80, find BC | – | **built** → `down-the-ice` |
+| 104 | Edexcel | 6677/01 M1 | Jan 2005 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202005%20QP.pdf) | A stone on ice along ABC against a 0.3 N resistance, 20 then 16 m/s over 24 m; speed at C 30 m on; show m = 0.1 kg; the wall's 2.4 N s impulse, time back to rest | – | **built** → `back-off-the-boards` |
 
 ## Built, and why it is built the way it is
 
@@ -438,6 +439,30 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `back-off-the-boards` — Back off the boards
+
+**Papers.** Edexcel M1 Jan 2005 Q5 (a stone on ice, 20 m s⁻¹ at A and 16 m s⁻¹
+at B, AB = 24 m, against 0.3 N: a = 3 m s⁻², √220 ≈ 14.8 m s⁻¹ at C, AC = 30 m;
+m = 0.1 kg; the wall's impulse 2.4 N s sends it back at 9.17 m s⁻¹, at rest
+3.06 s later).
+
+**Why the twelve cannot.** None of them turns a stated resistance into an
+acceleration, and none takes an impulse at a wall to turn a motion round. Both
+are one-step links the build rules now allow (F = ma; I = m(v − u)).
+
+**How it is solved.** js/core/wall.js: v² = u² − 2as over AB for a, then over
+AC for the speed at the wall (refused if it stops first); F = ma for the mass
+(or the resistance); the impulse through js/core/impulse.js's `impulseLink`,
+towards the wall positive and the impulse back; then v = u − at and
+v² = u² − 2as back to rest, and where it rests from A.
+
+**The stage.** The rink from above (js/render/ice.js's `rink` and `stoneTop`),
+ending in padded boards at C. B lights with its speed; at C the boards flash
+and the impulse is drawn back towards A with its size; the velocity arrow
+turns round; where it rests is ringed and the distance back dimensioned.
+
+**Parts.** (a) `a`, 3; (b) `vC`, 14.8; (c) `m`, 0.1; (d) `tBack`, 3.06.
 
 ### `down-the-ice` — Down the ice
 

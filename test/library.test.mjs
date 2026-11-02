@@ -25,6 +25,7 @@ import { mathText, mathHTML, paren, num } from '../js/notation.js';
 import { resolveKit } from '../js/kitresolve.js';
 import { solveHeli } from '../js/core/heli.js';
 import { solveIce } from '../js/core/ice.js';
+import { solveWall } from '../js/core/wall.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1472,7 +1473,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
@@ -1658,6 +1659,16 @@ group('CIE 9709/41 May/Jun 2017 Q5: speeds at A, B and C, and nothing else', () 
   const e = LIBRARY.find((x) => x.id === 'down-the-ice'), K = KITS[e.kit];
   for (const p of e.parts.filter((q) => q.given)) ok(K.solve(K.read({ uA: 20, uB: 12, uC: 6, AB: 50, ...p.given })).ok, `part (${p.label}) runs over a student's own AB`);
   ok(!solveTowards({ g: 0, A: { u: 20, theta: 30 }, B: { u: 10, theta: 60 }, D: 50 }).ok, 'thrown towards: g = 0 is refused');
+});
+
+group('Edexcel M1 Jan 2005 Q5: a stone on ice, the boards, and back', () => {
+  const s = solveWall({ uA: 20, uB: 16, AB: 24, AC: 30, R: 0.3, I: 2.4 });
+  ok(s.ok && s.a === 3 && Math.abs(s.vC - Math.sqrt(220)) < 1e-9 && s.m === 0.1, 'a = 3, √220 at C, m = 0.1 kg');
+  ok(Math.abs(s.w - 9.17) < 0.005 && Math.abs(s.tBack - 3.06) < 0.005, 'the impulse sends it back at 9.17 m s⁻¹, at rest 3.06 s later');
+  ok(Math.abs(s.f.pos(s.f.tC) - 30) < 1e-9 && s.f.vel(s.f.tC + 1e-6) < 0 && Math.abs(s.f.pos(s.f.tMax) - s.stopAt) < 1e-9, 'the motion reaches the wall, turns round, and rests where the engine says');
+  ok(Math.abs(solveWall({ uA: 20, uB: 16, AB: 24, AC: 30, m: 0.1, w: s.w }).I - 2.4) < 1e-6, 'the rebound speed instead gives the impulse back');
+  ok(!solveWall({ uA: 20, uB: 16, AB: 24, AC: 300, R: 0.3, I: 2.4 }).ok, 'a wall it never reaches is said so');
+  ok(!solveWall({ uA: 20, uB: 16, AB: 24, AC: 30, R: 0.3, I: 1 }).ok, 'an impulse too small to turn it round is refused');
 });
 
 group('Resolve opens on every library stage, from its engine', () => {

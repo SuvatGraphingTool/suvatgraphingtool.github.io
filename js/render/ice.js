@@ -22,7 +22,7 @@ const houseRoom = (h) => clamp(h * 0.26 * 0.42, 34, 60) + 14;
 const s3 = (x) => num(x, x !== 0 && Math.abs(x) < 10 ? 2 : 1, { trim: true });
 
 /** A curling stone from above at (x, y), radius r, its handle turned to `rot`. */
-function stoneTop(g, x, y, r, rot, handle = '#c8352b') {
+export function stoneTop(g, x, y, r, rot, handle = '#c8352b') {
   g.save();
   g.fillStyle = 'rgba(0,0,0,0.22)'; g.beginPath(); g.ellipse(x + r * 0.18, y + r * 0.22, r * 1.02, r * 0.98, 0, 0, TAU); g.fill();
   const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
@@ -39,6 +39,29 @@ function stoneTop(g, x, y, r, rot, handle = '#c8352b') {
   g.beginPath(); g.roundRect?.(-r * 0.62, -r * 0.13, r * 1.0, r * 0.26, r * 0.12); g.fill(); g.stroke();
   g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(-r * 0.55, -r * 0.1, r * 0.8, r * 0.06);
   g.restore();
+}
+
+/** The rink round a sheet across the stage from `top` to `bot`: the dark arena,
+    the lights, the pebbled ice between its boards, the crowd along the far side. */
+export function rink(g, w, h, top, bot, cy, sheetH, E = env()) {
+  g.fillStyle = E.night ? '#141a20' : '#2b3540'; g.fillRect(0, 0, w, h);
+  const glow = g.createLinearGradient(0, top - 60, 0, bot + 60);
+  glow.addColorStop(0, 'rgba(255,255,255,0)'); glow.addColorStop(0.5, 'rgba(180,210,230,0.10)'); glow.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = glow; g.fillRect(0, top - 60, w, sheetH + 120);
+  const ice = g.createLinearGradient(0, top, 0, bot);
+  ice.addColorStop(0, E.night ? '#c9d6de' : '#eef5f8'); ice.addColorStop(0.5, E.night ? '#d8e3ea' : '#f8fbfd'); ice.addColorStop(1, E.night ? '#c3d0d8' : '#e8f0f4');
+  g.fillStyle = ice; g.fillRect(-10, top, w + 20, sheetH);
+  { const R = rng(13); g.fillStyle = 'rgba(120,150,170,0.22)'; for (let i = 0; i < 520; i++) g.fillRect(R() * w, top + R() * sheetH, 1.2, 1.2); }
+  g.fillStyle = '#5a3b26'; g.fillRect(-10, top - 9, w + 20, 9); g.fillRect(-10, bot, w + 20, 9);
+  g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(-10, top - 9, w + 20, 2); g.fillRect(-10, bot, w + 20, 2);
+  // the crowd along the far side, and the rink's lights on the ice
+  { const R = rng(29), rowsY = [top - 30, top - 48, top - 66].filter((y) => y > 6);
+    for (const [j, y] of rowsY.entries()) for (let x0 = (j % 2) * 7; x0 < w; x0 += 14) {
+      const c = ['#3d4b5c', '#5b4a44', '#4a5a48', '#6a5d4d', '#3f3f55'][Math.floor(R() * 5)];
+      g.fillStyle = withAlpha(c, E.night ? 0.8 : 0.9); g.beginPath(); g.arc(x0 + R() * 4, y + R() * 3, 5, 0, TAU); g.fill();
+      g.fillRect(x0 - 5 + R() * 4, y + 4, 10, 8);
+    } }
+  for (let i = 0; i < 5; i++) { const lx = (i + 0.5) * (w / 5); const lg = g.createRadialGradient(lx, cy, 0, lx, cy, sheetH * 0.7); lg.addColorStop(0, 'rgba(255,255,255,0.35)'); lg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = lg; g.fillRect(lx - sheetH, top, sheetH * 2, sheetH); }
 }
 
 export function render(canvas, cam, o) {
@@ -61,25 +84,8 @@ export function render(canvas, cam, o) {
   const top = cy - sheetH / 2, bot = cy + sheetH / 2;
   const houseR = clamp(sheetH * 0.42, 34, 70);
 
-  // ── the arena: dark round the sheet, the boards, the pebbled ice
-  g.fillStyle = E.night ? '#141a20' : '#2b3540'; g.fillRect(0, 0, w, h);
-  const glow = g.createLinearGradient(0, top - 60, 0, bot + 60);
-  glow.addColorStop(0, 'rgba(255,255,255,0)'); glow.addColorStop(0.5, 'rgba(180,210,230,0.10)'); glow.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = glow; g.fillRect(0, top - 60, w, sheetH + 120);
-  const ice = g.createLinearGradient(0, top, 0, bot);
-  ice.addColorStop(0, E.night ? '#c9d6de' : '#eef5f8'); ice.addColorStop(0.5, E.night ? '#d8e3ea' : '#f8fbfd'); ice.addColorStop(1, E.night ? '#c3d0d8' : '#e8f0f4');
-  g.fillStyle = ice; g.fillRect(-10, top, w + 20, sheetH);
-  { const R = rng(13); g.fillStyle = 'rgba(120,150,170,0.22)'; for (let i = 0; i < 520; i++) g.fillRect(R() * w, top + R() * sheetH, 1.2, 1.2); }
-  g.fillStyle = '#5a3b26'; g.fillRect(-10, top - 9, w + 20, 9); g.fillRect(-10, bot, w + 20, 9);
-  g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(-10, top - 9, w + 20, 2); g.fillRect(-10, bot, w + 20, 2);
-  // the crowd along the far side, and the rink's lights on the ice
-  { const R = rng(29), rowsY = [top - 30, top - 48, top - 66].filter((y) => y > 6);
-    for (const [j, y] of rowsY.entries()) for (let x0 = (j % 2) * 7; x0 < w; x0 += 14) {
-      const c = ['#3d4b5c', '#5b4a44', '#4a5a48', '#6a5d4d', '#3f3f55'][Math.floor(R() * 5)];
-      g.fillStyle = withAlpha(c, E.night ? 0.8 : 0.9); g.beginPath(); g.arc(x0 + R() * 4, y + R() * 3, 5, 0, TAU); g.fill();
-      g.fillRect(x0 - 5 + R() * 4, y + 4, 10, 8);
-    } }
-  for (let i = 0; i < 5; i++) { const lx = (i + 0.5) * (w / 5); const lg = g.createRadialGradient(lx, cy, 0, lx, cy, sheetH * 0.7); lg.addColorStop(0, 'rgba(255,255,255,0.35)'); lg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = lg; g.fillRect(lx - sheetH, top, sheetH * 2, sheetH); }
+  // ── the arena: dark round the sheet, the boards, the pebbled ice, the crowd
+  rink(g, w, h, top, bot, cy, sheetH, E);
   // the centre line, faint
   g.strokeStyle = 'rgba(60,80,100,0.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(-10, cy); g.lineTo(w + 10, cy); g.stroke();
 

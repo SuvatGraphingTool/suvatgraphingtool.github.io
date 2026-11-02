@@ -79,6 +79,7 @@ A kit is an object with:
 | `river` — `js/kits/river.js` | `across-the-river` (engine js/core/river.js; stage js/render/river.js: a river from above, a steered boat, the velocity triangle) |
 | `heli` — `js/kits/heli.js` | `over-the-rock` (engine js/core/heli.js on plane.js's motion; stage js/render/heli.js: the sea from above, the lighthouse, the rock in its surf, a coastguard helicopter with its rotor turning; `heliTop` is exported) |
 | `ice` — `js/kits/ice.js` | `down-the-ice` (engine js/core/ice.js; stage js/render/ice.js: a curling sheet from above, lines A, B, C, the house round D, the stone turning as it slides) |
+| `wall` — `js/kits/wall.js` | `back-off-the-boards` (engine js/core/wall.js, with js/core/impulse.js at the wall; stage js/render/wall.js on ice.js's exported `rink` and `stoneTop`) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
 | `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
@@ -529,6 +530,14 @@ area from there sums to zero), a stop fixed by the total time `T`. Each
 segment's acceleration and displacement as working (`tripWorking`).
 
 Used by: `there-and-back`.
+
+### Back off the boards — `js/core/wall.js`
+
+A slide against a constant resistance into a wall and back. `solveWall({ uA,
+uB, AB, AC, R | m, I | w })`: a from v² = u² − 2as, the speed at C, F = ma for
+m (or R), the rebound through `impulseLink` (js/core/impulse.js), then the time
+`tBack`, distance `back` and resting place `stopAt` from A. The motion `f`
+turns round at `f.tC`.
 
 ### Down the ice — `js/core/ice.js`
 
