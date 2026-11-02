@@ -556,5 +556,17 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(!fromReader('firework-rocket', [{ label: 'a', asks: 'a time', answer: 'time' }])[0].find, 'with nothing to tell them apart, none is guessed');
 }
 
+// QA 2 Nov: "a car at 30 m/s passes a lorry doing a steady 20 m/s and brakes at 2 m/s²: when does the lorry catch it" —
+// refused, "A would slow to a stop and go backwards". A braking car brakes to rest
+{
+  const x = toPlace({ understood: true, scenario: 'library', library: 'two-on-a-road', summary: 'x', boxes: { 'A.u': 30, 'A.a': -2, 'B.u': 20 } }, 'car brakes at 2 m/s^2');
+  ok(x.boxes['A.V'] === 0, 'braking with nothing said of where it ends: to rest');
+  const { byId } = await import('../js/scenarios.js'), { KITS } = await import('../js/kits/index.js');
+  const K = KITS[byId('two-on-a-road').kit], sv = K.solve(K.read(x.boxes));
+  const pass = sv.ok && sv.events.find((e) => e.kind === 'overtake');
+  ok(pass && Math.abs(pass.t - 10) < 1e-6 && Math.abs(pass.x - 200) < 1e-6, 'and the lorry catches it at 10 s, 200 m on, before it stops');
+  ok(toPlace({ understood: true, scenario: 'library', library: 'two-on-a-road', summary: 'x', boxes: { 'A.u': 30, 'A.a': -2, 'A.V': 10, 'B.u': 20 } }, '').boxes['A.V'] === 10, 'a speed it slows to that the question gives is kept');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

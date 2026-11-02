@@ -184,8 +184,22 @@ function bounceTo(x, words) {
   return /\bfirst pass|\bto B\b|\breaches B\b|\bpasses B\b|\bat B\b/i.test(asked) ? { ...x, boxes: { ...b, stop: 'y' } } : x;
 }
 
+/**
+ * Two on a road: one braking, with nothing said of where its braking ends, brakes
+ * to rest — a car stops; it never reverses. "Brakes at 2 m/s²" is A.a = −2, A.V = 0.
+ */
+function lanes(x) {
+  const b = x?.boxes;
+  if (x?.library !== 'two-on-a-road' || !b) return x;
+  const o = { ...b };
+  for (const w of ['A', 'B']) {
+    if (typeof o[`${w}.a`] === 'number' && o[`${w}.a`] < 0 && o[`${w}.V`] == null && o[`${w}.tau`] == null && o[`${w}.ends`] == null) o[`${w}.V`] = 0;
+  }
+  return { ...x, boxes: o };
+}
+
 export function toPlace(x, words = '') {
-  return edexcel(bounceTo(stages(settle(placed(marked(x, words), words), words), words), words), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(marked(x, words), words), words), words), words)), words);
 }
 
 function placed(x, words) {
