@@ -62,7 +62,7 @@ function axesOf(pos, tMax) {
 }
 
 /** One object's blocks at t. */
-function blocksFor(o, t, tMax, K, U) {
+function blocksFor(o, t, tMax, K, U, f) {
   const axis = o.axis ?? K?.resolveAxis, who = o.name ? `${o.name}: ` : '';
   const p = vec(o.pos(t)), v = vec(o.vel ? o.vel(t) : 0), p0 = vec(o.pos(0));
   const ax = axesOf(o.pos, tMax);
@@ -125,7 +125,7 @@ function blocksFor(o, t, tMax, K, U) {
   const [pos1, neg1, plus] = Wd && line === 'along' ? [Wd.pos, Wd.neg, Wd.plus] : down ? ['going down', 'going up', 'Down'] : line === 'along' ? ['going forwards', 'going backwards', 'Forwards'] : ['going up', 'going down', 'Up'];
   const dir = vv > 1e-9 ? pos1 : vv < -1e-9 ? neg1 : 'at rest';
   // a line along a slope is neither across nor up: a kit says so with `resolvePart: ''` (rule 2)
-  const part = K?.resolvePart ?? (line === 'along' ? 'x' : 'y');
+  const part = typeof K?.resolvePart === 'function' ? K.resolvePart(f) : K?.resolvePart ?? (line === 'along' ? 'x' : 'y');
   // the engine follows it no further from here: an impact, or the end of its run
   const before = (u) => { const b = o.acc?.(u); return fin(b) ? b : b && typeof b === 'object' ? b[k] : 0; };
   // a kit whose run simply stops at its end (into the sea, off a roof) says so with `resolveEnds`
@@ -180,7 +180,7 @@ export function resolveKit(K, solved, f, t) {
   if (!objs?.length) return null;
   // in letters, or in km and hours: the numbers are in the question's own units
   const lu = K?.resolveUnits?.(f), U = lu ? { s: lu[0], v: lu[1], a: lu[2] } : UNITS;
-  const blocks = objs.flatMap((o) => blocksFor(o, tt, tMax, K, U));
+  const blocks = objs.flatMap((o) => blocksFor(o, tt, tMax, K, U, f));
   for (const b of blocks) for (const q of b.rows) q.dp = Math.min(places(q.value), 3);
   const letters = lu && /×/.test(lu[0]);
   return { t: tt, tUnit: lu?.[3], blocks, note: letters ? 'In the question’s letters: each number is a multiple of the unit beside it. Drag the time slider to watch it change.' : 'Read from the engine at this instant. Drag the time slider to watch it change.' };

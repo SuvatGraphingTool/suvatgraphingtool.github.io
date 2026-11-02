@@ -35,7 +35,9 @@ export const rope = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'along',
-  resolvePart: '',     // along a slope or level ground pulled by a rope: drawn solid, as the stage draws it
+  // on level ground the motion is across: dashed (rule 2); up a slope neither across nor up: solid
+  resolvePart: (f) => (f.alpha === 0 ? 'x' : ''),
+  resolveEnds: true,   // a run that ends sliding back stops while it moves: the engine follows it no further
   resolveFrom: 'where it started',
   resolveWords: { pos: 'going the way it is pulled', neg: 'sliding back', plus: 'The way it is pulled', line: 'along the surface' },
   read(v) { return { m: v.m, T: v.T, a: v.a, theta: v.theta, v: v.v, mu: v.mu, alpha: v.alpha, tanA: v.tanA, g: v.g }; },
@@ -56,11 +58,11 @@ export const rope = {
 
   /* Along one line; the acceleration changes when the rope is let go, and again at rest. */
   graphs(f, t, P) {
-    const cut = [f.tRel, f.tRest];
+    const cut = [f.tRel, f.tRest], dash = f.alpha === 0 ? [6, 4] : null;
     return [
-      { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax: f.tMax, t, series: [{ label: 'along the surface', tag: T`s`, fn: f.pos, color: P.disp, dash: null }], points: [{ t: f.tRel, y: f.s1, color: P.mark, label: 'let go' }, { t: f.tRest, y: f.s1 + f.s2, color: P.mark }] },
-      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash: null }], points: [{ t: f.tRel, y: f.v, color: P.mark }] },
-      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: f.acc, color: P.acc, dash: null, breaks: cut }] },
+      { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax: f.tMax, t, series: [{ label: 'along the surface', tag: T`s`, fn: f.pos, color: P.disp, dash }], points: [{ t: f.tRel, y: f.s1, color: P.mark, label: 'let go' }, { t: f.tRest, y: f.s1 + f.s2, color: P.mark }] },
+      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash }], points: [{ t: f.tRel, y: f.v, color: P.mark }] },
+      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: f.acc, color: P.acc, dash, breaks: cut }] },
     ];
   },
 
@@ -76,7 +78,7 @@ export const rope = {
   ending(s) {
     return {
       eyebrow: 'Let go, to rest',
-      title: `${num(Number(s.s2.toPrecision(3)), 6, { trim: true })} m after the rope is let go${s.stays ? '.' : ', then it slides back.'}`,
+      title: `It slides ${num(Number(s.s2.toPrecision(3)), 6, { trim: true })} m after the rope is let go${s.stays ? '.' : ', then slides back down.'}`,
       body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}`,
       real: true,
     };

@@ -60,7 +60,8 @@ export function solveRope(k = {}) {
     R = snap(Wn - T * st);
     if (R < 0) return fail(`Pulling at ${M`${d(theta)}°`} with ${M`${d(T)} [N]`} would lift it off the ${lvl ? 'ground' : 'slope'}: the rope’s pull across the surface is more than the weight’s.`);
     a = snap((T * ct - Wd - mu * R) / m);
-    if (!(a > 0)) return fail(`Pulled with ${M`${d(T)} [N]`} it does not speed up: friction${lvl ? '' : ' and the weight’s component'} are at least as big as the pull along the surface. Give a bigger tension.`);
+    if (!(a > 0)) return fail(lvl ? `Pulled with ${M`${d(T)} [N]`} it does not speed up: friction is at least as big as the pull along the ground. Give a bigger tension.`
+      : `Pulled with ${M`${d(T)} [N]`} it is not pulled up the slope: the weight’s component${mu > 0 ? ' and friction are' : ' is'} at least as big as the pull along it. Give a bigger tension.`);
   } else {
     a = k.a; if (!(a > 0)) return fail('Pulled from rest it speeds up: the acceleration is a positive number.');
     T = snap((m * a + Wd + mu * Wn) / (ct + mu * st));
@@ -69,7 +70,7 @@ export function solveRope(k = {}) {
   }
   const F = snap(mu * R);
   pull.push(slant
-    ? { f: M`R + T sin theta = m g cos alpha`, s: lvl ? M`R + ${have(k.T) ? d(T) : 'T'} sin ${d(theta)}° = ${d(m)} * ${d(g)}` : M`R + ${have(k.T) ? d(T) : 'T'} sin ${d(theta)}° = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: have(k.T) ? M`R = ${d(R)} [N]` : M`R = ${d(Wn)} - T sin ${d(theta)}°` }
+    ? { f: lvl ? M`R + T sin theta = m g` : M`R + T sin theta = m g cos alpha`, s: lvl ? M`R + ${have(k.T) ? d(T) : 'T'} sin ${d(theta)}° = ${d(m)} * ${d(g)}` : M`R + ${have(k.T) ? d(T) : 'T'} sin ${d(theta)}° = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: have(k.T) ? M`R = ${d(R)} [N]` : M`R = ${d(Wn)} - T sin ${d(theta)}°` }
     : { f: lvl ? M`R = m g` : M`R = m g cos alpha`, s: lvl ? M`R = ${d(m)} * ${d(g)}` : M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(R)} [N]` });
   if (have(k.T)) {
     if (mu > 0) pull.push({ f: M`F = mu R`, s: M`F = ${d(mu)} * ${d(R)}`, r: M`F = ${d(F)} [N]` });
@@ -77,7 +78,7 @@ export function solveRope(k = {}) {
     pull.push({ f: M`${slant ? 'T cos theta' : 'T'}${lvl ? '' : ' - m g sin alpha'}${mu > 0 ? ' - F' : ''} = ma`, s: M`${lhs} = ${d(m)}a`, r: M`a = ${d(a)} [m s^-2]` });
   } else {
     pull.push({ f: M`${slant ? 'T cos theta' : 'T'}${lvl ? '' : ' - m g sin alpha'}${mu > 0 ? ' - mu R' : ''} = ma`,
-      s: M`T${slant ? ` cos ${d(theta)}°` : ''}${lvl ? '' : ` - ${d(Wd)}`}${mu > 0 ? ` - ${d(mu)}(${slant ? `${d(Wn)} - T sin ${d(theta)}°` : d(R)})` : ''} = ${d(m)} * ${d(a)}`, r: M`T = ${d(T)} [N]` });
+      s: M`T${slant ? ` cos ${d(theta)}°` : ''}${lvl ? '' : ` - ${d(m)} * ${d(g)} sin ${d(alpha)}°`}${mu > 0 ? ` - ${d(mu)}(${slant ? `${d(Wn)} - T sin ${d(theta)}°` : d(R)})` : ''} = ${d(m)} * ${d(a)}`, r: M`T = ${d(T)} [N]` });
     if (slant) pull.push({ f: M`R = m g${lvl ? '' : ' cos alpha'} - T sin theta`, s: M`R = ${d(Wn)} - ${d(T)} sin ${d(theta)}°`, r: M`R = ${d(R)} [N]` });
   }
   const t1 = snap(v / a), s1 = snap((v * v) / (2 * a));
@@ -88,15 +89,17 @@ export function solveRope(k = {}) {
   if (!(a2 < 0)) return fail('Let go on level ground with no friction it would never stop: give a coefficient of friction.');
   const s2 = snap((v * v) / (-2 * a2)), t2 = snap(v / -a2);
   free.push({ f: lvl ? M`R = m g` : M`R = m g cos alpha`, s: lvl ? M`R = ${d(m)} * ${d(g)}` : M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(R2)} [N]` });
-  free.push({ f: M`${lvl ? '' : '-m g sin alpha '}- mu R = ma`, s: M`${lvl ? '' : `-${d(Wd)} `}- ${d(mu)} * ${d(R2)} = ${d(m)}a`, r: M`a = ${d(a2)} [m s^-2]` });
+  free.push({ f: M`${lvl ? '' : '-m g sin alpha '}- mu R = ma`, s: M`${lvl ? '' : `-${d(m)} * ${d(g)} sin ${d(alpha)}° `}- ${d(mu)} * ${d(R2)} = ${d(m)}a`, r: M`a = ${d(a2)} [m s^-2]` });
   free.push({ f: M`v^2 = u^2 + 2as`, s: M`0 = ${d(v)}^2 + 2 * ${sb(a2)}s`, r: M`s = ${d(s2)} [m]` });
   free.push({ f: M`v = u + at`, s: M`0 = ${d(v)} + ${sb(a2)}t`, r: M`t = ${d(t2)} [s]` });
   // on a slope, at rest: does it stay, or slide back?
   const stays = lvl || mu >= sa / ca - 1e-12;
   const aBack = stays ? null : snap(-g * (sa - mu * ca));
-  if (!lvl) free.push({ f: M`mu >= tan alpha "to stay"`, s: M`${d(mu)} ${stays ? '>=' : '<'} tan ${d(alpha)}° = ${d(snap(sa / ca))}`, r: stays ? 'it stays at rest' : M`"it slides back:" a = ${d(aBack)} [m s^-2]` });
+  if (!lvl) free.push({ f: M`mu >= tan alpha "to stay"`, s: M`${d(mu)} ${stays ? '>=' : '<'} tan ${d(alpha)}° = ${d(snap(sa / ca))}`, r: stays ? 'it stays at rest' : 'it slides back down' });
+  if (!stays) free.push({ f: M`mu R - m g sin alpha = ma`, s: M`${d(mu)} * ${d(R2)} - ${d(m)} * ${d(g)} sin ${d(alpha)}° = ${d(m)}a`, r: M`a = ${d(aBack)} [m s^-2] "(down the slope)"` });
 
-  const tRel = t1, tRest = snap(t1 + t2), tBack = stays ? 0 : Math.max(1, t2);
+  // sliding back is shown for a while — never past where it started
+  const tRel = t1, tRest = snap(t1 + t2), tBack = stays ? 0 : Math.min(Math.max(1, t2), Math.sqrt((2 * (s1 + s2)) / -aBack));
   const tMax = snap(tRest + (stays ? Math.max(0.8, tRest * 0.12) : tBack));
   const pos = (t) => {
     const c = Math.min(Math.max(t, 0), tMax);
@@ -108,6 +111,17 @@ export function solveRope(k = {}) {
   const vel = (t) => { const c = Math.min(Math.max(t, 0), tMax); return c <= tRel ? a * c : c <= tRest ? v + a2 * (c - tRel) : stays ? 0 : aBack * (c - tRest); };
   const acc = (t) => (t < tRel ? a : t < tRest ? a2 : stays ? 0 : aBack);
   const phase = (t) => (t < tRel ? 'pull' : t < tRest ? 'free' : stays ? 'rest' : 'back');
+  // the forces on it at each moment, along the way it is pulled +: the tension (while pulled),
+  // the normal reaction, and friction — against the sliding, or at rest on a slope just what
+  // holds it (static friction, m g sin α up the slope); on level ground at rest, none
+  const Frest = lvl ? 0 : snap(m * g * sa), F2 = snap(mu * R2);
+  const forces = (t) => {
+    const p = phase(t);
+    if (p === 'pull') return { T, R, F: -F, phase: p };
+    if (p === 'free') return { T: null, R: R2, F: -F2, phase: p };
+    if (p === 'rest') return { T: null, R: R2, F: Frest, phase: p, holding: !lvl };
+    return { T: null, R: R2, F: F2, phase: p };
+  };
 
   const notes = [
     `Pulled, ${slant ? `the rope lifts a little, so the ${lvl ? 'ground' : 'slope'} pushes back with only ${M`${d(R)} [N]`}; ` : ''}the pull along the surface${mu > 0 ? ' beats friction' : ''}${lvl ? '' : ' and the weight’s component'}: it speeds up at ${M`${d(a)} [m s^-2]`}${have(k.a) ? `, which needs a tension of ${M`${d(T)} [N]`}` : ''}.`,
@@ -117,7 +131,7 @@ export function solveRope(k = {}) {
   const derived = [`${M`R = ${d(R)} [N]`}`, `${M`a = ${d(a)} [m s^-2]`}`, `${M`${d(s2)} [m]`} after it is let go`];
 
   const f = { kind: 'rope', look: lvl ? 'level' : 'slope', m, mu, alpha, theta, g, T, a, R, F, a2, R2, v, s1, s2, t1, t2, tRel, tRest, tMax, tFlight: tMax, stays, aBack, W, Wd, Wn,
-    pos, vel, acc, phase, tMid: snap(tRel / 2), tSlide: snap((tRel + tRest) / 2), params: { u: 0, theta: 0, h: 0, g } };
+    pos, vel, acc, phase, forces, tMid: snap(tRel / 2), tSlide: snap((tRel + tRest) / 2), params: { u: 0, theta: 0, h: 0, g } };
   return { ok: true, mode: 'rope', T, a, R, F, a2, s2, t2, aBack, stays, pull, free, rows: [...pull, ...free], notes, derived, f };
 }
 
@@ -125,7 +139,7 @@ export function solveRope(k = {}) {
 export function ropeWorking(s) {
   if (!s?.ok) return [];
   return [
-    { title: 'Pulled by the rope', rows: s.pull, note: `Along the surface, the way it is pulled, is positive. Across it nothing moves${s.f.theta ? ', and the rope’s pull has a part across it too' : ''}.` },
-    { title: 'Let go: to rest', rows: s.free, note: 'With the rope gone the normal reaction goes back to the whole of the weight’s part across the surface, and friction is against the motion.' },
+    { title: 'Pulled by the rope', rows: s.pull, note: `Along the surface, the way it is pulled, is positive. Across it nothing moves${s.f.theta ? ', and the rope’s pull has a part across it too' : ''}. The time from rest is the stage’s: the paper gives only the speed when it is let go.` },
+    { title: 'Let go: to rest', rows: s.free, note: s.f.theta ? 'With the rope gone the normal reaction goes back to the whole of the weight’s part across the surface, and friction is against the motion.' : 'With the rope gone friction is still against the motion, and now nothing pulls it on.' },
   ];
 }

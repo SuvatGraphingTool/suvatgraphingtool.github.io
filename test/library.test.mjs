@@ -1730,6 +1730,15 @@ group('Edexcel M1 Nov 2004 Q7: pulled by a rope', () => {
   ok(!solveRope({ m: 30, mu: 0, T: 150, v: 12 }).ok, 'let go on smooth level ground it never stops: refused');
   ok(!solveRope({ m: 30, mu: 0.2, T: 150, a: 2, v: 12 }).ok && !solveRope({ m: 30, mu: 0.2, T: 150 }).ok, 'both T and a, or no release speed, refused');
   ok(ropeWorking(s).length === 2, 'the working: pulled, then let go');
+  { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
+    ok(strip(s.pull[0].f) === 'R+Tsinθ=mg', 'level ground: R + T sin θ = m g, no cos α');
+    ok(up.free.some((r) => /μR−mgsinα=ma/.test(strip(r.f))), 'sliding back: its acceleration is worked, not just stated');
+    const back = solveRope({ m: 10, mu: 0, alpha: 30, T: 100, v: 2, g: 9.8 });
+    ok(back.ok && back.f.pos(back.f.tMax) >= -1e-9, 'sliding back never passes where it started');
+    ok(box.f.forces(box.f.tMax).F > 0 && box.f.forces(box.f.tMax).holding, 'at rest on a slope, friction holds it (up the slope), from the engine');
+    ok(s.f.forces(s.f.tMax).F === 0 && s.f.forces(s.f.tRel / 2).T === 150, 'at rest on level ground no friction; while pulled, the tension');
+    const K = KITS.rope, kv = K.solve(K.read({ m: 30, mu: 0.2, theta: 20, T: 150, v: 12, g: 9.8 }));
+    ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => Array.isArray(x.dash))) && resolveKit(K, kv, kv.f, 1).blocks[0].rows.every((q) => q.part === 'x'), 'level ground is across: dashed graphs and Resolve rows (rule 2)'); }
 });
 
 group('Edexcel M1 Jun 2002 Q6: the lift, its cable and its floor', () => {

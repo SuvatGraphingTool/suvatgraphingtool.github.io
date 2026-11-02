@@ -38,7 +38,7 @@ export function render(canvas, cam, o) {
 
   // ── the surface in its own plane: from where it starts (0, 0) along the way it is pulled
   const al = f.alpha * D2R, ca = Math.cos(al), sa = Math.sin(al);
-  const far = f.s1 + f.s2, back = f.stays ? 0 : Math.min(far, 0.5 * Math.abs(f.aBack) * (f.tMax - f.tRest) ** 2);
+  const far = f.s1 + f.s2;
   const run = far * 1.18, D = run * ca, H = run * sa;
   const box = { xLo: -far * 0.1, xHi: D + far * 0.04, yLo: -far * 0.08, yHi: H + far * 0.2 };
   const area = { left: phone ? 14 : HB[0].w + 20, right: w - (cardW ? cardW + 30 : 14), top: HB[0].h * (phone ? 1 : 0.55), bottom: h - (compact ? 52 : 26) };
@@ -56,7 +56,8 @@ export function render(canvas, cam, o) {
   g.strokeStyle = 'rgba(120,140,160,0.45)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-20, o0.y); g.lineTo(o0.x, o0.y); g.lineTo(end.x, end.y); g.lineTo(w + 20, end.y - 2); g.stroke();
   const Ls = clamp(Math.min(w, h) * 0.13, 46, 84), Lp = Ls * 1.25;
   for (const [x, sz] of [[o0.x - 60, 1], [o0.x - 130, 0.8], [end.x - 40, 0.9], [end.x + 30, 1.1]]) if (x > 8 && x < w - 8 && !(cardW && x > w - cardW - 30 && end.y > h - cardH - 40)) {
-    const Yp = x < o0.x ? o0.y : Y(((x - X(0)) / k) * Math.tan(al)), Hp = Lp * 1.3 * sz; pine(g, x, Yp, Hp); L.reserve({ x: x - Hp * 0.36, y: Yp - Hp, w: Hp * 0.72, h: Hp });
+    // on the snow where it is: level before the start and past the end of the slope
+    const Yp = x < o0.x ? o0.y : x > end.x ? end.y : Y(((x - X(0)) / k) * Math.tan(al)), Hp = Lp * 1.3 * sz; pine(g, x, Yp, Hp); L.reserve({ x: x - Hp * 0.36, y: Yp - Hp, w: Hp * 0.72, h: Hp });
   }
 
   // ── the sledge's track so far, and the marks: let go, at rest
@@ -93,15 +94,16 @@ export function render(canvas, cam, o) {
   else { const gnd = along(feetS - ropeLen * 0.6 / k); g.beginPath(); g.moveTo(rp.hand.x, rp.hand.y); g.quadraticCurveTo(rp.hand.x - 4, gnd.y - 2, gnd.x, gnd.y - 1); g.stroke(); }
 
   // ── the arrows: the velocity along the surface, the acceleration under it
-  const v = f.vel(t), A = f.acc(t);
+  // on level ground the motion is across: dashed (rule 2); along a slope, solid
+  const v = f.vel(t), A = f.acc(t), across = f.alpha === 0 ? [6, 4] : null;
   if (show.velocity !== false && Math.abs(v) >= 0.05 && (Math.abs(v) / f.v) * 100 >= 4) {
     const dir = Math.sign(v), len = Math.min((Math.abs(v) / f.v) * 90, 90), ax = q.x + dir * ca * Ls * 0.6 + nx * Ls * 0.42, ay = q.y - dir * sa * Ls * 0.6 + ny * Ls * 0.42;
-    arrow(g, ax, ay, ax + dir * ca * len, ay - dir * sa * len, { color: P.vel, width: 2.6, head: Math.min(10, len * 0.6) });
+    arrow(g, ax, ay, ax + dir * ca * len, ay - dir * sa * len, { color: P.vel, width: 2.6, head: Math.min(10, len * 0.6), dash: across });
     L.add(T`${s3(Math.abs(v))} [m s^-1]`, ax + dir * ca * len + dir * 8, ay - dir * sa * len - 10, { color: P.vel, pri: 8, size: 14, weight: 700, align: dir > 0 ? 'left' : 'right' });
   }
   if (Math.abs(A) > 1e-9) {
     const dir = Math.sign(A), bx = q.x - nx * 24, by = q.y - ny * 24;
-    arrow(g, bx, by, bx + dir * ca * 46, by - dir * sa * 46, { color: P.acc, width: 2.2, head: 9 });
+    arrow(g, bx, by, bx + dir * ca * 46, by - dir * sa * 46, { color: P.acc, width: 2.2, head: 9, dash: across });
     L.add(T`${s3(Math.abs(A))} [m s^-2]`, bx + dir * ca * 56, by - dir * sa * 56 + 4, { color: P.acc, pri: 7, size: 13, weight: 700, align: dir > 0 ? 'left' : 'right' });
   }
   // at rest: a ring, and how far it slid after it was let go
@@ -113,32 +115,34 @@ export function render(canvas, cam, o) {
 
   // ── the free-body diagram for this moment, on a card (or a caption on a small stage)
   unview(g);
-  const ph = f.phase(t), on = ph === 'pull';
-  const Rnow = on ? f.R : f.R2, Fnow = ph === 'rest' ? null : f.mu * Rnow;
+  // the forces at this moment are the engine's (rule 4): friction along the way it is pulled +
+  const FF = f.forces(t), ph = FF.phase, on = ph === 'pull';
+  const Rnow = FF.R, Fnow = Math.abs(FF.F) > 1e-9 ? Math.abs(FF.F) : null, Fdir = Math.sign(FF.F);
   if (cardW) {
     const cx = w - cardW - 16, cy = h - cardH - 16;
     paper(g, cx, cy, cardW, cardH);
     const lab = (txt, x, y, col, al2 = 'left') => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = al2; g.textBaseline = 'middle'; g.fillText(txt, x, y); g.restore(); };
     lab(on ? 'Pulled: the forces on it' : ph === 'rest' ? 'At rest' : 'Let go: the forces on it', cx + 12, cy + 16, P.muted);
-    const bx = cx + cardW * 0.42, by = cy + 96, big = Math.max(f.W, f.T, 1e-9), sc = 52 / big;
+    // every arrow to one scale, the body high enough for the whole weight below it
+    const bx = cx + cardW * 0.42, by = cy + 74, big = Math.max(f.W, f.T, 1e-9), sc = 44 / big;
     // the body on its surface, tilted as the surface is
     g.save(); g.translate(bx, by); g.rotate(-al);
     g.strokeStyle = withAlpha(P.ink, 0.5); g.lineWidth = 1.2; g.beginPath(); g.moveTo(-60, 12); g.lineTo(60, 12); g.stroke();
     g.fillStyle = withAlpha(P.ink, 0.1); g.strokeStyle = P.ink; g.beginPath(); g.roundRect?.(-16, -12, 32, 24, 3); g.fill(); g.stroke();
     // R square out of the surface, friction along it against the motion, T along the rope
-    arrow(g, 0, -12, 0, -12 - Math.max(10, Rnow * sc), { color: P.ink, width: 2.2, head: 8 });
-    if (Fnow) { const dirF = ph === 'back' ? 1 : -1; arrow(g, dirF * 16, 6, dirF * (16 + Math.max(8, Fnow * sc)), 6, { color: P.ink, width: 2.2, head: 8 }); }
-    if (on) arrow(g, 16, -4, 16 + Math.cos(th) * Math.max(10, f.T * sc), -4 - Math.sin(th) * Math.max(10, f.T * sc), { color: P.ink, width: 2.4, head: 9 });
+    arrow(g, 0, -12, 0, -12 - Rnow * sc, { color: P.ink, width: 2.2, head: 8 });
+    if (Fnow) arrow(g, Fdir * 16, 6, Fdir * (16 + Fnow * sc), 6, { color: P.ink, width: 2.2, head: Math.min(8, Fnow * sc * 0.6) });
+    if (on) arrow(g, 16, -4, 16 + Math.cos(th) * f.T * sc, -4 - Math.sin(th) * f.T * sc, { color: P.ink, width: 2.4, head: 9 });
     g.restore();
     // the weight straight down
-    arrow(g, bx, by, bx, by + Math.max(10, f.W * sc * 0.5), { color: P.ink, width: 2.2, head: 8 });
+    arrow(g, bx, by, bx, by + f.W * sc, { color: P.ink, width: 2.2, head: 8 });
     const right = cx + cardW - 10;
     lab(T`R = ${sf(Rnow)} [N]`, right, cy + 38, P.ink, 'right');
     if (on) lab(T`T = ${sf(f.T)} [N]`, right, cy + 58, P.ink, 'right');
-    if (Fnow) lab(T`F = mu R = ${sf(Fnow)} [N]`, cx + 12, cy + cardH - 34, P.ink);
+    if (Fnow) lab(FF.holding ? T`F = m g sin alpha = ${sf(Fnow)} [N] "holding it"` : T`F = mu R = ${sf(Fnow)} [N]`, cx + 12, cy + cardH - 34, P.ink);
     lab(T`m g = ${sf(f.W)} [N]`, cx + 12, cy + cardH - 14, P.muted);
   } else {
-    const parts = [on ? T`T = ${sf(f.T)} [N]` : 'let go', T`R = ${sf(Rnow)} [N]`, Fnow ? T`F = ${sf(Fnow)} [N]` : 'no friction now'];
+    const parts = [on ? T`T = ${sf(f.T)} [N]` : 'let go', T`R = ${sf(Rnow)} [N]`, Fnow ? T`F = ${sf(Fnow)} [N]` : 'no friction, at rest'];
     g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle';
     const one = parts.join(', '), lines = g.measureText(one).width + 14 <= w - 20 ? [one] : [parts.slice(0, 2).join(', '), parts[2]];
     const tw = Math.max(...lines.map((x) => g.measureText(x).width)) + 14, bh = 8 + 18 * lines.length;

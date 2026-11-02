@@ -614,7 +614,7 @@ export const LIBRARY = [
     place: 'Side on: a snowfield, the sledge and the person pulling it',
     example: { m: 30, mu: 0.2, theta: 20, T: 150, v: 12, g: 9.8 },
     parts: [
-      { label: 'a', kind: 'force', ask: 'Find the normal reaction of the ground on the sledge, to 3 significant figures.', find: 'R', sym: 'R', unit: 'N', dp: 1, at: 'f.tMid', step: 'Pulled', paper: 243, tol: 0.5 },
+      { label: 'a', kind: 'force', ask: 'Find the normal reaction of the ground on the sledge, to 3 significant figures.', find: 'R', sym: 'R', unit: 'N', dp: 0, at: 'f.tMid', step: 'Pulled', paper: 243, tol: 0.5 },
       { label: 'b', kind: 'acceleration', ask: 'Find the acceleration of the sledge, to 3 significant figures.', find: 'a', sym: 'a', unit: 'm s^-2', dp: 2, at: 'f.tMid', step: 'Pulled', paper: 3.08, tol: 0.005 },
       { label: 'c', kind: 'distance', ask: 'The rope is let go when the sledge is moving at 12 m s⁻¹. Find how far it slides to rest, to 3 significant figures.', find: 's2', sym: 's', unit: 'm', dp: 1, at: 'f.tRest', step: 'Let go', paper: 36.7, tol: 0.05 },
     ],
