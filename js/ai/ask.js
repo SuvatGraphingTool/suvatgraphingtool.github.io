@@ -18,7 +18,8 @@ import { prepareImage, readQuestion, readText, READER } from './capture.js';
 import { esc, proseHTML, sourcesHTML } from './readout.js';
 import { typeOut } from './typewriter.js';
 import { gAskHTML, parseG } from './gchoice.js';
-import { loadChats, getChat, saveChat, deleteChat, newChatRecord, titleOf, whenOf, thumbOf } from './chats.js';
+import { loadChats, getChat, saveChat, deleteChat, newChatRecord, titleOf, dayGroup, thumbOf, onChats } from './chats.js';
+import { plainOf } from '../notation.js';
 
 const $ = (id) => document.getElementById(id);
 const PDF_MAX = 4_000_000;          // the Worker's own limit, checked here first
@@ -49,6 +50,9 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   // The chat on show, as it is kept in this browser (js/ai/chats.js): made by
   // its first message, saved after every message and reply.
   let chat = null;
+  // Bumped whenever the thread on show is swapped for another (a new chat, a
+  // kept one opened), so an answer still on its way to the old one is dropped.
+  let gen = 0;
   const keep = () => { if (chat) { chat.updated = Date.now(); chat.history = [...history]; saveChat(chat); } };
 
   /* ── the chat screen ────────────────────────────────────────────────────
@@ -63,6 +67,7 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     const kept = !thread.childElementCount && loadChats().length > 0;
     $('ask-resume').hidden = inChat() || (!thread.childElementCount && !kept);
     $('ask-resume-t').textContent = kept ? 'Your chats' : 'Back to your chat';
+    if (!inChat()) drawer(false);
   }
   new MutationObserver(dock).observe(app, { attributes: true, attributeFilter: ['data-step'] });
 
@@ -93,14 +98,24 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
       { duration: 520, easing: ease });
     $('screen-chat').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: ease });
   }
-  function newChat() {
-    typing?.finish(); busy?.abort();
-    for (const img of thread.querySelectorAll('img.ask-shot')) URL.revokeObjectURL(img.src);
+  /** The thread on show, emptied — and any answer on its way to it dropped. */
+  function clearThread() {
+    gen++;
+    typing?.finish(); typing = null;
+    if (busy) { busy.abort(); busy = null; sync(); }
+    for (const img of thread.querySelectorAll('img.ask-shot')) if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
     thread.replaceChildren();
     history.length = 0; current = null; chat = null;
+  }
+  /** A new chat, as in the assistants: the screen stays, empty, with its
+      greeting, and the box waits at its foot. */
+  function newChat() {
+    clearThread();
     closeList();
-    show('scenario');
-    focus();
+    renderList();
+    if (!inChat()) openChat({ instant: true });
+    dock();
+    text.focus({ preventScroll: true });
   }
   function focus() { text.focus(); text.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
 
@@ -112,6 +127,7 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   }, { passive: true });
   function follow(force = false) {
     if (force) stick = true;
+    if (!thread.childElementCount) { scroller.scrollTop = 0; return; }   // a new chat: its greeting, from the top
     if (stick) scroller.scrollTop = scroller.scrollHeight;
   }
 
@@ -206,6 +222,13 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   }
 
   /* ── the conversation: every message, oldest at the top ───────────────── */
+  /** A reply's frame: Suvat's mark and name, the words, and under them the
+      actions — Copy — which show on hover, as the assistants' do. */
+  const replyHTML = (html) => `<span class="ai-orb sm" aria-hidden="true">${SPARK}</span>`
+    + `<div class="ask-main"><p class="ask-name">Suvat</p><div class="ask-bubble">${html}</div>`
+    + `<div class="ask-tools"><button type="button" class="ask-tool ask-copy" title="Copy this reply">${COPY_IC}<span class="ask-tool-t">Copy</span></button></div></div>`;
+  /** While Suvat reads: its mark pulses and a word shimmers, in place of the dots. */
+  const thinkingHTML = (searching, note = '') => `<p class="ask-think" role="status"><span class="ask-think-t">${searching ? 'Searching the web…' : 'Thinking…'}</span></p>${note}`;
   /** A reply. Unless it is the dots, it is written out a letter at a time;
       `before` runs first, on the whole reply, before it is hidden to be
       typed in. */
@@ -215,7 +238,7 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     if (!r) { r = document.createElement('div'); r.className = 'ask-msg ask-reply'; thread.append(r); }
     if (thinking) current = r; else current = null;
     r.dataset.busy = String(thinking);
-    r.innerHTML = `<span class="ai-orb sm" aria-hidden="true">${SPARK}</span><div class="ask-bubble">${html}${acts || ''}</div>`;
+    r.innerHTML = replyHTML(`${html}${acts || ''}`);
     before?.(r);
     if (!thinking) {
       typing?.finish();
@@ -264,13 +287,13 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     echo(words, a);
     text.value = ''; detach();
     busy = new AbortController(); sync();
+    const my = gen, ctl = busy;
     const searching = modes.search;
-    const dots = `<p class="ask-dots" aria-label="Suvat is ${searching ? 'searching' : 'reading'}"><span></span><span></span><span></span></p>`;
-    reply(dots, { busy: true });
+    reply(thinkingHTML(searching), { busy: true });
     // Google's free models are sometimes slow to answer. Say so, rather than
-    // leave the dots looking stuck.
+    // leave Suvat looking stuck.
     const slow = setTimeout(() => {
-      if (busy) reply(`${dots}<p class="ask-wait">Still ${searching ? 'searching' : 'reading'} — Google is busy, so this one is taking longer.</p>`, { busy: true });
+      if (busy === ctl && gen === my) reply(thinkingHTML(searching, `<p class="ask-wait">Still ${searching ? 'searching' : 'reading'} — Google is busy, so this one is taking longer.</p>`), { busy: true });
     }, 6_000);
 
     let res;
@@ -278,18 +301,20 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
       const mode = searching ? 'search' : undefined;
       if (a?.kind === 'image') {
         const prepared = await prepareImage(a.file);
-        res = await readQuestion(READER, prepared, { hint: words, history, mode, signal: busy.signal });
+        res = await readQuestion(READER, prepared, { hint: words, history, mode, signal: ctl.signal });
       } else if (a?.kind === 'pdf') {
         const base64 = await fileBase64(a.file);
-        res = await readQuestion(READER, { base64, mimeType: 'application/pdf' }, { hint: words, history, mode, signal: busy.signal });
+        res = await readQuestion(READER, { base64, mimeType: 'application/pdf' }, { hint: words, history, mode, signal: ctl.signal });
       } else {
-        res = await readText(READER, words, { history: [...history], mode, signal: busy.signal });
+        res = await readText(READER, words, { history: [...history], mode, signal: ctl.signal });
       }
     } catch {
       res = { ok: false, message: 'That file could not be opened. Try a JPEG, PNG or PDF.' };
     }
     clearTimeout(slow);
-    const stopped = busy?.signal.aborted;
+    // the chat was left for another while this was read: its answer is dropped
+    if (gen !== my) return;
+    const stopped = ctl.signal.aborted;
     busy = null; sync();
     // the newest reading is the one a reopened chat sets up again; any other
     // answer leaves no buttons, so none is set up
@@ -389,50 +414,109 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   }
 
   /* ── the chats kept ─────────────────────────────────────────────────────
-     Every chat is kept in this browser as it is had (js/ai/chats.js). The
-     bar's "Chats" lists them; one opened reads back as it was, and its newest
-     reading is set up again, so "Show me the flight" shows that flight. */
-  const list = $('chat-list'), listBtn = $('chat-hist');
+     Every chat is kept in this browser as it is had (js/ai/chats.js), and
+     listed in a panel on the right of the chat, as the big assistants list
+     theirs: a new chat, a search by title, and the chats under the day they
+     were last had. One opened reads back as it was, and its newest reading
+     is set up again, so "Show me the flight" shows that flight.
+     Wide, the panel stays open unless it is put away (remembered here);
+     under 900 px it is a drawer from the bar, over a scrim. */
+  const screen = $('screen-chat'), side = $('chat-list'), listBtn = $('chat-hist');
+  const listEl = $('chat-list-ul'), none = $('chat-list-none'), search = $('chat-q');
+  const narrow = matchMedia('(max-width: 900px)');
+  const SIDE_KEY = 'suvat-chat-side';
+  let sideOpen = true;
+  try { sideOpen = localStorage.getItem(SIDE_KEY) !== 'closed'; } catch { /* storage shut: open */ }
+
+  const shown = () => (narrow.matches ? screen.dataset.drawer === 'open' : sideOpen);
+  function paintSide() {
+    screen.dataset.hist = sideOpen ? 'open' : 'closed';
+    const on = shown();
+    listBtn.setAttribute('aria-expanded', String(on));
+    const say = on ? 'Hide your chats' : 'Show your chats';
+    listBtn.setAttribute('aria-label', say); listBtn.title = say;
+    side.inert = !on;
+  }
+  function setSide(open) {
+    sideOpen = open;
+    try { localStorage.setItem(SIDE_KEY, open ? 'open' : 'closed'); } catch { /* storage shut */ }
+    paintSide();
+  }
+  /** The phone's drawer, opened or closed. Closing it gives the focus back to the bar. */
+  function drawer(open) {
+    if ((screen.dataset.drawer === 'open') === open) return;
+    const had = side.contains(document.activeElement);
+    screen.dataset.drawer = open ? 'open' : 'closed';
+    paintSide();
+    if (open) focusList();
+    else if (had) listBtn.focus({ preventScroll: true });
+  }
+  function focusList() {
+    requestAnimationFrame(() => (listEl.querySelector('[aria-current] .cl-open') || listEl.querySelector('.cl-open') || search)
+      .focus({ preventScroll: true }));
+  }
+  /** "Your chats": the panel, shown wherever it is. */
   function openList() {
+    renderList();
+    if (narrow.matches) drawer(true);
+    else { if (!sideOpen) setSide(true); focusList(); }
+  }
+  function closeList() { drawer(false); }
+  narrow.addEventListener('change', () => { screen.dataset.drawer = 'closed'; paintSide(); });
+
+  const BIN = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>';
+  /** The list, drawn again from what is kept: after every save or delete, a
+      sync from the account, a search, or another chat put on show. */
+  function renderList() {
     const all = loadChats();
-    const ul = $('chat-list-ul');
-    ul.replaceChildren(...all.map((c) => {
-      const li = document.createElement('li');
-      li.className = 'cl-row';
-      if (c.id === chat?.id) li.setAttribute('aria-current', 'true');
-      li.innerHTML = `<button type="button" class="cl-open" data-id="${esc(c.id)}"><span class="cl-t">${esc(c.title || 'A chat')}</span><span class="cl-when">${esc(whenOf(c.updated))}</span></button>
-        <button type="button" class="cl-x" data-id="${esc(c.id)}" aria-label="Delete this chat" title="Delete this chat"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>`;
-      return li;
+    const term = search.value.trim().toLowerCase();
+    const found = term ? all.filter((c) => (c.title || 'A chat').toLowerCase().includes(term)) : all;
+    const was = document.activeElement?.closest?.('.cl-row')?.dataset.id;
+    const wasX = document.activeElement?.classList?.contains('cl-x');
+    const groups = new Map();
+    for (const c of found) {
+      const g = dayGroup(c.updated);
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(c);
+    }
+    listEl.replaceChildren(...[...groups].map(([g, cs]) => {
+      const sec = document.createElement('section');
+      sec.className = 'cs-group';
+      sec.innerHTML = `<h3 class="cs-g">${esc(g)}</h3><ul class="cl-ul"></ul>`;
+      sec.lastElementChild.append(...cs.map((c) => {
+        const li = document.createElement('li');
+        li.className = 'cl-row';
+        li.dataset.id = c.id;
+        if (c.id === chat?.id) li.setAttribute('aria-current', 'true');
+        const t = esc(c.title || 'A chat');
+        li.innerHTML = `<button type="button" class="cl-open" data-id="${esc(c.id)}" title="${t}"><span class="cl-t">${t}</span></button>`
+          + `<button type="button" class="cl-x" data-id="${esc(c.id)}" aria-label="Delete “${t}”" title="Delete this chat">${BIN}</button>`;
+        return li;
+      }));
+      return sec;
     }));
-    $('chat-list-none').hidden = all.length > 0;
-    list.hidden = false;
-    listBtn.setAttribute('aria-expanded', 'true');
-    (ul.querySelector('[aria-current] .cl-open') || ul.querySelector('.cl-open') || list).focus({ preventScroll: true });
+    none.textContent = all.length ? 'No chats match that.' : 'No chats yet. Ask a question and it is kept here.';
+    none.hidden = found.length > 0;
+    // a row that had the focus keeps it, drawn again
+    if (was) listEl.querySelector(`.cl-row[data-id="${CSS.escape(was)}"] ${wasX ? '.cl-x' : '.cl-open'}`)?.focus({ preventScroll: true });
   }
-  function closeList() {
-    if (list.hidden) return;
-    list.hidden = true;
-    listBtn.setAttribute('aria-expanded', 'false');
-  }
+
   function openKept(id) {
     const c = getChat(id);
     closeList();
-    if (!c || c.id === chat?.id) return;
-    typing?.finish(); busy?.abort();
-    for (const img of thread.querySelectorAll('img.ask-shot')) if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
-    thread.replaceChildren();
-    current = null;
+    if (!c || c.id === chat?.id) { if (c && !inChat()) openChat({ instant: true }); return; }
+    clearThread();
     chat = c;
-    history.length = 0; history.push(...(c.history || []));
+    history.push(...(c.history || []));
     let last = null;
     for (const t of c.turns) {
       if (t.who === 'me') { mine(t.words, t.att, t.att?.thumb || null); continue; }
       const r = document.createElement('div');
       r.className = 'ask-msg ask-reply';
       r.dataset.busy = 'false';
-      r.innerHTML = `<span class="ai-orb sm" aria-hidden="true">${SPARK}</span><div class="ask-bubble">${t.html}</div>`;
+      r.innerHTML = replyHTML(t.html);
       // an older reply's part buttons would open the reading on show, not its own
-      for (const b of r.querySelectorAll('button')) b.disabled = true;
+      for (const b of r.querySelectorAll('.ask-bubble button')) b.disabled = true;
       r.turn = t;
       thread.append(r);
       last = r;
@@ -442,28 +526,75 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
       const r = apply(c.last.extraction, c.last.opts);
       if (r?.ok) reading(r, last);
     }
+    renderList();
     if (!inChat()) openChat({ instant: true });
     dock();
     follow(true);
   }
-  listBtn.addEventListener('click', () => (list.hidden ? openList() : closeList()));
-  list.addEventListener('click', (e) => {
+  listBtn.addEventListener('click', () => {
+    if (narrow.matches) drawer(screen.dataset.drawer !== 'open');
+    else setSide(!sideOpen);
+  });
+  $('chat-side-x').addEventListener('click', closeList);
+  $('chat-scrim').addEventListener('click', closeList);
+  $('chat-side-new').addEventListener('click', newChat);
+  search.addEventListener('input', renderList);
+  search.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && search.value) { e.preventDefault(); e.stopPropagation(); search.value = ''; renderList(); }
+  });
+  listEl.addEventListener('click', (e) => {
     const x = e.target.closest('.cl-x');
     if (x) {
-      deleteChat(x.dataset.id);
-      if (x.dataset.id === chat?.id) chat = null;   // the thread stays on screen, no longer kept
-      const row = x.closest('.cl-row'), next = row.nextElementSibling || row.previousElementSibling;
-      row.remove();
-      $('chat-list-none').hidden = !!$('chat-list-ul').childElementCount;
-      (next?.querySelector('.cl-open') || listBtn).focus();
+      const rows = [...listEl.querySelectorAll('.cl-row')];
+      const at = rows.indexOf(x.closest('.cl-row'));
+      const id = x.dataset.id;
+      // the chat on show, deleted: the screen becomes a new chat, as the assistants do
+      if (id === chat?.id) clearThread();
+      deleteChat(id);                  // heard by onChats below, which draws the list again
+      const left = [...listEl.querySelectorAll('.cl-row')];
+      (left[Math.min(at, left.length - 1)]?.querySelector('.cl-open') || search).focus({ preventScroll: true });
       return;
     }
     const o = e.target.closest('.cl-open');
     if (o) openKept(o.dataset.id);
   });
-  list.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeList(); listBtn.focus(); } });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && screen.dataset.drawer === 'open') { e.stopPropagation(); closeList(); }
+  });
   document.addEventListener('pointerdown', (e) => {
-    if (!list.hidden && !list.contains(e.target) && !listBtn.contains(e.target)) closeList();
+    if (screen.dataset.drawer === 'open' && !side.contains(e.target) && !listBtn.contains(e.target)) closeList();
+  });
+  // every chat kept or deleted, here or by the account's sync, redraws the list
+  onChats(() => renderList());
+
+  /* ── a new chat's greeting, and a reply copied ──────────────────────────
+     The greeting shows while the thread is empty; a suggestion is sent
+     through the box, as if it were typed. */
+  const hello = $('chat-hello');
+  const paintHello = () => {
+    const was = hello.hidden;
+    hello.hidden = thread.childElementCount > 0;
+    if (was && !hello.hidden) scroller.scrollTop = 0;   // a new chat starts at its greeting
+  };
+  new MutationObserver(paintHello).observe(thread, { childList: true });
+  paintHello();
+  hello.addEventListener('click', (e) => {
+    const b = e.target.closest('.chat-sug');
+    if (!b || busy) return;
+    text.value = b.dataset.q; sync(); submit();
+  });
+  thread.addEventListener('click', async (e) => {
+    const b = e.target.closest('.ask-copy');
+    if (!b) return;
+    typing?.finish();
+    const words = plainOf(b.closest('.ask-msg').querySelector('.ask-bubble'));
+    let done = false;
+    try { await navigator.clipboard.writeText(words); done = true; } catch { /* no clipboard here */ }
+    const t = b.querySelector('.ask-tool-t');
+    b.dataset.done = String(done);
+    t.textContent = done ? 'Copied' : 'Could not copy';
+    clearTimeout(b.resetAt);
+    b.resetAt = setTimeout(() => { t.textContent = 'Copy'; delete b.dataset.done; }, 1600);
   });
 
   /* ── voice ──────────────────────────────────────────────────────────── */
@@ -550,8 +681,11 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   });
   sync();
   dock();
-  // the account brought chats from another device: "Your chats" may be offered now
-  document.addEventListener('suvat:chats', dock);
+  paintSide();
+  renderList();
+  // the account brought chats from another device: "Your chats" may be offered
+  // now, and the panel lists them
+  document.addEventListener('suvat:chats', () => { dock(); renderList(); });
 
   return {
     /** The top bar's "Ask Suvat": the chat if there is one, else the box. */
@@ -571,6 +705,8 @@ function fileBase64(file) {
   });
 }
 
+
+const COPY_IC = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
 
 /** The Spark: the AI's mark, drawn once in index.html as the #spark symbol. */
 export const SPARK = '<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><use href="#spark"/></svg>';

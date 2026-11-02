@@ -168,6 +168,40 @@ export function mathText(src) {
   return cached(textCache, src, (x) => renderText(parse(x)));
 }
 
+/**
+ * Typeset HTML read back as words, with its maths as T`` would write it:
+ * what a chat reply copies to the clipboard. A superscript stays a
+ * superscript (v², not v2), a fraction gets its slash and the brackets its
+ * bar made redundant, a radical its brackets. Buttons, inputs, drawings and
+ * anything hidden from a screen reader are not part of the words. DOM only,
+ * at the moment of copying; nothing else here touches a document.
+ */
+export function plainOf(root) {
+  const SKIP = 'button, input, select, textarea, canvas, svg, script, style, .ask-acts, .sr-only, [aria-hidden="true"]';
+  const BLOCK = /^(P|DIV|UL|OL|H[1-6]|TABLE|TR|FIGURE|FIGCAPTION|SECTION|BLOCKQUOTE|PRE|DL|DT|DD)$/;
+  // Anything with a sign in it needs its brackets back once it has no bar.
+  const grp = (s) => { const t = s.trim(); return /.[+−=]/.test(t) ? `(${t})` : t; };
+  const walk = (n) => {
+    if (n.nodeType === 3) return n.nodeValue;
+    if (n.nodeType !== 1 || n.matches(SKIP)) return '';
+    const inner = () => [...n.childNodes].map(walk).join('');
+    const c = n.classList;
+    if (c.contains('m-frac')) { const [a, b] = [...n.children].map(walk); return `${grp(a ?? '')}${SOLIDUS}${grp(b ?? '')}`; }
+    if (c.contains('m-sqrt')) return `√(${walk(n.querySelector('.m-rad') || n).trim()})`;
+    if (c.contains('m-sp')) return THIN;
+    if (c.contains('m-op') && !c.contains('m-un') && !c.contains('m-comma')) return ` ${inner().trim()} `;
+    if (c.contains('m-vec')) return toBold(inner());
+    if (n.tagName === 'SUP') return toSuper(inner());
+    if (n.tagName === 'SUB') return toSub(inner());
+    if (n.tagName === 'BR') return '\n';
+    if (n.tagName === 'LI') return `\n• ${inner().trim()}\n`;
+    if (n.tagName === 'TD' || n.tagName === 'TH') return `${inner().trim()}\t`;
+    const t = inner();
+    return BLOCK.test(n.tagName) ? `\n${t}\n` : t;
+  };
+  return walk(root).replace(/ {2,}/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 /** Tagged templates: M`...` for HTML, T`...` for Unicode. */
 export const M = (strings, ...vals) => mathHTML(weave(strings, vals));
 export const T = (strings, ...vals) => mathText(weave(strings, vals));

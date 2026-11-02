@@ -7,7 +7,7 @@
 // full the pictures go first, then the oldest chats; when it is shut nothing
 // throws and nothing is claimed kept.
 
-import { loadChats, getChat, saveChat, deleteChat, clearChats, putChats, onChats, newChatRecord, titleOf, whenOf, CHATS_MAX } from '../js/ai/chats.js';
+import { loadChats, getChat, saveChat, deleteChat, clearChats, putChats, onChats, newChatRecord, titleOf, whenOf, dayGroup, CHATS_MAX } from '../js/ai/chats.js';
 import { mergeChats } from '../js/account.js';
 
 let pass = 0, fail = 0;
@@ -97,6 +97,17 @@ group('…and says when it was last had', () => {
   ok(whenOf(new Date(2026, 9, 30, 9, 0).getTime(), now) === 'Friday', 'this week: the day');
   ok(whenOf(new Date(2026, 8, 3).getTime(), now) === '3 Sept', 'earlier this year: the date');
   ok(whenOf(new Date(2025, 8, 3).getTime(), now) === '3 Sept 2025', 'another year: with the year');
+});
+
+group('…and is listed under the day it was had', () => {
+  const now = new Date(2026, 10, 2, 15, 0).getTime();
+  ok(dayGroup(now - 60_000, now) === 'Today', 'a minute ago: Today');
+  ok(dayGroup(new Date(2026, 10, 2, 0, 5).getTime(), now) === 'Today', 'just after midnight: Today');
+  ok(dayGroup(now + 3_600_000, now) === 'Today', 'ahead of this clock (another device): Today');
+  ok(dayGroup(new Date(2026, 10, 1, 23, 50).getTime(), now) === 'Yesterday', 'just before midnight: Yesterday');
+  ok(dayGroup(new Date(2026, 9, 27, 9, 0).getTime(), now) === 'Previous 7 days', 'six days ago: Previous 7 days');
+  ok(dayGroup(new Date(2026, 9, 26, 9, 0).getTime(), now) === 'Previous 7 days', 'seven days ago: Previous 7 days');
+  ok(dayGroup(new Date(2026, 9, 25, 9, 0).getTime(), now) === 'Older', 'eight days ago: Older');
 });
 
 const withId = (id, t) => ({ ...chat(id, t), id });

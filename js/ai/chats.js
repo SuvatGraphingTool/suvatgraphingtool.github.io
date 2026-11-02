@@ -116,6 +116,19 @@ export function whenOf(t, now = Date.now()) {
     ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/** The heading a chat is listed under in the panel, by the day it was last
+    had: 'Today', 'Yesterday', 'Previous 7 days' or 'Older'. A time ahead of
+    the clock (another device's) is today. */
+export const DAY_GROUPS = ['Today', 'Yesterday', 'Previous 7 days', 'Older'];
+export function dayGroup(t, now = Date.now()) {
+  const day = (x) => { const d = new Date(x); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+  const days = Math.round((day(now) - day(t)) / 86_400_000);
+  if (days <= 0) return DAY_GROUPS[0];
+  if (days === 1) return DAY_GROUPS[1];
+  if (days <= 7) return DAY_GROUPS[2];
+  return DAY_GROUPS[3];
+}
+
 /** A small picture of a photo sent, to keep in the chat: a JPEG data URL, or null. */
 export async function thumbOf(file, side = 360) {
   try {
