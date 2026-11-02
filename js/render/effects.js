@@ -28,7 +28,8 @@ export function dust(g, x, y, age, life, o = {}) {
   for (let i = 0; i < n; i++) {
     const a = Math.PI * (0.08 + r() * 0.84), sp = (18 + r() * 26) * size, e = ease(u);
     const px = x + Math.cos(a) * sp * e * (r() < 0.5 ? -1 : 1), py = y - Math.sin(a) * sp * 0.7 * e + 30 * size * u * u;
-    g.fillStyle = withAlpha(E.night ? '#a89a90' : '#b39a7e', 0.55 * (1 - u));
+    // `color` for what is thrown up (snow is white); earth by default
+    g.fillStyle = withAlpha(o.color ?? (E.night ? '#a89a90' : '#b39a7e'), 0.55 * (1 - u));
     g.beginPath(); g.arc(px, Math.min(py, y), (2 + r() * 2.5) * size * (0.6 + u), 0, Math.PI * 2); g.fill();
   }
   g.restore();

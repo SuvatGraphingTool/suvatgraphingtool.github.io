@@ -144,6 +144,16 @@ export function solveRunout(k = {}) {
   const vel = (t) => { const c = Math.min(Math.max(t, 0), tRest); return t >= tRest - 1e-12 ? 0 : c <= tB ? u + a1 * c : vBot + a2 * (c - tB); };
   const acc = (t) => (t >= tRest - 1e-12 ? 0 : t < tB ? a1 : a2);
   const phase = (t) => (t >= tRest - 1e-12 ? 'rest' : t < tB ? 'slope' : 'ground');
+  // the forces on it at each moment (needs the mass), along its path +: the weight's component down
+  // the slope, the normal reaction, friction against the sliding — at rest on the slope, just what holds it
+  const Wd = m != null ? snap(m * g * sn) : null, Rs = m != null ? snap(m * g * cs) : null, Rg = m != null ? snap(m * g) : null;
+  const Fs = m != null ? (smooth ? 0 : F1 != null ? F1 : snap(m * (g * sn - a1))) : null;
+  const forces = (t) => {
+    if (m == null) return null;
+    const p = phase(t), onSlope = p === 'slope' || (p === 'rest' && stopsOnSlope);
+    if (p === 'rest') return onSlope ? { phase: p, slope: true, W: Wd, R: Rs, F: Wd, holding: true } : { phase: p, slope: false, W: 0, R: Rg, F: 0 };
+    return onSlope ? { phase: p, slope: true, W: Wd, R: Rs, F: -Fs } : { phase: p, slope: false, W: 0, R: Rg, F: -Fg };
+  };
 
   const notes = [
     smooth ? `On the smooth slope only the weight’s component acts along it: ${M`a = g sin alpha = ${d(a1)} [m s^-2]`}.`
@@ -157,7 +167,7 @@ export function solveRunout(k = {}) {
 
   const f = { kind: 'runout', look, alpha, u, L: have(k.L) ? k.L : null, sSlope, a1, a2, vBot, s2, t1, t2, tB, tRest, tMax, tFlight: tMax, stopsOnSlope, dStop, mu1, smooth, g, m,
     Fslope: F1 != null ? F1 : m != null && mu1 != null ? snap(mu1 * m * g * cs) : null, Fground: Fg, W: m != null ? snap(m * g) : null,
-    pos, vel, acc, phase, tAsk, tMid: snap(t1 / 2), tGround: snap(tB + t2 / 2), params: { u: 0, theta: 0, h: 0, g } };
+    pos, vel, acc, phase, forces, tAsk, tMid: snap(t1 / 2), tGround: snap(tB + t2 / 2), params: { u: 0, theta: 0, h: 0, g } };
   return { ok: true, mode: 'runout', a1, dec: a1 < 0 ? snap(-a1) : null, mu1, vBot, s2, t1, t2, dStop, tAsk, stopsOnSlope, slope, ground, rows: [...slope, ...ground], notes, derived, f };
 }
 
