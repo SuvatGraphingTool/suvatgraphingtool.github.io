@@ -376,8 +376,11 @@ function launch(canvas, o) {
   const burstsAt = kind === 'firework' && R.effects.includes('burst') && f.uy > 0 && f.tApex < f.tMax ? f.tApex : null;
   if (R.effects.includes('smoke') && m.going && !(t >= f.tMax - 1e-9 && wet)) {
     g.save(); if (burstsAt != null && t > burstsAt) g.globalAlpha = clamp(1 - (t - burstsAt) / (0.4 * (f.tMax - burstsAt)), 0, 1);
-    smokeTrail(g, (tt) => at(f.pos(tt)), burstsAt != null ? Math.min(t, burstsAt) : t, { dt: f.tMax / 130, n: 46, size: clamp(k / 12, 0.8, 2) * (kind === 'firework' ? 0.6 : 1) });
+    if (R.backdrop === 'volcano') g.globalAlpha *= 0.6;
+    smokeTrail(g, (tt) => at(f.pos(tt)), burstsAt != null ? Math.min(t, burstsAt) : t, { dt: f.tMax / 130, n: 46, size: clamp(k / 12, 0.8, 2) * (kind === 'firework' ? 0.6 : R.backdrop === 'volcano' ? 0.7 : 1) });
     g.restore();
+    // the path it has flown, over its own smoke
+    if (R.backdrop === 'volcano') stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: 3, alpha: 1 });
   }
 
   // a firework's burst: how big, and whether it is playing (labels keep off it)
@@ -717,7 +720,7 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = { pitch: 'the pitch', stadium: 'the infield' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const name = { pitch: 'the pitch', stadium: 'the infield', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);

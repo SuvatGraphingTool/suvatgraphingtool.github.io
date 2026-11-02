@@ -477,7 +477,16 @@ have a handrail and a cupboard wall under the landing, no sofa behind them;
 places can keep labels off their props (`c.reserve`); a salmon or a dolphin
 may leap from the water at the foot of a place with an edge (h 0, the
 engine's level place `pool`; at a waterfall it brings its fall); the
-kangaroo is filled, not outlined.
+kangaroo is filled, not outlined. After batch 15's critic: the car park's
+barriers are a low kerb and cables on posts, so its parked cars show, its
+stair tower kept on the canvas with its sign below the readouts; the volcano
+is a broad cone with concave flanks, a dished crater behind the rim with a
+small white-hot and crimson glow (never orange), a plume pale enough by
+night, lobed old flows on the plain, its rock's smoke under the flown path;
+the quarry's far wall recedes in hazed grey benches with rubble on each
+ledge, its near face warmer and darker with shadowed steps, its pool and
+truck placed clear of the whole flight; the landings are named "the
+street", "the plain", "the quarry floor".
 
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn

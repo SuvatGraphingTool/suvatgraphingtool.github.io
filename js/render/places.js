@@ -1623,12 +1623,14 @@ function carpark(g, c) {
   tarmac(g, 0, w, oy, { depth: clamp(0.6 * k, 12, 24), verge: h - oy });
   if (!(H0 > 0)) return;
   const conc = n ? '#6a6a70' : '#bdbab4', concLo = n ? '#4a4a50' : '#8e8b86', deck = clamp(0.35 * k, 6, 14);
-  const lift = clamp(2.8 * k, 26, 90), floors = Math.max(1, Math.round((oy - top) / lift)), L = (oy - top) / floors, W = clamp(0.45 * (oy - top) + 120, 160, Math.max(160, x0 - 10));
+  const lift = clamp(2.8 * k, 26, 90), floors = Math.max(1, Math.round((oy - top) / lift)), L = (oy - top) / floors, W = Math.max(80, Math.min(clamp(0.45 * (oy - top) + 120, 160, 600), x0 - 60));
   const bx = x0 - W;
   // the stair tower at the back, its lit sign
   g.fillStyle = concLo; g.fillRect(bx - 30, top - L * 0.8, 40, oy - top + L * 0.8);
-  g.fillStyle = n ? withAlpha(E.window, 0.8) : '#2f5fa8'; g.fillRect(bx - 24, top - L * 0.6, 28, L * 0.3);
-  g.fillStyle = '#ffffff'; g.font = '700 13px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('P', bx - 10, top - L * 0.45);
+  // its sign low on the tower, below the readouts
+  const sy2 = Math.max(top + L * 0.3, Math.min(oy - 30, top + (oy - top) * 0.5));
+  g.fillStyle = n ? withAlpha(E.window, 0.8) : '#2f5fa8'; g.fillRect(bx - 26, sy2, 32, 22);
+  g.fillStyle = '#ffffff'; g.font = '700 15px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('P', bx - 10, sy2 + 11);
   // each level: the dark interior, a car or two parked, the deck slab and its edge barrier
   for (let i = 0; i < floors; i++) {
     const yT = top + i * L, yB = yT + L;
@@ -1644,10 +1646,13 @@ function carpark(g, c) {
     }
     g.fillStyle = conc; g.fillRect(bx, yT, W + 2, deck);
     g.fillStyle = withAlpha('#000000', 0.25); g.fillRect(bx, yT + deck, W, 2);
-    // the barrier: a concrete upstand along the deck's edge (open on the top deck at x0)
-    const bh = clamp(0.9 * k, 8, 24);
-    g.fillStyle = concLo; g.fillRect(bx, yT - bh, i === 0 ? W - clamp(3 * k, 30, 80) : W, bh);
-    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.2); g.fillRect(bx, yT - bh, i === 0 ? W - clamp(3 * k, 30, 80) : W, 1.5);
+    // the barrier: a low kerb and steel cables on posts along the deck's edge
+    // (so the parked cars show through), open on the top deck at x0
+    const bh = clamp(0.9 * k, 8, 24), kb = Math.max(2, bh * 0.25), bw2 = i === 0 ? W - clamp(3 * k, 30, 80) : W;
+    g.fillStyle = concLo; g.fillRect(bx, yT - kb, bw2, kb);
+    g.strokeStyle = n ? '#9aa0a8' : '#5a6068'; g.lineWidth = 1;
+    g.beginPath(); for (const f of [0.45, 0.75, 1]) { g.moveTo(bx, yT - bh * f); g.lineTo(bx + bw2, yT - bh * f); } g.stroke();
+    g.lineWidth = 2; g.beginPath(); for (let x = bx + 4; x <= bx + bw2; x += clamp(2.5 * k, 20, 60)) { g.moveTo(x, yT); g.lineTo(x, yT - bh); } g.stroke();
     // a stripe of yellow and black hazard paint along each deck's edge
     for (let x = bx; x < bx + W; x += 12) { g.fillStyle = (Math.floor((x - bx) / 12) % 2) ? '#2b2628' : '#e8c547'; g.fillRect(x, yT + deck - 3, 12, 3); }
   }
@@ -1657,87 +1662,120 @@ function carpark(g, c) {
   softShadow(g, (bx + x0) / 2, oy + 2, W * 0.6, 5, 0.6);
 }
 
-/** A volcano: its cone rising to the crater it is thrown from, lava glowing
-    in the crater and running in a channel down its flank, an ash plume
-    leaning downwind, old flows dark on the plain it lands on. */
+/** A volcano: a broad cone with concave flanks rising to its rim, a dished
+    crater it is thrown from with the glow of lava in it (white-hot and
+    crimson, never the velocity's orange), lava running crimson down a
+    channel, an ash plume leaning back over the cone; the plain below it
+    lobed with old dark flows. */
 function volcano(g, c) {
   const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
   const E = env(), n = E.night, r = rng(211), horizon = oy - clamp((oy - 40) * 0.2, 24, 100);
-  // an ash-hazed sky, darker toward the plume
   const sg = g.createLinearGradient(0, 0, 0, horizon); sg.addColorStop(0, n ? '#14121a' : '#8a8c96'); sg.addColorStop(1, n ? '#2a1e1c' : '#d8c8b4');
   g.fillStyle = sg; g.fillRect(0, 0, w, horizon);
-  // distant ridges
   g.fillStyle = n ? '#241c1c' : '#7a7068'; g.beginPath(); g.moveTo(0, horizon); for (let x = 0; x <= w; x += 30) g.lineTo(x, horizon - 10 - Math.abs(Math.sin(x / 90)) * 22); g.lineTo(w, horizon); g.closePath(); g.fill();
-  // the plain: dark basalt with old flows and their cracks
-  const pg = g.createLinearGradient(0, horizon, 0, h); pg.addColorStop(0, n ? '#2a2422' : '#5a524c'); pg.addColorStop(1, n ? '#1a1614' : '#3e3834'); g.fillStyle = pg; g.fillRect(0, horizon, w, h - horizon);
-  g.strokeStyle = withAlpha(n ? '#000000' : '#2a2420', 0.5); g.lineWidth = 1; for (let i = 0; i < w / 14; i++) { const x = r() * w, y = oy + r() * (h - oy); g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - 0.5) * 20, y + r() * 6); g.stroke(); }
+  // the plain: dark basalt, lobed tongues of old flows over it with their cooled crusts
+  const pg = g.createLinearGradient(0, horizon, 0, h); pg.addColorStop(0, n ? '#2a2422' : '#6a625a'); pg.addColorStop(1, n ? '#1a1614' : '#4e4842'); g.fillStyle = pg; g.fillRect(0, horizon, w, h - horizon);
+  for (let i = 0; i < 6; i++) {
+    const fx = r() * w, fy = lerp(horizon + 6, h, r() * 0.8), fl = 60 + r() * 140;
+    g.fillStyle = n ? '#18141a' : '#3a3434';
+    for (let j = 0; j < 5; j++) { g.beginPath(); g.ellipse(fx + j * fl * 0.2, fy + Math.sin(j) * 3, fl * 0.14, 4 + r() * 4, 0, 0, TAU); g.fill(); }
+    g.strokeStyle = withAlpha(n ? '#5a5050' : '#8a8078', 0.5); g.lineWidth = 1; g.beginPath(); g.moveTo(fx - fl * 0.1, fy - 3); g.quadraticCurveTo(fx + fl * 0.4, fy - 6, fx + fl * 0.9, fy - 2); g.stroke();
+  }
   if (!(H0 > 0)) return;
-  // the cone, its crater at x0, its slope falling away behind and before it
-  const H = oy - top, cw = clamp(H * 0.9, 80, w * 0.7);
-  const cone = () => { g.beginPath(); g.moveTo(x0 - cw * 1.6, oy + 2); g.quadraticCurveTo(x0 - cw * 0.6, oy - H * 0.3, x0 - cw * 0.25, top + 4); g.lineTo(x0 - cw * 0.18, top - 2); g.lineTo(x0 - cw * 0.04, top + 6); g.lineTo(x0, top); g.quadraticCurveTo(x0 + cw * 0.08, oy - H * 0.55, x0 + cw * 0.12, oy - H * 0.2); g.lineTo(x0 + cw * 0.12, oy + 2); g.closePath(); };
-  const cg = g.createLinearGradient(x0 - cw, 0, x0 + cw * 0.2, 0); cg.addColorStop(0, n ? '#3a2e2a' : '#6e625a'); cg.addColorStop(0.7, n ? '#2a2220' : '#4e4640'); cg.addColorStop(1, n ? '#1a1412' : '#3a322e');
+  // the cone: its rim at the launch point, a dished crater behind it; the near
+  // flank short enough that what it throws clears it
+  const H = oy - top, cw = Math.max(clamp(H * 1.3, 120, w * 0.8), x0 * 1.2), land = (c.clearX || [])[0] ?? w;
+  const footR = x0 + Math.min(H * 0.55, Math.max(20, (land - x0) * 0.45)), footL = x0 - cw, bowl = Math.max(14, Math.min(cw * 0.16, 70));
+  const cone = () => {
+    g.beginPath(); g.moveTo(footL, oy + 2);
+    g.quadraticCurveTo(x0 - cw * 0.4, oy - H * 0.12, x0 - bowl * 1.3, top + H * 0.02);
+    g.lineTo(x0 - bowl, top); g.quadraticCurveTo(x0 - bowl * 0.5, top + bowl * 0.45, x0, top);
+    g.quadraticCurveTo(x0 + (footR - x0) * 0.25, oy - H * 0.2, footR, oy + 2); g.closePath();
+  };
+  const cg = g.createLinearGradient(footL, 0, footR, 0); cg.addColorStop(0, n ? '#3a2e2a' : '#7a6e64'); cg.addColorStop(0.75, n ? '#2a2220' : '#5a5048'); cg.addColorStop(1, n ? '#1a1412' : '#3e3632');
   cone(); g.fillStyle = cg; g.fill();
-  // gullies and banded ash down its flanks
   g.save(); cone(); g.clip();
-  g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1.5; for (let i = 0; i < 9; i++) { const sx = x0 - cw * (0.05 + i * 0.12); g.beginPath(); g.moveTo(sx + cw * 0.02, top + H * (0.05 + i * 0.02)); g.quadraticCurveTo(sx - cw * 0.05, top + H * 0.5, sx - cw * 0.2, oy); g.stroke(); }
-  // the lava channel: glowing, white-hot near the crater, crimson below (never the velocity's orange), flickering
+  // banded ash and scoria down its flanks, following its curve; rills of loose ash
+  for (let i = 1; i < 7; i++) { g.strokeStyle = withAlpha(i % 2 ? '#000000' : '#ffffff', n ? 0.08 : 0.1); g.lineWidth = 3; const yy = lerp(top, oy, i / 7); g.beginPath(); g.moveTo(footL, yy + H * 0.08); g.quadraticCurveTo(x0 - cw * 0.3, yy, x0 + (footR - x0), yy + H * 0.05); g.stroke(); }
+  g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = 1;
+  for (let i = 0; i < 26; i++) { const sx = x0 - bowl - r() * (cw - bowl) * 0.9, d = (x0 - sx) / cw; const sy = top + H * d * d * 0.9 + 4; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 4 - r() * 8, sy + 10 + r() * H * 0.12); g.stroke(); }
+  // the lava channel: white-hot near the crater, crimson below, flickering
   const flick = 0.85 + 0.15 * Math.sin(phase * 5);
-  const lg = g.createLinearGradient(0, top, 0, oy); lg.addColorStop(0, `rgba(255,236,160,${0.95 * flick})`); lg.addColorStop(0.35, `rgba(200,40,60,${0.85 * flick})`); lg.addColorStop(1, 'rgba(110,20,40,0.6)');
-  g.strokeStyle = lg; g.lineWidth = clamp(0.5 * k, 3, 10); g.lineCap = 'round'; g.beginPath(); g.moveTo(x0 - cw * 0.12, top + 6); g.bezierCurveTo(x0 - cw * 0.3, top + H * 0.3, x0 - cw * 0.2, top + H * 0.6, x0 - cw * 0.55, oy); g.stroke();
+  const lg = g.createLinearGradient(0, top, 0, oy); lg.addColorStop(0, `rgba(255,240,190,${0.95 * flick})`); lg.addColorStop(0.35, `rgba(200,40,60,${0.85 * flick})`); lg.addColorStop(1, 'rgba(110,20,40,0.6)');
+  g.strokeStyle = lg; g.lineWidth = clamp(0.4 * k, 3, 9); g.lineCap = 'round'; g.beginPath(); g.moveTo(x0 - bowl * 1.2, top + 4); g.bezierCurveTo(x0 - cw * 0.25, top + H * 0.3, x0 - cw * 0.3, top + H * 0.6, x0 - cw * 0.55, oy); g.stroke();
   g.restore();
-  // the crater's glow, and the plume leaning back over the cone (away from the flight)
-  const gx = x0 - cw * 0.12, glow = g.createRadialGradient(gx, top, 0, gx, top, cw * 0.4); glow.addColorStop(0, `rgba(255,190,90,${0.7 * flick})`); glow.addColorStop(1, 'rgba(255,120,40,0)');
-  g.fillStyle = glow; g.fillRect(gx - cw * 0.4, top - cw * 0.4, cw * 0.8, cw * 0.8);
-  for (let i = 0; i < 9; i++) {
-    const t2 = i / 8, px = gx - t2 * cw * 0.9 + Math.sin(phase + i) * 4, py = top - t2 * Math.min(top - 10, cw * 0.9), R = cw * (0.06 + t2 * 0.16);
-    const pg2 = g.createRadialGradient(px, py, 0, px, py, R); pg2.addColorStop(0, withAlpha(n ? '#4a4040' : '#6a6460', 0.75 - t2 * 0.4)); pg2.addColorStop(1, withAlpha(n ? '#4a4040' : '#6a6460', 0));
+  // the crater's glow, in its bowl behind the rim: small, white-hot and crimson
+  const gx = x0 - bowl * 0.55, gy = top + bowl * 0.15, gR = bowl * 0.9;
+  const glow = g.createRadialGradient(gx, gy, 0, gx, gy, gR); glow.addColorStop(0, `rgba(255,244,210,${0.8 * flick})`); glow.addColorStop(0.45, `rgba(200,40,60,${0.45 * flick})`); glow.addColorStop(1, 'rgba(200,40,60,0)');
+  g.fillStyle = glow; g.beginPath(); g.arc(gx, gy, gR, 0, TAU); g.fill();
+  // the plume leaning back over the cone, away from the flight; pale enough to read at night
+  for (let i = 0; i < 10; i++) {
+    const t2 = i / 9, px = gx - t2 * cw * 0.7 + Math.sin(phase + i) * 4, py = top - 6 - t2 * Math.min(top - 10, cw * 0.7), R = bowl * (0.6 + t2 * 2.4);
+    const pg2 = g.createRadialGradient(px, py, 0, px, py, R); pg2.addColorStop(0, withAlpha(n ? '#9a9098' : '#6a6460', 0.7 - t2 * 0.35)); pg2.addColorStop(1, withAlpha(n ? '#9a9098' : '#6a6460', 0));
     g.fillStyle = pg2; g.beginPath(); g.arc(px, py, R, 0, TAU); g.fill();
   }
-  scree(g, x0 + cw * 0.12, oy, k);
 }
 
-/** A quarry: tiered benches cut in pale limestone, drill lines down each
-    face, a rock pool on the floor, a dump truck; it leaves from the top
-    bench's lip and lands on the quarry floor. */
+/** A quarry: the far wall of the pit receding in pale grey benches, each a
+    drilled face over a ledge strewn with rubble, hazed with distance; the
+    floor of crushed stone with a rock pool and a dump truck (clear of the
+    flight); the near face it leaves from in warmer, darker stone, its
+    benches stepping back with rubble on each ledge and a shadow under each. */
 function quarry(g, c) {
   const { w, h, k, oy, x0, top, H0 } = c;
   const E = env(), n = E.night, r = rng(223), horizon = oy - clamp((oy - 40) * 0.5, 60, 320);
   sky(g, w, horizon, x0, { far: 'none', seed: 161, clouds: 3 });
-  const lime = n ? '#7a7670' : '#d8d0c0', limeLo = n ? '#5a5650' : '#b4aa98', limeDk = n ? '#3e3a36' : '#8a806e';
-  // the far wall of the pit: benches stepping down to the floor, across
-  const steps = 4, sH = (oy - horizon) / steps;
+  // the far wall: benches, the upper ones smaller and hazier
+  const steps = 5, total = oy - horizon;
+  let y = horizon;
   for (let i = 0; i < steps; i++) {
-    const y = horizon + i * sH;
-    g.fillStyle = i % 2 ? limeLo : lime; g.fillRect(0, y, w, sH);
-    g.fillStyle = withAlpha('#000000', 0.15); g.fillRect(0, y + sH * 0.82, w, sH * 0.18);
-    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.3); g.fillRect(0, y, w, 1.5);
-    g.strokeStyle = withAlpha('#000000', 0.12); g.lineWidth = 1; for (let x = r() * 12; x < w; x += 9 + r() * 6) { g.beginPath(); g.moveTo(x, y + 3); g.lineTo(x + 1, y + sH * 0.8); g.stroke(); }
+    const f = (i + 1) / steps, faceH = total * (0.12 + 0.1 * f), ledge = Math.max(3, faceH * 0.18);
+    const face = n ? ['#5a5c60', '#62646a', '#6a6c72', '#72747a', '#7a7c82'][i] : ['#cfd2d4', '#c8cbce', '#c0c4c8', '#b8bcc0', '#b0b4b8'][i];
+    g.fillStyle = face; g.fillRect(0, y, w, faceH);
+    g.strokeStyle = withAlpha('#000000', 0.14); g.lineWidth = 1; for (let x = r() * 10; x < w; x += 6 + r() * 7) { g.beginPath(); g.moveTo(x, y + 2); g.lineTo(x + (r() - 0.5) * 2, y + faceH - 1); g.stroke(); }
+    g.fillStyle = withAlpha('#000000', 0.12); for (let x = r() * 60; x < w; x += 50 + r() * 80) { g.beginPath(); g.moveTo(x, y); g.lineTo(x + 8, y + faceH); g.lineTo(x - 4, y + faceH); g.closePath(); g.fill(); }
+    // the ledge: a lit top strip with rubble piles along it
+    g.fillStyle = n ? '#7a7c80' : '#e2e2e0'; g.fillRect(0, y + faceH, w, ledge);
+    g.fillStyle = n ? '#4a4c50' : '#9a9ea2'; for (let x = r() * 40; x < w; x += 30 + r() * 60) { g.beginPath(); g.ellipse(x, y + faceH + ledge * 0.4, 6 + r() * 10, ledge * 0.7, 0, Math.PI, TAU); g.fill(); }
+    // haze, thicker up the wall
+    g.fillStyle = withAlpha(n ? '#2a2c34' : '#e8ecf0', 0.3 * (1 - f)); g.fillRect(0, y, w, faceH + ledge);
+    y += faceH + ledge; if (y > oy - 4) break;
   }
-  // the floor: crushed stone, a rock pool, a heap of broken rock
+  // the floor: crushed stone
   const fg = g.createLinearGradient(0, oy, 0, h); fg.addColorStop(0, n ? '#5a5650' : '#c4baa8'); fg.addColorStop(1, n ? '#3e3a36' : '#a49a88'); g.fillStyle = fg; g.fillRect(0, oy, w, h - oy);
-  g.fillStyle = withAlpha(limeDk, 0.6); for (let i = 0; i < (w * (h - oy)) / 60; i++) g.fillRect(r() * w, oy + r() * (h - oy), 2, 1.5);
-  const pool = x0 + (w - x0) * 0.75; if (clearOf(pool, c, 80) && pool < w - 40) { g.fillStyle = n ? '#2a4a50' : '#6fb0b8'; g.beginPath(); g.ellipse(pool, oy + 8, clamp(3 * k, 30, 80), 5, 0, 0, TAU); g.fill(); g.fillStyle = withAlpha('#ffffff', 0.4); g.fillRect(pool - 15, oy + 6, 20, 1.2); }
-  // a dump truck on the floor, clear of the flight
-  const tx = x0 + (w - x0) * 0.45;
-  if (clearOf(tx, c, 90) && tx < w - 60) {
-    const tl = clamp(5 * k, 50, 120), th2 = tl * 0.45;
+  g.fillStyle = withAlpha(n ? '#2a2622' : '#7a7060', 0.6); for (let i = 0; i < (w * (h - oy)) / 50; i++) g.fillRect(r() * w, oy + r() * (h - oy), 2, 1.5);
+  // a rock pool and a dump truck on the floor, clear of the whole flight
+  const land = (c.clearX || [])[0] ?? x0, free = (x, half) => (x + half < x0 - 20 || x - half > land + 30) && x - half > 10 && x + half < w - 10;
+  const pw = clamp(3 * k, 30, 80), pool = [land + 50 + pw, w - pw - 20].find((x) => free(x, pw));
+  if (pool != null) { g.fillStyle = n ? '#2a4a50' : '#6fb0b8'; g.beginPath(); g.ellipse(pool, oy + 8, pw, 5, 0, 0, TAU); g.fill(); g.fillStyle = withAlpha('#ffffff', 0.4); g.fillRect(pool - pw * 0.4, oy + 6, pw * 0.5, 1.2); }
+  const tl = clamp(5 * k, 60, 130), tx = [land + 70 + tl / 2, pool != null ? pool + pw + 30 + tl / 2 : null, w - tl / 2 - 20].find((x) => x != null && free(x, tl / 2) && (pool == null || Math.abs(x - pool) > pw + tl / 2 + 10));
+  if (tx != null) {
+    const th2 = tl * 0.45;
     g.fillStyle = '#e8c547'; g.beginPath(); g.moveTo(tx - tl / 2, oy - th2 * 0.45); g.lineTo(tx + tl * 0.15, oy - th2 * 0.45); g.lineTo(tx + tl * 0.2, oy - th2); g.lineTo(tx - tl / 2 - 6, oy - th2); g.closePath(); g.fill();
+    g.fillStyle = withAlpha('#000000', 0.2); g.fillRect(tx - tl / 2, oy - th2 * 0.62, tl * 0.65, 2);
+    g.fillStyle = n ? '#8a8078' : '#b0a898'; g.beginPath(); g.ellipse(tx - tl * 0.15, oy - th2, tl * 0.3, th2 * 0.18, 0, Math.PI, TAU); g.fill();
     g.fillStyle = '#c8a82a'; g.fillRect(tx + tl * 0.18, oy - th2 * 0.85, tl * 0.3, th2 * 0.45);
     g.fillStyle = withAlpha('#a9c4dc', 0.85); g.fillRect(tx + tl * 0.26, oy - th2 * 0.8, tl * 0.16, th2 * 0.2);
-    g.fillStyle = '#1d1e22'; for (const wx of [tx - tl * 0.3, tx + tl * 0.32]) { g.beginPath(); g.arc(wx, oy - th2 * 0.2, th2 * 0.24, 0, TAU); g.fill(); g.fillStyle = '#8a9098'; g.beginPath(); g.arc(wx, oy - th2 * 0.2, th2 * 0.1, 0, TAU); g.fill(); g.fillStyle = '#1d1e22'; }
+    for (const wx of [tx - tl * 0.3, tx + tl * 0.32]) { g.fillStyle = '#1d1e22'; g.beginPath(); g.arc(wx, oy - th2 * 0.2, th2 * 0.24, 0, TAU); g.fill(); g.fillStyle = '#8a9098'; g.beginPath(); g.arc(wx, oy - th2 * 0.2, th2 * 0.1, 0, TAU); g.fill(); }
+    c.reserve?.({ x: tx - tl / 2 - 6, y: oy - th2 * 1.1, w: tl + 10, h: th2 * 1.1 + 4 });
   }
   if (!(H0 > 0)) return;
-  // the near face it leaves from: benches stepping back from the lip, drilled, a safety bund along the top
-  const H = oy - top, nb = Math.max(2, Math.round(H / clamp(5 * k, 40, 120))), bH = H / nb;
-  for (let i = 0; i < nb; i++) {
-    const yT = top + i * bH, xr = x0 - i * clamp(0.6 * k, 4, 14);
-    g.fillStyle = i % 2 ? limeLo : lime; g.fillRect(-4, yT, xr + 4, bH + 1);
-    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.35); g.fillRect(-4, yT, xr + 4, 1.5);
-    g.strokeStyle = withAlpha('#000000', 0.15); g.lineWidth = 1; for (let x = xr - 6; x > 0; x -= 8 + r() * 6) { g.beginPath(); g.moveTo(x, yT + 3); g.lineTo(x - 1, yT + bH - 2); g.stroke(); }
-    g.fillStyle = withAlpha('#000000', 0.2); g.fillRect(xr - 3, yT, 3, bH);
+  // the near face: warmer, darker stone, benches stepping back from the lip
+  const H = oy - top, nb = Math.max(2, Math.round(H / clamp(5 * k, 40, 120))), bH = H / nb, back = clamp(1.5 * k, 12, 40);
+  const warm = n ? ['#6a5a48', '#5a4c3e'] : ['#c4a878', '#b0946a'];
+  for (let i = nb - 1; i >= 0; i--) {
+    const yT = top + i * bH, xr = x0 - i * back;
+    g.fillStyle = warm[i % 2]; g.fillRect(-4, yT, xr + 4, bH + 1);
+    g.strokeStyle = withAlpha('#000000', 0.2); g.lineWidth = 1; for (let x = xr - 5; x > 0; x -= 7 + r() * 6) { g.beginPath(); g.moveTo(x, yT + 4); g.lineTo(x - 1, yT + bH - 2); g.stroke(); }
+    // a crack or two, the shadow down the step's corner, the ledge's lit edge with rubble on it
+    g.strokeStyle = withAlpha('#000000', 0.3); g.beginPath(); const cx2 = xr * (0.3 + r() * 0.5); g.moveTo(cx2, yT + 3); g.lineTo(cx2 + 6, yT + bH * 0.5); g.lineTo(cx2 - 3, yT + bH - 2); g.stroke();
+    g.fillStyle = withAlpha('#000000', 0.3); g.fillRect(xr - 4, yT, 4, bH);
+    g.fillStyle = withAlpha('#ffffff', n ? 0.08 : 0.4); g.fillRect(-4, yT, xr + 4, 2);
+    if (i > 0) { g.fillStyle = n ? '#4a4038' : '#9a7e58'; for (let x = xr + 4; x < xr + back - 2; x += 5) { g.beginPath(); g.arc(x, yT - 1, 2 + r() * 2.5, Math.PI, TAU); g.fill(); } }
   }
-  g.fillStyle = n ? '#4a4640' : '#9a9080'; g.beginPath(); g.moveTo(-4, top); g.quadraticCurveTo(x0 * 0.5, top - clamp(0.8 * k, 6, 20), x0 - clamp(2 * k, 20, 60), top); g.closePath(); g.fill();
-  scree(g, x0, oy, k);
+  // the safety bund along the top, back from the lip
+  g.fillStyle = n ? '#5a4c40' : '#a8906a'; g.beginPath(); g.moveTo(-4, top); g.quadraticCurveTo(x0 * 0.4, top - clamp(0.8 * k, 6, 20), x0 - clamp(2.5 * k, 24, 70), top); g.closePath(); g.fill();
+  scree(g, x0 - (nb - 1) * back, oy, k);
 }
 
 /** The places this file draws, by the registry's names. */
