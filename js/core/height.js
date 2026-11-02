@@ -41,6 +41,11 @@ export const PLACES = {
   floor:   { word: 'start', top: 'where it starts', below: 'the floor', lands: 'lands on the floor', foot: 'where it started', level: true },
   house:   { word: 'house', top: 'the roof', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the house' },
   tree:    { word: 'tree', top: 'the branch', below: 'the ground', lands: 'hits the ground', foot: 'straight below the branch' },
+  ledge:   { word: 'ledge', top: 'the ledge', below: 'the valley floor', lands: 'hits the valley floor', foot: 'at the foot of the ledge' },
+  quay:    { word: 'quay', top: 'the quayside', below: 'the water', lands: 'hits the water', foot: 'at the foot of the quay' },
+  building: { word: 'building', top: 'the roof', below: 'the street', lands: 'hits the street', foot: 'at the foot of the building' },
+  moon:    { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
+  mars:    { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
   table:   { word: 'table', top: 'the table top', below: 'the floor', lands: 'hits the floor', foot: 'at the foot of the table', from: 'the table top' },
   air:     { word: 'point it was let go', top: 'the point it is let go from', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', from: 'where it was let go' },
 };

@@ -66,7 +66,7 @@ group('From level ground, and from a house: the place word fits', () => {
 
 group('Refused, with a reason a student can read', () => {
   const no = (r, re, label) => { const x = check(r); ok(!x.ok && re.test(x.reason), `${label}: “${x.reason}”`); };
-  no({ ...CAR, backdrop: 'moon' }, /no backdrop called “moon”/, 'an unknown backdrop');
+  no({ ...CAR, backdrop: 'atlantis' }, /no backdrop called “atlantis”/, 'an unknown backdrop');
   no({ ...CAR, engine: 'warp' }, /no engine called/, 'an unknown engine');
   ok(check({ ...CAR, objects: [{ figure: 'dragon' }] }).recipe.notes[0] === 'Drawn as a particle: there is no dragon figure yet.', 'a thing with no figure: the closest, said so');
   no({ ...CAR, objects: [{ figure: 'ship' }] }, /from above/, 'a ship side on');
@@ -153,7 +153,7 @@ group('A part in a scene of its own', () => {
     { label: 'a', asks: 'time in the air', answer: 'time1' },
     { label: 'b', asks: 'how far out', answer: 'distance' },
     { label: 'c', asks: 'cyclist lands', answer: 'distance', recipe: { backdrop: 'road', engine: 'projectile', objects: [{ figure: 'cyclist' }], numbers: { h: 3, u: 6, theta: 0, g: 9.8 } } },
-    { label: 'd', asks: 'nonsense', answer: 'time1', recipe: { backdrop: 'moon', engine: 'projectile', objects: [{ figure: 'car' }] } },
+    { label: 'd', asks: 'nonsense', answer: 'time1', recipe: { backdrop: 'atlantis', engine: 'projectile', objects: [{ figure: 'car' }] } },
   ]);
   ok(main.map((p) => p.label).join() === 'a,b', 'the main scene keeps (a) and (b)');
   ok(scenes.length === 2 && !('recipe' in scenes[0].part), '(c) and (d) each a scene of their own, the recipe taken off the part');

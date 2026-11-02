@@ -14,7 +14,7 @@ import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
 import { compose, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
-import { figureOf } from './compose/registry.js';
+import { figureOf, placeOf } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
@@ -3620,7 +3620,7 @@ function applyComposed(x, { graph = true } = {}) {
     ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
   // the values it read, each from the question or assumed, as a library reply lists them
-  const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g,
+  const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g && !placeOf(s.recipe).g,
     `${x.summary || ''} ${said.join(' ')}`, false, !!c.kit.g);
   return { ok: true, runnable: !!traj, composed: !!traj, html: head + given + body + more };
 }

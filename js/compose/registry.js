@@ -38,6 +38,12 @@ export const BACKDROPS = {
   board:   { label: 'A diving board', what: 'a diving platform on its tower over an outdoor pool', place: 'board', below: 'pool', edge: true, at: 'a diving board' },
   table:   { label: 'A table', what: 'a wooden table in a room', place: 'table', below: 'floor', edge: true, at: 'a table' },
   well:    { label: 'A well', what: 'a stone well, its shaft cut away down to the water: it moves straight up or down', place: 'well', below: 'well', edge: true, at: 'a well' },
+  mountain: { label: 'Mountains', what: 'a rock ledge high above a valley, snow-capped peaks beyond', place: 'ledge', below: 'ground', edge: true, at: 'a ledge' },
+  forest:  { label: 'A forest', what: 'woodland: trees thinning into mist over a forest floor; from a height, a platform among the trunks', place: 'ground', below: 'ground', art: true },
+  harbour: { label: 'A harbour', what: 'a stone quay over the harbour water, boats at their moorings, a lighthouse across the bay', place: 'quay', below: 'sea', edge: true, at: 'a quay' },
+  city:    { label: 'A city', what: 'the roof of an office block among the city’s towers, the street below', place: 'building', below: 'road', edge: true, at: 'a building' },
+  moon:    { label: 'The Moon', what: 'the Moon’s grey cratered plain under a black sky, the Earth overhead; g is 1.62 there', place: 'moon', below: 'surface', art: true, g: 1.62, on: 'on the Moon' },
+  mars:    { label: 'Mars', what: 'Mars’s red dust and rock under a butterscotch sky; g is 3.71 there', place: 'mars', below: 'surface', art: true, g: 3.71, on: 'on Mars' },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from a hovering balloon (or a helicopter or a plane)', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
@@ -216,7 +222,7 @@ export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bou
 export const MOMENTS = { pair: 'flash', bounce: 'ring' };
 
 /** The effect a landing makes on what is below, when the recipe names none. */
-export const LANDS_WITH = { sea: 'splash', river: 'splash', pool: 'splash', well: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring' };
+export const LANDS_WITH = { surface: 'dust', sea: 'splash', river: 'splash', pool: 'splash', well: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring' };
 
 /** What it lands on, in a question's words, as a backdrop's `below`. */
 const UNDER = [
@@ -304,6 +310,12 @@ export function figureOf(who) {
 // "a window of time", "the house rules"
 const FROM = '\\b(?:off|from|on|over the edge of|out of)\\s+(?:a|the|an)\\s+(?:\\d+(?:\\.\\d+)?\\s*m(?:etres?)?\\s+(?:high\\s+|tall\\s+)?)?';
 const ONLY_HERE = [
+  [/\bon (?:the )?moon\b|\blunar\b|\bmoon'?s (?:surface|gravity)\b/, 'moon', 'moon'],
+  [/\bon mars\b|\bmartian\b|\bmars'?s (?:surface|gravity)\b/, 'mars', 'mars'],
+  [/\b(?:in|through|across|into)\s+(?:a|the)\s+(forest|wood|woods|woodland)\b/, 'forest'],
+  [/\b(skyscraper|office block|tower block|high-rise|rooftop)\b/, 'city'],
+  [new RegExp(`${FROM}(quay|quayside|harbour wall|pier|jetty|dock|harbour)\\b`), 'harbour'],
+  [new RegExp(`${FROM}(ledge|mountain|mountainside|peak|crag|mountain ledge)\\b`), 'mountain'],
   [new RegExp(`${FROM}(table|desk|bench|worktop|counter|shelf|workbench)\\b(?!\\s+(?:of|tennis))`), 'table'],
   [new RegExp(`${FROM}(balcony|window|house|bungalow|roof)\\b(?!\\s+of)`), 'house'],
   [/\b(?:in|inside)\s+(?:a|the)\s+(sports hall|gym(?:nasium)?)\b/, 'hall'],
@@ -315,6 +327,6 @@ const ONLY_HERE = [
  */
 export function placeIn(text) {
   const t = String(text ?? '').toLowerCase();
-  for (const [re, backdrop] of ONLY_HERE) { const m = t.match(re); if (m) return { backdrop, word: m[1] }; }
+  for (const [re, backdrop, word] of ONLY_HERE) { const m = t.match(re); if (m) return { backdrop, word: word ?? m[1] }; }
   return null;
 }

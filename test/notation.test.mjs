@@ -1315,7 +1315,7 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
       for (const x of c.scenario.ending.why.flat()) { said++; check('why', x, bag); }
     }
     const no = { ...base, backdrop: 'cliff', numbers: { h: 40 } };
-    for (const R of [{ ...no, backdrop: 'moon' }, { ...no, engine: 'warp' }, { ...no, objects: [{ figure: 'ship' }] }, { ...no, numbers: { h: -150000 } },
+    for (const R of [{ ...no, backdrop: 'atlantis' }, { ...no, engine: 'warp' }, { ...no, objects: [{ figure: 'ship' }] }, { ...no, numbers: { h: -150000 } },
       { ...no, numbers: { mass: 3 } }, { ...no, numbers: { h: 'x' } }, { ...no, numbers: { theta: 120 } }, { ...no, objects: [] }, { ...no, engine: 'plane' },
       { ...no, backdrop: 'ground', numbers: { h: 0, u: 5, theta: -20 } }, { ...no, backdrop: 'orchard', numbers: { h: 3 } }]) { said++; check('refusal', checkRecipe(R).reason, bag); }
     for (const x of [

@@ -231,6 +231,20 @@ a From-a-height reading whose surface is not the place's own, whatever moves.
 The stage draws a cliff over fields with `scree()` at its foot, or over sand,
 and a bridge over a road; the landing kicks up dust.
 
+Places in `js/render/places.js` (PLACE_ART, by the registry's backdrop
+name; each paints the backdrop and what it is launched from, called by
+composed.js scenery()): `mountain` (snow-capped peaks, a pine ridge, meadows
+to the valley floor, a rock ledge), `forest` (layered trees thinning into
+mist, leaf litter and ferns, a platform among the trunks from a height),
+`harbour` (a stone quay with a bollard and a ladder, boats at their
+moorings rocking with the swell, a breakwater and a lighthouse), `city` (a
+skyline, nearer lit blocks, the office block it leaves from, the street),
+`moon` (stars, the Earth half lit, a cratered grey plain; g 1.62) and `mars`
+(a butterscotch sky, a mesa, red dust and rock; g 3.71). A backdrop with its
+own g (registry `g`) uses it unless the question gives one, and the reply
+says so. Two from one place: the `twin` engine (js/core/twin.js,
+js/kits/twin.js), drawn by launch() as one mover or two.
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

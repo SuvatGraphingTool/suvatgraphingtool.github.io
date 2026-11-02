@@ -167,6 +167,8 @@ export function check(raw) {
   // what its moments make, unless the recipe says: a meeting flashes, a
   // bounce rings, a landing splashes or kicks up dust
   if (!effects.length && (MOMENTS[engine] || LANDS_WITH[B.below])) effects.push(MOMENTS[engine] || LANDS_WITH[B.below]);
+  // a place with its own gravity says so
+  if (B.g && !isNum(numbers.g)) notes.push(`${Up(B.on || B.label)} g is ${M`${num(B.g, 2, { trim: true })} [m s^-2]`}, not Earth’s ${M`9.81 [m s^-2]`}: the engine uses it.`);
 
   return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), engine, objects, numbers, effects, notes } };
 }
@@ -176,7 +178,7 @@ export function titleOf(r) {
   const F = FIGURES[r.objects[0].figure], B = BACKDROPS[r.backdrop];
   if (r.title) return Up(r.title);
   const what = Up(F.label);
-  const where = `${{ hall: 'in', sea: 'over' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
+  const where = B.on || `${{ hall: 'in', sea: 'over', forest: 'in' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
   if (r.engine === 'projectile') {
     if (r.backdrop === 'air') return `${what} let go from the air`;
     if (r.backdrop === 'well') return `${what} down a well`;
@@ -218,7 +220,8 @@ export function compose(raw) {
   const who = r.objects.map((o) => FIGURES[o.figure].label).join(' and ');
   // on Earth unless the question says otherwise — the reader leaves g out
   // then — at the app's own Earth value, as the twelve are
-  const boxes = { ...r.numbers, g: r.numbers.g ?? EARTH };
+  // on the Moon or Mars, its own g unless the question gives one
+  const boxes = { ...r.numbers, g: r.numbers.g ?? B.g ?? EARTH };
   if (r.engine === 'projectile' || r.engine === 'twin') boxes.place = B.place;
 
   // the engine's kit, as it is, with the composed stage in place of its own;
@@ -366,13 +369,14 @@ export function fromReading(x) {
   // have says otherwise; a coin or a marble is always drawn as itself
   const small = !m.figure || (m.exact && ['ball', 'stone', 'particle'].includes(m.figure));
   const words = `${x.summary || ''} ${x.words || ''}`;
-  const where = !fromHeight && LAUNCHES.includes(x.scenario) ? placeIn(words) : null;
+  const where = fromHeight || LAUNCHES.includes(x.scenario) ? placeIn(words) : null;
   const own = where?.backdrop ?? null;
   if (small && !under && !own) return null;
   const figure = m.figure || 'ball';
   let backdrop, numbers, keys;
   if (fromHeight) {
-    backdrop = HEIGHT_PLACES[x.boxes.place];
+    // a place only the composer draws, named in the words, wins over From a height's
+    backdrop = own ?? HEIGHT_PLACES[x.boxes.place];
     if (!backdrop) return null;
     numbers = pick(x.boxes, ['h', 'u', 'theta', 'v', 's', 't', 'tTop', 'level', 'g']);
     keys = HEIGHT_KEYS;
@@ -387,14 +391,15 @@ export function fromReading(x) {
     if (theta != null) numbers.theta = theta;
     if (r.h != null) numbers.h = r.h;
     if (typeof x.g === 'number') numbers.g = x.g;
-    backdrop = own && !(numbers.h === 0 && own !== 'hall') ? own
+    // a named place stands; one with an edge to leave from needs a height to stand on it
+    backdrop = own && (numbers.h !== 0 || !BACKDROPS[own].edge) ? own
       : !(numbers.h === 0) && CARRIER.test(words) ? 'air' : 'ground';
     keys = TWELVE_KEYS;
   } else return null;
   const notes = [];
   if (m.figure && !m.exact) notes.push(nearest(m));
   // the question's own word for the place, in the title and said if it is drawn as another
-  const at = own && where.word && !['table', 'house'].includes(where.word) ? where.word : null;
+  const at = own && BACKDROPS[own].edge && where.word && !['table', 'house'].includes(where.word) ? where.word : null;
   if (at && own === 'table') notes.push(`The ${at} is drawn as a table: only its height matters to the motion.`);
   const carrier = `${x.summary || ''} ${x.words || ''}`.match(CARRIER);
   if (backdrop === 'air' && carrier) notes.push(`Drawn let go from a balloon: there is no ${carrier[1].toLowerCase()} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);

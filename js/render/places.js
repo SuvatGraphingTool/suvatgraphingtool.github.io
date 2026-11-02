@@ -73,7 +73,14 @@ function mountain(g, { w, h, oy, x0, top, H0 }) {
   g.fillStyle = E.night ? '#2c3329' : '#55684a';
   g.beginPath(); g.moveTo(0, horizon + 10);
   for (let x = 0; x <= w; x += 30) g.lineTo(x, horizon - 30 * Math.sin(x / 140 + 1.3) - 18);
-  g.lineTo(w, oy); g.lineTo(0, oy); g.closePath(); g.fill();
+  const band = Math.min(oy, horizon + clamp((oy - horizon) * 0.3, 20, 70));
+  g.lineTo(w, band); g.lineTo(0, band); g.closePath(); g.fill();
+  // the valley's meadows running down from the ridge's foot to the floor
+  const mg = g.createLinearGradient(0, band, 0, oy);
+  mg.addColorStop(0, E.night ? '#33402c' : '#6d8a52'); mg.addColorStop(1, E.night ? '#3e4b33' : '#86a062');
+  g.fillStyle = mg; g.fillRect(0, band, w, oy - band);
+  g.strokeStyle = withAlpha(E.night ? '#1f2a1c' : '#4a5c3c', 0.45); g.lineWidth = 1;
+  for (let y = band + 8; y < oy; y += 10 + (y - band) * 0.25) { g.beginPath(); g.moveTo(0, y); for (let x = 0; x <= w; x += 40) g.lineTo(x, y + Math.sin(x / 90 + y) * 2); g.stroke(); }
   for (let x = 6; x < w; x += 9 + r() * 10) {
     const by = horizon - 30 * Math.sin(x / 140 + 1.3) - 14, ph = 10 + r() * 14;
     g.fillStyle = E.night ? '#1f2a1c' : '#3f5536';
