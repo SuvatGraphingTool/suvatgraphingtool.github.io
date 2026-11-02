@@ -450,6 +450,14 @@ blade and pads for cricket, a round bat and helmet for baseball. A serve
 from up to 3.4 m is struck by the racquet, never off a wall; the reply says
 "struck by the racquet" or "by the bat".
 
+Batch 14, more animals. `kangaroo` in `animals.js` (an animal like the cat:
+crouched, stretched out in the hop, its feet swinging forward to land; its
+tail out behind), and `SWIMMERS`: `dolphin` and `fish` (a salmon), drawn
+along their path with their tails beating; from the water (h 0 over the sea
+or a river) each waits as a dark shape below the surface, bursts out in a
+splash, and goes back in with another; no jetty is drawn under them. Their
+titles say "leaping from the open sea".
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

@@ -34,7 +34,7 @@ import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
 import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles, diveCatch } from './impacts.js';
-import { ANIMALS, FEET, javelin } from './animals.js';
+import { ANIMALS, FEET, SWIMMERS, javelin } from './animals.js';
 import { golfer, kicker, archer, archerHand, server, batter, SERVE_AT, BAT_AT, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
 import { VEHICLES } from './vehicles.js';
@@ -144,7 +144,7 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
       if (H0 > 0) appleTree(g, (x) => X(x - 1.2), Y, k, [1.2, 1.2], [H0, H0], 11);
       break;
     }
-    case 'sea': seaScene(g, w, h, horizon(0.2), phase); if (!(H0 <= 0 && FLOATS.has(R.objects[0].figure))) jetty(g, -4, x0 + 2, H0 > 0 ? top : oy - 4, oy, h, k); break;
+    case 'sea': seaScene(g, w, h, horizon(0.2), phase); if (!(H0 <= 0 && (FLOATS.has(R.objects[0].figure) || PIECES[R.objects[0].figure]?.swims))) jetty(g, -4, x0 + 2, H0 > 0 ? top : oy - 4, oy, h, k); break;
     case 'board': {
       // From a height's own diving stand over its pool, the board's tip at the edge
       const len = boardLen(k, oy - top), sx = x0 - len;
@@ -363,7 +363,7 @@ function launch(canvas, o) {
   // ── the path: all of it faintly, the part flown strongly
   const at = (p) => ({ x: X(p.x), y: Y(p.y) });
   stroke(g, pts.map(at), { color: P.vel, width: 1.8, alpha: 0.35 });
-  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'firework', 'arrow', 'javelin', 'bird'].includes(kind) || !!piece.animal;
+  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'firework', 'arrow', 'javelin', 'bird', 'dolphin', 'fish'].includes(kind) || !!piece.animal;
   stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
   // a rocket's smoke, left along the way it has come, under the marks
@@ -536,6 +536,18 @@ function launch(canvas, o) {
     if (kind === 'firework') firework(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, { burning: fired && t < f.tMax * 0.04, spent: R.effects.includes('burst') && f.uy > 0 && t >= f.tApex, spin: t * 9 });
     else rocket(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, !fired || t < f.tMax * 0.04);
     g.restore();
+  } else if (SWIMMERS[kind]) {
+    // a dolphin or a fish leaping from the water: along its path, its tail
+    // beating; a splash as it leaves the water and again as it goes back in
+    const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x);
+    const fromWater = H0 <= 0 && wet, s0 = Math.max(1, Lp / 30);
+    if (fromWater && fired && t < f.tMax * 0.35) bigSplash(g, X(0), oy, t / (f.tMax * 0.35), 1, s0);
+    g.save(); if (landed && wet) { g.beginPath(); g.rect(0, 0, w, oy + 1); g.clip(); }
+    if (!(landed && wet && age > life * 0.3) && !(fromWater && !fired)) SWIMMERS[kind](g, bx, by, Lp, P, { ang: landed && wet ? Math.PI / 2 : ang, phase: tRaw, ring: m.ring });
+    g.restore();
+    // waiting under the surface before it leaps: a dark shape below
+    if (fromWater && !fired) { g.fillStyle = 'rgba(30,45,55,0.35)'; g.beginPath(); g.ellipse(bx - Lp * 0.2, oy + Lp * 0.15, Lp * 0.45, Lp * 0.08, 0, 0, Math.PI * 2); g.fill(); }
+    m.body = { x: bx, y: by };
   } else if (kind === 'bird') {
     // a bird flying its own path: head along the way it goes, wings beating
     // on the way up and across, swept back as it dives; under water it is gone

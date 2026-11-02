@@ -219,7 +219,7 @@ export function titleOf(r) {
   const F = FIGURES[r.objects[0].figure], B = BACKDROPS[r.backdrop];
   if (r.title) return Up(r.title);
   const what = Up(F.label);
-  const where = B.on || `${{ hall: 'in', sea: 'over', forest: 'in' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
+  const where = B.on || `${{ hall: 'in', sea: F.swims ? 'from' : 'over', forest: 'in' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
   if (r.engine === 'projectile') {
     if (r.backdrop === 'air') return `${what} let go from ${r.carrier && r.carrier !== 'balloon' ? carrierName(r) : 'the air'}`;
     if (r.backdrop === 'well') return `${what} down a well`;
@@ -232,7 +232,7 @@ export function titleOf(r) {
     const byHand = (F.thrown || r.objects[0].figure === 'arrow') && r.objects[0].figure !== 'golfBall' && r.numbers.h > 0 && r.numbers.h <= (r.objects[0].figure === 'tennisBall' ? 3.4 : 2.6);
     if (byHand && r.backdrop === 'ground') return `${what} ${F.verb || 'thrown'}`;
     if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${B.high || 'a wall'}`;
-    const how = F.verb || (F.thrown ? 'thrown' : F.animal ? 'leaping' : 'launched');
+    const how = F.verb || (F.thrown ? 'thrown' : F.animal || F.swims ? 'leaping' : 'launched');
     return r.backdrop === 'ground' ? `${what} ${how} from the ground` : `${what} ${how} ${where}`;
   }
   const by = B.edge ? `by ${B.at}` : where;

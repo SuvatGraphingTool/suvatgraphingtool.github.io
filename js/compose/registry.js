@@ -121,6 +121,9 @@ export const FIGURES = {
   monkey:   { label: 'a monkey', m: 0.6, min: 30, views: ['side'], animal: true },
   frog:     { label: 'a frog', m: 0.12, min: 24, views: ['side'], animal: true },
   bird:     { label: 'a bird', m: 0.4, min: 46, views: ['side'], flier: true },
+  kangaroo: { label: 'a kangaroo', m: 1.6, min: 52, views: ['side'], animal: true },
+  dolphin:  { label: 'a dolphin', m: 2.5, min: 64, views: ['side'], swims: true },
+  fish:     { label: 'a fish', m: 0.7, min: 40, views: ['side'], swims: true },
 };
 
 /** What it is let go from, high in the air (backdrop `air` only): drawn at
@@ -364,6 +367,7 @@ const WORDS = [
   [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
   [/\b(javelin)\b/, 'javelin'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
   [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],
+  [/\b(kangaroo|wallaby)\b/, 'kangaroo'], [/\b(dolphin|porpoise|orca|killer whale)\b/, 'dolphin'], [/\b(fish|salmon|trout|flying fish)\b/, 'fish'],
   [/\b(bus|coach|minibus)\b/, 'bus'], [/\b(tractor|quad bike)\b/, 'tractor'], [/\b(speedboat|speed boat|motorboat|motor boat|powerboat)\b/, 'speedboat'],
   [/\b(jet ?ski|water scooter)\b/, 'jetski'], [/\b(ski jumper|skier|ski)\b/, 'skier'], [/\b(snowboard(?:er)?)\b/, 'snowboarder'],
   [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
@@ -376,8 +380,8 @@ const WORDS = [
 const NEAREST = [
   [/\b(dart|crossbow bolt|spear)\b/, 'arrow'],
   [/\b(surfer|bmx)\b/, 'diver'],
-  [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone|fish|nut|clam|mussel|prey|mouse)\b/, 'particle'],
-  [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|kangaroo|locust)\b/, 'frog'],
+  [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone|nut|clam|mussel|prey|mouse)\b/, 'particle'],
+  [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|locust)\b/, 'frog'],
   [/\b(animal|bat|insect|bee)\b/, 'particle'],
 ];
 /**
