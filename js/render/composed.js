@@ -421,12 +421,21 @@ function launch(canvas, o) {
     gm = Math.max(gm, end0.x * 0.5);
     const gx = X(gm), back = Math.max(X(end0.x + 0.8), gx + 14);
     goal(g, { x: gx, back, bar: oy - Math.max(24, 2.44 * k), y: oy }, t >= f.tMax - 1e-9 && clock.at != null ? (performance.now() - clock.at) / 1000 : -1, SETTLE);
-    // the goalkeeper: ready on the line, then diving low across the goal, toward
-    // us, as the ball comes, beaten; down on the turf once it is in. Drawn on the
-    // near side of the goal, under the ball, never in front of it (no save is claimed)
-    const kH = Math.max(30, Math.min(150, 1.85 * k)), dv = clamp((t - (f.tMax - 0.35)) / 0.35, 0, 1), e = dv * dv * (3 - 2 * dv);
-    const kx = gx - kH * 0.1 - kH * 0.2 * e, ky = lerpN(oy - DIVER_FEET * kH, oy - kH * 0.14, e) + 6 * e;
-    diver(g, kx, ky, kH, P, { ring: '#e8c547', dir: -1, stand: dv === 0, arms: 0.3 + 0.7 * e, spin: -(Math.PI / 2) * 0.95 * e });
+    // the goalkeeper, beaten (no save is claimed, rule 4): ready on the line while
+    // the ball is far off, then dived where the path is not — low along the turf
+    // under a high shot, or full stretch above a low one — before it arrives;
+    // with no room either way, no keeper is drawn
+    const bar = Math.max(24, 2.44 * k), kH = 0.76 * bar, km = kH / k, ux = Math.abs(f.ux) || 1;
+    let lo = Infinity, hi = -Infinity;
+    for (let xm = gm - km * 0.8; xm <= gm + 0.3; xm += km / 12) { const y = over(xm); if (y != null) { lo = Math.min(lo, y); hi = Math.max(hi, y); } }
+    const ballM = 0.11 + 8 / k, lowTop = 0.32 * km, highMid = hi + ballM + 0.18 * km;
+    const pose = lo > lowTop + ballM ? 'low' : highMid + 0.2 * km < 2.44 ? 'high' : null;
+    if (pose) {
+      const tc = gm / ux, dv = clamp((t - (tc - 0.65)) / 0.35, 0, 1), e = dv * dv * (3 - 2 * dv);
+      const restY = pose === 'low' ? oy - kH * 0.14 : Y(highMid);
+      const kx = gx - kH * 0.1 - kH * 0.2 * e, ky = lerpN(oy - DIVER_FEET * kH, restY, e);
+      diver(g, kx, ky, kH, P, { ring: '#e8c547', keeper: true, dir: -1, stand: dv === 0, arms: 0.3 + 0.7 * e, spin: -(Math.PI / 2) * 0.95 * e });
+    }
   }
   const later = [];
   const landed = t >= f.tMax - 1e-9;
@@ -643,7 +652,7 @@ function launch(canvas, o) {
       const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * (wet ? 3 : 2) : wet ? ease(0.05, 1, p) * Math.PI * 0.85 : Math.sin(ease(0.05, 0.95, p) * Math.PI) * 0.6;
       m.body = { x: cx, y: cy - (fired ? 0 : Lp * 0.25) };
       // on the Moon or Mars, in a white spacesuit
-      diver(g, cx, cy, Lp, P, { ring: m.ring || (R.backdrop === 'moon' || R.backdrop === 'mars' ? '#e4e6ea' : null), tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
+      diver(g, cx, cy, Lp, P, { ring: m.ring || (R.backdrop === 'moon' || R.backdrop === 'mars' ? '#e4e6ea' : null), space: R.backdrop === 'moon' || R.backdrop === 'mars', tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
     } else if (piece.animal) {
       // crouched on the edge, its feet at the engine's point; it springs,
       // stretches out in the air, and reaches down to land

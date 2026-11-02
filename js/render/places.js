@@ -2051,7 +2051,7 @@ function runway(g, c) {
   // the terminal: long, low, glazed, along the horizon, clear of where it is thrown from
   const tx0 = clamp(x0 + 60, w * 0.3, w * 0.6), tw = Math.min(w - tx0 - 10, clamp(w * 0.45, 160, 520)), th = clamp((oy - horizon) * 0.35, 14, 44);
   g.fillStyle = n ? '#4a5060' : '#d8dce2'; g.fillRect(tx0, horizon - th, tw, th);
-  g.fillStyle = n ? withAlpha(E.window, 0.8) : '#7a96b2'; g.fillRect(tx0 + 4, horizon - th * 0.8, tw - 8, th * 0.45);
+  g.fillStyle = n ? withAlpha(E.window, 0.45) : '#7a96b2'; g.fillRect(tx0 + 4, horizon - th * 0.8, tw - 8, th * 0.45);
   g.fillStyle = withAlpha('#ffffff', 0.25); for (let x = tx0 + 8; x < tx0 + tw - 6; x += 14) g.fillRect(x, horizon - th * 0.8, 1, th * 0.45);
   g.fillStyle = n ? '#3a3e48' : '#9aa2ae'; g.fillRect(tx0 - 4, horizon - th - 4, tw + 8, 5);
   // the control tower at the terminal's end: its shaft, the glazed cab, the antenna
@@ -2060,14 +2060,19 @@ function runway(g, c) {
   g.fillStyle = n ? '#3a3e48' : '#6a7280'; g.beginPath(); g.moveTo(cx - 13, horizon - ch); g.lineTo(cx + 13, horizon - ch); g.lineTo(cx + 10, horizon - ch - 12); g.lineTo(cx - 10, horizon - ch - 12); g.closePath(); g.fill();
   g.fillStyle = n ? withAlpha(E.window, 0.9) : '#a9c4dc'; g.fillRect(cx - 10, horizon - ch - 10, 20, 7);
   g.strokeStyle = n ? '#8a8e96' : '#5a6070'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, horizon - ch - 12); g.lineTo(cx, horizon - ch - 24); g.stroke();
-  // an airliner at its gate in front of the terminal, side on: fuselage, fin, wing, engines
-  const pl = clamp(tw * 0.3, 60, 160), px = tx0 + tw * 0.25, py = horizon - pl * 0.06;
-  g.fillStyle = n ? '#c8ccd2' : '#f4f6f8'; g.beginPath(); g.roundRect(px, py - pl * 0.08, pl, pl * 0.08, pl * 0.04); g.fill();
-  g.beginPath(); g.moveTo(px + pl * 0.04, py - pl * 0.07); g.lineTo(px - pl * 0.02, py - pl * 0.24); g.lineTo(px + pl * 0.1, py - pl * 0.24); g.lineTo(px + pl * 0.2, py - pl * 0.07); g.closePath(); g.fillStyle = n ? '#3a4a6a' : '#2f5fa8'; g.fill();
-  g.fillStyle = n ? '#9aa0a8' : '#c8ccd2'; g.beginPath(); g.moveTo(px + pl * 0.45, py - pl * 0.03); g.lineTo(px + pl * 0.35, py + pl * 0.02); g.lineTo(px + pl * 0.55, py - pl * 0.03); g.closePath(); g.fill();
-  g.fillStyle = n ? '#6a7080' : '#8a929e'; g.beginPath(); g.roundRect(px + pl * 0.42, py - pl * 0.01, pl * 0.1, pl * 0.035, pl * 0.015); g.fill();
-  g.fillStyle = n ? withAlpha(E.window, 0.7) : '#5a6a7e'; for (let i = 0; i < 12; i++) g.fillRect(px + pl * (0.2 + i * 0.055), py - pl * 0.06, pl * 0.02, pl * 0.018);
-  g.fillStyle = '#2f5fa8'; g.fillRect(px + pl * 0.1, py - pl * 0.03, pl * 0.85, pl * 0.012);
+  // an airliner at its gate in front of the terminal, side on: fuselage outlined against the
+  // glass, its fin, wing, engine, windows and its gear down on the apron
+  const pl = clamp(tw * 0.38, 90, 200), px = tx0 + tw * 0.2, gear = pl * 0.05, py = horizon - gear;
+  const fus = pl * 0.085;
+  g.fillStyle = n ? '#3a4a6a' : '#2f5fa8'; g.beginPath(); g.moveTo(px + pl * 0.05, py - fus * 0.9); g.lineTo(px + pl * 0.01, py - fus - pl * 0.14); g.lineTo(px + pl * 0.09, py - fus - pl * 0.14); g.lineTo(px + pl * 0.2, py - fus * 0.9); g.closePath(); g.fill();
+  g.fillStyle = n ? '#c8ccd2' : '#f8f9fa'; g.beginPath(); g.moveTo(px, py - fus * 0.75); g.lineTo(px + pl * 0.9, py - fus); g.quadraticCurveTo(px + pl * 1.02, py - fus * 0.95, px + pl, py - fus * 0.3); g.quadraticCurveTo(px + pl * 0.97, py, px + pl * 0.85, py); g.lineTo(px + pl * 0.1, py); g.closePath(); g.fill();
+  g.strokeStyle = n ? '#1b1d22' : '#4a5260'; g.lineWidth = 1.2; g.stroke();
+  g.fillStyle = n ? withAlpha(E.window, 0.7) : '#3a4656'; for (let i = 0; i < 16; i++) g.fillRect(px + pl * (0.16 + i * 0.045), py - fus * 0.7, pl * 0.016, fus * 0.22);
+  g.fillStyle = n ? '#1b1d22' : '#3a4656'; g.beginPath(); g.moveTo(px + pl * 0.9, py - fus * 0.8); g.lineTo(px + pl * 0.96, py - fus * 0.75); g.lineTo(px + pl * 0.95, py - fus * 0.55); g.lineTo(px + pl * 0.9, py - fus * 0.55); g.closePath(); g.fill();
+  g.fillStyle = '#2f5fa8'; g.fillRect(px + pl * 0.06, py - fus * 0.42, pl * 0.86, Math.max(1.5, fus * 0.12));
+  g.fillStyle = n ? '#8a9098' : '#aeb4bc'; g.beginPath(); g.moveTo(px + pl * 0.42, py - fus * 0.3); g.lineTo(px + pl * 0.3, py + gear * 0.2); g.lineTo(px + pl * 0.5, py - fus * 0.3); g.closePath(); g.fill();
+  g.fillStyle = n ? '#5a6070' : '#7a828e'; g.beginPath(); g.roundRect(px + pl * 0.36, py - fus * 0.2, pl * 0.11, fus * 0.42, fus * 0.2); g.fill();
+  g.strokeStyle = '#2b2a2e'; g.lineWidth = 1.2; for (const gx2 of [px + pl * 0.82, px + pl * 0.42]) { g.beginPath(); g.moveTo(gx2, py); g.lineTo(gx2, horizon - 2); g.stroke(); g.fillStyle = '#1d1e22'; g.beginPath(); g.arc(gx2, horizon - 2, Math.max(1.6, gear * 0.4), 0, TAU); g.fill(); }
   // the grass to the runway, then the runway: tarmac, its edges, edge lights and the centre line
   grass(g, 0, w, horizon, h);
   const yF = lerp(horizon, oy, 0.45), yN = oy + clamp((h - oy) * 0.5, 14, 60);
@@ -2083,18 +2088,18 @@ function runway(g, c) {
     if (n) { const gl = g.createRadialGradient(x, y, 0, x, y, rr * 4); gl.addColorStop(0, 'rgba(255,246,200,0.5)'); gl.addColorStop(1, 'rgba(255,246,200,0)'); g.fillStyle = gl; g.fillRect(x - rr * 4, y - rr * 4, rr * 8, rr * 8); }
   }
   // a windsock on the far side, red and white, clear of where it lands
-  const land = (c.clearX || [])[0] ?? w, wx = [land + 90, x0 - 60, w - 40].find((x) => x > 20 && x < w - 20 && Math.abs(x - land) > 70 && Math.abs(x - x0) > 50);
+  const land = (c.clearX || [])[0] ?? w, wx = [land + 90, w - 40, x0 + 90].find((x) => x > 20 && x < w - 20 && Math.abs(x - land) > 70 && !(x > x0 - 90 && x < x0 + 50) && !(x > tx0 - 10 && x < tx0 + tw + 10));
   if (wx != null) {
     const wh = clamp((yF - horizon) * 1.4, 18, 50), wy = yF - 4;
     g.strokeStyle = n ? '#8a8e96' : '#5a6070'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(wx, wy); g.lineTo(wx, wy - wh); g.stroke();
-    for (let i = 0; i < 4; i++) { const sx = wx + i * wh * 0.12; g.fillStyle = i % 2 ? '#f4f4f4' : '#c8383a'; g.beginPath(); g.moveTo(sx, wy - wh - wh * 0.08 + i * wh * 0.012); g.lineTo(sx + wh * 0.12, wy - wh - wh * 0.07 + (i + 1) * wh * 0.012); g.lineTo(sx + wh * 0.12, wy - wh + wh * 0.07 - (i + 1) * wh * 0.012); g.lineTo(sx, wy - wh + wh * 0.08 - i * wh * 0.012); g.closePath(); g.fill(); }
+    for (let i = 0; i < 4; i++) { const sx = wx + i * wh * 0.12; g.fillStyle = i % 2 ? '#f4f4f4' : '#d0405f'; g.beginPath(); g.moveTo(sx, wy - wh - wh * 0.08 + i * wh * 0.012); g.lineTo(sx + wh * 0.12, wy - wh - wh * 0.07 + (i + 1) * wh * 0.012); g.lineTo(sx + wh * 0.12, wy - wh + wh * 0.07 - (i + 1) * wh * 0.012); g.lineTo(sx, wy - wh + wh * 0.08 - i * wh * 0.012); g.closePath(); g.fill(); }
   }
   if (!(H0 > 0)) return;
   const H = oy - top;
   if (H0 <= 7) {
     // the aircraft steps: a truck whose stair climbs to a railed platform at the top, the stair's
     // side panel solid, its treads stepping up along it, struts down to the chassis
-    const run = H * 1.1, base = x0 - clamp(1.2 * k, 14, 40) - run, plat = clamp(1.2 * k, 14, 40), deck = clamp(0.25 * k, 4, 10);
+    const plat = clamp(1.2 * k, 14, 40), deck = clamp(0.25 * k, 4, 10), run = Math.max(H * 0.6, Math.min(H * 1.1, x0 - plat - 30 - plat * 0.6)), base = x0 - plat - run;
     const chY = oy - clamp(0.9 * k, 10, 26), chH = clamp(0.45 * k, 6, 14), side = clamp(0.35 * k, 6, 16);
     const white = n ? '#a8acb4' : '#eef0f3', grey = n ? '#6a7080' : '#9aa2ae', yel = n ? '#8a7a3a' : '#e8c547';
     // the chassis and its cab, low at the far end, wheels under it
@@ -2123,14 +2128,25 @@ function runway(g, c) {
     g.beginPath(); g.moveTo(sx1 + plat * 0.5, sy1); g.lineTo(sx1 + plat * 0.5, sy1 - rh); g.stroke();
     softShadow(g, (base + x0) / 2, oy + 2, run * 0.6, 4, 0.6);
   } else {
-    // the control tower: a concrete shaft up to its gallery, the glazed cab above
-    const sw = clamp(H * 0.12, 16, 60);
-    stone(g, x0 - sw, top, sw, H, { course: clamp(0.8 * k, 6, 18), color: n ? '#6a6e76' : '#cfd2d6', seed: 47 });
-    g.fillStyle = n ? '#3a3e48' : '#6a7280'; g.fillRect(x0 - sw * 1.5, top - 3, sw * 1.5 + 2, 5);
-    g.fillStyle = n ? withAlpha(E.window, 0.9) : '#a9c4dc'; g.fillRect(x0 - sw * 1.35, top - sw * 0.7, sw * 1.2, sw * 0.6);
-    g.fillStyle = n ? '#3a3e48' : '#6a7280'; g.fillRect(x0 - sw * 1.45, top - sw * 0.8, sw * 1.4, sw * 0.12);
-    g.strokeStyle = n ? '#c8ccd2' : '#9aa2ae'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x0 - sw * 1.5, top - clamp(1 * k, 10, 24)); g.lineTo(x0 - sw * 0.6, top - clamp(1 * k, 10, 24)); g.stroke();
-    softShadow(g, x0 - sw / 2, oy + 2, sw, 4, 0.6);
+    // the control tower: a smooth concrete shaft, its gallery (the top it leaves from)
+    // and the glazed cab above and behind it, sized in metres
+    const sw = clamp(2.5 * k, 16, 90), cabW = clamp(6 * k, 30, 220), cabH = clamp(3.5 * k, 18, 130), gal = clamp(1.5 * k, 8, 50);
+    const sg = g.createLinearGradient(x0 - gal - sw, 0, x0 - gal, 0); sg.addColorStop(0, n ? '#7a7e86' : '#e2e4e8'); sg.addColorStop(1, n ? '#4a4e56' : '#a8acb4');
+    g.fillStyle = sg; g.fillRect(x0 - gal - sw, top, sw, H);
+    g.fillStyle = withAlpha('#000000', 0.12); for (let y = top + 30; y < oy; y += 30) g.fillRect(x0 - gal - sw, y, sw, 1);
+    // the gallery slab, its top where it is thrown from
+    g.fillStyle = n ? '#6a6e76' : '#c8ccd2'; g.fillRect(x0 - cabW * 0.6 - gal, top, cabW * 0.6 + gal, clamp(0.4 * k, 4, 14));
+    g.fillStyle = withAlpha('#000000', 0.2); g.fillRect(x0 - cabW * 0.6 - gal, top + clamp(0.4 * k, 4, 14), cabW * 0.6 + gal, 2);
+    // the cab, set back from the gallery's edge: its sloped glass and roof
+    const cx0 = x0 - gal - cabW * 0.55, cy0 = top - cabH;
+    g.fillStyle = n ? '#3a3e48' : '#6a7280'; g.fillRect(cx0 - cabW * 0.45, cy0 - cabH * 0.12, cabW * 0.9, cabH * 0.14);
+    g.fillStyle = n ? withAlpha(E.window, 0.75) : '#a9c4dc'; g.beginPath(); g.moveTo(cx0 - cabW * 0.42, cy0 + cabH * 0.02); g.lineTo(cx0 + cabW * 0.42, cy0 + cabH * 0.02); g.lineTo(cx0 + cabW * 0.38, top); g.lineTo(cx0 - cabW * 0.38, top); g.closePath(); g.fill();
+    g.strokeStyle = withAlpha('#ffffff', 0.35); g.lineWidth = 1; for (let i = 1; i < 6; i++) { const u = i / 6; g.beginPath(); g.moveTo(lerp(cx0 - cabW * 0.42, cx0 + cabW * 0.42, u), cy0 + cabH * 0.02); g.lineTo(lerp(cx0 - cabW * 0.38, cx0 + cabW * 0.38, u), top); g.stroke(); }
+    g.strokeStyle = n ? '#8a8e96' : '#5a6070'; g.beginPath(); g.moveTo(cx0, cy0 - cabH * 0.12); g.lineTo(cx0, cy0 - cabH * 0.5); g.stroke();
+    // the gallery's rail: posts and a top rail, behind where the person stands
+    const rh = clamp(1 * k, 8, 34), rx0 = cx0 + cabW * 0.42, rx1 = x0 - clamp(0.8 * k, 6, 30);
+    if (rx1 > rx0 + 4) { g.strokeStyle = n ? '#c8ccd2' : '#7a828e'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(rx0, top - rh); g.lineTo(rx1, top - rh); for (let x = rx0; x <= rx1; x += Math.max(6, (rx1 - rx0) / 4)) { g.moveTo(x, top); g.lineTo(x, top - rh); } g.stroke(); }
+    softShadow(g, x0 - gal - sw / 2, oy + 2, sw, 4, 0.6);
   }
 }
 

@@ -1039,10 +1039,11 @@ export function surface(g, ground, x0, x1, Y, P) {
  * the hip the feet are when standing (× H), to stand one on a board's end.
  */
 export const DIVER_FEET = 0.49;
-export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, ring = null, stand = false, feet = null, swing = null } = {}) {
-  const E = env(), skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
+export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, ring = null, stand = false, feet = null, swing = null, space = false, keeper = false } = {}) {
+  // in a spacesuit (`space`) the limbs are the suit's white, the head a helmet with its gold visor
+  const E = env(), skin = space ? (E.night ? '#d4d6da' : '#eef0f3') : E.night ? '#b08a74' : '#d9a988', skinFar = space ? (E.night ? '#9a9da3' : '#c3c6cc') : E.night ? '#7d6253' : '#b5876a';
   const suit = ring || (E.night ? '#3f5e74' : '#2f5d7c'), suitHi = E.night ? '#557891' : '#3f7398', cap = E.night ? '#c9b8a8' : '#f2ece4';
-  const k = Math.max(0, Math.min(1, tuck)), lw = Math.max(3, H * 0.07);
+  const k = Math.max(0, Math.min(1, tuck)), lw = Math.max(3, H * (space ? 0.09 : 0.07));
   const T = H * 0.3, L1 = H * 0.25, L2 = H * 0.24, UA = H * 0.165, FA = H * 0.155, FOOT = H * 0.075;
   const at2 = (o, l, a) => ({ x: o.x + Math.cos(a) * l, y: o.y + Math.sin(a) * l });
   g.save();
@@ -1080,6 +1081,8 @@ export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, 
   const handNear = swing ? at2(SH, UA + FA * 0.95, swing[0]) : k > 0 ? lerp(freeArm(0.1), shin(near, 0.45), k) : freeArm(0.1);
   const handFar = swing ? at2(SH, UA + FA * 0.95, swing[1]) : k > 0 ? lerp(freeArm(-0.12), shin(far, 0.55), k) : freeArm(-0.12);
   const armNear = [SH, joint(SH, handNear, UA, FA, -1), handNear], armFar = [SH, joint(SH, handFar, UA, FA, -1), handFar];
+  // a spacesuit's backpack, behind the shoulders
+  if (space) { const BP = at2(HIP, T * 0.62, up), bk = up - Math.PI / 2; g.save(); g.translate(BP.x + Math.cos(bk) * lw * 1.4, BP.y + Math.sin(bk) * lw * 1.4); g.rotate(up + Math.PI / 2); g.fillStyle = E.night ? '#a8acb2' : '#d3d6db'; g.beginPath(); g.roundRect(-lw * 0.9, -T * 0.32, lw * 1.8, T * 0.62, lw * 0.4); g.fill(); g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; g.stroke(); g.restore(); }
   // far limbs first, in shade
   limb(g, [...far, footOf(far)], skinFar, lw * 0.95);
   limb(g, armFar, skinFar, lw * 0.75);
@@ -1091,6 +1094,8 @@ export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, 
   g.strokeStyle = withAlpha(suitHi, 0.8); g.lineWidth = Math.max(1, lw * 0.35); g.lineCap = 'round';
   const s0 = at2(HIP, T * 0.2, up), s1 = at2(HIP, T * 0.8, up);
   g.beginPath(); g.moveTo(s0.x - Math.sin(up) * lw * 0.6, s0.y + Math.cos(up) * lw * 0.6); g.lineTo(s1.x - Math.sin(up) * lw * 0.6, s1.y + Math.cos(up) * lw * 0.6); g.stroke();
+  // a goalkeeper's dark shorts over the hips
+  if (keeper) { g.fillStyle = '#1b1d22'; g.beginPath(); g.ellipse(HIP.x, HIP.y + lw * 0.2, lw * 1.35, lw * 1.1, up + Math.PI / 2, 0, TAU); g.fill(); limb(g, [HIP, at2(HIP, L1 * 0.4, Math.atan2(near[1].y, near[1].x))], '#1b1d22', lw * 1.5); }
   // the near leg and foot over the body, then the neck and head, then the near arm
   limb(g, [...near, footOf(near)], skin, lw);
   limb(g, [SH, NK], skinFar, lw * 0.8);
@@ -1099,9 +1104,21 @@ export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, 
   g.fillStyle = hg; g.beginPath(); g.arc(HEAD.x, HEAD.y, hr, 0, TAU); g.fill();
   // the cap over the crown, the face to the front, an eye and an ear
   const face = up + k * 0.5 + Math.PI / 2;
-  g.fillStyle = cap; g.beginPath(); g.arc(HEAD.x, HEAD.y, hr * 1.02, face + Math.PI * 0.62, face + Math.PI * 1.62); g.fill();
-  g.fillStyle = '#2b2628'; const ey = at2(HEAD, hr * 0.5, face - 0.35); g.beginPath(); g.arc(ey.x, ey.y, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
+  if (space) {
+    // the helmet over the head, the gold visor where the face is
+    const hR = hr * 1.45;
+    g.fillStyle = E.night ? '#d4d6da' : '#f4f5f7'; g.beginPath(); g.arc(HEAD.x, HEAD.y, hR, 0, TAU); g.fill();
+    g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 1; g.stroke();
+    const vc = at2(HEAD, hR * 0.28, face), vg = g.createLinearGradient(vc.x, vc.y - hR * 0.5, vc.x, vc.y + hR * 0.5); vg.addColorStop(0, '#f2d27a'); vg.addColorStop(1, '#8a6a1e');
+    g.fillStyle = vg; g.beginPath(); g.ellipse(vc.x, vc.y, hR * 0.62, hR * 0.5, face, 0, TAU); g.fill();
+    g.fillStyle = withAlpha('#ffffff', 0.6); const gl = at2(vc, hR * 0.25, face - 1.2); g.beginPath(); g.arc(gl.x, gl.y, hR * 0.12, 0, TAU); g.fill();
+  } else {
+    g.fillStyle = cap; g.beginPath(); g.arc(HEAD.x, HEAD.y, hr * 1.02, face + Math.PI * 0.62, face + Math.PI * 1.62); g.fill();
+    g.fillStyle = '#2b2628'; const ey = at2(HEAD, hr * 0.5, face - 0.35); g.beginPath(); g.arc(ey.x, ey.y, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
+  }
   limb(g, armNear, skin, lw * 0.78);
+  // a goalkeeper's gloves
+  if (keeper) for (const hnd of [handNear, handFar]) { g.fillStyle = '#f4f4f4'; g.beginPath(); g.arc(hnd.x, hnd.y, lw * 0.75, 0, TAU); g.fill(); g.strokeStyle = '#1b1d22'; g.lineWidth = 1; g.stroke(); }
   g.restore();
 }
 const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
