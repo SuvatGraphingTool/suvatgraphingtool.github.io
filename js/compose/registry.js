@@ -36,7 +36,7 @@ export const BACKDROPS = {
   orchard: { label: 'An orchard', what: 'apple trees in grass', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['apple', 'ball', 'stone', 'particle'] },
   hall:    { label: 'A sports hall', what: 'an indoor hall with a wooden floor and high windows', place: 'floor', below: 'floor' },
   board:   { label: 'A diving board', what: 'a diving platform on its tower over an outdoor pool', place: 'board', below: 'pool', edge: true, at: 'a diving board' },
-  table:   { label: 'A table', what: 'a wooden table in a room: a coin, a marble or a ball off its edge', place: 'table', below: 'floor', edge: true, at: 'a table' },
+  table:   { label: 'A table', what: 'a wooden table in a room', place: 'table', below: 'floor', edge: true, at: 'a table' },
   well:    { label: 'A well', what: 'a stone well, its shaft cut away down to the water: it moves straight up or down', place: 'well', below: 'well', edge: true, at: 'a well' },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from a hovering balloon (or a helicopter or a plane)', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };

@@ -64,7 +64,7 @@ export function render(canvas, cam, o) {
 }
 
 /** How wide a table is drawn: about a metre and a half, to scale. */
-const tableW = (k) => clamp(1.5 * k, 90, 260);
+const tableW = (k, w = 1e9) => clamp(1.5 * k, 50, w * 0.45);
 /** How long a diving stand's board is drawn, for its height in px. */
 const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 
@@ -127,8 +127,8 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
     }
     case 'table': {
       // a room: the wall with its shelf, the floor, the table its own size
-      labWall(g, w, oy, h);
-      table(g, x0 - tableW(k), x0, top, oy);
+      labWall(g, w, oy, h, { x0: x0 - tableW(k, w), x1: x0, top });
+      table(g, x0 - tableW(k, w), x0, top, oy);
       break;
     }
     case 'well': {
@@ -142,7 +142,7 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
       // high over fields, let go from beside a hovering balloon's basket
       fields(g, w, horizon(0.3), oy); grass(g, 0, w, oy, h);
       const bs = Math.max(26, 0.75 * k);
-      balloon(g, x0 - bs * 0.31 - 6, top, bs, P, { groundY: oy });
+      balloon(g, x0 - bs * 0.31 - Math.max(10, size(k) * 0.5), top, bs, P, { groundY: oy });
       break;
     }
     case 'road': fields(g, w, horizon(0.25), oy); tarmac(g, 0, w, oy, { depth: clamp(0.6 * k, 12, 24), verge: h - oy }); ledge(); break;
@@ -163,8 +163,8 @@ function launch(canvas, o) {
   // a person throws it, unless it falls from a tree; small things are drawn
   // as themselves at the point, vehicles and people round it
   // off a table, it leaves the table's edge: no one stands on the table
-  const thrown = !!piece.thrown && R.backdrop !== 'orchard' && R.backdrop !== 'table';
-  const small = !!piece.thrown || !!piece.small;
+  const thrown = (!!piece.thrown || kind === 'arrow') && R.backdrop !== 'orchard' && R.backdrop !== 'table';
+  const small = !!piece.thrown || !!piece.small || kind === 'arrow';
   // thrown from low down with nothing to stand on: the thrower stands on the
   // ground or the floor and lets go at hand height
   const byHand = thrown && !B.edge && R.backdrop !== 'sea' && H0 > 0 && H0 <= 2.6;
@@ -191,12 +191,16 @@ function launch(canvas, o) {
     const body = thrown ? TH(k) : size(k);
     const place = R.backdrop === 'house' ? houseW(k) + 30 : R.backdrop === 'orchard' ? 2.4 * k
       : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 1.4
-      : R.backdrop === 'table' ? tableW(k) + 20 : R.backdrop === 'well' ? 90 : 0;
+      : R.backdrop === 'table' ? tableW(k, w) + 20 : R.backdrop === 'well' ? 90 : 0;
     const head = (thrown && !byHand ? TH(k) : size(k) * 0.6) + 16 - (yTop - H0) * k;
     // an orchard's crown stands well above the branch
     const crown = R.backdrop === 'orchard' ? 1.9 * k + 16 - (yTop - H0) * k
       : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 2.95 + 12 - (yTop - H0) * k : 0;
-    return { l: Math.max(body * 0.9, place) + 80, r: 70 + (small ? 22 : size(k) * 0.55), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown) };
+    // a well's head and winch stand well above its mouth
+    const winch = R.backdrop === 'well' ? 130 - (yTop - H0) * k : 0;
+    // on a phone a table takes only its own room, so the motion has the rest
+    if (phone && R.backdrop === 'table') return { l: tableW(k, w) + 12, r: 40, t: Math.max(36, head) };
+    return { l: Math.max(body * 0.9, place) + 80, r: 70 + (small ? 22 : size(k) * 0.55), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown, winch) };
   };
   // the readouts are cards over the stage: the path may pass behind them, but
   // the place's top and its height's label stay clear of them
@@ -209,7 +213,7 @@ function launch(canvas, o) {
     const p = pads(k), box = { xLo: -p.l / k, xHi: xMax + p.r / k, yLo: 0, yHi: yTop + p.t / k };
     // on a phone the readouts sit over the top of the stage: the sky takes the
     // spare height, and the place stands low, clear of them
-    F = fitClear(box, w, h, phone, phone ? 0.6 : 0.35, (fs) => clear(fs, p));
+    F = fitClear(box, w, h, phone, R.backdrop === 'table' ? 0.75 : phone ? 0.6 : 0.35, (fs) => clear(fs, p));
     if (!F) return null;
     k = F.k;
   }
@@ -239,7 +243,7 @@ function launch(canvas, o) {
     // beside the place, never across it: outside the house's front, behind the thrower
     const dx = R.backdrop === 'house' ? x0 - houseW(k) - 16 : R.backdrop === 'board' ? x0 - boardLen(k, oy - top) - 26
       : R.backdrop === 'air' ? x0 - Math.max(26, 0.75 * k) * 1.25 - 20
-      : R.backdrop === 'table' ? x0 - tableW(k) - 16
+      : R.backdrop === 'table' ? x0 - tableW(k, w) - 16 : R.backdrop === 'well' ? x0 - 26 - 30
       : (thrown ? feet - th * 0.3 : x0 - size(k) * 0.65) - 14;
     stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.ink, width: 1.4, alpha: 0.9 });
     for (const yy of [oy, top]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
@@ -311,20 +315,30 @@ function launch(canvas, o) {
     if (aloft && !wet) softShadow(g, bx, oy + 1, R0 * 1.4, R0 * 0.35, clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
     if (!gone) {
       if (kind === 'apple') apple(g, bx, by, clamp(k * 0.05, 6, 10));
-      else if (kind === 'coin') coin(g, bx, by, 8, fired ? t * 9 : 0);
-      else if (kind === 'marble') marble(g, bx, by, 7);
+      // resting on the surface, not sunk in it: lifted by its own radius
+      // while it sits there, easing to the engine's point as it goes
+      else if (kind === 'coin') coin(g, bx, by - (fired && t > 0 ? 0 : 3), 8, fired ? t * 9 : 0.25);
+      else if (kind === 'marble') marble(g, bx, by - (fired && t > 0 ? 0 : 7), 7);
+      else if (kind === 'arrow') arrowShaft(g, bx, by, Math.max(44, size(k)), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
       else if (kind === 'ball') ballAt(g, bx, by, R0);
       else if (kind === 'particle') particle(g, bx, by, R0 * 2, P);
       else pebble(g, bx, by, R0);
     }
-  } else if (kind === 'rocket' || kind === 'arrow') {
+  } else if (kind === 'rocket') {
     // pointed along its path all the way, as a real arrow or a coasting rocket flies
     const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x);
     g.save();
     if (landed && wet) { g.beginPath(); g.rect(0, 0, w, oy + 1); g.clip(); }
     if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
-    if (kind === 'rocket') rocket(g, bx, by, Lp, ang, !fired || t < f.tMax * 0.04);
-    else arrowShaft(g, bx, by, Lp, ang);
+    // on its rod at the start, its tail at the launch point, then the engine's point
+    const p0 = fired ? clamp(t / (f.tMax * 0.06), 0, 1) : 0, a0 = Math.atan2(-v0.y, v0.x);
+    if (!fired || p0 < 1) {
+      const lx0 = X(0), ly0 = Y(H0);
+      stroke(g, [{ x: lx0, y: ly0 + 2 }, { x: lx0 + Math.cos(a0) * Lp * 1.1, y: ly0 + Math.sin(a0) * Lp * 1.1 }], { color: P.ink, width: 1.6, alpha: 0.7 });
+      g.fillStyle = withAlpha(P.ink, 0.55); g.fillRect(lx0 - 9, ly0 - 1, 18, 4);
+    }
+    const lift = (1 - p0) * Lp * 0.5;
+    rocket(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, !fired || t < f.tMax * 0.04);
     g.restore();
   } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel' || kind === 'sandbag' || kind === 'bucket') {
     const p = fired ? t / f.tMax : 0, ease = (a0, b0, x) => { const u = clamp((x - a0) / (b0 - a0), 0, 1); return u * u * (3 - 2 * u); };
@@ -337,6 +351,8 @@ function launch(canvas, o) {
       // a jump upwards tucks and turns one and a half times to go in head
       // first, a dive out tips over gently; in the water it is gone under
       cy = by - DIVER_FEET * Lp * (1 - ease(0, 0.12, p)) + (landed && wet ? Lp * 1.4 * ease(0, 0.3, after) : 0);
+      // at a well they stand on the stone beside the shaft, and step off over it
+      if (R.backdrop === 'well') cx = bx - (26 + 10 + Lp * 0.15) * (1 - ease(0, 0.12, p));
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
       // dropped, or sent straight down, a person falls feet first, upright;
       // a jump upwards tucks and somersaults; a dive out tips over gently
@@ -356,8 +372,14 @@ function launch(canvas, o) {
     } else {
       // hangs on a line from the basket until it is let go; a quarter turn as
       // it falls, so it lands flat on its base
-      cy = by - Lp * 0.36;
-      if (!fired && R.backdrop === 'air') stroke(g, [{ x: bx, y: cy - Lp * 0.36 }, { x: bx - Lp * 0.35, y: top - 2 }], { color: P.ink, width: 1.2, alpha: 0.7 });
+      // hung by its top until it is let go: from the basket's edge in the
+      // air, from the well's rope over the shaft
+      const half = kind === 'sandbag' ? 0.5 : kind === 'bucket' ? 0.4 : 0.36;
+      cy = by - Lp * half;
+      if (!fired && (R.backdrop === 'air' || R.backdrop === 'well')) {
+        const end = R.backdrop === 'air' ? { x: bx - Lp * 0.5 - 4, y: top - 2 } : { x: bx, y: Math.max(8, top - 70) };
+        stroke(g, [{ x: bx, y: cy - Lp * half }, end], { color: P.ink, width: 1.3, alpha: 0.75 });
+      }
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.5, Math.max(2, Lp * 0.06), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
       const spin = ease(0, 1, p) * Math.PI / 2;
       if (kind === 'parcel') parcel(g, cx, cy, Lp, P, { spin });
@@ -386,8 +408,10 @@ function launch(canvas, o) {
   const pv = pts.map((p) => f.vel(p.t));
   const vMax = Math.max(...pv.map((q) => Math.hypot(q.x, q.y)), 1e-6);
   const room = (c, dv, lo, hi) => (dv > 0 ? (hi - c) / dv : dv < 0 ? (lo - c) / dv : Infinity);
-  let vl = clamp(w * 0.08, 46, 100) / vMax;
-  pts.forEach((p, i) => { const q = pv[i]; vl = Math.min(vl, room(X(p.x), q.x, 12, w - 12) * 0.9, room(Y(p.y), -q.y, 12, h - 8) * 0.9); });
+  // one scale for the whole flight, so the arrow grows and shrinks with the
+  // speed; never shorter than 30 px while it moves, cut at the canvas's edge
+  const vl = clamp(w * 0.08, 46, 100) / vMax;
+  void room;
   const sp = Math.hypot(v.x, v.y);
   if (show.velocity !== false && sp > 1e-6) {
     // from a vehicle's nose, not buried in its door; on a halo, so it reads
@@ -397,13 +421,15 @@ function launch(canvas, o) {
     // a small thing has it from its edge, so the thing itself shows
     const lead = small ? 11 : Lp * 0.5;
     const ox = person ? bx + Lp * 0.62 : bx + (v.x / sp) * lead, oyv = person ? by - Lp * 0.5 : by - (v.y / sp) * lead;
-    const tx = ox + v.x * vl, ty = oyv - v.y * vl;
-    const halo = withAlpha(P.card, 0.8);
+    const len = Math.max(30, sp * vl), ux = v.x / sp, uy = -v.y / sp;
+    let tx = ox + ux * len, ty = oyv + uy * len;
+    tx = clamp(tx, 10, w - 10); ty = clamp(ty, 10, h - 8);
+    const halo = withAlpha(P.card, 0.45);
     if (show.components && Math.abs(v.x) > 1e-9) {
       arrow(g, ox, oyv, tx, oyv, { color: P.velVec, width: 2, head: 9, dash: [5, 4] });
       arrow(g, tx, oyv, tx, ty, { color: P.velVec, width: 2, head: 9 });
     }
-    arrow(g, ox, oyv, tx, ty, { color: halo, width: 7, head: 15 });
+    arrow(g, ox, oyv, tx, ty, { color: halo, width: 6, head: 14 });
     arrow(g, ox, oyv, tx, ty, { color: P.velVec, width: 3, head: 12 });
     for (let u = 0, m = Math.ceil(Math.hypot(tx - ox, ty - oyv) / 10); u <= m; u++) L.reserve({ x: ox + (tx - ox) * u / m - 6, y: oyv + (ty - oyv) * u / m - 6, w: 12, h: 12 });
     const near = tx > w - 120, sy = Math.sign(ty - by) || 1;
@@ -592,12 +618,12 @@ function column(canvas, o) {
 /** A coin edge-on and face-on as it flips: a gold disc `R` px across whose
     width follows the flip, a rim, a highlight. `turn` is the flip, in turns. */
 export function coin(g, x, y, R, turn = 0) {
-  const E = env(), c = Math.cos(turn * Math.PI * 2), sx = Math.max(0.18, Math.abs(c));
+  const E = env(), c = Math.cos(turn * Math.PI * 2), sx = Math.max(0.45, Math.abs(c));
   g.save(); g.translate(x, y); g.scale(sx, 1);
   const gr = g.createRadialGradient(-R * 0.35, -R * 0.35, R * 0.1, 0, 0, R);
   gr.addColorStop(0, E.night ? '#f2e2a6' : '#fff2b8'); gr.addColorStop(0.6, E.night ? '#c8a24a' : '#d9b04c'); gr.addColorStop(1, E.night ? '#8d6e2a' : '#9c7a2c');
   g.fillStyle = gr; g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill();
-  g.strokeStyle = 'rgba(90,65,20,0.8)'; g.lineWidth = 1.2; g.stroke();
+  g.strokeStyle = 'rgba(70,48,12,0.95)'; g.lineWidth = 1.8; g.stroke();
   g.strokeStyle = 'rgba(255,245,210,0.55)'; g.beginPath(); g.arc(0, 0, R * 0.68, 0, Math.PI * 2); g.stroke();
   g.restore();
 }
@@ -615,7 +641,7 @@ export function rocket(g, x, y, L, ang, burning = false) {
   }
   g.fillStyle = E.night ? '#8f3b35' : '#c6463c';
   for (const s of [-1, 1]) { g.beginPath(); g.moveTo(-L * 0.28, s * r); g.lineTo(-L * 0.48, s * r * 2.6); g.lineTo(-L * 0.5, s * r); g.closePath(); g.fill(); }
-  const bg = g.createLinearGradient(0, -r, 0, r); bg.addColorStop(0, E.night ? '#d8d2cc' : '#ffffff'); bg.addColorStop(1, E.night ? '#8f8a86' : '#bdb8b2');
+  const bg = g.createLinearGradient(0, -r, 0, r); bg.addColorStop(0, E.night ? '#eeeae6' : '#ffffff'); bg.addColorStop(1, E.night ? '#8f8a86' : '#bdb8b2');
   g.fillStyle = bg; g.fillRect(-L * 0.5, -r, L * 0.78, r * 2);
   g.fillStyle = E.night ? '#8f3b35' : '#c6463c';
   g.beginPath(); g.moveTo(L * 0.28, -r); g.quadraticCurveTo(L * 0.46, -r * 0.6, L * 0.5, 0); g.quadraticCurveTo(L * 0.46, r * 0.6, L * 0.28, r); g.closePath(); g.fill();
@@ -638,18 +664,28 @@ export function arrowShaft(g, x, y, L, ang) {
   g.restore();
 }
 
-/** A sandbag `L` px across round its middle, turned by `spin`: a tied hessian
-    sack, lit from the left, its weave shown. */
+/** A sandbag `L` px tall round its middle, tipped by `spin`: an upright
+    hessian sack, full and rounded at the bottom, gathered and tied at the
+    neck, its weave shown, lit from the left. */
 export function sandbag(g, x, y, L, spin = 0) {
-  const E = env(), w = L, h = L * 0.62;
+  const E = env(), w = L * 0.62, h = L;
   g.save(); g.translate(x, y); g.rotate(spin);
-  const bg = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
-  bg.addColorStop(0, E.night ? '#a08c6a' : '#d8c39a'); bg.addColorStop(1, E.night ? '#6b5c44' : '#a68e63');
-  g.fillStyle = bg; g.beginPath(); g.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.moveTo(w * 0.42, -h * 0.12); g.lineTo(w * 0.6, -h * 0.3); g.lineTo(w * 0.62, h * 0.08); g.closePath(); g.fill();
-  g.strokeStyle = 'rgba(70,50,25,0.35)'; g.lineWidth = 1;
-  for (let i = -3; i <= 3; i++) { g.beginPath(); g.moveTo(i * w * 0.12, -h * 0.42); g.lineTo(i * w * 0.12, h * 0.42); g.stroke(); }
-  g.strokeStyle = 'rgba(80,55,25,0.8)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(w * 0.42, -h * 0.2); g.lineTo(w * 0.44, h * 0.05); g.stroke();
+  const bg = g.createLinearGradient(-w / 2, 0, w / 2, 0);
+  bg.addColorStop(0, E.night ? '#b39e7a' : '#e2cfa5'); bg.addColorStop(1, E.night ? '#6b5c44' : '#a68e63');
+  g.fillStyle = bg; g.beginPath();
+  g.moveTo(-w * 0.18, -h * 0.34);
+  g.quadraticCurveTo(-w * 0.62, -h * 0.05, -w * 0.5, h * 0.3);
+  g.quadraticCurveTo(-w * 0.4, h * 0.5, 0, h * 0.5);
+  g.quadraticCurveTo(w * 0.4, h * 0.5, w * 0.5, h * 0.3);
+  g.quadraticCurveTo(w * 0.62, -h * 0.05, w * 0.18, -h * 0.34);
+  g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(70,50,25,0.3)'; g.lineWidth = 1;
+  for (let i = -2; i <= 2; i++) { g.beginPath(); g.moveTo(i * w * 0.14, -h * 0.25); g.lineTo(i * w * 0.18, h * 0.45); g.stroke(); }
+  // the gathered neck and its tie
+  g.fillStyle = E.night ? '#9c8866' : '#cdb88c';
+  g.beginPath(); g.moveTo(-w * 0.18, -h * 0.34); g.lineTo(-w * 0.26, -h * 0.5); g.lineTo(w * 0.26, -h * 0.5); g.lineTo(w * 0.18, -h * 0.34); g.closePath(); g.fill();
+  g.strokeStyle = E.night ? '#4a3a28' : '#6b5134'; g.lineWidth = Math.max(1.6, L * 0.05);
+  g.beginPath(); g.moveTo(-w * 0.2, -h * 0.36); g.lineTo(w * 0.2, -h * 0.36); g.stroke();
   g.restore();
 }
 
@@ -674,8 +710,10 @@ export function marble(g, x, y, R) {
   const gr = g.createRadialGradient(x - R * 0.35, y - R * 0.35, R * 0.1, x, y, R);
   gr.addColorStop(0, 'rgba(235,245,250,0.95)'); gr.addColorStop(1, 'rgba(120,160,190,0.9)');
   g.fillStyle = gr; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fill();
-  g.strokeStyle = 'rgba(40,90,140,0.85)'; g.lineWidth = Math.max(1.2, R * 0.28);
-  g.beginPath(); g.arc(x, y, R * 0.45, 0.4, 2.6); g.stroke();
+  // two coloured ribbons crossing inside the glass
+  g.lineWidth = Math.max(1.2, R * 0.26); g.lineCap = 'round';
+  g.strokeStyle = 'rgba(40,90,160,0.85)'; g.beginPath(); g.moveTo(x - R * 0.6, y + R * 0.3); g.quadraticCurveTo(x, y - R * 0.5, x + R * 0.6, y + R * 0.2); g.stroke();
+  g.strokeStyle = 'rgba(200,70,60,0.8)'; g.beginPath(); g.moveTo(x - R * 0.5, y - R * 0.35); g.quadraticCurveTo(x, y + R * 0.55, x + R * 0.55, y - R * 0.3); g.stroke();
   g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(x - R * 0.35, y - R * 0.4, R * 0.22, 0, Math.PI * 2); g.fill();
   g.strokeStyle = 'rgba(30,50,70,0.6)'; g.lineWidth = 1; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.stroke();
   g.restore();
