@@ -287,7 +287,8 @@ export function toApp(x) {
   }
 
   // g — stated, or the 9.81 every scenario seeds.
-  if (isNum(x.g) && x.g > 0) { given.g = x.g; put('g', x.g, 'given'); }
+  // (a g the student chose, or a paper's rubric's, is said as such: js/ai/gchoice.js, worker/src/place.js)
+  if (isNum(x.g) && x.g > 0) { given.g = x.g; put('g', x.g, x.gFrom === 'choice' ? 'chosen' : x.gFrom === 'Edexcel' ? 'paper' : 'given'); }
   else { given.g = DEFAULT_G; put('g', DEFAULT_G, 'assumed'); }
 
   // h — measured from the ground. The ground scenarios start on it.

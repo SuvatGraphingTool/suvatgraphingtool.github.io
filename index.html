@@ -47,6 +47,7 @@
 <link rel="modulepreload" href="./js/ai/ask.js">
 <link rel="modulepreload" href="./js/board/board.js">
 <link rel="modulepreload" href="./js/ai/readout.js">
+<link rel="modulepreload" href="./js/ai/gchoice.js">
 <link rel="modulepreload" href="./js/parts/parts.js">
 <link rel="modulepreload" href="./js/parts/strip.js">
 <link rel="modulepreload" href="./js/parts/answers.js">
@@ -339,6 +340,17 @@
               <button type="button" class="ask-mode" id="ask-graph" data-mode="graph" aria-pressed="true" title="Set it up and draw the flight and its graphs">
                 <span class="m-ic"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg></span><span class="m-lb">Graph</span>
               </button>
+              <span class="pbox-div" aria-hidden="true"></span>
+              <!-- g, for a question that gives none: js/ai/gchoice.js -->
+              <div class="ask-g">
+                <button type="button" class="ask-mode" id="ask-g" aria-haspopup="dialog" aria-expanded="false" aria-controls="ask-gpop" title="The g to use when the question gives none"></button>
+                <div class="ask-gpop" id="ask-gpop" role="dialog" aria-label="g, when the question gives none" hidden>
+                  <p class="ask-gpop-h">g when the question gives none</p>
+                  <div class="chips ask-g-chips" role="group" aria-label="The values papers use"></div>
+                  <label class="ask-g-other">Another value <input id="ask-g-in" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 9.78" aria-describedby="ask-g-err"> <span>m s⁻²</span></label>
+                  <p class="ask-g-err" id="ask-g-err" role="alert" hidden></p>
+                </div>
+              </div>
             </div>
             <button type="button" class="pbox-go" id="ask-send" data-state="mic" aria-label="Speak the question" title="Speak">
               <span class="go-mic"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></span><span class="go-send"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span><span class="go-busy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg></span><span class="go-stop"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor"/></svg></span>

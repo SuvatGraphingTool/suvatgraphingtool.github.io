@@ -521,5 +521,31 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(fromReader('road', [{ label: 'a', asks: 'the deceleration' }])[0].find === 'five.a.value' && fromReader('road', [{ label: 'a', asks: 'its retardation' }])[0].find === 'five.a.value', 'a deceleration or a retardation asked is the acceleration the engine found');
 }
 
+// THE USER, 2 Nov: "a button to choose gravity … 9.81 and 9.8 and 10, and then just a text box"
+{
+  const { parseG, loadG, saveG, withChosenG, G_CHIPS } = await import('../js/ai/gchoice.js');
+  ok(G_CHIPS.join() === '9.81,9.8,10', 'the three chips: 9.81, 9.8, 10');
+  ok(parseG('9.78') === 9.78 && parseG(' 9,8 ') === 9.8 && parseG('10 m s^-2') === 10, 'a value typed in the box is read');
+  ok([0, -9.8, '', 'abc', '9.8.1', '1e3', 'NaN', '-0'].every((v) => parseG(v) === null), '0, negative and nonsense are refused');
+  // the choice outlives a reload: it is kept in the viewer's storage, and a storage that throws is survived
+  const mem = new Map(), store = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
+  ok(loadG(store) === null, 'never chosen: no choice');
+  saveG(9.8, store);
+  ok(loadG(store) === 9.8, 'chosen once, it is there after a reload');
+  const broken = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
+  ok(loadG(broken) === null && (saveG(10, broken), true), 'a private window that refuses storage is survived');
+  // a reading with no g takes the choice; a g the question states wins; Edexcel's rule gives way to it
+  const twelve = withChosenG({ understood: true, scenario: 'up', u: 20 }, 9.8);
+  ok(twelve.g === 9.8 && twelve.gFrom === 'choice' && toApp(twelve).given.g === 9.8 && toApp(twelve).items.find((i) => i.k === 'g').how === 'chosen', 'one of the twelve with no g takes the chosen 9.8, said as your choice');
+  ok(withChosenG({ understood: true, scenario: 'up', u: 20, g: 10 }, 9.8).g === 10, 'a g the question states wins over the choice');
+  const lib = withChosenG({ understood: true, scenario: 'library', library: 'bounce', boxes: { h: 2 } }, 10);
+  ok(lib.boxes.g === 10 && lib.gFrom === 'choice', 'a library reading with no g takes it in its boxes');
+  ok(withChosenG({ understood: true, scenario: 'library', library: 'bounce', boxes: { h: 2, g: 9.8 }, gFrom: 'Edexcel' }, 10).boxes.g === 10, 'Edexcel’s 9.8 gives way to a choice the student made');
+  const comp = withChosenG({ understood: true, scenario: 'compose', recipe: { engine: 'projectile', numbers: { h: 5 } } }, 9.8);
+  ok(comp.recipe.numbers.g === 9.8, 'a composed scene with no g takes it in its numbers');
+  ok(withChosenG({ understood: true, scenario: 'up', u: 20 }, null).g === undefined, 'never chosen: the reading is left to Earth’s 9.81, assumed');
+  ok(withChosenG({ understood: false, note: 'hi' }, 9.8).g === undefined, 'a chat reply is left alone');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

@@ -37,6 +37,7 @@ import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML, resultsHTML, esc } from './ai/readout.js';
+import { initGChooser, withChosenG } from './ai/gchoice.js';
 import { walk, stepOf, labelOf, ownScene, sceneOf } from './parts/parts.js';
 import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML, askHTML, answerHTML } from './parts/strip.js';
 import { answerOf } from './parts/parts.js';
@@ -3332,6 +3333,8 @@ let heard = '';
 /** Whose g the reading took, when a paper's rubric gave it: 'Edexcel' (9.8), or ''. */
 let gFrom = '';
 function applyReading(x, opts) {
+  // the student's own g, where the question gives none (js/ai/gchoice.js)
+  if (!opts?.part) x = withChosenG(x, gChooser.get());
   if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? opts.words : '';
   if (!opts?.part) gFrom = typeof x?.gFrom === 'string' ? x.gFrom.slice(0, 20) : '';
   stayPut = true;
@@ -3514,7 +3517,8 @@ function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = t
         fromWords = !!heard && !saidIn(heard, n);
       }
     }
-    const how = f.key === 'g' && gFrom ? `${esc(gFrom)}’s value for the paper`
+    const how = f.key === 'g' && gFrom === 'choice' ? 'your choice'
+      : f.key === 'g' && gFrom ? `${esc(gFrom)}’s value for the paper`
       : f.key === 'g' && gAssumed ? 'assumed · on Earth'
       : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given'
       : f.key === 'u' && atRest ? 'assumed · no speed was given'
@@ -3527,7 +3531,7 @@ function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = t
   // g, which no kit lists among its boxes: Earth's, assumed; a paper's rubric's; or read
   const g = state.kit.g;
   if (usesG && !fields.some((f) => f.key === 'g') && (gAssumed || (typeof g === 'number' && g > 0))) {
-    const how = gFrom ? `${esc(gFrom)}’s value for the paper` : gAssumed ? 'assumed · on Earth' : example ? 'from the paper' : 'in the question';
+    const how = gFrom === 'choice' ? 'your choice' : gFrom ? `${esc(gFrom)}’s value for the paper` : gAssumed ? 'assumed · on Earth' : example ? 'from the paper' : 'in the question';
     rows.push(`<li class="ro-row" data-how="${gAssumed && !gFrom ? 'assumed' : 'given'}"><span class="ro-val">${M`g = ${num(gAssumed ? 9.81 : g, 2, { trim: true })} [m s^-2]`}</span><span class="ro-how">${how}</span></li>`);
   }
   return rows.length ? `<ul class="ro-list">${rows.join('')}</ul>` : '';
@@ -3667,6 +3671,7 @@ function showFlight() {
     reveal($('canvas-wrap'), scenario.recipe).then(() => runFlight());
   } else launch();
 }
+const gChooser = initGChooser();
 const ask = createAsk({
   apply: applyReading,
   run: showFlight,
