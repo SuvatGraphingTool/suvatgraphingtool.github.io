@@ -162,7 +162,85 @@ export function javelin(g, x, y, L, ang) {
 }
 
 /** Every animal, by the registry's figure name. */
-export const ANIMALS = { cat, dog, monkey, frog };
+/** A kangaroo: a big tail behind for balance, the long hind feet
+    together, small forearms tucked; crouched before, stretched out in the
+    hop, the feet swinging forward to land. */
+export function kangaroo(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null } = {}) {
+  const E = env(), s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land)), ext = s * (1 - d * 0.7);
+  const fur = E.night ? '#8a6a52' : '#b8875a', furLo = E.night ? '#5a4232' : '#8a5f3a', belly = E.night ? '#b8a088' : '#e2c8a4';
+  g.save(); g.translate(x, y); g.rotate(spin + lerp(-0.5, -0.25, ext));
+  // the tail, thick at the base, out behind
+  g.strokeStyle = furLo; g.lineCap = 'round'; g.lineWidth = L * 0.1; g.beginPath(); g.moveTo(-L * 0.18, L * 0.08); g.quadraticCurveTo(-L * 0.45, L * 0.18, -L * 0.62, L * lerp(0.32, 0.12, ext)); g.stroke();
+  g.lineWidth = L * 0.05; g.beginPath(); g.moveTo(-L * 0.5, L * lerp(0.26, 0.14, ext)); g.lineTo(-L * 0.68, L * lerp(0.36, 0.1, ext)); g.stroke();
+  // the hind leg: haunch, the long foot under it, or out behind in the air
+  const hip = { x: -L * 0.12, y: L * 0.1 }, kn = { x: hip.x + L * lerp(0.16, 0.02, ext), y: hip.y + L * lerp(0.1, 0.14, ext) }, an = { x: kn.x + L * lerp(-0.18, -0.26, ext), y: kn.y + L * lerp(0.14, 0.08, ext) + L * d * 0.06 }, ft = { x: an.x + L * lerp(0.36, 0.34, ext) + L * d * 0.12, y: an.y + L * 0.02 };
+  torso(g, -L * 0.04, L * 0.08, L * 0.15, L * 0.12, 0.2, fur, furLo);
+  leg(g, [hip, kn, an, ft], L * 0.08, furLo);
+  // the body, upright-ish, the belly paler
+  torso(g, L * 0.04, -L * 0.08, L * 0.12, L * 0.2, -0.35, fur, furLo);
+  g.fillStyle = belly; g.beginPath(); g.ellipse(L * 0.1, -L * 0.05, L * 0.06, L * 0.15, -0.35, 0, TAU); g.fill();
+  // the small forearms, tucked
+  leg(g, [{ x: L * 0.12, y: -L * 0.12 }, { x: L * 0.2, y: -L * 0.04 }, { x: L * 0.22, y: L * 0.0 }], L * 0.035, furLo);
+  // the head: long-eared, its muzzle forward
+  g.fillStyle = fur; g.beginPath(); g.ellipse(L * 0.15, -L * 0.33, L * 0.08, L * 0.06, 0.3, 0, TAU); g.fill();
+  g.beginPath(); g.ellipse(L * 0.23, -L * 0.3, L * 0.06, L * 0.035, 0.4, 0, TAU); g.fill();
+  for (const [ex, ea] of [[0.1, -0.4], [0.14, -0.2]]) { g.fillStyle = furLo; g.beginPath(); g.ellipse(L * ex, -L * 0.43, L * 0.025, L * 0.07, ea, 0, TAU); g.fill(); }
+  eye(g, L * 0.18, -L * 0.35, L * 0.012);
+  g.fillStyle = '#2b2628'; g.beginPath(); g.arc(L * 0.28, -L * 0.28, L * 0.012, 0, TAU); g.fill();
+  g.restore();
+  ringed(g, x, y, L, ring);
+}
+
+/** A dolphin, along its path: the grey back darker than its pale belly,
+    the beak forward, the dorsal fin, flippers and tail flukes beating with
+    `phase`. Drawn round its middle, heading along `ang` (canvas radians). */
+export function dolphin(g, x, y, L, P, { ang = 0, phase = 0, ring = null } = {}) {
+  const E = env(), back = E.night ? '#4a5866' : '#6a7f92', belly = E.night ? '#a8b4c0' : '#dfe6ec';
+  g.save(); g.translate(x, y); g.rotate(ang);
+  const beat = Math.sin(phase * 8) * 0.25;
+  // the flukes, then the body's outline: a long teardrop with a beak
+  g.save(); g.translate(-L * 0.46, 0); g.rotate(beat);
+  g.fillStyle = back; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-L * 0.08, -L * 0.12, -L * 0.14, -L * 0.13); g.quadraticCurveTo(-L * 0.08, 0, -L * 0.14, L * 0.13); g.quadraticCurveTo(-L * 0.08, L * 0.12, 0, 0); g.fill();
+  g.restore();
+  const body = () => { g.beginPath(); g.moveTo(-L * 0.46, 0); g.quadraticCurveTo(-L * 0.2, -L * 0.13, L * 0.15, -L * 0.11); g.quadraticCurveTo(L * 0.34, -L * 0.08, L * 0.4, -L * 0.02); g.lineTo(L * 0.52, -L * 0.005); g.lineTo(L * 0.52, L * 0.01); g.quadraticCurveTo(L * 0.3, L * 0.09, L * 0.1, L * 0.1); g.quadraticCurveTo(-L * 0.2, L * 0.09, -L * 0.46, 0); g.closePath(); };
+  const gr = g.createLinearGradient(0, -L * 0.12, 0, L * 0.1); gr.addColorStop(0, back); gr.addColorStop(0.55, back); gr.addColorStop(0.62, belly); gr.addColorStop(1, belly);
+  body(); g.fillStyle = gr; g.fill();
+  g.strokeStyle = ring || 'rgba(20,24,30,0.45)'; g.lineWidth = ring ? 2.4 : 1; g.stroke();
+  // the dorsal fin, the near flipper
+  g.fillStyle = back; g.beginPath(); g.moveTo(-L * 0.05, -L * 0.115); g.quadraticCurveTo(-L * 0.02, -L * 0.24, -L * 0.14, -L * 0.25); g.quadraticCurveTo(-L * 0.12, -L * 0.17, -L * 0.18, -L * 0.11); g.closePath(); g.fill();
+  g.fillStyle = E.night ? '#3a4652' : '#56697a'; g.beginPath(); g.moveTo(L * 0.14, L * 0.07); g.quadraticCurveTo(L * 0.06, L * 0.18, -L * 0.02, L * 0.19); g.quadraticCurveTo(L * 0.04, L * 0.1, L * 0.06, L * 0.07); g.closePath(); g.fill();
+  eye(g, L * 0.33, -L * 0.04, L * 0.014);
+  g.strokeStyle = 'rgba(20,24,30,0.4)'; g.lineWidth = 1; g.beginPath(); g.moveTo(L * 0.4, L * 0.0); g.lineTo(L * 0.5, L * 0.005); g.stroke();
+  // a sheen along its back
+  g.strokeStyle = withAlpha('#ffffff', 0.3); g.lineWidth = 1.5; g.beginPath(); g.moveTo(-L * 0.25, -L * 0.09); g.quadraticCurveTo(L * 0.05, -L * 0.12, L * 0.3, -L * 0.07); g.stroke();
+  g.restore();
+}
+
+/** A leaping fish (a salmon), along its path: silver flanks with a pink
+    stripe and spotted back, the tail beating with `phase`. */
+export function fish(g, x, y, L, P, { ang = 0, phase = 0, ring = null } = {}) {
+  const E = env();
+  g.save(); g.translate(x, y); g.rotate(ang);
+  const beat = Math.sin(phase * 12) * 0.35;
+  g.save(); g.translate(-L * 0.38, 0); g.rotate(beat);
+  g.fillStyle = E.night ? '#5a6470' : '#7a8a9a'; g.beginPath(); g.moveTo(0, 0); g.lineTo(-L * 0.16, -L * 0.13); g.quadraticCurveTo(-L * 0.11, 0, -L * 0.16, L * 0.13); g.closePath(); g.fill();
+  g.restore();
+  const body = () => { g.beginPath(); g.moveTo(-L * 0.4, 0); g.quadraticCurveTo(-L * 0.1, -L * 0.17, L * 0.25, -L * 0.1); g.quadraticCurveTo(L * 0.45, -L * 0.04, L * 0.5, L * 0.01); g.quadraticCurveTo(L * 0.4, L * 0.1, L * 0.2, L * 0.11); g.quadraticCurveTo(-L * 0.1, L * 0.13, -L * 0.4, 0); g.closePath(); };
+  const gr = g.createLinearGradient(0, -L * 0.15, 0, L * 0.12); gr.addColorStop(0, E.night ? '#4a5866' : '#5a7088'); gr.addColorStop(0.45, E.night ? '#a8b4c0' : '#d8e0e8'); gr.addColorStop(1, E.night ? '#c8ccd2' : '#f4f6f8');
+  body(); g.fillStyle = gr; g.fill(); g.strokeStyle = ring || 'rgba(20,24,30,0.45)'; g.lineWidth = ring ? 2.4 : 1; g.stroke();
+  g.save(); body(); g.clip();
+  g.fillStyle = withAlpha('#d8708a', 0.45); g.fillRect(-L * 0.4, -L * 0.01, L * 0.85, L * 0.035);
+  g.fillStyle = 'rgba(20,24,30,0.5)'; for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(-L * 0.25 + i * L * 0.06, -L * 0.08 + (i % 2) * L * 0.02, L * 0.01, 0, TAU); g.fill(); }
+  g.restore();
+  g.fillStyle = E.night ? '#5a6470' : '#6a7a8a'; g.beginPath(); g.moveTo(0, -L * 0.14); g.lineTo(-L * 0.1, -L * 0.22); g.lineTo(-L * 0.12, -L * 0.13); g.closePath(); g.fill();
+  eye(g, L * 0.36, -L * 0.03, L * 0.02);
+  g.strokeStyle = 'rgba(20,24,30,0.4)'; g.lineWidth = 1; g.beginPath(); g.arc(L * 0.28, 0, L * 0.06, -1.1, 1.1); g.stroke();
+  g.restore();
+}
+
+export const ANIMALS = { cat, dog, monkey, frog, kangaroo };
+/** What leaps from the water and swims along its path, drawn along it. */
+export const SWIMMERS = { dolphin, fish };
 /** How far below its middle each one's feet reach, as a fraction of L: the
     stage stands it on the edge and the ground with this. */
-export const FEET = { cat: 0.38, dog: 0.38, monkey: 0.44, frog: 0.24 };
+export const FEET = { cat: 0.38, dog: 0.38, monkey: 0.44, frog: 0.24, kangaroo: 0.33 };

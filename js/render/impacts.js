@@ -382,10 +382,13 @@ export function skid(g, x, y, age, life, o = {}) {
   g.save();
   // the marks: rubber laid from where the wheels touched, darker where they bit
   const len = L * 0.9 * ease(Math.min(1, u * 3));
-  for (const [dy, a] of [[1.5, 0.75], [4, 0.45]]) {
+  // (wide and near-black, each edged with a pale line of rubber dust so it
+  // shows on tarmac as well as on grass)
+  for (const [dy, a] of [[2, 0.9], [6, 0.6]]) {
     const gr = g.createLinearGradient(x - L * 0.5 - len, 0, x + L * 0.4, 0);
-    gr.addColorStop(0, withAlpha('#151515', 0)); gr.addColorStop(0.3, withAlpha('#151515', a * 0.6)); gr.addColorStop(1, withAlpha('#151515', a));
-    g.fillStyle = gr; g.fillRect(x - L * 0.5 - len, y + dy - 1, len + L * 0.9, 2.2);
+    gr.addColorStop(0, withAlpha('#050505', 0)); gr.addColorStop(0.3, withAlpha('#050505', a * 0.7)); gr.addColorStop(1, withAlpha('#050505', a));
+    g.fillStyle = gr; g.fillRect(x - L * 0.5 - len, y + dy - 1.5, len + L * 0.9, 3.5);
+    g.fillStyle = withAlpha('#d8d4cc', 0.35 * a); g.fillRect(x - L * 0.5 - len * 0.7, y + dy - 2.5, len * 0.7 + L * 0.9, 1);
   }
   const p = phaseOf(age, life);
   if (p != null) {

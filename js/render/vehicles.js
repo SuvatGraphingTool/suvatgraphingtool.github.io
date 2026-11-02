@@ -86,14 +86,16 @@ export function speedboat(g, X, Y, L, P, { phase = 0, ring = null, airborne = fa
   const C = person(E);
   g.fillStyle = E.night ? '#2a2e36' : '#3a4250'; g.beginPath(); g.arc(X - L * 0.52, deck - H * 1.0, H * 0.32, 0, TAU); g.fill();
   g.fillStyle = C.skin; g.beginPath(); g.arc(X - L * 0.5, deck - H * 1.0, H * 0.26, 0, TAU); g.fill();
-  g.fillStyle = E.night ? '#3a4a6a' : '#e8c547'; g.fillRect(X - L * 0.58, deck - H * 0.75, L * 0.1, H * 0.75);
-  g.fillStyle = withAlpha('#bcd6e6', 0.7); g.beginPath(); g.moveTo(X - L * 0.42, deck); g.lineTo(X - L * 0.36, deck - H * 0.9); g.lineTo(X - L * 0.3, deck); g.closePath(); g.fill();
-  g.strokeStyle = withAlpha('#2a2e36', 0.7); g.lineWidth = 1; g.stroke();
+  g.fillStyle = E.night ? '#c8b060' : '#e8c547'; g.fillRect(X - L * 0.58, deck - H * 0.75, L * 0.1, H * 0.75);
+  // the windscreen: a raked pane in its frame, set across the deck
+  g.fillStyle = withAlpha('#bcd6e6', 0.6); g.beginPath(); g.moveTo(X - L * 0.44, deck); g.lineTo(X - L * 0.4, deck - H * 0.75); g.lineTo(X - L * 0.33, deck - H * 0.75); g.lineTo(X - L * 0.3, deck); g.closePath(); g.fill();
+  g.strokeStyle = '#2a2e36'; g.lineWidth = Math.max(1.2, L * 0.012); g.stroke();
   // the outboard at the stern, its propeller below
   g.fillStyle = '#2b2628'; g.beginPath(); g.roundRect(X - L * 1.06, deck - H * 0.7, L * 0.07, H * 1.0, 3); g.fill(); g.fillRect(X - L * 1.04, deck + H * 0.3, L * 0.025, H * 1.0);
   if (airborne) { const b = Math.cos(phase * 8) * H * 0.3; g.strokeStyle = '#5a5e66'; g.lineWidth = 2; g.beginPath(); g.moveTo(X - L * 1.03, Y + H * 0.6 - b); g.lineTo(X - L * 1.03, Y + H * 0.6 + b); g.stroke(); }
   // spray at the bow, on the water
-  if (!airborne) { g.fillStyle = withAlpha('#ffffff', 0.7); for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(X - L * (0.15 + i * 0.05), Y - 1 - Math.abs(Math.sin(phase * 6 + i)) * H * 0.4, H * 0.15, 0, TAU); g.fill(); } }
+  // the bow wave peeling off either side of the hull, as spray
+  if (!airborne) { g.strokeStyle = withAlpha('#ffffff', 0.8); g.lineWidth = 1.5; for (let i = 0; i < 4; i++) { const sx = X - L * (0.1 + i * 0.08), hh = H * (0.5 - i * 0.08) * (0.7 + 0.3 * Math.abs(Math.sin(phase * 6 + i))); g.beginPath(); g.moveTo(sx, Y); g.quadraticCurveTo(sx + L * 0.03, Y - hh, sx + L * 0.07, Y - hh * 0.4); g.stroke(); } }
 }
 
 /** A jet ski and its rider: a short white hull with a coloured top, the
@@ -133,8 +135,10 @@ export function skier(g, X, Y, L, P, { ring = null, airborne = false } = {}) {
   g.strokeStyle = suit; g.lineWidth = Hp * 0.065; g.beginPath(); g.moveTo(sh.x, sh.y); g.lineTo(hand.x, hand.y); g.stroke();
   g.strokeStyle = E.night ? '#8a8e96' : '#4a4e56'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(hand.x, hand.y); g.lineTo(hand.x - Hp * 0.55, hand.y - Hp * 0.12); g.stroke();
   // the head in its helmet and goggles
-  g.fillStyle = E.night ? '#c8ccd2' : '#f2f2f0'; g.beginPath(); g.arc(sh.x + Hp * 0.08, sh.y - Hp * 0.08, Hp * 0.075, 0, TAU); g.fill();
-  g.fillStyle = '#e8c547'; g.fillRect(sh.x + Hp * 0.1, sh.y - Hp * 0.1, Hp * 0.06, Hp * 0.035);
+  // a yellow helmet (white would vanish on snow), dark goggles
+  g.fillStyle = '#e8c547'; g.beginPath(); g.arc(sh.x + Hp * 0.08, sh.y - Hp * 0.08, Hp * 0.075, 0, TAU); g.fill();
+  g.strokeStyle = '#2b2628'; g.lineWidth = 1; g.stroke();
+  g.fillStyle = '#2b2628'; g.fillRect(sh.x + Hp * 0.1, sh.y - Hp * 0.1, Hp * 0.06, Hp * 0.035);
   g.fillStyle = C.skin; g.fillRect(sh.x + Hp * 0.11, sh.y - Hp * 0.06, Hp * 0.04, Hp * 0.04);
 }
 
@@ -162,31 +166,39 @@ export function snowboarder(g, X, Y, L, P, { ring = null, airborne = false } = {
 /** A horse and its rider, side on: a long body, an arched neck and head, a
     tail; its legs walking with `phase` on the ground, folded under it as it
     jumps; the rider forward in the saddle. Y is its hooves. */
-export function horse(g, X, Y, L, P, { phase = 0, ring = null, airborne = false } = {}) {
-  const E = env(), C = person(E), coat = E.night ? '#5a4232' : '#8a5a3a', coatLo = E.night ? '#3e2c22' : '#6a4228', leg = L * 0.42, bodyY = Y - leg - L * 0.12;
+export function horse(g, X, Y, L, P, { phase = 0, ring = null, airborne = false, tuck = airborne ? 1 : 0 } = {}) {
+  // a dapple grey, clear of the velocity's orange
+  const E = env(), C = person(E), coat = E.night ? '#6a6662' : '#a8a29a', coatLo = E.night ? '#4a4644' : '#7a746e', leg = L * 0.42, bodyY = Y - leg - L * 0.12;
   if (!airborne) softShadow(g, X - L * 0.5, Y + 1, L * 0.5, L * 0.05, 0.9);
   const hipX = X - L * 0.82, shX = X - L * 0.32;
   // legs: far pair darker; in the air folded, the forelegs tucked, the hind trailing
+  // each leg eases from its stride on the ground to folded (forelegs) or
+  // stretched back (hind legs) as it jumps, by `tuck`
+  const tk = Math.max(0, Math.min(1, tuck)), mix = (a, b) => ({ x: a.x + (b.x - a.x) * tk, y: a.y + (b.y - a.y) * tk });
   const legAt = (x, front, far, i) => {
-    const sw = Math.sin(phase * 3 + i * 1.6) * 0.35;
-    const k = airborne ? (front ? { x: x + L * 0.12, y: bodyY + leg * 0.35 } : { x: x - L * 0.1, y: bodyY + leg * 0.45 }) : { x: x + Math.sin(sw) * leg * 0.45, y: bodyY + leg * 0.5 };
-    const f = airborne ? (front ? { x: x + L * 0.02, y: bodyY + leg * 0.6 } : { x: x - L * 0.22, y: bodyY + leg * 0.7 }) : { x: k.x + Math.sin(sw * 0.6) * leg * 0.4, y: Y };
+    const sw = Math.sin(phase * 3 + i * 1.6) * 0.35 * (1 - tk);
+    const k0 = { x: x + Math.sin(sw) * leg * 0.45, y: bodyY + leg * 0.5 }, f0 = { x: k0.x + Math.sin(sw * 0.6) * leg * 0.4, y: Y };
+    const k1 = front ? { x: x + L * 0.14, y: bodyY + leg * 0.32 } : { x: x - L * 0.14, y: bodyY + leg * 0.4 };
+    const f1 = front ? { x: x + L * 0.04, y: bodyY + leg * 0.58 } : { x: x - L * 0.34, y: bodyY + leg * 0.6 };
+    const k = mix(k0, k1), f = mix(f0, f1);
     g.strokeStyle = far ? coatLo : coat; g.lineWidth = L * 0.06; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, bodyY); g.lineTo(k.x, k.y); g.lineTo(f.x, f.y); g.stroke();
     g.fillStyle = '#2b2628'; g.beginPath(); g.arc(f.x, f.y - L * 0.01, L * 0.03, 0, TAU); g.fill();
   };
   legAt(hipX + L * 0.06, false, true, 0); legAt(shX - L * 0.04, true, true, 1);
   // the tail, the body, the neck and the head
-  g.strokeStyle = E.night ? '#2a1e18' : '#3a2618'; g.lineWidth = L * 0.04; g.beginPath(); g.moveTo(hipX - L * 0.04, bodyY - L * 0.08); g.quadraticCurveTo(hipX - L * 0.22, bodyY, hipX - L * 0.18, bodyY + L * 0.28); g.stroke();
+  g.strokeStyle = E.night ? '#3a3634' : '#5a5450'; g.lineWidth = L * 0.04; g.beginPath(); g.moveTo(hipX - L * 0.04, bodyY - L * 0.08); g.quadraticCurveTo(hipX - L * 0.22, bodyY, hipX - L * 0.18, bodyY + L * 0.28); g.stroke();
   const gr = g.createLinearGradient(0, bodyY - L * 0.15, 0, bodyY + L * 0.12); gr.addColorStop(0, coat); gr.addColorStop(1, coatLo);
   g.fillStyle = gr; g.beginPath(); g.ellipse((hipX + shX) / 2, bodyY - L * 0.02, L * 0.3, L * 0.13, 0, 0, TAU); g.fill();
   g.beginPath(); g.moveTo(shX - L * 0.04, bodyY - L * 0.1); g.quadraticCurveTo(shX + L * 0.12, bodyY - L * 0.3, X - L * 0.12, bodyY - L * 0.42); g.lineTo(X - L * 0.04, bodyY - L * 0.36); g.lineTo(shX + L * 0.08, bodyY + L * 0.02); g.closePath(); g.fill();
   g.beginPath(); g.ellipse(X - L * 0.06, bodyY - L * 0.38, L * 0.1, L * 0.05, 0.5, 0, TAU); g.fill();
   if (ring) { g.strokeStyle = ring; g.lineWidth = 2.4; g.beginPath(); g.ellipse((hipX + shX) / 2, bodyY - L * 0.02, L * 0.3, L * 0.13, 0, 0, TAU); g.stroke(); }
   g.fillStyle = '#1b1a1c'; g.beginPath(); g.arc(X - L * 0.06, bodyY - L * 0.41, L * 0.012, 0, TAU); g.fill();
-  g.strokeStyle = E.night ? '#2a1e18' : '#3a2618'; g.lineWidth = L * 0.03; g.beginPath(); g.moveTo(shX, bodyY - L * 0.14); g.quadraticCurveTo(shX + L * 0.12, bodyY - L * 0.32, X - L * 0.14, bodyY - L * 0.44); g.stroke();
+  // dapples on the coat, and the mane
+  g.fillStyle = withAlpha('#ffffff', E.night ? 0.08 : 0.25); for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(hipX + L * (0.05 + (i % 3) * 0.13), bodyY - L * (0.06 - Math.floor(i / 3) * 0.05), L * 0.025, 0, TAU); g.fill(); }
+  g.strokeStyle = E.night ? '#3a3634' : '#5a5450'; g.lineWidth = L * 0.03; g.beginPath(); g.moveTo(shX, bodyY - L * 0.14); g.quadraticCurveTo(shX + L * 0.12, bodyY - L * 0.32, X - L * 0.14, bodyY - L * 0.44); g.stroke();
   legAt(hipX + L * 0.12, false, false, 2); legAt(shX, true, false, 3);
   // the saddle and the rider, forward over the neck as it jumps
-  const lean = airborne ? 0.55 : 0.2, seat = { x: (hipX + shX) / 2 + L * 0.04, y: bodyY - L * 0.13 };
+  const lean = 0.2 + 0.35 * tk, seat = { x: (hipX + shX) / 2 + L * 0.04, y: bodyY - L * 0.13 };
   g.fillStyle = '#3a2a22'; g.beginPath(); g.ellipse(seat.x, seat.y + L * 0.02, L * 0.09, L * 0.035, 0, 0, TAU); g.fill();
   const sh = { x: seat.x + Math.sin(lean) * L * 0.3, y: seat.y - Math.cos(lean) * L * 0.3 };
   g.strokeStyle = '#e8e2d6'; g.lineWidth = L * 0.06; g.beginPath(); g.moveTo(seat.x, seat.y); g.lineTo(seat.x + L * 0.08, seat.y + L * 0.12); g.lineTo(seat.x + L * 0.02, seat.y + L * 0.2); g.stroke();
