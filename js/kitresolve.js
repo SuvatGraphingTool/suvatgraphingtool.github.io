@@ -26,7 +26,8 @@
 // `kit.resolveUnits(f)` gives [s, v, a, t] units for a question in letters or
 // in kilometres and hours; `kit.resolveNames` the two objects' names.
 // On one line a kit may also give `resolveWords` { pos, neg, plus, line } — its
-// own words for the two ways (up and down a slope); `resolvePart: ''` for a line
+// own words for the two ways (up and down a slope); `resolvePart: ''` (or a function of
+// the motion and the moment) for a line
 // that is neither across nor up (a slope), so its rows are not dashed (rule 2);
 // and `resolveEnds: true` when its run simply stops at tMax (into the sea, at the
 // end of the paper's stretch), so the last moment says the engine goes no further.
@@ -125,7 +126,7 @@ function blocksFor(o, t, tMax, K, U, f) {
   const [pos1, neg1, plus] = Wd && line === 'along' ? [Wd.pos, Wd.neg, Wd.plus] : down ? ['going down', 'going up', 'Down'] : line === 'along' ? ['going forwards', 'going backwards', 'Forwards'] : ['going up', 'going down', 'Up'];
   const dir = vv > 1e-9 ? pos1 : vv < -1e-9 ? neg1 : 'at rest';
   // a line along a slope is neither across nor up: a kit says so with `resolvePart: ''` (rule 2)
-  const part = typeof K?.resolvePart === 'function' ? K.resolvePart(f) : K?.resolvePart ?? (line === 'along' ? 'x' : 'y');
+  const part = typeof K?.resolvePart === 'function' ? K.resolvePart(f, t) : K?.resolvePart ?? (line === 'along' ? 'x' : 'y');
   // the engine follows it no further from here: an impact, or the end of its run
   const before = (u) => { const b = o.acc?.(u); return fin(b) ? b : b && typeof b === 'object' ? b[k] : 0; };
   // a kit whose run simply stops at its end (into the sea, off a roof) says so with `resolveEnds`

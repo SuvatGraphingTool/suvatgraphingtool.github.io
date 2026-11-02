@@ -140,6 +140,8 @@ this library: *covered* names the one of the twelve that does it.
 | 104 | Edexcel | 6677/01 M1 | Jan 2005 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202005%20QP.pdf) | A stone on ice along ABC against a 0.3 N resistance, 20 then 16 m/s over 24 m; speed at C 30 m on; show m = 0.1 kg; the wall's 2.4 N s impulse, time back to rest | – | **built** → `back-off-the-boards` |
 | 105 | AQA | MM1B | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202012%20QP%20-%20M1%20AQA.pdf) | A cyclist freewheels down a slope, 4 to 10 m/s over 50 m: a, time; 70 kg: resultant force; the slope's angle with no resistance, then against 30 N | 9.8 | **built** → `freewheeling` |
 | 106 | CIE | 9709/41 | May/Jun 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | 0.8 kg projected at 12 m/s up a rough 10° plane, μ = 0.4: the acceleration; the distance up the plane to rest | 10 | **built** → `up-a-rough-slope` |
+| 117 | CIE | 9709/04 | specimen for 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/Specimen%20QP%20-%20M1.pdf) | 0.5 kg from rest down a smooth 30° slope: time to 2.5 m/s; after 3 m onto rough level ground with 1 N friction: distance to rest | 10 | **built** → `down-and-across` |
+| 118 | Edexcel | 6677 M1 | Nov 2002 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 10 kg suitcase down a rough 20° ramp, 10 m/s at A, 8 m/s 5 m on: the deceleration, μ, the greatest length of the ramp | 9.8 | **built** → `down-and-across` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **candidate**: `pulled-by-a-rope`'s engine gives both (18.4 N, 0.123 m/s²), but the paper gives no speed to play the motion with |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **candidate**: the engine gives both (509.4 N, 1.51 m/s²), but no speed is given to play the motion |
@@ -451,6 +453,26 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `down-and-across` — Down the slope and across the flat
+
+**Papers.** Cambridge 9709/04 specimen (for 2017) Q2 (0.5 kg from rest down a smooth 30°
+slope, g = 10: 0.5 s to 2.5 m s⁻¹; after 3 m onto level ground with 1 N of friction: 7.5 m to
+rest). Edexcel 6677 M1 Nov 2002 Q5 (a 10 kg suitcase down a rough 20° ramp, 10 then 8 m s⁻¹
+5 m apart: a = −3.6 m s⁻², μ = 0.755, the ramp at most 13.9 m long).
+
+**Why the others cannot.** `down-a-rough-slope` starts from rest and ends at the bottom;
+here the motion goes on along the level with a second friction, or (moving at the top)
+slows down the slope and may stop on it.
+
+**How it is solved.** js/core/runout.js: on the slope m g sin α − F = ma (F = μ m g cos α, a
+stated force, or none); or two speeds give a and then μ. v² = u² + 2as to the bottom (or to
+rest), then on the level −F = ma and SUVAT to rest.
+
+**The stage.** A snowy hill and its flat with the rough slope's sledge and pines, its track
+in the snow; or a loading dock, a chequer-plate ramp and a warehouse floor with a suitcase.
+The angle at the foot, the slope's length beside it, its speed at the bottom, a dashed ruler
+of the run-out on the level.
 
 ### `pulled-by-a-rope` — Pulled by a rope
 
