@@ -2150,5 +2150,188 @@ function runway(g, c) {
   }
 }
 
+/* ── a garden, a farm, a cricket ground ─────────────────────────────────── */
+
+/** Something free along the ground: the first of `xs` whose half-width
+    `half` keeps it clear of where it is thrown from and where it lands. */
+const spot = (xs, half, x0, land, w) => xs.find((x) => x != null && x - half > 8 && x + half < w - 8 && (x + half < x0 - 30 || x - half > x0 + 20) && Math.abs(x - land) > half + 50);
+
+/** A round-crowned tree on the horizon, darker below. */
+function crown(g, x, y, R, n) {
+  g.fillStyle = n ? '#1c2a1c' : '#3f6a3a'; g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill();
+  g.fillStyle = n ? '#243424' : '#4f7c45'; g.beginPath(); g.arc(x - R * 0.3, y - R * 0.3, R * 0.6, 0, TAU); g.fill();
+}
+
+/** A back garden: the fence along its end with a border of flowers in front,
+    the neighbours' trees beyond, a striped lawn; a shed, a greenhouse and a
+    washing line set clear of the flight. From a height: the shed's roof (to
+    about 3 m), or the back of the house, from an upstairs window. */
+function garden(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(233), horizon = oy - clamp((oy - 40) * 0.32, 40, 160);
+  const fh = clamp(1.8 * k, 18, 60);
+  sky(g, w, horizon - fh, x0, { far: 'none', seed: 161, clouds: 3 });
+  for (let x = -10 + r() * 30; x < w + 20; x += 30 + r() * 40) crown(g, x, horizon - fh - 6 - r() * 10, 16 + r() * 18, n);
+  // the fence: overlapping wooden panels on posts
+  g.fillStyle = n ? '#4a3a2c' : '#8a6a4a'; g.fillRect(0, horizon - fh, w, fh);
+  g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = 1; for (let y = horizon - fh + 5; y < horizon; y += 5) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+  g.fillStyle = n ? '#3a2c20' : '#6a4e34'; for (let x = 0; x < w; x += clamp(1.8 * k, 40, 120)) g.fillRect(x - 3, horizon - fh - 4, 6, fh + 4);
+  // the lawn, mown in stripes, and the border in front of the fence: shrubs and flowers
+  mownTurf(g, w, horizon, h, n, { lo: '#6fa652', hi: '#7cb35c', line: false });
+  g.fillStyle = n ? '#2a2018' : '#5a4430'; g.fillRect(0, horizon, w, clamp(0.5 * k, 5, 14));
+  const petals = n ? ['#8a6a7a', '#9a9a6a', '#c8c8c8'] : ['#e86a9a', '#f2c21b', '#ffffff', '#d84a6a', '#f4e4a0'];
+  for (let x = r() * 20; x < w; x += 14 + r() * 26) {
+    const R = 8 + r() * 12; g.fillStyle = n ? '#1e2e1e' : r() < 0.5 ? '#3e6a34' : '#4a7a3a'; g.beginPath(); g.arc(x, horizon - R * 0.3, R, Math.PI, TAU); g.fill();
+    for (let i = 0; i < 4; i++) { g.fillStyle = petals[Math.floor(r() * petals.length)]; g.beginPath(); g.arc(x + (r() - 0.5) * R * 1.4, horizon - R * 0.3 - r() * R * 0.8, 1.8 + r() * 1.5, 0, TAU); g.fill(); }
+  }
+  const land = (c.clearX || [])[0] ?? w;
+  // the greenhouse: an aluminium frame and glass, staging inside
+  const gw = clamp(3 * k, 50, 150), gh = gw * 0.6, gx = spot([land + 90 + gw / 2, w - gw / 2 - 20, x0 + (w - x0) * 0.3], gw / 2, x0, land, w);
+  if (gx != null) {
+    const gy = lerp(horizon, oy, 0.35), l = gx - gw / 2;
+    g.fillStyle = withAlpha(n ? '#5a6a7a' : '#dfeaf2', n ? 0.5 : 0.55); g.beginPath(); g.moveTo(l, gy); g.lineTo(l, gy - gh * 0.65); g.lineTo(gx, gy - gh); g.lineTo(l + gw, gy - gh * 0.65); g.lineTo(l + gw, gy); g.closePath(); g.fill();
+    g.strokeStyle = n ? '#8a9098' : '#b8bec6'; g.lineWidth = 1.4; g.stroke();
+    for (let i = 1; i < 5; i++) { const x = l + (gw * i) / 5; g.beginPath(); g.moveTo(x, gy); g.lineTo(x, gy - gh * (0.65 + 0.35 * (1 - Math.abs(x - gx) / (gw / 2)))); g.stroke(); }
+    g.beginPath(); g.moveTo(l, gy - gh * 0.35); g.lineTo(l + gw, gy - gh * 0.35); g.stroke();
+    g.fillStyle = n ? '#2e4a2a' : '#5f9a48'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(l + gw * (0.12 + i * 0.15), gy - gh * 0.38, gw * 0.04, Math.PI, TAU); g.fill(); }
+    softShadow(g, gx, gy + 1, gw * 0.55, 3, 0.5);
+    c.reserve?.({ x: l - 4, y: gy - gh - 4, w: gw + 8, h: gh + 8 });
+  }
+  // the washing line between two posts, its clothes stirring
+  const lw = clamp(5 * k, 90, 260), lx = spot([x0 + (w - x0) * 0.55, land - lw * 0.7, w * 0.8], lw / 2, x0, land, w);
+  if (lx != null && (gx == null || Math.abs(lx - gx) > lw / 2 + gw / 2 + 10)) {
+    const ly = lerp(horizon, oy, 0.2), ph = clamp(1.9 * k, 26, 70), a = lx - lw / 2, b = lx + lw / 2;
+    g.strokeStyle = n ? '#8a8e96' : '#7a828e'; g.lineWidth = 2; for (const x of [a, b]) { g.beginPath(); g.moveTo(x, ly); g.lineTo(x, ly - ph); g.stroke(); }
+    g.strokeStyle = n ? '#aaaeb6' : '#d8dce2'; g.lineWidth = 1; g.beginPath(); g.moveTo(a, ly - ph); g.quadraticCurveTo(lx, ly - ph + 8, b, ly - ph); g.stroke();
+    const clothes = n ? ['#5a6a8a', '#8a8a8a', '#9a9a6a'] : ['#2f5fa8', '#ffffff', '#f2c21b', '#e86a9a', '#7ab4e0'];
+    for (let i = 0; i < 5; i++) {
+      const u = (i + 0.7) / 6, x = lerp(a, b, u), y = ly - ph + 8 * (1 - (2 * u - 1) ** 2), cw = lw * 0.09, ch = cw * (1 + (i % 2) * 0.4), sw2 = Math.sin(phase * 2 + i) * 2;
+      g.fillStyle = clothes[i % clothes.length]; g.beginPath(); g.moveTo(x, y); g.lineTo(x + cw, y); g.lineTo(x + cw + sw2, y + ch); g.lineTo(x + sw2, y + ch); g.closePath(); g.fill();
+      g.strokeStyle = withAlpha('#000000', 0.2); g.stroke();
+    }
+    c.reserve?.({ x: a - 4, y: ly - ph - 4, w: lw + 8, h: ph + 8 });
+  }
+  if (!(H0 > 0)) return;
+  const H = oy - top;
+  if (H0 <= 3.5) {
+    // the shed: weatherboard walls, a window, its door, a felt roof sloping down to the edge it leaves from
+    const sw = clamp(2.4 * k, 40, 130), wall = H * 0.8, l = x0 - sw;
+    g.fillStyle = n ? '#3e4a3a' : '#5f7a5a'; g.fillRect(l, oy - wall, sw, wall);
+    g.strokeStyle = withAlpha('#000000', 0.22); g.lineWidth = 1; for (let y = oy - wall + 5; y < oy; y += 6) { g.beginPath(); g.moveTo(l, y); g.lineTo(x0, y); g.stroke(); }
+    g.fillStyle = n ? '#2a3428' : '#4a6046'; g.fillRect(l + sw * 0.1, oy - wall * 0.85, sw * 0.32, wall * 0.85);
+    g.fillStyle = n ? withAlpha(E.window, 0.6) : '#a9c4dc'; g.fillRect(l + sw * 0.55, oy - wall * 0.75, sw * 0.3, wall * 0.3);
+    g.strokeStyle = n ? '#5a6458' : '#e8ece4'; g.lineWidth = 1.5; g.strokeRect(l + sw * 0.55, oy - wall * 0.75, sw * 0.3, wall * 0.3);
+    g.fillStyle = n ? '#1e2024' : '#2e3036'; g.beginPath(); g.moveTo(l - 6, oy - wall + 2); g.lineTo(l + sw * 0.15, top - 2); g.lineTo(x0 + 3, top - 2); g.lineTo(x0 + 3, top + 4); g.lineTo(l - 6, oy - wall + 8); g.closePath(); g.fill();
+    softShadow(g, l + sw / 2, oy + 2, sw * 0.6, 4, 0.6);
+  } else {
+    // the back of the house: brick, the kitchen door below, the upstairs window it leaves from
+    const hw = clamp(H * 0.9, 70, x0 + 4), l = x0 - hw;
+    g.fillStyle = n ? '#5a4a44' : '#a8705a'; g.fillRect(l, top - H * 0.45, hw, oy - top + H * 0.45);
+    g.strokeStyle = withAlpha('#000000', 0.12); g.lineWidth = 1; for (let y = top - H * 0.45 + 4; y < oy; y += 5) { g.beginPath(); g.moveTo(l, y); g.lineTo(x0, y); g.stroke(); }
+    g.fillStyle = n ? '#2e3036' : '#3e4048'; g.beginPath(); g.moveTo(l - 8, top - H * 0.45); g.lineTo(x0 + 8, top - H * 0.45); g.lineTo(x0 - hw * 0.2, top - H * 0.75); g.lineTo(l + hw * 0.1, top - H * 0.75); g.closePath(); g.fill();
+    // the window it leaves from: open, its sill at the launch height
+    const ww = clamp(1.2 * k, 18, 60), wh = clamp(1.3 * k, 20, 66);
+    g.fillStyle = n ? withAlpha(E.window, 0.75) : '#3a4656'; g.fillRect(x0 - ww - 4, top - wh, ww, wh);
+    g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(x0 - ww - 8, top, ww + 12, 4); g.strokeStyle = n ? '#8a8e96' : '#f4f2ee'; g.lineWidth = 2.5; g.strokeRect(x0 - ww - 4, top - wh, ww, wh);
+    g.fillStyle = n ? '#4a4e56' : '#6a4a3a'; g.fillRect(x0 - hw * 0.5, oy - clamp(2 * k, 26, 80), clamp(0.9 * k, 14, 40), clamp(2 * k, 26, 80));
+    g.fillStyle = n ? withAlpha(E.window, 0.7) : '#a9c4dc'; g.fillRect(x0 - hw * 0.85, oy - clamp(1.8 * k, 24, 70), clamp(1.2 * k, 18, 54), clamp(1 * k, 14, 40));
+    softShadow(g, x0 + 6, oy + 2, 24, 4, 0.5);
+  }
+}
+
+/** A farm: hedged fields rolling away, sheep grazing, round hay bales, a gate;
+    the barn of dark timber under its grey roof, from whose hayloft door it
+    leaves (from a height), its hoist beam over the door. */
+function farm(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(239), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
+  sky(g, w, horizon, x0, { far: 'none', seed: 167, clouds: 3 });
+  // the fields: a patchwork rising behind, hedgerows between, trees along them
+  const tones = n ? ['#2a3a26', '#34442c', '#3a4a2c', '#2e3e28'] : ['#7aa85a', '#9ab86a', '#c8c070', '#88b062'];
+  for (let i = 0; i < 4; i++) {
+    const y0 = horizon - 30 + i * 9;
+    g.fillStyle = tones[i]; g.beginPath(); g.moveTo(0, horizon); for (let x = 0; x <= w; x += 30) g.lineTo(x, y0 + Math.sin(x * 0.008 + i * 1.7) * 8); g.lineTo(w, horizon); g.closePath(); g.fill();
+    g.strokeStyle = n ? '#1a2418' : '#3e5e30'; g.lineWidth = 2; g.beginPath(); for (let x = 0; x <= w; x += 30) g.lineTo(x, y0 + Math.sin(x * 0.008 + i * 1.7) * 8); g.stroke();
+  }
+  for (let x = r() * 60; x < w; x += 70 + r() * 90) crown(g, x, horizon - 30 + Math.sin(x * 0.008) * 8 - 6, 7 + r() * 6, n);
+  grass(g, 0, w, horizon, h);
+  const land = (c.clearX || [])[0] ?? w;
+  // sheep grazing on the far side of the field
+  for (let i = 0; i < 6; i++) {
+    const sx = r() * w, sy = lerp(horizon, oy, 0.2 + r() * 0.25), ss = clamp(0.5 * k, 5, 14) * (0.8 + (sy - horizon) / Math.max(1, oy - horizon) * 0.4);
+    if (Math.abs(sx - land) < 50 || Math.abs(sx - x0) < 40) continue;
+    g.fillStyle = n ? '#9a9a96' : '#f2efe6'; g.beginPath(); g.ellipse(sx, sy - ss * 0.6, ss, ss * 0.6, 0, 0, TAU); g.fill();
+    g.fillStyle = '#2b2628'; g.beginPath(); g.ellipse(sx + ss * 0.95, sy - ss * 0.7, ss * 0.32, ss * 0.25, 0.3, 0, TAU); g.fill();
+    g.fillRect(sx - ss * 0.5, sy - ss * 0.15, 1.5, ss * 0.3); g.fillRect(sx + ss * 0.5, sy - ss * 0.15, 1.5, ss * 0.3);
+  }
+  // round bales of hay, wrapped in their twine, clear of the flight
+  const bR = clamp(0.75 * k, 10, 40);
+  for (const bx of [land + 80, land + 80 + bR * 2.3, w - bR * 3]) {
+    if (spot([bx], bR, x0, land, w) == null) continue;
+    const by = lerp(horizon, oy, 0.75);
+    g.fillStyle = n ? '#6a5a3a' : '#d8b860'; g.beginPath(); g.arc(bx, by - bR, bR, 0, TAU); g.fill();
+    g.strokeStyle = withAlpha(n ? '#3a3020' : '#a88a3a', 0.8); g.lineWidth = 1; for (let i = 1; i < 4; i++) { g.beginPath(); g.arc(bx, by - bR, bR * i / 4, 0, TAU); g.stroke(); }
+    softShadow(g, bx, by + 1, bR, 3, 0.6);
+    c.reserve?.({ x: bx - bR - 4, y: by - bR * 2 - 4, w: bR * 2 + 8, h: bR * 2 + 8 });
+  }
+  if (!(H0 > 0)) return;
+  // the barn: its gable end to us, the hayloft door open at the launch height, the hoist beam over it
+  const H = oy - top, bw = clamp(H * 1.4, 70, x0 + 6), l = x0 - bw, ridge = top - clamp(H * 0.6, 20, 140);
+  g.fillStyle = n ? '#2e2620' : '#4a3a2c'; g.beginPath(); g.moveTo(l, oy); g.lineTo(l, top + H * 0.05); g.lineTo(l + bw * 0.5, ridge); g.lineTo(x0, top + H * 0.05); g.lineTo(x0, oy); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; for (let x = l + 6; x < x0; x += 7) { g.beginPath(); g.moveTo(x, oy); g.lineTo(x, Math.max(ridge, top + H * 0.05 - (bw * 0.5 - Math.abs(x - l - bw * 0.5)) * ((top + H * 0.05 - ridge) / (bw * 0.5)))); g.stroke(); }
+  // the roof's verge, corrugated grey, along both slopes
+  g.strokeStyle = n ? '#5a5e66' : '#8a9098'; g.lineWidth = clamp(0.3 * k, 4, 10); g.lineCap = 'round'; g.beginPath(); g.moveTo(l - 6, top + H * 0.05 + 4); g.lineTo(l + bw * 0.5, ridge - 2); g.lineTo(x0 + 6, top + H * 0.05 + 4); g.stroke();
+  // the big doors below, the hayloft door above, open at the edge it leaves from
+  const dw = bw * 0.42, dh = H * 0.55;
+  g.fillStyle = n ? '#3a2e24' : '#5e4a36'; g.fillRect(l + bw * 0.5 - dw / 2, oy - dh, dw, dh);
+  g.strokeStyle = n ? '#5a4a3a' : '#c8b896'; g.lineWidth = 2; g.strokeRect(l + bw * 0.5 - dw / 2, oy - dh, dw, dh); g.beginPath(); g.moveTo(l + bw * 0.5 - dw / 2, oy - dh); g.lineTo(l + bw * 0.5, oy); g.lineTo(l + bw * 0.5 + dw / 2, oy - dh); g.moveTo(l + bw * 0.5, oy - dh); g.lineTo(l + bw * 0.5, oy); g.stroke();
+  const hw = clamp(1.2 * k, 16, 60), hh = clamp(1.5 * k, 20, 80);
+  g.fillStyle = '#14120f'; g.fillRect(x0 - hw - 2, top - hh, hw, hh);
+  g.fillStyle = n ? '#6a5a3a' : '#c8a850'; for (let i = 0; i < 5; i++) g.fillRect(x0 - hw - 2 + r() * hw * 0.8, top - 4 - r() * 4, 4, 3);
+  g.strokeStyle = n ? '#5a4a3a' : '#c8b896'; g.lineWidth = 2; g.strokeRect(x0 - hw - 2, top - hh, hw, hh);
+  g.fillStyle = n ? '#3a2e24' : '#6a4e34'; g.fillRect(x0 - hw * 0.6, top - hh - clamp(0.4 * k, 5, 14), hw * 0.6 + clamp(1 * k, 12, 40), clamp(0.25 * k, 4, 10));
+  g.strokeStyle = n ? '#8a8e96' : '#5a5a60'; g.lineWidth = 1.2; const hx = x0 + clamp(1 * k, 12, 40) - 6; g.beginPath(); g.moveTo(hx, top - hh - 4); g.lineTo(hx, top - hh * 0.4); g.stroke();
+  g.beginPath(); g.arc(hx, top - hh * 0.4 + 3, 3, 0, Math.PI); g.stroke();
+  softShadow(g, x0 - bw / 2, oy + 2, bw * 0.6, 5, 0.6);
+}
+
+/** A cricket ground: the pavilion with its balcony and clock across the
+    outfield, the sight screen, the trees round the boundary; the square mown
+    in its strips and the pitch out from the batter's crease, the stumps
+    behind the batter, and those at the bowler's end where the path clears
+    them or lands short (rule 4); from a height, the pavilion's stand. */
+function cricket(g, c) {
+  const { w, h, k, X, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(241), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
+  sky(g, w, horizon - 20, x0, { far: 'none', seed: 173, clouds: 3 });
+  for (let x = -10 + r() * 20; x < w + 20; x += 18 + r() * 24) crown(g, x, horizon - 14 - r() * 6, 12 + r() * 12, n);
+  // the pavilion across the ground: white, a pitched roof with a clock turret, its balcony and seats
+  const pw = clamp(w * 0.22, 120, 300), px = clamp(x0 + (w - x0) * 0.5, pw / 2 + 10, w - pw / 2 - 10) - pw / 2, ph = clamp((oy - horizon) * 0.45, 20, 60);
+  g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(px, horizon - ph, pw, ph);
+  g.fillStyle = n ? '#3a3036' : '#5a4a44'; g.beginPath(); g.moveTo(px - 6, horizon - ph); g.lineTo(px + pw * 0.5, horizon - ph * 1.55); g.lineTo(px + pw + 6, horizon - ph); g.closePath(); g.fill();
+  g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(px + pw * 0.46, horizon - ph * 1.75, pw * 0.08, ph * 0.3);
+  g.fillStyle = '#1b1d22'; g.beginPath(); g.arc(px + pw * 0.5, horizon - ph * 1.6, ph * 0.08, 0, TAU); g.fill(); g.fillStyle = '#ffffff'; g.beginPath(); g.arc(px + pw * 0.5, horizon - ph * 1.6, ph * 0.06, 0, TAU); g.fill();
+  g.fillStyle = n ? withAlpha(E.window, 0.7) : '#4a5a6a'; for (let i = 0; i < 7; i++) g.fillRect(px + pw * (0.06 + i * 0.13), horizon - ph * 0.85, pw * 0.07, ph * 0.3);
+  g.fillStyle = n ? '#5a5e66' : '#2f5a3a'; g.fillRect(px, horizon - ph * 0.45, pw, ph * 0.08);
+  crowd(g, px + 4, px + pw - 4, [{ y: horizon - ph * 0.05, s: clamp(ph * 0.14, 3, 7) }], r, n);
+  // the sight screen, white, on its wheels, clear of the pavilion
+  const ssx = px > w * 0.5 ? px - 70 : px + pw + 40;
+  if (ssx > 10 && ssx < w - 50) { g.fillStyle = n ? '#aaaeb6' : '#fbfbf8'; g.fillRect(ssx, horizon - ph * 0.9, 44, ph * 0.85); g.strokeStyle = withAlpha('#000000', 0.2); g.strokeRect(ssx, horizon - ph * 0.9, 44, ph * 0.85); }
+  // the outfield, mown in bands, and the boundary rope along its far edge
+  mownTurf(g, w, horizon, h, n, { lo: '#5f9a48', hi: '#6aa851', line: false });
+  g.strokeStyle = withAlpha('#ffffff', n ? 0.5 : 0.9); g.lineWidth = 2; g.beginPath(); g.moveTo(0, horizon + 4); g.lineTo(w, horizon + 4); g.stroke();
+  // the pitch: a pale strip out from the batter's crease along the flight's own line
+  const yF = oy - clamp((oy - horizon) * 0.12, 4, 14), yN = oy + clamp((h - oy) * 0.2, 4, 18), p0 = X(-1.5), p1 = X(20.12 + 1.5);
+  g.fillStyle = n ? '#6a6250' : '#cbb88a'; g.beginPath(); g.moveTo(p0 + 4, yF); g.lineTo(p1 + 4, yF); g.lineTo(p1 - 4, yN); g.lineTo(p0 - 4, yN); g.closePath(); g.fill();
+  g.fillStyle = withAlpha('#000000', 0.06); for (let i = 0; i < 20; i++) g.fillRect(lerp(p0, p1, r()), lerp(yF, yN, r()), 6, 1);
+  g.strokeStyle = withAlpha('#ffffff', 0.9); g.lineWidth = 1.5; for (const d of [-1.22, 1.22 - 1.22, 20.12 - 1.22 + 1.22, 20.12 + 1.22]) { g.beginPath(); g.moveTo(X(d) + 3, yF); g.lineTo(X(d) - 3, yN); g.stroke(); }
+  // the stumps: three in a row with the bails, 0.71 m tall
+  const stumps = (sx) => { const sh = Math.max(10, 0.71 * k); g.strokeStyle = n ? '#c8c0a8' : '#f2ead2'; g.lineWidth = Math.max(1.5, 0.04 * k); for (const d of [-1.5, 0, 1.5]) { g.beginPath(); g.moveTo(sx + d, oy + d * 0.6); g.lineTo(sx + d, oy - sh + d * 0.6); g.stroke(); } g.strokeStyle = n ? '#a89a7a' : '#d8c8a0'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx - 3, oy - sh - 1); g.lineTo(sx + 3, oy - sh + 1); g.stroke(); };
+  stumps(X(0) - Math.max(16, 0.9 * k));
+  const land = (c.clearX || [])[0] ?? w, at = c.over?.(20.12);
+  if (X(20.12) < w - 6 && (land < X(20.12) - 6 || at == null || at > 0.85)) stumps(X(20.12));
+  if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket };
