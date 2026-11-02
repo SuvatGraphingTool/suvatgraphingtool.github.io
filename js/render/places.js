@@ -2670,5 +2670,56 @@ function circus(g, c) {
   if (tx > 10) { g.strokeStyle = '#d8c8a0'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(tx - 10, 0); g.lineTo(tx - 10, ty); g.moveTo(tx + 10, 0); g.lineTo(tx + 10, ty); g.stroke(); g.strokeStyle = '#c8ccd2'; g.lineWidth = 3; g.beginPath(); g.moveTo(tx - 12, ty); g.lineTo(tx + 12, ty); g.stroke(); }
 }
 
+/* ── the polar sea ──────────────────────────────────────────────────────── */
+
+/** An iceberg on the horizon: white above, its shaded faces blue-grey. */
+function berg(g, x, y, s, n, r) {
+  g.fillStyle = n ? '#aab4c4' : '#f4f8fc'; g.beginPath(); g.moveTo(x - s, y);
+  g.lineTo(x - s * 0.7, y - s * (0.35 + r() * 0.2)); g.lineTo(x - s * 0.2, y - s * (0.5 + r() * 0.3)); g.lineTo(x + s * 0.3, y - s * (0.4 + r() * 0.2)); g.lineTo(x + s, y); g.closePath(); g.fill();
+  g.fillStyle = n ? '#6a7a92' : '#b8cce0'; g.beginPath(); g.moveTo(x - s * 0.2, y - s * 0.5); g.lineTo(x + s * 0.3, y - s * 0.4); g.lineTo(x + s, y); g.lineTo(x + s * 0.1, y); g.closePath(); g.fill();
+}
+
+/** The polar sea: a pale sky, icebergs on the horizon, dark water with floes
+    of ice; the edge it leaves from is the ice itself — level with the sea, or
+    (from a height) the face of an ice shelf, its top snow and its face
+    seamed with blue cracks. */
+function polar(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(271), horizon = oy - clamp((oy - 40) * 0.22, 30, 120);
+  sky(g, w, horizon, x0, { far: 'none', seed: 193, clouds: 2 });
+  // icebergs along the horizon, clear of where it is thrown from
+  for (let x = clamp(x0 + 80, 60, w * 0.4); x < w; x += 120 + r() * 160) berg(g, x, horizon + 1, 16 + r() * 30, n, r);
+  // the sea: dark, cold, with floes drifting on it
+  water(g, 0, w, horizon, h, { phase });
+  g.fillStyle = withAlpha(n ? '#0a1424' : '#1e3448', 0.35); g.fillRect(0, horizon, w, h - horizon);
+  const land = (c.clearX || [])[0] ?? w;
+  for (let i = 0; i < 9; i++) {
+    const fx = r() * w, fy = lerp(horizon, h, 0.08 + r() * 0.7), fw = (8 + r() * 26) * (0.5 + (fy - horizon) / Math.max(1, h - horizon));
+    if (fx < x0 + 20 || Math.abs(fx - land) < fw + 20) continue;
+    g.fillStyle = n ? '#c8d0dc' : '#f2f6fa'; g.beginPath(); g.ellipse(fx, fy, fw, fw * 0.18, 0, 0, TAU); g.fill();
+    g.fillStyle = withAlpha(n ? '#5a6a82' : '#9ab4cc', 0.8); g.beginPath(); g.ellipse(fx, fy + fw * 0.08, fw, fw * 0.1, 0, 0, Math.PI); g.fill();
+  }
+  const snow = n ? '#d4dce6' : '#ffffff', iceFace = n ? '#5a6e88' : '#a8c4dc', iceDeep = n ? '#3a4a62' : '#6a92b8';
+  if (!(H0 > 0)) {
+    // the ice it leaves from: a floe level with the sea, its snow top a little above the water,
+    // its edge lit, the rest under the water, seen through it
+    const ew = Math.min(x0 + 6, w * 0.35), th = clamp(0.5 * k, 6, 22), sub = clamp(2 * k, 16, 70);
+    g.fillStyle = withAlpha(iceFace, 0.55); g.beginPath(); g.moveTo(-4, oy); g.lineTo(ew + 4, oy); g.lineTo(ew - 8, Math.min(h, oy + sub)); g.lineTo(-4, Math.min(h, oy + sub)); g.closePath(); g.fill();
+    g.fillStyle = snow; g.beginPath(); g.moveTo(-4, oy - th * 0.4); g.lineTo(ew - 4, oy - th * 0.4); g.quadraticCurveTo(ew + 4, oy - th * 0.3, ew + 4, oy + 1); g.lineTo(-4, oy + 1); g.closePath(); g.fill();
+    g.fillStyle = iceFace; g.fillRect(-4, oy + 1, ew + 8, th * 0.4);
+    g.strokeStyle = withAlpha('#ffffff', 0.8); g.lineWidth = 2; g.beginPath(); g.moveTo(ew + 4, oy + 1); g.lineTo(ew + 24, oy + 1); g.stroke();
+    return;
+  }
+  // the ice shelf: its snow top, a sheer face seamed with blue cracks, darker under the water
+  const H = oy - top, ew = Math.max(x0 + 4, clamp(H * 1.5, 80, w * 0.5));
+  g.fillStyle = iceFace; g.beginPath(); g.moveTo(-4, top); g.lineTo(x0, top); g.lineTo(x0 + 3, lerp(top, oy, 0.4)); g.lineTo(x0 - 2, oy); g.lineTo(x0, h); g.lineTo(-4, h); g.closePath(); g.fill();
+  const fg = g.createLinearGradient(x0 - 40, 0, x0, 0); fg.addColorStop(0, withAlpha(iceFace, 0)); fg.addColorStop(1, withAlpha('#ffffff', n ? 0.1 : 0.35)); g.fillStyle = fg; g.fillRect(x0 - 40, top, 43, oy - top);
+  g.strokeStyle = iceDeep; g.lineWidth = 1.5; for (let i = 0; i < 6; i++) { const cx = x0 - 6 - r() * Math.min(ew, 140), cy = top + 6 + r() * H * 0.3; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + (r() - 0.5) * 8, cy + H * (0.2 + r() * 0.4)); g.lineTo(cx + (r() - 0.5) * 14, cy + H * (0.4 + r() * 0.4)); g.stroke(); }
+  g.fillStyle = withAlpha(iceDeep, 0.6); g.fillRect(-4, oy, x0 + 4, h - oy);
+  // the snow along its top, overhanging a little at the edge
+  g.fillStyle = snow; g.beginPath(); g.moveTo(-4, top - clamp(0.4 * k, 4, 12)); g.lineTo(x0 - 6, top - clamp(0.4 * k, 4, 12)); g.quadraticCurveTo(x0 + 3, top - clamp(0.3 * k, 3, 10), x0 + 2, top + 3); g.lineTo(-4, top + 3); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha('#ffffff', 0.8); g.lineWidth = 2; g.beginPath(); g.moveTo(x0 - 2, oy + 1); g.lineTo(x0 + 18, oy + 1); g.stroke();
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar };

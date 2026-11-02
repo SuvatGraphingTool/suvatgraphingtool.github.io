@@ -71,6 +71,7 @@ export const BACKDROPS = {
   island:  { label: 'A tropical island', what: 'a tropical island: white sand, palms and a deep blue lagoon inside the reef; from a height, the crown of a palm tree a coconut falls from, or the deck of a beach hut on stilts for anything thrown', place: 'island', below: 'beach', art: true, on: 'on a tropical island', high: 'the deck of a beach hut', lands: 'sand' },
   skatepark: { label: 'A skatepark', what: 'a skatepark: smooth concrete, a funbox and its rail, a graffiti wall; from a height, a concrete ledge with its stair set (to about 4 m) or the roof of the skate shop', place: 'skatepark', below: 'road', art: true, on: 'in a skatepark', high: 'a ledge in a skatepark', higher: [4, 'the roof of the skate shop'] },
   circus:  { label: 'A circus', what: 'inside a circus big top: the canvas in blue and cream, spotlights, the audience, the ring’s curb and its sawdust; from a height, the trapeze platform on its rigging pole', place: 'circus', below: 'floor', art: true, on: 'in a circus ring', high: 'the trapeze platform', lands: 'dust' },
+  polar:   { label: 'The polar sea', what: 'the polar sea: icebergs on the horizon, floes on the dark water; from the ice at the water’s edge, or (from a height) the face of an ice shelf', place: 'polar', below: 'sea', art: true, on: 'at the edge of the ice', high: 'an ice shelf' },
   carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
   volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
   quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
@@ -152,6 +153,9 @@ export const FIGURES = {
   flea:     { label: 'a flea', m: 0.003, min: 26, views: ['side'], animal: true },
   bird:     { label: 'a bird', m: 0.4, min: 46, views: ['side'], flier: true },
   kangaroo: { label: 'a kangaroo', m: 1.6, min: 52, views: ['side'], animal: true },
+  squirrel: { label: 'a squirrel', m: 0.45, min: 32, views: ['side'], animal: true },
+  rabbit:   { label: 'a rabbit', m: 0.45, min: 32, views: ['side'], animal: true },
+  penguin:  { label: 'a penguin', m: 0.9, min: 40, views: ['side'], animal: true },
   goat:     { label: 'a goat', m: 1.2, min: 46, views: ['side'], animal: true },
   dolphin:  { label: 'a dolphin', m: 2.5, min: 64, views: ['side'], swims: true },
   fish:     { label: 'a fish', m: 0.7, min: 40, views: ['side'], swims: true },
@@ -404,7 +408,7 @@ const WORDS = [
   [/\b(shuttlecock|shuttle|birdie)\b/, 'shuttlecock'], [/\b(jets? of water|water jet|stream of water|spray of water)\b/, 'water'],
   [/\b(grasshopper|locust|katydid)\b/, 'grasshopper'], [/\b(flea)\b/, 'flea'], [/\b(hockey ball)\b/, 'hockeyBall'], [/\b(eggs?)\b/, 'egg'], [/\b(bullet|pellet|round fired)\b/, 'bullet'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
   [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],
-  [/\b(kangaroo|wallaby)\b/, 'kangaroo'], [/\b(goat|ibex|chamois|deer|sheep|lamb)\b/, 'goat'], [/\b(hailstone|hail ?stones?|hail)\b/, 'hailstone'], [/\b(raindrop|rain ?drop|drop of water|drop of rain)\b/, 'raindrop'], [/\b(dolphin|porpoise|orca|killer whale)\b/, 'dolphin'], [/\b(fish|salmon|trout|flying fish)\b/, 'fish'],
+  [/\b(kangaroo|wallaby)\b/, 'kangaroo'], [/\b(squirrels?|chipmunk)\b/, 'squirrel'], [/\b(rabbits?|hares?|bunny)\b/, 'rabbit'], [/\b(penguins?)\b/, 'penguin'], [/\b(goat|ibex|chamois|deer|sheep|lamb)\b/, 'goat'], [/\b(hailstone|hail ?stones?|hail)\b/, 'hailstone'], [/\b(raindrop|rain ?drop|drop of water|drop of rain)\b/, 'raindrop'], [/\b(dolphin|porpoise|orca|killer whale)\b/, 'dolphin'], [/\b(fish|salmon|trout|flying fish)\b/, 'fish'],
   [/\b(bus|coach|minibus)\b/, 'bus'], [/\b(tractor|quad bike)\b/, 'tractor'], [/\b(speedboat|speed boat|motorboat|motor boat|powerboat)\b/, 'speedboat'],
   [/\b(jet ?ski|water scooter)\b/, 'jetski'], [/\b(ski jumper|skier|ski)\b/, 'skier'], [/\b(snowboard(?:er)?)\b/, 'snowboarder'],
   [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
@@ -419,7 +423,7 @@ const NEAREST = [
   [/\b(crossbow bolt|spear)\b/, 'arrow'],
   [/\b(surfer|bmx)\b/, 'diver'],
   [/\b(missile|projectile|shell|stick|bottle|can|bag|helmet|bomb|nut|clam|mussel|prey|mouse)\b/, 'particle'],
-  [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], 
+  [/\b(fox|leopard|cheetah|lion|tiger)\b/, 'cat'], 
   [/\b(animal|bat|insect|bee)\b/, 'particle'],
 ];
 /**
@@ -494,6 +498,7 @@ const ONLY_HERE = [
   [/\b(palm tree|coconut palm|desert island|tropical island|coconut)\b/, 'island'],
   [/\b(skate ?park|half-?pipe|skate ramp|quarter-?pipe)\b/, 'skatepark'],
   [/\b(circus|big top|trapeze|human cannonball|circus ring|ringmaster)\b/, 'circus'],
+  [/\b(ice shelf|ice floe|ice sheet|iceberg|antarctic|arctic|polar)\b/, 'polar'],
   [/\b(tennis court|centre court|grass court|hard court|clay court|tennis match|tennis player)\b/, 'court'],
   [/\b(basketball (?:court|hoop|player|ring|net|arena)|netball (?:court|hoop|post|ring)|(?:through|into|at) the (?:hoop|ring)|free throw|jump shot|slam dunk)\b/, 'arena'],
   // on a beach, but not a cliff, pier or harbour over one ("off the cliff onto the beach" is the cliff's)

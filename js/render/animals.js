@@ -67,7 +67,7 @@ function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears,
   g.fillStyle = '#1b1a1c'; g.beginPath(); g.arc(hx + hr * (0.9 + snout), hy + hr * 0.15, Math.max(1, hr * 0.14), 0, TAU); g.fill();
   g.fillStyle = furLo;
   if (ears === 'pointed') for (const dx of [-0.35, 0.2]) { g.beginPath(); g.moveTo(hx + hr * dx - hr * 0.3, hy - hr * 0.6); g.lineTo(hx + hr * dx, hy - hr * 1.45); g.lineTo(hx + hr * dx + hr * 0.3, hy - hr * 0.55); g.closePath(); g.fill(); }
-  else { g.beginPath(); g.ellipse(hx - hr * 0.3, hy - hr * 0.1, hr * 0.32, hr * 0.7, 0.5 - s * 0.6, 0, TAU); g.fill(); }
+  else if (ears !== 'none') { g.beginPath(); g.ellipse(hx - hr * 0.3, hy - hr * 0.1, hr * 0.32, hr * 0.7, 0.5 - s * 0.6, 0, TAU); g.fill(); }
   eye(g, hx + hr * 0.4, hy - hr * 0.2, hr * 0.13);
   // what this animal's head has of its own (a goat's horns and beard)
   if (head) head(g, hx, hy, hr);
@@ -312,9 +312,55 @@ export function flea(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null 
   ringed(g, x, y, L, ring);
 }
 
-export const ANIMALS = { cat, dog, monkey, frog, kangaroo, goat, grasshopper, flea };
+/** A grey squirrel: grey-brown, a pale belly line, small pointed ears and
+    the great bushy tail streaming out behind. */
+export function squirrel(g, x, y, L, P, o = {}) {
+  const E = env();
+  quadruped(g, x, y, L, { ...o, fur: E.night ? '#7a787a' : '#9a9690', furLo: E.night ? '#4e4c4e' : '#66625c', ears: 'pointed', tail: { w: 0.16, lift: 0.3 }, snout: 0.3, head: (g2, hx, hy, hr) => {
+    g2.fillStyle = E.night ? '#b8b4ac' : '#e8e2d6'; g2.beginPath(); g2.ellipse(hx + hr * 0.5, hy + hr * 0.55, hr * 0.5, hr * 0.25, 0.2, 0, TAU); g2.fill();
+  } });
+  ringed(g, x, y, L, o.ring);
+}
+/** A rabbit: soft brown-grey, its long ears laid back as it springs, a
+    white scut of a tail. */
+export function rabbit(g, x, y, L, P, o = {}) {
+  const E = env(), s = Math.max(0, Math.min(1, o.leap ?? 0));
+  quadruped(g, x, y, L, { ...o, fur: E.night ? '#7a6e62' : '#a89482', furLo: E.night ? '#4e463e' : '#6e6052', ears: 'none', tail: { w: 0.02, lift: 0.02 }, snout: 0.25, head: (g2, hx, hy, hr) => {
+    g2.fillStyle = E.night ? '#7a6e62' : '#a89482';
+    for (const dx of [-0.25, 0.05]) { g2.save(); g2.translate(hx + hr * dx, hy - hr * 0.5); g2.rotate(-0.9 - s * 0.6); g2.beginPath(); g2.ellipse(0, -hr * 0.9, hr * 0.28, hr * 1.0, 0, 0, TAU); g2.fill(); g2.fillStyle = E.night ? '#8a6a6a' : '#d8a8a0'; g2.beginPath(); g2.ellipse(0, -hr * 0.9, hr * 0.12, hr * 0.7, 0, 0, TAU); g2.fill(); g2.restore(); g2.fillStyle = E.night ? '#7a6e62' : '#a89482'; }
+  } });
+  // the white scut, at the back
+  g.save(); g.translate(x, y); g.rotate(o.spin ?? 0); g.fillStyle = '#f4f2ee'; g.beginPath(); g.arc(-L * 0.36, -L * 0.02, L * 0.06, 0, TAU); g.fill(); g.restore();
+  ringed(g, x, y, L, o.ring);
+}
+/** A penguin, `L` px tall: black back and head, white front, a yellow flash
+    at the neck and a dark beak; it leaps head first, flippers swept back,
+    and stands upright, flippers out, before and after. */
+export function penguin(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null } = {}) {
+  const E = env(), s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land)), fly = s * (1 - d);
+  g.save(); g.translate(x, y); g.rotate(spin + fly * 1.1);
+  const back = E.night ? '#0e1014' : '#1b1d22', front = E.night ? '#c8ccd2' : '#f6f8fa';
+  // the feet, dark, under it
+  g.fillStyle = '#3a3e46'; for (const dx of [-0.08, 0.06]) { g.beginPath(); g.ellipse(L * dx + L * 0.04, L * 0.42, L * 0.07, L * 0.025, 0, 0, TAU); g.fill(); }
+  // the body: a black back, the white front over it
+  g.fillStyle = back; g.beginPath(); g.ellipse(0, L * 0.05, L * 0.2, L * 0.38, 0, 0, TAU); g.fill();
+  g.fillStyle = front; g.beginPath(); g.ellipse(L * 0.06, L * 0.1, L * 0.13, L * 0.3, 0, 0, TAU); g.fill();
+  // the flippers: out to balance standing, swept back in the leap
+  g.fillStyle = back;
+  for (const side of [1]) { g.save(); g.translate(-L * 0.02, -L * 0.08); g.rotate(side * lerp(0.35, -0.6, fly)); g.beginPath(); g.ellipse(-L * 0.02, L * 0.16, L * 0.045, L * 0.17, 0, 0, TAU); g.fill(); g.restore(); }
+  // the head, the yellow flash, the beak and the eye
+  g.fillStyle = back; g.beginPath(); g.arc(L * 0.02, -L * 0.33, L * 0.12, 0, TAU); g.fill();
+  g.fillStyle = '#f2c21b'; g.beginPath(); g.ellipse(L * 0.08, -L * 0.25, L * 0.05, L * 0.03, -0.4, 0, TAU); g.fill();
+  g.fillStyle = '#2b2a2e'; g.beginPath(); g.moveTo(L * 0.12, -L * 0.35); g.lineTo(L * 0.24, -L * 0.32); g.lineTo(L * 0.12, -L * 0.3); g.closePath(); g.fill();
+  g.fillStyle = '#ffffff'; g.beginPath(); g.arc(L * 0.07, -L * 0.36, L * 0.025, 0, TAU); g.fill(); g.fillStyle = '#1b1a1c'; g.beginPath(); g.arc(L * 0.075, -L * 0.36, L * 0.012, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1; g.beginPath(); g.ellipse(0, L * 0.05, L * 0.2, L * 0.38, 0, 0, TAU); g.stroke();
+  g.restore();
+  if (ring) { g.strokeStyle = ring; g.lineWidth = 2.4; g.beginPath(); g.ellipse(x, y, L * 0.3, L * 0.5, 0, 0, TAU); g.stroke(); }
+}
+
+export const ANIMALS = { cat, dog, monkey, frog, kangaroo, goat, grasshopper, flea, squirrel, rabbit, penguin };
 /** What leaps from the water and swims along its path, drawn along it. */
 export const SWIMMERS = { dolphin, fish };
 /** How far below its middle each one's feet reach, as a fraction of L: the
     stage stands it on the edge and the ground with this. */
-export const FEET = { cat: 0.38, dog: 0.38, monkey: 0.44, frog: 0.24, kangaroo: 0.33, goat: 0.4, grasshopper: 0.17, flea: 0.32 };
+export const FEET = { cat: 0.38, dog: 0.38, monkey: 0.44, frog: 0.24, kangaroo: 0.33, goat: 0.4, grasshopper: 0.17, flea: 0.32, squirrel: 0.38, rabbit: 0.38, penguin: 0.44 };
