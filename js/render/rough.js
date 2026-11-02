@@ -55,7 +55,7 @@ export function render(canvas, cam, o) {
   if (!f || f.kind !== 'rough') return null;
   const { ctx: g, w, h } = fitCanvas(canvas);
   const P = palette(), L = labels(), E = env(), phone = w < 520;
-  const compact = phone || h < 380 || w < 760;
+  const compact = phone || h < 300 || w < 700;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
   const HB = hudBoxes(w, 3); for (const b of HB) L.reserve(b);
 
@@ -76,9 +76,13 @@ export function render(canvas, cam, o) {
   hillG.addColorStop(0, snow); hillG.addColorStop(1, shade);
   g.fillStyle = hillG; g.beginPath(); g.moveTo(-20, foot.y); g.lineTo(foot.x, foot.y); g.lineTo(top.x, top.y); g.lineTo(w + 20, top.y - 4); g.lineTo(w + 20, h + 20); g.lineTo(-20, h + 20); g.closePath(); g.fill();
   g.strokeStyle = 'rgba(120,140,160,0.45)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-20, foot.y); g.lineTo(foot.x, foot.y); g.lineTo(top.x, top.y); g.lineTo(w + 20, top.y - 4); g.stroke();
-  for (const [x, s] of [[foot.x - 70, 1], [foot.x - 140, 0.8], [top.x + 50, 1.1], [top.x + 110, 0.85]]) if (x > 8 && x < w - 8) pine(g, x, x < foot.x ? foot.y : top.y - 2, 70 * s);
+  // the pines, and room kept round them for nothing else
+  for (const [x, sz] of [[foot.x - 70, 1], [foot.x - 140, 0.8], [top.x + 50, 1.1], [top.x + 110, 0.85]]) if (x > 8 && x < w - 8) {
+    const Yp = x < foot.x ? foot.y : top.y - 2, Hp = 70 * sz; pine(g, x, Yp, Hp); L.reserve({ x: x - Hp * 0.36, y: Yp - Hp, w: Hp * 0.72, h: Hp });
+  }
   // falling snow, drifting with the clock
-  { g.fillStyle = 'rgba(255,255,255,0.75)'; for (let i = 0; i < 60; i++) { const x = ((i * 97.3 + t * 18) % (w + 20)) - 10, y = ((i * 53.1 + t * 40) % (h + 20)) - 10; g.beginPath(); g.arc(x, y, 1.4, 0, TAU); g.fill(); } }
+  { g.fillStyle = 'rgba(255,255,255,0.75)'; const hsh = (n) => { const z = Math.sin(n * 127.1 + 311.7) * 43758.5453; return z - Math.floor(z); };
+    for (let i = 0; i < 60; i++) { const x = ((hsh(i) * (w + 20) + t * 18) % (w + 20)) - 10, y = ((hsh(i + 99) * (h + 20) + t * 40) % (h + 20)) - 10; g.beginPath(); g.arc(x, y, 1.2 + hsh(i + 7), 0, TAU); g.fill(); } }
 
   // ── the angle at the foot
   { const R = clamp(k * run * 0.3, 44, 110);
@@ -124,20 +128,22 @@ export function render(canvas, cam, o) {
   // ── the forces along the slope: a card, or on a small stage a caption line
   if (f.W != null) {
     unview(g);
-    const goingUp = v > 1e-9 || t < f.tTop - 1e-9, Fdir = goingUp ? -1 : f.stays ? 0 : 1;
+    // the friction the engine gives for this moment: up the slope positive
+    const Fx = f.friction(t), ph = f.phase(t), way = Fx < 0 ? '"down the slope"' : '"up the slope"';
+    const fWord = ph === 'rest' ? T`"friction holding it" ${s3(Math.abs(Fx))} [N] ${way}` : T`F = mu R = ${s3(Math.abs(Fx))} [N] ${way}`;
     if (!compact) {
       const cw = cardW, chh = 150, cx = w - cw - 16, cy = h - chh - 16;
       paper(g, cx, cy, cw, chh);
-      const lab = (txt, x, y, col) => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(txt, x, y); g.restore(); };
-      lab('Along the slope, up it +', cx + 12, cy + 18, P.muted);
+      const lab = (txt, x, y, col) => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(txt, x, y, cw - 20); g.restore(); };
+      lab('Up the slope +', cx + 12, cy + 18, P.muted);
       const big = Math.max(f.W, f.Fr, 1e-9), sc = (cw - 60) / 2 / big, x0 = cx + cw / 2;
       arrow(g, x0, cy + 46, x0 - f.W * sc, cy + 46, { color: P.ink, width: 2.4, head: 9 });
-      lab(T`m g sin alpha = ${s3(f.W)} [N]`, cx + 12, cy + 62, P.ink);
-      if (Fdir !== 0) arrow(g, x0, cy + 92, x0 + Fdir * f.Fr * sc, cy + 92, { color: P.ink, width: 2.4, head: 9 });
-      lab(Fdir === 0 ? T`"friction holds it:" mu R >= ${s3(f.W)} [N]` : T`F = mu R = ${s3(f.Fr)} [N], ${Fdir < 0 ? '"down"' : '"up"'}`, cx + 12, cy + 108, P.ink);
+      lab(T`m g sin alpha = ${s3(f.W)} [N] "down the slope"`, cx + 12, cy + 62, P.ink);
+      if (Math.abs(Fx) > 1e-9) arrow(g, x0, cy + 92, x0 + Fx * sc, cy + 92, { color: P.ink, width: 2.4, head: 9 });
+      lab(fWord, cx + 12, cy + 108, P.ink);
       lab(T`R = m g cos alpha = ${s3(f.N)} [N]`, cx + 12, cy + 134, P.muted);
     } else {
-      const txt = T`m g sin alpha = ${s3(f.W)} [N], F = ${s3(f.Fr)} [N], R = ${s3(f.N)} [N]`;
+      const txt = `${T`m g sin alpha = ${s3(f.W)} [N] "down"`}, ${ph === 'rest' ? T`"friction" ${s3(Math.abs(Fx))} [N] ${Fx < 0 ? '"down"' : '"up"'}` : T`F = ${s3(Math.abs(Fx))} [N] ${Fx < 0 ? '"down"' : '"up"'}`}, ${T`R = ${s3(f.N)} [N]`}`;
       g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle';
       const tw = Math.min(w - 20, g.measureText(txt).width + 14);
       g.fillStyle = withAlpha('#101418', 0.78); g.fillRect(10, h - 30, tw, 22);

@@ -592,7 +592,7 @@ export const LIBRARY = [
     place: 'A snowy hillside, side on',
     example: { u: 12, alpha: 10, mu: 0.4, m: 0.8, g: 10 },
     parts: [
-      { label: 'a', kind: 'acceleration', ask: 'Find the acceleration of the sledge up the slope.', find: 'a', sym: 'a', unit: 'm s^-2', dp: 2, at: 'f.tTop', step: 'Up the slope', paper: -5.68, tol: 0.005 },
+      { label: 'a', kind: 'acceleration', ask: 'Find the acceleration of the sledge up the slope.', find: 'a', sym: 'a', unit: 'm s^-2', dp: 2, at: 'f.tMid', step: 'Up the slope', paper: -5.68, tol: 0.005 },
       { label: 'b', kind: 'distance', ask: 'Find the distance it moves up the slope before coming to rest.', find: 'sUp', sym: 's', unit: 'm', dp: 1, at: 'f.tTop', step: 'Up the slope', paper: 12.7, tol: 0.05 },
     ],
     sources: [

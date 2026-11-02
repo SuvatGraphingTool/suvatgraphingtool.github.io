@@ -29,6 +29,7 @@ export const rough = {
 
   resolveAxis: 'along',
   resolveFrom: 'where it started',
+  resolveWords: { pos: 'going up the slope', neg: 'going down the slope', plus: 'Up the slope', line: 'along the slope' },
   read(v) { return { u: v.u, alpha: v.alpha, mu: v.mu, m: v.m, g: v.g }; },
   solve: solveRough,
   working: (solved) => roughWorking(solved),

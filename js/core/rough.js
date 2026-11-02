@@ -66,16 +66,17 @@ export function solveRough(k = {}) {
     vBack = snap(Math.sqrt(-2 * aDown * sUp));
     rows.push({ f: M`-m g sin alpha + mu m g cos alpha = ma`, s: M`a = -${d(g)}(sin ${d(alpha)}° - ${d(mu)} cos ${d(alpha)}°)`, r: M`a = ${d(aDown)} [m s^-2]` });
     rows.push({ f: M`v^2 = u^2 + 2as`, s: M`v^2 = 0 + 2 * ${sb(aDown)} * (-${d(sUp)})`, r: M`v = -${d(vBack)} [m s^-1]` });
-    rows.push({ f: M`s = ut + ½at^2`, s: M`-${d(sUp)} = ½ * ${sb(aDown)}t^2`, r: M`t = ${d(tDown)} [s]` });
+    rows.push({ f: M`s = ut + ½at^2`, s: M`-${d(sUp)} = ½ * ${sb(aDown)}t^2`, r: M`t = ${d(tDown)} [s] "from the top"` });
   }
   const tMax = snap(tUp + (stays ? Math.max(1, tUp * 0.4) : tDown));
 
   const notes = [
     `Up the slope, the weight's component and the friction both act against it: a deceleration of ${M`${d(-aUp)} [m s^-2]`}. It comes to rest ${M`${d(sUp)} [m]`} up the slope after ${M`${d(tUp)} [s]`}.`,
     stays ? `There ${M`mu = ${d(mu)}`} is at least ${M`tan ${d(alpha)}° = ${d(snap(tan))}`}, so friction can hold it: it stays at rest.`
+      : mu === 0 ? `With no friction it slides straight back down, at ${M`${d(-aDown)} [m s^-2]`}, the weight's component alone. It is back at the start after another ${M`${d(tDown)} [s]`}, at the ${M`${d(vBack)} [m s^-1]`} it left with.`
       : `There ${M`mu = ${d(mu)}`} is less than ${M`tan ${d(alpha)}° = ${d(snap(tan))}`}: it slides back, with friction now acting up the slope, accelerating at only ${M`${d(-aDown)} [m s^-2]`}. It is back at the start after another ${M`${d(tDown)} [s]`}, at ${M`${d(vBack)} [m s^-1]`} — slower than it left.`,
   ];
-  if (m != null) notes.push(`On ${M`${d(m)} [kg]`} the normal reaction is ${M`${d(snap(m * g * cs))} [N]`} and the friction ${M`${d(snap(mu * m * g * cs))} [N]`}.`);
+  if (m != null) notes.push(`On ${M`${d(m)} [kg]`} the normal reaction is ${M`${d(snap(m * g * cs))} [N]`} and the friction, while it slides, ${M`${d(snap(mu * m * g * cs))} [N]`}${stays ? `; at rest it holds it with just the ${M`${d(snap(m * g * sn))} [N]`} the weight's component needs` : ''}.`);
   const derived = [`${M`a = ${d(aUp)} [m s^-2]`}`, `${M`${d(sUp)} [m]`} up the slope`, stays ? 'stays at rest' : `back at ${M`${d(vBack)} [m s^-1]`}`];
 
   const tTop = tUp;
@@ -86,9 +87,14 @@ export function solveRough(k = {}) {
     const s = c - tTop; return sUp + 0.5 * aDown * s * s;
   };
   const vel = (t) => { const c = Math.min(Math.max(t, 0), tMax); return c <= tTop ? u + aUp * c : stays ? 0 : aDown * (c - tTop); };
-  const acc = (t) => (t <= tTop ? aUp : stays ? 0 : aDown);
+  const acc = (t) => (t < tTop ? aUp : stays ? 0 : aDown);
+  // the friction along the slope, up it positive, in each phase: sliding up it acts down;
+  // held at rest, it is just what the weight's component needs; sliding down, it acts up
+  const W = m != null ? snap(m * g * sn) : null, Fr = m != null ? snap(mu * m * g * cs) : null;
+  const phase = (t) => (t < tTop ? 'up' : stays ? 'rest' : 'down');
+  const friction = (t) => (Fr == null ? null : { up: -Fr, rest: W, down: Fr }[phase(t)]);
   const f = { kind: 'rough', u, alpha, mu, m, g, aUp, aDown, sUp, tUp, tDown, vBack, stays, tTop, tMax, tFlight: tMax, pos, vel, acc,
-    N: m != null ? snap(m * g * cs) : null, Fr: m != null ? snap(mu * m * g * cs) : null, W: m != null ? snap(m * g * sn) : null,
+    N: m != null ? snap(m * g * cs) : null, Fr, W, phase, friction, tMid: snap(tTop / 2),
     params: { u, theta: 0, h: 0, g } };
   return { ok: true, mode: 'rough', a: aUp, decel: snap(-aUp), sUp, tUp, stays, aDown, vBack, tDown, R: f.N, F: f.Fr, rows, notes, derived, f };
 }

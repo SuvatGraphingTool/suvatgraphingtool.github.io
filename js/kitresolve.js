@@ -115,7 +115,9 @@ function blocksFor(o, t, tMax, K, U) {
   const [sN, sNote] = line === 'vertical' ? ['Height', from ? `Up from ${from}.` : 'Up from where heights are measured.']
     : line === 'down' ? ['Distance down', 'Down from where it started.']
     : [from ? `Displacement from ${from}` : 'Displacement', from ? `Along the line, from ${from}.` : 'Along the line, from the start.'];
-  const [pos1, neg1, plus] = down ? ['going down', 'going up', 'Down'] : line === 'along' ? ['going forwards', 'going backwards', 'Forwards'] : ['going up', 'going down', 'Up'];
+  // a kit may name the line's two ways (up and down a slope, say): `resolveWords`
+  const Wd = K?.resolveWords;
+  const [pos1, neg1, plus] = Wd && line === 'along' ? [Wd.pos, Wd.neg, Wd.plus] : down ? ['going down', 'going up', 'Down'] : line === 'along' ? ['going forwards', 'going backwards', 'Forwards'] : ['going up', 'going down', 'Up'];
   const dir = vv > 1e-9 ? pos1 : vv < -1e-9 ? neg1 : 'at rest';
   const part = line === 'along' ? 'x' : 'y';
   // the engine follows it no further from here: an impact, or the end of its run
@@ -133,7 +135,7 @@ function blocksFor(o, t, tMax, K, U) {
         : Math.abs(vv) < 1e-9 ? (Math.abs(aa) < 1e-9 ? 'At rest.' : t < 1e-9 ? 'Starting from rest.' : t >= tMax - 1e-9 ? 'Coming to rest.' : 'Momentarily at rest.')
         : Math.abs(aa) < 1e-9 ? 'Steady: no acceleration.' : aa * vv < 0 ? 'Against the motion: slowing down.' : 'With the motion: speeding up.' });
   }
-  return [{ name: `${who}${line === 'along' ? 'along the line' : 'up and down'}`, hue: '', rows }];
+  return [{ name: `${who}${line === 'along' ? (Wd?.line || 'along the line') : 'up and down'}`, hue: '', rows }];
 }
 
 /** The objects to resolve, from the kit or the motion. */
