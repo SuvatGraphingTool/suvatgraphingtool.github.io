@@ -61,7 +61,7 @@ export function render(canvas, cam, o) {
 
   // ── the slope in its own plane: from the start at the foot (0, 0) up to the top of the run and a little past
   const al = f.alpha * D2R, run = f.sUp * 1.25, D = run * Math.cos(al), H = run * Math.sin(al);
-  const cardW = compact ? 0 : 230;
+  const cardW = compact ? 0 : 262;
   const box = { xLo: -run * 0.18, xHi: D + run * 0.08, yLo: -run * 0.06, yHi: H + run * 0.16 };
   const area = { left: phone ? 14 : HB[0].w + 20, right: w - (compact ? 14 : cardW + 30), top: HB[0].h * (phone ? 1 : 0.55), bottom: h - (compact ? 40 : 26) };
   const { k, X, Y } = fitSide(box, area, { sky: 0.6 });
@@ -100,8 +100,9 @@ export function render(canvas, cam, o) {
   if (fired && t >= f.tTop - 1e-9) {
     const p = along(f.sUp), e = ageOf(t, f.tTop, f.tMax);
     pulse(g, p.x, p.y, e.age, e.life, P.mark, { radius: 36 });
-    L.add(T`${s3(f.sUp)} [m] "up the slope"`, p.x, p.y - Ls * 0.7, { color: P.mark, pri: 9, size: 13, weight: 700 });
-    L.add(f.stays ? 'friction holds it: at rest' : 'too steep: it slides back', p.x, p.y - Ls * 0.7 - 20, { color: P.mark, pri: 8, size: 13, weight: 700 });
+    // one label at the stop, held near it: the distance, and what happens there
+    const then = f.stays ? '"friction holds it"' : f.mu === 0 ? '"no friction: it slides back"' : '"too steep: it slides back"';
+    L.add(T`${s3(f.sUp)} [m] "up the slope," ${then}`, p.x, p.y - Ls * 0.7, { color: P.mark, pri: 10, size: 13, weight: 700, maxPush: 60 });
   }
   if (fired && !f.stays && t >= f.tMax - 1e-9) {
     const e = ageOf(t, f.tMax, f.tMax); pulse(g, foot.x, foot.y, e.age, e.life, P.mark, { radius: 32 });
@@ -110,13 +111,15 @@ export function render(canvas, cam, o) {
 
   // ── the arrows, along the slope from the sledge
   const ux = Math.cos(al), uy = -Math.sin(al);
-  if (show.velocity !== false && Math.abs(v) > 1e-9) {
-    const dir = Math.sign(v), len = clamp((Math.abs(v) / f.u) * 100, 18, 100);
+  // no arrow for a speed that reads as 0; it shortens with the speed, no minimum
+  if (show.velocity !== false && Math.abs(v) >= 0.05 && (Math.abs(v) / f.u) * 100 >= 4) {
+    const dir = Math.sign(v), len = Math.min((Math.abs(v) / f.u) * 100, 100);
     const ax = q.x + dir * ux * Ls * 0.6, ay = q.y + dir * uy * Ls * 0.6 - Ls * 0.42;
     arrow(g, ax, ay, ax + dir * ux * len, ay + dir * uy * len, { color: P.vel, width: 2.6, head: 10 });
     L.add(T`${s3(Math.abs(v))} [m s^-1]`, ax + dir * ux * len + dir * 8, ay + dir * uy * len - 8, { color: P.vel, pri: 8, size: 14, weight: 700, align: dir > 0 ? 'left' : 'right' });
   }
   const a = f.acc(t);
+  // the deceleration is what the scene is about: always shown while it acts, as on the ice
   if (Math.abs(a) > 1e-9) {
     // under the slope, square off it
     const dir = Math.sign(a), bx = q.x - uy * 24, by = q.y + ux * 24;
@@ -130,11 +133,12 @@ export function render(canvas, cam, o) {
     unview(g);
     // the friction the engine gives for this moment: up the slope positive
     const Fx = f.friction(t), ph = f.phase(t), way = Fx < 0 ? '"down the slope"' : '"up the slope"';
-    const fWord = ph === 'rest' ? T`"friction holding it" ${s3(Math.abs(Fx))} [N] ${way}` : T`F = mu R = ${s3(Math.abs(Fx))} [N] ${way}`;
+    const fWord = f.mu === 0 ? 'no friction: a smooth slope' : ph === 'rest' ? T`"friction holding it" ${s3(Math.abs(Fx))} [N] ${way}` : T`F = mu R = ${s3(Math.abs(Fx))} [N] ${way}`;
     if (!compact) {
       const cw = cardW, chh = 150, cx = w - cw - 16, cy = h - chh - 16;
       paper(g, cx, cy, cw, chh);
-      const lab = (txt, x, y, col) => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(txt, x, y, cw - 20); g.restore(); };
+      // never squeezed: the card is wide enough for its longest line at 13 px
+      const lab = (txt, x, y, col) => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(txt, x, y); g.restore(); };
       lab('Up the slope +', cx + 12, cy + 18, P.muted);
       const big = Math.max(f.W, f.Fr, 1e-9), sc = (cw - 60) / 2 / big, x0 = cx + cw / 2;
       arrow(g, x0, cy + 46, x0 - f.W * sc, cy + 46, { color: P.ink, width: 2.4, head: 9 });
@@ -143,11 +147,13 @@ export function render(canvas, cam, o) {
       lab(fWord, cx + 12, cy + 108, P.ink);
       lab(T`R = m g cos alpha = ${s3(f.N)} [N]`, cx + 12, cy + 134, P.muted);
     } else {
-      const txt = `${T`m g sin alpha = ${s3(f.W)} [N] "down"`}, ${ph === 'rest' ? T`"friction" ${s3(Math.abs(Fx))} [N] ${Fx < 0 ? '"down"' : '"up"'}` : T`F = ${s3(Math.abs(Fx))} [N] ${Fx < 0 ? '"down"' : '"up"'}`}, ${T`R = ${s3(f.N)} [N]`}`;
+      const parts = [T`m g sin alpha = ${s3(f.W)} [N] "down"`, f.mu === 0 ? 'no friction' : ph === 'rest' ? T`"friction" ${s3(Math.abs(Fx))} [N] ${Fx < 0 ? '"down"' : '"up"'}` : T`F = ${s3(Math.abs(Fx))} [N] ${Fx < 0 ? '"down"' : '"up"'}`, T`R = ${s3(f.N)} [N]`];
       g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle';
-      const tw = Math.min(w - 20, g.measureText(txt).width + 14);
-      g.fillStyle = withAlpha('#101418', 0.78); g.fillRect(10, h - 30, tw, 22);
-      g.fillStyle = '#e8eaee'; g.fillText(txt, 17, h - 19, w - 34); g.restore();
+      // one line if it fits, else two: never squeezed below 13 px
+      const one = parts.join(', '), lines = g.measureText(one).width + 14 <= w - 20 ? [one] : [parts.slice(0, 2).join(', '), parts[2]];
+      const tw = Math.max(...lines.map((x) => g.measureText(x).width)) + 14, bh = 8 + 18 * lines.length;
+      g.fillStyle = withAlpha('#101418', 0.78); g.fillRect(10, h - bh - 8, tw, bh);
+      g.fillStyle = '#e8eaee'; lines.forEach((x, i) => g.fillText(x, 17, h - bh - 8 + 13 + i * 18)); g.restore();
     }
   }
   return null;

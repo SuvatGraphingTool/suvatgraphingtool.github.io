@@ -47,8 +47,9 @@ export const sink = {
     const y = f.pos(tt) + f.h;
     return {
       left: [
-        y >= -1e-9 ? { k: 'Above the ground', v: num(Math.max(0, y), r != null ? 4 : 2, { trim: r != null }), unit: 'm', hue: 'disp' }
-          : { k: 'Into the ground', v: num(-y, 4, { trim: true }), unit: 'm', hue: 'disp' },
+        // measured as the s–t graph and Resolve measure it: up from A; in the ground, how deep too
+        y >= -1e-9 ? { k: 'Height, up from A', v: num(f.pos(tt), r != null ? 4 : 2, { trim: r != null }), unit: 'm', hue: 'disp' }
+          : { k: `Up from A (${num(-y, 3, { trim: true })} m in)`, v: num(f.pos(tt), 4, { trim: true }), unit: 'm', hue: 'disp' },
         { k: 'Velocity, up +', v: num(f.vel(tt), 2), unit: 'm s⁻¹', hue: 'vel' },
         { k: 'Acceleration, up +', v: num(Number(f.acc(tt).toPrecision(4)), 4, { trim: true }), unit: 'm s⁻²', hue: 'acc' },
       ],
@@ -64,7 +65,7 @@ export const sink = {
     const land = [{ t: f.tLand, y: -f.h, color: P.mark, label: 'lands' }];
     const off = -f.a > 5 * f.g;
     const accAir = (tt) => (off && tt >= f.tLand && tt < f.tRest ? NaN : f.acc(tt));
-    const note = off ? `${T`"in the ground" +${num(-f.a, 1, { trim: true })} [m s^-2]`} for ${T`${num(Number(f.tSink.toPrecision(3)), 6, { trim: true })} [s]`}, off the scale` : null;
+    const note = off ? `${T`"in the ground" ${num(-f.a, 1, { trim: true })} [m s^-2] "up"`} for ${T`${num(Number(f.tSink.toPrecision(3)), 6, { trim: true })} [s]`}, off the scale` : null;
     return [
       { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax: f.tMax, t, series: [{ label: 'up from A', tag: T`s`, fn: f.pos, color: P.disp, dash: null, breaks: cut }], points: land },
       { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash: null, breaks: cut }], points: [{ t: f.tLand, y: -f.vL, color: P.mark }] },

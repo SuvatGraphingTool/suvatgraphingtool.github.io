@@ -33,9 +33,12 @@ export function solveRough(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   const g = have(k.g) ? k.g : 9.8;
   if (!(g > 0)) return fail('g is the size of the acceleration due to gravity: a positive number.');
-  if (!have(k.u) || !(k.u > 0)) return fail('Still needed: its speed up the slope at the start, a positive number.');
-  if (!have(k.alpha) || !(k.alpha > 0 && k.alpha < 90)) return fail('Still needed: the slope’s angle, between 0° and 90°.');
-  if (!have(k.mu) || !(k.mu >= 0)) return fail('Still needed: the coefficient of friction, 0 or more.');
+  if (!have(k.u)) return fail('Still needed: its speed up the slope at the start.');
+  if (!(k.u > 0)) return fail('It is sent up the slope: its speed at the start is a positive number.');
+  if (!have(k.alpha)) return fail('Still needed: the slope’s angle.');
+  if (!(k.alpha > 0 && k.alpha < 90)) return fail('A slope’s angle is between 0° and 90°.');
+  if (!have(k.mu)) return fail('Still needed: the coefficient of friction (0 for a smooth slope).');
+  if (!(k.mu >= 0)) return fail('A coefficient of friction is 0 or more.');
   if (have(k.m) && !(k.m > 0)) return fail('The mass is a positive number of kilograms.');
   const { u, alpha, mu } = k, m = have(k.m) ? k.m : null;
   const sn = Math.sin(alpha * D2R), cs = Math.cos(alpha * D2R);
@@ -43,11 +46,14 @@ export function solveRough(k = {}) {
 
   // ── up the slope: the weight's component and the friction both down it
   const aUp = snap(-g * (sn + mu * cs));
-  if (m != null) {
+  if (m != null && mu > 0) {
     const R = snap(m * g * cs), F = snap(mu * R);
     rows.push({ f: M`R = m g cos alpha`, s: M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(R)} [N]` });
     rows.push({ f: M`F = mu R`, s: M`F = ${d(mu)} * ${d(R)}`, r: M`F = ${d(F)} [N]` });
     rows.push({ f: M`-m g sin alpha - F = ma`, s: M`-${d(m)} * ${d(g)} sin ${d(alpha)}° - ${d(F)} = ${d(m)}a`, r: M`a = ${d(aUp)} [m s^-2]` });
+  } else if (mu === 0) {
+    if (m != null) rows.push({ f: M`R = m g cos alpha`, s: M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(snap(m * g * cs))} [N]` });
+    rows.push({ f: M`-m g sin alpha = ma`, s: M`a = -${d(g)} sin ${d(alpha)}°`, r: M`a = ${d(aUp)} [m s^-2]` });
   } else {
     rows.push({ f: M`-m g sin alpha - mu m g cos alpha = ma`, s: M`a = -${d(g)}(sin ${d(alpha)}° + ${d(mu)} cos ${d(alpha)}°)`, r: M`a = ${d(aUp)} [m s^-2]` });
   }
@@ -64,19 +70,20 @@ export function solveRough(k = {}) {
     aDown = snap(-g * (sn - mu * cs));
     tDown = snap(Math.sqrt((2 * sUp) / -aDown));
     vBack = snap(Math.sqrt(-2 * aDown * sUp));
-    rows.push({ f: M`-m g sin alpha + mu m g cos alpha = ma`, s: M`a = -${d(g)}(sin ${d(alpha)}° - ${d(mu)} cos ${d(alpha)}°)`, r: M`a = ${d(aDown)} [m s^-2]` });
+    rows.push(mu === 0 ? { f: M`-m g sin alpha = ma`, s: M`a = -${d(g)} sin ${d(alpha)}°`, r: M`a = ${d(aDown)} [m s^-2]` }
+      : { f: M`-m g sin alpha + mu m g cos alpha = ma`, s: M`a = -${d(g)}(sin ${d(alpha)}° - ${d(mu)} cos ${d(alpha)}°)`, r: M`a = ${d(aDown)} [m s^-2]` });
     rows.push({ f: M`v^2 = u^2 + 2as`, s: M`v^2 = 0 + 2 * ${sb(aDown)} * (-${d(sUp)})`, r: M`v = -${d(vBack)} [m s^-1]` });
     rows.push({ f: M`s = ut + ½at^2`, s: M`-${d(sUp)} = ½ * ${sb(aDown)}t^2`, r: M`t = ${d(tDown)} [s] "from the top"` });
   }
   const tMax = snap(tUp + (stays ? Math.max(1, tUp * 0.4) : tDown));
 
   const notes = [
-    `Up the slope, the weight's component and the friction both act against it: a deceleration of ${M`${d(-aUp)} [m s^-2]`}. It comes to rest ${M`${d(sUp)} [m]`} up the slope after ${M`${d(tUp)} [s]`}.`,
+    `Up the slope, ${mu === 0 ? "with no friction, only the weight's component acts against it" : "the weight's component and the friction both act against it"}: a deceleration of ${M`${d(-aUp)} [m s^-2]`}. It comes to rest ${M`${d(sUp)} [m]`} up the slope after ${M`${d(tUp)} [s]`}.`,
     stays ? `There ${M`mu = ${d(mu)}`} is at least ${M`tan ${d(alpha)}° = ${d(snap(tan))}`}, so friction can hold it: it stays at rest.`
       : mu === 0 ? `With no friction it slides straight back down, at ${M`${d(-aDown)} [m s^-2]`}, the weight's component alone. It is back at the start after another ${M`${d(tDown)} [s]`}, at the ${M`${d(vBack)} [m s^-1]`} it left with.`
       : `There ${M`mu = ${d(mu)}`} is less than ${M`tan ${d(alpha)}° = ${d(snap(tan))}`}: it slides back, with friction now acting up the slope, accelerating at only ${M`${d(-aDown)} [m s^-2]`}. It is back at the start after another ${M`${d(tDown)} [s]`}, at ${M`${d(vBack)} [m s^-1]`} — slower than it left.`,
   ];
-  if (m != null) notes.push(`On ${M`${d(m)} [kg]`} the normal reaction is ${M`${d(snap(m * g * cs))} [N]`} and the friction, while it slides, ${M`${d(snap(mu * m * g * cs))} [N]`}${stays ? `; at rest it holds it with just the ${M`${d(snap(m * g * sn))} [N]`} the weight's component needs` : ''}.`);
+  if (m != null) notes.push(`On ${M`${d(m)} [kg]`} the normal reaction is ${M`${d(snap(m * g * cs))} [N]`}${mu === 0 ? ', and there is no friction' : ` and the friction, while it slides, ${M`${d(snap(mu * m * g * cs))} [N]`}`}${stays ? `; at rest it holds it with just the ${M`${d(snap(m * g * sn))} [N]`} the weight's component needs` : ''}.`);
   const derived = [`${M`a = ${d(aUp)} [m s^-2]`}`, `${M`${d(sUp)} [m]`} up the slope`, stays ? 'stays at rest' : `back at ${M`${d(vBack)} [m s^-1]`}`];
 
   const tTop = tUp;
@@ -104,7 +111,7 @@ export function roughWorking(s) {
   if (!s?.ok) return [];
   const up = s.rows.findIndex((r) => /tan/.test(r.f));
   return [
-    { title: 'Up the slope: friction and weight both against it', rows: s.rows.slice(0, up + 1),
+    { title: s.f.mu === 0 ? 'Up the slope: only the weight against it' : 'Up the slope: friction and weight both against it', rows: s.rows.slice(0, up + 1),
       note: `Up the slope is positive. Perpendicular to the slope nothing moves, so ${M`R = m g cos alpha`}; sliding, the friction is ${M`mu R`}, against the motion.` },
     ...(s.stays ? [] : [{ title: 'Back down: friction now up the slope', rows: s.rows.slice(up + 1),
       note: 'Friction always opposes the sliding: on the way down it acts up the slope, so it speeds up more gently than it slowed down.' }]),

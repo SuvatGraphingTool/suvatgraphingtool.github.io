@@ -83,10 +83,10 @@ export function solveSink(k = {}) {
       // the launch is not a time it comes to a height; two roots that would print alike are one
       tAt = [t1, t2].filter((x) => x > 1e-9 && x <= tLand + 1e-9);
       // a height within a rounding of the top is the top
-      if (Math.abs(t2 - t1) < 1e-3 || d(t1) === d(t2) || Math.abs(yAsk - H) < 1e-3 * Math.max(1, H)) tAt = [tTop];
+      if (u > 0 && (Math.abs(t2 - t1) < 1e-3 || d(t1) === d(t2) || Math.abs(yAsk - H) < 1e-3 * Math.max(1, H))) tAt = [tTop];
     }
     air.push({ f: M`s = ut + ½at^2`, s: M`${d(yAsk)} = ${ut(u)}${d(g / 2)}t^2`,
-      r: tAt.length === 0 ? `it never rises that high: its greatest height is ${M`${d(H)} [m]`}` : M`t = ${tAt.map(d).join(' "or" ')} [s]` });
+      r: tAt.length === 0 ? (u === 0 && Math.abs(yAsk) < 1e-9 ? 'it starts there, and only falls from it' : `it never rises that high: its greatest height is ${M`${d(H)} [m]`}`) : M`t = ${tAt.map(d).join(' "or" ')} [s]` });
   }
 
   // ── in the ground: down positive. F = ma, then v² = u² + 2as to rest
@@ -101,6 +101,7 @@ export function solveSink(k = {}) {
     rows.push({ f: M`v^2 = u^2 + 2as`, s: M`0 = ${d(vL)}^2 + 2 * ${sb(a)}s`, r: M`s = ${d(depth)} [m]` });
   } else {
     depth = k.depth;
+    if (depth > 100) return fail('A sink of more than 100 m is not soft ground: give how far it sinks in metres, a few centimetres or so.');
     a = snap(-v2 / (2 * depth));
     rows.push({ f: M`v^2 = u^2 + 2as`, s: M`0 = ${d(vL)}^2 + 2a * ${d(depth)}`, r: M`a = ${d(a)} [m s^-2]` });
     if (m != null) {
@@ -137,9 +138,9 @@ export function solveSink(k = {}) {
     `${u === 0 ? 'Released from rest at A, it' : `It leaves A at ${M`${d(u)} [m s^-1]`}, rises ${M`${d(H)} [m]`} above it, and`} reaches the ground ${M`${d(tLand)} [s]`} after it was ${u === 0 ? 'let go' : 'projected'}, moving at ${M`${d(vL)} [m s^-1]`}.`,
     `In the ground the resistance outweighs the weight: a deceleration of ${M`${d(-a)} [m s^-2]`}${R != null ? `, from a resistance of ${M`${d(R)} [N]`}` : ''}. It sinks ${M`${d(depth)} [m]`} in ${M`${d(tSink)} [s]`} and stops.`,
   ];
-  if (tAt) notes.push(tAt.length === 0 ? `It never reaches ${M`${d(yAsk)} [m]`} above A: it rises only ${M`${d(H)} [m]`}.`
-    : Math.abs(yAsk + h) < 1e-9 ? `${M`${d(h)} [m]`} below A is the ground: it gets there at ${M`${d(tAt[0])} [s]`}.`
-      : Math.abs(yAsk) < 1e-9 ? `It is back at A at ${M`${d(tAt[0])} [s]`}, on its way down.`
+  if (tAt) notes.push(tAt.length === 0 ? (u === 0 && Math.abs(yAsk) < 1e-9 ? 'It starts at A and only falls from there: it is never back at A.' : `It never reaches ${M`${d(yAsk)} [m]`} above A: it rises only ${M`${d(H)} [m]`}.`)
+    : Math.abs(yAsk) < 1e-9 ? `It is back at A${h > 0 ? '' : ', on the ground,'} at ${M`${d(tAt[0])} [s]`}${h > 0 ? ', on its way down' : ''}.`
+      : Math.abs(yAsk + h) < 1e-9 ? `${M`${d(h)} [m]`} below A is the ground: it gets there at ${M`${d(tAt[0])} [s]`}.`
         : tAt.length === 1 ? `It is ${M`${d(Math.abs(yAsk))} [m]`} ${yAsk < 0 ? 'below' : 'above'} A once, at ${M`${d(tAt[0])} [s]`}${Math.abs(tAt[0] - tTop) < 1e-3 ? ', at the top' : ', on its way down'}.`
           : `It is ${M`${d(yAsk)} [m]`} above A twice: at ${M`${d(tAt[0])} [s]`} on the way up and ${M`${d(tAt[1])} [s]`} on the way down.`);
   const derived = [`${M`u = ${d(u)} [m s^-1]`}`, `lands after ${M`${d(tLand)} [s]`}`, R != null ? `${M`R = ${d(R)} [N]`}` : `${M`a = ${d(a)} [m s^-2]`}`, `sinks ${M`${d(depth)} [m]`}`];

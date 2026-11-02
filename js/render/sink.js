@@ -212,10 +212,11 @@ export function render(canvas, cam, o) {
   }
   if (show.acceleration !== false && t < f.tLand && fired && t > 0) {
     // out of the falling velocity's way; above the ball when there is no room below it
-    const ax = q.x + (v < 0 ? 44 : 30), y0 = q.y + 50 > h - 8 ? q.y - 46 : q.y + 6;
+    // falling, it goes to the left of the way up, clear of the falling velocity on the right
+    const fall = v < 0, ax = fall ? bx - 22 : q.x + 30, y0 = q.y + 50 > h - 8 ? q.y - 46 : q.y + 6;
     arrow(g, ax, y0, ax, y0 + 40, { color: P.acc, width: 2.2, head: 9 });
     L.reserve({ x: ax - 6, y: y0, w: 12, h: 40 });
-    L.add(T`${s3(f.g)} [m s^-2]`, ax + 8, y0 + 22, { color: P.acc, pri: 7, size: 13, weight: 700, align: 'left' });
+    L.add(T`${s3(f.g)} [m s^-2]`, fall ? ax - 8 : ax + 8, y0 + 22, { color: P.acc, pri: 7, size: 13, weight: 700, align: fall ? 'right' : 'left' });
   }
   if (t >= f.tRest - 1e-9) { const e = ageOf(t, f.tRest, f.tMax, Math.max(0.4, f.tMax * 0.15)); pulse(g, lx, oy, e.age, e.life, P.mark, { radius: 18 }); }
   L.draw(g, w, h);

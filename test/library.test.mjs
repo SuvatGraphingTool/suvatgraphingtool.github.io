@@ -1695,6 +1695,9 @@ group('CIE 9709/41 May/Jun 2017 Q2: up a rough slope', () => {
   ok(b.ok && !b.stays && b.vBack < 6 && Math.abs(b.f.pos(b.f.tMax)) < 1e-9 && b.f.vel(b.f.tMax) < 0, 'a steep slope: it slides back, and reaches the start slower than it left');
   ok(solveRough({ u: 12, alpha: 10, mu: 0.4, g: 10 }).a === s.a, 'the mass cancels from the acceleration');
   ok(!solveRough({ u: 12, alpha: 95, mu: 0.4 }).ok && !solveRough({ u: 12, alpha: 10, mu: -0.1 }).ok, 'a bad angle or μ is refused');
+  { const z = solveRough({ u: 5, alpha: 30, mu: 0, m: 2, g: 9.8 }), strip = (x) => String(x).replace(/<[^>]+>/g, '');
+    ok(z.ok && !/friction both/.test(z.notes[0]) && !z.notes.some((x) => /0\s*N\b/.test(strip(x)) && /friction/.test(x)) && !z.rows.some((r) => /0cos/.test(strip(r.s))), 'μ = 0: no friction in the words, no zero term in the working'); }
+  ok(/A slope’s angle is between/.test(solveRough({ u: 12, alpha: 95, mu: 0.4 }).reason), 'an angle out of range is said as out of range, not as missing');
 });
 
 group('Edexcel M1 Jan 2003 Q7 and Jun 2012 Q5: into soft ground', () => {
@@ -1718,6 +1721,12 @@ group('Edexcel M1 Jan 2003 Q7 and Jun 2012 Q5: into soft ground', () => {
   ok(!solveSink({ h: 10, vL: -14, m: 1, R: 100 }).ok && solveSink({ h: 1, H: 0, m: 1, R: 100 }).u === 0, 'a negative speed is refused as a speed; a greatest height of 0 is a drop');
   ok(solveSink({ h: 1, u: 5, y: 1.2755, m: 1, R: 100, g: 9.8 }).tAt.length === 1 && solveSink({ h: 1, u: 5, y: 0, m: 1, R: 100, g: 9.8 }).tAt.length === 1, 'roots that print alike are one; the launch is not a time it is back at A');
   ok(!solveSink({ h: 1, u: 1, m: 1, R: 9.81, g: 9.8 }).ok, 'a resistance hardly above the weight, sinking a kilometre, is refused');
+  { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
+    const drop = solveSink({ h: 5, u: 0, y: 0, m: 1, R: 100, g: 9.8 });
+    ok(drop.tAt.length === 0 && drop.notes.some((x) => /only falls/.test(x)), 'dropped from A, asked when it is at A: never again, and it says so');
+    const flat = solveSink({ h: 0, u: 6, y: 0, m: 1, R: 100, g: 9.8 });
+    ok(flat.tAt.length === 1 && flat.notes.some((x) => /back at A, on the ground,/.test(strip(x))), 'A on the ground: back at A, on the ground — not "0 m below A"'); }
+  ok(!solveSink({ h: 1.5, u: 5, m: 1, depth: 2000, g: 9.8 }).ok, 'a depth of kilometres is refused, as a resistance that would give one is');
 });
 
 group('Resolve opens on every library stage, from its engine', () => {

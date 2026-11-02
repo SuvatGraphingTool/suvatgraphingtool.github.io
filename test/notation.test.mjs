@@ -684,6 +684,25 @@ group('The Past-paper library: under the ceiling, everything it says', () => {
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
+group('The Past-paper library: up a rough slope, everything it says', () => {
+  const K = KITS.rough, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ u: 12, alpha: 10, mu: 0.4, m: 0.8, g: 10 }, { u: 6, alpha: 30, mu: 0.2 }, { u: 5, alpha: 30, mu: 0, m: 2 }, { u: 5, alpha: 1, mu: 0 },
+    { u: 5, alpha: 45, mu: 1, m: 1 }, { u: -3, alpha: 10, mu: 0.2 }, { u: 5, alpha: 95, mu: 0.2 }, { u: 5, alpha: 10, mu: -1 }, { u: 5, alpha: 10, mu: 0.2, m: 0 }, {}]) {
+    const r = K.solve({ g: 9.8, ...k });
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tTop * 0.5, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('The Past-paper library: into soft ground, everything it says', () => {
   const K = KITS.sink, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
   const bag = [];

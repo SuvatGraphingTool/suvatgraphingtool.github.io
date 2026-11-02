@@ -592,9 +592,12 @@ export const LIBRARY = [
     place: 'A field cut away to its soil, side on, with a magnifier on the spot where it lands',
     example: { h: 1.5, H: 25.6, m: 0.6, depth: 0.025, g: 9.8 },
     parts: [
-      { label: 'a', kind: 'speed', ask: 'Show that the ball was projected at 22.4 m s⁻¹.', find: 'u', sym: 'u', unit: 'm s^-1', trim: true, at: 'f.tTop', step: 'In the air', paper: 22.4 },
+      { label: 'a', kind: 'show', ask: 'Show that the ball was projected at 22.4 m s⁻¹.', find: 'u', sym: 'u', unit: 'm s^-1', trim: true, at: 'f.tTop', step: 'In the air', paper: 22.4 },
       { label: 'b', kind: 'time', ask: 'Find, to 2 decimal places, the time it takes to reach the ground.', find: 'T', sym: 'T', unit: 's', dp: 2, at: 'f.tLand', step: 'In the air', paper: 4.64, tol: 0.005 },
-      { label: 'c', kind: 'force', ask: 'The 0.6 kg ball sinks 2.5 cm into the ground. Find the ground’s constant resistive force, to 3 significant figures.', find: 'R', sym: 'R', unit: 'N', dp: 0, at: 'end', step: 'In the ground', paper: 6380, tol: 0.5 },
+      { label: 'c', kind: 'force', ask: 'The 0.6 kg ball sinks 2.5 cm into the ground. Find the ground’s constant resistive force, to 3 significant figures.', find: 'R', sym: 'R', unit: 'N', dp: 0, at: 'f.tRest', step: 'In the ground', paper: 6380, tol: 0.5 },
+    ],
+    answers: [
+      { kind: 'distance', say: 'how far it sinks into the ground', find: 'depth', sym: 's', unit: 'm', dp: 3, at: 'f.tRest', step: 'In the ground', example: { h: 17.5, vL: 28, m: 4, R: 5000, g: 9.8 } },
     ],
     sources: [
       { board: 'Edexcel', paper: '6677 M1', session: 'Jan 2003', q: '7', part: 'all' },
