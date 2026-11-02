@@ -55,7 +55,7 @@ export const lift = {
     return [
       { canvas: 'g-s', title: 'Height risen–time', unit: 'm', tMax: f.tMax, t, points: stops.map((tt) => ({ t: tt, y: f.pos(tt).x, color: P.mark })),
         series: [{ label: 'height risen', tag: T`s`, fn: (tt) => f.pos(tt).x, color: P.disp, dash: null }] },
-      { canvas: 'g-v', title: 'Velocity–time, up positive (the area is the height risen)', unit: 'm s⁻¹', tMax: f.tMax, t, points: stops.map((tt) => ({ t: tt, y: f.vel(tt).x, color: P.mark })),
+      { canvas: 'g-v', title: 'Velocity–time, up + (area: height risen)', unit: 'm s⁻¹', tMax: f.tMax, t, points: stops.map((tt) => ({ t: tt, y: f.vel(tt).x, color: P.mark })),
         series: [{ label: 'velocity', tag: T`v`, fn: (tt) => f.vel(tt).x, color: P.vel, dash: null }] },
       { canvas: 'g-a', title: 'Acceleration–time, up positive', unit: 'm s⁻²', tMax: f.tMax, t,
         series: [{ label: 'acceleration', tag: T`a`, fn: at0(f.accel), color: P.acc, dash: null }] },

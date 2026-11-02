@@ -29,8 +29,14 @@ export function render(canvas, cam, o) {
   // floors about 3 m apart, so many that the lift stops level with a landing
   const D = f.range, STOREY = D / Math.max(1, Math.round(D / 3)), floors = Math.round(D / STOREY) + 2, Hb = floors * STOREY + 1.2;
   const box = { xLo: -5.5, xHi: 6.5, yLo: -1.2, yHi: Hb + 1 };
-  // a stage drawn over this one (the forces on a card) may keep room on the right: `o.keepRight`
-  const area = { left: HB[0].w + (phone ? 8 : 24), right: w - (phone ? 10 : 18) - (o.keepRight || 0), top: phone ? HB[1].h + 8 : 24, bottom: h - 12 - (o.keepBottom || 0) };
+  // a stage drawn over this one (the forces on a card) may keep room on the right, at the
+  // bottom, or a rectangle of its own (`o.keepRight`, `o.keepBottom`, `o.keepRect`): the building
+  // stays out of it and so do the labels; with a card, the roof clears the Resolve and Time boxes too
+  const kept = o.keepRight || o.keepBottom || o.keepRect;
+  const area = { left: HB[0].w + (phone ? 8 : 24), right: w - (phone ? 10 : 18) - (o.keepRight || 0), top: phone || kept ? HB[1].h + 8 : 24, bottom: h - 12 - (o.keepBottom || 0) };
+  if (o.keepRight) L.reserve({ x: w - o.keepRight, y: 0, w: o.keepRight, h });
+  if (o.keepBottom) L.reserve({ x: 0, y: h - o.keepBottom, w, h: o.keepBottom });
+  if (o.keepRect) L.reserve(o.keepRect);
   const { k, X, Y } = fitSide(box, area, { sky: 0.5 });
   const oy = Y(0);
   skyscape(g, 0, 0, w, oy - 30, { seed: 91, far: 'skyline' });
@@ -116,7 +122,8 @@ export function render(canvas, cam, o) {
     arrow(g, ax, ymid, ax, ymid - len, { color: P.vel, width: 2.6, head: 10 });
     L.add(T`${sig3(v)} [m s^-1]`, ax + 10, ymid - len * 0.6, { color: P.vel, align: 'left', pri: 8, size: 13, weight: 700 });
   }
-  if (Math.abs(a) > 1e-9 && t < f.tMax - 1e-9) {
+  // not before it sets off: standing at the bottom nothing accelerates it yet
+  if (fired && Math.abs(a) > 1e-9 && t < f.tMax - 1e-9) {
     const len = clamp(Math.abs(a) * k * 4, 14, 60) * Math.sign(a), axx = cx0 - 18;
     arrow(g, axx, ymid, axx, ymid - len, { color: P.acc, width: 2.4, head: 9 });
     L.add(T`${sig3(a)} [m s^-2]`, axx - 10, ymid - len * 0.6, { color: P.acc, align: 'right', pri: 7, size: 13, weight: 700 });
@@ -126,7 +133,8 @@ export function render(canvas, cam, o) {
   // floor it is passing, the passenger, and the doors opening when it stops
   if (!phone) {
     const ix1 = wx0 - 40, iw = Math.min(170, ix1 - (HB[0].w + 30)), ih = iw * 1.15;
-    if (iw > 110) {
+    // only where it fits on the canvas above the ground
+    if (iw > 110 && oy - iw * 1.15 - 10 >= 30) {
       const ix0 = ix1 - iw, iy0 = clamp((cy0 + cy1) / 2 - ih / 2, 30, oy - ih - 10);
       g.save();
       g.fillStyle = withAlpha('#000000', 0.18); g.fillRect(ix0 + 4, iy0 + 5, iw, ih);
@@ -158,5 +166,7 @@ export function render(canvas, cam, o) {
     }
   }
   L.draw(g, w, h);
+  // where the car is, for a stage drawn over this one to point at it
+  if (o.out) o.out.car = { x: (cx0 + cx1) / 2, y: (cy0 + cy1) / 2, x0: cx0, x1: cx1 };
   return null;
 }

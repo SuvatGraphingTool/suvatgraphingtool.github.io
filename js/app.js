@@ -2937,7 +2937,9 @@ function draw() {
                  hoverMark: state.hoverMark,
                  markers: state.markers || {}, scenario, secondLabel: scenario.second?.label,
                  who: state.who,
-                 resolve: R, hover: state.hover };
+                 resolve: R, hover: state.hover,
+                 // the part on show, so a stage can mark what it asks for
+                 askPart: state.part >= 0 ? state.runs?.[state.part]?.part || null : null };
   /* ── which renderer, and why there are two ────────────────────────────
      `plate` hands a scenario to js/render/exhibit.js instead of to the
      side-on view: the strobe photograph, with its own dark plate, its own
