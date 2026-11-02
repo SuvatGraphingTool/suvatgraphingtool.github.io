@@ -135,6 +135,8 @@ export function solveDrive(k = {}) {
 
   const f = { kind: 'drive', way, ways: done.map((w) => w.name), find, m, g, u, s, sinA: sn, alpha: have(k.alpha) ? k.alpha : alpha, angleGiven: have(k.alpha) ? 'alpha' : have(k.h) ? 'h' : 'sinA', h: have(k.h) ? k.h : null, W,
     up: by.up?.ok ? by.up : null, down: by.down?.ok ? by.down : null, failed: all.filter((w) => !w.ok).map((w) => w.name),
+    // a way that does not cover the distance, in a few words for the stage: from the engine's own reason
+    stalled: all.filter((w) => !w.ok).map((w) => ({ name: w.name, short: /slows to rest/.test(w.why) ? 'slows to rest short of the end' : /balance/.test(w.why) ? 'the forces balance: it does not get going' : 'it does not get going' })),
     tUp: by.up?.ok ? by.up.t : null, tDown: by.down?.ok ? by.down.t : null, tMax, tFlight: tMax, tMid: snap(tEnd / 2), params: { u: 0, theta: 0, h: 0, g } };
   return { ok: true, mode: 'drive', way, find, W, sinA: sn,
     aUp: by.up?.a ?? null, aDown: by.down?.a ?? null, vUp: by.up?.ok ? by.up.v : null, vDown: by.down?.ok ? by.down.v : null,

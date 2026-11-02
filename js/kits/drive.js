@@ -89,7 +89,7 @@ export const drive = {
       <path d="M0 46 L20 46 L104 22 L120 22" stroke="#4d5157" stroke-width="5" fill="none"/>
       <path d="M20 46 L104 22" stroke="#ffffff" stroke-width="0.8" stroke-dasharray="4 4" fill="none"/>
       <g transform="translate(40 40) rotate(-16)"><rect x="-10" y="-8" width="20" height="6" rx="2" fill="#7f90a6"/><circle cx="-6" cy="-1" r="2" fill="#222"/><circle cx="6" cy="-1" r="2" fill="#222"/></g>
-      <g transform="translate(86 27) rotate(-16)"><rect x="-10" y="-8" width="20" height="6" rx="2" fill="#c45a4a" stroke="#db2777"/><circle cx="-6" cy="-1" r="2" fill="#222"/><circle cx="6" cy="-1" r="2" fill="#222"/></g>
+      <g transform="translate(86 27) rotate(-16)"><rect x="-10" y="-8" width="20" height="6" rx="2" fill="#b03a32"/><circle cx="-6" cy="-1" r="2" fill="#222"/><circle cx="6" cy="-1" r="2" fill="#222"/></g>
     </svg>`;
   },
 

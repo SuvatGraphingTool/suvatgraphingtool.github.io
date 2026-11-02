@@ -47,9 +47,11 @@ export function yScale(series, tMax) {
  */
 export function endTags(series, tMax, Y, yTop, yBot, gap = 18) {
   const tags = series.filter((s) => s.tag).map((s) => {
-    const v = s.fn(tMax - tMax * 1e-6);
+    // a line that stops before the graph's end (its motion is over) is tagged where it stops
+    let tEnd = tMax - tMax * 1e-6, v = s.fn(tEnd);
+    for (let i = 1; i <= 400 && !isFinite(v); i++) { tEnd = tMax * (1 - i / 400) - tMax * 1e-6; v = s.fn(tEnd); }
     const y0 = Math.min(Math.max(Y(isFinite(v) ? v : 0), yTop), yBot);
-    return { tag: s.tag, color: s.color, y0, y: y0 };
+    return { tag: s.tag, color: s.color, y0, y: y0, tEnd: isFinite(v) ? tEnd : tMax };
   }).sort((a, b) => a.y0 - b.y0);
   // spread: push down from the top, then back up from the bottom
   for (let i = 1; i < tags.length; i++) tags[i].y = Math.max(tags[i].y, tags[i - 1].y + gap);
@@ -71,7 +73,10 @@ export function drawGraph(canvas, spec) {
   ctx.fillStyle = P.card; ctx.fillRect(0, 0, w, h);
   // a graph whose lines carry letters keeps a margin on the right for them
   const lettered = series.some((s) => s.tag);
-  const gw = w - PAD.l - PAD.r - (lettered ? TAG_MARGIN : 0), gh = h - PAD.t - PAD.b;
+  // wide enough for the widest letter or word a line carries
+  let tagRoom = TAG_MARGIN;
+  if (lettered) { ctx.save(); ctx.font = `800 15px ${cssVar('--font', 'system-ui, sans-serif')}`; for (const s of series) if (s.tag) tagRoom = Math.max(tagRoom, ctx.measureText(s.tag).width + 18); ctx.restore(); }
+  const gw = w - PAD.l - PAD.r - (lettered ? tagRoom : 0), gh = h - PAD.t - PAD.b;
 
   const { lo, hi, stepY } = yScale(series, tMax);
 
@@ -152,6 +157,10 @@ export function drawGraph(canvas, spec) {
   if (lettered) {
     const xe = PAD.l + gw;
     for (const tg of endTags(series, tMax, Y, PAD.t + 6, PAD.t + gh)) {
+      // a line that stopped early: a faint leader from where it stopped to the margin, in the axis
+      // colour (a dashed line in a quantity's hue would read as a horizontal component, rule 2)
+      const xs = X(tg.tEnd);
+      if (xs < xe - 6) stroke(ctx, [{ x: xs + 4, y: tg.y0 }, { x: xe + 2, y: tg.y0 }], { color: P.axis, width: 1, alpha: 0.6, dash: [2, 3] });
       if (tg.leader) stroke(ctx, [{ x: xe + 2, y: tg.y0 }, { x: xe + 9, y: tg.y }], { color: tg.color, width: 1.2 });
       ctx.save();
       ctx.font = `800 15px ${cssVar('--font', 'system-ui, sans-serif')}`;
