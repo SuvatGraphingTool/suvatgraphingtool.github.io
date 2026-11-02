@@ -1558,6 +1558,14 @@ group('A ball that bounces: the impulse from the ground (Edexcel M1 June 2018 Q4
   ok(found.ok && near(found.params.I, 7) && !found.params.Igiven, 'the mass alone: the impulse is found, 7 N s');
   ok(!solveBounce({ start: 'down', h: 2.5, w: 10, I: 7, g: 9.8 }).ok, 'an impulse with no mass is refused, in words');
   ok(!solveBounce({ start: 'down', h: 2.5, w: 10, m: 0.2, I: 1, g: 9.8 }).ok, 'an impulse too small for the rebound is refused');
+  // the step itself, js/core/impulse.js — for the builder's kicks and catches too
+  const { impulseLink } = await import('../js/core/impulse.js');
+  const up = impulseLink({ m: 0.2, I: 7, v: 10 });
+  ok(up.ok && up.found === 'u' && near(up.u, -25) && /7=0\.2\(10−u\)/.test(strip(up.row.s)), 'impulseLink: I = m(v − u) finds the velocity before, signed, with its row');
+  ok(near(impulseLink({ m: 0.2, I: 7, u: -25 }).v, 10) && near(impulseLink({ m: 0.2, u: -25, v: 10 }).I, 7), 'and the velocity after, or the impulse');
+  ok(near(impulseLink({ m: 0.45, u: 0, v: 20 }).I, 9), 'a kick from rest: 0.45 kg to 20 m s⁻¹ is 9 N s');
+  ok(near(impulseLink({ m: 0.15, u: 12, v: 0 }).I, -1.8), 'a catch: the impulse is against the motion');
+  ok(!impulseLink({ m: 0.2, I: 7 }).ok && !impulseLink({ I: 7, u: 1 }).ok && !impulseLink({ m: 0.2, I: 9, u: -25, v: 10 }).ok, 'too little, no mass, or three that disagree: refused in words');
 });
 
 /* ── a question in parts ────────────────────────────────────────────── */

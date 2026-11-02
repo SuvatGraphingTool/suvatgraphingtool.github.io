@@ -418,6 +418,18 @@ mark, and where a wall that high is cleared.
 
 Used by: `over-the-wall`.
 
+### An impulse — `js/core/impulse.js`
+
+`impulseLink({ m, I, u, v })` — the one momentum step a SUVAT motion takes,
+along one line: I = m(v − u), with u just before and v just after, signed the
+same way as I. Give the mass and any two of I, u, v; the third comes back with
+the working row that found it (`row: { f, s, r }`, set as maths), or
+`{ ok: false, reason }` — no mass, too little, or three that disagree. In scope
+(build-rules.md) as a link between flights: a bounce, a kick, a catch. Never a
+collision between two bodies or a force over a time.
+
+Used by: `bounce` (up positive: before is −V, after +w, so I = m(w + V)).
+
 ### A ball that bounces — `js/core/bounce.js`
 
 `solveBounce({ start, h, U, V, w, H, e, m, I, n, y, stop, axis, g })` — `start` is

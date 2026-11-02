@@ -31,6 +31,7 @@
 
 import { staged, toLevel, rebound, timesAt, quadRoots } from './stages.js';
 import { snap } from './numeric.js';
+import { impulseLink } from './impulse.js';
 import { M, num } from '../notation.js';
 
 const EPS = 1e-9;
@@ -105,24 +106,23 @@ export function solveBounce(k = {}) {
   }
   const notes = [];
 
-  /* ── the impulse at the bounce: I = m(v_after + v_before) ────────────────
-     The one momentum step this engine takes, for a vertical bounce only: the
-     ball arrives going down and leaves going up, so the change in its
-     momentum is the mass times the two SPEEDS added. With the mass, the
-     impulse fixes their sum — so the rebound gives the impact speed, or the
-     impact speed gives the rebound. With the mass alone, the impulse is
-     found. Nothing else here is momentum (design/components.md). */
+  /* ── the impulse at the bounce: I = m(v − u), js/core/impulse.js ────────
+     The one momentum step this engine takes. Up positive, the ball arrives
+     at −V and leaves at +w, so I = m(w + V): with the mass, the impulse
+     fixes the two speeds' sum — the rebound gives the impact speed, or the
+     impact speed gives the rebound — and with the mass alone the impulse
+     is found. Nothing else here is momentum (design/components.md). */
   const mass = have(k.m) ? k.m : null, I = have(k.I) ? k.I : null;
   if (I != null && mass == null) return fail('An impulse changes the momentum, so it needs the mass of the ball too: give the mass.');
   if (mass != null && !(mass > EPS)) return fail('The mass of the ball must be more than 0.');
-  const sum = I != null ? I / mass : null;                 // v_after + v_before, as speeds
+  const sum = I != null ? I / mass : null;                 // w + V, as speeds
 
   /* ── the throw: any two of h, U, V (released: U is 0) ────────────────── */
   let h = k.h, U = k.U, V = k.V;
   const found = {};
   // the rebound and the impulse give the impact speed
   if (sum != null && have(k.w) && !have(V)) {
-    V = sum - k.w;
+    V = -impulseLink({ m: mass, I, v: k.w }).u;
     if (!(V > EPS)) return fail(`An impulse of ${M`${d(I)} [N s]`} on ${M`${d(mass)} [kg]`} is only enough to send it back up at ${M`${sf(sum)} [m s^-1]`} from rest: with a rebound of ${M`${d(k.w)} [m s^-1]`} it would have to arrive with no speed at all. Check the impulse, the mass and the rebound speed.`);
     found.Vimp = true;
   }
@@ -176,7 +176,7 @@ export function solveBounce(k = {}) {
     if (!(k.T > EPS)) return fail('The time after the bounce is after it, so it must be more than 0.');
     asked.push({ key: 'T', w: (k.y + 0.5 * g * k.T * k.T) / k.T, say: `being ${M`${d(k.y)} [m]`} up ${M`${d(k.T)} [s]`} after the bounce` });
   }
-  if (sum != null && !found.Vimp) asked.push({ key: 'I', w: sum - V, say: `takes an impulse of ${M`${d(I)} [N s]`}` });
+  if (sum != null && !found.Vimp) asked.push({ key: 'I', w: impulseLink({ m: mass, I, u: -V }).v, say: `takes an impulse of ${M`${d(I)} [N s]`}` });
   if (asked.length && asked[0].key === 'I' && !(asked[0].w > EPS)) {
     return fail(`An impulse of ${M`${d(I)} [N s]`} on ${M`${d(mass)} [kg]`} only stops a ball arriving at ${M`${sf(V)} [m s^-1]`}${asked[0].w < -EPS ? ', and not even that' : ''}: it would not bounce. Check the impulse and the mass.`);
   }
@@ -267,7 +267,7 @@ export function solveBounce(k = {}) {
     ...(stopAt ? [`${M`${sf(stopAt.since)} [s]`} from the bounce to ${M`${d(y)} [m]`} up`]
       : [`${ordinal(n)} impact at ${M`t = ${sf(last.t)} [s]`}`]),
   ];
-  if (mass != null && I == null) derived.push(`an impulse of ${M`${sf(mass * (w + V))} [N s]`} from the ground`);
+  if (mass != null && I == null) derived.push(`an impulse of ${M`${sf(impulseLink({ m: mass, u: -V, v: w }).I)} [N s]`} from the ground`);
   if (found.h) derived.unshift(`starts ${M`${sf(h)} [m]`} up`);
   if (found.U && U > 1e-6) derived.unshift(`thrown at ${M`${sf(U)} [m s^-1]`}`);
 
@@ -293,7 +293,7 @@ export function solveBounce(k = {}) {
   return {
     ok: true, mode: 'bounce', axis, sign: sg,
     params: { g, h, u, U, V, w, e, H1, n, y, start, by, stopAtY, found, T: have(k.T) ? k.T : null, fromT: have(k.T),
-              mass, I: mass != null ? (I != null ? I : snap(mass * (w + V))) : null, Igiven: I != null },
+              mass, I: mass != null ? (I != null ? I : impulseLink({ m: mass, u: -V, v: w }).I) : null, Igiven: I != null },
     f, m, impacts: shown, crossings, yAfter, top0, stopAt, moment, derived, notes, extras, convention, watched,
     say: moment.text,
   };
