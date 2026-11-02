@@ -128,6 +128,57 @@ export function catapult(g, x, y, s, P, { gy = y, swing = 0 } = {}) {
   g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 1; for (let i = -2; i <= 2; i++) { g.beginPath(); g.moveTo(piv.x + i * s * 0.025, piv.y - s * 0.07); g.lineTo(piv.x + i * s * 0.025 + s * 0.02, piv.y + s * 0.07); g.stroke(); }
 }
 
+
+/** A rifle on its shooting stand: the muzzle at (x, y), the launch point,
+    aimed `aim` degrees; its stock back along the line of fire, a scope on
+    top, resting on a tripod down to the surface it stands on (gy), or on a
+    sandbag on the edge it fires over. When it fires, a flash at the muzzle,
+    a puff of smoke, and the rifle kicks back. */
+export function rifle(g, x, y, s, P, { aim = 0, t = -1, gy = y } = {}) {
+  const E = env(), a = (Math.max(-45, Math.min(85, aim)) * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
+  const kick = t >= 0 ? Math.sin(Math.min(1, t / 0.12) * Math.PI) * s * 0.05 : 0;
+  const L = s, bx = x - ca * kick, by = y + sa * kick;
+  // where it rests: two thirds of the way back from the muzzle
+  const rx = bx - ca * L * 0.45, ry = by + sa * L * 0.45 + s * 0.05;
+  const metal = E.night ? '#4a4e56' : '#2e3136', wood = E.night ? '#4a3a2c' : '#6a4a2c';
+  if (gy - ry > s * 0.12) {
+    // the tripod, its legs splayed to the ground
+    g.strokeStyle = E.night ? '#5a5e66' : '#3a3e44'; g.lineWidth = Math.max(1.6, s * 0.025); g.lineCap = 'round';
+    for (const d of [-0.28, 0.05, 0.3]) { g.beginPath(); g.moveTo(rx, ry); g.lineTo(rx + d * s, gy); g.stroke(); }
+    softShadow(g, rx, gy + 1, s * 0.35, s * 0.04, 0.7);
+  } else {
+    // a sandbag on the edge, the rifle laid over it
+    g.fillStyle = E.night ? '#6a6250' : '#c9b48a'; g.beginPath(); g.roundRect(rx - s * 0.16, ry, s * 0.32, Math.max(6, s * 0.1), s * 0.05); g.fill();
+    g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1; g.stroke();
+  }
+  g.save(); g.translate(bx, by); g.rotate(-a);
+  // the stock: wood, its butt and grip
+  g.fillStyle = wood; g.beginPath(); g.moveTo(-L * 0.42, -s * 0.03); g.lineTo(-L, -s * 0.04); g.lineTo(-L, s * 0.09); g.lineTo(-L * 0.78, s * 0.05); g.lineTo(-L * 0.62, s * 0.1); g.lineTo(-L * 0.56, s * 0.04); g.lineTo(-L * 0.42, s * 0.04); g.closePath(); g.fill();
+  g.fillStyle = withAlpha('#ffffff', 0.15); g.fillRect(-L * 0.98, -s * 0.035, L * 0.5, s * 0.015);
+  // the action and the barrel to the muzzle, the scope on top
+  g.fillStyle = metal; g.fillRect(-L * 0.45, -s * 0.035, L * 0.2, s * 0.07); g.fillRect(-L * 0.26, -s * 0.018, L * 0.26, s * 0.036);
+  g.fillStyle = withAlpha('#ffffff', 0.25); g.fillRect(-L * 0.26, -s * 0.018, L * 0.26, s * 0.008);
+  g.fillStyle = metal; g.beginPath(); g.roundRect(-L * 0.46, -s * 0.11, L * 0.3, s * 0.05, s * 0.02); g.fill();
+  g.fillStyle = '#7ab4e0'; g.beginPath(); g.ellipse(-L * 0.16, -s * 0.085, s * 0.008, s * 0.022, 0, 0, TAU); g.fill();
+  g.fillStyle = metal; g.fillRect(-L * 0.36, -s * 0.065, s * 0.02, s * 0.03); g.fillRect(-L * 0.24, -s * 0.065, s * 0.02, s * 0.03);
+  g.fillStyle = '#b08a2a'; g.beginPath(); g.arc(-L * 0.4, s * 0.05, s * 0.02, 0, TAU); g.fill();
+  g.restore();
+  if (t >= 0) {
+    // the flash, gone in a moment, then the smoke drifting off
+    const f = Math.max(0, 1 - t / 0.1);
+    if (f > 0) {
+      const R = s * 0.22 * (0.6 + f * 0.6), gl = g.createRadialGradient(x, y, 0, x, y, R);
+      gl.addColorStop(0, `rgba(255,252,220,${f})`); gl.addColorStop(0.5, `rgba(255,220,120,${0.7 * f})`); gl.addColorStop(1, 'rgba(255,200,90,0)');
+      g.fillStyle = gl; g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill();
+    }
+    const q = Math.min(1, t / 1.2);
+    if (q < 1) for (let i = 0; i < 4; i++) {
+      const d = s * (0.08 + i * 0.07) * ease(q), R = s * (0.05 + i * 0.02) * (0.6 + q), px = x + ca * d, py = y - sa * d - s * 0.1 * q * i * 0.3;
+      g.fillStyle = withAlpha(E.night ? '#9a9aa0' : '#d8d8dc', 0.6 * (1 - q)); g.beginPath(); g.arc(px, py, R, 0, TAU); g.fill();
+    }
+  }
+}
+
 /** Each launcher by the registry's name: `size` px at k px a metre. */
-export const LAUNCHER_ART = { cannon, ramp, catapult };
-export const launcherSize = (kind, k) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : clamp(3 * k, 60, 160));
+export const LAUNCHER_ART = { cannon, ramp, catapult, rifle };
+export const launcherSize = (kind, k) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? clamp(1.1 * k, 56, 96) : clamp(3 * k, 60, 160));

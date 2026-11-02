@@ -215,6 +215,8 @@ export function check(raw) {
     launcher = LAUNCHERS[said] ? said : launcherIn(said)?.launcher;
     if (!launcher) return no(`There is no launcher called “${clip(raw.launcher, 20)}”. The launchers are: ${listOf(LAUNCHERS)}.`);
   }
+  // a bullet is fired, never thrown: from a rifle unless something else is named
+  if (!launcher && engine === 'projectile' && backdrop !== 'air' && objects.some((o) => o.figure === 'bullet')) launcher = 'rifle';
   return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), ...(launcher ? { launcher } : {}), engine, objects, numbers, effects, notes } };
 }
 
@@ -411,7 +413,7 @@ const HEIGHT_PLACES = {
   // (a backdrop's own name wins over another's place: "ground" is the ground's, not the forest's)
   ...Object.fromEntries(Object.entries(BACKDROPS).reverse().map(([key, B]) => [B.place, key])),
   ...Object.fromEntries(Object.keys(BACKDROPS).map((key) => [key, key])),
-  branch: 'orchard', green: 'golf', court: 'hall', gym: 'hall', ...TWELVE_PLACES,
+  branch: 'orchard', green: 'golf', gym: 'hall', ...TWELVE_PLACES,
 };
 const JUMPS = /\b(jump|jumps|jumped|leaps?|leapt)\b/i;
 /** What the reading assumed, said: a jump with no angle taken as straight up. */
@@ -490,7 +492,7 @@ export function fromReading(x) {
   // a release height a hand can reach is the thrower's hand above the
   // ground, not a wall: a hammer, a shot, a basketball from 2 m
   const fromHand = FIGURES[figure].thrown && figure !== 'golfBall' && numbers.h > 0 && numbers.h <= (figure === 'tennisBall' ? 3.4 : 2.6);
-  if (backdrop === 'ground' && fromHand) notes.push(`${figure === 'tennisBall' ? 'Struck' : 'Let go'} ${num(numbers.h, 2, { trim: true })} m above the ground, ${{ tennisBall: 'by the racquet', baseball: 'by the bat', cricketBall: 'by the bat' }[figure] || 'from the thrower’s hand'}.`);
+  if (backdrop === 'ground' && fromHand && !launcher && figure !== 'bullet') notes.push(`${figure === 'tennisBall' ? 'Struck' : 'Let go'} ${num(numbers.h, 2, { trim: true })} m above the ground, ${{ tennisBall: 'by the racquet', baseball: 'by the bat', cricketBall: 'by the bat' }[figure] || 'from the thrower’s hand'}.`);
   else if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
   notes.push(...assumedNotes(x));
   if (x.scenario === 'dropped' && JUMPS.test(`${x.summary || ''} ${x.words || ''}`)) notes.push('No speed was given for the jump, so it is taken as stepping off from rest. Give the speed on the values screen if the question has one.');

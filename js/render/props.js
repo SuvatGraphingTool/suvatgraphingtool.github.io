@@ -166,13 +166,93 @@ function raindrop(g, x, y, R) {
   g.strokeStyle = 'rgba(30,60,90,0.5)'; g.lineWidth = 1; g.stroke();
 }
 
-export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball, hailstone, raindrop };
+/** A discus: a flat disc seen almost edge on, tipped up a little, its steel
+    rim catching the light and its dark centre plate, the glint turning. */
+function discus(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(-0.25);
+  const gr = g.createLinearGradient(0, -R * 0.4, 0, R * 0.4); gr.addColorStop(0, '#e8eaee'); gr.addColorStop(0.5, '#9aa0a8'); gr.addColorStop(1, '#4a4e56');
+  g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, R, R * 0.36, 0, 0, TAU); g.fill();
+  g.fillStyle = '#2b2a2e'; g.beginPath(); g.ellipse(0, -R * 0.03, R * 0.62, R * 0.2, 0, 0, TAU); g.fill();
+  g.fillStyle = '#b8bcc2'; g.beginPath(); g.ellipse(0, -R * 0.05, R * 0.18, R * 0.07, 0, 0, TAU); g.fill();
+  const q = Math.cos(spin * 3); g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.ellipse(q * R * 0.7, -R * 0.2, R * 0.16, R * 0.05, 0, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = Math.max(1, R * 0.1); g.beginPath(); g.ellipse(0, 0, R, R * 0.36, 0, 0, TAU); g.stroke();
+  g.restore();
+}
+/** A frisbee: a yellow flying disc, its domed top lit, the lip's shadow
+    under it and the rings moulded in it, the glint turning as it spins. */
+function frisbee(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(-0.12);
+  g.fillStyle = '#9a7a10'; g.beginPath(); g.ellipse(0, R * 0.08, R, R * 0.3, 0, 0, TAU); g.fill();
+  const gr = g.createLinearGradient(0, -R * 0.45, 0, R * 0.2); gr.addColorStop(0, '#fff2a8'); gr.addColorStop(1, '#f2c21b');
+  g.fillStyle = gr; g.beginPath(); g.ellipse(0, -R * 0.02, R * 0.98, R * 0.32, 0, Math.PI, TAU); g.ellipse(0, -R * 0.02, R * 0.98, R * 0.12, 0, 0, Math.PI); g.fill();
+  g.strokeStyle = 'rgba(120,90,10,0.6)'; g.lineWidth = 1; for (const f of [0.45, 0.7]) { g.beginPath(); g.ellipse(0, -R * 0.08, R * f, R * 0.3 * f, 0, Math.PI * 1.05, Math.PI * 1.95); g.stroke(); }
+  const q = Math.sin(spin * 2.5); g.fillStyle = 'rgba(255,255,255,0.75)'; g.beginPath(); g.ellipse(q * R * 0.5, -R * 0.22, R * 0.14, R * 0.05, 0, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(80,60,0,0.7)'; g.lineWidth = Math.max(1, R * 0.08); g.beginPath(); g.ellipse(0, R * 0.04, R, R * 0.3, 0, 0, TAU); g.stroke();
+  g.restore();
+}
+/** Something long and thin pointed along its flight: `ang` the angle of
+    its velocity on the canvas (radians, clockwise from the right). */
+const along = (g, x, y, ang, draw) => { g.save(); g.translate(x, y); g.rotate(ang ?? 0); draw(); g.restore(); };
+/** A dart: its steel point, a knurled tungsten barrel, the shaft and blue
+    flights, pointing along its flight; struck point first where it lands. */
+function dart(g, x, y, R, spin, { ang = 0 } = {}) {
+  const L = R * 2.2;
+  along(g, x, y, ang, () => {
+    g.strokeStyle = '#c8ccd2'; g.lineWidth = Math.max(1, R * 0.08); g.beginPath(); g.moveTo(L * 0.25, 0); g.lineTo(L * 0.5, 0); g.stroke();
+    const gr = g.createLinearGradient(0, -R * 0.14, 0, R * 0.14); gr.addColorStop(0, '#d8dce2'); gr.addColorStop(1, '#4a4e56');
+    g.fillStyle = gr; g.beginPath(); g.roundRect(-L * 0.08, -R * 0.13, L * 0.34, R * 0.26, R * 0.08); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 0.8; for (let i = 0; i < 5; i++) { const xx = -L * 0.04 + i * L * 0.055; g.beginPath(); g.moveTo(xx, -R * 0.13); g.lineTo(xx, R * 0.13); g.stroke(); }
+    g.strokeStyle = '#2b2a2e'; g.lineWidth = Math.max(1.2, R * 0.1); g.beginPath(); g.moveTo(-L * 0.08, 0); g.lineTo(-L * 0.38, 0); g.stroke();
+    g.fillStyle = '#2f5fa8'; g.strokeStyle = '#173a70'; g.lineWidth = 1;
+    for (const sgn of [-1, 1]) { g.beginPath(); g.moveTo(-L * 0.22, 0); g.lineTo(-L * 0.42, sgn * R * 0.5); g.lineTo(-L * 0.5, sgn * R * 0.5); g.lineTo(-L * 0.46, 0); g.closePath(); g.fill(); g.stroke(); }
+  });
+}
+/** A shuttlecock: the cork nose in its white cap leading, the skirt of
+    feathers flaring behind it, pointing along its flight. */
+function shuttlecock(g, x, y, R, spin, { ang = 0 } = {}) {
+  along(g, x, y, ang, () => {
+    g.fillStyle = 'rgba(255,255,255,0.95)'; g.strokeStyle = 'rgba(80,80,90,0.7)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(R * 0.35, -R * 0.32); g.lineTo(-R * 1.2, -R * 0.85); g.lineTo(-R * 1.2, R * 0.85); g.lineTo(R * 0.35, R * 0.32); g.closePath(); g.fill(); g.stroke();
+    g.strokeStyle = 'rgba(80,80,90,0.45)'; for (const f of [-0.5, 0, 0.5]) { g.beginPath(); g.moveTo(R * 0.35, f * R * 0.3); g.lineTo(-R * 1.2, f * R * 0.85); g.stroke(); }
+    g.fillStyle = '#2f5fa8'; g.fillRect(R * 0.25, -R * 0.36, R * 0.12, R * 0.72);
+    const gr = g.createRadialGradient(R * 0.6, -R * 0.15, R * 0.05, R * 0.55, 0, R * 0.45); gr.addColorStop(0, '#ffffff'); gr.addColorStop(1, '#c9c4ba');
+    g.fillStyle = gr; g.beginPath(); g.arc(R * 0.5, 0, R * 0.4, -Math.PI / 2, Math.PI / 2); g.closePath(); g.fill(); g.strokeStyle = 'rgba(0,0,0,0.45)'; g.stroke();
+  });
+}
+/** A hockey ball: hard white plastic, dimpled. */
+function hockeyBall(g, x, y, R) {
+  sphere(g, x, y, R, '#ffffff', '#f2f0ea', '#b0aca4');
+  g.fillStyle = 'rgba(0,0,0,0.16)';
+  for (let i = 0; i < 7; i++) { const a = i * 2.6, rr = R * (0.3 + (i % 2) * 0.3); g.beginPath(); g.arc(x + Math.cos(a) * rr, y + Math.sin(a) * rr, Math.max(1, R * 0.14), 0, TAU); g.fill(); }
+  rim(g, x, y, R, 'rgba(0,0,0,0.45)');
+}
+/** An egg: smooth, cream-white, broader below, turning as it falls. */
+function egg(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(spin * 0.6);
+  const gr = g.createRadialGradient(-R * 0.3, -R * 0.4, R * 0.1, 0, 0, R * 1.2); gr.addColorStop(0, '#fffdf6'); gr.addColorStop(0.6, '#f0e6d2'); gr.addColorStop(1, '#b8a888');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(0, -R * 1.2); g.bezierCurveTo(R * 0.85, -R * 1.15, R * 0.95, R * 0.95, 0, R * 0.95); g.bezierCurveTo(-R * 0.95, R * 0.95, -R * 0.85, -R * 1.15, 0, -R * 1.2); g.fill();
+  g.strokeStyle = 'rgba(90,70,40,0.55)'; g.lineWidth = Math.max(1, R * 0.1); g.stroke();
+  g.restore();
+}
+/** A bullet: a grey lead round in its brass case's shape, pointing along its
+    flight, a faint streak of air behind it. */
+function bullet(g, x, y, R, spin, { ang = 0 } = {}) {
+  along(g, x, y, ang, () => {
+    g.strokeStyle = 'rgba(255,255,255,0.45)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(-R * 1.1, 0); g.lineTo(-R * 3.2, 0); g.stroke();
+    const gr = g.createLinearGradient(0, -R * 0.4, 0, R * 0.4); gr.addColorStop(0, '#d8dce2'); gr.addColorStop(0.45, '#7a7e86'); gr.addColorStop(1, '#2e3136');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(-R, -R * 0.38); g.lineTo(R * 0.2, -R * 0.38); g.quadraticCurveTo(R * 0.95, -R * 0.3, R * 1.1, 0); g.quadraticCurveTo(R * 0.95, R * 0.3, R * 0.2, R * 0.38); g.lineTo(-R, R * 0.38); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.65)'; g.lineWidth = 1; g.stroke();
+    g.strokeStyle = 'rgba(0,0,0,0.4)'; g.beginPath(); g.moveTo(-R * 0.55, -R * 0.38); g.lineTo(-R * 0.55, R * 0.38); g.stroke();
+  });
+}
+
+export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball, hailstone, raindrop, discus, frisbee, dart, shuttlecock, hockeyBall, egg, bullet };
 
 /** Draw a prop by name at (x, y), R px, turned by spin, ringed for B. */
 export function drawProp(g, kind, x, y, R, spin = 0, ring = null, o = {}) {
   const f = PROPS[kind];
   if (!f) return false;
   f(g, x, y, R, spin, o);
-  ringed(g, x, y, R * (kind === 'phone' || kind === 'book' || kind === 'hammer' ? 1.2 : 1), ring);
+  ringed(g, x, y, R * (['phone', 'book', 'hammer', 'dart', 'discus', 'frisbee', 'bullet', 'shuttlecock'].includes(kind) ? 1.2 : 1), ring);
   return true;
 }

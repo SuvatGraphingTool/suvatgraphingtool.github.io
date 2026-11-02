@@ -177,6 +177,15 @@ export function splat(g, x, y, age, life, o = {}) {
   const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 89);
   g.save();
   const R = 26 * size * ease(Math.min(1, u * 3));
+  if (o.egg) {
+    // an egg: the white spread thin, the yolk in it, bits of shell thrown out
+    g.fillStyle = withAlpha('#f4f0e2', 0.8); g.beginPath(); g.ellipse(x, y + 1, R * 0.8, R * 0.16, 0, 0, TAU); g.fill();
+    g.fillStyle = '#f2c21b'; g.beginPath(); g.ellipse(x + R * 0.1, y, R * 0.22, R * 0.08, 0, 0, TAU); g.fill();
+    g.fillStyle = withAlpha('#ffffff', 0.7); g.beginPath(); g.ellipse(x + R * 0.04, y - R * 0.03, R * 0.07, R * 0.025, 0, 0, TAU); g.fill();
+    const p = phaseOf(age, life);
+    if (p != null) thrown(x, y, ease(p), 10, size, r, (px, py, i) => { g.save(); g.translate(px, py); g.rotate(p * 6 + i); g.fillStyle = `rgba(250,246,234,${1 - p * 0.5})`; g.strokeStyle = 'rgba(90,70,40,0.5)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-3 * size, 0); g.lineTo(0, -2.5 * size); g.lineTo(3 * size, 0.5); g.closePath(); g.fill(); g.stroke(); g.restore(); }, { up: 0.5, out: 1.2 });
+    g.restore(); return;
+  }
   // a wet patch with a sheen on it, lighter than the ground so it shows
   g.fillStyle = withAlpha(E.night ? '#24323d' : '#3e5566', 0.4); g.beginPath(); g.ellipse(x, y + 1, R, R * 0.2, 0, 0, TAU); g.fill();
   g.fillStyle = withAlpha('#d8ecf8', 0.45); g.beginPath(); g.ellipse(x - R * 0.2, y, R * 0.55, R * 0.07, 0, 0, TAU); g.fill();
@@ -446,4 +455,28 @@ export function diveCatch(g, x, y, u, o = {}) {
   g.restore();
   // once down, a little dust round where they slid in
   if (fly >= 1 && o.age != null) { const p = Math.min(1, o.age / 0.8); g.fillStyle = `rgba(200,190,170,${0.5 * (1 - p)})`; g.beginPath(); g.ellipse(x + H * 0.5, y + 1, H * 0.6 * (0.6 + p), H * 0.08, 0, 0, TAU); g.fill(); }
+}
+
+/** A tennis ball landing on the court: a puff of chalk (or the court's own
+    dust) kicked up and drifting on, low and pale, and the ball's mark left
+    on the surface, a fuzzy oval that stays. */
+export function chalk(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const size = o.size ?? 1, r = rng(o.seed ?? 127);
+  g.save();
+  // the mark: skidded a little forward from where it touched
+  const ml = 9 * size * ease(Math.min(1, u * 6));
+  g.fillStyle = withAlpha('#f6f4ee', 0.55); g.beginPath(); g.ellipse(x + ml * 0.4, y + 1, Math.max(2, ml), 2.2 * size, 0, 0, TAU); g.fill();
+  g.strokeStyle = withAlpha('#ffffff', 0.7); g.lineWidth = 1; g.stroke();
+  const p = phaseOf(age, life * 0.8);
+  if (p != null) {
+    // the puff: low, forward, pale, thinning as it spreads
+    for (let i = 0; i < 9; i++) {
+      const R = (3 + r() * 4) * size * (0.6 + p * 1.8), dx = (r() * 18 + 4) * size * ease(p), dy = -(2 + r() * 8) * size * ease(p) - R * 0.2;
+      const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, R);
+      gr.addColorStop(0, `rgba(250,250,246,${0.85 * (1 - p)})`); gr.addColorStop(1, 'rgba(250,250,246,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, R, 0, TAU); g.fill();
+    }
+  }
+  g.restore();
 }

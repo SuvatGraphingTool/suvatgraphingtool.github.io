@@ -382,6 +382,16 @@ console.log('\nFrom a height shows its working when the height is given');
   ok(height.working(solveHeight({ place: 'cliff', g: 9.8, h: 40, u: 15, theta: 0 }), 1).length >= 3, 'the working panel is never left empty');
 }
 
+group('Batches 16–17: a court, an arena, a castle; the new props and the rifle', () => {
+  for (const [q, b] of [['a stone is thrown from the top of a castle wall', 'castle'], ['a ball is served on a tennis court', 'court'], ['she throws it at the basketball hoop', 'arena']]) ok(placeIn(q)?.backdrop === b, `“${q}”: ${b}`);
+  ok(placeIn('a parcel is dropped from the basket of a balloon')?.backdrop !== 'arena', 'a balloon’s basket is not a basketball hoop');
+  for (const w of ['discus', 'frisbee', 'dart', 'shuttlecock', 'hockeyBall', 'egg', 'bullet']) ok(figureOf(w === 'hockeyBall' ? 'hockey ball' : w).figure === w, `${w} is drawn as itself`);
+  const b = check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'bullet' }], numbers: { h: 1.5, u: 300, theta: 0 } }).recipe;
+  ok(b?.launcher === 'rifle' && titleOf(b) === 'A bullet fired from a rifle', 'a bullet is fired from a rifle, never thrown');
+  ok(check({ backdrop: 'castle', engine: 'projectile', objects: [{ figure: 'egg' }], numbers: { h: 15, u: 0, theta: -90 } }).recipe?.effects.join() === 'splat', 'an egg splats');
+  ok(check({ backdrop: 'court', engine: 'projectile', objects: [{ figure: 'tennisBall' }], numbers: { h: 2.5, u: 25, theta: 0 } }).recipe?.effects.join() === 'chalk', 'a tennis ball on a court kicks up chalk');
+});
+
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);
   ok(s[0] === 'Placing a cliff' && s.includes('Laying out the sea') && s.includes('Bringing in a car') && s.includes('Adding a splash'), s.join(' / '));

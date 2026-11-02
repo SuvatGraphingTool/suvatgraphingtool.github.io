@@ -63,6 +63,9 @@ export const PLACES = {
   carpark: { word: 'car park', top: 'the top deck of the car park', below: 'the street', lands: 'hits the street', foot: 'at the foot of the car park' },
   volcano: { word: 'crater', top: 'the crater', below: 'the plain', lands: 'lands on the plain', foot: 'below the crater' },
   quarry:  { word: 'quarry', top: 'the edge of the quarry', below: 'the quarry floor', lands: 'hits the quarry floor', foot: 'at the foot of the quarry face' },
+  court:   { word: 'start', top: 'where it starts', below: 'the court', lands: 'lands on the court', foot: 'where it started', level: true },
+  arena:   { word: 'start', top: 'where it starts', below: 'the floor', lands: 'lands on the floor', foot: 'where it started', level: true },
+  castle:  { word: 'castle', top: 'the battlements', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the castle wall' },
   // a dolphin or a fish leaping from the water at the foot of a place
   pool:    { word: 'start', top: 'where it leaves the water', below: 'the water', lands: 'goes back into the water', foot: 'where it left the water', level: true, from: 'where it left the water' },
   site:    { word: 'scaffold', top: 'the top of the scaffolding', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the scaffolding' },

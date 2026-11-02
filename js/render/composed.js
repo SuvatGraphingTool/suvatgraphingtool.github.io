@@ -33,7 +33,7 @@ import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, t
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
-import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles, diveCatch } from './impacts.js';
+import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles, diveCatch, chalk } from './impacts.js';
 import { ANIMALS, FEET, SWIMMERS, javelin } from './animals.js';
 import { golfer, kicker, archer, archerHand, server, batter, SERVE_AT, BAT_AT, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
@@ -48,7 +48,9 @@ const HUD = 250, HUD_H = 290;
 const trimmed = (s) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s);
 /** Half a figure's drawn height, as a fraction of its drawn length L — so it
     is drawn round the engine's point, not standing on it. */
-const BALLS = new Set(['football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball', 'rugbyBall', 'cricketBall', 'baseball', 'volleyball']);
+const BALLS = new Set(['football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball', 'rugbyBall', 'cricketBall', 'baseball', 'volleyball', 'hockeyBall']);
+// drawn pointing along the flight: a dart, a shuttlecock, a bullet
+const POINTED = new Set(['dart', 'shuttlecock', 'bullet']);
 const MIDDLE = { car: 0.16, lorry: 0.2, train: 0.11, cyclist: 0.45, motorcycle: 0.3, runner: 0.5 };
 // what floats once it is down on the water, and settles level there
 const FLOATS = new Set(['speedboat', 'jetski']);
@@ -84,10 +86,10 @@ const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 /** The backdrop and the place things start from, for either stage: the
     library's own scenery for the recipe's backdrop, its top at `top` (H0 m),
     its edge at x0, the ground or the water at oy. */
-function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false }) {
+function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false, over, hoop }) {
   const P = palette();
   // the places in js/render/places.js draw themselves and what they launch from
-  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap }); return; }
+  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, hoop }); return; }
   const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
   // the place it is launched from, where the backdrop has no edge of its own:
   // a stone wall to stand on, a jetty over the sea, or the ground itself
@@ -279,7 +281,12 @@ function launch(canvas, o) {
   const ls = LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k) : 0;
   // (a cannon is dug in where it fires from: on the ground, or on the wall it fires from)
   const grounded = !!ls && !B.edge && H0 > 0 && R.launcher !== 'cannon' && (R.launcher === 'ramp' || H0 * k <= ls * 2.4);
-  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims });
+  // how high the lead's path is where it crosses x (a net across a court), or null
+  const over = (x) => { const p = lead.pts; for (let j = 1; j < p.length; j++) if ((p[j - 1].x - x) * (p[j].x - x) <= 0 && p[j].x !== p[j - 1].x) return p[j - 1].y + (p[j].y - p[j - 1].y) * (x - p[j - 1].x) / (p[j].x - p[j - 1].x); return null; };
+  // a hoop at the height a part asks about, where the engine passes it on the way down (rule 4)
+  const lvl = lead.f.level, tDown = lvl?.times?.length ? lvl.times[lvl.times.length - 1] : null;
+  const hoop = R.backdrop === 'arena' && lvl && lvl.xDown != null && tDown != null && !lvl.atTop ? { x: X(lvl.xDown), y: Y(lvl.L), age: lead.t >= tDown ? lead.t - tDown : -1 } : null;
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, hoop });
 
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {
@@ -430,7 +437,9 @@ function launch(canvas, o) {
       else if (e === 'dust' && !wet) dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k, piece) / 30), n: 22 });
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
-      else if (e === 'net') continue;
+      else if (e === 'net' || e === 'swish') continue;
+      // a tennis ball on a line: a puff of chalk off the court, its mark left
+      else if (e === 'chalk' && !wet) later.push(() => chalk(g, lx, oy, age, life, { size: clamp(k / 14, 1, 2.4) }));
       // gone under: it sinks away and bubbles come up where it went in
       else if (e === 'bubbles' && wet) bubbles(g, lx - (small ? 10 : 0), oy, age, life, { size: clamp((small ? 12 : size(k, piece)) / 14, phone ? 0.8 : 1.1, 3), depth: clamp((h - oy) * 0.7, 30, 160) });
       // a vehicle down hard on dry ground: tyre marks and smoke as it brakes
@@ -454,7 +463,7 @@ function launch(canvas, o) {
       // a fielder dives and takes it just above the ground
       else if (e === 'catch') continue;
       else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
-      else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: clamp(k / 14, 1, 3) }); g.restore(); }
+      else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: clamp(k / 14, 1, 3), egg: kind === 'egg' }); g.restore(); }
       else if (e === 'crack') crack(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
     }
     if (!f.vertical) {
@@ -515,7 +524,7 @@ function launch(canvas, o) {
   if (small) {
     const R0 = clamp(k * piece.m * 0.5, 5.5, 9);
     // gone under water, or burst: a water balloon is not there once it lands
-    const gone = landed && ((wet && age > life * 0.2) || (kind === 'waterBalloon' && age > 0.04));
+    const gone = landed && ((wet && age > life * 0.2) || ((kind === 'waterBalloon' || (kind === 'egg' && !wet)) && age > 0.04));
     if (aloft && !wet) softShadow(g, bx, oy + 1, R0 * 1.4, R0 * 0.35, clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
     if (!gone) {
       if (kind === 'apple') apple(g, bx, by, clamp(k * 0.05, 6, 10));
@@ -532,9 +541,11 @@ function launch(canvas, o) {
       else if (piece.prop) {
         // a ball to scale, never smaller than reads; resting on the turf or the
         // tee one radius up before it is struck and once it has landed
-        const ball = BALLS.has(kind), Rp = clamp(k * piece.m * 0.5, ball ? (kind === 'golfBall' ? 3.5 : 4) : 7, 10);
+        const ball = BALLS.has(kind), Rp = clamp(k * piece.m * 0.5, ball ? (kind === 'golfBall' ? 3.5 : 4) : 7, POINTED.has(kind) || kind === 'discus' || kind === 'frisbee' ? 13 : 10);
         const lift = ball && !aloft && !(landed && wet) ? Rp : 0;
-        drawProp(g, kind, bx, by - lift, Rp, fired ? t * 7 : 0.3, m.ring, { cracked: landed && R.effects.includes('crack') });
+        // pointed along its flight, and a dart stuck point first where it lands
+        const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), dig = landed && kind === 'dart' ? Rp * 0.75 : 0;
+        drawProp(g, kind, bx - Math.cos(ang) * dig, by - lift - Math.sin(ang) * dig, Rp, fired ? t * 7 : 0.3, m.ring, { cracked: landed && R.effects.includes('crack'), ang });
       }
       else if (kind === 'ball') ballAt(g, bx, by, R0, m.ring);
       else if (kind === 'particle') particle(g, bx, by, R0 * 2, P, { ring: m.ring });
@@ -720,7 +731,7 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = { pitch: 'the pitch', stadium: 'the infield', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const name = { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);

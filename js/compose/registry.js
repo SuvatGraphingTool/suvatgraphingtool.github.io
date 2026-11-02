@@ -60,6 +60,9 @@ export const BACKDROPS = {
   beach:   { label: 'A beach', what: 'a sandy beach, waves breaking along the shore, parasols; from a height, the promenade’s sea wall', place: 'beach', below: 'beach', art: true, on: 'on a beach', high: 'a sea wall', lands: 'sand' },
   room:    { label: 'A room', what: 'a room indoors: papered walls, a window with curtains, a sofa and a bookcase, floorboards; from a height, the landing at the top of the stairs', place: 'room', below: 'floor', art: true, on: 'in a room', high: 'the landing at the top of the stairs' },
   planet:  { label: 'Another planet', what: 'another world: a ringed giant and two moons in a dark sky over a rocky plain with crystal outcrops; g is what the question gives', place: 'planet', below: 'surface', art: true, on: 'on another planet', high: 'a rock ledge', lands: 'crater' },
+  court:   { label: 'A tennis court', what: 'a tennis court at its real size, served from its baseline: the net across the middle (drawn only where the ball clears it or lands short), the umpire’s chair, the windbreak fence; from a height, a show court’s stand', place: 'court', below: 'ground', art: true, on: 'on a tennis court', high: 'a show court’s stand', lands: 'chalk' },
+  arena:   { label: 'A basketball arena', what: 'an indoor basketball court: the crowd in the bleachers, the scoreboard, the maple floor; the hoop where it passes the height a part asks about (numbers.level) on its way down, its net swishing as it drops through; from a height, the bleachers’ upper tier', place: 'arena', below: 'floor', art: true, on: 'in a basketball arena', high: 'the top of the bleachers', lands: 'ring' },
+  castle:  { label: 'A castle', what: 'a castle: the battlements of its curtain wall, the keep with its flag behind, a moat at the wall’s foot, fields and a village beyond', place: 'castle', below: 'ground', edge: true, at: 'the battlements of a castle', art: true },
   carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
   volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
   quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
@@ -120,6 +123,14 @@ export const FIGURES = {
   book:     { label: 'a book', m: 0.24, min: 10, views: ['side'], thrown: true, prop: true },
   hammer:   { label: 'a hammer', m: 0.33, min: 11, views: ['side'], thrown: true, prop: true },
   javelin:  { label: 'a javelin', m: 2.6, min: 44, views: ['side'], thrown: true },
+  discus:   { label: 'a discus', m: 0.22, min: 12, views: ['side'], thrown: true, prop: true },
+  frisbee:  { label: 'a frisbee', m: 0.27, min: 14, views: ['side'], thrown: true, prop: true },
+  dart:     { label: 'a dart', m: 0.15, min: 12, views: ['side'], thrown: true, prop: true },
+  shuttlecock: { label: 'a shuttlecock', m: 0.085, min: 10, views: ['side'], thrown: true, prop: true },
+  hockeyBall: { label: 'a hockey ball', m: 0.073, min: 10, views: ['side'], thrown: true, prop: true },
+  egg:      { label: 'an egg', m: 0.06, min: 10, views: ['side'], thrown: true, prop: true, lands: 'splat' },
+  // fired, never thrown: a rifle sends it off unless the recipe names another launcher
+  bullet:   { label: 'a bullet', m: 0.03, min: 10, views: ['side'], thrown: true, prop: true, verb: 'fired' },
   // animals that leap by themselves (js/render/animals.js): `m` is nose to tail
   cat:      { label: 'a cat', m: 0.5, min: 30, views: ['side'], animal: true },
   dog:      { label: 'a dog', m: 0.8, min: 34, views: ['side'], animal: true },
@@ -149,6 +160,7 @@ export const LAUNCHERS = {
   cannon:   { label: 'a cannon', verb: 'fired from', words: /\b(cannon|mortar|field gun)\b/ },
   ramp:     { label: 'a ramp', verb: 'off', words: /\b(ramp|kicker|launch ramp|jump ramp)\b/ },
   catapult: { label: 'a catapult', verb: 'flung from', words: /\b(catapult|trebuchet|slingshot|siege engine)\b/ },
+  rifle:    { label: 'a rifle', verb: 'fired from', words: /\b(rifle|gun|pistol|shotgun|musket)\b/ },
 };
 /** What a question says sends it off, or null. */
 export function launcherIn(text) {
@@ -186,6 +198,7 @@ export const EFFECTS = {
   bubbles: { label: 'bubbles', what: 'something heavy sinking after it goes into water' },
   net:    { label: 'a goal net', what: 'a goal where it lands: its net bulges as the ball meets it' },
   burst:  { label: 'a firework burst', what: 'at the top of a firework’s flight' },
+  chalk:  { label: 'a puff of chalk', what: 'a tennis ball landing on a court: chalk kicked up, its mark left' },
 };
 
 /** How it moves. `kit` is the library kit whose engine, boxes, working,
@@ -372,7 +385,8 @@ const WORDS = [
   // an athlete's hammer is a heavy ball on a wire: drawn as the shot
   [/\b(hammer throw(?:er|ing)?|athletics hammer)\b/, 'shot'],
   [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
-  [/\b(javelin)\b/, 'javelin'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
+[/\b(javelin)\b/, 'javelin'], [/\b(discus)\b/, 'discus'], [/\b(frisbee|flying disc)\b/, 'frisbee'], [/\b(darts?)\b/, 'dart'],
+  [/\b(shuttlecock|shuttle|birdie)\b/, 'shuttlecock'], [/\b(hockey ball)\b/, 'hockeyBall'], [/\b(eggs?)\b/, 'egg'], [/\b(bullet|pellet|round fired)\b/, 'bullet'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
   [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],
   [/\b(kangaroo|wallaby)\b/, 'kangaroo'], [/\b(goat|ibex|chamois|deer|sheep|lamb)\b/, 'goat'], [/\b(hailstone|hail ?stones?|hail)\b/, 'hailstone'], [/\b(raindrop|rain ?drop|drop of water|drop of rain)\b/, 'raindrop'], [/\b(dolphin|porpoise|orca|killer whale)\b/, 'dolphin'], [/\b(fish|salmon|trout|flying fish)\b/, 'fish'],
   [/\b(bus|coach|minibus)\b/, 'bus'], [/\b(tractor|quad bike)\b/, 'tractor'], [/\b(speedboat|speed boat|motorboat|motor boat|powerboat)\b/, 'speedboat'],
@@ -380,14 +394,14 @@ const WORDS = [
   [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
   [/\b(bird|kingfisher|gannet|seagull|gull|eagle|hawk|falcon|osprey|pelican|heron|tern|cormorant|puffin|swallow|pigeon|owl|crow|duck)\b/, 'bird'],
   [/\b(stone|pebble|rock|brick|key|object|mass)\b/, 'stone'],
-  [/\b(ball|dart)\b/, 'ball'],
+  [/\b(ball)\b/, 'ball'],
   [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
 ];
 /** The figures a thing with none of its own is drawn as, and how to say so. */
 const NEAREST = [
-  [/\b(dart|crossbow bolt|spear)\b/, 'arrow'],
+  [/\b(crossbow bolt|spear)\b/, 'arrow'],
   [/\b(surfer|bmx)\b/, 'diver'],
-  [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|nut|clam|mussel|prey|mouse)\b/, 'particle'],
+  [/\b(missile|projectile|shell|stick|bottle|can|bag|helmet|bomb|nut|clam|mussel|prey|mouse)\b/, 'particle'],
   [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|locust)\b/, 'frog'],
   [/\b(animal|bat|insect|bee)\b/, 'particle'],
 ];
@@ -452,6 +466,9 @@ const ONLY_HERE = [
   [/\b(multi-?storey car park|car park|parking garage|parking deck)\b/, 'carpark'],
   [/\b(volcano|volcanic|erupt(?:s|ion|ing)?|lava bomb)\b/, 'volcano'],
   [/\b(quarry|quarry face|rock face of (?:a|the) quarry)\b/, 'quarry'],
+  [new RegExp(`${FROM}(?:(?:top|battlements?|walls?|ramparts?|tower) of (?:a|the)\\s+)?(castle|castle wall|battlements|ramparts|fortress|fort)\\b`), 'castle'],
+  [/\b(tennis court|centre court|grass court|hard court|clay court|tennis match|tennis player)\b/, 'court'],
+  [/\b(basketball (?:court|hoop|player|ring|net|arena)|netball (?:court|hoop|post|ring)|(?:through|into|at) the (?:hoop|ring)|free throw|jump shot|slam dunk)\b/, 'arena'],
   // on a beach, but not a cliff, pier or harbour over one ("off the cliff onto the beach" is the cliff's)
   [/^(?!.*\b(?:cliff|pier|harbour|quay|jetty|bridge|tower|lighthouse)\b).*(?:\b(?:on|across|along)\s+(?:a|the)\s+(?:beach|sands)\b|\b(?:sea wall|promenade|seafront)\b)/, 'beach', 'beach'],
   [/\b(?:in|across)\s+(?:a|the|his|her|their)\s+(room|bedroom|living room|classroom|kitchen|lounge)\b|\b(top of the stairs|staircase|landing of the stairs)\b/, 'room'],
@@ -463,7 +480,7 @@ const ONLY_HERE = [
   [new RegExp(`${FROM}(ledge|mountain|mountainside|peak|crag|mountain ledge|rock|boulder|outcrop)\\b`), 'mountain'],
   [new RegExp(`${FROM}(table|desk|bench|worktop|counter|shelf|workbench)\\b(?!\\s+(?:of|tennis))`), 'table'],
   [new RegExp(`${FROM}(balcony|window|house|bungalow|roof)\\b(?!\\s+of)`), 'house'],
-  [/\b(?:in|inside)\s+(?:a|the)\s+(sports hall|gym(?:nasium)?)\b|\b(basketball court|netball court|badminton court|indoor court)\b/, 'hall'],
+  [/\b(?:in|inside)\s+(?:a|the)\s+(sports hall|gym(?:nasium)?)\b|\b(badminton court|indoor court)\b/, 'hall'],
   [new RegExp(`${FROM}(tree|branch|apple tree|bough)\\b`), 'orchard'],
 ];
 /**
