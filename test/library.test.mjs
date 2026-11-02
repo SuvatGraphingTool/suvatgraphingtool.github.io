@@ -1712,6 +1712,13 @@ group('Edexcel M1 Jun 2002 Q6: the lift, its cable and its floor', () => {
   ok(lone.ok && lone.R1 == null && Math.abs(lone.T1 - 1416) < 1e-9, 'no passenger: the cable alone');
   ok(!solveCable({ a1: 2, V: 3, t3: 0.2, D: 27, M: 120, m: 80, g: 9.8 }).ok, 'slowing faster than g: the cable would go slack, refused');
   ok(!solveCable({ a1: 2, V: 3, t3: 2.5, D: 27, g: 9.8 }).ok, 'no lift mass: refused');
+  { const tri = solveCable({ a1: 2, V: 3, t3: 2.5, D: 6, M: 120, m: 80, g: 9.8 });
+    ok(tri.ok && tri.T2 == null && tri.f.tSteady == null && tri.R3 === 688, 'no steady stage (a triangle): solved, two stages, no crash'); }
+  ok(!solveCable({ a1: 2, V: 9.8, t3: 1, D: 200, M: 120, m: 80, g: 9.8 }).ok, 'slowing at exactly g: the cable carries nothing, refused');
+  { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
+    ok(!cableWorking(s).flatMap((st) => st.rows).some((r) => /^T=11/.test(strip(r.r))) && s.derived.some((x) => /ttot=11/.test(strip(x))), 'the whole time is t_tot, so T is only the tension');
+    ok(cableWorking(s).at(-1).rows.every((r) => !/m-var">speeding|m-var">slowing/.test(r.r)), 'the stage words are prose, not set as variables'); }
+  ok(s.f.weight === 1960 && s.f.weightPassenger === 784, 'the weights for the card come from the engine');
 });
 
 group('Edexcel M1 Jan 2013 Q4, Jan 2004 Q3, Jan 2010 Q5: down a rough slope', () => {

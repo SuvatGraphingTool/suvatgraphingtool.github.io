@@ -126,6 +126,7 @@ parts: [
 | `sym`, `unit`, `dp` | how the answer is typeset: `M`${sym} = ${num(v, dp)} [${unit}]`` — `sym` is notation source (`'v'`, `'t_1'`, `'theta'`), `unit` too (`'m s^-1'`). `dp` defaults to 2; `trim: true` drops trailing zeros. `suffix` is notation after the number, for an answer in letters (`suffix: 'u/g'` sets 2u/g; a coefficient of 1 is left out) or a degree sign. `vec: true` with two paths sets them as one vector in i and j. `words: { yes, no }` for an answer that is true/false |
 | `at` | the part's moment on the stage: a path like `find`, a number of seconds, or `'end'`. Left out: the moment of `find` if it is a time, else the end |
 | `span` | `[from, to]` instead of `at`, for an interval (a time above a line): both ends ringed, the band marked on the clock |
+| `graph` | for a `graph` part: which graph it asks for (`'g-s'`, `'g-v'`, `'g-a'`); the velocity–time one when left out |
 | `step` | which working step answers it: text matched against the step titles (case and tags ignored), or an index into `kit.working()` |
 | `given` | `{ box: value }` — boxes this part adds or changes, from this part on, keyed as `example` is. Leave it out when the example already holds everything |
 | `carry` | `{ box: 'a' }` — from this part on, the box takes part (a)'s answer: the ENGINE's value, never a typed one. The part says so: "using t = 3.5 s from (a)" |

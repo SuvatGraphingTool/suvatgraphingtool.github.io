@@ -1035,10 +1035,11 @@ function showPart(k, { play = false } = {}) {
   syncRate(); renderParts(); dirty = true;
   // the working panel, if it is open, scrolls its lit step into view
   requestAnimationFrame(() => document.querySelector('#working .step[data-part="on"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
-  // a sketch is answered by the stage's own graphs: open them, the velocity–time one in view
+  // a sketch is answered by the stage's own graphs: open them, the one it asks for in view
+  // (`graph: 'g-a'` on a part; the velocity–time one when it does not say)
   if (run.part.kind === 'graph') {
     openGraphs();
-    requestAnimationFrame(() => $('g-v')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+    requestAnimationFrame(() => $(run.part.graph || 'g-v')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
   }
 }
 $('parts').addEventListener('click', (e) => {

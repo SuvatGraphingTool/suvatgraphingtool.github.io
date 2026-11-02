@@ -7,7 +7,7 @@
 import { solveCable, cableWorking } from '../core/cable.js';
 import { lift } from './lift.js';
 import * as stage from '../render/cable.js';
-import { num } from '../notation.js';
+import { M, num } from '../notation.js';
 
 export const cable = {
   ...lift,
@@ -45,6 +45,10 @@ export const cable = {
   },
 
   ending(s) {
-    return { ...lift.ending(s), title: `Tension ${num(s.T1, 1, { trim: true })} N speeding up, ${num(s.T3, 1, { trim: true })} N slowing.` };
+    const e = lift.ending(s), n = (x) => num(x, 3, { trim: true });
+    // the forces stage by stage, a line each
+    const NAME = { up: 'Speeding up', hold: 'At a steady speed', down: 'Slowing down' };
+    const table = s.f.cable.map((st) => `<p>${NAME[st.kind]}: ${M`a = ${n(st.a)} [m s^-2]`}, ${M`T = ${n(st.T)} [N]`}${s.f.m ? `, ${M`R = ${n(st.R)} [N]`}` : ''}.</p>`).join('');
+    return { ...e, title: `Tension ${n(s.T1)} N speeding up${s.R3 != null ? `; the floor pushes ${n(s.R3)} N slowing down` : `, ${n(s.T3)} N slowing down`}.`, body: `${table}${e.body || ''}` };
   },
 };
