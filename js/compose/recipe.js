@@ -143,6 +143,10 @@ export function check(raw) {
     if (isNum(numbers.h) && numbers.h < 0) return no('The height they start at is above what they land on: give it as a positive number.');
     for (const k of ['A.theta', 'B.theta']) if (isNum(numbers[k]) && Math.abs(numbers[k]) > 90) return no(`${Up(E.names[k])} is between −90° (straight down) and 90° (straight up).`);
     for (const k of ['A.t0', 'B.t0']) if (isNum(numbers[k]) && numbers[k] < 0) return no(`${Up(E.names[k])} is a time from the start: give it as 0 or more.`);
+    // from the ground itself, each has to leave it: upwards, and moving
+    if (!B.edge && numbers.h === 0) for (const n of ['A', 'B']) {
+      if ((isNum(numbers[`${n}.theta`]) && numbers[`${n}.theta`] <= 0) || numbers[`${n}.u`] === 0) return no(`From the ground ${n === 'A' ? 'the first' : 'the second'} must be launched upwards: give it a speed, and an angle above 0°.`);
+    }
   }
   if (engine === 'pair' || engine === 'bounce') {
     for (const k of ['h', 'A.h', 'B.h']) if (isNum(numbers[k]) && numbers[k] < 0) return no(`${Up(E.names[k])} is measured up from the ground: give it as a positive number.`);
@@ -185,7 +189,9 @@ export function titleOf(r) {
   if (r.engine === 'pair') return `Two on one line ${by}: when do they meet?`;
   if (r.engine === 'twin') {
     const two = r.objects.map((o) => FIGURES[o.figure].label);
-    const what2 = two[0] === two[1] ? `Two ${two[0].replace(/^an? /, '')}s` : `${Up(two[0])} and ${two[1]}`;
+    const plural = { person: 'people', lorry: 'lorries', bus: 'buses', ball: 'balls', marble: 'marbles', box: 'boxes' };
+    const many = (l) => { const n = l.replace(/^an? /, ''); return plural[n] || `${n}s`; };
+    const what2 = two[0] === two[1] ? `Two ${many(two[0])}` : `${Up(two[0])} and ${two[1]}`;
     return B.edge ? `${what2} off ${B.at}` : `${what2} ${where}`;
   }
   if (r.engine === 'bounce') return `${what} bouncing ${by}`;

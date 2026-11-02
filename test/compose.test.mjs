@@ -279,7 +279,7 @@ group('Two from one place', () => {
   near(s.extras.find((e) => e.key === 'gapX').value, 300 / 7, 1e-9, 'they land 15 × 20/7 m apart');
   ok(s.first === 'the car' && s.f.B.name === 'the stone', 'the car first; each named as the question names it');
   const w = c.kit.working(s, s.f.tMax);
-  ok(w.some((x) => /^The car: /.test(x.title)) && w.some((x) => /^The stone: /.test(x.title)) && w[w.length - 1].title === 'The two together', 'each launch worked in its own name, then the two together');
+  ok(w.some((x) => /^The car: /.test(x.title)) && w.some((x) => /^The stone, timed from when it sets off/.test(x.title)) && w[w.length - 1].title === 'The two together', 'each launch worked in its own name, then the two together');
   COMPOSED.push(c.scenario);
   const parts = fromReader(c.scenario.id, [{ label: 'a', asks: 'how far apart', answer: 'distance3' }, { label: 'b', asks: 'which first, by how long', answer: 'time3' }], Object.keys(c.boxes));
   near(answerOf(parts[1], s).values[0], 1, 1e-9, '(b) the time between landings is the engine’s');

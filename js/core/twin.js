@@ -29,7 +29,7 @@ export function solveTwin(k = {}) {
   if (!A.ok) return fail(`${nameA.replace(/^./, (c) => c.toUpperCase())}: ${A.reason}`);
   if (!B.ok) return fail(`${nameB.replace(/^./, (c) => c.toUpperCase())}: ${B.reason}`);
   const a0 = have(k.A?.t0) ? k.A.t0 : 0, b0 = have(k.B?.t0) ? k.B.t0 : 0;
-  if (a0 < 0 || b0 < 0) return fail('A start time is after the clock starts: give it as 0 or more.');
+  if (a0 < 0 || b0 < 0) return fail('A start time before the clock starts makes no sense here: give it as 0 or more.');
 
   // each on the one clock: waiting where it starts before it goes, resting
   // where it lands after
@@ -53,7 +53,8 @@ export function solveTwin(k = {}) {
 
   // the questions a pair is asked: when each lands, how far out, how fast,
   // and the differences between them
-  const gapT = snap(Math.abs(fa.tLand - fb.tLand)), gapX = snap(Math.abs(A.out - B.out));
+  const tidy = (x) => (Math.abs(x) < 1e-9 ? 0 : snap(x));
+  const gapT = tidy(Math.abs(fa.tLand - fb.tLand)), gapX = tidy(Math.abs(A.out - B.out));
   const extras = [
     { key: 'tA', label: `${nameA} lands at`, value: fa.tLand, unit: 's' },
     { key: 'tB', label: `${nameB} lands at`, value: fb.tLand, unit: 's' },
@@ -67,8 +68,9 @@ export function solveTwin(k = {}) {
   const Up = (s) => s.replace(/^./, (c) => c.toUpperCase());
   const first = fa.tLand < fb.tLand - 1e-9 ? nameA : fb.tLand < fa.tLand - 1e-9 ? nameB : null;
   const notes = [
-    ...A.notes.map((n) => `${Up(nameA)}: ${n}`),
-    ...B.notes.map((n) => `${Up(nameB)}: ${n}`),
+    // each launch's own sentences are timed from when it sets off; said so
+    ...A.notes.map((n) => `${Up(nameA)}${a0 > 0 ? `, timed from when it sets off at ${M`t = ${d(a0)} [s]`}` : ''}: ${n}`),
+    ...B.notes.map((n) => `${Up(nameB)}${b0 > 0 ? `, timed from when it sets off at ${M`t = ${d(b0)} [s]`}` : ''}: ${n}`),
     first ? `${Up(first)} lands first, ${M`${d(gapT)} [s]`} before ${first === nameA ? nameB : nameA}.` : 'They land at the same moment.',
     gapX > 1e-9 ? `They land ${M`${d(gapX)} [m]`} apart.` : 'They land at the same place.',
   ];

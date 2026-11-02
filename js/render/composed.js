@@ -304,10 +304,10 @@ function launch(canvas, o) {
     for (const e of R.effects) {
       // a car hitting the water at speed throws up a column, not a ripple
       if (e === 'splash' && wet) {
-        bigSplash(g, lx, oy, age, life, Math.max(clamp(k / 5, phone ? 1 : 1.5, phone ? 1.5 : 2.6), small ? 0 : size(k) / 26));
-        ripples(g, lx, oy, age, life, Math.max(1, (small ? 12 : size(k) * 0.5) / 18));
+        bigSplash(g, lx, oy, age, life, Math.max(clamp(k / 5, phone ? 1 : 1.5, phone ? 1.5 : 2.6), small ? 0 : size(k, piece) / 26));
+        ripples(g, lx, oy, age, life, Math.max(1, (small ? 12 : size(k, piece) * 0.5) / 18));
       }
-      else if (e === 'dust' && !wet) dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k) / 30), n: 22 });
+      else if (e === 'dust' && !wet) dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k, piece) / 30), n: 22 });
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
     }
@@ -321,7 +321,7 @@ function launch(canvas, o) {
 
   // ── the moving thing, at the engine's point
   const r = f.pos(t), v = f.vel(t), bx = X(r.x), by = Y(r.y);
-  const Lp = small ? 0 : size(k);
+  const Lp = small ? 0 : size(k, piece);
   const aloft = m.going && t > 0 && !landed;
   if (small) {
     const R0 = clamp(k * piece.m * 0.5, 5.5, 9);
@@ -333,7 +333,7 @@ function launch(canvas, o) {
       // while it sits there, easing to the engine's point as it goes
       else if (kind === 'coin') coin(g, bx, by - (fired && t > 0 ? 0 : 3), 8, fired ? t * 9 : 0.25);
       else if (kind === 'marble') marble(g, bx, by - (fired && t > 0 ? 0 : 7), 7);
-      else if (kind === 'arrow') arrowShaft(g, bx, by, Math.max(44, size(k)), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
+      else if (kind === 'arrow') arrowShaft(g, bx, by, Math.max(44, size(k, piece)), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
       else if (kind === 'ball') ballAt(g, bx, by, R0, m.ring);
       else if (kind === 'particle') particle(g, bx, by, R0 * 2, P, { ring: m.ring });
       else { pebble(g, bx, by, R0); if (m.ring) dot(g, bx, by, R0 + 3, { stroke: m.ring, width: 2.4 }); }

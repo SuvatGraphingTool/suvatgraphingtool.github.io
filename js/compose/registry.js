@@ -108,7 +108,7 @@ export const ENGINES = {
     label: 'Two launched from one place', kit: 'twin', view: 'side', objects: [2, 2], ready: true,
     what: 'two launched from the same height — thrown, dropped, driven or jumping off one edge — each at its own speed and angle, one perhaps later than the other: which lands first, and where',
     boxes: {
-      h: 'height they both start at above what they land on, m',
+      h: 'height they both start at above what they land on, m (0 from the ground)',
       'A.u': 'the first object’s (objects[0]) launch speed, m/s', 'A.theta': 'its angle in degrees (0 across, 90 up, −90 down)', 'A.t0': 'when it sets off, s (blank: at once)',
       'B.u': 'the second object’s launch speed, m/s', 'B.theta': 'its angle in degrees', 'B.t0': 'when it sets off, s',
       g: 'g, only if the question states it',
@@ -199,14 +199,14 @@ export const BOUNCE_ANSWERS = [
 ];
 /** Two from one place: the twin engine's answers (js/core/twin.js). */
 export const TWIN_ANSWERS = [
-  { kind: 'time', say: 'when the first lands', find: 'extras.tA', sym: 't', unit: 's', at: 'extras.tA' },
-  { kind: 'time', say: 'when the second lands', find: 'extras.tB', sym: 't', unit: 's', at: 'extras.tB' },
+  { kind: 'time', say: 'when the first-named one (objects[0]) lands', find: 'extras.tA', sym: 't', unit: 's', at: 'extras.tA' },
+  { kind: 'time', say: 'when the second-named one (objects[1]) lands', find: 'extras.tB', sym: 't', unit: 's', at: 'extras.tB' },
   { kind: 'time', say: 'the time between their landings', find: 'extras.gapT', sym: 't', unit: 's', at: 'end' },
-  { kind: 'distance', say: 'how far out the first lands', find: 'extras.xA', sym: 'x', unit: 'm', at: 'extras.tA' },
-  { kind: 'distance', say: 'how far out the second lands', find: 'extras.xB', sym: 'x', unit: 'm', at: 'extras.tB' },
+  { kind: 'distance', say: 'how far out the first-named one lands', find: 'extras.xA', sym: 'x', unit: 'm', at: 'extras.tA' },
+  { kind: 'distance', say: 'how far out the second-named one lands', find: 'extras.xB', sym: 'x', unit: 'm', at: 'extras.tB' },
   { kind: 'distance', say: 'the distance between where they land', find: 'extras.gapX', sym: 'd', unit: 'm', at: 'end' },
-  { kind: 'speed', say: 'the speed the first lands at', find: 'extras.vA', sym: 'v', unit: 'm s^-1', at: 'extras.tA' },
-  { kind: 'speed', say: 'the speed the second lands at', find: 'extras.vB', sym: 'v', unit: 'm s^-1', at: 'extras.tB' },
+  { kind: 'speed', say: 'the speed the first-named one lands at', find: 'extras.vA', sym: 'v', unit: 'm s^-1', at: 'extras.tA' },
+  { kind: 'speed', say: 'the speed the second-named one lands at', find: 'extras.vB', sym: 'v', unit: 'm s^-1', at: 'extras.tB' },
   { kind: 'graph', say: 'a sketch of the graphs: the stage draws them' },
 ];
 export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bounce: BOUNCE_ANSWERS, twin: TWIN_ANSWERS };

@@ -10,6 +10,8 @@ import { solveTwin } from '../core/twin.js';
 import { height } from './height.js';
 import { M, T, num } from '../notation.js';
 
+/** Where one landed: straight down at the foot, or so far out. */
+const where = (s) => (s.vertical || Math.abs(s.out) < 1e-9 ? s.Pl.foot : `${M`${tr(s.out)} [m]`} out`);
 const tr = (x) => num(x, x !== 0 && Math.abs(x) < 1 ? 4 : 3, { trim: true });
 const one = (n) => [
   { key: `${n}.u`, col: n, label: `Speed ${M`u`} (m s⁻¹)`, placeholder: '—', hint: 'How fast it is launched. 0 if it is dropped.' },
@@ -39,13 +41,13 @@ export const twin = {
   working(solved, t) {
     if (!solved?.ok) return [];
     const of = (s, name, t0) => height.working(s, Math.max(0, Math.min(t - t0, s.f.tMax)))
-      .map((sec) => ({ ...sec, title: `${name.replace(/^./, (c) => c.toUpperCase())}: ${sec.title}` }));
+      .map((sec) => ({ ...sec, title: `${name.replace(/^./, (c) => c.toUpperCase())}${t0 > 0 ? `, timed from when it sets off at ${M`t = ${tr(t0)} [s]`}` : ''}: ${sec.title}` }));
     const { f } = solved;
     return [...of(solved.A, f.A.name, f.A.t0), ...of(solved.B, f.B.name, f.B.t0), {
       title: 'The two together',
       rows: [
-        { f: M`t_A = ${tr(f.A.t0)} + ${tr(solved.A.T)}`, s: '', r: M`t_A = ${tr(f.A.tLand)} [s]` },
-        { f: M`t_B = ${tr(f.B.t0)} + ${tr(solved.B.T)}`, s: '', r: M`t_B = ${tr(f.B.tLand)} [s]` },
+        { f: M`t_A = t_0 + T`, s: M`${tr(f.A.t0)} + ${tr(solved.A.T)}`, r: M`t_A = ${tr(f.A.tLand)} [s]` },
+        { f: M`t_B = t_0 + T`, s: M`${tr(f.B.t0)} + ${tr(solved.B.T)}`, r: M`t_B = ${tr(f.B.tLand)} [s]` },
       ],
       note: solved.notes.slice(-2).join(' '),
     }];
@@ -89,10 +91,10 @@ export const twin = {
   ending(solved) {
     const { f } = solved;
     return {
-      eyebrow: `From ${tr(solved.h)} m above ${solved.Pl.below}`,
+      eyebrow: solved.h > 0 ? `From ${tr(solved.h)} m above ${solved.Pl.below}` : `From ${solved.Pl.below}`,
       title: solved.first ? `${solved.first.replace(/^./, (c) => c.toUpperCase())} lands first.` : 'They land at the same moment.',
       body: solved.notes.slice(-2).map((x) => `<p>${x}</p>`).join('')
-        + `<p>${f.A.name.replace(/^./, (c) => c.toUpperCase())} lands at ${M`t = ${tr(f.A.tLand)} [s]`}, ${M`${tr(solved.A.out)} [m]`} out; ${f.B.name} at ${M`t = ${tr(f.B.tLand)} [s]`}, ${M`${tr(solved.B.out)} [m]`} out.</p>`,
+        + `<p>${f.A.name.replace(/^./, (c) => c.toUpperCase())} lands at ${M`t = ${tr(f.A.tLand)} [s]`}, ${where(solved.A)}; ${f.B.name} at ${M`t = ${tr(f.B.tLand)} [s]`}, ${where(solved.B)}.</p>`,
       real: true,
     };
   },
