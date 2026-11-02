@@ -668,6 +668,16 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const lvl = fromReader('from-a-height', [{ label: 'b', asks: 'horizontal distance when 5 m above ground on the way down' }])?.[0];
   ok(lvl?.find === 'level.xDown', 'that part is From a height’s distance at the height asked');
   ok(!fromReader('up', [{ label: 'b', asks: 'horizontal distance when 5 m above ground on the way down', answer: 'range' }])[0].find, 'and never the range, whatever key the reader named');
+  // round 6 (hand-written): i and j, and the twelve's g
+  const vec = fromReader('vectors-ij', [{ label: 'a', asks: 'when it is moving parallel to i', answer: 'time' }, { label: 'b', asks: 'position vector then' }]);
+  ok(vec[0].find === 'answers.moving.t', '"when is it moving parallel to i" is the moment it moves that way, not when it is due east of O');
+  ok(!/another topic/.test(vec[1].say) && /working/.test(vec[1].say), 'a part with no answer line points to the working, never to "another topic"');
+  const PK = KITS[byId('vectors-ij').kit], pv = PK.solve(PK.read({ 'u.x': 2, 'u.y': -5, 'a.x': 1, 'a.y': 2, 'at.moving': 'E' }));
+  const mv = pv.answers?.moving ?? (Array.isArray(pv.answers) ? pv.answers.find((a) => a.kind === 'moving') : null);
+  ok(mv?.ok && Math.abs(mv.t - 2.5) < 1e-9, 'and it moves parallel to i at t = 2.5 s');
+  const { readoutHTML } = await import('../js/ai/readout.js');
+  const gRow = readoutHTML({ items: [{ k: 'g', value: 9.81, how: 'assumed' }], asks: [] }, {});
+  ok(/m-var">g</.test(gRow) && !/m-var">a</.test(gRow), 'the twelve list g as g, not a');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

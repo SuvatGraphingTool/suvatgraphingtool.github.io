@@ -151,6 +151,11 @@ export const LIBRARY = [
       { label: 'a', kind: 'time', ask: 'When is the particle due east of the origin $O$?', find: 'answers.due.t', sym: 't', unit: 's', trim: true, at: 'answers.due.t', step: 'due east', paper: 30 },
       { label: 'b', kind: 'speed', ask: 'How fast is it moving at the moment it heads south-east?', sym: 'abs(vec v)', find: 'answers.moving.speed', unit: 'm s^-1', at: 'answers.moving.t', step: 'south-east', paper: 1.41 },
     ],
+    answers: [
+      // "when is it moving parallel to i", "… north-west": the moment its velocity points that way
+      { kind: 'time', say: 'when it is moving in the direction asked: parallel to i or j, north-west, …', find: 'answers.moving.t', sym: 't', unit: 's', trim: true, at: 'answers.moving.t', step: 'south-east', example: { 'u.x': 2, 'u.y': -5, 'a.x': 1, 'a.y': 2, 'at.moving': 'E' } },
+      { kind: 'distance', say: 'how far from O it is at the moment it is moving in the direction asked', find: 'answers.moving.dist', sym: 'abs(vec r)', unit: 'm', trim: true, at: 'answers.moving.t', example: { 'u.x': 2, 'u.y': -5, 'a.x': 1, 'a.y': 2, 'at.moving': 'E' } },
+    ],
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jun 2012', q: '7' },
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2013', q: '7' },
