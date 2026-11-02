@@ -63,6 +63,7 @@ export const BACKDROPS = {
   court:   { label: 'A tennis court', what: 'a tennis court at its real size, served from its baseline: the net across the middle (drawn only where the ball clears it or lands short), the umpire’s chair, the windbreak fence; from a height, a show court’s stand', place: 'court', below: 'ground', art: true, on: 'on a tennis court', high: 'a show court’s stand', lands: 'chalk' },
   arena:   { label: 'A basketball arena', what: 'an indoor basketball court: the crowd in the bleachers, the scoreboard, the maple floor; the hoop where it passes the height a part asks about (numbers.level) on its way down, its net swishing as it drops through; from a height, the bleachers’ upper tier', place: 'arena', below: 'floor', art: true, on: 'in a basketball arena', high: 'the top of the bleachers', lands: 'ring' },
   castle:  { label: 'A castle', what: 'a castle: the battlements of its curtain wall, the keep with its flag behind, a moat at the wall’s foot, fields and a village beyond', place: 'castle', below: 'ground', edge: true, at: 'the battlements of a castle', art: true },
+  runway:  { label: 'An airfield', what: 'an airfield: the runway with its edge lights and centre line, the terminal and its control tower beyond, an airliner at its gate, a windsock; from a height, the aircraft steps (to about 7 m) or the control tower', place: 'runway', below: 'road', art: true, on: 'on an airfield', high: 'the aircraft steps' },
   carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
   volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
   quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
@@ -374,7 +375,7 @@ export const placeOf = (r) => ({ ...BACKDROPS[r.backdrop], below: r.below || BAC
    becomes a figure — exactly, or the closest one there is, saying so — so
    what moves is what is drawn, everywhere; never a silent ball. */
 const WORDS = [
-  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager)\b/, 'diver'],
+  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager|astronaut|spaceman|spacewoman|cosmonaut)\b/, 'diver'],
   [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
   [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
   [/\b(sandbag|sand ?bag|sack|bag of (sand|flour)|ballast)\b/, 'sandbag'], [/\b(bucket|pail)\b/, 'bucket'],
@@ -473,6 +474,7 @@ const ONLY_HERE = [
   [/\b(volcano|volcanic|erupt(?:s|ion|ing)?|lava bomb)\b/, 'volcano'],
   [/\b(quarry|quarry face|rock face of (?:a|the) quarry)\b/, 'quarry'],
   [new RegExp(`${FROM}(?:(?:top|battlements?|walls?|ramparts?|tower) of (?:a|the)\\s+)?(castle|castle wall|battlements|ramparts|fortress|fort)\\b`), 'castle'],
+  [/\b(?:on|along|across|onto)\s+(?:a|the|an)\s+(?:runway|airfield|apron)\b|\b(aircraft steps|airstairs?|control tower)\b/, 'runway'],
   [/\b(tennis court|centre court|grass court|hard court|clay court|tennis match|tennis player)\b/, 'court'],
   [/\b(basketball (?:court|hoop|player|ring|net|arena)|netball (?:court|hoop|post|ring)|(?:through|into|at) the (?:hoop|ring)|free throw|jump shot|slam dunk)\b/, 'arena'],
   // on a beach, but not a cliff, pier or harbour over one ("off the cliff onto the beach" is the cliff's)

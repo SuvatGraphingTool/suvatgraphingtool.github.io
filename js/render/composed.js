@@ -421,6 +421,12 @@ function launch(canvas, o) {
     gm = Math.max(gm, end0.x * 0.5);
     const gx = X(gm), back = Math.max(X(end0.x + 0.8), gx + 14);
     goal(g, { x: gx, back, bar: oy - Math.max(24, 2.44 * k), y: oy }, t >= f.tMax - 1e-9 && clock.at != null ? (performance.now() - clock.at) / 1000 : -1, SETTLE);
+    // the goalkeeper: ready on the line, then diving low across the goal, toward
+    // us, as the ball comes, beaten; down on the turf once it is in. Drawn on the
+    // near side of the goal, under the ball, never in front of it (no save is claimed)
+    const kH = Math.max(30, Math.min(150, 1.85 * k)), dv = clamp((t - (f.tMax - 0.35)) / 0.35, 0, 1), e = dv * dv * (3 - 2 * dv);
+    const kx = gx - kH * 0.1 - kH * 0.2 * e, ky = lerpN(oy - DIVER_FEET * kH, oy - kH * 0.14, e) + 6 * e;
+    diver(g, kx, ky, kH, P, { ring: '#e8c547', dir: -1, stand: dv === 0, arms: 0.3 + 0.7 * e, spin: -(Math.PI / 2) * 0.95 * e });
   }
   const later = [];
   const landed = t >= f.tMax - 1e-9;
@@ -636,7 +642,8 @@ function launch(canvas, o) {
       // a full turn (or a lean and back) so it lands upright
       const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * (wet ? 3 : 2) : wet ? ease(0.05, 1, p) * Math.PI * 0.85 : Math.sin(ease(0.05, 0.95, p) * Math.PI) * 0.6;
       m.body = { x: cx, y: cy - (fired ? 0 : Lp * 0.25) };
-      diver(g, cx, cy, Lp, P, { ring: m.ring, tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
+      // on the Moon or Mars, in a white spacesuit
+      diver(g, cx, cy, Lp, P, { ring: m.ring || (R.backdrop === 'moon' || R.backdrop === 'mars' ? '#e4e6ea' : null), tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
     } else if (piece.animal) {
       // crouched on the edge, its feet at the engine's point; it springs,
       // stretches out in the air, and reaches down to land
@@ -750,7 +757,7 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const name = { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);

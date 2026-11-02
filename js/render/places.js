@@ -2037,5 +2037,102 @@ function castle(g, c) {
   softShadow(g, x0 + 8, oy + 2, 26, 4, 0.5);
 }
 
+/* ── an airfield ────────────────────────────────────────────────────────── */
+
+/** An airfield: the terminal and its control tower beyond, an airliner at
+    its gate, a windsock; the grass, then the runway with its edge lights and
+    the dashed centre line along the flight's own depth. From a height: the
+    aircraft steps up to a plane's door (to about 7 m), or the control tower's
+    gallery above that. */
+function runway(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(229), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
+  sky(g, w, horizon, x0, { far: 'none', seed: 151, clouds: 3 });
+  // the terminal: long, low, glazed, along the horizon, clear of where it is thrown from
+  const tx0 = clamp(x0 + 60, w * 0.3, w * 0.6), tw = Math.min(w - tx0 - 10, clamp(w * 0.45, 160, 520)), th = clamp((oy - horizon) * 0.35, 14, 44);
+  g.fillStyle = n ? '#4a5060' : '#d8dce2'; g.fillRect(tx0, horizon - th, tw, th);
+  g.fillStyle = n ? withAlpha(E.window, 0.8) : '#7a96b2'; g.fillRect(tx0 + 4, horizon - th * 0.8, tw - 8, th * 0.45);
+  g.fillStyle = withAlpha('#ffffff', 0.25); for (let x = tx0 + 8; x < tx0 + tw - 6; x += 14) g.fillRect(x, horizon - th * 0.8, 1, th * 0.45);
+  g.fillStyle = n ? '#3a3e48' : '#9aa2ae'; g.fillRect(tx0 - 4, horizon - th - 4, tw + 8, 5);
+  // the control tower at the terminal's end: its shaft, the glazed cab, the antenna
+  const cx = tx0 + tw - clamp(tw * 0.08, 14, 40), ch = th * 2.6;
+  g.fillStyle = n ? '#5a6070' : '#c8ccd2'; g.fillRect(cx - 5, horizon - ch, 10, ch);
+  g.fillStyle = n ? '#3a3e48' : '#6a7280'; g.beginPath(); g.moveTo(cx - 13, horizon - ch); g.lineTo(cx + 13, horizon - ch); g.lineTo(cx + 10, horizon - ch - 12); g.lineTo(cx - 10, horizon - ch - 12); g.closePath(); g.fill();
+  g.fillStyle = n ? withAlpha(E.window, 0.9) : '#a9c4dc'; g.fillRect(cx - 10, horizon - ch - 10, 20, 7);
+  g.strokeStyle = n ? '#8a8e96' : '#5a6070'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, horizon - ch - 12); g.lineTo(cx, horizon - ch - 24); g.stroke();
+  // an airliner at its gate in front of the terminal, side on: fuselage, fin, wing, engines
+  const pl = clamp(tw * 0.3, 60, 160), px = tx0 + tw * 0.25, py = horizon - pl * 0.06;
+  g.fillStyle = n ? '#c8ccd2' : '#f4f6f8'; g.beginPath(); g.roundRect(px, py - pl * 0.08, pl, pl * 0.08, pl * 0.04); g.fill();
+  g.beginPath(); g.moveTo(px + pl * 0.04, py - pl * 0.07); g.lineTo(px - pl * 0.02, py - pl * 0.24); g.lineTo(px + pl * 0.1, py - pl * 0.24); g.lineTo(px + pl * 0.2, py - pl * 0.07); g.closePath(); g.fillStyle = n ? '#3a4a6a' : '#2f5fa8'; g.fill();
+  g.fillStyle = n ? '#9aa0a8' : '#c8ccd2'; g.beginPath(); g.moveTo(px + pl * 0.45, py - pl * 0.03); g.lineTo(px + pl * 0.35, py + pl * 0.02); g.lineTo(px + pl * 0.55, py - pl * 0.03); g.closePath(); g.fill();
+  g.fillStyle = n ? '#6a7080' : '#8a929e'; g.beginPath(); g.roundRect(px + pl * 0.42, py - pl * 0.01, pl * 0.1, pl * 0.035, pl * 0.015); g.fill();
+  g.fillStyle = n ? withAlpha(E.window, 0.7) : '#5a6a7e'; for (let i = 0; i < 12; i++) g.fillRect(px + pl * (0.2 + i * 0.055), py - pl * 0.06, pl * 0.02, pl * 0.018);
+  g.fillStyle = '#2f5fa8'; g.fillRect(px + pl * 0.1, py - pl * 0.03, pl * 0.85, pl * 0.012);
+  // the grass to the runway, then the runway: tarmac, its edges, edge lights and the centre line
+  grass(g, 0, w, horizon, h);
+  const yF = lerp(horizon, oy, 0.45), yN = oy + clamp((h - oy) * 0.5, 14, 60);
+  const tg = g.createLinearGradient(0, yF, 0, yN); tg.addColorStop(0, n ? '#2a2c30' : '#5a5e64'); tg.addColorStop(1, n ? '#1e2024' : '#45484e');
+  g.fillStyle = tg; g.fillRect(0, yF, w, yN - yF);
+  g.fillStyle = withAlpha('#ffffff', 0.05); for (let i = 0; i < (w * (yN - yF)) / 60; i++) g.fillRect(r() * w, yF + r() * (yN - yF), 2, 1);
+  g.fillStyle = withAlpha('#ffffff', n ? 0.6 : 0.85); g.fillRect(0, yF + 2, w, 2); g.fillRect(0, yN - 4, w, 2.5);
+  // the centre line, dashed along the depth the flight is in, its rubber marks where wheels touch
+  for (let x = -r() * 40; x < w; x += 46) g.fillRect(x, oy - 1, 26, 2.5);
+  g.fillStyle = withAlpha('#000000', 0.25); for (let i = 0; i < 6; i++) { const x = r() * w; g.fillRect(x, oy + 4 + r() * 6, 30 + r() * 40, 2); }
+  for (let x = 12; x < w; x += 54) for (const [y, rr] of [[yF, 2], [yN - 2, 3]]) {
+    g.fillStyle = n ? '#fff6c8' : '#f4f0d8'; g.beginPath(); g.arc(x, y, rr, 0, TAU); g.fill();
+    if (n) { const gl = g.createRadialGradient(x, y, 0, x, y, rr * 4); gl.addColorStop(0, 'rgba(255,246,200,0.5)'); gl.addColorStop(1, 'rgba(255,246,200,0)'); g.fillStyle = gl; g.fillRect(x - rr * 4, y - rr * 4, rr * 8, rr * 8); }
+  }
+  // a windsock on the far side, red and white, clear of where it lands
+  const land = (c.clearX || [])[0] ?? w, wx = [land + 90, x0 - 60, w - 40].find((x) => x > 20 && x < w - 20 && Math.abs(x - land) > 70 && Math.abs(x - x0) > 50);
+  if (wx != null) {
+    const wh = clamp((yF - horizon) * 1.4, 18, 50), wy = yF - 4;
+    g.strokeStyle = n ? '#8a8e96' : '#5a6070'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(wx, wy); g.lineTo(wx, wy - wh); g.stroke();
+    for (let i = 0; i < 4; i++) { const sx = wx + i * wh * 0.12; g.fillStyle = i % 2 ? '#f4f4f4' : '#c8383a'; g.beginPath(); g.moveTo(sx, wy - wh - wh * 0.08 + i * wh * 0.012); g.lineTo(sx + wh * 0.12, wy - wh - wh * 0.07 + (i + 1) * wh * 0.012); g.lineTo(sx + wh * 0.12, wy - wh + wh * 0.07 - (i + 1) * wh * 0.012); g.lineTo(sx, wy - wh + wh * 0.08 - i * wh * 0.012); g.closePath(); g.fill(); }
+  }
+  if (!(H0 > 0)) return;
+  const H = oy - top;
+  if (H0 <= 7) {
+    // the aircraft steps: a truck whose stair climbs to a railed platform at the top, the stair's
+    // side panel solid, its treads stepping up along it, struts down to the chassis
+    const run = H * 1.1, base = x0 - clamp(1.2 * k, 14, 40) - run, plat = clamp(1.2 * k, 14, 40), deck = clamp(0.25 * k, 4, 10);
+    const chY = oy - clamp(0.9 * k, 10, 26), chH = clamp(0.45 * k, 6, 14), side = clamp(0.35 * k, 6, 16);
+    const white = n ? '#a8acb4' : '#eef0f3', grey = n ? '#6a7080' : '#9aa2ae', yel = n ? '#8a7a3a' : '#e8c547';
+    // the chassis and its cab, low at the far end, wheels under it
+    g.fillStyle = yel; g.fillRect(base - plat * 0.6, chY, run + plat * 1.4, chH);
+    g.fillStyle = yel; g.beginPath(); g.roundRect(base - plat * 0.6, chY - chH * 1.6, plat * 0.9, chH * 1.6, 3); g.fill();
+    g.fillStyle = n ? withAlpha(E.window, 0.8) : '#a9c4dc'; g.fillRect(base - plat * 0.5, chY - chH * 1.4, plat * 0.6, chH * 0.7);
+    for (const wx2 of [base - plat * 0.2, x0 - plat * 0.6]) { g.fillStyle = '#1d1e22'; g.beginPath(); g.arc(wx2, oy - chH * 0.55, chH * 0.55, 0, TAU); g.fill(); g.fillStyle = '#8a9098'; g.beginPath(); g.arc(wx2, oy - chH * 0.55, chH * 0.22, 0, TAU); g.fill(); }
+    // the struts from the chassis up under the stair and the platform
+    g.strokeStyle = grey; g.lineWidth = Math.max(2, 0.08 * k); g.lineCap = 'butt';
+    g.beginPath(); g.moveTo(x0 - plat * 0.5, chY); g.lineTo(x0 - plat * 0.5, top + deck); g.moveTo(base + run * 0.5, chY); g.lineTo(x0 - plat, top + H * 0.35); g.moveTo(base + run * 0.55, chY); g.lineTo(base + run * 0.55, lerp(chY, top, 0.5) + side); g.stroke();
+    // the stair's side panel, from the chassis up to the platform
+    const sx0 = base, sy0 = chY, sx1 = x0 - plat, sy1 = top;
+    g.fillStyle = white; g.beginPath(); g.moveTo(sx0, sy0); g.lineTo(sx1, sy1); g.lineTo(sx1, sy1 + side); g.lineTo(sx0 + side * 0.8, sy0 + side * 0.3); g.closePath(); g.fill();
+    g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; g.stroke();
+    // the treads: a step profile along the top of the panel
+    const steps = Math.max(5, Math.round(H / 0.2 / Math.max(1, H / 6)));
+    g.fillStyle = grey; g.beginPath(); g.moveTo(sx0, sy0);
+    for (let i = 0; i < steps; i++) { const u0 = i / steps, u1 = (i + 1) / steps; g.lineTo(lerp(sx0, sx1, u0), lerp(sy0, sy1, u1)); g.lineTo(lerp(sx0, sx1, u1), lerp(sy0, sy1, u1)); }
+    g.lineTo(sx1, sy1 + 2); g.lineTo(sx0, sy0 + 2); g.closePath(); g.fill();
+    // the platform, its deck and the guard rail round its back
+    g.fillStyle = white; g.fillRect(sx1, top, plat, deck); g.strokeStyle = withAlpha('#000000', 0.3); g.strokeRect(sx1, top, plat, deck);
+    const rh = clamp(1 * k, 12, 30);
+    g.strokeStyle = grey; g.lineWidth = Math.max(1.6, 0.05 * k);
+    g.beginPath(); g.moveTo(sx0 + side, sy0 - rh); g.lineTo(sx1, sy1 - rh); g.lineTo(sx1 + plat * 0.5, sy1 - rh); g.stroke();
+    for (let i = 0; i <= 4; i++) { const u = i / 4, px = lerp(sx0 + side, sx1, u), py = lerp(sy0, sy1, u); g.beginPath(); g.moveTo(px, py); g.lineTo(px, py - rh); g.stroke(); }
+    g.beginPath(); g.moveTo(sx1 + plat * 0.5, sy1); g.lineTo(sx1 + plat * 0.5, sy1 - rh); g.stroke();
+    softShadow(g, (base + x0) / 2, oy + 2, run * 0.6, 4, 0.6);
+  } else {
+    // the control tower: a concrete shaft up to its gallery, the glazed cab above
+    const sw = clamp(H * 0.12, 16, 60);
+    stone(g, x0 - sw, top, sw, H, { course: clamp(0.8 * k, 6, 18), color: n ? '#6a6e76' : '#cfd2d6', seed: 47 });
+    g.fillStyle = n ? '#3a3e48' : '#6a7280'; g.fillRect(x0 - sw * 1.5, top - 3, sw * 1.5 + 2, 5);
+    g.fillStyle = n ? withAlpha(E.window, 0.9) : '#a9c4dc'; g.fillRect(x0 - sw * 1.35, top - sw * 0.7, sw * 1.2, sw * 0.6);
+    g.fillStyle = n ? '#3a3e48' : '#6a7280'; g.fillRect(x0 - sw * 1.45, top - sw * 0.8, sw * 1.4, sw * 0.12);
+    g.strokeStyle = n ? '#c8ccd2' : '#9aa2ae'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x0 - sw * 1.5, top - clamp(1 * k, 10, 24)); g.lineTo(x0 - sw * 0.6, top - clamp(1 * k, 10, 24)); g.stroke();
+    softShadow(g, x0 - sw / 2, oy + 2, sw, 4, 0.6);
+  }
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway };
