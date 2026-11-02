@@ -81,7 +81,7 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
 const STOP = new Set(['what', 'when', 'where', 'which', 'find', 'from', 'that', 'this', 'with', 'their', 'there', 'they', 'does', 'will', 'into', 'than', 'then', 'show', 'value', 'time', 'speed', 'height', 'distance', 'ball', 'particle']);
 
 // "how long is the ramp" is a distance; "how long until it lands" a time
-const HOW = [[/\bhow (high|tall)\b/, 'height'], [/\bhow far\b/, 'distance'], [/\bhow (fast|quickly)\b/, 'speed'],
+const HOW = [[/\bhow (high|tall|deep)\b/, 'height'], [/\bhow far\b/, 'distance'], [/\bhow (fast|quickly)\b/, 'speed'],
   [/\bhow long (is|was) (the|a|an)\b/, 'distance'], [/\bhow long\b|\bhow many seconds\b/, 'time']];
 
 export function fromReader(id, raw, boxes = []) {
@@ -105,7 +105,7 @@ export function fromReader(id, raw, boxes = []) {
       if (m.length < 2) return m[0] || null;
       // "how high does it go", "the highest point", "max height": the greatest height
       // and a "total" time or distance is the whole one
-      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}`;
+      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}`;
       const mine = new Set(cue.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)));
       const score = m.map((a) => String(a.say || '').toLowerCase().split(/[^a-z]+/).filter((w) => mine.has(w)).length);
       const best = Math.max(...score);

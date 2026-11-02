@@ -100,6 +100,11 @@ function settle(x, words) {
   // composed, let go from what carries it: a balloon moves straight up or down, and a
   // speed read as negative ("descending at 3 m/s" as u = −3) is a speed downwards
   const n = x?.scenario === 'compose' && x.recipe?.numbers;
+  // "rolls off the desk", "slides off", "flicked off", "horizontally": launched flat
+  if (n && (n.theta == null || n.theta === '') && !(Number(n.u) < 0)
+      && /\b(roll(s|ed|ing)?|slid(e|es|ing)?|pushed|push(es)?|flick(s|ed)?)\b[^.]*?\boff\b|\bhorizontally\b/i.test(words)) {
+    return { ...x, recipe: { ...x.recipe, numbers: { ...n, theta: 0 } } };
+  }
   if (n && (n.theta == null || n.theta === '') && Number(n.u) !== 0 && isFinite(Number(n.u)) && n.u !== '' && n.u != null) {
     const balloon = x.recipe.backdrop === 'air' && /balloon/i.test(String(x.recipe.carrier || ''));
     const text = `${words} ${x.summary || ''}`;
@@ -110,6 +115,8 @@ function settle(x, words) {
   if (x?.library !== 'from-a-height' || !b) return x;
   const text = `${words} ${x.summary || ''}`;
   const out = { ...x, boxes: { ...b } };
+  // "hits the water 2.5 s later. how deep is the well": a height of 0 with a time is the height asked
+  if (b.h === 0 && b.t > 0) delete out.boxes.h;
   // an angle the question gave is kept: the engine then says, in words, that
   // from a well or a balloon it moves only straight up or down
   if ((b.place === 'well' || b.place === 'balloon') && b.u > 0 && b.theta !== 90 && b.theta !== -90 && !x.angleGiven) {
@@ -210,7 +217,40 @@ function lanes(x) {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(cleared(timed(marked(x, words), words), words), words), words), words), words)), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(cleared(lowered(reacts(timed(marked(x, words), words), words), words), words), words), words), words), words)), words);
+}
+
+/**
+ * A driver who reacts first, then brakes: "reacts after 0.6 s and then brakes
+ * at 6 m/s²" is two stages, a steady one and a braking one, not one road. A
+ * Journey in stages, braking to rest, timed at the distance the question names
+ * ("a red light 50 m ahead"): its speed there says whether it stops in time.
+ */
+const REACTS = /\breact(s|ed|ing|ion)?\b|\bthinking (time|distance)\b/i;
+function reacts(x, words) {
+  if (x?.scenario !== 'road' || !REACTS.test(words) || !(x.u > 0) || !(typeof x.a === 'number' && x.a !== 0)) return x;
+  const times = [...new Set([...String(words).matchAll(/(\d+(?:\.\d+)?)\s*(?:s|secs?|seconds)\b(?!\s*[²2^-])/gi)].map((m) => Number(m[1])))];
+  if (times.length !== 1 || !(times[0] > 0)) return x;
+  const boxes = { n: 2, u: x.u, k1: 'hold', t1: times[0], k2: 'down', a2: Math.abs(x.a), v2: 0 };
+  if (x.s > 0) boxes['at.s'] = x.s;
+  const out = { understood: true, confidence: x.confidence || 'high', scenario: 'library', library: 'journey-stages', summary: x.summary, boxes };
+  for (const k of ['who', 'asks', 'asked', 'parts']) if (x[k] != null) out[k] = x[k];
+  return out;
+}
+
+/**
+ * "The landing platform is 2 m lower": a launch from 2 m above where it lands,
+ * which a reader may give no height at all.
+ */
+const LOWER = /(\d+(?:\.\d+)?)\s*m\s*(?:lower|below where it|below the (?:ramp|launch|start))\b/i;
+function lowered(x, words) {
+  const m = LOWER.exec(String(words || ''));
+  if (!m || !(Number(m[1]) > 0)) return x;
+  const h = Number(m[1]);
+  const n = x?.scenario === 'compose' && (!x.recipe?.engine || x.recipe.engine === 'projectile') && x.recipe?.numbers;
+  if (n && !(Number(n.h) > 0)) return { ...x, recipe: { ...x.recipe, numbers: { ...n, h } } };
+  if (x?.scenario === 'arc' && x.angleDegrees != null) return { ...x, scenario: 'platform-angle', h };
+  return x;
 }
 
 /**

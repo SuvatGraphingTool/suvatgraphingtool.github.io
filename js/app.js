@@ -3532,7 +3532,9 @@ function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = t
       // a choice stays in words: "A diving board"
       const o = f.options.find((q) => String(q.v) === String(v));
       if (!o) continue;
-      shown = `${esc(plain(f.label))}: <b>${esc(plain(o.label))}</b>`;
+      // a stage's "It: speeds up" says which stage
+      const stage = /^It$/i.test(plain(f.label)) && /^k(\d+)$/.exec(f.key)?.[1];
+      shown = `${esc(stage ? `Stage ${stage}` : plain(f.label))}: <b>${esc(plain(o.label))}</b>`;
     } else {
       const n = typeof v === 'number' ? v : Number(v);
       if (!isFinite(n)) { shown = `${esc(plain(f.label))}: ${esc(String(v))}`; }
@@ -3573,6 +3575,8 @@ function askedHTML(id, x, solvedLike) {
     : Array.isArray(x.asks) ? x.asks.filter((a) => typeof a === 'string').map((a) => ({ asks: a })) : [];
   const ps = raw.length ? fromReader(id, raw.slice(0, 4).map((p, i) => ({ ...p, label: String.fromCharCode(97 + i) }))) || [] : [];
   const rows = ps.map((p) => {
+    // "does it clear", "whether he reaches it": yes or no, which a number alone does not say
+    if (/^\s*(whether|does|do|did|is|are|was|can|could|will|would)\b/i.test(p.ask || '') && !/\b(how|what|when|where|which)\b/i.test(p.ask || '')) return '';
     // of two answers the question's words cannot tell apart, the one they both come to:
     // from the ground, the greatest height above it and above the launch are one
     if (!p.find && p.either) {

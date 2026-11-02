@@ -625,6 +625,20 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const phone = toPlace({ understood: true, scenario: 'compose', summary: 'A phone is dropped from a descending hot air balloon at 40 m.', recipe: { backdrop: 'air', carrier: 'balloon', engine: 'projectile', objects: [{ figure: 'phone' }], numbers: { h: 40, u: -3 } } }, 'a hot air balloon is descending at 3 m/s when a passenger drops a phone from 40 m up');
   ok(phone.recipe.numbers.u === 3 && phone.recipe.numbers.theta === -90, 'from a descending balloon, u = −3 with no angle: 3 m/s straight down');
   ok(toPlace({ understood: true, scenario: 'compose', summary: 'x', recipe: { backdrop: 'air', carrier: 'balloon', engine: 'projectile', objects: [{ figure: 'phone' }], numbers: { h: 40, u: 3 } } }, 'a balloon rising at 3 m/s lets go a phone at 40 m').recipe.numbers.theta === 90, 'from a rising one: straight up');
+  ok(one('arc', 'how long was it in the air')?.find === 'f.tFlight', '"how long was it in the air" is the time of flight');
+  ok(one('from-a-height', 'how deep is the well')?.find === 'h', '"how deep is the well" is the height it was let go from');
+  const well = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'well', h: 0, u: 0, theta: 0, t: 2.5 } }, 'a stone is dropped down a well and hits the water 2.5 s later. how deep is the well');
+  ok(!('h' in well.boxes) && well.boxes.t === 2.5, 'a well 0 m deep with a time: the depth is what is asked, left to the engine');
+  const bike = toPlace({ understood: true, scenario: 'compose', summary: 'x', recipe: { backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'motorcycle' }], numbers: { h: 0, u: 25, theta: 20 } }, asked: [{ asks: 'whether he reaches the platform', answer: 'distance' }] }, 'a stuntman rides a motorbike off a ramp at 25 m/s at 20 degrees. the landing platform is 2 m lower and 40 m away. does he reach it');
+  ok(bike.recipe.numbers.h === 2, 'a platform "2 m lower": launched 2 m above where it lands');
+  const desk = toPlace({ understood: true, scenario: 'compose', summary: 'x', recipe: { backdrop: 'table', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 1.2, s: 0.9 } } }, 'a ball rolls off a 1.2 m high desk and lands 0.9 m from the foot of the desk');
+  ok(desk.recipe.numbers.theta === 0, 'what rolls off a desk leaves it flat');
+  const light = toPlace({ understood: true, scenario: 'road', summary: 'x', u: 22, a: -6, s: 50 }, 'a car at 22 m/s sees a red light 50 m ahead. the driver reacts after 0.6 s and then brakes at 6 m/s². does it stop before the light');
+  ok(light.library === 'journey-stages' && light.boxes.k1 === 'hold' && light.boxes.t1 === 0.6 && light.boxes.k2 === 'down' && light.boxes.a2 === 6 && light.boxes.v2 === 0 && light.boxes['at.s'] === 50, 'a reaction time, then braking: two stages, steady then braking to rest, timed at the light');
+  const JK = KITS[byId('journey-stages').kit], jv = JK.solve(JK.read(light.boxes));
+  ok(jv.ok && Math.abs(jv.J.D - 53.533) < 1e-3, 'and it needs 53.53 m: it does not stop before the light');
+  const { solveRoad } = await import('../js/core/road.js');
+  ok(/stops before it has gone/.test(solveRoad({ u: 22, a: -6, s: 50 }).reason) && /40\.33/.test(solveRoad({ u: 22, a: -6, s: 50 }).reason), 'braking that stops short of the distance says where it stops, not that the three do not fix it');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

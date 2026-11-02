@@ -126,7 +126,14 @@ export function solveRoad(k = {}) {
   const use = PREFER.filter((x) => given.includes(x)).slice(0, 3);
   const known = Object.fromEntries(use.map((x) => [x, k[x]]));
   const r = solveFive(known);
-  if (!r.ok) return fail('Those three do not fix the motion. Try a different three of the five.');
+  if (!r.ok) {
+    // braking that stops it short of the distance: it never gets there
+    if (have(known.u) && have(known.a) && have(known.s) && known.u * known.a < 0 && known.u ** 2 + 2 * known.a * known.s < 0) {
+      const stop = -(known.u ** 2) / (2 * known.a);
+      return fail(`It stops before it has gone ${M`${d(Math.abs(known.s))} [m]`}: from ${M`v^2 = u^2 + 2as`} with ${M`v = 0`}, it comes to rest after ${M`s = ${d(Math.abs(stop))} [m]`}.`);
+    }
+    return fail('Those three do not fix the motion. Try a different three of the five.');
+  }
   const V = r.values;
 
   if (!(V.t > EPS)) {

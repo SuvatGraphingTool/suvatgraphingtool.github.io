@@ -740,6 +740,8 @@ export const LIBRARY = [
     ],
     answers: [
       { kind: 'distance', say: 'how far out it lands, horizontally, from below where it was thrown', find: 'out', sym: 'x', unit: 'm', trim: true, at: 'end', step: 'horizontal' },
+      // "hits the water 2.5 s later: how deep is the well"
+      { kind: 'height', say: 'the height it starts from, or how deep the well is, found from the time it takes', find: 'h', sym: 'h', unit: 'm', trim: true, at: 0, example: { place: 'well', u: 0, theta: -90, t: 2.5, g: 9.8 } },
     ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2010', q: '6' },
