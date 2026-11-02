@@ -84,10 +84,16 @@ export const FIGURES = {
   basketball: { label: 'a basketball', m: 0.24, min: 12, views: ['side'], thrown: true, prop: true },
   shot:     { label: 'a shot', m: 0.12, min: 11, views: ['side'], thrown: true, prop: true },
   snowball: { label: 'a snowball', m: 0.08, min: 10, views: ['side'], thrown: true, prop: true },
-  waterBalloon: { label: 'a water balloon', m: 0.15, min: 11, views: ['side'], thrown: true, prop: true },
-  phone:    { label: 'a phone', m: 0.15, min: 10, views: ['side'], thrown: true, prop: true },
+  waterBalloon: { label: 'a water balloon', m: 0.15, min: 11, views: ['side'], thrown: true, prop: true, lands: 'splat' },
+  phone:    { label: 'a phone', m: 0.15, min: 10, views: ['side'], thrown: true, prop: true, lands: 'crack' },
   book:     { label: 'a book', m: 0.24, min: 10, views: ['side'], thrown: true, prop: true },
   hammer:   { label: 'a hammer', m: 0.33, min: 11, views: ['side'], thrown: true, prop: true },
+  javelin:  { label: 'a javelin', m: 2.6, min: 44, views: ['side'], thrown: true },
+  // animals that leap by themselves (js/render/animals.js): `m` is nose to tail
+  cat:      { label: 'a cat', m: 0.5, min: 30, views: ['side'], animal: true },
+  dog:      { label: 'a dog', m: 0.8, min: 34, views: ['side'], animal: true },
+  monkey:   { label: 'a monkey', m: 0.6, min: 30, views: ['side'], animal: true },
+  frog:     { label: 'a frog', m: 0.12, min: 24, views: ['side'], animal: true },
 };
 
 /** What happens, at the engine's own moments (rule 4: the engine says when). */
@@ -102,6 +108,8 @@ export const EFFECTS = {
   sparks: { label: 'sparks', what: 'where metal or stone strikes a hard surface' },
   confetti: { label: 'confetti', what: 'a hit: on target, a goal, a win' },
   smoke:  { label: 'a smoke trail', what: 'behind a rocket or a firework as it flies' },
+  splat:  { label: 'a splat', what: 'a water balloon bursting on dry ground' },
+  crack:  { label: 'a crack', what: 'where something hard and heavy strikes a hard surface' },
 };
 
 /** How it moves. `kit` is the library kit whose engine, boxes, working,
@@ -283,16 +291,19 @@ const WORDS = [
   [/\b(basket ?ball|netball)\b/, 'basketball'], [/\b(snowball)\b/, 'snowball'], [/\b(water ?balloon|water bomb)\b/, 'waterBalloon'],
   [/\b(shot ?put|the shot|a shot|cannonball|cannon ball|iron ball|lead shot)\b/, 'shot'],
   [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
+  [/\b(javelin)\b/, 'javelin'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
+  [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],
   [/\b(stone|pebble|rock|brick|key|object|mass)\b/, 'stone'],
   [/\b(ball|cricket ball|rugby ball|dart)\b/, 'ball'],
   [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
 ];
 /** The figures a thing with none of its own is drawn as, and how to say so. */
 const NEAREST = [
-  [/\b(dart|javelin|crossbow bolt|spear)\b/, 'arrow'],
+  [/\b(dart|crossbow bolt|spear)\b/, 'arrow'],
   [/\b(ski(er)?|snowboard(er)?|surfer|horse|rider|bmx)\b/, 'diver'],
   [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone)\b/, 'particle'],
-  [/\b(dog|cat|bird|animal|squirrel|monkey|frog)\b/, 'particle'],
+  [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|kangaroo|locust)\b/, 'frog'],
+  [/\b(bird|animal)\b/, 'particle'],
 ];
 /**
  * What moves, found in a question's own words when the reader left it out:

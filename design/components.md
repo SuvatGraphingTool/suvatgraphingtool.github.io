@@ -279,7 +279,16 @@ tracks; a rock ledge under a snow cap with a cornice) and `desert` (a hazy
 sky, buttes in heat shimmer, dunes with windward slopes and shaded slip
 faces, rippled sand, cacti; a sandstone outcrop), both level places in
 js/core/height.js. A place that draws its own ledge names it in the title
-(registry `high`: "a snowy ledge", "a ledge on the Moon").
+(registry `high`: "a snowy ledge", "a ledge on the Moon"). Also `splat` (a water balloon
+bursting on dry ground, its own landing: registry figure `lands`) and
+`crack` (a dropped phone's).
+
+Animals in `js/render/animals.js` (`cat`, `dog`, `monkey`, `frog`, each
+`(g, x, y, L, P, { leap, land, spin, ring })`): crouched on the edge, they
+spring, stretch out in the air and reach down to land; registry figures with
+`animal: true`. A squirrel or a fox is drawn as the cat, a flea or a kangaroo
+as the frog, and the reply says so. `javelin(g, x, y, L, ang)`, thrown and
+pointed along its path.
 
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn

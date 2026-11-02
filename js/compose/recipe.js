@@ -170,7 +170,9 @@ export function check(raw) {
   // what its moments make, unless the recipe says: a meeting flashes, a
   // bounce rings, a landing splashes or kicks up dust
   // (a place's own: a crater on the Moon); a rocket trails smoke as it flies
-  const lands = MOMENTS[engine] || B.lands || LANDS_WITH[B.below];
+  // (or what it is: a water balloon bursts, a dropped phone cracks — on dry ground)
+  const dry = !['sea', 'river', 'pool', 'well'].includes(B.below), own = dry && objects.map((o) => FIGURES[o.figure].lands).find(Boolean);
+  const lands = MOMENTS[engine] || own || B.lands || LANDS_WITH[B.below];
   if (!effects.length && lands) effects.push(lands);
   if (objects.some((o) => o.figure === 'rocket') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
   // a place with its own gravity says so

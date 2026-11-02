@@ -33,7 +33,8 @@ import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, t
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
-import { crater, snowPuff, divot, sparks, confetti, smokeTrail } from './impacts.js';
+import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack } from './impacts.js';
+import { ANIMALS, javelin } from './animals.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
 import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, skyscape, env, rng, softShadow } from './scenery.js';
@@ -300,7 +301,7 @@ function launch(canvas, o) {
   // ── the path: all of it faintly, the part flown strongly
   const at = (p) => ({ x: X(p.x), y: Y(p.y) });
   stroke(g, pts.map(at), { color: P.vel, width: 1.8, alpha: 0.35 });
-  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'arrow'].includes(kind);
+  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'arrow', 'javelin'].includes(kind) || !!piece.animal;
   stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
   if (show.apex && f.uy > 0) {
@@ -333,6 +334,8 @@ function launch(canvas, o) {
       else if (e === 'divot') divot(g, lx, oy, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 14, 0.8, 2.5) });
       else if (e === 'sparks') sparks(g, lx, oy - 2, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 16, 0.7, 2) });
       else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
+      else if (e === 'splat') splat(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
+      else if (e === 'crack') crack(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
     }
     if (!f.vertical) {
       const ry = oy + 24 + m.i * 24;
@@ -353,7 +356,8 @@ function launch(canvas, o) {
   const aloft = m.going && t > 0 && !landed;
   if (small) {
     const R0 = clamp(k * piece.m * 0.5, 5.5, 9);
-    const gone = landed && wet && age > life * 0.2;
+    // gone under water, or burst: a water balloon is not there once it lands
+    const gone = landed && ((wet && age > life * 0.2) || (kind === 'waterBalloon' && age > 0.04));
     if (aloft && !wet) softShadow(g, bx, oy + 1, R0 * 1.4, R0 * 0.35, clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
     if (!gone) {
       if (kind === 'apple') apple(g, bx, by, clamp(k * 0.05, 6, 10));
@@ -361,6 +365,7 @@ function launch(canvas, o) {
       // while it sits there, easing to the engine's point as it goes
       else if (kind === 'coin') coin(g, bx, by - (fired && t > 0 ? 0 : 3), 8, fired ? t * 9 : 0.25);
       else if (kind === 'marble') marble(g, bx, by - (fired && t > 0 ? 0 : 7), 7);
+      else if (kind === 'javelin') javelin(g, bx, by, size(k, piece), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
       else if (kind === 'arrow') arrowShaft(g, bx, by, Math.max(44, size(k, piece)), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
       else if (piece.prop) drawProp(g, kind, bx, by, clamp(k * piece.m * 0.5, 7, 10), fired ? t * 7 : 0.3, m.ring);
       else if (kind === 'ball') ballAt(g, bx, by, R0, m.ring);
@@ -383,7 +388,7 @@ function launch(canvas, o) {
     const lift = (1 - p0) * Lp * 0.5;
     rocket(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, !fired || t < f.tMax * 0.04);
     g.restore();
-  } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel' || kind === 'sandbag' || kind === 'bucket') {
+  } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel' || kind === 'sandbag' || kind === 'bucket' || piece.animal) {
     const p = fired ? t / f.tMax : 0, ease = (a0, b0, x) => { const u = clamp((x - a0) / (b0 - a0), 0, 1); return u * u * (3 - 2 * u); };
     const after = landed ? clamp(age / life, 0, 1) : 0;
     let cx = bx, cy = by;
@@ -406,6 +411,14 @@ function launch(canvas, o) {
       const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * 3 : ease(0.05, 1, p) * Math.PI * 0.85;
       m.body = { x: cx, y: cy - (fired ? 0 : Lp * 0.25) };
       diver(g, cx, cy, Lp, P, { ring: m.ring, tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
+    } else if (piece.animal) {
+      // crouched on the edge, its feet at the engine's point; it springs,
+      // stretches out in the air, and reaches down to land
+      cx = bx - Lp * 0.3 * (1 - ease(0, 0.1, p)); cy = by - Lp * 0.3;
+      if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.4, Math.max(2, Lp * 0.05), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
+      const pitch = aloft ? 0.35 * Math.atan2(-v.y, v.x) : 0;
+      m.body = { x: cx, y: cy };
+      ANIMALS[kind](g, cx, cy, Lp, P, { leap: fired ? ease(0, 0.08, p) : 0, land: fired ? ease(0.8, 1, p) : 0, spin: pitch, ring: m.ring });
     } else if (kind === 'skateboarder') {
       // the wheels carry the engine's point all the way down, the deck's front
       // at the edge before the off, landing level on all four wheels
@@ -467,7 +480,7 @@ function launch(canvas, o) {
     // from a vehicle's nose, not buried in its door; on a halo, so it reads
     // over the art. The impact velocity stays drawn at the moment of impact.
     // a person or a parcel has it beside them, never across the body
-    const person = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket'].includes(kind);
+    const person = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket'].includes(kind) || !!piece.animal;
     // a small thing has it from its edge, so the thing itself shows
     const lead = small ? 11 : Lp * 0.5;
     // a person or a parcel: from just in front of its body, so it reads as its own

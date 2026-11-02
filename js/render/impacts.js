@@ -151,3 +151,40 @@ export function smokeTrail(g, at, t, o = {}) {
   }
   g.restore();
 }
+
+/** A splat: a water balloon bursting on dry ground — droplets thrown out low,
+    shreds of its skin, and a dark wet patch spreading that stays. */
+export function splat(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 89);
+  g.save();
+  const R = 26 * size * ease(Math.min(1, u * 3));
+  g.fillStyle = withAlpha(E.night ? '#10161c' : '#2c3a44', 0.35); g.beginPath(); g.ellipse(x, y + 1, R, R * 0.2, 0, 0, TAU); g.fill();
+  const p = phaseOf(age, life);
+  if (p != null) {
+    thrown(x, y, ease(p), 22, size, r, (px, py) => {
+      g.fillStyle = `rgba(150,200,235,${0.9 * (1 - p)})`; g.beginPath(); g.ellipse(px, py, 2.2 * size, 1.6 * size, 0, 0, TAU); g.fill();
+    }, { up: 0.6, out: 1.5 });
+    g.fillStyle = withAlpha('#3d9bd6', 1 - p);
+    for (let i = 0; i < 4; i++) { const a = r() * Math.PI, d = 10 * size * ease(p) * (0.5 + r()); g.beginPath(); g.ellipse(x + Math.cos(a) * d * (r() < 0.5 ? -1 : 1), y - 2, 3 * size, 1.4 * size, r(), 0, TAU); g.fill(); }
+  }
+  g.restore();
+}
+
+/** A crack: jagged lines running out across a hard surface from where it
+    struck, flattened by the angle it is seen at; they stay. */
+export function crack(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 97), grow = ease(Math.min(1, u * 4));
+  g.save(); g.strokeStyle = withAlpha(E.night ? '#0c0c0e' : '#1d1b1c', 0.75); g.lineWidth = 1.3; g.lineJoin = 'round';
+  for (let i = 0; i < 7; i++) {
+    const a = r() * TAU, L = (14 + r() * 22) * size * grow;
+    let px = x, py = y + 1;
+    g.beginPath(); g.moveTo(px, py);
+    for (let j = 1; j <= 4; j++) { px = x + Math.cos(a + (r() - 0.5) * 0.5) * L * j / 4; py = y + 1 + Math.sin(a + (r() - 0.5) * 0.5) * L * 0.22 * j / 4; g.lineTo(px, py); }
+    g.stroke();
+  }
+  const p = phaseOf(age, life * 0.5);
+  if (p != null) { g.fillStyle = `rgba(255,255,255,${0.5 * (1 - p)})`; g.beginPath(); g.ellipse(x, y, 10 * size * (1 + p), 3 * size * (1 + p), 0, 0, TAU); g.fill(); }
+  g.restore();
+}
