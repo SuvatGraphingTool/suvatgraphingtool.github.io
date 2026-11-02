@@ -209,7 +209,8 @@ export function crack(g, x, y, age, life, o = {}) {
 export function leaves(g, x, y, age, life, o = {}) {
   const u = held(age, life); if (u == null) return;
   const E = env(), size = Math.max(1.2, o.size ?? 1), r = rng(o.seed ?? 101);
-  const cols = E.night ? ['#7a5a2e', '#6e3e26', '#5c6230', '#80662e'] : ['#d79a2b', '#b4532a', '#8a8f3a', '#e0b13c', '#9c4a22'];
+  // yellows and olives, clear of the velocity's orange
+  const cols = E.night ? ['#8a7a3a', '#6a6a30', '#5c6230', '#8a8040'] : ['#e6c23a', '#a8a83a', '#f0d454', '#7f8a32', '#d4b03a'];
   const leaf = (px, py, a, s, c, alpha) => {
     g.save(); g.translate(px, py); g.rotate(a); g.scale(1, 0.35 + 0.65 * Math.abs(Math.cos(a * 1.7)));
     g.fillStyle = withAlpha(c, alpha); g.beginPath(); g.moveTo(-s, 0); g.quadraticCurveTo(0, -s * 0.75, s, 0); g.quadraticCurveTo(0, s * 0.75, -s, 0); g.fill();
@@ -218,15 +219,16 @@ export function leaves(g, x, y, age, life, o = {}) {
   };
   g.save();
   // what stays: leaves lying flat in a loose ring, pushed out from where it struck
-  for (let i = 0; i < 9; i++) { const d = (8 + r() * 16) * size * ease(Math.min(1, u * 4)), s = (r() < 0.5 ? -1 : 1); leaf(x + s * d, y + 1 + r() * 2, r() * 0.6 - 0.3, 3.2 * size, cols[i % cols.length], 0.9); }
+  g.fillStyle = withAlpha('#000000', 0.18); g.beginPath(); g.ellipse(x, y + 2, 22 * size * ease(Math.min(1, u * 4)), 3 * size, 0, 0, TAU); g.fill();
+  for (let i = 0; i < 11; i++) { const d = (6 + r() * 16) * size * ease(Math.min(1, u * 4)), s = (r() < 0.5 ? -1 : 1); leaf(x + s * d, y + 1 + r() * 2, r() * 0.6 - 0.3, 3.8 * size, cols[i % cols.length], 1); }
   const p = phaseOf(age, life);
   if (p != null) {
     for (let i = 0; i < 18; i++) {
-      const a = Math.PI * (0.2 + r() * 0.6), sp = (26 + r() * 40) * size, side = r() < 0.5 ? -1 : 1;
+      const a = Math.PI * (0.2 + r() * 0.6), sp = (14 + r() * 16) * size, side = r() < 0.5 ? -1 : 1;
       // up quickly, then drifting down slowly, side to side, as a leaf does
       const rise = Math.min(1, p / 0.3), fall = Math.max(0, p - 0.3);
       const px = x + side * Math.cos(a) * sp * ease(rise) + Math.sin(p * 9 + i) * 7 * size * fall;
-      const py = y - Math.sin(a) * sp * 1.3 * ease(rise) + fall * fall * 70 * size;
+      const py = y - Math.sin(a) * sp * ease(rise) + fall * fall * 40 * size;
       if (py > y) continue;
       leaf(px, py, p * 6 * (i % 2 ? 1 : -1) + i, (3.6 + r() * 2) * size, cols[i % cols.length], 1 - Math.max(0, p - 0.75) / 0.25);
     }
@@ -252,18 +254,18 @@ export function sandSpray(g, x, y, age, life, o = {}) {
   for (const s of [-1, 1]) { g.beginPath(); g.moveTo(x + s * R * 0.9, y + 1); g.quadraticCurveTo(x + s * R * 1.4, y - R * 0.3, x + s * R * 2, y + 1); g.closePath(); g.fill(); }
   const p = phaseOf(age, life);
   if (p != null) {
-    // the cloud: billows that swell, rise a little and thin, drifting downwind
-    for (let i = 0; i < 7; i++) {
-      const dx = (r() - 0.3) * 40 * size * ease(p), dy = -(4 + r() * 16) * size * ease(p), Rb = (7 + r() * 9) * size * (0.5 + p * 1.2);
-      const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, Rb);
-      gr.addColorStop(0, withAlpha(cloud, 0.75 * (1 - p))); gr.addColorStop(0.6, withAlpha(cloud, 0.4 * (1 - p))); gr.addColorStop(1, withAlpha(cloud, 0));
-      g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, Rb, 0, TAU); g.fill();
+    // the cloud: billows that swell, rise a little and thin, drifting
+    // downwind, each shadowed beneath and pale on top so it stands off the sand
+    const puffs = []; for (let i = 0; i < 7; i++) puffs.push({ dx: (r() - 0.3) * 40 * size * ease(p), dy: -(4 + r() * 16) * size * ease(p), R: (7 + r() * 9) * size * (0.5 + p * 1.2) });
+    for (const q of puffs) { g.fillStyle = withAlpha(E.night ? '#2a2018' : '#7a5a34', 0.3 * (1 - p)); g.beginPath(); g.arc(x + q.dx + 2, y + q.dy + q.R * 0.25, q.R, 0, TAU); g.fill(); }
+    for (const q of puffs) {
+      const gr = g.createRadialGradient(x + q.dx - q.R * 0.3, y + q.dy - q.R * 0.3, 0, x + q.dx, y + q.dy, q.R);
+      gr.addColorStop(0, withAlpha(E.night ? '#c8b08a' : '#fbf0d6', 0.9 * (1 - p))); gr.addColorStop(0.7, withAlpha(cloud, 0.7 * (1 - p))); gr.addColorStop(1, withAlpha(cloud, 0));
+      g.fillStyle = gr; g.beginPath(); g.arc(x + q.dx, y + q.dy, q.R, 0, TAU); g.fill();
     }
-    // grains in a low fan, falling back in streaks
-    g.lineCap = 'round';
+    // grains in a low fan, as dots, dark and light
     thrown(x, y, ease(p), 40, size, r, (px, py, i) => {
-      g.strokeStyle = withAlpha(i % 3 ? deep : grain, 0.95 * (1 - p)); g.lineWidth = 2;
-      g.beginPath(); g.moveTo(px, py); g.lineTo(px + (px - x) * 0.04, py + 2.5 * size); g.stroke();
+      g.fillStyle = withAlpha(i % 3 ? deep : '#fff2d0', 0.95 * (1 - p)); g.beginPath(); g.arc(px, py, 1.5 * Math.sqrt(size), 0, TAU); g.fill();
     }, { up: 0.75, out: 1.4 });
   }
   g.restore();
@@ -275,7 +277,8 @@ export function sandSpray(g, x, y, age, life, o = {}) {
 export function mud(g, x, y, age, life, o = {}) {
   const u = held(age, life); if (u == null) return;
   const E = env(), size = Math.max(1.3, o.size ?? 1), r = rng(o.seed ?? 107);
-  const wet = E.night ? '#2e241c' : '#4a3626', clot = E.night ? '#3e3024' : '#644830';
+  // wet and dark, darker than the site's dry ground, with a sheen
+  const wet = E.night ? '#1e1610' : '#2e1e12', clot = E.night ? '#2a1e14' : '#3e2a1a';
   g.save();
   const R = 14 * size * ease(Math.min(1, u * 5));
   g.fillStyle = withAlpha(wet, 0.95); g.beginPath(); g.ellipse(x, y + 1.5, R, R * 0.26, 0, 0, TAU); g.fill();
@@ -297,6 +300,7 @@ export function mud(g, x, y, age, life, o = {}) {
     thrown(x, y, ease(p), 16, size, r, (px, py, i) => {
       g.fillStyle = withAlpha(i % 2 ? clot : wet, 1 - p * 0.5);
       g.beginPath(); g.ellipse(px, py, (2.4 + (i % 3)) * size, (1.8 + (i % 2)) * size, i, 0, TAU); g.fill();
+      g.fillStyle = withAlpha('#ffffff', 0.35 * (1 - p)); g.beginPath(); g.arc(px - size, py - size, 0.8 * size, 0, TAU); g.fill();
     }, { up: 0.9 });
   }
   g.restore();
@@ -325,9 +329,7 @@ export function burst(g, x, y, age, life, o = {}) {
     g.beginPath(); g.moveTo(x + Math.cos(an) * rr * 0.72, y + Math.sin(an) * rr * 0.72 + sag * 0.6); g.lineTo(sx, sy); g.stroke();
     // late in its life a star twinkles before it goes
     const tw = u > 0.6 ? 0.5 + 0.5 * Math.sin(u * 60 + i * 2.3) : 1;
-    g.fillStyle = withAlpha(c, (1 - u) * tw); g.beginPath(); g.arc(sx, sy, sz * size ** 0.5, 0, TAU); g.fill();
-    // by day each star is ringed dark, so it shows on a pale sky
-    if (!night) { g.strokeStyle = withAlpha('#3a2a3a', 0.45 * (1 - u) * tw); g.lineWidth = 0.8; g.stroke(); }
+    g.fillStyle = withAlpha(c, (1 - u) * tw); g.beginPath(); g.arc(sx, sy, sz * size ** 0.6, 0, TAU); g.fill();
   }
   g.restore();
 }

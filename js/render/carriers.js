@@ -75,8 +75,10 @@ export function plane(g, x, y, s, P, { phase = 0 } = {}) {
   g.beginPath(); g.moveTo(s * 0.33, fy - fr * 0.85); g.lineTo(s * 0.42, fy - fr * 0.85); g.lineTo(s * 0.46, fy - fr * 0.2); g.lineTo(s * 0.33, fy - fr * 0.2); g.closePath(); g.fill();
   for (let i = 0; i < 5; i++) { g.beginPath(); g.roundRect(-s * 0.16 + i * s * 0.08, fy - fr * 0.7, s * 0.04, fr * 0.5, 2); g.fill(); }
   // the high wing, seen edge on, on its strut down to the body
-  g.fillStyle = skin; g.beginPath(); g.moveTo(s * 0.3, fy - fr * 1.05); g.quadraticCurveTo(s * 0.28, fy - fr * 1.5, s * 0.2, fy - fr * 1.45); g.lineTo(s * 0.06, fy - fr * 1.25); g.lineTo(s * 0.06, fy - fr * 1.0); g.closePath(); g.fill();
-  g.strokeStyle = withAlpha(ink, 0.4); g.stroke();
+  // (a thick chord, lit on top, its underside in shadow, so it reads as a wing)
+  g.fillStyle = skin; g.beginPath(); g.moveTo(s * 0.32, fy - fr * 1.0); g.quadraticCurveTo(s * 0.3, fy - fr * 1.75, s * 0.2, fy - fr * 1.7); g.lineTo(s * 0.04, fy - fr * 1.45); g.lineTo(s * 0.04, fy - fr * 1.0); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha(ink, 0.7); g.lineWidth = 1.2; g.stroke();
+  g.fillStyle = trim; g.beginPath(); g.moveTo(s * 0.32, fy - fr * 1.0); g.lineTo(s * 0.04, fy - fr * 1.0); g.lineTo(s * 0.04, fy - fr * 1.2); g.lineTo(s * 0.31, fy - fr * 1.22); g.closePath(); g.fill();
   g.strokeStyle = skinLo; g.lineWidth = Math.max(1.4, s * 0.008); g.beginPath(); g.moveTo(s * 0.16, fy - fr * 1.1); g.lineTo(s * 0.1, fy + fr * 0.8); g.stroke();
   // fixed wheels on their legs
   g.strokeStyle = withAlpha(ink, 0.8); g.lineWidth = Math.max(1.4, s * 0.01);

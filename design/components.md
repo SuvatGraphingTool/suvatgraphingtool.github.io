@@ -363,6 +363,22 @@ arrow sits on the bow (sized to the archer) and eases onto the engine's
 path. Golf and athletics words (`fairway`, `tee box`, `shot put`, `athletics
 track`…) name their places; football words keep the app's own pitch.
 
+
+Batch 9. Places `ship` (a ship at sea side on, its stern at the edge: a dark
+hull over red antifouling, portholes, a white deckhouse with its funnel and
+lifeboats, a rail open at the stern, a wake), `dam` (the crest of a
+concrete dam with its rail and lamp, the wall in lifts with seepage stains,
+the spillway pouring beside it, the reservoir behind among wooded hills, the
+river below) and `playground` (trees behind a fence, swings swaying on an
+A-frame, a see-saw, a blue-grey rubber surface; from a height, a play
+tower's platform with its roof, ladder and slide behind). After batch 7's
+critic: the canyon in ochre and buff (clear of the velocity's orange), the
+waterfall's curtain in ragged ribbons with the river running to its lip,
+leaves in yellows and olives, sand spray shadowed and pale-topped with dot
+grains, mud dark and wet, a firework's burst twice the size with the apex
+label held off it, its smoke stopping where it bursts, its tube blue; a
+carrier is part of a composed scene's id.
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

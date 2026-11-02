@@ -332,9 +332,19 @@ function launch(canvas, o) {
   stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
   // a rocket's smoke, left along the way it has come, under the marks
-  if (R.effects.includes('smoke') && m.going && !(t >= f.tMax - 1e-9 && wet)) smokeTrail(g, (tt) => at(f.pos(tt)), t, { dt: f.tMax / 130, n: 46, size: clamp(k / 12, 0.8, 2) });
+  // (a firework's stops where it bursts, and thins away as the stick falls)
+  const burstsAt = kind === 'firework' && R.effects.includes('burst') && f.uy > 0 && f.tApex < f.tMax ? f.tApex : null;
+  if (R.effects.includes('smoke') && m.going && !(t >= f.tMax - 1e-9 && wet)) {
+    g.save(); if (burstsAt != null && t > burstsAt) g.globalAlpha = clamp(1 - (t - burstsAt) / (0.4 * (f.tMax - burstsAt)), 0, 1);
+    smokeTrail(g, (tt) => at(f.pos(tt)), burstsAt != null ? Math.min(t, burstsAt) : t, { dt: f.tMax / 130, n: 46, size: clamp(k / 12, 0.8, 2) * (kind === 'firework' ? 0.6 : 1) });
+    g.restore();
+  }
 
-  if (show.apex && f.uy > 0) {
+  // a firework's burst: how big, and whether it is playing (labels keep off it)
+  const bSize = clamp(k / 4.5, phone ? 1 : 1.4, phone ? 1.4 : 2), bR = 80 * bSize;
+  const bursting = burstsAt != null && bursts[m.i].at != null && performance.now() - bursts[m.i].at < BURST * 1000;
+  if (bursting) { const q = at(f.pos(f.tApex)); L.reserve({ x: q.x - bR, y: q.y - bR, w: bR * 2, h: bR * 2 }); }
+  if (show.apex && f.uy > 0 && !bursting) {
     const q = at(f.pos(f.tApex));
     dot(g, q.x, q.y, 4.5, { fill: P.card, stroke: P.disp, width: 2 });
     // each its own top, the engine's (rule 4)
@@ -346,7 +356,7 @@ function launch(canvas, o) {
   if (R.effects.includes('burst') && kind === 'firework') {
     const bc = bursts[m.i], up = f.uy > 0 && f.tApex < f.tMax;
     if (!up || t < f.tApex) bc.at = null; else if (bc.at == null) bc.at = performance.now();
-    if (bc.at != null) { const q = at(f.pos(f.tApex)); burst(g, q.x, q.y, (performance.now() - bc.at) / 1000, BURST, { size: clamp(k / 9, phone ? 0.6 : 0.8, phone ? 1 : 1.5), seed: 5 + m.i }); }
+    if (bc.at != null) { const q = at(f.pos(f.tApex)); burst(g, q.x, q.y, (performance.now() - bc.at) / 1000, BURST, { size: bSize, seed: 5 + m.i }); }
   }
 
   // ── where it lands, once it has: the recipe's effect, at the engine's time
@@ -362,8 +372,6 @@ function launch(canvas, o) {
     goal(g, { x: gx, back, bar: oy - Math.max(24, 2.44 * k), y: oy }, t >= f.tMax - 1e-9 && clock.at != null ? (performance.now() - clock.at) / 1000 : -1, SETTLE);
   }
   const later = [];
-  // thrown out on the open side only, never across the face it fell beside
-  const openSide = (draw) => { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } draw(); g.restore(); };
   const landed = t >= f.tMax - 1e-9;
   const end = f.pos(f.tMax), lx = X(end.x);
   if (!landed) clock.at = null;
@@ -387,7 +395,7 @@ function launch(canvas, o) {
         const sz = clamp((small ? 10 : size(k, piece) * 0.5) / 12, 1.4, 3.2);
         later.push(() => (e === 'crater' ? crater(g, lx, oy, age, life, { size: sz, ...(R.backdrop === 'mars' ? { dark: '#5e2e1d', light: '#e2a77a', blanket: true } : {}) })
           : e === 'snow' ? snowPuff(g, lx, oy, age, life, { size: sz }) : e === 'leaves' ? leaves(g, lx, oy, age, life, { size: sz })
-            : e === 'sand' ? sandSpray(g, lx, oy, age, life, { size: sz }) : e === 'mud' ? openSide(() => mud(g, lx, oy, age, life, { size: sz })) : divot(g, lx, oy, age, life, { size: sz })));
+            : e === 'sand' ? sandSpray(g, lx, oy, age, life, { size: sz }) : e === 'mud' ? mud(g, lx, oy, age, life, { size: sz }) : divot(g, lx, oy, age, life, { size: sz })));
       }
       else if (e === 'sparks') {
         // on the open side, never across the face it fell beside
@@ -611,7 +619,7 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = { waterfall: 'the plunge pool', pitch: 'the pitch', stadium: 'the infield' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const name = { pitch: 'the pitch', stadium: 'the infield' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);
@@ -842,7 +850,8 @@ export function firework(g, x, y, L, ang, { burning = false, spent = false, spin
     const rr = rng(13);
     for (let i = 0; i < 14; i++) { const d = rr() * L * 0.35, s = (rr() - 0.5) * r * 2 * (1 + d / (L * 0.2)); g.fillStyle = `rgba(255,${190 + Math.floor(rr() * 60)},${90 + Math.floor(rr() * 80)},${0.95 - d / (L * 0.4)})`; g.beginPath(); g.arc(-L * 0.1 - d, s, 1 + rr() * 1.4, 0, Math.PI * 2); g.fill(); }
   }
-  const bg = g.createLinearGradient(0, -r, 0, r); bg.addColorStop(0, '#f26d5b'); bg.addColorStop(0.5, '#c8323a'); bg.addColorStop(1, '#7d1a22');
+  // a blue tube, so it stands apart from its own velocity arrow
+  const bg = g.createLinearGradient(0, -r, 0, r); bg.addColorStop(0, '#6f9be0'); bg.addColorStop(0.5, '#2f5fa8'); bg.addColorStop(1, '#1a3466');
   g.fillStyle = bg; g.fillRect(-L * 0.1, -r, L * 0.4, r * 2);
   g.fillStyle = '#f2d06b'; g.fillRect(L * 0.06, -r, L * 0.05, r * 2);
   g.fillStyle = E.night ? '#cfc8bc' : '#ece6da'; g.beginPath(); g.moveTo(L * 0.3, -r * 1.1); g.lineTo(L * 0.46, 0); g.lineTo(L * 0.3, r * 1.1); g.closePath(); g.fill();

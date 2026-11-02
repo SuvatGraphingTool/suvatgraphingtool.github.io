@@ -828,7 +828,7 @@ function canyon(g, c) {
   sky(g, w, horizon, x0, { far: 'none', seed: 61, clouds: 2 });
   // far mesas and buttes on the skyline, standing on the far rim: stepped
   // sides of talus and cliff, flat caprock lit along its top, hazed with distance
-  const far = n ? '#5a4048' : '#d49274', farLo = n ? '#46323a' : '#bf7c62';
+  const far = n ? '#544a4c' : '#d8bf98', farLo = n ? '#443c3e' : '#c0a47c';
   for (let x = -40 + r() * 60; x < w + 40; x += 150 + r() * 170) {
     const mw = 50 + r() * 130, mh = clamp((rim - horizon) * (0.9 + r() * 1.2) + 10, 14, 70), base = rim + 4, topY = base - mh;
     const step = mh * (0.35 + r() * 0.2);
@@ -844,7 +844,8 @@ function canyon(g, c) {
   // haze over them, the sky's own tone
   g.fillStyle = withAlpha(n ? '#2a2c3a' : '#e9dcd4', 0.35); g.fillRect(0, horizon - 80, w, rim - horizon + 84);
   // the far wall: layers of red and cream rock from its rim down to the river
-  const wallTones = n ? ['#6a4038', '#7a4a3e', '#5e3a34', '#806052', '#6e4438'] : ['#c06a48', '#d4825a', '#b55e40', '#e2b48c', '#c87652', '#a9553c'];
+  // ochre, buff and cream: banded rock held clear of the velocity's orange
+  const wallTones = n ? ['#5e5444', '#6a5e4a', '#544a3c', '#787058', '#625846'] : ['#c4a066', '#d6b98a', '#b0915e', '#e3d0a8', '#c8aa78', '#a08458'];
   g.save(); g.beginPath(); g.moveTo(0, oy + 2);
   const edge = (x) => rim + Math.sin(x / 90) * 6 + Math.sin(x / 23) * 2;
   for (let x = 0; x <= w + 10; x += 10) g.lineTo(x, edge(x));
@@ -870,14 +871,14 @@ function canyon(g, c) {
   }
   // it is far: hazed toward the sky's tone, the gorge's depths in shadow
   g.fillStyle = withAlpha(n ? '#2a2a3a' : '#e8d2c4', n ? 0.25 : 0.3); g.fillRect(0, rim - 10, w, oy - rim + 12);
-  const dz = g.createLinearGradient(0, rim, 0, oy); dz.addColorStop(0, withAlpha(n ? '#1d1a26' : '#f3d9c4', 0)); dz.addColorStop(1, withAlpha(n ? '#1d1a26' : '#6a3a2e', 0.4));
+  const dz = g.createLinearGradient(0, rim, 0, oy); dz.addColorStop(0, withAlpha(n ? '#1d1a26' : '#f3d9c4', 0)); dz.addColorStop(1, withAlpha(n ? '#1d1a26' : '#5a4a36', 0.4));
   g.fillStyle = dz; g.fillRect(0, rim - 10, w, oy - rim + 12);
   g.restore();
   // its rim, catching the light
   g.strokeStyle = withAlpha(n ? '#b08a78' : '#f6dcc0', 0.7); g.lineWidth = 1.4; g.beginPath(); for (let x = 0; x <= w + 10; x += 10) g.lineTo(x, edge(x)); g.stroke();
   // the talus at its foot: fans of fallen rock down to the water
   const tal = clamp((oy - rim) * 0.12, 8, 50);
-  g.fillStyle = n ? '#4a3430' : '#9c6a52';
+  g.fillStyle = n ? '#4a4236' : '#9c8460';
   g.beginPath(); g.moveTo(0, oy); for (let x = 0; x <= w + 10; x += 14) g.lineTo(x, oy - tal * (0.4 + 0.6 * Math.abs(Math.sin(x / 80 + 1)))); g.lineTo(w + 10, oy); g.closePath(); g.fill();
   g.fillStyle = withAlpha(n ? '#2a1e1c' : '#6a4434', 0.6); for (let i = 0; i < w / 9; i++) { const x = r() * w; g.fillRect(x, oy - r() * tal * 0.6 - 2, 2 + r() * 3, 2); }
   // the river: green with silt, a pale line where it meets the rock
@@ -888,12 +889,12 @@ function canyon(g, c) {
   if (!n) { const bx = x0 + (w - x0) * 0.55 + Math.sin(phase * 0.7) * 20, by = lerp(rim, oy, 0.25), bs = 7; g.strokeStyle = withAlpha('#2a2426', 0.85); g.lineWidth = 1.6; g.beginPath(); g.moveTo(bx - bs, by - 2); g.quadraticCurveTo(bx - bs / 2, by - bs * 0.6, bx, by); g.quadraticCurveTo(bx + bs / 2, by - bs * 0.6, bx + bs, by - 2); g.stroke(); }
   if (!(H0 > 0)) return;
   // the near rim it leaves from: sandstone, banded, its foot in the river
-  seaCliff(g, -4, x0, top, oy, { cap: false, tones: rockTones(n ? '#9a6a58' : '#e3a07a', n ? '#7a4e40' : '#c4784f', n ? '#42281f' : '#7a3f28') });
+  seaCliff(g, -4, x0, top, oy, { cap: false, tones: rockTones(n ? '#8a7a62' : '#e2c79a', n ? '#6a5c48' : '#c4a272', n ? '#3a3226' : '#7a6040') });
   g.save(); g.globalAlpha = 0.35; const H = oy - top;
   for (const f of [0.18, 0.4, 0.58, 0.8]) { g.fillStyle = f === 0.4 || f === 0.8 ? '#f2d2b0' : '#5a2a1a'; g.fillRect(-4, top + H * f, x0 - 6 - H * 0.05 * f, Math.max(2, H * 0.03)); }
   g.restore();
   // a slab cap, a little proud of the face
-  g.fillStyle = n ? '#a8806a' : '#efc29a'; g.beginPath(); g.moveTo(-4, top - 3); g.lineTo(x0 + 3, top - 3); g.lineTo(x0 + 1, top + 4); g.lineTo(-4, top + 5); g.closePath(); g.fill();
+  g.fillStyle = n ? '#a0927a' : '#efdcb4'; g.beginPath(); g.moveTo(-4, top - 3); g.lineTo(x0 + 3, top - 3); g.lineTo(x0 + 1, top + 4); g.lineTo(-4, top + 5); g.closePath(); g.fill();
   // a juniper clinging to the rim, back from the edge
   const jx = x0 - clamp(4 * k, 40, 110), js = clamp(2.2 * k, 16, 46);
   if (jx > 12) {
@@ -932,19 +933,27 @@ function waterfall(g, c) {
     g.fillStyle = withAlpha(n ? '#2e4a2a' : '#5f8a3c', 0.55);
     for (let y = top + 6; y < oy - 8; y += 10 + r() * 18) g.fillRect(-4, y, x0 - 8 - r() * 20, 2 + r() * 3);
     // the river above, running to the lip behind the dry rock it leaves from
-    g.fillStyle = n ? '#3a5a64' : '#8fb8c4'; g.fillRect(-4, top - 3, fx1 + 4, 4);
-    g.fillStyle = withAlpha('#ffffff', 0.6); for (let x = -4 + ((phase * 30) % 16); x < fx1; x += 16) g.fillRect(x, top - 2, 6, 1);
-    // the curtain: streaks of white falling down the face, faster lower down
-    const fg = g.createLinearGradient(fx0, 0, fx1, 0);
-    fg.addColorStop(0, withAlpha(n ? '#9ab0b8' : '#dfeef2', 0.8)); fg.addColorStop(0.5, withAlpha(n ? '#c8d4d8' : '#ffffff', 0.92)); fg.addColorStop(1, withAlpha(n ? '#7f98a0' : '#c4dde4', 0.85));
-    g.fillStyle = fg; g.beginPath(); g.moveTo(fx0, top - 2); g.quadraticCurveTo(fx0 - 4, lerp(top, oy, 0.5), fx0 - 8, oy); g.lineTo(fx1 + 4, oy); g.quadraticCurveTo(fx1 + 2, lerp(top, oy, 0.4), fx1, top - 2); g.closePath(); g.fill();
-    g.strokeStyle = withAlpha(n ? '#6a8088' : '#9cc2cc', 0.7); g.lineWidth = 1;
-    for (let x = fx0 + 3; x < fx1; x += 5) {
-      const off = ((phase * 120 + x * 7) % 40);
-      for (let y = top + off; y < oy; y += 40) { g.beginPath(); g.moveTo(x - (y - top) * 0.01, y); g.lineTo(x - (y + 16 - top) * 0.01, Math.min(oy, y + 16)); g.stroke(); }
+    const rd = clamp(0.4 * k, 5, 12);
+    g.fillStyle = n ? '#2f4650' : '#6f97a6'; g.fillRect(-4, top - rd * 0.4, fx1 + 4, rd);
+    g.fillStyle = withAlpha('#ffffff', 0.7); g.fillRect(-4, top - rd * 0.4, fx1 + 4, 1.5);
+    g.fillStyle = withAlpha('#ffffff', 0.55); for (let x = -4 + ((phase * 30) % 18); x < fx0; x += 18) g.fillRect(x, top - rd * 0.4 + 3, 7, 1);
+    // the curtain: ribbons of white water, each its own width and brightness,
+    // ragged and thinning at the edges, sliding down the face
+    const H = oy - top;
+    for (let x = fx0, i = 0; x <= fx1; x += 2.5, i++) {
+      const f = (x - fx0) / Math.max(1, fx1 - fx0), edge = Math.min(f, 1 - f) * 2, len = H * (edge > 0.25 ? 1 : 0.55 + r() * 0.45);
+      const a = (0.35 + 0.55 * Math.min(1, edge * 2.5)) * (0.7 + r() * 0.3);
+      const lg = g.createLinearGradient(0, top, 0, top + len);
+      lg.addColorStop(0, withAlpha(n ? '#c8d4d8' : '#ffffff', a)); lg.addColorStop(0.7, withAlpha(n ? '#9ab0b8' : '#e6f2f6', a * 0.9)); lg.addColorStop(1, withAlpha(n ? '#9ab0b8' : '#e6f2f6', 0));
+      g.strokeStyle = lg; g.lineWidth = 2 + r() * 2;
+      g.beginPath(); g.moveTo(x, top - 1); g.quadraticCurveTo(x + 2 + r() * 2, top + len * 0.5, x - 1 + (r() - 0.5) * 3, top + len); g.stroke();
     }
+    // the falling water's texture: streaks running down it
+    g.save(); g.setLineDash([6, 10]); g.lineDashOffset = -phase * 160; g.strokeStyle = withAlpha(n ? '#6a8088' : '#9cc2cc', 0.55); g.lineWidth = 1;
+    for (let x = fx0 + 3; x < fx1 - 2; x += 4) { g.beginPath(); g.moveTo(x, top + 4); g.lineTo(x + 1, oy - 4); g.stroke(); }
+    g.restore();
     // its lip: the water bulging over the edge, lit
-    g.strokeStyle = withAlpha('#ffffff', 0.9); g.lineWidth = 2; g.beginPath(); g.moveTo(fx0, top - 1); g.quadraticCurveTo((fx0 + fx1) / 2, top - 4, fx1, top - 1); g.stroke();
+    g.strokeStyle = withAlpha('#ffffff', 0.95); g.lineWidth = 2.5; g.beginPath(); g.moveTo(fx0 - 2, top); g.quadraticCurveTo((fx0 + fx1) / 2, top - 5, fx1 + 1, top); g.stroke();
     // the dry rock at the lip it leaves from, a step proud of the water
     g.fillStyle = n ? '#5a605a' : '#8c938a'; g.fillRect(fx1, top - 4, x0 - fx1 + 2, 5);
     g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.25); g.fillRect(fx1, top - 4, x0 - fx1 + 2, 1.2);
@@ -1011,9 +1020,9 @@ function lighthouse(g, c) {
   g.strokeStyle = n ? '#2c2e33' : '#2f3540'; g.beginPath(); g.moveTo(cx, ly - lw * 0.37); g.lineTo(cx, ly - lw * 0.37 - lh * 0.4); g.stroke();
   // at night, its beam turning: a wedge of light swinging out and back, away from the stage
   if (n) {
-    const a = Math.PI + Math.sin(phase * 0.8) * 0.5, L = w * 0.6, sp = 0.09, lx = cx, lyy = ly + lh * 0.5;
+    const a = Math.sin(phase * 0.8) * 0.35 - 0.05, L = w * 0.7, sp = 0.07, lx = cx, lyy = ly + lh * 0.5;
     const bg = g.createLinearGradient(lx, lyy, lx + Math.cos(a) * L, lyy + Math.sin(a) * L * 0.2);
-    bg.addColorStop(0, withAlpha(E.window, 0.45)); bg.addColorStop(1, withAlpha(E.window, 0));
+    bg.addColorStop(0, withAlpha(E.window, 0.3)); bg.addColorStop(1, withAlpha(E.window, 0));
     g.fillStyle = bg; g.beginPath(); g.moveTo(lx, lyy); g.lineTo(lx + Math.cos(a - sp) * L, lyy + Math.sin(a - sp) * L * 0.2); g.lineTo(lx + Math.cos(a + sp) * L, lyy + Math.sin(a + sp) * L * 0.2); g.closePath(); g.fill();
   }
   softShadow(g, cx, foot + 1, Wb * 0.7, 3, 0.6);
@@ -1217,5 +1226,180 @@ function stadium(g, c) {
   if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
 }
 
+/* ── a ship, a dam, a playground ────────────────────────────────────────── */
+
+/** A ship at sea, side on, its stern at x0: the hull dark above red
+    antifouling at the waterline, a row of portholes, the white
+    superstructure with its bridge windows, a funnel, lifeboats in their
+    davits, a rail along the deck open at the stern; the sea to a far
+    coast, gulls. */
+function ship(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(173), horizon = oy - clamp((oy - 40) * 0.2, 30, 110);
+  sky(g, w, horizon, x0, { far: 'none', seed: 121, clouds: 3 });
+  // a far coast, low and misted, and a tanker on the horizon
+  g.fillStyle = n ? '#3b3239' : '#a9a2a8'; g.beginPath(); g.moveTo(w * 0.5, horizon); g.quadraticCurveTo(w * 0.7, horizon - 16, w + 10, horizon - 10); g.lineTo(w + 10, horizon); g.closePath(); g.fill();
+  const tx = x0 + (w - x0) * 0.75; if (clearOf(tx, c, 60)) { g.fillStyle = n ? '#4a4e56' : '#5a6470'; g.fillRect(tx - 24, horizon - 5, 48, 5); g.fillRect(tx + 12, horizon - 11, 8, 6); }
+  water(g, 0, w, horizon, h, { phase });
+  if (!(H0 > 0)) return;
+  const bob = Math.sin(phase * 1.2) * 1.2;
+  const fb = top + bob, wl = oy, hullTop = fb, len = Math.max(x0 + 40, w * 0.6);
+  const xs = x0 - len;
+  // the hull: dark, with a red band at the waterline, its stern raked back
+  const rake = clamp((wl - fb) * 0.25, 6, 40);
+  const hull = () => { g.beginPath(); g.moveTo(xs, hullTop); g.lineTo(x0, hullTop); g.lineTo(x0 - rake, wl + 6); g.lineTo(xs, wl + 6); g.closePath(); };
+  hull(); const hg = g.createLinearGradient(0, hullTop, 0, wl); hg.addColorStop(0, n ? '#2a3448' : '#24324a'); hg.addColorStop(1, n ? '#1a2232' : '#18233a'); g.fillStyle = hg; g.fill();
+  g.save(); hull(); g.clip();
+  const band = clamp((wl - fb) * 0.18, 4, 20);
+  g.fillStyle = n ? '#6a2a2a' : '#a8342e'; g.fillRect(xs, wl - band, len + 10, band + 8);
+  g.fillStyle = withAlpha('#ffffff', n ? 0.6 : 0.9); g.fillRect(xs, wl - band - 2, len + 10, 2);
+  // portholes in a row, a rubbing strake above them
+  const ph = clamp(0.15 * k, 2, 4);
+  g.fillStyle = n ? withAlpha(E.window, 0.8) : '#c9d6e0';
+  for (let x = x0 - rake - 18; x > xs; x -= ph * 5) { g.beginPath(); g.arc(x, lerp(hullTop, wl - band, 0.45), ph, 0, TAU); g.fill(); }
+  g.fillStyle = withAlpha('#ffffff', 0.2); g.fillRect(xs, hullTop + 3, len + 10, 1.5);
+  g.restore();
+  // its wake at the stern and the foam along its waterline
+  g.fillStyle = withAlpha('#ffffff', 0.55); for (let i = 0; i < 5; i++) { const fx = x0 - rake + 4 + i * 14 + Math.sin(phase * 2 + i) * 3; g.beginPath(); g.ellipse(fx, wl + 1, 10 - i, 1.6, 0, 0, TAU); g.fill(); }
+  // white decks, the bridge's windows
+  // the superstructure near the stern, behind whoever stands there, clear of the readouts
+  const sx1 = x0 - clamp(0.1 * len, 34, 100), sh = clamp(0.5 * (wl - fb), 24, 120), sw = clamp(0.3 * len, 60, 220);
+  const white = n ? '#b8bcc4' : '#f4f2ee', whiteLo = n ? '#8a8e96' : '#d8d6d2';
+  if (sx1 - sw > -60) {
+    g.fillStyle = whiteLo; g.fillRect(sx1 - sw, hullTop - sh * 0.5, sw, sh * 0.5);
+    g.fillStyle = white; g.fillRect(sx1 - sw * 0.85, hullTop - sh, sw * 0.7, sh * 0.5);
+    g.fillStyle = n ? withAlpha(E.window, 0.85) : '#2e3a48';
+    for (let x = sx1 - sw + 6; x < sx1 - 6; x += 10) g.fillRect(x, hullTop - sh * 0.38, 6, sh * 0.12);
+    g.fillRect(sx1 - sw * 0.82, hullTop - sh * 0.88, sw * 0.64, sh * 0.14);
+    // the funnel, its band in the line's colours, a wisp of exhaust
+    const fx = sx1 - sw * 0.5, fw = sw * 0.16;
+    g.fillStyle = n ? '#5a2a2a' : '#b5473f'; g.beginPath(); g.moveTo(fx - fw / 2, hullTop - sh); g.lineTo(fx - fw * 0.35, hullTop - sh * 1.5); g.lineTo(fx + fw * 0.55, hullTop - sh * 1.5); g.lineTo(fx + fw / 2, hullTop - sh); g.closePath(); g.fill();
+    g.fillStyle = '#1b1d22'; g.fillRect(fx - fw * 0.35, hullTop - sh * 1.55, fw * 0.9, sh * 0.07);
+    for (let i = 0; i < 4; i++) { g.fillStyle = withAlpha(n ? '#8a8e96' : '#c8c8cc', 0.35 - i * 0.07); g.beginPath(); g.arc(fx - 6 - i * 12, hullTop - sh * 1.62 - i * 4, 5 + i * 3, 0, TAU); g.fill(); }
+    // lifeboats in their davits along the upper deck
+    for (let x = sx1 - sw * 0.8; x < sx1 - sw * 0.2; x += sw * 0.3) { g.fillStyle = '#e8862a'; g.beginPath(); g.roundRect(x, hullTop - sh * 0.62, sw * 0.22, sh * 0.1, sh * 0.05); g.fill(); }
+  }
+  // the deck's rail, open at the stern where it is thrown from
+  const rh = clamp(1 * k, 9, 28), gap = clamp(1.6 * k, 16, 50);
+  g.strokeStyle = n ? '#c8ccd2' : '#e8eaee'; g.lineWidth = Math.max(1.3, clamp(0.05 * k, 1, 2.4));
+  g.beginPath(); g.moveTo(Math.max(xs, sx1 + 4), hullTop - rh); g.lineTo(x0 - gap, hullTop - rh); g.moveTo(Math.max(xs, sx1 + 4), hullTop - rh * 0.5); g.lineTo(x0 - gap, hullTop - rh * 0.5); g.stroke();
+  for (let x = x0 - gap; x > Math.max(xs, sx1 + 4); x -= rh) { g.beginPath(); g.moveTo(x, hullTop); g.lineTo(x, hullTop - rh); g.stroke(); }
+  // a bollard and a coil of rope on the deck by the stern
+  g.fillStyle = n ? '#2b2628' : '#3b3436'; g.fillRect(x0 - gap * 0.7, hullTop - 7, 7, 7);
+  g.strokeStyle = n ? '#8a7a5a' : '#c9a96a'; g.lineWidth = 2; g.beginPath(); g.ellipse(x0 - gap * 1.6, hullTop - 2, 7, 2.5, 0, 0, TAU); g.stroke();
+}
+
+/** A dam: the reservoir high behind it among hills, the concrete wall's
+    crest with its road, rail and lamps, its face falling to the river,
+    stained with seepage, the spillway pouring down beside it; it leaves
+    from the crest's edge and lands in the river below. */
+function dam(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(179);
+  const horizon = H0 > 0 ? Math.min(top - 20, oy - clamp((oy - 40) * 0.4, 50, 260)) : oy - clamp((oy - 40) * 0.4, 50, 260);
+  sky(g, w, horizon, x0, { far: 'none', seed: 131, clouds: 3 });
+  // the valley sides behind, wooded, falling to the river
+  for (const [f, tone] of [[0, n ? '#2a3428' : '#7f9a76'], [0.4, n ? '#232c22' : '#5f7f56'], [0.75, n ? '#1e271c' : '#4c6c44']]) {
+    const base = lerp(horizon, oy, f);
+    g.fillStyle = tone; g.beginPath(); g.moveTo(-10, oy + 2);
+    for (let x = -10; x <= w + 12; x += 14) g.lineTo(x, base - 10 - 18 * Math.sin(x / 140 + f * 4) - Math.abs(Math.sin(x / 23 + f)) * 6);
+    g.lineTo(w + 12, oy + 2); g.closePath(); g.fill();
+    for (let x = r() * 20; x < w; x += 9 + r() * 12) { const y = base - 6 - 18 * Math.sin(x / 140 + f * 4); pine(g, x, y + r() * 8, 10 + f * 14 + r() * 6, tone, withAlpha('#ffffff', n ? 0.04 : 0.1)); }
+  }
+  water(g, 0, w, oy, h, { phase });
+  g.fillStyle = withAlpha(n ? '#1e3a3a' : '#3f6a6a', 0.3); g.fillRect(0, oy, w, h - oy);
+  if (!(H0 > 0)) return;
+  const conc = n ? '#7a7a7e' : '#c4c0b8', concLo = n ? '#5a5a5e' : '#a29e96', crestW = clamp(0.25 * (oy - top), 30, 140);
+  // the reservoir behind the wall, its surface just under the crest
+  const res = top + clamp(0.06 * (oy - top), 4, 20);
+  g.fillStyle = n ? '#2f4650' : '#7fa0ad'; g.fillRect(-4, res, x0 - crestW + 4, 6);
+  // the wall: its face leaning back a little from the crest, lifts of
+  // concrete in courses, seepage stains, the spillway's chute beside it
+  const lean = clamp((oy - top) * 0.04, 2, 16);
+  g.fillStyle = concLo; g.beginPath(); g.moveTo(x0 - crestW, top); g.lineTo(x0, top); g.lineTo(x0 - lean, oy + 4); g.lineTo(x0 - crestW - (oy - top) * 0.35, oy + 4); g.lineTo(x0 - crestW, res + 6); g.closePath(); g.fill();
+  const fg = g.createLinearGradient(x0 - crestW, 0, x0, 0); fg.addColorStop(0, withAlpha('#000000', 0.15)); fg.addColorStop(1, withAlpha('#ffffff', n ? 0.04 : 0.18));
+  g.fillStyle = fg; g.beginPath(); g.moveTo(x0 - crestW, top); g.lineTo(x0, top); g.lineTo(x0 - lean, oy + 4); g.lineTo(x0 - crestW - (oy - top) * 0.35, oy + 4); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha('#000000', 0.14); g.lineWidth = 1;
+  for (let y = top + clamp(1.5 * k, 8, 30); y < oy; y += clamp(1.5 * k, 8, 30)) { const f = (y - top) / (oy - top); g.beginPath(); g.moveTo(x0 - crestW - (oy - top) * 0.35 * f, y); g.lineTo(x0 - lean * f, y); g.stroke(); }
+  g.fillStyle = withAlpha(n ? '#2a3028' : '#6a705c', 0.3);
+  for (let i = 0; i < 6; i++) { const sx = x0 - crestW * (0.15 + r() * 0.8), sy = top + (oy - top) * r() * 0.5; g.fillRect(sx, sy, 2 + r() * 3, (oy - top) * (0.2 + r() * 0.4)); }
+  // the spillway: water pouring white down a stepped chute, behind the face's far side
+  const sx0 = x0 - crestW - (oy - top) * 0.12, sw = clamp(0.12 * (oy - top), 10, 50);
+  g.fillStyle = withAlpha(n ? '#9ab0b8' : '#e6f2f4', 0.85); g.beginPath(); g.moveTo(sx0, res + 4); g.lineTo(sx0 + sw, res + 4); g.lineTo(sx0 + sw - (oy - res) * 0.25, oy); g.lineTo(sx0 - (oy - res) * 0.3, oy); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha(n ? '#6a8088' : '#a8c8d0', 0.8); g.lineWidth = 1;
+  for (let i = 0; i < 5; i++) { const off = ((phase * 90 + i * 37) % (oy - res)); g.beginPath(); g.moveTo(sx0 + sw * (0.2 + i * 0.15) - off * 0.27, res + off); g.lineTo(sx0 + sw * (0.2 + i * 0.15) - (off + 14) * 0.27, Math.min(oy, res + off + 14)); g.stroke(); }
+  for (let i = 0; i < 4; i++) { const sg = g.createRadialGradient(sx0 - (oy - res) * 0.25 + i * 10, oy - 6, 0, sx0 - (oy - res) * 0.25 + i * 10, oy - 6, 20); sg.addColorStop(0, withAlpha('#ffffff', 0.5)); sg.addColorStop(1, withAlpha('#ffffff', 0)); g.fillStyle = sg; g.fillRect(sx0 - (oy - res) * 0.25 + i * 10 - 20, oy - 26, 40, 40); }
+  // the crest: a road with its parapet, rail and lamps, open at the edge
+  g.fillStyle = conc; g.fillRect(x0 - crestW - 6, top - 3, crestW + 6, 5);
+  const rh = clamp(1 * k, 8, 26);
+  g.strokeStyle = n ? '#c8ccd2' : '#5a5e66'; g.lineWidth = Math.max(1.3, clamp(0.05 * k, 1, 2.4));
+  g.beginPath(); g.moveTo(x0 - crestW, top - rh); g.lineTo(x0 - clamp(1.6 * k, 14, 50), top - rh); g.stroke();
+  for (let x = x0 - crestW; x < x0 - clamp(1.6 * k, 14, 50); x += rh) { g.beginPath(); g.moveTo(x, top - 3); g.lineTo(x, top - rh); g.stroke(); }
+  const lh = clamp(4 * k, 30, 100), lx = x0 - crestW * 0.6;
+  g.strokeStyle = n ? '#3a3e46' : '#4a4e56'; g.lineWidth = 2; g.beginPath(); g.moveTo(lx, top - 3); g.lineTo(lx, top - lh); g.lineTo(lx + 8, top - lh); g.stroke();
+  g.fillStyle = n ? E.window : '#f4ecd2'; g.beginPath(); g.arc(lx + 8, top - lh + 3, 3, 0, TAU); g.fill();
+}
+
+/** A playground: a fence and trees, swings on an A-frame swaying, a
+    see-saw and a roundabout, a soft rubber surface; from a height, the
+    platform of a play tower with its roof, its slide going down behind. */
+function playground(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(181), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
+  sky(g, w, horizon, x0, { far: 'trees', seed: 141, clouds: 3 });
+  // the grass behind, a fence along it and trees
+  grass(g, 0, w, horizon, oy, { seed: 17 });
+  g.strokeStyle = n ? '#6a6e76' : '#3f6a4a'; g.lineWidth = 1.4;
+  const fy = lerp(horizon, oy, 0.25), fh = clamp(1.2 * k, 8, 24);
+  g.beginPath(); g.moveTo(0, fy - fh); g.lineTo(w, fy - fh); for (let x = 0; x <= w; x += 6) { g.moveTo(x, fy); g.lineTo(x, fy - fh); } g.stroke();
+  // trees behind the fence: a trunk forking into a crown of clumps, shaded below
+  for (let x = r() * 80; x < w; x += 110 + r() * 120) {
+    const tr = clamp(2.4 * k, 18, 44), ty = fy - fh;
+    forestTree(g, x, ty + 4, tr * 3, Math.max(3, tr * 0.12), { bark: n ? '#3a3028' : '#6a5040', barkLo: n ? '#2a221c' : '#4a3828', leaf: n ? '#22321f' : '#4f7c45', leafLo: n ? '#18241a' : '#3a6034', leafHi: n ? '#2c3e28' : '#6f9c5a' }, r);
+  }
+  // the soft surface under the play things
+  // a blue-grey rubber, clear of the quantity hues
+  const sg = g.createLinearGradient(0, oy, 0, h); sg.addColorStop(0, n ? '#2e3440' : '#6a7d96'); sg.addColorStop(1, n ? '#242a34' : '#566a82');
+  g.fillStyle = sg; g.fillRect(0, oy, w, h - oy);
+  g.fillStyle = withAlpha('#000000', 0.12); for (let i = 0; i < (w * (h - oy)) / 60; i++) g.fillRect(r() * w, oy + r() * (h - oy), 1.5, 1.5);
+  g.fillStyle = withAlpha(n ? '#2a3a2a' : '#4f8a5f', 0.9); g.fillRect(0, oy + clamp((h - oy) * 0.5, 14, 60), w, 3);
+  const steel = n ? '#8a8e96' : '#2f6f9a', steelHi = n ? '#aab0b8' : '#e8b923';
+  // the swings: an A-frame, two seats swinging in turn
+  const sx = [0.62, 0.84, 0.42].map((f) => x0 + (w - x0) * f).find((x) => clearOf(x, c, 90) && x < w - 50);
+  if (sx != null) {
+    const sh = clamp(2.6 * k, 34, 90), sw = sh * 1.1;
+    g.strokeStyle = steel; g.lineWidth = Math.max(2, sh * 0.04);
+    g.beginPath(); g.moveTo(sx - sw / 2 - sh * 0.25, oy); g.lineTo(sx - sw / 2, oy - sh); g.lineTo(sx + sw / 2, oy - sh); g.lineTo(sx + sw / 2 + sh * 0.25, oy); g.moveTo(sx - sw / 2 + sh * 0.2, oy); g.lineTo(sx - sw / 2, oy - sh); g.moveTo(sx + sw / 2 - sh * 0.2, oy); g.lineTo(sx + sw / 2, oy - sh); g.stroke();
+    for (const [dx, ph] of [[-0.2, 0], [0.2, Math.PI]]) {
+      const a = Math.sin(phase * 2 + ph) * 0.35, px = sx + dx * sw, L = sh * 0.78, ex = px + Math.sin(a) * L, ey = oy - sh + Math.cos(a) * L;
+      g.strokeStyle = n ? '#9a9ea6' : '#6a6e76'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(px - 3, oy - sh); g.lineTo(ex - 3, ey); g.moveTo(px + 3, oy - sh); g.lineTo(ex + 3, ey); g.stroke();
+      g.fillStyle = '#2b2628'; g.fillRect(ex - 6, ey - 1, 12, 3);
+    }
+  }
+  // a see-saw, clear of the landing
+  const ssx = [0.3, 0.16, 0.7, 0.95].map((f) => x0 + (w - x0) * f).find((x) => clearOf(x, c, 80) && (sx == null || Math.abs(x - sx) > clamp(5 * k, 110, 220)) && x < w - 40);
+  if (ssx != null) {
+    const L = clamp(3.5 * k, 40, 100), tilt = Math.sin(phase * 1.2) * 0.18;
+    g.fillStyle = steel; g.beginPath(); g.moveTo(ssx - 6, oy); g.lineTo(ssx, oy - L * 0.18); g.lineTo(ssx + 6, oy); g.closePath(); g.fill();
+    g.save(); g.translate(ssx, oy - L * 0.18); g.rotate(tilt); g.fillStyle = steelHi; g.fillRect(-L / 2, -2, L, 4); g.fillStyle = '#2b2628'; for (const s of [-1, 1]) g.fillRect(s * L * 0.42 - 2, -8, 4, 6); g.restore();
+  }
+  if (!(H0 > 0)) return;
+  // the play tower: four posts, a deck at the top, a roof, a ladder, a slide behind
+  const tw = clamp(2 * k, 30, 90), tx0 = x0 - tw, post = Math.max(3, tw * 0.07), wood = n ? '#6a5040' : '#a87a4f', woodLo = n ? '#4a3830' : '#7a5636';
+  g.fillStyle = woodLo; g.fillRect(tx0, top, post, oy - top); g.fillStyle = wood; g.fillRect(x0 - post, top, post, oy - top);
+  g.fillStyle = wood; g.fillRect(tx0 - 2, top - 2, tw + 4, Math.max(4, tw * 0.08));
+  // the guard rails, open at the front where it leaves from
+  g.strokeStyle = steel; g.lineWidth = 2; g.beginPath(); g.moveTo(tx0, top - tw * 0.45); g.lineTo(x0 - tw * 0.55, top - tw * 0.45); g.moveTo(tx0, top); g.lineTo(tx0, top - tw * 0.9); g.stroke();
+  // the roof, pitched, in the tower's colour
+  g.fillStyle = n ? '#34466a' : '#3f6aa8'; g.beginPath(); g.moveTo(tx0 - tw * 0.15, top - tw * 0.9); g.lineTo(tx0 + tw * 0.5, top - tw * 1.35); g.lineTo(x0 + tw * 0.05, top - tw * 0.9); g.closePath(); g.fill();
+  g.strokeStyle = woodLo; g.lineWidth = post * 0.7; g.beginPath(); g.moveTo(tx0 + post / 2, top); g.lineTo(tx0 + post / 2, top - tw * 0.9); g.stroke();
+  // the slide, its chute curving down behind the tower
+  g.strokeStyle = steelHi; g.lineWidth = Math.max(4, tw * 0.12); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(tx0, top + 2); g.bezierCurveTo(tx0 - (oy - top) * 0.6, top + (oy - top) * 0.3, tx0 - (oy - top) * 0.7, oy - 6, tx0 - (oy - top) * 1.1, oy - 4); g.stroke();
+  // a ladder up its back
+  g.strokeStyle = woodLo; g.lineWidth = 1.6; g.beginPath(); g.moveTo(tx0 + tw * 0.25, top); g.lineTo(tx0 + tw * 0.15, oy); g.moveTo(tx0 + tw * 0.45, top); g.lineTo(tx0 + tw * 0.35, oy); for (let y = top + 8; y < oy; y += 8) { const f = (y - top) / (oy - top); g.moveTo(tx0 + tw * (0.25 - 0.1 * f), y); g.lineTo(tx0 + tw * (0.45 - 0.1 * f), y); } g.stroke();
+  softShadow(g, x0 - tw / 2, oy + 1, tw * 0.7, 4, 0.6);
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground };

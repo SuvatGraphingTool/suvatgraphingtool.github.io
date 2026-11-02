@@ -233,7 +233,9 @@ export function titleOf(r) {
 
 /** The same recipe always gets the same id, so asking twice opens one scene. */
 function idOf(r) {
-  const s = JSON.stringify([r.title, r.backdrop, r.engine, r.objects, r.numbers]);
+  // what it is let go from is part of the scene (only when there is one, so
+  // every other recipe keeps the id it had)
+  const s = JSON.stringify([r.title, r.backdrop, r.engine, r.objects, r.numbers, ...(r.carrier ? [r.carrier, r.carrierWord ?? null] : [])]);
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
   return `composed-${(h >>> 0).toString(36)}`;
