@@ -68,6 +68,8 @@ Gemma's allowance was already spent when the day began: my first call came back 
 | *(re-check after the Worker deploy)* M1 June 2018 Q4 | (a) U = 24, (b) 0.11 s, (c) the graph, the run ending at B. | — |
 | the lorry: passes A at u, B 10 s later at 34 m/s, AB = 240 m; (a) u (b) time from A to the mid-point | (a) 14 right. (b) said 10.00 s, the whole time: the part was read with answer "t", though the engine timed the mid-point at 6 s. | The road offers the time and speed at the mid-point or mark (`moment`). A "t" or "v" asked "to the mid-point" is that moment's. Test. |
 | a ball at 20 m/s to just clear a 5 m wall 30 m away: the angle; a diver at 4 m/s at 30° from a 10 m board; forces on a slope; asdfghjkl | 36.18° or 63.29°; 1.646 s, 5.70 m out, 14.57 m s⁻¹; a chat reply for each of the last two. All right. | — |
+| a parcel from a helicopter hovering at 80 m; a coin flicked off a 0.8 m table at 2 m/s; a balloon rising at 5 m/s lets go a sandbag at 60 m, (a)/(b); my cat jumps off a 1.5 m wall at 3 m/s at 40° | 4.04 s; 0.81 m out; 4.04 s and 34.67 m s⁻¹; 1.80 m out, drawn as a particle and said so. All right, in helper one's new air and table scenes. | — |
+| a cyclist slows from 12 m/s to 4 m/s over 40 m, find the deceleration | "It asks for the deceleration", then no answer line: "deceleration" does not contain the word "acceleration". | A deceleration or retardation asked is the acceleration the engine found: a = −1.6 m s⁻². Test. |
 
 Passed to helper one: a composed reply lists none of the values it read, which library replies do; and the diver's reply says "it … where it was thrown from".
 

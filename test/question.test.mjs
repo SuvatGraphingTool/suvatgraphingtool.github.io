@@ -515,5 +515,11 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(r.ok && Math.abs(r.moment.t - 6) < 1e-9 && Math.abs(r.moment.v - 26) < 1e-9, 'and the engine times it: 6 s, at 26 m s⁻¹');
 }
 
+// QA 2 Nov: "a cyclist slows from 12 m/s to 4 m/s over 40 m, find the deceleration" — the ask was never answered: "deceleration" is not "acceleration"
+{
+  const { fromReader } = await import('../js/parts/answers.js');
+  ok(fromReader('road', [{ label: 'a', asks: 'the deceleration' }])[0].find === 'five.a.value' && fromReader('road', [{ label: 'a', asks: 'its retardation' }])[0].find === 'five.a.value', 'a deceleration or a retardation asked is the acceleration the engine found');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
