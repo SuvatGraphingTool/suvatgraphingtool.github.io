@@ -34,7 +34,7 @@ const ringed = (g, x, y, L, ring) => { if (!ring) return; g.strokeStyle = ring; 
 
 /** A four-legged runner (a cat, a dog): crouched, stretched out, reaching
     down; its tail out behind, its head up and forward. */
-function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears, tail, snout, head = null }) {
+function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears, tail, snout, head = null, rump = null }) {
   const s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land));
   // gathered on its haunches before the spring: tail end low, head up
   g.save(); g.translate(x, y); g.rotate(spin - (1 - s) * (1 - d) * 0.22);
@@ -51,12 +51,24 @@ function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears,
     : [{ x: back.x, y: back.y + hb * 0.4 }, { x: back.x - legL * 0.45, y: back.y + legL * 0.5 }, { x: back.x - legL * lerp(1.1, 0.6, d), y: back.y + legL * lerp(0.55, 0.95, d) }];
   leg(g, hind.map((p) => ({ x: p.x + L * 0.05, y: p.y })), bw * 0.85, furLo);
   leg(g, fore.map((p) => ({ x: p.x - L * 0.05, y: p.y })), fw * 0.85, furLo);
-  // the tail, out behind, curling up
-  g.strokeStyle = fur; g.lineWidth = L * tail.w; g.lineCap = 'round';
-  g.beginPath(); g.moveTo(back.x, back.y - hb * 0.3);
-  g.quadraticCurveTo(back.x - L * 0.22, back.y - hb * lerp(0.2, 0.6, s) - L * tail.lift, back.x - L * 0.36, back.y - L * tail.lift * 1.6);
-  g.stroke();
+  // the tail, out behind, curling up (a squirrel's a filled plume arching over its back; none for a rabbit's scut)
+  if (tail?.plume) {
+    const bx = back.x, by = back.y - hb * 0.3, up = lerp(0.35, 0.15, s);
+    const tip = { x: bx - L * lerp(0.15, 0.55, s), y: by - L * lerp(0.6, 0.25, s) }, mid = { x: bx - L * 0.38, y: by - L * up };
+    const wd = L * 0.14;
+    g.fillStyle = fur; g.beginPath(); g.moveTo(bx, by - wd * 0.2);
+    g.quadraticCurveTo(mid.x - wd, mid.y + wd * 0.3, tip.x - wd * 0.6, tip.y); g.quadraticCurveTo(tip.x + wd * 0.3, tip.y - wd * 1.2, tip.x + wd * 1.2, tip.y + wd * 0.2);
+    g.quadraticCurveTo(mid.x + wd * 1.4, mid.y - wd * 0.2, bx + wd * 0.3, by + wd * 0.2); g.closePath(); g.fill();
+    g.strokeStyle = withAlpha(tail.edge, 0.8); g.lineWidth = 1.2; g.stroke();
+    g.strokeStyle = withAlpha(tail.edge, 0.5); g.lineWidth = 1; for (let i = 0; i < 6; i++) { const u = 0.3 + i * 0.12; g.beginPath(); g.moveTo(lerp(bx, tip.x, u) - wd * 0.6, lerp(by, tip.y, u)); g.lineTo(lerp(bx, tip.x, u) - wd * 0.9, lerp(by, tip.y, u) + wd * 0.3); g.stroke(); }
+  } else if (tail) {
+    g.strokeStyle = fur; g.lineWidth = L * tail.w; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(back.x, back.y - hb * 0.3);
+    g.quadraticCurveTo(back.x - L * 0.22, back.y - hb * lerp(0.2, 0.6, s) - L * tail.lift, back.x - L * 0.36, back.y - L * tail.lift * 1.6);
+    g.stroke();
+  }
   torso(g, 0, (back.y + front.y) / 2, len / 2 + hb * 0.4, hb, 0, fur, furLo);
+  if (rump) rump(g, back, hb, len);
   leg(g, hind, bw, fur); leg(g, fore, fw, fur);
   // the head, up and forward on its neck, with its ears, snout and eye
   const hx = front.x + L * 0.12, hy = front.y - hb * 1.1, hr = L * 0.12;
@@ -316,8 +328,8 @@ export function flea(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null 
     the great bushy tail streaming out behind. */
 export function squirrel(g, x, y, L, P, o = {}) {
   const E = env();
-  quadruped(g, x, y, L, { ...o, fur: E.night ? '#7a787a' : '#9a9690', furLo: E.night ? '#4e4c4e' : '#66625c', ears: 'pointed', tail: { w: 0.16, lift: 0.3 }, snout: 0.3, head: (g2, hx, hy, hr) => {
-    g2.fillStyle = E.night ? '#b8b4ac' : '#e8e2d6'; g2.beginPath(); g2.ellipse(hx + hr * 0.5, hy + hr * 0.55, hr * 0.5, hr * 0.25, 0.2, 0, TAU); g2.fill();
+  quadruped(g, x, y, L, { ...o, fur: E.night ? '#7a787a' : '#9a9690', furLo: E.night ? '#4e4c4e' : '#66625c', ears: 'pointed', tail: { plume: true, edge: E.night ? '#b8b4ac' : '#e2ded6' }, snout: 0.3, rump: (g2, back, hb, len) => {
+    g2.fillStyle = E.night ? '#a8a49c' : '#e8e2d6'; g2.beginPath(); g2.ellipse(back.x + len * 0.55, back.y + hb * 0.6, len * 0.35, hb * 0.3, 0, 0, TAU); g2.fill();
   } });
   ringed(g, x, y, L, o.ring);
 }
@@ -325,20 +337,18 @@ export function squirrel(g, x, y, L, P, o = {}) {
     white scut of a tail. */
 export function rabbit(g, x, y, L, P, o = {}) {
   const E = env(), s = Math.max(0, Math.min(1, o.leap ?? 0));
-  quadruped(g, x, y, L, { ...o, fur: E.night ? '#7a6e62' : '#a89482', furLo: E.night ? '#4e463e' : '#6e6052', ears: 'none', tail: { w: 0.02, lift: 0.02 }, snout: 0.25, head: (g2, hx, hy, hr) => {
-    g2.fillStyle = E.night ? '#7a6e62' : '#a89482';
-    for (const dx of [-0.25, 0.05]) { g2.save(); g2.translate(hx + hr * dx, hy - hr * 0.5); g2.rotate(-0.9 - s * 0.6); g2.beginPath(); g2.ellipse(0, -hr * 0.9, hr * 0.28, hr * 1.0, 0, 0, TAU); g2.fill(); g2.fillStyle = E.night ? '#8a6a6a' : '#d8a8a0'; g2.beginPath(); g2.ellipse(0, -hr * 0.9, hr * 0.12, hr * 0.7, 0, 0, TAU); g2.fill(); g2.restore(); g2.fillStyle = E.night ? '#7a6e62' : '#a89482'; }
-  } });
-  // the white scut, at the back
-  g.save(); g.translate(x, y); g.rotate(o.spin ?? 0); g.fillStyle = '#f4f2ee'; g.beginPath(); g.arc(-L * 0.36, -L * 0.02, L * 0.06, 0, TAU); g.fill(); g.restore();
+  quadruped(g, x, y, L, { ...o, fur: E.night ? '#7a6e62' : '#a89482', furLo: E.night ? '#4e463e' : '#6e6052', ears: 'none', tail: null, snout: 0.25, head: (g2, hx, hy, hr) => {
+    for (const dx of [-0.25, 0.05]) { g2.save(); g2.translate(hx + hr * dx, hy - hr * 0.5); g2.rotate(-0.9 - s * 0.6); g2.fillStyle = E.night ? '#7a6e62' : '#a89482'; g2.beginPath(); g2.ellipse(0, -hr * 0.9, hr * 0.28, hr * 1.0, 0, 0, TAU); g2.fill(); g2.fillStyle = E.night ? '#8a6a6a' : '#d8a8a0'; g2.beginPath(); g2.ellipse(0, -hr * 0.9, hr * 0.12, hr * 0.7, 0, 0, TAU); g2.fill(); g2.restore(); }
+  }, rump: (g2, back, hb) => { g2.fillStyle = E.night ? '#b8b4ac' : '#f4f2ee'; g2.beginPath(); g2.arc(back.x - hb * 0.5, back.y - hb * 0.3, L * 0.06, 0, TAU); g2.fill(); } });
   ringed(g, x, y, L, o.ring);
 }
 /** A penguin, `L` px tall: black back and head, white front, a yellow flash
     at the neck and a dark beak; it leaps head first, flippers swept back,
     and stands upright, flippers out, before and after. */
-export function penguin(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null } = {}) {
-  const E = env(), s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land)), fly = s * (1 - d);
-  g.save(); g.translate(x, y); g.rotate(spin + fly * 1.1);
+export function penguin(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null, head = 0, wet = false } = {}) {
+  // head first along its heading in the air; into the water it stays in its dive (and goes under)
+  const E = env(), s = Math.max(0, Math.min(1, leap)), d = wet ? 0 : Math.max(0, Math.min(1, land)), fly = s * (1 - d);
+  g.save(); g.translate(x, y); g.rotate(spin + fly * (head + Math.PI / 2));
   const back = E.night ? '#0e1014' : '#1b1d22', front = E.night ? '#c8ccd2' : '#f6f8fa';
   // the feet, dark, under it
   g.fillStyle = '#3a3e46'; for (const dx of [-0.08, 0.06]) { g.beginPath(); g.ellipse(L * dx + L * 0.04, L * 0.42, L * 0.07, L * 0.025, 0, 0, TAU); g.fill(); }

@@ -678,7 +678,7 @@ function launch(canvas, o) {
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.4, Math.max(2, Lp * 0.05), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
       const pitch = aloft ? 0.35 * Math.atan2(-v.y, v.x) : 0;
       m.body = { x: cx, y: cy };
-      ANIMALS[kind](g, cx, cy, Lp, P, { leap: fired ? ease(0, 0.08, p) : 0, land: fired ? ease(0.8, 1, p) : 0, spin: pitch, ring: m.ring });
+      ANIMALS[kind](g, cx, cy, Lp, P, { leap: fired ? ease(0, 0.08, p) : 0, land: fired ? ease(0.8, 1, p) : 0, spin: kind === 'penguin' ? 0 : pitch, ring: m.ring, head: fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), wet: landed && wet });
     } else if (kind === 'skateboarder') {
       // the wheels carry the engine's point all the way down, the deck's front
       // at the edge before the off, landing level on all four wheels
@@ -786,7 +786,7 @@ function launch(canvas, o) {
   const netted = R.backdrop === 'circus' && R.objects[0].figure === 'diver' && (H0 > 0 || R.launcher === 'cannon');
   const name = netted ? 'the safety net' : R.backdrop === 'stadium' && R.objects[0].figure === 'diver' && !(H0 > 0) ? 'the sand pit' : { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', lake: 'the lake', island: 'the sand', skatepark: 'the concrete', circus: 'the ring', polar: 'the sea', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   // (at a lake thrown by hand, the place drew the shore: the name goes over the water)
-  const under = wet && H0 > 0 && !(R.backdrop === 'lake' && byHand);
+  const under = wet && H0 > 0 && !(R.backdrop === 'lake' && byHand) && R.backdrop !== 'polar';
   L.add(name, under ? x0 - 12 : w - 14, under ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);

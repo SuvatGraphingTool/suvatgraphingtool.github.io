@@ -33,7 +33,7 @@ export const BACKDROPS = {
   sea:     { label: 'The open sea', what: 'open water to the horizon', place: 'water', below: 'sea' },
   road:    { label: 'A road', what: 'a straight tarmac road with verges', place: 'road', below: 'road' },
   rails:   { label: 'A railway', what: 'a railway line on ballast and sleepers', place: 'track', below: 'rails' },
-  orchard: { label: 'An orchard', what: 'apple trees in grass (or on a river bank, over the water)', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['apple', 'ball', 'stone', 'particle', 'bird'], belows: ['ground', 'river'] },
+  orchard: { label: 'An orchard', what: 'apple trees in grass (or on a river bank, over the water)', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['apple', 'ball', 'stone', 'particle', 'bird', 'squirrel'], belows: ['ground', 'river'] },
   hall:    { label: 'A sports hall', what: 'an indoor hall with a wooden floor and high windows', place: 'floor', below: 'floor' },
   board:   { label: 'A diving board', what: 'a diving platform on its tower over an outdoor pool', place: 'board', below: 'pool', edge: true, at: 'a diving board' },
   table:   { label: 'A table', what: 'a wooden table in a room', place: 'table', below: 'floor', edge: true, at: 'a table' },
