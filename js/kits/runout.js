@@ -43,8 +43,11 @@ export const runout = {
 
   resolveAxis: 'along',
   // down the slope it is neither across nor up (solid); along the level, across (dashed)
-  resolvePart: (f, t) => (f.phase(t) === 'slope' ? '' : 'x'),
-  resolveFrom: 'the top of the slope',
+  resolvePart: (f, t) => (f.stopsOnSlope || f.phase(t) === 'slope' ? '' : 'x'),
+  // a displacement along a path that bends is not one: on the slope it is from the top, along the level from the foot
+  resolveObjects: (f, t) => ((f.stopsOnSlope || f.phase(t) === 'slope')
+    ? [{ name: '', pos: f.pos, vel: f.vel, acc: f.acc, from: 'the top of the slope' }]
+    : [{ name: '', pos: (u) => f.pos(u) - f.sSlope, vel: f.vel, acc: f.acc, from: 'the foot of the slope' }]),
   resolveWords: { pos: 'going the way it slides', neg: 'going back', plus: 'The way it slides', line: 'along its path' },
   read(v) { return { look: v.look ?? 'snow', alpha: v.alpha, L: v.L, u: v.u, mu1: v.mu1, F1: v.F1, vB: v.vB, dB: v.dB, vAsk: v.vAsk, m: v.m, mu2: v.mu2, F2: v.F2, g: v.g }; },
   solve: solveRunout,
@@ -65,11 +68,15 @@ export const runout = {
   /* Along its path: down the slope, then the level. The acceleration changes at the foot, and again at rest. */
   graphs(f, t, P) {
     const cut = [f.tB, f.tRest].filter((x) => x > 0 && x < f.tMax);
+    // down the slope solid; along the level (and at rest there) across, so dashed (rule 2): one series each
+    const two = (fn, label, tag, color) => f.stopsOnSlope ? [{ label, tag, fn, color, dash: null, breaks: cut }]
+      : [{ label, tag, fn: (tt) => (tt <= f.tB ? fn(tt) : NaN), color, dash: null },
+         { label: `${label}, on the level`, tag: null, fn: (tt) => (tt >= f.tB ? fn(tt) : NaN), color, dash: [6, 4], breaks: cut }];
     const marks = f.stopsOnSlope ? [] : [{ t: f.tB, y: f.sSlope, color: P.mark, label: 'the bottom' }];
     return [
-      { canvas: 'g-s', title: 'Distance along its path–time', unit: 'm', tMax: f.tMax, t, series: [{ label: 'along its path', tag: T`s`, fn: f.pos, color: P.disp, dash: null }], points: marks },
-      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash: null }], points: f.stopsOnSlope ? [] : [{ t: f.tB, y: f.vBot, color: P.mark }] },
-      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: f.acc, color: P.acc, dash: null, breaks: cut }] },
+      { canvas: 'g-s', title: 'Distance along its path–time', unit: 'm', tMax: f.tMax, t, series: two(f.pos, 'along its path', T`s`, P.disp), points: marks },
+      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: two(f.vel, 'velocity', T`v`, P.vel), points: f.stopsOnSlope ? [] : [{ t: f.tB, y: f.vBot, color: P.mark }] },
+      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: two(f.acc, 'acceleration', T`a`, P.acc) },
     ];
   },
 

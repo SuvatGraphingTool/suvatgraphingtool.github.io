@@ -1729,6 +1729,20 @@ group('CIE 9709/04 specimen Q2 and Edexcel M1 Nov 2002 Q5: down the slope and ac
   const short = solveRunout({ alpha: 20, u: 5, mu1: 0.9, L: 20, mu2: 0.3, g: 9.8 });
   ok(short.ok && short.stopsOnSlope && short.dStop < 20, 'slowing on a long rough slope: it stops before the bottom');
   ok(runoutWorking(s).length === 2 && runoutWorking(c).length === 1, 'the working: the slope, then the ground (or the slope alone)');
+  { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
+    const steady = solveRunout({ alpha: 20, u: 3, mu1: Math.tan(20 * Math.PI / 180), L: 5, mu2: 0.3, g: 9.8 });
+    ok(steady.ok && steady.a1 === 0 && !steady.stopsOnSlope && near(steady.vBot, 3), 'μ = tan α, moving: a steady slide, a = 0, at the bottom at its own speed');
+    ok(!solveRunout({ alpha: 20, u: 3, mu1: Math.tan(20 * Math.PI / 180), mu2: 0.3, g: 9.8 }).ok, 'a steady slide with no length: refused, not a stop 10¹⁵ m away');
+    ok(!solveRunout({ alpha: 20, u: 5, vB: 4, dB: 10, L: 2, mu2: 0.3 }).ok, 'a speed further down than the slope is long: refused');
+    ok(strip(s.slope[0].r).startsWith('a=') && /t=0\.5/.test(strip(s.slope[1].r)), 'the time to 2.5 m s⁻¹ comes after the acceleration it needs');
+    ok(solveRunout({ alpha: 30, mu1: 0, L: 3, mu2: 0.2 }).f.smooth, 'μ = 0 is a smooth slope');
+    const atFoot = solveRunout({ alpha: 20, u: 10, vB: 0, dB: 125 / 9, L: 125 / 9, g: 9.8 });
+    ok(atFoot.ok && atFoot.stopsOnSlope, 'stopping exactly at the foot: at rest there, no ground friction needed');
+    const K = KITS.runout, kc = K.solve(K.read({ look: 'ramp', alpha: 20, u: 10, vB: 8, dB: 5, m: 10, g: 9.8 }));
+    ok(resolveKit(K, kc, kc.f, kc.f.tMax).blocks[0].rows.every((q) => q.part === ''), 'at rest on the slope Resolve is not dashed');
+    const ks = K.solve(K.read({ alpha: 30, L: 3, m: 0.5, F2: 1, g: 10 }));
+    ok(/foot of the slope/.test(resolveKit(K, ks, ks.f, ks.f.tB + 0.5).blocks[0].rows[0].note), 'on the level, displacement measured from the foot');
+    ok(near(c.dec, 3.6), 'the deceleration as a size'); }
 });
 
 group('Edexcel M1 Nov 2004 Q7: pulled by a rope', () => {

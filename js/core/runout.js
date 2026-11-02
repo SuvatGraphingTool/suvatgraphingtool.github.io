@@ -60,6 +60,7 @@ export function solveRunout(k = {}) {
   let a1, mu1 = null, F1 = null, smooth = false;
   if (have(k.vB) || have(k.dB)) {
     if (!have(k.vB) || !have(k.dB) || !(k.dB > 0) || !(k.vB >= 0)) return fail('A speed further down the slope needs both: the speed, and how far down from the top it is.');
+    if (have(k.L) && k.dB > k.L + 1e-9) return fail('That speed further down has to be on the slope: no further down than its length.');
     a1 = snap((k.vB * k.vB - u * u) / (2 * k.dB));
     slope.push({ f: M`v^2 = u^2 + 2as`, s: M`${d(k.vB)}^2 = ${d(u)}^2 + 2a * ${d(k.dB)}`, r: M`a = ${d(a1)} [m s^-2]` });
     mu1 = snap((g * sn - a1) / (g * cs));
@@ -67,34 +68,38 @@ export function solveRunout(k = {}) {
     mu1 = Math.max(0, mu1);
     slope.push({ f: M`m g sin alpha - mu m g cos alpha = ma`, s: M`mu = (${d(g)} sin ${d(alpha)}° - ${sb(a1)})/(${d(g)} cos ${d(alpha)}°)`, r: M`mu = ${d(mu1)}` });
   } else if (have(k.mu1)) {
-    mu1 = k.mu1; a1 = snap(g * (sn - mu1 * cs));
+    mu1 = k.mu1; a1 = snap(g * (sn - mu1 * cs)); smooth = mu1 === 0;
     slope.push(mu1 > 0 ? { f: M`m g sin alpha - mu m g cos alpha = ma`, s: M`a = ${d(g)}(sin ${d(alpha)}° - ${d(mu1)} cos ${d(alpha)}°)`, r: M`a = ${d(a1)} [m s^-2]` }
       : { f: M`m g sin alpha = ma`, s: M`a = ${d(g)} sin ${d(alpha)}°`, r: M`a = ${d(a1)} [m s^-2]` });
   } else if (have(k.F1)) {
-    F1 = k.F1; a1 = snap(g * sn - F1 / m);
+    F1 = k.F1; a1 = snap(g * sn - F1 / m); smooth = F1 === 0;
     slope.push({ f: M`m g sin alpha - F = ma`, s: M`${d(m)} * ${d(g)} sin ${d(alpha)}° - ${d(F1)} = ${d(m)}a`, r: M`a = ${d(a1)} [m s^-2]` });
   } else {
     smooth = true; a1 = snap(g * sn);
     slope.push({ f: M`m g sin alpha = ma`, s: M`a = ${d(g)} sin ${d(alpha)}°`, r: M`a = ${d(a1)} [m s^-2]` });
   }
+  // friction exactly balancing the weight's component is a steady slide, not a rounding off one
+  if (Math.abs(a1) < 1e-9) a1 = 0;
+  const nA = slope.length;
   if (u === 0 && !(a1 > 0)) return fail('Let go from rest it would never start: friction holds it on the slope.');
 
   // ── how far down the slope: to the bottom, or to rest on it
   let L = have(k.L) ? k.L : null, vBot = null, t1, stopsOnSlope = false, dStop = null;
   if (a1 < 0) { dStop = snap((u * u) / (-2 * a1)); }
   if (L == null) {
-    if (dStop == null) return fail('Still needed: the length of the slope — speeding up, it reaches the bottom wherever that is.');
+    if (dStop == null) return fail(a1 === 0 ? 'At a steady speed it never stops on the slope: give its length.' : 'Still needed: the length of the slope — speeding up, it reaches the bottom wherever that is.');
     // slowing down: the longest the slope can be, for it still to reach the bottom
     L = dStop; stopsOnSlope = true;
     slope.push({ f: M`v^2 = u^2 + 2as`, s: M`0 = ${d(u)}^2 + 2 * ${sb(a1)}s`, r: M`s = ${d(dStop)} [m] "to rest"` });
-  } else if (dStop != null && dStop < L - 1e-9) {
+  } else if (dStop != null && dStop <= L + 1e-9) {
+    // it comes to rest on the slope — or, exactly at its length, just at the foot
     stopsOnSlope = true;
-    slope.push({ f: M`v^2 = u^2 + 2as`, s: M`0 = ${d(u)}^2 + 2 * ${sb(a1)}s`, r: M`s = ${d(dStop)} [m] "to rest, before the bottom"` });
+    slope.push({ f: M`v^2 = u^2 + 2as`, s: M`0 = ${d(u)}^2 + 2 * ${sb(a1)}s`, r: Math.abs(dStop - L) <= 1e-9 ? M`s = ${d(dStop)} [m] "to rest, just at the foot"` : M`s = ${d(dStop)} [m] "to rest, before the bottom"` });
   }
   if (stopsOnSlope) { vBot = 0; t1 = snap(u / -a1); }
   else {
     vBot = snap(Math.sqrt(Math.max(0, u * u + 2 * a1 * L)));
-    t1 = Math.abs(a1) < 1e-12 ? snap(L / u) : snap((vBot - u) / a1);
+    t1 = a1 === 0 ? snap(L / u) : snap((vBot - u) / a1);
     slope.push({ f: M`v^2 = u^2 + 2as`, s: M`v^2 = ${d(u)}^2 + 2 * ${sb(a1)} * ${d(L)}`, r: M`v = ${d(vBot)} [m s^-1] "at the bottom"` });
     slope.push({ f: M`v = u + at`, s: M`${d(vBot)} = ${d(u)} + ${sb(a1)}t`, r: M`t = ${d(t1)} [s]` });
   }
@@ -103,10 +108,12 @@ export function solveRunout(k = {}) {
   // ── a speed asked about on the slope: the time it takes
   let tAsk = null;
   if (have(k.vAsk)) {
+    if (a1 === 0) return fail(`It moves at a steady ${M`${d(u)} [m s^-1]`} all the way down the slope: no one time has a given speed.`);
     const between = (k.vAsk - u) * (k.vAsk - (stopsOnSlope ? 0 : vBot)) <= 1e-9;
-    if (!between || Math.abs(a1) < 1e-12) return fail(`On the slope its speed goes from ${M`${d(u)}`} to ${M`${d(stopsOnSlope ? 0 : vBot)} [m s^-1]`}: it is never ${M`${d(k.vAsk)} [m s^-1]`} there.`);
+    if (!between) return fail(`On the slope its speed goes from ${M`${d(u)}`} to ${M`${d(stopsOnSlope ? 0 : vBot)} [m s^-1]`}: it is never ${M`${d(k.vAsk)} [m s^-1]`} there.`);
     tAsk = snap((k.vAsk - u) / a1);
-    slope.unshift({ f: M`v = u + at`, s: M`${d(k.vAsk)} = ${d(u)} + ${sb(a1)}t`, r: M`t = ${d(tAsk)} [s]` });
+    // after the acceleration's rows, before the rest: the order a student works in
+    slope.splice(nA, 0, { f: M`v = u + at`, s: M`${d(k.vAsk)} = ${d(u)} + ${sb(a1)}t`, r: M`t = ${d(tAsk)} [s]` });
   }
 
   // ── along the level ground: friction alone, to rest
@@ -140,9 +147,10 @@ export function solveRunout(k = {}) {
 
   const notes = [
     smooth ? `On the smooth slope only the weight’s component acts along it: ${M`a = g sin alpha = ${d(a1)} [m s^-2]`}.`
-      : a1 >= 0 ? `Down the slope the weight’s component beats friction: it speeds up at ${M`${d(a1)} [m s^-2]`}${mu1 != null && (have(k.vB)) ? `, so ${M`mu = ${d(mu1)}`}` : ''}.`
+      : a1 === 0 ? `Friction exactly balances the weight’s component: it slides down at a steady ${M`${d(u)} [m s^-1]`}.`
+      : a1 > 0 ? `Down the slope the weight’s component beats friction: it speeds up at ${M`${d(a1)} [m s^-2]`}${mu1 != null && (have(k.vB)) ? `, so ${M`mu = ${d(mu1)}`}` : ''}.`
         : `Friction beats the weight’s component: it slows down the slope at ${M`${d(-a1)} [m s^-2]`}${have(k.vB) ? `, so ${M`mu = ${d(mu1)}`}` : ''}.`,
-    stopsOnSlope ? (have(k.L) ? `It stops ${M`${d(dStop)} [m]`} down the slope, before the bottom, and stays there.` : `It stops after ${M`${d(dStop)} [m]`}: for it to reach the bottom the slope can be at most ${M`${d(dStop)} [m]`} long.`)
+    stopsOnSlope ? (have(k.L) ? (Math.abs(dStop - L) <= 1e-9 ? `It just reaches the foot of the slope and stops there.` : `It stops ${M`${d(dStop)} [m]`} down the slope, before the bottom, and stays there.`) : `It stops after ${M`${d(dStop)} [m]`}: for it to reach the bottom the slope can be at most ${M`${d(dStop)} [m]`} long.`)
       : `It reaches the bottom at ${M`${d(vBot)} [m s^-1]`} after ${M`${d(t1)} [s]`}, and slides ${M`${d(s2)} [m]`} along the ground before friction stops it.`,
   ];
   const derived = [`${M`a = ${d(a1)} [m s^-2]`} on the slope`, ...(stopsOnSlope ? [`${M`${d(dStop)} [m]`} to rest`] : [`${M`v = ${d(vBot)} [m s^-1]`} at the bottom`, `${M`${d(s2)} [m]`} along the ground`])];
@@ -150,7 +158,7 @@ export function solveRunout(k = {}) {
   const f = { kind: 'runout', look, alpha, u, L: have(k.L) ? k.L : null, sSlope, a1, a2, vBot, s2, t1, t2, tB, tRest, tMax, tFlight: tMax, stopsOnSlope, dStop, mu1, smooth, g, m,
     Fslope: F1 != null ? F1 : m != null && mu1 != null ? snap(mu1 * m * g * cs) : null, Fground: Fg, W: m != null ? snap(m * g) : null,
     pos, vel, acc, phase, tAsk, tMid: snap(t1 / 2), tGround: snap(tB + t2 / 2), params: { u: 0, theta: 0, h: 0, g } };
-  return { ok: true, mode: 'runout', a1, mu1, vBot, s2, t1, t2, dStop, tAsk, stopsOnSlope, slope, ground, rows: [...slope, ...ground], notes, derived, f };
+  return { ok: true, mode: 'runout', a1, dec: a1 < 0 ? snap(-a1) : null, mu1, vBot, s2, t1, t2, dStop, tAsk, stopsOnSlope, slope, ground, rows: [...slope, ...ground], notes, derived, f };
 }
 
 /** The working: down the slope, then along the ground. */

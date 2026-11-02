@@ -147,8 +147,8 @@ function blocksFor(o, t, tMax, K, U, f) {
 }
 
 /** The objects to resolve, from the kit or the motion. */
-function objectsOf(K, f) {
-  if (K?.resolveObjects) return K.resolveObjects(f);
+function objectsOf(K, f, t) {
+  if (K?.resolveObjects) return K.resolveObjects(f, t);
   const [nA, nB] = K?.resolveNames || ['A', 'B'];
   const still = (o) => (o?.v ? () => o.v : null);   // a constant velocity, kept on the object
   if (f.posA && f.posB) return [{ name: nA, pos: f.posA, vel: f.velA || still(f.A), acc: f.accA }, { name: nB, pos: f.posB, vel: f.velB || still(f.B), acc: f.accB }];
@@ -177,7 +177,7 @@ export function resolveKit(K, solved, f, t) {
   const tt = Math.min(Math.max(t, 0), tMax);
   if (K?.resolve) { const R = K.resolve(solved, tt, f); if (R) return { t: tt, ...R }; }
   K = K || { resolveAxis: 'along', resolveFrom: 'A' };   // the road: along A to B
-  const objs = objectsOf(K, f);
+  const objs = objectsOf(K, f, tt);
   if (!objs?.length) return null;
   // in letters, or in km and hours: the numbers are in the question's own units
   const lu = K?.resolveUnits?.(f), U = lu ? { s: lu[0], v: lu[1], a: lu[2] } : UNITS;

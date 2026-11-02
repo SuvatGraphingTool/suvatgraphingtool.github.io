@@ -105,7 +105,8 @@ export function render(canvas, cam, o) {
   // ── what slides: on the slope tilted with it, on the level flat
   const s = f.pos(t), q = pathAt(s), onSlope = s < f.sSlope - 1e-9;
   // tilts back to level over its own length as it reaches the foot
-  const blend = clamp((f.sSlope - s) / Math.max(1e-9, (Ls * 0.5) / k), 0, 1), rot = al * blend;
+  // measured to the drawn foot, not to where it stops: stopping on the slope it stays tilted with it
+  const blend = clamp((Ldraw - Math.min(s, f.sSlope)) / Math.max(1e-9, (Ls * 0.5) / k), 0, 1), rot = al * blend;
   g.save(); g.translate(q.x, q.y); g.rotate(rot);
   if (look === 'snow') sledge(g, Ls); else suitcase(g, Ls);
   g.restore();

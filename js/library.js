@@ -618,7 +618,7 @@ export const LIBRARY = [
       { label: 'ii', kind: 'distance', ask: 'After 3 m it reaches rough level ground, where the friction is 1 N. Find how far it travels along the ground before it stops.', find: 's2', sym: 's', unit: 'm', trim: true, at: 'f.tRest', step: 'Along the ground', paper: 7.5 },
     ],
     answers: [
-      { kind: 'acceleration', say: 'the suitcase’s deceleration down the ramp', find: 'a1', sym: 'a', unit: 'm s^-2', dp: 2, at: 'f.tMid', step: 'Down the slope', example: { look: 'ramp', alpha: 20, u: 10, vB: 8, dB: 5, m: 10, g: 9.8 } },
+      { kind: 'acceleration', say: 'the suitcase’s deceleration down the ramp', find: 'dec', sym: '"deceleration"', unit: 'm s^-2', dp: 2, at: 'f.tMid', step: 'Down the slope', example: { look: 'ramp', alpha: 20, u: 10, vB: 8, dB: 5, m: 10, g: 9.8 } },
       { kind: 'other', say: 'the coefficient of friction between the suitcase and the ramp', find: 'mu1', sym: 'mu', dp: 3, at: 'f.tMid', step: 'Down the slope', example: { look: 'ramp', alpha: 20, u: 10, vB: 8, dB: 5, m: 10, g: 9.8 } },
       { kind: 'distance', say: 'the greatest possible length of the ramp, for the suitcase to reach the bottom', find: 'dStop', sym: 's', unit: 'm', dp: 1, at: 'end', step: 'Down the slope', example: { look: 'ramp', alpha: 20, u: 10, vB: 8, dB: 5, m: 10, g: 9.8 } },
     ],
