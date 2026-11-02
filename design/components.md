@@ -377,7 +377,21 @@ waterfall's curtain in ragged ribbons with the river running to its lip,
 leaves in yellows and olives, sand spray shadowed and pale-topped with dot
 grains, mud dark and wet, a firework's burst twice the size with the apex
 label held off it, its smoke stopping where it bursts, its tube blue; a
-carrier is part of a composed scene's id.
+carrier is part of a composed scene's id. After batches 8–9's critic: the
+stadium's track is blue (a red one hid the path, rule 2) and its arcs run
+only out to the landing; `grandstand()` is seen end on, stepped tiers with a
+spectator on each step, a cantilevered roof on its column, the far stand
+kept below it; the goal's net bulges over half a second; golf's clubhouse
+stands in front of its trees, its tee markers are pegs, its pin clear of
+the landing's label; an archer's arrow is drawn at the engine's point
+unless the bow hand is there; the ship's deckhouse is smaller, its rail
+dark, its lifeboats yellow on davits, its hull plated with an anchor; the
+dam has its reservoir and a spillway from the crest; the playground's
+swings and see-saw stand clear of the whole flight, on a rubber strip in
+the grass, its tower roofed above head height. A From-a-height reading of
+a place the composer draws (ground, snow, a ledge, a green, a branch) is
+composed there; a branch over a river is the orchard's tree on a bank; a
+diving bird is figure `bird`.
 
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn

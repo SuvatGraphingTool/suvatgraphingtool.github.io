@@ -1080,32 +1080,50 @@ function mownTurf(g, w, y0, y1, n, { lo = '#5f9a48', hi = '#6fae55', line = true
   if (line) { g.fillStyle = withAlpha('#ffffff', n ? 0.5 : 0.85); g.fillRect(0, y0 + 2, w, 1.5); }
 }
 
-/** A grandstand to throw from: its upper tier cantilevered out to its front
-    edge at x0, `top` up, a lower tier set back under it, crowd on both, a
-    roof over. What leaves from the front edge falls clear of the tiers. */
+/** A grandstand to throw from, seen end on: its concrete end wall in
+    section, an upper tier stepping up and back from its front edge at x0
+    (`top` up), cantilevered over a lower tier set back beneath it, a
+    spectator seated on every step, a roof on its column over the back.
+    What leaves from the front edge falls clear of both tiers. */
 function grandstand(g, x0, top, oy, k, r, n) {
-  const H = oy - top, depth = clamp(H * 0.9, 60, 260), conc = n ? '#5a5c62' : '#a8acb2', concLo = n ? '#3a3c42' : '#7a7e86';
-  // the lower tier, under the overhang, stepping up away from the pitch
-  const lowFront = x0 - clamp(H * 0.18, 12, 60), lowTop = top + H * 0.45;
-  g.fillStyle = concLo; g.beginPath(); g.moveTo(lowFront, oy); g.lineTo(lowFront - depth * 0.7, lowTop); g.lineTo(-4, lowTop); g.lineTo(-4, oy); g.closePath(); g.fill();
-  const rowsLo = []; for (let i = 1, s = 5; i < 12; i++) { const t = i / 12, y = lerp(oy, lowTop, t); rowsLo.push({ y, s }); }
-  g.save(); g.beginPath(); g.moveTo(lowFront, oy); g.lineTo(lowFront - depth * 0.7, lowTop); g.lineTo(-4, lowTop); g.lineTo(-4, oy); g.closePath(); g.clip();
-  for (const { y } of rowsLo) { g.fillStyle = withAlpha('#ffffff', 0.12); g.fillRect(-4, y, lowFront + 4, 1); }
-  g.restore();
-  for (const row of rowsLo) crowd(g, -4, lowFront - (oy - row.y) * (depth * 0.7) / (oy - lowTop) - 4, [row], r, n);
-  // the upper tier: its underside a soffit in shadow, its raked face with crowd
-  g.fillStyle = withAlpha('#000000', 0.35); g.fillRect(-4, lowTop - 4, lowFront + 4, 6);
-  g.fillStyle = conc; g.beginPath(); g.moveTo(x0, top); g.lineTo(x0, top + H * 0.08); g.lineTo(-4, lowTop - 2); g.lineTo(-4, top - H * 0.35); g.closePath(); g.fill();
-  g.fillStyle = concLo; g.beginPath(); g.moveTo(x0, top + H * 0.08); g.lineTo(-4, lowTop - 2); g.lineTo(-4, lowTop + 4); g.lineTo(x0 - 4, top + H * 0.12); g.closePath(); g.fill();
-  // the front of the upper tier: a parapet with the edge it leaves from
-  g.fillStyle = n ? '#7a7c82' : '#d8dce0'; g.fillRect(x0 - clamp(1.2 * k, 10, 30), top - clamp(0.4 * k, 3, 10), clamp(1.2 * k, 10, 30), clamp(0.4 * k, 3, 10) + 2);
-  // crowd up the upper tier, behind the front
-  const rowsUp = []; for (let i = 1, s = 4.5; i < 9; i++) { const t = i / 9; rowsUp.push({ y: lerp(top - 2, top - H * 0.33, t), s, x1: lerp(x0 - clamp(2 * k, 20, 60), -4, t) }); }
-  for (const row of rowsUp) crowd(g, -4, row.x1, [row], r, n);
-  // the roof over the back, on its columns
-  g.fillStyle = n ? '#2a2c32' : '#5a5e66'; g.fillRect(-4, top - H * 0.45, x0 * 0.7, clamp(0.4 * k, 4, 10));
-  g.strokeStyle = n ? '#4a4e56' : '#8a8e96'; g.lineWidth = 2; g.beginPath(); g.moveTo(x0 * 0.1, top - H * 0.45); g.lineTo(x0 * 0.1, top - H * 0.33); g.stroke();
-  softShadow(g, x0 - depth * 0.3, oy + 2, depth * 0.6, 5, 0.6);
+  const H = oy - top, depth = clamp(H * 1.1, 70, 300), rise = H * 0.4;
+  const conc = n ? '#5e6066' : '#b4b8be', concLo = n ? '#45474c' : '#8e9298', shade = n ? '#2c2e33' : '#6a6e76';
+  const shirts = n ? ['#5a5560', '#6a5a50', '#4a5a6a', '#7a6a5a'] : ['#2f5fa8', '#e8c547', '#f2f0ea', '#5fae7a', '#2f3340', '#8a5bb0'];
+  // a stepped tier from its front edge (fx, fy) up and back: `steps` treads
+  const tier = (fx, fy, d, up, steps, under) => {
+    const tw = d / steps, rh = up / steps, pts = [{ x: fx, y: fy }];
+    for (let i = 0; i < steps; i++) { const x = fx - i * tw, y = fy - i * rh; pts.push({ x, y: y - rh }, { x: x - tw, y: y - rh }); }
+    const bx = fx - d, by = fy - up;
+    g.fillStyle = conc; g.beginPath(); g.moveTo(pts[0].x, pts[0].y); for (const q of pts) g.lineTo(q.x, q.y); g.lineTo(bx, under); g.lineTo(fx, under); g.closePath(); g.fill();
+    // each tread lit, each riser's shadow
+    for (let i = 0; i < steps; i++) { const x = fx - i * tw, y = fy - (i + 1) * rh; g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.25); g.fillRect(x - tw, y, tw, 1.2); g.fillStyle = withAlpha('#000000', 0.18); g.fillRect(x - 1.5, y, 1.5, rh); }
+    // a spectator on each step, seated, facing the pitch
+    for (let i = 1; i < steps; i++) {
+      if (r() < 0.15) continue;
+      const x = fx - i * tw - tw * 0.45, y = fy - i * rh, s = clamp(tw * 0.55, 3.5, 9);
+      g.fillStyle = shirts[Math.floor(r() * shirts.length)]; g.beginPath(); g.roundRect(x - s * 0.45, y - s * 1.5, s * 0.9, s * 1.1, s * 0.25); g.fill();
+      g.fillStyle = n ? '#7d6253' : ['#d9a988', '#a87a5a', '#7a4e36'][Math.floor(r() * 3)]; g.beginPath(); g.arc(x + s * 0.05, y - s * 1.85, s * 0.36, 0, TAU); g.fill();
+    }
+    return { bx, by };
+  };
+  // the lower tier, set back under the overhang
+  const lowFront = x0 - clamp(H * 0.2, 14, 70), lowUp = H * 0.4;
+  tier(lowFront, oy, depth * 0.7, lowUp, 8, oy + 2);
+  g.fillStyle = concLo; g.fillRect(-4, oy - lowUp, Math.max(0, lowFront - depth * 0.7 + 4), lowUp + 2);
+  // the upper tier on its slab, the soffit in shadow beneath it
+  const slab = clamp(0.4 * k, 4, 12), back = tier(x0, top, depth, rise, 10, top + slab);
+  g.fillStyle = shade; g.beginPath(); g.moveTo(x0, top + slab); g.lineTo(back.bx, top + slab); g.lineTo(back.bx, top + slab + 3); g.lineTo(x0 - 4, top + slab + 3); g.closePath(); g.fill();
+  g.fillStyle = concLo; g.fillRect(-4, back.by, Math.max(0, back.bx + 4), oy - lowUp - back.by);
+  // a column under the back of the upper tier, down to the lower tier
+  g.fillStyle = concLo; g.fillRect(back.bx + depth * 0.15, top + slab, clamp(0.4 * k, 4, 10), oy - lowUp - top - slab + lowUp * 0.6);
+  // the front parapet it leaves from
+  g.fillStyle = n ? '#7a7c82' : '#d8dce0'; g.fillRect(x0 - clamp(0.4 * k, 4, 10), top - clamp(0.9 * k, 7, 22), clamp(0.4 * k, 4, 10), clamp(0.9 * k, 7, 22));
+  // the roof: a column at the back, the cantilever out over the upper tier, its tie
+  const roofY = back.by - clamp(H * 0.3, 20, 90), colX = back.bx + 4, tip = x0 - depth * 0.15;
+  g.fillStyle = shade; g.fillRect(colX - 3, roofY, 6, back.by - roofY);
+  g.beginPath(); g.moveTo(colX - 10, roofY); g.lineTo(tip, roofY + 4); g.lineTo(tip, roofY + 9); g.lineTo(colX - 10, roofY + 10); g.closePath(); g.fill();
+  g.strokeStyle = shade; g.lineWidth = 1.2; g.beginPath(); g.moveTo(colX, roofY - clamp(H * 0.12, 8, 30)); g.lineTo(tip, roofY + 4); g.moveTo(colX, roofY - clamp(H * 0.12, 8, 30)); g.lineTo(colX, roofY); g.stroke();
+  softShadow(g, x0 - depth * 0.4, oy + 2, depth * 0.6, 5, 0.6);
 }
 
 /** A football stadium: the stand across the pitch with its crowd and
@@ -1114,10 +1132,11 @@ function grandstand(g, x0, top, oy, k, r, n) {
 function pitch(g, c) {
   const { w, h, k, oy, x0, top, H0 } = c;
   const E = env(), n = E.night, r = rng(157);
-  const horizon = oy - clamp((oy - 40) * 0.32, 40, 170);
+  // the far stand lower than the near one it is thrown from
+  const horizon = H0 > 0 ? Math.max(oy - clamp((oy - 40) * 0.32, 40, 170), Math.min(oy - 30, top + 60)) : oy - clamp((oy - 40) * 0.32, 40, 170);
   sky(g, w, horizon - 60, x0, { far: 'none', seed: 91, clouds: 2 });
   if (n) { g.fillStyle = withAlpha('#2a3550', 0.5); g.fillRect(0, 0, w, horizon); }
-  farStand(g, w, horizon, r, n, { tall: clamp((horizon - 20) * 0.35, 30, 90) });
+  farStand(g, w, horizon, r, n, { tall: Math.min(clamp((horizon - 20) * 0.35, 30, 90), H0 > 0 ? Math.max(20, horizon - top - 8) : 90) });
   mownTurf(g, w, horizon, h, n);
   if (n) { const fl = g.createLinearGradient(0, horizon, 0, h); fl.addColorStop(0, 'rgba(255,246,216,0.12)'); fl.addColorStop(1, 'rgba(255,246,216,0)'); g.fillStyle = fl; g.fillRect(0, horizon, w, h - horizon); }
   // the near touchline
@@ -1134,18 +1153,18 @@ function golf(g, c) {
   const E = env(), n = E.night, r = rng(163);
   const horizon = oy - clamp((oy - 40) * 0.3, 36, 150);
   sky(g, w, horizon, x0, { far: 'none', seed: 101, clouds: 3 });
-  // the clubhouse, white with a dark roof, clear of the flight
-  const cx = clamp(x0 * 0.5, 20, w * 0.25), cw = clamp(6 * k, 50, 120), ch = cw * 0.35;
-  g.fillStyle = n ? '#8a8a90' : '#f4f1ea'; g.fillRect(cx, horizon - ch, cw, ch);
-  g.fillStyle = n ? '#3a3036' : '#5a4038'; g.beginPath(); g.moveTo(cx - 6, horizon - ch); g.lineTo(cx + cw * 0.5, horizon - ch * 1.7); g.lineTo(cx + cw + 6, horizon - ch); g.closePath(); g.fill();
-  g.fillStyle = n ? withAlpha(E.window, 0.85) : '#4a5a6a'; for (let i = 0; i < 5; i++) g.fillRect(cx + cw * 0.08 + i * cw * 0.19, horizon - ch * 0.7, cw * 0.1, ch * 0.35);
   // the tree line: rounded crowns, darker below, along the far edge
   for (let x = -10 + r() * 20; x < w + 20; x += 18 + r() * 22) {
-    if (x > cx - 10 && x < cx + cw + 10 && r() < 0.8) continue;
+    if (x > clamp(x0 * 0.5, 20, w * 0.25) - 10 && x < clamp(x0 * 0.5, 20, w * 0.25) + clamp(6 * k, 50, 120) + 10) continue;
     const R = 12 + r() * 14, ty = horizon - R * 0.6;
     g.fillStyle = n ? '#1c2a1c' : '#3f6a3a'; g.beginPath(); g.arc(x, ty, R, 0, TAU); g.fill();
     g.fillStyle = n ? '#243424' : '#4f7c45'; g.beginPath(); g.arc(x - R * 0.25, ty - R * 0.25, R * 0.6, 0, TAU); g.fill();
   }
+  // the clubhouse, white with a dark roof, in front of the tree line
+  const cx = clamp(x0 * 0.5, 20, w * 0.25), cw = clamp(6 * k, 50, 120), ch = cw * 0.35;
+  g.fillStyle = n ? '#8a8a90' : '#f4f1ea'; g.fillRect(cx, horizon - ch, cw, ch);
+  g.fillStyle = n ? '#3a3036' : '#5a4038'; g.beginPath(); g.moveTo(cx - 6, horizon - ch); g.lineTo(cx + cw * 0.5, horizon - ch * 1.7); g.lineTo(cx + cw + 6, horizon - ch); g.closePath(); g.fill();
+  g.fillStyle = n ? withAlpha(E.window, 0.85) : '#4a5a6a'; for (let i = 0; i < 5; i++) g.fillRect(cx + cw * 0.08 + i * cw * 0.19, horizon - ch * 0.7, cw * 0.1, ch * 0.35);
   // the rough, then the fairway in its stripes, then the near rough
   const rg = g.createLinearGradient(0, horizon, 0, h); rg.addColorStop(0, n ? '#2a3a26' : '#5b7f3e'); rg.addColorStop(1, n ? '#223020' : '#4c6d33');
   g.fillStyle = rg; g.fillRect(0, horizon, w, h - horizon);
@@ -1176,9 +1195,10 @@ function golf(g, c) {
   const land = (c.clearX || [])[0];
   if (land != null && land > x0 + 20) {
     const gw = clamp(10 * k, 70, 220);
-    g.fillStyle = n ? '#3a5a32' : '#9ccc6a'; g.beginPath(); g.ellipse(land + gw * 0.1, oy, gw / 2, clamp(gw * 0.05, 4, 10), 0, 0, TAU); g.fill();
+    g.fillStyle = n ? '#4f7a44' : '#9ccc6a'; g.beginPath(); g.ellipse(land + gw * 0.1, oy, gw / 2, clamp(gw * 0.05, 4, 10), 0, 0, TAU); g.fill();
     g.strokeStyle = withAlpha('#ffffff', n ? 0.05 : 0.2); g.lineWidth = 1; g.beginPath(); g.ellipse(land + gw * 0.1, oy, gw / 2, clamp(gw * 0.05, 4, 10), 0, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
-    const px = land + clamp(2.5 * k, 22, 60), ph = clamp(2.2 * k, 26, 60);
+    // the pin beyond the landing, clear of the label that names the surface there
+    const px = land + clamp(4 * k, 60, 110), ph = clamp(2.2 * k, 26, 60);
     g.fillStyle = '#1b1d22'; g.beginPath(); g.ellipse(px, oy, 3.5, 1.4, 0, 0, TAU); g.fill();
     g.strokeStyle = n ? '#c8c8cc' : '#f4f4f4'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(px, oy); g.lineTo(px, oy - ph); g.stroke();
     const wv = Math.sin(phase * 4) * 2;
@@ -1187,12 +1207,12 @@ function golf(g, c) {
   if (H0 > 0) {
     // the raised tee: a bank of turf on a wall of railway sleepers
     const tw = clamp(H0 * k * 1.2, 60, 220), sl = n ? '#4a3a2c' : '#6e5038', slHi = n ? '#5a4a3a' : '#8a6a4a';
-    g.fillStyle = n ? '#2c3e28' : '#6a9a48'; g.beginPath(); g.moveTo(x0, top); g.lineTo(x0 - tw, top); g.quadraticCurveTo(x0 - tw - (oy - top) * 0.6, lerp(top, oy, 0.4), x0 - tw - (oy - top) * 1.4, oy + 2); g.lineTo(x0, oy + 2); g.closePath(); g.fill();
+    g.fillStyle = n ? '#3c5a34' : '#6a9a48'; g.beginPath(); g.moveTo(x0, top); g.lineTo(x0 - tw, top); g.quadraticCurveTo(x0 - tw - (oy - top) * 0.6, lerp(top, oy, 0.4), x0 - tw - (oy - top) * 1.4, oy + 2); g.lineTo(x0, oy + 2); g.closePath(); g.fill();
     const sh = clamp(0.25 * k, 4, 10);
     for (let y = top, i = 0; y < oy; y += sh, i++) { g.fillStyle = i % 2 ? sl : slHi; g.fillRect(x0 - clamp(1.2 * k, 10, 30), y, clamp(1.2 * k, 10, 30), Math.min(sh, oy - y)); g.fillStyle = withAlpha('#000000', 0.3); g.fillRect(x0 - clamp(1.2 * k, 10, 30), y + sh - 1, clamp(1.2 * k, 10, 30), 1); }
-    g.fillStyle = n ? '#3a5a32' : '#9ccc6a'; g.fillRect(x0 - tw, top - 2, tw, 3);
-    // the tee markers either side
-    g.fillStyle = '#e8e8ea'; g.beginPath(); g.arc(x0 - tw * 0.85, top - 3, 3, 0, TAU); g.fill();
+    g.fillStyle = n ? '#6a9a58' : '#9ccc6a'; g.fillRect(x0 - tw, top - 2, tw, 3);
+    // the tee markers: two short painted pegs, not balls
+    for (const [mx, col] of [[0.85, '#2f5fa8'], [0.55, '#e8c547']]) { g.fillStyle = col; g.fillRect(x0 - tw * mx - 2, top - 7, 4, 7); g.fillStyle = withAlpha('#000000', 0.3); g.fillRect(x0 - tw * mx + 1, top - 7, 1, 7); }
   }
 }
 
@@ -1203,12 +1223,13 @@ function golf(g, c) {
 function stadium(g, c) {
   const { w, h, k, X, oy, x0, top, H0 } = c;
   const E = env(), n = E.night, r = rng(167);
-  const horizon = oy - clamp((oy - 40) * 0.34, 44, 180);
+  const horizon = H0 > 0 ? Math.max(oy - clamp((oy - 40) * 0.34, 44, 180), Math.min(oy - 30, top + 60)) : oy - clamp((oy - 40) * 0.34, 44, 180);
   sky(g, w, horizon - 60, x0, { far: 'none', seed: 111, clouds: 2 });
   if (n) { g.fillStyle = withAlpha('#2a3550', 0.5); g.fillRect(0, 0, w, horizon); }
-  farStand(g, w, horizon, r, n, { tall: clamp((horizon - 20) * 0.35, 30, 90) });
+  farStand(g, w, horizon, r, n, { tall: Math.min(clamp((horizon - 20) * 0.35, 30, 90), H0 > 0 ? Math.max(20, horizon - top - 8) : 90) });
   // the far straight: red lanes, white lines
-  const lane = clamp((oy - horizon) * 0.06, 3, 10), red = n ? '#7a3a34' : '#c0533e';
+  // a blue track (some are), so the path never crosses a red one: rule 2
+  const lane = clamp((oy - horizon) * 0.06, 3, 10), red = n ? '#2c3e5a' : '#4a72a8';
   g.fillStyle = red; g.fillRect(0, horizon, w, lane * 6);
   g.fillStyle = withAlpha('#ffffff', n ? 0.5 : 0.85); for (let i = 0; i <= 6; i++) g.fillRect(0, horizon + i * lane, w, 1);
   // the infield
@@ -1216,7 +1237,9 @@ function stadium(g, c) {
   // the throwing arcs, every ten metres out from where it is thrown
   if (X) {
     g.strokeStyle = withAlpha('#ffffff', n ? 0.4 : 0.75); g.lineWidth = 1.4;
-    for (let d = 10; X(d) < w + 40; d += 10) { const R = X(d) - X(0); g.beginPath(); g.ellipse(X(0), oy, R, clamp(R * 0.04, 3, 14), 0, Math.PI * 1.12, Math.PI * 1.88); g.stroke(); g.beginPath(); g.ellipse(X(0), oy, R, clamp(R * 0.04, 3, 14), 0, Math.PI * 0.05, Math.PI * 0.35); g.stroke(); }
+    // out to just past where it lands, never a tangle of them
+    const land = (c.clearX || [])[0] ?? w, step = (land - X(0)) / (X(10) - X(0)) > 8 ? 20 : 10;
+    for (let d = step; X(d) < Math.min(w + 40, land + (X(step) - X(0))); d += step) { const R = X(d) - X(0), E2 = clamp(R * 0.09, 5, 26); g.beginPath(); g.ellipse(X(0), oy, R, E2, 0, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); g.beginPath(); g.ellipse(X(0), oy, R, E2, 0, Math.PI * 0.08, Math.PI * 0.3); g.stroke(); }
   }
   // the near track along the front of the frame
   const ny = oy + clamp((h - oy) * 0.45, 16, 70);
@@ -1258,12 +1281,21 @@ function ship(g, c) {
   g.fillStyle = n ? withAlpha(E.window, 0.8) : '#c9d6e0';
   for (let x = x0 - rake - 18; x > xs; x -= ph * 5) { g.beginPath(); g.arc(x, lerp(hullTop, wl - band, 0.45), ph, 0, TAU); g.fill(); }
   g.fillStyle = withAlpha('#ffffff', 0.2); g.fillRect(xs, hullTop + 3, len + 10, 1.5);
+  // its plating: seams between the plates, a little rust weeping from them
+  g.strokeStyle = withAlpha('#ffffff', n ? 0.05 : 0.09); g.lineWidth = 1;
+  for (let x = x0 - 24; x > xs; x -= clamp(1.6 * k, 18, 46)) { g.beginPath(); g.moveTo(x, hullTop + 4); g.lineTo(x, wl - band - 2); g.stroke(); }
+  for (const f of [0.3, 0.65]) { g.beginPath(); g.moveTo(xs, lerp(hullTop, wl - band, f)); g.lineTo(x0, lerp(hullTop, wl - band, f)); g.stroke(); }
+  g.fillStyle = withAlpha('#8a5a3a', n ? 0.15 : 0.25); for (let i = 0; i < 8; i++) { const x = x0 - 30 - r() * (len * 0.6); g.fillRect(x, lerp(hullTop, wl - band, 0.3 + r() * 0.3), 1.5, (wl - hullTop) * (0.08 + r() * 0.12)); }
+  // the anchor in its hawse pipe, near the stern
+  const ax = x0 - rake - clamp(2.2 * k, 24, 60), ay = lerp(hullTop, wl - band, 0.25), as = clamp(0.5 * k, 5, 12);
+  g.fillStyle = withAlpha('#000000', 0.45); g.beginPath(); g.ellipse(ax, ay, as * 0.7, as * 0.5, 0, 0, TAU); g.fill();
+  g.strokeStyle = n ? '#5a5e66' : '#3a3e46'; g.lineWidth = Math.max(1.5, as * 0.25); g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax, ay + as * 2); g.moveTo(ax - as, ay + as * 1.5); g.quadraticCurveTo(ax, ay + as * 2.6, ax + as, ay + as * 1.5); g.stroke();
   g.restore();
   // its wake at the stern and the foam along its waterline
   g.fillStyle = withAlpha('#ffffff', 0.55); for (let i = 0; i < 5; i++) { const fx = x0 - rake + 4 + i * 14 + Math.sin(phase * 2 + i) * 3; g.beginPath(); g.ellipse(fx, wl + 1, 10 - i, 1.6, 0, 0, TAU); g.fill(); }
   // white decks, the bridge's windows
   // the superstructure near the stern, behind whoever stands there, clear of the readouts
-  const sx1 = x0 - clamp(0.1 * len, 34, 100), sh = clamp(0.5 * (wl - fb), 24, 120), sw = clamp(0.3 * len, 60, 220);
+  const sx1 = x0 - clamp(0.1 * len, 34, 100), sh = Math.min(clamp(0.32 * (wl - fb), 18, 70), Math.max(14, (top - 20) / 1.7)), sw = clamp(0.18 * len, 50, 140);
   const white = n ? '#b8bcc4' : '#f4f2ee', whiteLo = n ? '#8a8e96' : '#d8d6d2';
   if (sx1 - sw > -60) {
     g.fillStyle = whiteLo; g.fillRect(sx1 - sw, hullTop - sh * 0.5, sw, sh * 0.5);
@@ -1277,13 +1309,21 @@ function ship(g, c) {
     g.fillStyle = '#1b1d22'; g.fillRect(fx - fw * 0.35, hullTop - sh * 1.55, fw * 0.9, sh * 0.07);
     for (let i = 0; i < 4; i++) { g.fillStyle = withAlpha(n ? '#8a8e96' : '#c8c8cc', 0.35 - i * 0.07); g.beginPath(); g.arc(fx - 6 - i * 12, hullTop - sh * 1.62 - i * 4, 5 + i * 3, 0, TAU); g.fill(); }
     // lifeboats in their davits along the upper deck
-    for (let x = sx1 - sw * 0.8; x < sx1 - sw * 0.2; x += sw * 0.3) { g.fillStyle = '#e8862a'; g.beginPath(); g.roundRect(x, hullTop - sh * 0.62, sw * 0.22, sh * 0.1, sh * 0.05); g.fill(); }
+    // lifeboats in their davits, hung from the upper deck (yellow, clear of the velocity hue)
+    for (let x = sx1 - sw * 0.8; x < sx1 - sw * 0.2; x += sw * 0.3) {
+      g.strokeStyle = n ? '#8a8e96' : '#4a4e56'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x + 2, hullTop - sh * 0.5); g.quadraticCurveTo(x - 2, hullTop - sh * 0.78, x + 4, hullTop - sh * 0.74); g.moveTo(x + sw * 0.2, hullTop - sh * 0.5); g.quadraticCurveTo(x + sw * 0.24, hullTop - sh * 0.78, x + sw * 0.18, hullTop - sh * 0.74); g.stroke();
+      g.fillStyle = n ? '#a89a50' : '#e8c547'; g.beginPath(); g.roundRect(x + 2, hullTop - sh * 0.7, sw * 0.18, sh * 0.1, sh * 0.05); g.fill();
+      g.fillStyle = withAlpha('#000000', 0.2); g.fillRect(x + 2, hullTop - sh * 0.62, sw * 0.18, sh * 0.02);
+    }
   }
   // the deck's rail, open at the stern where it is thrown from
   const rh = clamp(1 * k, 9, 28), gap = clamp(1.6 * k, 16, 50);
-  g.strokeStyle = n ? '#c8ccd2' : '#e8eaee'; g.lineWidth = Math.max(1.3, clamp(0.05 * k, 1, 2.4));
+  // a dark rail against the sky (pale by night)
+  g.strokeStyle = n ? '#c8ccd2' : '#2a2e36'; g.lineWidth = Math.max(1.5, clamp(0.06 * k, 1.2, 2.6));
   g.beginPath(); g.moveTo(Math.max(xs, sx1 + 4), hullTop - rh); g.lineTo(x0 - gap, hullTop - rh); g.moveTo(Math.max(xs, sx1 + 4), hullTop - rh * 0.5); g.lineTo(x0 - gap, hullTop - rh * 0.5); g.stroke();
   for (let x = x0 - gap; x > Math.max(xs, sx1 + 4); x -= rh) { g.beginPath(); g.moveTo(x, hullTop); g.lineTo(x, hullTop - rh); g.stroke(); }
+  // at night the deck's edge catches the ship's own lights
+  if (n) { g.fillStyle = withAlpha(E.window, 0.55); g.fillRect(xs, hullTop, len, 1.5); for (let x = x0 - rake - 12; x > xs; x -= 26) { const lg = g.createRadialGradient(x, hullTop - rh, 0, x, hullTop - rh, 14); lg.addColorStop(0, withAlpha(E.window, 0.35)); lg.addColorStop(1, withAlpha(E.window, 0)); g.fillStyle = lg; g.fillRect(x - 14, hullTop - rh - 14, 28, 28); } }
   // a bollard and a coil of rope on the deck by the stern
   g.fillStyle = n ? '#2b2628' : '#3b3436'; g.fillRect(x0 - gap * 0.7, hullTop - 7, 7, 7);
   g.strokeStyle = n ? '#8a7a5a' : '#c9a96a'; g.lineWidth = 2; g.beginPath(); g.ellipse(x0 - gap * 1.6, hullTop - 2, 7, 2.5, 0, 0, TAU); g.stroke();
@@ -1312,7 +1352,12 @@ function dam(g, c) {
   const conc = n ? '#7a7a7e' : '#c4c0b8', concLo = n ? '#5a5a5e' : '#a29e96', crestW = clamp(0.25 * (oy - top), 30, 140);
   // the reservoir behind the wall, its surface just under the crest
   const res = top + clamp(0.06 * (oy - top), 4, 20);
-  g.fillStyle = n ? '#2f4650' : '#7fa0ad'; g.fillRect(-4, res, x0 - crestW + 4, 6);
+  // the reservoir: a broad body of water seen across, behind the wall, its far shore the hills
+  const lake = clamp(0.3 * (oy - top), 20, 120), lg = g.createLinearGradient(0, res, 0, res + lake);
+  lg.addColorStop(0, n ? '#2f4650' : '#8fb0bc'); lg.addColorStop(1, n ? '#1e3038' : '#5e8290');
+  g.fillStyle = lg; g.fillRect(-4, res, x0 - crestW + 8, lake);
+  g.fillStyle = withAlpha('#ffffff', 0.5); g.fillRect(-4, res, x0 - crestW + 8, 1.2);
+  g.strokeStyle = withAlpha('#ffffff', 0.25); g.lineWidth = 1; for (let i = 1; i < 5; i++) { const y = res + lake * (i / 5) ** 1.4; g.beginPath(); for (let x = -4; x < x0 - crestW; x += 14) { g.moveTo(x + ((i * 7 + phase * 10) % 14), y); g.lineTo(x + 6 + ((i * 7 + phase * 10) % 14), y); } g.stroke(); }
   // the wall: its face leaning back a little from the crest, lifts of
   // concrete in courses, seepage stains, the spillway's chute beside it
   const lean = clamp((oy - top) * 0.04, 2, 16);
@@ -1324,11 +1369,13 @@ function dam(g, c) {
   g.fillStyle = withAlpha(n ? '#2a3028' : '#6a705c', 0.3);
   for (let i = 0; i < 6; i++) { const sx = x0 - crestW * (0.15 + r() * 0.8), sy = top + (oy - top) * r() * 0.5; g.fillRect(sx, sy, 2 + r() * 3, (oy - top) * (0.2 + r() * 0.4)); }
   // the spillway: water pouring white down a stepped chute, behind the face's far side
-  const sx0 = x0 - crestW - (oy - top) * 0.12, sw = clamp(0.12 * (oy - top), 10, 50);
-  g.fillStyle = withAlpha(n ? '#9ab0b8' : '#e6f2f4', 0.85); g.beginPath(); g.moveTo(sx0, res + 4); g.lineTo(sx0 + sw, res + 4); g.lineTo(sx0 + sw - (oy - res) * 0.25, oy); g.lineTo(sx0 - (oy - res) * 0.3, oy); g.closePath(); g.fill();
+  // (from a gate in the crest at its back, down the wall's back slope in a white sheet)
+  const sx0 = x0 - crestW - 2, sw = clamp(0.12 * (oy - top), 10, 50);
+  g.fillStyle = conc; g.fillRect(sx0 - 3, top - clamp(1.2 * k, 8, 24), 4, clamp(1.2 * k, 8, 24) + 3); g.fillRect(sx0 + sw - 1, top - clamp(1.2 * k, 8, 24), 4, clamp(1.2 * k, 8, 24) + 3);
+  g.fillStyle = withAlpha(n ? '#9ab0b8' : '#e6f2f4', 0.9); g.beginPath(); g.moveTo(sx0, top + 1); g.lineTo(sx0 + sw, top + 1); g.lineTo(sx0 + sw - (oy - top) * 0.33, oy); g.lineTo(sx0 - (oy - top) * 0.38, oy); g.closePath(); g.fill();
   g.strokeStyle = withAlpha(n ? '#6a8088' : '#a8c8d0', 0.8); g.lineWidth = 1;
-  for (let i = 0; i < 5; i++) { const off = ((phase * 90 + i * 37) % (oy - res)); g.beginPath(); g.moveTo(sx0 + sw * (0.2 + i * 0.15) - off * 0.27, res + off); g.lineTo(sx0 + sw * (0.2 + i * 0.15) - (off + 14) * 0.27, Math.min(oy, res + off + 14)); g.stroke(); }
-  for (let i = 0; i < 4; i++) { const sg = g.createRadialGradient(sx0 - (oy - res) * 0.25 + i * 10, oy - 6, 0, sx0 - (oy - res) * 0.25 + i * 10, oy - 6, 20); sg.addColorStop(0, withAlpha('#ffffff', 0.5)); sg.addColorStop(1, withAlpha('#ffffff', 0)); g.fillStyle = sg; g.fillRect(sx0 - (oy - res) * 0.25 + i * 10 - 20, oy - 26, 40, 40); }
+  for (let i = 0; i < 5; i++) { const off = ((phase * 90 + i * 37) % (oy - top)); g.beginPath(); g.moveTo(sx0 + sw * (0.2 + i * 0.15) - off * 0.35, top + off); g.lineTo(sx0 + sw * (0.2 + i * 0.15) - (off + 14) * 0.35, Math.min(oy, top + off + 14)); g.stroke(); }
+  for (let i = 0; i < 4; i++) { const sg = g.createRadialGradient(sx0 - (oy - top) * 0.35 + i * 10, oy - 6, 0, sx0 - (oy - top) * 0.35 + i * 10, oy - 6, 20); sg.addColorStop(0, withAlpha('#ffffff', 0.5)); sg.addColorStop(1, withAlpha('#ffffff', 0)); g.fillStyle = sg; g.fillRect(sx0 - (oy - top) * 0.35 + i * 10 - 20, oy - 26, 40, 40); }
   // the crest: a road with its parapet, rail and lamps, open at the edge
   g.fillStyle = conc; g.fillRect(x0 - crestW - 6, top - 3, crestW + 6, 5);
   const rh = clamp(1 * k, 8, 26);
@@ -1357,15 +1404,18 @@ function playground(g, c) {
     const tr = clamp(2.4 * k, 18, 44), ty = fy - fh;
     forestTree(g, x, ty + 4, tr * 3, Math.max(3, tr * 0.12), { bark: n ? '#3a3028' : '#6a5040', barkLo: n ? '#2a221c' : '#4a3828', leaf: n ? '#22321f' : '#4f7c45', leafLo: n ? '#18241a' : '#3a6034', leafHi: n ? '#2c3e28' : '#6f9c5a' }, r);
   }
-  // the soft surface under the play things
-  // a blue-grey rubber, clear of the quantity hues
-  const sg = g.createLinearGradient(0, oy, 0, h); sg.addColorStop(0, n ? '#2e3440' : '#6a7d96'); sg.addColorStop(1, n ? '#242a34' : '#566a82');
-  g.fillStyle = sg; g.fillRect(0, oy, w, h - oy);
-  g.fillStyle = withAlpha('#000000', 0.12); for (let i = 0; i < (w * (h - oy)) / 60; i++) g.fillRect(r() * w, oy + r() * (h - oy), 1.5, 1.5);
-  g.fillStyle = withAlpha(n ? '#2a3a2a' : '#4f8a5f', 0.9); g.fillRect(0, oy + clamp((h - oy) * 0.5, 14, 60), w, 3);
+  // the ground: grass, with a strip of soft blue-grey rubber where the play things stand
+  grass(g, 0, w, oy, h, { seed: 19 });
+  const mat = clamp((h - oy) * 0.18, 8, 30);
+  g.fillStyle = n ? '#2e3440' : '#6a7d96'; g.fillRect(0, oy, w, mat);
+  g.fillStyle = withAlpha('#000000', 0.12); for (let i = 0; i < (w * mat) / 50; i++) g.fillRect(r() * w, oy + r() * mat, 1.5, 1.5);
+  g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.25); g.fillRect(0, oy, w, 1.2);
+  // the play things stand clear of the whole flight: behind where it starts, or past where it lands
+  const land = (c.clearX || [])[0] ?? x0, free = (x, half) => (x + half < x0 - 30 || x - half > land + 40) && x - half > 10 && x + half < w - 10;
   const steel = n ? '#8a8e96' : '#2f6f9a', steelHi = n ? '#aab0b8' : '#e8b923';
   // the swings: an A-frame, two seats swinging in turn
-  const sx = [0.62, 0.84, 0.42].map((f) => x0 + (w - x0) * f).find((x) => clearOf(x, c, 90) && x < w - 50);
+  const swingHalf = clamp(2.6 * k, 34, 90) * 0.85;
+  const sx = [land + 50 + swingHalf, w - swingHalf - 20, x0 - 60 - swingHalf, (x0 - 40) / 2].find((x) => free(x, swingHalf));
   if (sx != null) {
     const sh = clamp(2.6 * k, 34, 90), sw = sh * 1.1;
     g.strokeStyle = steel; g.lineWidth = Math.max(2, sh * 0.04);
@@ -1377,7 +1427,8 @@ function playground(g, c) {
     }
   }
   // a see-saw, clear of the landing
-  const ssx = [0.3, 0.16, 0.7, 0.95].map((f) => x0 + (w - x0) * f).find((x) => clearOf(x, c, 80) && (sx == null || Math.abs(x - sx) > clamp(5 * k, 110, 220)) && x < w - 40);
+  const ssHalf = clamp(3.5 * k, 40, 100) / 2;
+  const ssx = [sx != null ? sx + swingHalf + ssHalf + 24 : null, land + 50 + ssHalf, x0 - 50 - ssHalf, sx != null ? sx - swingHalf - ssHalf - 24 : null, w - ssHalf - 20].find((x) => x != null && free(x, ssHalf) && (sx == null || Math.abs(x - sx) > swingHalf + ssHalf + 10));
   if (ssx != null) {
     const L = clamp(3.5 * k, 40, 100), tilt = Math.sin(phase * 1.2) * 0.18;
     g.fillStyle = steel; g.beginPath(); g.moveTo(ssx - 6, oy); g.lineTo(ssx, oy - L * 0.18); g.lineTo(ssx + 6, oy); g.closePath(); g.fill();
@@ -1389,13 +1440,16 @@ function playground(g, c) {
   g.fillStyle = woodLo; g.fillRect(tx0, top, post, oy - top); g.fillStyle = wood; g.fillRect(x0 - post, top, post, oy - top);
   g.fillStyle = wood; g.fillRect(tx0 - 2, top - 2, tw + 4, Math.max(4, tw * 0.08));
   // the guard rails, open at the front where it leaves from
-  g.strokeStyle = steel; g.lineWidth = 2; g.beginPath(); g.moveTo(tx0, top - tw * 0.45); g.lineTo(x0 - tw * 0.55, top - tw * 0.45); g.moveTo(tx0, top); g.lineTo(tx0, top - tw * 0.9); g.stroke();
-  // the roof, pitched, in the tower's colour
-  g.fillStyle = n ? '#34466a' : '#3f6aa8'; g.beginPath(); g.moveTo(tx0 - tw * 0.15, top - tw * 0.9); g.lineTo(tx0 + tw * 0.5, top - tw * 1.35); g.lineTo(x0 + tw * 0.05, top - tw * 0.9); g.closePath(); g.fill();
-  g.strokeStyle = woodLo; g.lineWidth = post * 0.7; g.beginPath(); g.moveTo(tx0 + post / 2, top); g.lineTo(tx0 + post / 2, top - tw * 0.9); g.stroke();
+  // the roof over head height, on a post at each corner; a rail round the deck, open at the front
+  const roofH = Math.max(tw * 0.9, 2.3 * k, 30);
+  g.strokeStyle = woodLo; g.lineWidth = post * 0.7; g.beginPath(); g.moveTo(tx0 + post / 2, top); g.lineTo(tx0 + post / 2, top - roofH); g.moveTo(x0 - post / 2, top); g.lineTo(x0 - post / 2, top - roofH); g.stroke();
+  g.strokeStyle = steel; g.lineWidth = 2; g.beginPath(); g.moveTo(tx0, top - roofH * 0.4); g.lineTo(x0 - tw * 0.6, top - roofH * 0.4); g.moveTo(tx0, top - roofH * 0.2); g.lineTo(x0 - tw * 0.6, top - roofH * 0.2); g.stroke();
+  g.fillStyle = n ? '#34466a' : '#3f6aa8'; g.beginPath(); g.moveTo(tx0 - tw * 0.15, top - roofH); g.lineTo(tx0 + tw * 0.5, top - roofH - tw * 0.45); g.lineTo(x0 + tw * 0.05, top - roofH); g.closePath(); g.fill();
+  g.fillStyle = withAlpha('#000000', 0.2); g.fillRect(tx0 - tw * 0.1, top - roofH, tw * 1.1, 2);
   // the slide, its chute curving down behind the tower
   g.strokeStyle = steelHi; g.lineWidth = Math.max(4, tw * 0.12); g.lineCap = 'round';
-  g.beginPath(); g.moveTo(tx0, top + 2); g.bezierCurveTo(tx0 - (oy - top) * 0.6, top + (oy - top) * 0.3, tx0 - (oy - top) * 0.7, oy - 6, tx0 - (oy - top) * 1.1, oy - 4); g.stroke();
+  const run = Math.min((oy - top) * 0.8, Math.max(20, tx0 - 30));
+  g.beginPath(); g.moveTo(tx0, top + 2); g.bezierCurveTo(tx0 - run * 0.55, top + (oy - top) * 0.3, tx0 - run * 0.65, oy - 6, tx0 - run, oy - 4); g.stroke();
   // a ladder up its back
   g.strokeStyle = woodLo; g.lineWidth = 1.6; g.beginPath(); g.moveTo(tx0 + tw * 0.25, top); g.lineTo(tx0 + tw * 0.15, oy); g.moveTo(tx0 + tw * 0.45, top); g.lineTo(tx0 + tw * 0.35, oy); for (let y = top + 8; y < oy; y += 8) { const f = (y - top) / (oy - top); g.moveTo(tx0 + tw * (0.25 - 0.1 * f), y); g.lineTo(tx0 + tw * (0.45 - 0.1 * f), y); } g.stroke();
   softShadow(g, x0 - tw / 2, oy + 1, tw * 0.7, 4, 0.6);

@@ -321,7 +321,7 @@ function launch(canvas, o) {
   feet -= sh;
   // an archer stands with the bow hand over where the arrow leaves from
   const shoots = thrown && kind === 'arrow';
-  if (shoots) feet = x0 - archerHand(th, aim).x - sh;
+  if (shoots) feet = x0 - archerHand(th, aim).x - sh - (byHand ? 0 : th * 0.12);
   // a golf ball is struck by a golfer, a football kicked: the ball where
   // the engine starts it, at the club's head or the boot
   const striker = !byHand && (kind === 'golfBall' ? golfer : kind === 'football' ? kicker : null);
@@ -450,8 +450,9 @@ function launch(canvas, o) {
   // seen) holds it in its hand, and it eases onto the engine's path as it goes
   // an archer's arrow is to the archer: about the length of its draw
   const arrowLen = shoots ? clamp(th * 0.62, 30, 64) : Math.max(44, size(k, piece));
-  if (shoots) {
+  if (shoots && byHand) {
     // nocked on the string, its point just past the bow, until it is loosed
+    // (only when the bow hand is where the engine starts it: rule 4)
     const hp = archerHand(th, aim), q = 1 - clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1), e = q * q * (3 - 2 * q);
     const a0 = Math.atan2(v0.y, v0.x), L = arrowLen;
     bx += (feet + hp.x - Math.cos(a0) * L * 0.3 - X(0)) * e; by += (stand - hp.y + Math.sin(a0) * L * 0.3 - Y(H0)) * e;

@@ -342,7 +342,9 @@ export function goal(g, G, age = -1, life = 1, o = {}) {
   const E = env(), { x, back, bar, y } = G, H = y - bar;
   const p = age >= 0 ? Math.min(1, age / life) : null;
   // the bulge: out fast, back past and settling, as a net does
-  const b = p == null ? 0 : Math.exp(-p * 5) * Math.cos(p * 14) * (o.size ?? 1) * Math.min(18, (back - x) * 0.5);
+  // (over about half a second: out, back past, and still — slow enough to be seen)
+  const q = age >= 0 ? age / 0.6 : null;
+  const b = q == null ? 0 : Math.exp(-q * 2) * Math.sin(q * 6) * (o.size ?? 1) * Math.min(22, (back - x) * 0.6);
   const top = { x: x + (back - x) * 0.35, y: bar + H * 0.05 }, low = y - H * 0.35;
   const backAt = (t) => { const yy = lerp(top.y, y, t), d = Math.exp(-(((yy - low) / (H * 0.3)) ** 2)); return { x: lerp(top.x, back, t) + b * d, y: yy }; };
   g.save();
