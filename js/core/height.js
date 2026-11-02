@@ -41,6 +41,7 @@ export const PLACES = {
   floor:   { word: 'start', top: 'where it starts', below: 'the floor', lands: 'lands on the floor', foot: 'where it started', level: true },
   house:   { word: 'house', top: 'the roof', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the house' },
   tree:    { word: 'tree', top: 'the branch', below: 'the ground', lands: 'hits the ground', foot: 'straight below the branch' },
+  table:   { word: 'table', top: 'the table top', below: 'the floor', lands: 'hits the floor', foot: 'at the foot of the table', from: 'the table top' },
   air:     { word: 'point it was let go', top: 'the point it is let go from', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', from: 'where it was let go' },
 };
 

@@ -36,6 +36,8 @@ export const BACKDROPS = {
   orchard: { label: 'An orchard', what: 'apple trees in grass', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['apple', 'ball', 'stone', 'particle'] },
   hall:    { label: 'A sports hall', what: 'an indoor hall with a wooden floor and high windows', place: 'floor', below: 'floor' },
   board:   { label: 'A diving board', what: 'a diving platform on its tower over an outdoor pool', place: 'board', below: 'pool', edge: true, at: 'a diving board' },
+  table:   { label: 'A table', what: 'a wooden table in a room: a coin, a marble or a ball off its edge', place: 'table', below: 'floor', edge: true, at: 'a table' },
+  well:    { label: 'A well', what: 'a stone well, its shaft cut away down to the water: it moves straight up or down', place: 'well', below: 'well', edge: true, at: 'a well' },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from a hovering balloon (or a helicopter or a plane)', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
@@ -56,9 +58,15 @@ export const FIGURES = {
   stone:    { label: 'a stone', m: 0.08, min: 11, views: ['side'], thrown: true },
   particle: { label: 'a particle', m: 0.1, min: 10, views: ['side', 'plan'], thrown: true },
   apple:    { label: 'an apple', m: 0.08, min: 12, views: ['side'], small: true },
+  coin:     { label: 'a coin', m: 0.025, min: 11, views: ['side'], thrown: true },
+  marble:   { label: 'a marble', m: 0.016, min: 10, views: ['side'], thrown: true },
   diver:    { label: 'a person', m: 1.75, min: 64, views: ['side'] },
   skateboarder: { label: 'a skateboarder', m: 1.75, min: 60, views: ['side'] },
   parcel:   { label: 'a parcel', m: 0.5, min: 22, views: ['side'] },
+  sandbag:  { label: 'a sandbag', m: 0.5, min: 20, views: ['side'] },
+  bucket:   { label: 'a bucket', m: 0.35, min: 20, views: ['side'] },
+  rocket:   { label: 'a rocket', m: 1, min: 34, views: ['side'] },
+  arrow:    { label: 'an arrow', m: 0.75, min: 34, views: ['side'] },
   ship:     { label: 'a ship', m: 60, min: 40, views: ['plan'] },
   robot:    { label: 'a robot', m: 0.6, min: 30, views: ['plan'] },
 };
@@ -184,7 +192,7 @@ export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bou
 export const MOMENTS = { pair: 'flash', bounce: 'ring' };
 
 /** The effect a landing makes on what is below, when the recipe names none. */
-export const LANDS_WITH = { sea: 'splash', river: 'splash', pool: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring' };
+export const LANDS_WITH = { sea: 'splash', river: 'splash', pool: 'splash', well: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring' };
 
 /** What it lands on, in a question's words, as a backdrop's `below`. */
 const UNDER = [
@@ -216,17 +224,20 @@ const WORDS = [
   [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager)\b/, 'diver'],
   [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
   [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
+  [/\b(sandbag|sand ?bag|sack|bag of (sand|flour)|ballast)\b/, 'sandbag'], [/\b(bucket|pail)\b/, 'bucket'],
+  [/\b(rocket|firework|model rocket)\b/, 'rocket'], [/\b(arrow|dart|javelin|bolt)\b/, 'arrow'],
   [/\b(car|van|vehicle|taxi|jeep)\b/, 'car'], [/\b(lorry|truck|bus)\b/, 'lorry'], [/\b(train|tram|locomotive)\b/, 'train'],
   [/\b(cyclist|bike|bicycle|cycle)\b/, 'cyclist'], [/\b(motorcycl(e|ist)|motorbike|scooter|moped)\b/, 'motorcycle'],
   [/\b(runner|sprinter|jogger)\b/, 'runner'],
-  [/\b(stone|pebble|rock|brick|coin|marble|key|object|mass)\b/, 'stone'],
+  [/\b(coin|penny|pound coin)\b/, 'coin'], [/\b(marble|ball ?bearing|bead)\b/, 'marble'],
+  [/\b(stone|pebble|rock|brick|key|object|mass)\b/, 'stone'],
   [/\b(ball|football|tennis ball|cricket ball|golf ball|basketball|netball|rugby ball|shot|cannonball|snowball|dart)\b/, 'ball'],
-  [/\b(particle|bead|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
+  [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
 ];
 /** The figures a thing with none of its own is drawn as, and how to say so. */
 const NEAREST = [
   [/\b(ski(er)?|snowboard(er)?|surfer|horse|rider|bmx)\b/, 'diver'],
-  [/\b(rocket|missile|projectile|shell|bullet|arrow|javelin|discus|hammer|stick|bottle|can|phone|book|bag|helmet|bomb|drop of water|raindrop|hailstone)\b/, 'particle'],
+  [/\b(missile|projectile|shell|bullet|discus|hammer|stick|bottle|can|phone|book|bag|helmet|bomb|drop of water|raindrop|hailstone)\b/, 'particle'],
   [/\b(dog|cat|bird|animal|squirrel|monkey|frog)\b/, 'particle'],
 ];
 /**
@@ -256,4 +267,20 @@ export function figureOf(who) {
   for (const [re, f] of WORDS) if (re.test(word)) return { figure: f, exact: true, word };
   for (const [re, f] of NEAREST) if (re.test(word)) return { figure: f, exact: false, word };
   return { figure: 'particle', exact: false, word };
+}
+
+/* ── places only the composer draws ─────────────────────────────────────
+   The twelve draw the pitch, From a height its cliff, tower, bridge, board,
+   well and balloon. A question about a coin off a table or a ball from a
+   balcony names a place neither has: whatever moves, small or not, it is
+   composed there (js/compose/recipe.js fromReading). */
+const ONLY_HERE = [
+  [/\b(table|desk|bench|worktop|counter|shelf)\b/, 'table'],
+  [/\b(balcony|window|house|bungalow)\b/, 'house'],
+  [/\b(sports hall|gym(nasium)?)\b/, 'hall'],
+];
+/** The composer's own place a question names, or null. */
+export function placeIn(text) {
+  const t = String(text ?? '').toLowerCase();
+  return ONLY_HERE.find(([re]) => re.test(t))?.[1] ?? null;
 }

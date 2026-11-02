@@ -170,7 +170,7 @@ group('What moves is what is drawn', () => {
   const f = (w) => figureOf(w);
   ok(f('diver').figure === 'diver' && f('a person').figure === 'diver' && f('she').figure === 'diver', 'a diver, a person, she: a person');
   ok(f('skateboarder').figure === 'skateboarder' && f('parcel').figure === 'parcel' && f('football').figure === 'ball' && f('pebble').figure === 'stone', 'skateboarder, parcel, football, pebble');
-  ok(!f('rocket').exact && f('rocket').figure === 'particle', 'a rocket has no figure yet: the closest, and not exact');
+  ok(!f('missile').exact && f('missile').figure === 'particle' && f('rocket').figure === 'rocket', 'a missile has no figure yet: the closest, and not exact; a rocket has its own');
   ok(f('').figure === null, 'nothing named: nothing assumed');
   // the user's own question, as the Worker hands it on
   const d = fromReading({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'A person jumps off a 10 m diving board at 7 m/s.',
@@ -184,8 +184,8 @@ group('What moves is what is drawn', () => {
   ok(p.recipe.backdrop === 'air' && !('h' in p.recipe.numbers) && /no helicopter yet/.test(p.notes.join(' ')), 'a parcel from a helicopter: from the air, its height asked for, the helicopter said');
   const sk = fromReading({ understood: true, scenario: 'platform', h: 2, u: 4, who: 'skateboarder' });
   ok(sk.recipe.objects[0].figure === 'skateboarder' && compose(sk.recipe).scenario.name === 'A skateboarder off a wall', 'a skateboarder off a 2 m wall');
-  const r = fromReading({ understood: true, scenario: 'up', h: 0, u: 30, who: 'rocket', parts: [{ label: 'a', asks: 'top', answer: 'top' }] });
-  ok(/no rocket figure yet/.test(r.notes.join(' ')) && r.parts[0].answer === 'height1', 'a rocket drawn as a particle, said; the twelve’s answer key renamed');
+  const r = fromReading({ understood: true, scenario: 'up', h: 0, u: 30, who: 'missile', parts: [{ label: 'a', asks: 'top', answer: 'top' }] });
+  ok(/no missile figure yet/.test(r.notes.join(' ')) && r.parts[0].answer === 'height1', 'a missile drawn as a particle, said; the twelve’s answer key renamed');
 });
 
 console.log('\nThe Worker reads a jump with no angle as straight up, and says so');
@@ -237,6 +237,21 @@ console.log('\nWhat it lands on follows the question');
   ok(!('below' in check({ backdrop: 'tower', below: 'sea', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 12 } }).recipe), 'a surface a place cannot stand over is the place’s own');
   ok(check({ backdrop: 'bridge', below: 'water', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 12 } }).recipe.below === undefined, 'water under a bridge is its river, as drawn');
 }
+
+group('Places only the composer draws, and more of what students name', () => {
+  const coin = fromReading({ understood: true, scenario: 'platform', h: 0.8, u: 2, summary: 'A coin is flicked off a 0.8 m table at 2 m/s.', who: 'coin' });
+  ok(coin && coin.recipe.backdrop === 'table' && coin.recipe.objects[0].figure === 'coin', 'a coin flicked off a table: the coin, off the table (never the bare pitch)');
+  const cs = compose(coin.recipe), sv = cs.kit.solve(cs.kit.read(cs.boxes));
+  ok(sv.ok && /hits the floor/.test(sv.notes.join(' ')) && cs.scenario.name === 'A coin off a table', 'it hits the floor; “A coin off a table”');
+  ok(fromReading({ understood: true, scenario: 'platform', h: 6, u: 4, summary: 'A ball is thrown horizontally from a balcony.', who: 'ball' }).recipe.backdrop === 'house', 'a ball from a balcony: the house');
+  ok(fromReading({ understood: true, scenario: 'platform', h: 20, u: 5, summary: 'A ball thrown from a 20 m cliff.', who: 'ball' }) === null, 'a ball from a cliff stays From a height’s');
+  const well = fromReading({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'A bucket falls down a 20 m well.', boxes: { place: 'well', h: 20, u: 0, theta: -90 }, who: 'bucket' });
+  ok(well.recipe.backdrop === 'well' && well.recipe.objects[0].figure === 'bucket' && compose(well.recipe).scenario.name === 'A bucket down a well', 'a bucket down a well: drawn as a bucket, down the well');
+  const ws = compose(well.recipe), wv = ws.kit.solve(ws.kit.read(ws.boxes));
+  near(wv.T, Math.sqrt(2 * 20 / 9.81), 1e-9, 'and it falls for √(2h/g)');
+  ok(!check({ backdrop: 'well', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 20, u: 5, theta: 30 } }).ok === false, 'a well recipe at an angle is checked by the engine, not the registry');
+  for (const [w, f] of [['rocket', 'rocket'], ['firework', 'rocket'], ['javelin', 'arrow'], ['sandbag', 'sandbag'], ['bag of flour', 'sandbag'], ['pail', 'bucket'], ['marble', 'marble'], ['penny', 'coin']]) ok(figureOf(w).figure === f && figureOf(w).exact, `“${w}” is drawn as ${f}`);
+});
 
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);

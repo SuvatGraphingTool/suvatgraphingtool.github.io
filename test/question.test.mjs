@@ -336,7 +336,7 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(r.scenario === 'compose' && checkRecipe(r.recipe).ok && r.recipe.numbers.theta === 90 && /straight up/.test(assumedNotes(r).join(' ')),
      'a board recipe is drawn, never "no backdrop called board"; the angle-less jump straight up and said');
   const wl = toPlace({ understood: true, scenario: 'compose', summary: 'A stone dropped down a well.', recipe: { backdrop: 'well', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 20, u: 0 } } }, 'a stone dropped down a 20 m well');
-  ok(wl.library === 'from-a-height' && wl.boxes.place === 'well', 'a well, which only From a height draws, is From a height');
+  ok(wl.scenario === 'compose' && checkRecipe(wl.recipe).ok, 'a well recipe is drawn by the composer, never refused');
   const l = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'A person jumps.', boxes: { place: 'board', h: 10, u: 7, theta: 0 } }, w);
   ok(l.boxes.theta === 90 && /straight up/.test(l.summary), 'read as a flat launch, the jump is put straight up');
   ok(toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'board', h: 10, u: 7, theta: 30 } }, 'a diver jumps at 7 m/s at 30 degrees').boxes.theta === 30, 'an angle the student gave is kept');

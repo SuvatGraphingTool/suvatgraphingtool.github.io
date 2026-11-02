@@ -85,6 +85,9 @@ export function toFigure(x, words = '') {
   const text = `${words} ${x.summary || ''}`;
   const out = { ...x };
   if (!out.who) { const w = whoIn(text); if (w) out.who = w; }
+  // the question's own words go along, so the app can see a place the
+  // summary left out ("off a 0.8 m table")
+  if (words && !out.words) out.words = String(words).slice(0, 400);
   // what it lands on, when the words say and the model did not: "hits the
   // ground", "at the bottom is the GROUND, not sea", "lands on the road"
   if (!out.below) { const b = String(words || text).match(LANDS_ON); if (b) out.below = b[1].toLowerCase(); }

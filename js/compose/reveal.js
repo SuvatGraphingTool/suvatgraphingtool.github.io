@@ -16,7 +16,7 @@ import { FIGURES, EFFECTS, placeOf } from './registry.js';
 
 /** The Spark, Ask Suvat's mark: the one `#spark` symbol in index.html. */
 const SPARK = '<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><use href="#spark"/></svg>';
-const BELOW = { sea: 'the sea', river: 'the river', pool: 'the pool', ground: 'the ground', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor' };
+const BELOW = { sea: 'the sea', river: 'the river', pool: 'the pool', well: 'the water in the well', ground: 'the ground', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor' };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 /** What the veil says, step by step: [{ say, chip }], from the recipe. */

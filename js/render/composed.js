@@ -29,10 +29,11 @@ import { BACKDROPS, FIGURES as PIECES, placeOf } from '../compose/registry.js';
 import { dust, pulse, flash, squash } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, sig3, withAlpha } from './util.js';
 import { thrower, throwerHand, THROWER_MIN, ballAt, drawFigure, phaseFor, particle, fence, diver, DIVER_FEET, skateboarder, SKATE_FEET, parcel } from './figures.js';
-import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, tower, bridge, divingBoard, balloon, bigSplash, pebble, fitClear } from './heights.js';
+import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, tower, bridge, divingBoard, balloon, well, bigSplash, pebble, fitClear } from './heights.js';
+import { table, labWall } from './bench.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
-import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, env, rng, softShadow } from './scenery.js';
+import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, skyscape, env, rng, softShadow } from './scenery.js';
 import { T } from '../notation.js';
 
 const HUD = 250, HUD_H = 290;
@@ -40,7 +41,7 @@ const trimmed = (s) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, ''
 /** Half a figure's drawn height, as a fraction of its drawn length L — so it
     is drawn round the engine's point, not standing on it. */
 const MIDDLE = { car: 0.16, lorry: 0.2, train: 0.11, cyclist: 0.45, motorcycle: 0.3, runner: 0.5 };
-const WET = new Set(['sea', 'river', 'pool']);
+const WET = new Set(['sea', 'river', 'pool', 'well']);
 
 /* ── the landing, played out after the motion stops ───────────────────
    Playback stops at the moment it lands, so an effect timed only by the
@@ -62,6 +63,8 @@ export function render(canvas, cam, o) {
   return null;
 }
 
+/** How wide a table is drawn: about a metre and a half, to scale. */
+const tableW = (k) => clamp(1.5 * k, 90, 260);
 /** How long a diving stand's board is drawn, for its height in px. */
 const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 
@@ -122,6 +125,19 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
       divingBoard(g, sx, x0, top, oy, h);
       break;
     }
+    case 'table': {
+      // a room: the wall with its shelf, the floor, the table its own size
+      labWall(g, w, oy, h);
+      table(g, x0 - tableW(k), x0, top, oy);
+      break;
+    }
+    case 'well': {
+      // From a height's own well: the head on level ground, the shaft cut
+      // away down to its water, the line down its middle
+      skyscape(g, 0, 0, w, top, { far: 'trees', seed: 14 });
+      well(g, -4, w + 4, x0 + 3.5, 26, top, oy, h, { rise: 0 });
+      break;
+    }
     case 'air': {
       // high over fields, let go from beside a hovering balloon's basket
       fields(g, w, horizon(0.3), oy); grass(g, 0, w, oy, h);
@@ -146,7 +162,8 @@ function launch(canvas, o) {
   const H0 = f.params.h, phone = w < 520, wet = WET.has(B.below);
   // a person throws it, unless it falls from a tree; small things are drawn
   // as themselves at the point, vehicles and people round it
-  const thrown = !!piece.thrown && R.backdrop !== 'orchard';
+  // off a table, it leaves the table's edge: no one stands on the table
+  const thrown = !!piece.thrown && R.backdrop !== 'orchard' && R.backdrop !== 'table';
   const small = !!piece.thrown || !!piece.small;
   // thrown from low down with nothing to stand on: the thrower stands on the
   // ground or the floor and lets go at hand height
@@ -173,7 +190,8 @@ function launch(canvas, o) {
   const pads = (k) => {
     const body = thrown ? TH(k) : size(k);
     const place = R.backdrop === 'house' ? houseW(k) + 30 : R.backdrop === 'orchard' ? 2.4 * k
-      : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 1.4 : 0;
+      : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 1.4
+      : R.backdrop === 'table' ? tableW(k) + 20 : R.backdrop === 'well' ? 90 : 0;
     const head = (thrown && !byHand ? TH(k) : size(k) * 0.6) + 16 - (yTop - H0) * k;
     // an orchard's crown stands well above the branch
     const crown = R.backdrop === 'orchard' ? 1.9 * k + 16 - (yTop - H0) * k
@@ -203,7 +221,8 @@ function launch(canvas, o) {
 
   // ── who throws it: at the edge, wound up before the throw, through after it
   const v0 = f.vel(0), aim = (Math.atan2(v0.y, v0.x) * 180) / Math.PI;
-  let th = TH(k), feet = x0 - th * (f.vertical ? 0.5 : 0.2), stand = top;
+  // at a well, the thrower stands at the well head, clear of the shaft
+  let th = TH(k), feet = R.backdrop === 'well' ? x0 - 26 - 13 - 10 - th * 0.18 : x0 - th * (f.vertical ? 0.5 : 0.2), stand = top;
   if (byHand) {
     // sized so the hand is at the launch point, feet on the floor
     const per = throwerHand(100, aim);
@@ -220,6 +239,7 @@ function launch(canvas, o) {
     // beside the place, never across it: outside the house's front, behind the thrower
     const dx = R.backdrop === 'house' ? x0 - houseW(k) - 16 : R.backdrop === 'board' ? x0 - boardLen(k, oy - top) - 26
       : R.backdrop === 'air' ? x0 - Math.max(26, 0.75 * k) * 1.25 - 20
+      : R.backdrop === 'table' ? x0 - tableW(k) - 16
       : (thrown ? feet - th * 0.3 : x0 - size(k) * 0.65) - 14;
     stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.ink, width: 1.4, alpha: 0.9 });
     for (const yy of [oy, top]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
@@ -247,7 +267,7 @@ function launch(canvas, o) {
   // ── the path: all of it faintly, the part flown strongly
   const at = (p) => ({ x: X(p.x), y: Y(p.y) });
   stroke(g, pts.map(at), { color: P.vel, width: 1.8, alpha: 0.35 });
-  const body = ['diver', 'skateboarder', 'parcel'].includes(kind);
+  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'arrow'].includes(kind);
   stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
   if (show.apex && f.uy > 0) {
@@ -291,11 +311,22 @@ function launch(canvas, o) {
     if (aloft && !wet) softShadow(g, bx, oy + 1, R0 * 1.4, R0 * 0.35, clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
     if (!gone) {
       if (kind === 'apple') apple(g, bx, by, clamp(k * 0.05, 6, 10));
+      else if (kind === 'coin') coin(g, bx, by, 8, fired ? t * 9 : 0);
+      else if (kind === 'marble') marble(g, bx, by, 7);
       else if (kind === 'ball') ballAt(g, bx, by, R0);
       else if (kind === 'particle') particle(g, bx, by, R0 * 2, P);
       else pebble(g, bx, by, R0);
     }
-  } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel') {
+  } else if (kind === 'rocket' || kind === 'arrow') {
+    // pointed along its path all the way, as a real arrow or a coasting rocket flies
+    const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x);
+    g.save();
+    if (landed && wet) { g.beginPath(); g.rect(0, 0, w, oy + 1); g.clip(); }
+    if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
+    if (kind === 'rocket') rocket(g, bx, by, Lp, ang, !fired || t < f.tMax * 0.04);
+    else arrowShaft(g, bx, by, Lp, ang);
+    g.restore();
+  } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel' || kind === 'sandbag' || kind === 'bucket') {
     const p = fired ? t / f.tMax : 0, ease = (a0, b0, x) => { const u = clamp((x - a0) / (b0 - a0), 0, 1); return u * u * (3 - 2 * u); };
     const after = landed ? clamp(age / life, 0, 1) : 0;
     let cx = bx, cy = by;
@@ -307,9 +338,12 @@ function launch(canvas, o) {
       // first, a dive out tips over gently; in the water it is gone under
       cy = by - DIVER_FEET * Lp * (1 - ease(0, 0.12, p)) + (landed && wet ? Lp * 1.4 * ease(0, 0.3, after) : 0);
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
-      const steep = Math.atan2(v0.y, v0.x) > Math.PI / 4;
+      // dropped, or sent straight down, a person falls feet first, upright;
+      // a jump upwards tucks and somersaults; a dive out tips over gently
+      const down = Math.hypot(v0.x, v0.y) < 1e-6 || (v0.y < 0 && Math.abs(v0.x) < Math.abs(v0.y) * 0.25);
+      const steep = !down && Math.atan2(v0.y, v0.x) > Math.PI / 4;
       const tuck = steep ? ease(0.15, 0.35, p) * (1 - ease(0.6, 0.8, p)) : 0;
-      const spin = steep ? ease(0.15, 0.85, p) * Math.PI * 3 : ease(0.05, 1, p) * Math.PI * 0.85;
+      const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * 3 : ease(0.05, 1, p) * Math.PI * 0.85;
       diver(g, cx, cy, Lp, P, { tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
     } else if (kind === 'skateboarder') {
       // the wheels carry the engine's point all the way down, the deck's front
@@ -325,7 +359,10 @@ function launch(canvas, o) {
       cy = by - Lp * 0.36;
       if (!fired && R.backdrop === 'air') stroke(g, [{ x: bx, y: cy - Lp * 0.36 }, { x: bx - Lp * 0.35, y: top - 2 }], { color: P.ink, width: 1.2, alpha: 0.7 });
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.5, Math.max(2, Lp * 0.06), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
-      parcel(g, cx, cy, Lp, P, { spin: ease(0, 1, p) * Math.PI / 2 });
+      const spin = ease(0, 1, p) * Math.PI / 2;
+      if (kind === 'parcel') parcel(g, cx, cy, Lp, P, { spin });
+      else if (kind === 'sandbag') sandbag(g, cx, cy, Lp, spin * 0.6);
+      else bucket(g, cx, cy, Lp, Math.sin(ease(0, 1, p) * Math.PI) * 0.6);
     }
     g.restore();
   } else {
@@ -356,8 +393,10 @@ function launch(canvas, o) {
     // from a vehicle's nose, not buried in its door; on a halo, so it reads
     // over the art. The impact velocity stays drawn at the moment of impact.
     // a person or a parcel has it beside them, never across the body
-    const person = ['diver', 'skateboarder', 'parcel'].includes(kind);
-    const ox = person ? bx + Lp * 0.62 : bx + (v.x / sp) * Lp * 0.5, oyv = person ? by - Lp * 0.5 : by - (v.y / sp) * Lp * 0.5;
+    const person = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket'].includes(kind);
+    // a small thing has it from its edge, so the thing itself shows
+    const lead = small ? 11 : Lp * 0.5;
+    const ox = person ? bx + Lp * 0.62 : bx + (v.x / sp) * lead, oyv = person ? by - Lp * 0.5 : by - (v.y / sp) * lead;
     const tx = ox + v.x * vl, ty = oyv - v.y * vl;
     const halo = withAlpha(P.card, 0.8);
     if (show.components && Math.abs(v.x) > 1e-9) {
@@ -373,7 +412,7 @@ function launch(canvas, o) {
   if (show.acceleration) arrow(g, bx, by, bx, by + 40, { color: P.acc, width: 2.4, head: 10 });
 
   // ── what it lands on, named on it
-  const name = { sea: 'the sea', river: 'the river', pool: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';
+  const name = { sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);
@@ -549,6 +588,98 @@ function column(canvas, o) {
 }
 
 /* ── pieces the composer needed and the library did not have ─────────── */
+
+/** A coin edge-on and face-on as it flips: a gold disc `R` px across whose
+    width follows the flip, a rim, a highlight. `turn` is the flip, in turns. */
+export function coin(g, x, y, R, turn = 0) {
+  const E = env(), c = Math.cos(turn * Math.PI * 2), sx = Math.max(0.18, Math.abs(c));
+  g.save(); g.translate(x, y); g.scale(sx, 1);
+  const gr = g.createRadialGradient(-R * 0.35, -R * 0.35, R * 0.1, 0, 0, R);
+  gr.addColorStop(0, E.night ? '#f2e2a6' : '#fff2b8'); gr.addColorStop(0.6, E.night ? '#c8a24a' : '#d9b04c'); gr.addColorStop(1, E.night ? '#8d6e2a' : '#9c7a2c');
+  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(90,65,20,0.8)'; g.lineWidth = 1.2; g.stroke();
+  g.strokeStyle = 'rgba(255,245,210,0.55)'; g.beginPath(); g.arc(0, 0, R * 0.68, 0, Math.PI * 2); g.stroke();
+  g.restore();
+}
+
+/** A model rocket `L` px long round its middle, nose along `ang` (radians,
+    canvas): a white body with a red nose cone, three fins, a window; a short
+    flame from the nozzle only at the launch (`burning`). */
+export function rocket(g, x, y, L, ang, burning = false) {
+  const E = env(), r = L * 0.09;
+  g.save(); g.translate(x, y); g.rotate(ang);
+  if (burning) {
+    const fl = g.createLinearGradient(-L * 0.5, 0, -L * 0.85, 0);
+    fl.addColorStop(0, 'rgba(255,220,120,0.95)'); fl.addColorStop(1, 'rgba(255,120,40,0)');
+    g.fillStyle = fl; g.beginPath(); g.moveTo(-L * 0.48, -r * 0.7); g.lineTo(-L * 0.85, 0); g.lineTo(-L * 0.48, r * 0.7); g.closePath(); g.fill();
+  }
+  g.fillStyle = E.night ? '#8f3b35' : '#c6463c';
+  for (const s of [-1, 1]) { g.beginPath(); g.moveTo(-L * 0.28, s * r); g.lineTo(-L * 0.48, s * r * 2.6); g.lineTo(-L * 0.5, s * r); g.closePath(); g.fill(); }
+  const bg = g.createLinearGradient(0, -r, 0, r); bg.addColorStop(0, E.night ? '#d8d2cc' : '#ffffff'); bg.addColorStop(1, E.night ? '#8f8a86' : '#bdb8b2');
+  g.fillStyle = bg; g.fillRect(-L * 0.5, -r, L * 0.78, r * 2);
+  g.fillStyle = E.night ? '#8f3b35' : '#c6463c';
+  g.beginPath(); g.moveTo(L * 0.28, -r); g.quadraticCurveTo(L * 0.46, -r * 0.6, L * 0.5, 0); g.quadraticCurveTo(L * 0.46, r * 0.6, L * 0.28, r); g.closePath(); g.fill();
+  g.fillStyle = E.night ? '#5d7f97' : '#7fb0d4'; g.beginPath(); g.arc(L * 0.12, 0, r * 0.55, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.strokeRect(-L * 0.5, -r, L * 0.78, r * 2);
+  g.restore();
+}
+
+/** An arrow `L` px long round its middle, point along `ang`: a wooden shaft,
+    a steel point, three fletches at the tail. */
+export function arrowShaft(g, x, y, L, ang) {
+  const E = env(), t = Math.max(1.6, L * 0.035);
+  g.save(); g.translate(x, y); g.rotate(ang);
+  g.strokeStyle = E.night ? '#a3825f' : '#b8915f'; g.lineWidth = t; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(-L * 0.5, 0); g.lineTo(L * 0.42, 0); g.stroke();
+  g.fillStyle = E.night ? '#9aa1a8' : '#6f767d';
+  g.beginPath(); g.moveTo(L * 0.5, 0); g.lineTo(L * 0.4, -t * 1.8); g.lineTo(L * 0.4, t * 1.8); g.closePath(); g.fill();
+  g.fillStyle = E.night ? '#c9a24a' : '#e3b04b';
+  for (const s of [-1, 1]) { g.beginPath(); g.moveTo(-L * 0.36, 0); g.lineTo(-L * 0.5, s * t * 3); g.lineTo(-L * 0.47, 0); g.closePath(); g.fill(); }
+  g.restore();
+}
+
+/** A sandbag `L` px across round its middle, turned by `spin`: a tied hessian
+    sack, lit from the left, its weave shown. */
+export function sandbag(g, x, y, L, spin = 0) {
+  const E = env(), w = L, h = L * 0.62;
+  g.save(); g.translate(x, y); g.rotate(spin);
+  const bg = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+  bg.addColorStop(0, E.night ? '#a08c6a' : '#d8c39a'); bg.addColorStop(1, E.night ? '#6b5c44' : '#a68e63');
+  g.fillStyle = bg; g.beginPath(); g.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.moveTo(w * 0.42, -h * 0.12); g.lineTo(w * 0.6, -h * 0.3); g.lineTo(w * 0.62, h * 0.08); g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(70,50,25,0.35)'; g.lineWidth = 1;
+  for (let i = -3; i <= 3; i++) { g.beginPath(); g.moveTo(i * w * 0.12, -h * 0.42); g.lineTo(i * w * 0.12, h * 0.42); g.stroke(); }
+  g.strokeStyle = 'rgba(80,55,25,0.8)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(w * 0.42, -h * 0.2); g.lineTo(w * 0.44, h * 0.05); g.stroke();
+  g.restore();
+}
+
+/** A metal bucket `L` px tall round its middle, tipped by `tilt`: a tapered
+    pail with a rim, a bail handle and a sheen. */
+export function bucket(g, x, y, L, tilt = 0) {
+  const E = env(), top = L * 0.42, bot = L * 0.3, hh = L * 0.8;
+  g.save(); g.translate(x, y); g.rotate(tilt);
+  const bg = g.createLinearGradient(-top, 0, top, 0);
+  bg.addColorStop(0, E.night ? '#b7bec5' : '#e6ebef'); bg.addColorStop(0.5, E.night ? '#7f878f' : '#a9b2ba'); bg.addColorStop(1, E.night ? '#5a6168' : '#7b848c');
+  g.fillStyle = bg; g.beginPath(); g.moveTo(-top, -hh / 2); g.lineTo(top, -hh / 2); g.lineTo(bot, hh / 2); g.lineTo(-bot, hh / 2); g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 1.2; g.stroke();
+  g.fillStyle = E.night ? '#3e444a' : '#5d656c'; g.beginPath(); g.ellipse(0, -hh / 2, top, L * 0.07, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = E.night ? '#9aa1a8' : '#6f767d'; g.lineWidth = Math.max(1.2, L * 0.03);
+  g.beginPath(); g.arc(0, -hh / 2, top * 0.95, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
+  g.restore();
+}
+
+/** A glass marble: a clear sphere with a coloured twist inside and a hard highlight. */
+export function marble(g, x, y, R) {
+  g.save();
+  const gr = g.createRadialGradient(x - R * 0.35, y - R * 0.35, R * 0.1, x, y, R);
+  gr.addColorStop(0, 'rgba(235,245,250,0.95)'); gr.addColorStop(1, 'rgba(120,160,190,0.9)');
+  g.fillStyle = gr; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(40,90,140,0.85)'; g.lineWidth = Math.max(1.2, R * 0.28);
+  g.beginPath(); g.arc(x, y, R * 0.45, 0.4, 2.6); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(x - R * 0.35, y - R * 0.4, R * 0.22, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(30,50,70,0.6)'; g.lineWidth = 1; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.stroke();
+  g.restore();
+}
 
 /** Scree at a cliff's foot on dry land: fallen rocks, larger near the face,
     lit from the left, so the face meets the ground rather than floating. */

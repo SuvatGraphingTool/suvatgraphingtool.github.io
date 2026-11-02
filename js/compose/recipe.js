@@ -20,7 +20,7 @@
 // Nothing here calculates (CLAUDE.md rule 4). The engine solves; this file
 // only says which engine, with which boxes.
 
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, figureOf, belowOf, placeOf } from './registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, figureOf, belowOf, placeOf, placeIn } from './registry.js';
 import { toApp } from '../core/question.js';
 import { KITS } from '../kits/index.js';
 import { GRAVITY } from '../scenarios.js';
@@ -170,10 +170,11 @@ export function titleOf(r) {
   const where = `${{ hall: 'in', sea: 'over' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
   if (r.engine === 'projectile') {
     if (r.backdrop === 'air') return `${what} let go from the air`;
+    if (r.backdrop === 'well') return `${what} down a well`;
     if (B.edge) return `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
     if (r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off a wall`;
-    return `${what} ${F.thrown ? 'thrown' : 'launched'} ${where}`;
+    return r.backdrop === 'ground' ? `${what} ${F.thrown ? 'thrown' : 'launched'} from the ground` : `${what} ${F.thrown ? 'thrown' : 'launched'} ${where}`;
   }
   const by = B.edge ? `by ${B.at}` : where;
   if (r.engine === 'pair') return `Two on one line ${by}: when do they meet?`;
@@ -304,7 +305,7 @@ const LAUNCHES = ['up', 'arc', 'dropped', 'down', 'platform-down', 'platform', '
 const TWELVE_KEYS = { flight: 'time1', range: 'distance', vLand: 'speed1', top: 'height1', rise: 'height2', tTop: 'time2', u: 'speed2', theta: 'angle' };
 const HEIGHT_KEYS = { height: 'height1', speed: 'speed1', time: 'time1', graph: 'graph' };
 /** From a height's places, as the composer's backdrops (a well is From a height's alone). */
-const HEIGHT_PLACES = { cliff: 'cliff', tower: 'tower', bridge: 'bridge', board: 'board', balloon: 'air' };
+const HEIGHT_PLACES = { cliff: 'cliff', tower: 'tower', bridge: 'bridge', board: 'board', well: 'well', balloon: 'air' };
 const CARRIER = /\b(helicopter|aeroplane|airplane|aircraft|plane|drone|airship|glider)\b/i;
 const JUMPS = /\b(jump|jumps|jumped|leaps?|leapt)\b/i;
 /** What the reading assumed, said: a jump with no angle taken as straight up. */
@@ -329,8 +330,11 @@ export function fromReading(x) {
   // composed, whatever moves — a ball thrown by its thrower included
   const fromHeight = x.scenario === 'library' && x.library === 'from-a-height' && x.boxes && typeof x.boxes === 'object';
   const under = fromHeight && HEIGHT_PLACES[x.boxes.place] ? belowOf(HEIGHT_PLACES[x.boxes.place], x.below) : null;
-  const small = !m.figure || (m.exact && ['ball', 'stone', 'particle'].includes(m.figure));
-  if (small && !under) return null;
+  const small = !m.figure || (m.exact && ['ball', 'stone', 'particle', 'coin', 'marble'].includes(m.figure));
+  // a place only the composer draws (a table, a balcony) is drawn, even for a coin
+  const words = `${x.summary || ''} ${x.words || ''}`;
+  const own = !fromHeight && LAUNCHES.includes(x.scenario) ? placeIn(words) : null;
+  if (small && !under && !own) return null;
   const figure = m.figure || 'ball';
   let backdrop, numbers, keys;
   if (fromHeight) {
@@ -349,14 +353,15 @@ export function fromReading(x) {
     if (theta != null) numbers.theta = theta;
     if (r.h != null) numbers.h = r.h;
     if (typeof x.g === 'number') numbers.g = x.g;
-    backdrop = !(numbers.h === 0) && CARRIER.test(`${x.summary || ''} ${x.words || ''}`) ? 'air' : 'ground';
+    backdrop = own && !(numbers.h === 0 && own !== 'hall') ? own
+      : !(numbers.h === 0) && CARRIER.test(words) ? 'air' : 'ground';
     keys = TWELVE_KEYS;
   } else return null;
   const notes = [];
   if (m.figure && !m.exact) notes.push(nearest(m));
   const carrier = `${x.summary || ''} ${x.words || ''}`.match(CARRIER);
   if (backdrop === 'air' && carrier) notes.push(`Drawn let go from a balloon: there is no ${carrier[1].toLowerCase()} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);
-  if (backdrop === 'ground' && numbers.h > 0) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
+  if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
   notes.push(...assumedNotes(x));
   if (x.scenario === 'dropped' && JUMPS.test(`${x.summary || ''} ${x.words || ''}`)) notes.push('No speed was given for the jump, so it is taken as stepping off from rest. Give the speed on the values screen if the question has one.');
   const parts = Array.isArray(x.parts) ? x.parts.map((p) => {
