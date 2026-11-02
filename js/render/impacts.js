@@ -480,3 +480,58 @@ export function chalk(g, x, y, age, life, o = {}) {
   }
   g.restore();
 }
+
+/* ── the moment it leaves: drawn on the engine's clock from the launch ──── */
+
+/** A take-off kicks up dust: a low puff thrown back from where it pushed
+    off, clods arcing behind, settling as it goes. `age` is seconds since it
+    left (the engine's time, rule 4). */
+export function kick(g, x, y, age, life, o = {}) {
+  const p = phaseOf(age, life); if (p == null) return;
+  const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 131);
+  g.save();
+  for (let i = 0; i < 8; i++) {
+    const R = (4 + r() * 5) * size * (0.6 + p * 1.6), dx = -(6 + r() * 20) * size * ease(p), dy = -(2 + r() * 8) * size * ease(p);
+    const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, R);
+    gr.addColorStop(0, E.night ? `rgba(150,140,124,${0.7 * (1 - p)})` : `rgba(196,178,148,${0.75 * (1 - p)})`); gr.addColorStop(1, 'rgba(196,178,148,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, R, 0, TAU); g.fill();
+  }
+  thrown(x, y, ease(p), 7, size * 0.8, r, (px, py) => { g.fillStyle = withAlpha(E.night ? '#4a3e30' : '#7a6248', 1 - p); g.fillRect(px - 2, py - 1.5, 3, 3); }, { up: 0.5, out: -0.9 });
+  g.restore();
+}
+
+/** Something leaving a branch shakes leaves down: a few leaves let go round
+    the branch and flutter down, swaying, fading as they fall. */
+export function rustle(g, x, y, age, life, o = {}) {
+  const p = phaseOf(age, life); if (p == null) return;
+  const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 137);
+  g.save();
+  for (let i = 0; i < 9; i++) {
+    const x0 = x + (r() - 0.6) * 40 * size, y0 = y - r() * 16 * size, fall = (30 + r() * 50) * size * p, sway = Math.sin(p * 8 + i) * 8 * size;
+    g.save(); g.translate(x0 + sway, y0 + fall); g.rotate(p * 6 + i);
+    g.fillStyle = withAlpha(i % 3 ? (E.night ? '#2e4a2a' : '#5f9a48') : (E.night ? '#5a5a2a' : '#c8b04a'), 1 - p * 0.8);
+    g.beginPath(); g.ellipse(0, 0, 4 * size, 2 * size, 0, 0, TAU); g.fill();
+    g.restore();
+  }
+  g.restore();
+}
+
+/** Something heavy landing on a hard surface: a flattened ring of dust
+    racing out along it, grit thrown low, and cracks left in the surface. */
+export function shockwave(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 139);
+  g.save();
+  // the cracks, which stay
+  g.strokeStyle = withAlpha('#000000', 0.45); g.lineWidth = 1.2; const cl = 14 * size * ease(Math.min(1, u * 4));
+  for (let i = 0; i < 5; i++) { const a = (i - 2) * 0.5, sx = x, ex = x + Math.cos(a) * cl * (0.7 + r() * 0.6) * (i % 2 ? -1 : 1); g.beginPath(); g.moveTo(sx, y + 1); g.lineTo((sx + ex) / 2 + (r() - 0.5) * 4, y + 1 + r() * 2); g.lineTo(ex, y + 1 + r() * 3); g.stroke(); }
+  const p = phaseOf(age, life);
+  if (p != null) {
+    // the ring racing out, low and flat
+    const R = 50 * size * ease(p);
+    g.strokeStyle = E.night ? `rgba(170,166,156,${0.7 * (1 - p)})` : `rgba(200,192,176,${0.8 * (1 - p)})`; g.lineWidth = 6 * size * (1 - p) + 1;
+    g.beginPath(); g.ellipse(x, y - 2, R, R * 0.16, 0, Math.PI, TAU); g.stroke();
+    thrown(x, y, ease(p), 12, size, r, (px, py) => { g.fillStyle = withAlpha(E.night ? '#6a665e' : '#8a8478', 1 - p); g.fillRect(px - 1.5, py - 1.5, 3, 3); }, { up: 0.35, out: 1.6 });
+  }
+  g.restore();
+}

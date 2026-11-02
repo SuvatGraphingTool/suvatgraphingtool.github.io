@@ -217,6 +217,9 @@ export const EFFECTS = {
   bubbles: { label: 'bubbles', what: 'something heavy sinking after it goes into water' },
   net:    { label: 'a goal net', what: 'a goal where it lands: its net bulges as the ball meets it' },
   burst:  { label: 'a firework burst', what: 'at the top of a firework’s flight' },
+  kick:   { label: 'a kick of dust', what: 'where it takes off from the ground: an animal, a jumper or a vehicle pushing off' },
+  rustle: { label: 'falling leaves', what: 'where it leaves a branch: leaves shaken down' },
+  shockwave: { label: 'a shockwave of dust', what: 'something heavy landing on a hard surface: a ring of dust and cracks' },
   chalk:  { label: 'a ball mark', what: 'a tennis ball landing on a court: its mark left, and a puff of chalk when it lands on a line' },
 };
 

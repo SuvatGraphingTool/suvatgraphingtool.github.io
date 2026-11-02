@@ -33,7 +33,7 @@ import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, t
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
-import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles, diveCatch, chalk } from './impacts.js';
+import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles, diveCatch, chalk, kick, rustle, shockwave } from './impacts.js';
 import { ANIMALS, FEET, SWIMMERS, javelin } from './animals.js';
 import { golfer, kicker, archer, archerHand, server, batter, SERVE_AT, BAT_AT, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
@@ -445,6 +445,12 @@ function launch(canvas, o) {
   if (!landed) clock.at = null;
   else if (clock.at == null) clock.at = performance.now();
   const life = SETTLE, age = landed ? Math.min(life * 0.999, (performance.now() - clock.at) / 1000) : -1;
+  // the moment it leaves, on the engine's clock from the launch (rule 4): dust kicked up from
+  // the ground it pushes off, leaves shaken down from the branch it leaves
+  if (m.going && m.i === 0) {
+    if (R.effects.includes('kick')) kick(g, X(0) - 4, Y(H0), t, 0.9, { size: clamp(k / 30, 0.8, 2.2) });
+    if (R.effects.includes('rustle')) rustle(g, X(0), Y(H0), t, 1.6, { size: clamp(k / 30, 0.8, 1.8) });
+  }
   if (landed) {
     for (const e of R.effects) {
       // a car hitting the water at speed throws up a column, not a ripple
@@ -455,7 +461,9 @@ function launch(canvas, o) {
       else if (e === 'dust' && !wet) dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k, piece) / 30), n: 22 });
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
-      else if (e === 'net' || e === 'swish') continue;
+      else if (e === 'net' || e === 'swish' || e === 'kick' || e === 'rustle') continue;
+      // something heavy down on a hard surface: a flat ring of dust racing out, cracks left
+      else if (e === 'shockwave' && !wet) later.push(() => shockwave(g, lx, oy, age, life, { size: clamp(k / 25, 0.8, 2.4) }));
       // a tennis ball on a line: a puff of chalk off the court, its mark left
       else if (e === 'chalk' && !wet) chalk(g, lx, oy, age, life, { size: clamp(k / 14, 1, 2.4), puff: R.backdrop === 'court' && [0, 5.485, 18.285, 23.77].some((d) => Math.abs(end.x - d) <= 0.05) });
       // gone under: it sinks away and bubbles come up where it went in
