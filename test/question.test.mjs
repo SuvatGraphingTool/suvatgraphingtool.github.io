@@ -506,5 +506,14 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(runs[2].part.kind === 'graph' && Math.abs(runs[2].moment.t - sv.f.tMax) < 1e-9 && Math.abs(sv.f.tMax - sv.yAfter.t) < 1e-9, '(c) the graph, the run ending at B');
 }
 
+// QA 2 Nov: the lorry, "(b) the time from A to the mid-point of AB", read with answer "t" — answered 10 s, the whole time; the mid-point is 6 s
+{
+  const { fromReader } = await import('../js/parts/answers.js');
+  const ps = fromReader('road', [{ label: 'a', asks: 'the value of u', answer: 'u' }, { label: 'b', asks: 'time from A to the midpoint of AB', answer: 't' }, { label: 'c', asks: 'speed at the mid-point', answer: 'v' }]);
+  ok(ps[0].find === 'five.u.value' && ps[1].find === 'moment.t' && ps[2].find === 'moment.v', 'a time or a speed at the mid-point is the moment the engine timed, not the whole run');
+  const r = solveRoad({ v: 34, t: 10, s: 240, mark: 'mid' });
+  ok(r.ok && Math.abs(r.moment.t - 6) < 1e-9 && Math.abs(r.moment.v - 26) < 1e-9, 'and the engine times it: 6 s, at 26 m s⁻¹');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

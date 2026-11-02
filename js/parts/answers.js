@@ -28,6 +28,9 @@ export const ROAD_ANSWERS = [
   { key: 'v', kind: 'speed', say: 'the velocity at the second point', find: 'five.v.value', sym: 'v', unit: 'm s^-1', at: 'end' },
   { key: 'a', kind: 'acceleration', say: 'the acceleration', find: 'five.a.value', sym: 'a', unit: 'm s^-2', at: 'end' },
   { key: 't', kind: 'time', say: 'the time between the two points', find: 'five.t.value', sym: 't', unit: 's', at: 'end' },
+  // the moment the question times: its mid-point, or a mark it names
+  { key: 'tMid', kind: 'time', say: 'the time from the first point to the mid-point (or the mark)', find: 'moment.t', sym: 't', unit: 's', at: 'moment.t' },
+  { key: 'vMid', kind: 'speed', say: 'the speed at the mid-point (or the mark)', find: 'moment.v', sym: 'v', unit: 'm s^-1', at: 'moment.t' },
 ];
 
 /**
@@ -92,12 +95,14 @@ export function fromReader(id, raw, boxes = []) {
     const meets = /\b(when|catch(es)?|meet|level|overtakes?|pass(es)?|collide)\b/.test(words);
     const named = ['speed', 'time', 'height', 'distance', 'acceleration', 'angle', 'impulse'].filter((k) => words.includes(k));
     const asKind = (k) => only(k) || (k === 'time' && meets ? only('meeting') : null);
-    const hit = offer.find((a) => a.key === r.answer)
+    let hit = offer.find((a) => a.key === r.answer)
       || (/sketch|graph/.test(words) ? only('graph') : null)
       || (typeof r.answer === 'string' ? asKind(r.answer.replace(/\d+$/, '')) : null)
       || named.map(asKind).find(Boolean)
       // "when does A catch B", with no other kind asked for
       || (meets && !named.some((k) => k !== 'time') && !/^(speed|height|distance|acceleration|angle)/.test(r.answer || '') ? only('meeting') : null);
+    // a time or a speed "to the mid-point" is the moment's, whatever key was named
+    if (/mid-?point|\bmark\b/.test(words) && (hit?.key === 't' || hit?.key === 'v')) hit = offer.find((a) => a.key === `${hit.key}Mid`) || hit;
     const base = hit ? (hit.part || hit) : null;
     const p = base
       // with no words of its own, a part says what it is — never another paper's numbers
