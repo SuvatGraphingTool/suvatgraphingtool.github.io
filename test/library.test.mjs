@@ -24,6 +24,7 @@ import { toLevel, rebound, timesAt } from '../js/core/stages.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
 import { resolveKit } from '../js/kitresolve.js';
 import { solveHeli } from '../js/core/heli.js';
+import { solveIce } from '../js/core/ice.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -1470,7 +1471,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
@@ -1609,6 +1610,17 @@ group('AQA MM1B Jun 2013 Q8 and Jun 2011 Q7: a helicopter over the sea', () => {
   ok(Math.abs(Math.hypot(r.x, r.y) - 100) < 1e-6, 'moving at the start, the first time it is 100 m out really is 100 m out');
   ok(solveHeli({ r0: { x: 0, y: 0 }, u: { x: 1, y: 0 }, a: { x: 0, y: 1 }, P: { x: 2, y: 5 } }).answers.P.over === false, 'a rock it is level with but never over: said so');
   ok(!solveHeli({ u: { x: 1 } }).ok, 'no acceleration given: it asks for one');
+});
+
+group('CIE 9709/41 May/Jun 2017 Q5: speeds at A, B and C, and nothing else', () => {
+  const r = solveIce({ uA: 20, uB: 12, uC: 6 });
+  ok(r.ok && !r.scaled && r.ratioSrc.replace(/<[^>]+>/g, '') === '64 : 27', 'AB : BC = 64 : 27 from the speeds alone');
+  const s = solveIce({ uA: 20, uB: 12, uC: 6, AD: 80 });
+  ok(s.a === 2.5 && s.BC === 21.6 && s.AB === 51.2 && s.tD === 8, 'at rest 80 m past A: a = 2.5, BC = 21.6, AB = 51.2, 8 s');
+  ok(solveIce({ uA: 20, uB: 12, uC: 6, BC: 21.6 }).AD === 80 && solveIce({ uA: 20, uB: 12, uC: 6, a: 2.5 }).BC === 21.6, 'BC, or a, scales it the same way');
+  ok(Math.abs(s.f.pos(s.tB) - s.AB) < 1e-9 && Math.abs(s.f.vel(s.tC) - 6) < 1e-9, 'the motion passes B at AB and C at 6 m s⁻¹');
+  ok(!solveIce({ uA: 12, uB: 20 }).ok && !solveIce({ uA: 20, uB: 12, uC: 15 }).ok, 'speeding up is refused: it slows down steadily');
+  ok(!solveIce({ uA: 20, uB: 12, uC: 6, AD: 80, a: 2 }).ok, 'two scales at once is refused');
 });
 
 group('Resolve opens on every library stage, from its engine', () => {

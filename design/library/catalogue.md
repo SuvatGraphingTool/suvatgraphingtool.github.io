@@ -136,6 +136,7 @@ this library: *covered* names the one of the twelve that does it.
 | 100 | AQA | MM1B | Jun 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202010%20QP%20-%20M1%20AQA.pdf) | An aeroplane flies due north at 100 m/s relative to air moving due east at 30 m/s: resultant speed, bearing | – | **built** → `flying-in-a-wind` |
 | 101 | AQA | MM1B | Jun 2013 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202013%20QP%20-%20M1%20AQA.pdf) | A helicopter at constant height passes over a lighthouse with a given velocity and constant acceleration (i east, j north): position vector, does it pass over a rock, when; average velocity; is its size the average speed | – | **built** → `over-the-rock` |
 | 102 | AQA | MM1B | Jun 2011 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202011%20QP%20-%20M1%20AQA.pdf) | A helicopter hovering over a lighthouse sets off with constant acceleration: speed and bearing at a time; how long until it is a given distance from its start | – | **built** → `over-the-rock` |
+| 103 | CIE | 9709/41 | May/Jun 2017 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | Constant deceleration along ABCD, speeds 20, 12, 6 at A, B, C: ratio AB : BC; rests at D with AD = 80, find BC | – | **built** → `down-the-ice` |
 
 ## Built, and why it is built the way it is
 
@@ -437,6 +438,30 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `down-the-ice` — Down the ice
+
+**Papers.** CIE 9709/41 May/Jun 2017 Q5 (speeds 20, 12 and 6 m s⁻¹ at A, B and
+C under a constant deceleration: AB : BC = 64 : 27; at rest at D with AD = 80 m,
+so a = 2.5 m s⁻² and BC = 21.6 m).
+
+**Why the twelve cannot.** Every one of them needs the acceleration, or enough
+numbers to find it, before it gives a distance. Here the paper gives only
+speeds, and asks for a ratio in which the acceleration cancels; the scale comes
+afterwards, from one more number.
+
+**How it is solved.** js/core/ice.js: v² = u² − 2as on each stretch gives each
+distance as a number over a (AB = 128⁄a, BC = 54⁄a); their ratio in lowest
+whole terms; then a from whichever one more number is given (AD, AB, BC or a
+itself), and every distance and time. With none, the answers stay over a, and
+the stage and readouts say so.
+
+**The stage.** A curling sheet from above: pebbled ice between the boards, the
+lines A, B and C across it, the house round D. The granite stone with its red
+handle turns as it slides; each line lights with the speed it had there; the
+distances are dimensioned under the sheet, in metres or over a.
+
+**Parts.** (a) `ratio`, 64⁄27 = 2.370; (b) `a`, 2.5; (c) `BC`, 21.6.
 
 ### `over-the-rock` — Over the rock
 

@@ -78,6 +78,7 @@ A kit is an object with:
 | `wind` — `js/kits/wind.js` | `flying-in-a-wind` (engine js/core/wind.js; stage js/render/wind.js: from above, an airliner on its heading, the triangle on a card) |
 | `river` — `js/kits/river.js` | `across-the-river` (engine js/core/river.js; stage js/render/river.js: a river from above, a steered boat, the velocity triangle) |
 | `heli` — `js/kits/heli.js` | `over-the-rock` (engine js/core/heli.js on plane.js's motion; stage js/render/heli.js: the sea from above, the lighthouse, the rock in its surf, a coastguard helicopter with its rotor turning; `heliTop` is exported) |
+| `ice` — `js/kits/ice.js` | `down-the-ice` (engine js/core/ice.js; stage js/render/ice.js: a curling sheet from above, lines A, B, C, the house round D, the stone turning as it slides) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
 | `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
@@ -469,6 +470,14 @@ area from there sums to zero), a stop fixed by the total time `T`. Each
 segment's acceleration and displacement as working (`tripWorking`).
 
 Used by: `there-and-back`.
+
+### Down the ice — `js/core/ice.js`
+
+A constant deceleration along ABCD from speeds alone. `solveIce({ uA, uB, uC,
+AD | AB | BC | a })`: each distance over a from v² = u² − 2as, the ratio AB : BC
+in lowest terms (`ratio`, `ratioSrc`), then — given one more number — a, AB,
+BC, CD, AD and the times `tB`, `tC`, `tD`. With none, `scaled` is false and
+everything is over a (a = 1): the kit's `resolveUnits` and readouts say so.
 
 ### Over the rock — `js/core/heli.js`
 
