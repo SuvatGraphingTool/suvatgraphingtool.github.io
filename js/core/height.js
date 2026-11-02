@@ -65,7 +65,9 @@ export const BELOW = {
 export function solveHeight(k0 = {}) {
   let k = k0;
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
-  const place = PLACES[k.place] ? k.place : 'cliff', Pl = { ...PLACES[place], ...(BELOW[k.below] || {}) };
+  // `from` — where it started, in words — when what moves was not thrown (a
+  // diver, a car): "where the diver started", never "where it was thrown from"
+  const place = PLACES[k.place] ? k.place : 'cliff', Pl = { ...PLACES[place], ...(BELOW[k.below] || {}), ...(k.from ? { from: k.from } : {}) };
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
   // the height may be left for the engine when the time in the air is given
   if (!have(k.h) && !have(k.t)) return fail(`Still needed: how high ${Pl.top} is above ${Pl.below} — or the time it takes to land, to find that height.`);

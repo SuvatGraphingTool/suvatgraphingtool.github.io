@@ -213,8 +213,21 @@ export function compose(raw) {
     voice: { h: name, sub: `Composed by Ask Suvat from the app’s own pieces: ${B.label.toLowerCase()}, ${who}, ${E.label.toLowerCase()}. Change any number and the engine works it out again.` },
     rows: (base.rows || []).filter((row) => !(row.fields || []).some((f) => f.key === 'place')),
     read: (vals) => ({ ...base.read({ ...Object.fromEntries(Object.entries(vals).map(([k, v]) => [k, frac(v)])), place: boxes.place ?? vals.place }),
+      // a thing that is not thrown started somewhere, it was not thrown from it
+      ...(r.engine === 'projectile' && !FIGURES[r.objects[0].figure].thrown ? { from: ['diver', 'skateboarder'].includes(r.objects[0].figure) ? 'where they started' : 'where it started' } : {}),
       // the surface below in the engine's words: a cliff over the ground hits the ground
       ...(r.below ? { below: r.below } : {}) }),
+    // the engine's sentences say what moves by its name: "The diver enters
+    // the water…", "The car hits the sea…", not "It …"
+    solve: (k) => {
+      const out = base.solve(k);
+      if (out?.ok && r.engine === 'projectile') {
+        const name = r.objects[0].name;
+        if (Array.isArray(out.notes)) out.notes = out.notes.map((n) => n.replace(/^It /, `${Up(name)} `));
+        if (Array.isArray(out.derived)) out.derived = out.derived.map((n) => n.replace(/^it /, `${name} `));
+      }
+      return out;
+    },
     render: (canvas, cam, o) => stage.render(canvas, cam, { ...o, recipe: r }),
     // the landing plays out on the clock after the motion stops, and the
     // ending card waits for it
