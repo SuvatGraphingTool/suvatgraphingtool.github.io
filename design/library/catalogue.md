@@ -140,6 +140,9 @@ this library: *covered* names the one of the twelve that does it.
 | 104 | Edexcel | 6677/01 M1 | Jan 2005 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202005%20QP.pdf) | A stone on ice along ABC against a 0.3 N resistance, 20 then 16 m/s over 24 m; speed at C 30 m on; show m = 0.1 kg; the wall's 2.4 N s impulse, time back to rest | – | **built** → `back-off-the-boards` |
 | 105 | AQA | MM1B | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202012%20QP%20-%20M1%20AQA.pdf) | A cyclist freewheels down a slope, 4 to 10 m/s over 50 m: a, time; 70 kg: resultant force; the slope's angle with no resistance, then against 30 N | 9.8 | **built** → `freewheeling` |
 | 106 | CIE | 9709/41 | May/Jun 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | 0.8 kg projected at 12 m/s up a rough 10° plane, μ = 0.4: the acceleration; the distance up the plane to rest | 10 | **built** → `up-a-rough-slope` |
+| 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
+| 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **candidate**: `pulled-by-a-rope`'s engine gives both (18.4 N, 0.123 m/s²), but the paper gives no speed to play the motion with |
+| 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **candidate**: the engine gives both (509.4 N, 1.51 m/s²), but no speed is given to play the motion |
 | 112 | Edexcel | 6677 M1 | Jun 2002 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A lift with an 80 kg man rises 27 m from rest: 2 m/s² to 3 m/s, steady for T s, slows to rest in 2.5 s: v–t sketch, T, a–t sketch; 120 kg lift: the cable's tension speeding up, the floor's force on the man slowing | 9.8 | **built** → `lift-cable-floor` |
 | 113 | Edexcel | 6677/01 M1 | Jun 2013 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 950 kg lift with a 50 kg woman, moving up and slowing at 2 m/s²: the tension, the floor's force on her | 9.8 | **candidate**: the forces are `lift-cable-floor`'s, but the paper gives no journey to play: needs a one-stage mode |
 | 109 | Edexcel | 6677/01 M1 | Jan 2013 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | An 800 kg lifeboat let go from rest down a 50 m ramp at 15°, 12.6 m/s at the end: the coefficient of friction | 9.8 | **built** → `down-a-rough-slope` |
@@ -448,6 +451,24 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `pulled-by-a-rope` — Pulled by a rope
+
+**Papers.** Edexcel 6677 M1 Nov 2004 Q7 (30 kg sledge, rope at 20°, 150 N, μ = 0.2:
+R = 243 N, a = 3.08 m s⁻²; let go at 12 m s⁻¹, 36.7 m to rest).
+
+**Why the others cannot.** `up-a-rough-slope` and `down-a-rough-slope` have friction
+but no applied force; here a rope pulls at an angle, so the normal reaction is
+less than the weight, and the motion has two stages with different forces.
+
+**How it is solved.** js/core/rope.js: across the surface R + T sin θ = m g cos α;
+along it T cos θ − m g sin α − μR = ma (or the tension from a given a). Let go,
+R = m g cos α and −m g sin α − μR = ma; SUVAT to rest; on a slope μ against tan α.
+
+**The stage.** A snowfield with pines, the sledge (rough-slope's) on its track, a
+person walking ahead with the rope at its angle; let go, they stop and the rope
+drops, the sledge slides on to a ring. A free-body card: T along the rope, R, the
+weight and friction while pulled; no T once let go.
 
 ### `lift-cable-floor` — The lift, its cable and its floor
 

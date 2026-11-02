@@ -32,6 +32,7 @@ import { solveSink, sinkWorking } from '../js/core/sink.js';
 import { solveSlide, slideWorking } from '../js/core/slide.js';
 import { solveCable, cableWorking } from '../js/core/cable.js';
 import { solveStages } from '../js/core/journey.js';
+import { solveRope, ropeWorking } from '../js/core/rope.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1483,7 +1484,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope', 'into-soft-ground', 'down-a-rough-slope', 'lift-cable-floor']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope', 'into-soft-ground', 'down-a-rough-slope', 'lift-cable-floor', 'pulled-by-a-rope']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
@@ -1713,6 +1714,22 @@ group('Above the roof, with the first particle on its own (QA: how tall is the b
   ok(K.hud(s.f, 1).left.length === 2 && K.graphs(s.f, 1, { disp: '#0', vel: '#0', acc: '#0', second: '#0', mark: '#0' }).every((gr) => gr.series.length === 1), 'one particle: no B in the readouts or the graphs');
   ok(resolveKit(K, s, s.f, 1).blocks.length === 1 && K.working(s).length === 1, 'Resolve and the working: the one particle');
   ok(K.solve(K.read({ u: 25, above: 3, g: 9.8, 'B.u': 10 })).single !== true, 'with the second particle given, the pair as before');
+});
+
+group('Edexcel M1 Nov 2004 Q7: pulled by a rope', () => {
+  const s = solveRope({ m: 30, mu: 0.2, theta: 20, T: 150, v: 12, g: 9.8 });
+  ok(s.ok && near(s.R, 243, 0.5) && near(s.a, 3.08, 0.005) && near(s.s2, 36.7, 0.05), '(a) R = 243 N, (b) a = 3.08, (c) 36.7 m after it is let go', s.reason);
+  const up = solveRope({ m: 78, mu: 0.25, tanA: 5 / 12, a: 0.5, v: 3, g: 9.8 });
+  ok(up.ok && near(up.T, 509.4, 0.05) && !up.stays && near(-up.aBack, 1.51, 0.005), 'Jan 2001: tension 509.4 N; after it stops it slides back at 1.51 m s⁻²');
+  const box = solveRope({ m: 2, mu: 0.6, alpha: 20, T: 18, v: 1, g: 9.8 });
+  ok(box.ok && near(box.R, 18.4, 0.05) && near(box.a, 0.123, 0.0005) && box.stays, 'Jun 2005: R = 18.4 N, a = 0.123 m s⁻², and it stays when it stops');
+  const f = s.f;
+  ok(near(f.vel(f.tRel), 12, 1e-9) && near(f.pos(f.tMax), f.s1 + f.s2, 1e-9) && f.vel(f.tMax) === 0, 'the motion: 12 m s⁻¹ when let go, at rest s1 + s2 along');
+  ok(!solveRope({ m: 30, mu: 0.2, theta: 80, T: 400, v: 12 }).ok, 'a pull that would lift it off the ground is refused');
+  ok(!solveRope({ m: 30, mu: 0.2, T: 50, v: 12 }).ok, 'a pull too weak to beat friction is refused');
+  ok(!solveRope({ m: 30, mu: 0, T: 150, v: 12 }).ok, 'let go on smooth level ground it never stops: refused');
+  ok(!solveRope({ m: 30, mu: 0.2, T: 150, a: 2, v: 12 }).ok && !solveRope({ m: 30, mu: 0.2, T: 150 }).ok, 'both T and a, or no release speed, refused');
+  ok(ropeWorking(s).length === 2, 'the working: pulled, then let go');
 });
 
 group('Edexcel M1 Jun 2002 Q6: the lift, its cable and its floor', () => {

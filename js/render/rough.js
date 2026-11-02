@@ -21,7 +21,7 @@ const D2R = Math.PI / 180, TAU = Math.PI * 2;
 const s3 = (x) => num(x, Math.abs(x) < 10 ? 2 : 1, { trim: true });
 
 /** A wooden sledge, side on, its runners on the ground at (0, 0), L px long, facing +x. */
-function sledge(g, L) {
+export function sledge(g, L) {
   g.save();
   g.strokeStyle = '#3b2a1a'; g.lineWidth = Math.max(2, L * 0.05); g.lineCap = 'round';
   // the runners, curling up at the front
@@ -41,7 +41,7 @@ function sledge(g, L) {
 }
 
 /** A snow-laden pine at (x, Y) on the ground, H px tall. */
-function pine(g, x, Y, H) {
+export function pine(g, x, Y, H) {
   g.fillStyle = '#4a3423'; g.fillRect(x - H * 0.04, Y - H * 0.16, H * 0.08, H * 0.16);
   for (let i = 0; i < 3; i++) {
     const y = Y - H * (0.14 + i * 0.27), wdt = H * (0.36 - i * 0.09);
