@@ -104,7 +104,8 @@ export function fromReader(id, raw, boxes = []) {
       const m = offer.filter((a) => a.kind === k);
       if (m.length < 2) return m[0] || null;
       // "how high does it go", "the highest point", "max height": the greatest height
-      const cue = /\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? `${words} greatest` : words;
+      // and a "total" time or distance is the whole one
+      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}`;
       const mine = new Set(cue.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)));
       const score = m.map((a) => String(a.say || '').toLowerCase().split(/[^a-z]+/).filter((w) => mine.has(w)).length);
       const best = Math.max(...score);

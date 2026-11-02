@@ -618,6 +618,13 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const lunar = fromReading({ understood: true, scenario: 'up', summary: 'An astronaut throws a rock straight up on the Moon at 4 m/s.', h: 0, u: 4, angleDegrees: 90, g: 1.6, who: 'rock', asks: ['how high does it go'], words: 'on the moon an astronaut throws a rock straight up at 4 m/s. how high does it go' });
   ok(lunar?.scenario === 'compose' && lunar.asks?.[0] === 'how high does it go', 'composed from one of the twelve, what the question asks goes with it');
   ok(fromReading({ understood: true, scenario: 'platform', summary: 'x', h: 0.8, u: 2, who: 'coin', asked: [{ asks: 'how far out', answer: 'range' }] })?.asked?.[0]?.answer === 'distance', 'and its answer key is the composed scene’s own');
+  const tot = one('journey-stages', 'total time to run 100 m');
+  ok(tot?.either?.length === 2 && tot.either.every((q) => /whole/.test(q.ask || q.say)), 'a "total" time is the whole time (the journey asks it two ways; the reply says it when both agree)');
+  const sprint = toPlace({ understood: true, scenario: 'library', library: 'journey-stages', summary: 'x', boxes: { n: 2, u: 0, k1: 'up', v1: 10, t1: 4, k2: 'hold', t2: 0, D: 100 } }, 'a sprinter accelerates from rest to 10 m/s in 4 s and then runs at that speed. how long to run 100 m');
+  ok(sprint.boxes.t2 == null && sprint.boxes.t1 === 4, 'a stage the reader gave 0 s is a time it did not know, left to the engine');
+  const phone = toPlace({ understood: true, scenario: 'compose', summary: 'A phone is dropped from a descending hot air balloon at 40 m.', recipe: { backdrop: 'air', carrier: 'balloon', engine: 'projectile', objects: [{ figure: 'phone' }], numbers: { h: 40, u: -3 } } }, 'a hot air balloon is descending at 3 m/s when a passenger drops a phone from 40 m up');
+  ok(phone.recipe.numbers.u === 3 && phone.recipe.numbers.theta === -90, 'from a descending balloon, u = −3 with no angle: 3 m/s straight down');
+  ok(toPlace({ understood: true, scenario: 'compose', summary: 'x', recipe: { backdrop: 'air', carrier: 'balloon', engine: 'projectile', objects: [{ figure: 'phone' }], numbers: { h: 40, u: 3 } } }, 'a balloon rising at 3 m/s lets go a phone at 40 m').recipe.numbers.theta === 90, 'from a rising one: straight up');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

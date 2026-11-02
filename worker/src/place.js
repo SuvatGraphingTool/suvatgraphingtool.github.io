@@ -97,6 +97,15 @@ const LET_GO = /\b(push(ed|es)?|roll(s|ed)?|drop(s|ped)?|falls?|fell|let go|rele
  *   starts from rest, and the reply says so.
  */
 function settle(x, words) {
+  // composed, let go from what carries it: a balloon moves straight up or down, and a
+  // speed read as negative ("descending at 3 m/s" as u = −3) is a speed downwards
+  const n = x?.scenario === 'compose' && x.recipe?.numbers;
+  if (n && (n.theta == null || n.theta === '') && Number(n.u) !== 0 && isFinite(Number(n.u)) && n.u !== '' && n.u != null) {
+    const balloon = x.recipe.backdrop === 'air' && /balloon/i.test(String(x.recipe.carrier || ''));
+    const text = `${words} ${x.summary || ''}`;
+    const down = Number(n.u) < 0 || (balloon && /\b(descend(s|ing)?|sink(s|ing)?|fall(s|ing)?|coming down)\b/i.test(text));
+    if (Number(n.u) < 0 || balloon) return { ...x, recipe: { ...x.recipe, numbers: { ...n, u: Math.abs(Number(n.u)), theta: down ? -90 : 90 } } };
+  }
   const b = x?.boxes;
   if (x?.library !== 'from-a-height' || !b) return x;
   const text = `${words} ${x.summary || ''}`;
@@ -146,6 +155,8 @@ function stages(x, words) {
   const out = { ...x, boxes: { ...b } }, o = out.boxes;
   const n = Number(o.n) || 0;
   for (let i = 1; i <= Math.max(n, 6); i++) {
+    // a stage that lasts 0 s is a time the reader did not know ("then runs at that speed"): left to the engine
+    if (o[`t${i}`] === 0) delete o[`t${i}`];
     if (o[`k${i}`] !== 'hold' || o[`v${i}`] == null) continue;
     const before = o[`k${i - 1}`];
     if ((before === 'up' || before === 'down') && o[`v${i - 1}`] == null) o[`v${i - 1}`] = o[`v${i}`];
