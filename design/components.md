@@ -82,6 +82,7 @@ A kit is an object with:
 | `wall` — `js/kits/wall.js` | `back-off-the-boards` (engine js/core/wall.js, with js/core/impulse.js at the wall; stage js/render/wall.js on ice.js's exported `rink` and `stoneTop`) |
 | `hill` — `js/kits/hill.js` | `freewheeling` (engine js/core/hill.js on the twelve's suvat `solve`, then F = ma along the slope; stage js/render/hill.js: a lane down a hillside at its true angle, a cyclist leaning into it, the forces on a card) |
 | `rough` — `js/kits/rough.js` | `up-a-rough-slope` (engine js/core/rough.js: R, F = μR, F = ma, and back down if μ < tan α; stage js/render/rough.js: a snowy hillside, a wooden sledge, the forces on a card) |
+| `slide` — `js/kits/slide.js` | `down-a-rough-slope` (engine js/core/slide.js: from rest down a rough slope, a from R, F = μR, F = ma — or μ from the run; stage js/render/slide.js: a lifeboat slipway into the sea, a house roof, a wedge on a lab bench, the forces on a card) |
 | `sink` — `js/kits/sink.js` | `into-soft-ground` (engine js/core/sink.js: up from A to the ground, then m g − R = ma and SUVAT to rest in it; stage js/render/sink.js: a field cut away to its soil, the thrower on the ground or a tower, a magnifier that replays the sink slowed down) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
@@ -764,6 +765,20 @@ Projected up a rough slope. `solveRough({ u, alpha, mu, m, g })`: `a` up the
 slope from −g(sin α + μ cos α) (with m, R and F in newtons, through R = m g cos α
 and F = μR), `sUp` and `tUp` to rest, `stays` (μ ≥ tan α), and if not `aDown`,
 `vBack`, `tDown` back to the start. The motion turns at `f.tTop`.
+
+### Down a rough slope — `js/core/slide.js`
+
+Let go from rest down a rough slope. `solveSlide({ look, alpha, mu, s, t, v, m, g })`:
+with μ, `a` = g(sin α − μ cos α) (and with m, R, F and the weight's component in
+newtons) and one of s, t, v for the run through the twelve's `solve`; without μ,
+two of s, t, v give `a`, and F = ma along the slope gives `mu`. Refuses μ ≥ tan α
+(it never starts to slide) and an acceleration above g sin α.
+
+**Stage pieces** (`js/render/slide.js`): `lifeboat(g, L)` — a lifeboat side on,
+dark hull, bright upper strake, wheelhouse, mast and rail; `roofTile(g, L)`;
+`woodBlock(g, L)` — a lab block with its grain and hook; a lifeboat station's
+boathouse with open doors on a slipway of concrete on piles; a house with a
+tiled roof, chimney and gutter; a wooden wedge on a lab bench.
 
 ### Into soft ground — `js/core/sink.js`
 

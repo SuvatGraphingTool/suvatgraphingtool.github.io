@@ -140,6 +140,9 @@ this library: *covered* names the one of the twelve that does it.
 | 104 | Edexcel | 6677/01 M1 | Jan 2005 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202005%20QP.pdf) | A stone on ice along ABC against a 0.3 N resistance, 20 then 16 m/s over 24 m; speed at C 30 m on; show m = 0.1 kg; the wall's 2.4 N s impulse, time back to rest | – | **built** → `back-off-the-boards` |
 | 105 | AQA | MM1B | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202012%20QP%20-%20M1%20AQA.pdf) | A cyclist freewheels down a slope, 4 to 10 m/s over 50 m: a, time; 70 kg: resultant force; the slope's angle with no resistance, then against 30 N | 9.8 | **built** → `freewheeling` |
 | 106 | CIE | 9709/41 | May/Jun 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | 0.8 kg projected at 12 m/s up a rough 10° plane, μ = 0.4: the acceleration; the distance up the plane to rest | 10 | **built** → `up-a-rough-slope` |
+| 109 | Edexcel | 6677/01 M1 | Jan 2013 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | An 800 kg lifeboat let go from rest down a 50 m ramp at 15°, 12.6 m/s at the end: the coefficient of friction | 9.8 | **built** → `down-a-rough-slope` |
+| 110 | Edexcel | 6677 M1 | Jan 2004 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A loose tile slides from rest down a 30° roof, μ = 0.4: its acceleration; its speed at the edge 3 m on; the acceleration for twice the mass | 9.8 | **built** → `down-a-rough-slope` |
+| 111 | Edexcel | 6677/01 M1 | Jan 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | (a), (b): 0.8 kg released from rest on a rough 30° plane moves 2.7 m in 3 s: its acceleration, μ ((c), held by a horizontal force, is equilibrium: out) | 9.8 | **built** → `down-a-rough-slope` |
 | 107 | Edexcel | 6677 M1 | Jan 2003 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | Ball projected up from 1.5 m above the ground, rising 25.6 m above its start: show u = 22.4; time to the ground; 0.6 kg sinks 2.5 cm into soft ground: the constant resistance | 9.8 | **built** → `into-soft-ground` |
 | 108 | Edexcel | 6677/01 M1 | Jun 2012 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | (c) only (the link is the combined M1 file, Jun 2012 inside it): 4 kg particle reaching soft ground at 28 m/s against a 5000 N resistance: how far it sinks ((a), (b) were already covered by `from-a-height`) | 9.8 | **built** → `into-soft-ground` |
 
@@ -443,6 +446,32 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `down-a-rough-slope` — Down a rough slope
+
+**Papers.** Edexcel 6677/01 M1 Jan 2013 Q4 (an 800 kg lifeboat let go from rest
+down a 50 m slipway at 15°, 12.6 m s⁻¹ at the end: μ = 0.100). Edexcel 6677 M1
+Jan 2004 Q3 (a tile from rest down a 30° roof, μ = 0.4: a = 1.51 m s⁻², 3.01 m s⁻¹
+at the edge 3 m on; the same a for twice the mass). Edexcel 6677/01 M1 Jan 2010
+Q5 (a), (b) (0.8 kg from rest on a 30° plane, 2.7 m in 3 s: a = 0.6 m s⁻²,
+μ = 0.507).
+
+**Why the twelve cannot, nor `up-a-rough-slope`.** None of the twelve has
+friction; `up-a-rough-slope` sends its particle up the slope, and never finds μ
+from the motion. Here it is let go from rest down the slope, and the papers go
+either way: from μ to the run, or from the run to μ.
+
+**How it is solved.** js/core/slide.js: with μ, R = m g cos α, F = μR and
+m g sin α − F = ma give a, then the twelve's solver does the run from rest. Without
+μ, two of the distance, time and end speed give a from rest, then
+m g sin α − μ m g cos α = ma gives μ.
+
+**The stage.** Three places, chosen in the values: a lifeboat station on a
+headland, its boathouse doors open on a concrete slipway on piles running into
+a moving sea, the lifeboat sliding down and splashing in at the end; a house,
+its tiled roof at the slope's angle, a loose tile sliding to the gutter; a
+wooden wedge on a lab bench with a block and a rubber stop. The run is marked
+under the slope, the angle at the foot, the forces on a card.
 
 ### `into-soft-ground` — Into soft ground
 

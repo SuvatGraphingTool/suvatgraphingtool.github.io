@@ -29,6 +29,7 @@ import { solveWall } from '../js/core/wall.js';
 import { solveHill } from '../js/core/hill.js';
 import { solveRough } from '../js/core/rough.js';
 import { solveSink, sinkWorking } from '../js/core/sink.js';
+import { solveSlide, slideWorking } from '../js/core/slide.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1476,7 +1477,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope', 'into-soft-ground']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope', 'into-soft-ground', 'down-a-rough-slope']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
@@ -1698,6 +1699,22 @@ group('CIE 9709/41 May/Jun 2017 Q2: up a rough slope', () => {
   { const z = solveRough({ u: 5, alpha: 30, mu: 0, m: 2, g: 9.8 }), strip = (x) => String(x).replace(/<[^>]+>/g, '');
     ok(z.ok && !/friction both/.test(z.notes[0]) && !z.notes.some((x) => /0\s*N\b/.test(strip(x)) && /friction/.test(x)) && !z.rows.some((r) => /0cos/.test(strip(r.s))), 'μ = 0: no friction in the words, no zero term in the working'); }
   ok(/A slope’s angle is between/.test(solveRough({ u: 12, alpha: 95, mu: 0.4 }).reason), 'an angle out of range is said as out of range, not as missing');
+});
+
+group('Edexcel M1 Jan 2013 Q4, Jan 2004 Q3, Jan 2010 Q5: down a rough slope', () => {
+  const boat = solveSlide({ look: 'slipway', alpha: 15, s: 50, v: 12.6, m: 800, g: 9.8 });
+  ok(boat.ok && near(boat.a, 1.5876, 1e-9) && near(boat.mu, 0.100, 0.0005), 'J13: from 12.6 m s⁻¹ after 50 m, a = 1.5876 and μ = 0.100', boat.reason);
+  const tile = solveSlide({ look: 'roof', alpha: 30, mu: 0.4, s: 3, g: 9.8 });
+  ok(tile.ok && near(tile.a, 1.51, 0.005) && near(tile.v, 3.01, 0.005), 'J04: a = 1.51 m s⁻², 3.01 m s⁻¹ at the edge');
+  ok(solveSlide({ look: 'roof', alpha: 30, mu: 0.4, s: 3, m: 2, g: 9.8 }).a === tile.a, 'J04 (c): the mass cancels');
+  const pt = solveSlide({ look: 'plane', alpha: 30, s: 2.7, t: 3, m: 0.8, g: 9.8 });
+  ok(pt.ok && near(pt.a, 0.6, 1e-9) && near(pt.mu, 0.507, 0.0005), 'J10: a = 0.6, μ = 0.507');
+  ok(near(pt.f.pos(pt.f.tMax), 2.7, 1e-9) && near(pt.f.vel(pt.f.tMax), 1.8, 1e-9), 'the motion ends 2.7 m down at 1.8 m s⁻¹');
+  ok(!solveSlide({ alpha: 30, mu: 0.6, s: 3 }).ok, 'μ at least tan α: it never starts to slide, and says so');
+  ok(!solveSlide({ alpha: 10, s: 5, t: 1 }).ok, 'faster than a smooth slope allows is refused');
+  ok(!solveSlide({ alpha: 30, mu: 0.2, s: 3, t: 2 }).ok && !solveSlide({ alpha: 30, s: 3 }).ok, 'too much or too little of the run is refused');
+  ok(solveSlide({ alpha: 30, s: 9.8, t: 2, g: 9.8 }).mu === 0, 'a run as fast as a smooth slope gives μ = 0');
+  ok(slideWorking(boat)[0].title.startsWith('From rest') && slideWorking(tile)[0].title.startsWith('Down the slope'), 'the working goes the way the paper goes');
 });
 
 group('Edexcel M1 Jan 2003 Q7 and Jun 2012 Q5: into soft ground', () => {
