@@ -122,6 +122,13 @@ function settle(x, words) {
   const out = { ...x, boxes: { ...b } };
   // "hits the water 2.5 s later. how deep is the well": a height of 0 with a time is the height asked
   if (b.h === 0 && b.t > 0) delete out.boxes.h;
+  // "the splash is HEARD 3 s later; the speed of sound is 340 m/s": that time is the fall and the
+  // sound back up together, never the fall alone (the engine splits them)
+  const c = /speed of sound[^.?!]*?(\d+(?:\.\d+)?)\s*m|(\d+(?:\.\d+)?)\s*m\s*\/?\s*s(?:\^?-1|⁻¹)?[^.?!]*\bsound\b/i.exec(text);
+  if (out.boxes.t > 0 && out.boxes.h == null && /\b(heard|hears|hear)\b/i.test(text) && c) {
+    out.boxes.heard = out.boxes.t; out.boxes.cSound = Number(c[1] ?? c[2]);
+    delete out.boxes.t;
+  }
   // an angle the question gave is kept: the engine then says, in words, that
   // from a well or a balloon it moves only straight up or down
   if ((b.place === 'well' || b.place === 'balloon') && b.u > 0 && b.theta !== 90 && b.theta !== -90 && !x.angleGiven) {

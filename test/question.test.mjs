@@ -716,6 +716,19 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(fapp.nth?.n === 5 && fapp.given.s == null && fapp.given.t == null, 'the page reads it, with no s or t of its own');
   ok(one('from-a-height', 'speed of projection')?.find === 'params.u' && one('from-a-height', 'speed as it hits the sea')?.find === 'vL', 'a speed of projection is the speed it is thrown with, never the speed it lands at');
   ok(one('arc', 'speed at the highest point')?.find === 'f.ux' && one('arc', 'range')?.find === 'f.range', 'the speed at the top is the horizontal part; "range" is a distance');
+  // round 11 (hand-written): a splash heard, and the same deceleration at twice the speed
+  const heardX = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'A stone is dropped into a well; the splash is heard 3 s later.', boxes: { place: 'well', u: 0, theta: -90, t: 3 } }, 'A stone is dropped into a well and the splash is heard 3 s later. Taking the speed of sound as 340 m/s, find the depth of the well.');
+  ok(heardX.boxes.heard === 3 && heardX.boxes.cSound === 340 && heardX.boxes.t == null, 'a splash heard 3 s later, sound at 340 m/s: the time heard, never the time of the fall');
+  const hv3 = HK.solve(HK.read({ ...heardX.boxes, g: 9.81 }));
+  ok(hv3.ok && Math.abs(hv3.h - 40.693) < 1e-3 && Math.abs(hv3.T - 2.88) < 1e-3, 'it falls for 2.88 s, and the well is 40.69 m deep (not 44.1)');
+  ok(toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'well', u: 0, theta: -90, t: 2.5 } }, 'a stone is dropped down a well and hits the water 2.5 s later').boxes.t === 2.5, 'with no sound in it, the time stays the fall');
+  ok(one('from-a-height', 'depth of the well')?.find === 'h', '"the depth of the well" is the height it starts from');
+  const { sceneOf } = await import('../js/parts/parts.js');
+  const cyc = { understood: true, scenario: 'road', summary: 'x', u: 6, v: 0, t: 3, words: 'A cyclist travelling at 6 m/s brakes uniformly and stops in 3 s. (b) If she had been travelling at twice the speed with the same deceleration, how far would she have travelled while braking?' };
+  const cb = sceneOf(cyc, { label: 'b', asks: 'distance at twice the speed, same deceleration', answer: 's', scene: { u: 12 } });
+  ok(cb.u === 12 && cb.a === -2 && cb.t == null && cb.v === 0, 'twice the speed, the same deceleration: the first motion’s rate, found by the engine, and not its time');
+  const cbs = solveRoad({ u: cb.u, v: cb.v, a: cb.a });
+  ok(cbs.ok && cbs.five.s.value === 36, 'so she brakes over 36 m, not 18');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

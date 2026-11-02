@@ -91,7 +91,7 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
 const STOP = new Set(['what', 'when', 'where', 'which', 'find', 'from', 'that', 'this', 'with', 'their', 'there', 'they', 'does', 'will', 'into', 'than', 'then', 'show', 'value', 'time', 'speed', 'height', 'distance', 'ball', 'particle']);
 
 // "how long is the ramp" is a distance; "how long until it lands" a time
-const HOW = [[/\bhow (high|tall|deep)\b/, 'height'], [/\brange\b/, 'distance'], [/\bhow far\b/, 'distance'], [/\bhow (fast|quickly)\b/, 'speed'],
+const HOW = [[/\bhow (high|tall|deep)\b|\bdepth\b/, 'height'], [/\brange\b/, 'distance'], [/\bhow far\b/, 'distance'], [/\bhow (fast|quickly)\b/, 'speed'],
   [/\bhow long (is|was) (the|a|an)\b/, 'distance'], [/\bhow long\b|\bhow many seconds\b/, 'time']];
 
 export function fromReader(id, raw, boxes = []) {

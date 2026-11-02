@@ -107,9 +107,20 @@ export function solveHeight(k0 = {}) {
   // diver, a car): "where the diver started", never "where it was thrown from"
   const place = PLACES[k.place] ? k.place : 'cliff', Pl = { ...PLACES[place], ...(BELOW[k.below] || {}), ...(k.from ? { from: k.from } : {}) };
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
+  const sRows = [];
+  // "the splash is heard 3 s later; sound at 340 m/s": the fall, t₁, and the sound
+  // back up, h/c, make the time heard. Straight down: h = ut₁ + ½gt₁² = c(T − t₁)
+  if (have(k.heard) && have(k.cSound) && !have(k.h) && !have(k.t)) {
+    const T = k.heard, c = k.cSound, uu = have(k.u) ? k.u : 0;
+    if (!(T > 0) || !(c > 0)) return fail('The time it is heard after, and the speed of sound, are both positive.');
+    if (have(k.theta) && Math.abs(k.theta + 90) > 1e-9 && !(uu === 0)) return fail('Timed by its sound, it falls straight down: give the angle as −90, or let it go from rest.');
+    // ½g t₁² + (u + c) t₁ − cT = 0, the positive root
+    const t1 = snap((-(uu + c) + Math.sqrt((uu + c) ** 2 + 2 * k.g * c * T)) / k.g);
+    sRows.push({ f: M`h = ut_1 + ½gt_1^2 = c(T - t_1)`, s: M`${d(uu)}t_1 + ½ * ${d(k.g)}t_1^2 = ${d(c)}(${d(T)} - t_1)`, r: M`t_1 = ${d(t1)} [s]` });
+    k = { ...k, t: t1, theta: -90, u: uu };
+  }
   // "lands 50 m from the foot of the cliff: find the height": how far out it
   // lands and the launch give the time in the air, t = s/(u cos θ), and that the height
-  const sRows = [];
   if (!have(k.h) && !have(k.t) && have(k.s) && k.s > 0 && have(k.u) && k.u > 0 && have(k.theta) && Math.abs(Math.abs(k.theta) - 90) > 1e-9) {
     const tt = snap(k.s / (k.u * Math.cos(k.theta * Math.PI / 180)));
     sRows.push({ f: M`t = s/(u cos theta)`, s: M`${d(k.s)}/(${d(k.u)} cos ${d(k.theta)}°)`, r: M`t = ${d(tt)} [s]` });

@@ -42,6 +42,10 @@ export const height = {
     { title: 'What the paper asks', fields: [
       { key: 'level', label: 'When is it this high above the throw? (m)', given: 'Height asked about, above the throw (m)', aria: 'When is it this height above where it was thrown from (m)', placeholder: '—', hint: 'Negative for below it.' },
     ] },
+    { title: 'Heard, not seen: a splash timed by its sound', fields: [
+      { key: 'heard', label: 'Splash heard after (s)', aria: 'The splash is heard this long after it is let go (s)', placeholder: '—', hint: 'The fall and the sound coming back up, together. In place of the time in the air.' },
+      { key: 'cSound', label: 'Speed of sound (m s⁻¹)', aria: 'The speed of sound (m s⁻¹)', placeholder: '—', hint: 'As the paper gives it: 340, 330 …' },
+    ] },
   ],
   g: [9.8, 9.81, 10],
   hides: { shows: ['ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
@@ -49,7 +53,7 @@ export const height = {
   /** Resolve: a throw straight up or down is one line, its a the engine's g. */
   resolveG: true,
   read(vals) {
-    return { place: vals.place, h: vals.h, theta: vals.theta, u: vals.u, v: vals.v, s: vals.s, t: vals.t, tTop: vals.tTop, level: vals.level, g: vals.g };
+    return { place: vals.place, h: vals.h, theta: vals.theta, u: vals.u, v: vals.v, s: vals.s, t: vals.t, tTop: vals.tTop, level: vals.level, heard: vals.heard, cSound: vals.cSound, g: vals.g };
   },
   solve: solveHeight,
   working: (solved, t) => {

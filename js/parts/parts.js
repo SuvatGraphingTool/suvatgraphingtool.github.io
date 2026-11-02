@@ -7,6 +7,9 @@
 // format is in design/components.md, "A question in parts".
 
 /** The parts that are in scope, in order — an `out` part has no answer. */
+import { toApp } from '../core/question.js';
+import { solveRoad } from '../core/road.js';
+
 export const live = (parts) => (parts || []).filter((p) => !p.out);
 
 /** `(a)`, `(ii)`. */
@@ -149,6 +152,14 @@ export function sceneOf(x, p) {
   if (sc.scenario || sc.library) return { ...sc, ...(sc.library && !sc.scenario ? { scenario: 'library' } : {}), ...base };
   const top = { ...x };
   for (const k of ['parts', 'summary', 'note', 'example']) delete top[k];
+  // "at twice the speed, with the same deceleration": the rate the engine found for the
+  // first motion, not its time — the time is what changes
+  if (top.scenario === 'road' && /\bsame (de|ac)celeration\b|\bsame (rate|braking)\b/i.test(`${p.asks || ''} ${x.words || ''}`)
+      && ('u' in sc || 'v' in sc) && !('a' in sc) && !('t' in sc)) {
+    const r = toApp(top), g = r.ok ? r.given : null;
+    const first = g ? solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t }) : null;
+    if (first?.ok) { delete top.t; delete top.s; return { ...top, a: first.params.a, ...sc, ...base }; }
+  }
   if (top.scenario === 'library') return { ...top, ...base, boxes: { ...(top.boxes || {}), ...(sc.boxes || sc) } };
   if (top.scenario === 'compose') return { ...top, ...base, recipe: { ...top.recipe, numbers: { ...(top.recipe?.numbers || {}), ...(sc.numbers || sc) } } };
   return { ...top, ...sc, ...base };
