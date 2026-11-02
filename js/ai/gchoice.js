@@ -1,11 +1,13 @@
 // ai/gchoice.js — the g a student chooses, for questions that give none.
 //
-// The user, 2 Nov: "before they show the values, there should be a button to
-// choose gravity … 9.81 and 9.8 and 10, and then just a text box". A paper
-// that states g is read with its own; one that does not takes this choice —
-// in place of Earth's 9.81 and of the Edexcel rule (worker/src/place.js). The
-// choice is the viewer's own, kept in this browser only (localStorage), and
-// the reply says where each g came from. Nothing here calculates (rule 4).
+// The user, 2 Nov: "the AI should ask for gravity right there when it says
+// Show me the flight, in the chat … some questions have nothing to do with
+// gravity". So the reply asks — 9.81, 9.8, 10, or a box — and only when the
+// motion uses g and the question gives none. A paper that states g is read
+// with its own; one that does not takes the student's choice, in place of
+// Earth's 9.81 and of the Edexcel rule (worker/src/place.js). The last choice
+// is kept in this browser (localStorage) and is the one pressed next time.
+// Nothing here calculates (rule 4).
 
 import { M } from '../notation.js';
 
@@ -49,48 +51,26 @@ export function withChosenG(x, g) {
   return stated(x.g) ? x : { ...x, g, gFrom: 'choice' };
 }
 
+/** Whether the question itself states g: a g the reader read, never one a rule or a choice put there. */
+export function gStated(x) {
+  if (!x || typeof x !== 'object' || x.gFrom) return false;
+  const v = x.scenario === 'library' ? x.boxes?.g : x.scenario === 'compose' ? x.recipe?.numbers?.g : x.g;
+  return typeof v === 'number' && v > 0;
+}
+
 /**
- * The button in the Ask Suvat box and its popover: three chips and a box for
- * any other value. `onChange(g)` hears each new choice.
+ * The question in the reply, beside "Show me the flight": which g? Three chips
+ * and a box. `ask` is { g, from } — the g the reply was worked with, and where it
+ * came from ('choice', 'Edexcel', or '' for Earth's, assumed).
  */
-export function initGChooser({ onChange } = {}) {
-  const btn = document.getElementById('ask-g'), pop = document.getElementById('ask-gpop');
-  if (!btn || !pop) return { get: () => loadG() };
-  const input = document.getElementById('ask-g-in'), err = document.getElementById('ask-g-err');
-  const chips = pop.querySelector('.ask-g-chips');
-  let chosen = loadG();
-  chips.innerHTML = G_CHIPS.map((v) => `<button type="button" class="chip" data-g="${v}">${v}</button>`).join('');
-  function sync() {
-    const v = chosen ?? 9.81;
-    document.getElementById('ask-g-v').textContent = String(v);
-    btn.setAttribute('aria-label', `g, when the question gives none: ${v} m s⁻²${chosen == null ? ', Earth’s, until you choose' : ''}`);
-    btn.dataset.chosen = String(chosen != null);
-    for (const c of chips.querySelectorAll('.chip')) c.setAttribute('aria-pressed', String(chosen != null && Number(c.dataset.g) === chosen));
-    if (chosen != null && !G_CHIPS.includes(chosen)) input.value = String(chosen);
-  }
-  function choose(v) {
-    chosen = v; saveG(v); err.hidden = true; sync(); onChange?.(v);
-  }
-  function open(on) {
-    pop.hidden = !on; btn.setAttribute('aria-expanded', String(on));
-    if (on) (chips.querySelector('[aria-pressed="true"]') || chips.querySelector('.chip'))?.focus();
-  }
-  btn.innerHTML = `<span class="m-lb">${M`g`} <b id="ask-g-v"></b></span>`;
-  btn.addEventListener('click', () => open(pop.hidden));
-  chips.addEventListener('click', (e) => {
-    const c = e.target.closest('.chip');
-    if (c) { input.value = ''; choose(Number(c.dataset.g)); open(false); btn.focus(); }
-  });
-  const typed = () => {
-    if (!input.value.trim()) { err.hidden = true; return; }
-    const v = parseG(input.value);
-    if (v == null) { err.textContent = 'g is a positive number, such as 9.78.'; err.hidden = false; return; }
-    choose(v);
-  };
-  input.addEventListener('change', typed);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); typed(); if (err.hidden) { open(false); btn.focus(); } } });
-  document.addEventListener('pointerdown', (e) => { if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) open(false); });
-  pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') { open(false); btn.focus(); } });
-  sync();
-  return { get: () => chosen };
+export function gAskHTML(ask) {
+  if (!ask) return '';
+  const mine = ask.from === 'choice';
+  const note = mine ? 'your choice' : ask.from === 'Edexcel' ? 'assumed · Edexcel’s 9.8' : 'assumed · Earth’s 9.81';
+  const chips = G_CHIPS.map((v) => `<button type="button" class="chip" data-g="${v}" aria-pressed="${v === ask.g}">${v}</button>`).join('');
+  const other = G_CHIPS.includes(ask.g) ? '' : String(ask.g);
+  return `<div class="ask-gq" role="group" aria-label="Which g? The question gives none">
+    <span class="ask-gq-h">Which ${M`g`}?</span>${chips}
+    <input class="ask-gq-in" type="text" inputmode="decimal" autocomplete="off" placeholder="other" value="${other}" aria-label="Another value of g, in metres per second squared">
+    <span class="ask-gq-note">${note}</span><span class="ask-gq-err" role="alert" hidden>g is a positive number, such as 9.78.</span></div>`;
 }

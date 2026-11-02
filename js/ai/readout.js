@@ -16,7 +16,7 @@ export function esc(s) {
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-const HOW = { given: 'in the question', worked: 'worked out', assumed: 'assumed', chosen: 'your choice', paper: 'Edexcel’s value for the paper' };
+const HOW = { given: 'in the question', worked: 'worked out', assumed: 'assumed', chosen: 'your choice', paper: 'assumed · Edexcel’s value' };
 
 /** One value, as maths. */
 function valueHTML(it) {

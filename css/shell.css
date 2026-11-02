@@ -993,28 +993,15 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
   .pin:has(.pchips > :nth-child(5)) .pgo { grid-column: 1 / -1; grid-row: 3; }
 }
 
-/* ── g, for a question that gives none (js/ai/gchoice.js) ─────────────────
-   A tool like the others in the box; its popover is frosted glass, its
-   chips the app's own. Monochrome: the choice is pressed in ink. */
-.ask-g { position: relative; display: inline-flex; }
-/* its label is all it has, so it always shows — the other tools show theirs pressed */
-.ask-g #ask-g .m-lb { display: inline-flex; align-items: baseline; gap: 4px; font-size: max(13px, var(--fs-sm)); max-width: none; opacity: 1; }
-.ask-g #ask-g[aria-expanded='true'] { background: var(--hover); color: var(--ink); }
-.ask-g #ask-g b { font-weight: 600; font-variant-numeric: tabular-nums; }
-.ask-g #ask-g[data-chosen='false'] b { color: var(--ink-muted); font-weight: 500; }
-.ask-gpop {
-  position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 30; width: max-content; max-width: min(300px, 86vw);
-  padding: var(--sp-3); border: 1px solid var(--border); border-radius: var(--r-lg);
-  background: var(--frost); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  box-shadow: var(--shadow-lg); display: grid; gap: var(--sp-2); font-size: max(13px, var(--fs-sm));
-}
-.ask-gpop[hidden] { display: none; }
-.ask-gpop-h { margin: 0; color: var(--ink-muted); font-size: 13px; }
-.ask-g-chips { display: flex; gap: var(--sp-2); }
-.ask-g-chips .chip { font-variant-numeric: tabular-nums; min-width: 52px; }
-.ask-g-other { display: flex; align-items: center; gap: var(--sp-2); color: var(--ink-muted); font-size: 13px; }
-.ask-g-other input { width: 7ch; min-height: 32px; padding: 4px 8px; font: inherit; font-size: 13px; color: var(--ink);
+/* ── g, asked in the reply when the question gives none (js/ai/gchoice.js) ──
+   A row above "Show me the flight": the chips are the app's own, the choice
+   pressed in ink; the note says where the g in the answers came from. */
+.ask-acts:has(.ask-gq) { flex-wrap: wrap; }
+.ask-gq { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); font-size: 13px; color: var(--ink-muted); }
+.ask-gq-h { color: var(--ink); font-size: max(13px, var(--fs-sm)); }
+.ask-gq .chip { font-variant-numeric: tabular-nums; min-width: 48px; }
+.ask-gq-in { width: 7ch; min-height: 32px; padding: 4px 8px; font: inherit; font-size: 13px; color: var(--ink);
   background: var(--input); border: 1px solid var(--border); border-radius: var(--r-md); }
-.ask-g-other input:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
-.ask-g-err { margin: 0; color: var(--bad); font-size: 13px; }
-@media (max-width: 480px) { .ask-gpop { left: auto; right: -60px; } }
+.ask-gq-in:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.ask-gq-in[aria-invalid='true'] { border-color: var(--bad); }
+.ask-gq-err { flex-basis: 100%; color: var(--bad); }

@@ -568,5 +568,24 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(toPlace({ understood: true, scenario: 'library', library: 'two-on-a-road', summary: 'x', boxes: { 'A.u': 30, 'A.a': -2, 'A.V': 10, 'B.u': 20 } }, '').boxes['A.V'] === 10, 'a speed it slows to that the question gives is kept');
 }
 
+// THE USER, 2 Nov: "the AI should ask for gravity right there when it says Show me the flight … some questions have nothing to do with gravity"
+{
+  const { gStated, gAskHTML } = await import('../js/ai/gchoice.js');
+  const { KITS } = await import('../js/kits/index.js');
+  // 1 · a motion under gravity, no g in the question: asked
+  ok(!gStated({ understood: true, scenario: 'up', u: 20 }) && !gStated({ understood: true, scenario: 'library', library: 'bounce', boxes: { h: 2 } }), 'no g in the question: it is not stated, so the reply may ask');
+  const html = gAskHTML({ g: 9.81, from: '' });
+  ok(/Which/.test(html) && (html.match(/class="chip"/g) || []).length === 3 && /aria-pressed="true">9\.81/.test(html) && /assumed · Earth’s 9\.81/.test(html) && /ask-gq-in/.test(html), 'the question: 9.81, 9.8, 10 and a box, with 9.81 pressed and said to be assumed');
+  ok(/aria-pressed="true">9\.8</.test(gAskHTML({ g: 9.8, from: 'choice' })) && /your choice/.test(gAskHTML({ g: 9.8, from: 'choice' })), 'the last choice is pressed, and said to be theirs');
+  ok(/assumed · Edexcel’s 9\.8/.test(gAskHTML({ g: 9.8, from: 'Edexcel' })) && /value="9\.78"/.test(gAskHTML({ g: 9.78, from: 'choice' })), 'an Edexcel paper’s 9.8 is assumed; a value of their own sits in the box');
+  // 2 · g stated in the question: not asked — but a rule's 9.8 or a choice is not the question's
+  ok(gStated({ understood: true, scenario: 'up', u: 20, g: 10 }) && gStated({ understood: true, scenario: 'library', library: 'bounce', boxes: { g: 9.8 } }) && gStated({ understood: true, scenario: 'compose', recipe: { numbers: { g: 9.8 } } }), 'a g the question states: never asked');
+  ok(!gStated({ understood: true, scenario: 'library', library: 'bounce', boxes: { g: 9.8 }, gFrom: 'Edexcel' }) && !gStated({ understood: true, scenario: 'up', g: 9.8, gFrom: 'choice' }), 'Edexcel’s rule or an earlier choice is not the question stating it');
+  // 3 · gravity-free motion: the kit says so — a lift, two on a road, a journey, vectors, a graph to read
+  ok(['lift', 'lanes', 'journey', 'plane', 'vtgraph', 'xtgraph', 'twotrains'].every((k) => KITS[k] && !KITS[k].g), 'a lift, two on a road, a journey, i and j, a graph read: no g in the kit, so never asked');
+  ok(['height', 'bounce', 'pair', 'target', 'rocket'].every((k) => KITS[k]?.g), 'a fall, a bounce, two in a vertical line, a projectile, a firework: g in the kit, so asked when not stated');
+  ok(gAskHTML(null) === '', 'nothing asked, nothing shown');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

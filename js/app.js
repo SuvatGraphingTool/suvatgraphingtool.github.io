@@ -37,7 +37,7 @@ import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML, resultsHTML, esc } from './ai/readout.js';
-import { initGChooser, withChosenG } from './ai/gchoice.js';
+import { withChosenG, gStated, loadG, saveG } from './ai/gchoice.js';
 import { walk, stepOf, labelOf, ownScene, sceneOf } from './parts/parts.js';
 import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML, askHTML, answerHTML } from './parts/strip.js';
 import { answerOf } from './parts/parts.js';
@@ -3332,13 +3332,38 @@ for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) 
 let heard = '';
 /** Whose g the reading took, when a paper's rubric gave it: 'Edexcel' (9.8), or ''. */
 let gFrom = '';
+/** The question last read, as the reader gave it — to read again with another g. */
+let lastRead = null;
 function applyReading(x, opts) {
-  // the student's own g, where the question gives none (js/ai/gchoice.js)
-  if (!opts?.part) x = withChosenG(x, gChooser.get());
+  const raw = x;
+  // the student's g, where the question gives none: the one just picked in the
+  // reply, else the last one they chose (js/ai/gchoice.js)
+  if (!opts?.part) { x = withChosenG(x, opts?.g ?? loadG()); lastRead = { raw, opts: { ...opts, g: undefined } }; }
   if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? opts.words : '';
   if (!opts?.part) gFrom = typeof x?.gFrom === 'string' ? x.gFrom.slice(0, 20) : '';
   stayPut = true;
-  try { return readInto(x, opts); } finally { stayPut = false; }
+  let r;
+  try { r = readInto(x, opts); } finally { stayPut = false; }
+  if (r?.ok && !opts?.part) r.gAsk = gAskOf(raw);
+  return r;
+}
+/**
+ * Whether the reply asks which g: only when the motion uses g — the engine's
+ * kit offers a g, or it is one of the twelve but the road — and the question
+ * did not state one. Then: the g it was worked with, and where that came from.
+ */
+function gAskOf(raw) {
+  if (!traj || !solved?.ok || gStated(raw)) return null;
+  const uses = kit() ? !!kit().g : !scenario?.road;
+  if (!uses) return null;
+  const g = kit() ? state.kit.g : state.given.g;
+  return typeof g === 'number' && g > 0 ? { g, from: gFrom } : null;
+}
+/** "Which g?" answered in the reply: remembered, and the question read again with it. */
+function gravity(g) {
+  if (!lastRead || !(g > 0)) return null;
+  saveG(g);
+  return applyReading(lastRead.raw, { ...lastRead.opts, g });
 }
 
 /* A QUESTION WHOSE PARTS NEED SET-UPS OF THEIR OWN. "(b) The stone is now
@@ -3518,7 +3543,7 @@ function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = t
       }
     }
     const how = f.key === 'g' && gFrom === 'choice' ? 'your choice'
-      : f.key === 'g' && gFrom ? `${esc(gFrom)}’s value for the paper`
+      : f.key === 'g' && gFrom ? `assumed · ${esc(gFrom)}’s value`
       : f.key === 'g' && gAssumed ? 'assumed · on Earth'
       : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given'
       : f.key === 'u' && atRest ? 'assumed · no speed was given'
@@ -3531,8 +3556,8 @@ function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = t
   // g, which no kit lists among its boxes: Earth's, assumed; a paper's rubric's; or read
   const g = state.kit.g;
   if (usesG && !fields.some((f) => f.key === 'g') && (gAssumed || (typeof g === 'number' && g > 0))) {
-    const how = gFrom === 'choice' ? 'your choice' : gFrom ? `${esc(gFrom)}’s value for the paper` : gAssumed ? 'assumed · on Earth' : example ? 'from the paper' : 'in the question';
-    rows.push(`<li class="ro-row" data-how="${gAssumed && !gFrom ? 'assumed' : 'given'}"><span class="ro-val">${M`g = ${num(gAssumed ? 9.81 : g, 2, { trim: true })} [m s^-2]`}</span><span class="ro-how">${how}</span></li>`);
+    const how = gFrom === 'choice' ? 'your choice' : gFrom ? `assumed · ${esc(gFrom)}’s value` : gAssumed ? 'assumed · on Earth' : example ? 'from the paper' : 'in the question';
+    rows.push(`<li class="ro-row" data-how="${gFrom && gFrom !== 'choice' ? 'assumed' : gAssumed && !gFrom ? 'assumed' : 'given'}"><span class="ro-val">${M`g = ${num(gAssumed ? 9.81 : g, 2, { trim: true })} [m s^-2]`}</span><span class="ro-how">${how}</span></li>`);
   }
   return rows.length ? `<ul class="ro-list">${rows.join('')}</ul>` : '';
 }
@@ -3672,11 +3697,11 @@ function showFlight() {
     reveal($('canvas-wrap'), scenario.recipe).then(() => runFlight());
   } else launch();
 }
-const gChooser = initGChooser();
 const ask = createAsk({
   apply: applyReading,
   run: showFlight,
   scene: (id) => (/^part:-?\d+$/.test(id) ? openPart(parseInt(id.slice(5), 10)) : showScene(id)),
+  gravity,
   edit: () => go('values'),
   show: go,
 });
@@ -3696,7 +3721,7 @@ $('ask-top').addEventListener('click', () => ask.open());
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
-                 openAskAt, closeAskAt, easeAngle, applyReading, get board() { return board; },
+                 openAskAt, closeAskAt, easeAngle, applyReading, gravity, get board() { return board; },
                  redraw() { recompute(); draw(); }, showPart,
                  /** Compose a scene from a recipe, as the reader would: SUVAT.compose({ backdrop, engine, objects, numbers, parts }). */
                  compose(recipe, parts = recipe?.parts) {

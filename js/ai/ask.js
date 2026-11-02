@@ -17,6 +17,7 @@
 import { prepareImage, readQuestion, readText, READER } from './capture.js';
 import { esc, proseHTML, sourcesHTML } from './readout.js';
 import { typeOut } from './typewriter.js';
+import { gAskHTML, parseG } from './gchoice.js';
 
 const $ = (id) => document.getElementById(id);
 const PDF_MAX = 4_000_000;          // the Worker's own limit, checked here first
@@ -28,8 +29,9 @@ const TXT_MAX = 2_000;
  * @param o.edit()  go to the values screen instead
  * @param o.show(step)  go to a screen — 'chat' is this one's
  * @param o.scene(id)  a part's own composed scene, on the stage (js/compose/)
+ * @param o.gravity(g)  the question read again with that g → the same as apply's answer
  */
-export function createAsk({ apply, run, edit, show, scene }) {
+export function createAsk({ apply, run, edit, show, scene, gravity }) {
   const form = $('ask-form'), text = $('ask-text'), send = $('ask-send');
   const thread = $('ask-thread'), scroller = $('chat-scroll');
   const composer = $('ask-composer');
@@ -295,18 +297,53 @@ export function createAsk({ apply, run, edit, show, scene }) {
     // Typeset maths arrives as markup, so it goes in with innerHTML (rule 1).
     // EVERY READING THAT RUNS CAN BE VIEWED (the user, 1 Nov): the buttons no
     // longer hang on the Graph switch, which only decides whether the graphs open.
+    // Which g? Asked here, beside the flight, only when the motion uses g and the
+    // question gave none (js/ai/gchoice.js); never before a question is asked.
     const acts = r.runnable || modes.graph
-      ? `<div class="ask-acts">
+      ? `<div class="ask-acts">${gAskHTML(r.gAsk)}
         <button type="button" class="fire sm ask-run"${r.runnable ? '' : ' disabled'}>${r.composed ? 'Show me the scene' : 'Show me the flight'}</button>
         <button type="button" class="ghost sm ask-edit">${r.runnable ? 'Check the values' : 'Add the missing values'}</button>
       </div>`
       : '';
     // The box keeps the focus, as in any chat: the next question is the
     // likelier next thing than the flight.
-    reply(r.html, { acts, before(node) {
+    const wireScenes = (el) => { for (const b of el.querySelectorAll('.ask-scene')) b.addEventListener('click', () => scene?.(b.dataset.id)); };
+    reply(`<div class="ask-body">${r.html}</div>`, { acts, before(node) {
       node.querySelector('.ask-run')?.addEventListener('click', run);
       node.querySelector('.ask-edit')?.addEventListener('click', edit);
-      for (const b of node.querySelectorAll('.ask-scene')) b.addEventListener('click', () => scene?.(b.dataset.id));
+      wireScenes(node);
+      const gq = node.querySelector('.ask-gq');
+      if (!gq) return;
+      // a g picked: the question read again with it, and this reply's answers,
+      // values and working replaced where they stand — no new message
+      const pick = (g) => {
+        const again = gravity?.(g);
+        if (!again?.ok) return;
+        typing?.finish();
+        const body = node.querySelector('.ask-body');
+        body.innerHTML = again.html;
+        wireScenes(body);
+        const fresh = document.createElement('div');
+        fresh.innerHTML = gAskHTML(again.gAsk);
+        const now = fresh.firstElementChild;
+        if (now) { gq.querySelectorAll('.chip').forEach((c, i) => c.setAttribute('aria-pressed', now.querySelectorAll('.chip')[i].getAttribute('aria-pressed')));
+          gq.querySelector('.ask-gq-note').textContent = now.querySelector('.ask-gq-note').textContent; }
+        node.querySelector('.ask-run')?.toggleAttribute('disabled', !again.runnable);
+      };
+      const box = gq.querySelector('.ask-gq-in'), err = gq.querySelector('.ask-gq-err');
+      gq.addEventListener('click', (e) => {
+        const c = e.target.closest('.chip');
+        if (c) { box.value = ''; box.removeAttribute('aria-invalid'); err.hidden = true; pick(Number(c.dataset.g)); }
+      });
+      const typed = () => {
+        if (!box.value.trim()) return;
+        const g = parseG(box.value);
+        box.toggleAttribute('aria-invalid', g == null); if (g == null) box.setAttribute('aria-invalid', 'true');
+        err.hidden = g != null;
+        if (g != null) pick(g);
+      };
+      box.addEventListener('change', typed);
+      box.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); typed(); } });
     } });
     // A scene composed for this question is what they asked to see: the stage
     // opens on it straight away, behind its veil (js/compose/reveal.js), and
