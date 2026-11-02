@@ -48,7 +48,7 @@ export function solveTrip(k = {}) {
   const open = S.filter((s) => !have(s.t));
   if (open.length > 2) return fail('At most two segment times can be left to the engine: one fixed by where it ends, one by the total time.');
   const back = have(k.back) ? Math.round(k.back) : null;
-  if (back != null && !(back >= 1 && back <= S.length)) return fail(`There is no segment ${back} to come back to.`);
+  if (back != null && !(back >= 1 && back <= S.length)) return fail(`There is no segment ${num(back, 0)} to come back to.`);
 
   // which open time does which condition fix?
   const moving = open.filter((s) => Math.abs(s.v0) + Math.abs(s.v1) > EPS), resting = open.filter((s) => !(Math.abs(s.v0) + Math.abs(s.v1) > EPS));

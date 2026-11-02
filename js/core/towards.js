@@ -30,6 +30,7 @@ export function solveTowards(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   const g = k.g;
   if (!have(g)) return fail('Choose the value of g the paper uses.');
+  if (!(g > 0)) return fail('g is the size of the acceleration due to gravity: a positive number.');
   const P = {};
   for (const n of ['A', 'B']) {
     const q = k[n] || {};

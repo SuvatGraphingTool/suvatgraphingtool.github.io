@@ -86,7 +86,7 @@ export const clears = {
         <div class="ph-row" role="row" data-key="first">
           <span role="cell">${cell(s.theta)}</span><span role="cell">${cell(s.u)}</span><span role="cell">${cell(s.a)}</span>
           <span role="cell">${cell(s.Hmax)}</span><span role="cell">${cell(s.T)}</span><span role="cell">${cell(s.R * s.a)}</span></div>
-        <p class="ph-units">${M`theta`} in degrees; ${M`u`} in ${M`[m s^-1]`}; ${M`a`} in ${M`[m]`}; the greatest height ${M`H`}, which is ${M`${ka(s.c * s.tan * s.tan / 2)}`}, in ${M`[m]`}; where it lands, from O, in ${M`[m]`}; ${M`t`}, the time in the air, in ${M`[s]`}.</p>
+        <p class="ph-units">${M`theta`} in degrees; ${M`u`} in ${M`[m s^-1]`}; ${M`a`} in ${M`[m]`}; the greatest height ${M`H`}, which is ${M`${ka(s.hc)}`}, in ${M`[m]`}; where it lands, from O, in ${M`[m]`}; ${M`t`}, the time in the air, in ${M`[s]`}.</p>
       </div>`;
     return {
       eyebrow: `Just clears, then lands`,

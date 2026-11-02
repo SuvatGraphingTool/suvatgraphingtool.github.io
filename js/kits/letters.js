@@ -40,7 +40,7 @@ export const letters = {
   resolveUnits: (f) => (f.num ? null : [`× ${T`U^2/g`}`, '× U', '× g', `× ${T`U/g`}`]),
 
   hud(f, t) {
-    const u = f.num ? ['m', 'm s⁻¹', 's'] : ['× U²/g', '× U', '× U/g'];
+    const u = f.num ? ['m', 'm s⁻¹', 's'] : [`× ${T`U^2/g`}`, '× U', `× ${T`U/g`}`];
     return {
       left: [
         { k: 'P’s height', v: num(f.yP(t), 3), unit: u[0], hue: 'disp' },
@@ -53,8 +53,8 @@ export const letters = {
 
   /* Vertical: solid (rule 2). Without numbers, in units of U/g, U²/g and U. */
   graphs(f, t, P) {
-    const u = f.num ? ['m', 'm s⁻¹', 'm s⁻²'] : ['× U²/g', '× U', '× g'];
-    const nt = f.num ? '' : ' (t × U/g)';
+    const u = f.num ? ['m', 'm s⁻¹', 'm s⁻²'] : [`× ${T`U^2/g`}`, '× U', '× g'];
+    const nt = f.num ? '' : ` (t × ${T`U/g`})`;
     return [
       { canvas: 'g-s', title: `Height–time${nt}`, unit: u[0], tMax: f.tMax, t, points: f.tc != null ? [{ t: f.tc, y: f.yc, color: P.mark }] : [],
         series: [{ label: 'P', tag: 'P', fn: f.yP, color: P.disp, dash: null }, { label: 'Q', tag: 'Q', fn: f.yQ, color: P.second, dash: null }] },

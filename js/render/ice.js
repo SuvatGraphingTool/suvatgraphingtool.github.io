@@ -125,7 +125,7 @@ export function render(canvas, cam, o) {
     arrow(g, x + r + 2, cy - r - 10, x + r + 2 + len, cy - r - 10, { color: P.vel, width: 2.6, head: 10, dash: [6, 4] });
     L.add(T`${s3(v)} [m s^-1]`, x + r + 8 + len, cy - r - 10, { color: P.vel, pri: 8, size: 14, weight: 700, align: 'left' });
   }
-  if (t < f.tMax - 1e-9) {   // the deceleration is what the scene is about: always shown
+  if (f.acc(t) !== 0) {   // the deceleration is what the scene is about: always shown while it acts
     arrow(g, x - r - 2, cy + r + 10, x - r - 2 - 46, cy + r + 10, { color: P.acc, width: 2.2, head: 9, dash: [6, 4] });
     L.add(f.scaled ? T`${s3(f.a)} [m s^-2]` : T`a`, x - r - 54, cy + r + 10, { color: P.acc, pri: 6, size: 13, weight: 700, align: 'right' });
   }

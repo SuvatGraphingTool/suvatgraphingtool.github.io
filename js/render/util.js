@@ -556,10 +556,13 @@ export function sig3(x) {
     on a laptop, 182 × 55 every 63 px under 520 px wide, 16 px in. The clock
     has the Resolve button beside it on every stage: 256 px together, or
     stacked under 520 px (css/shell.css). */
+/** Whether the clock and the Resolve button stack: the viewport's width decides,
+    as css/shell.css does — not the canvas's, which the options column narrows. */
+const stacked = () => (typeof matchMedia === 'function' ? matchMedia('(max-width: 520px)').matches : false);
 export function hudBoxes(w, rows = 3) {
   const phone = w < 520, bw = phone ? 182 : 218, step = phone ? 63 : 72;
   return [
     { x: 0, y: 0, w: 16 + bw + 8, h: 16 + step * Math.max(1, rows) },
-    phone ? { x: w - 148, y: 0, w: 148, h: 136 } : { x: w - 280, y: 0, w: 280, h: 88 },
+    stacked() ? { x: w - 148, y: 0, w: 148, h: 136 } : { x: w - 280, y: 0, w: 280, h: 88 },
   ];
 }

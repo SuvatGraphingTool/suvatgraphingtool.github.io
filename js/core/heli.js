@@ -135,7 +135,7 @@ export function solveHeli(k = {}) {
     rows.push({ f: '', s: '', r: ts.length ? ts.map((t) => M`t = ${d(t)} [s]`).join(' or ') : 'no time after it sets off' });
     for (const t of ts) rows.push({ f: M`${o} = ${o}_0 + u_${o} t + ½a_${o} t^2`, s: M`${d(r0[o])} + ${sb(u[o])} * ${d(t)} + ${sb(a[o] / 2)} * ${d(t)}^2`, r: M`${o} = ${d(snap(at(t)))}${agree(t) ? '' : ` != ${d(P[o])}`}` });
     if (hit == null) {
-      answers.P = { P, over: false, times: ts };
+      answers.P = { P, over: false, times: ts, gaps: ts.map((t) => snap(at(t) - P[o])), along: o };
       const atStart = Math.hypot(r0.x - P.x, r0.y - P.y) < 1e-9;
       notes.push(atStart && !ts.length ? 'It is over the rock only at the start, at the moment it sets off, and never comes back over it.'
         : ts.length ? `It is level with the rock ${word} at ${ts.map((t) => M`t = ${d(t)} [s]`).join(' and ')}, but ${ts.length > 1 ? 'each time' : 'then'} it is somewhere else the other way: it never passes directly over it.`
@@ -148,7 +148,7 @@ export function solveHeli(k = {}) {
       const straight = Math.abs(L - D0) <= 1e-6 * Math.max(1, L);
       // and if not: it turned back along its line, or its path curves
       const cross = u.x * a.y - u.y * a.x, back = !rest && A > EPS && Math.abs(cross) <= 1e-9 * Math.max(1, Math.hypot(u.x, u.y) * A);
-      answers.P = { P, over: true, t: T, times: ts, hits, disp, av, avs, L, sp, straight };
+      answers.P = { P, over: true, t: T, times: ts, hits, disp, av, avs, L, sp, straight, gaps: ts.map((t) => snap(at(t) - P[o])), along: o };
       rows.push({ f: M`"average velocity" = "displacement"/"time"`, s: M`${vb(disp)}/${d(T)}`, r: M`${vsrc(av)} [m s^-1]` });
       rows.push({ f: M`abs("average velocity")`, s: M`sqrt(${sb(av.x)}^2 + ${sb(av.y)}^2)`, r: M`${d(avs)} [m s^-1]` });
       rows.push({ f: M`"average speed" = "distance travelled"/"time"`, s: M`${d(L)}/${d(T)}`, r: M`${d(sp)} [m s^-1]` });

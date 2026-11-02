@@ -96,7 +96,7 @@ export const jump = {
     const name = ['Free fall', 'Under the canopy', 'Steady'];
     const cell = (x) => `<b>${tr(x)}</b>`;
     const rows = st.map((s, i) => {
-      const t1 = isFinite(s.t1) ? s.t1 : f.tMax, v = s.u + s.a * (t1 - s.t0), sx = f.pos(t1).x - s.x0;
+      const t1 = isFinite(s.t1) ? s.t1 : f.tMax, v = f.vel(t1).x, sx = f.pos(t1).x - s.x0;
       return `<div class="ph-row" role="row" data-key="${i ? 'second' : 'first'}"><span class="ph-name" role="cell"><b>${i + 1}</b><em>${name[i] || ''}</em></span>
         <span role="cell">${cell(s.u)}</span><span role="cell">${cell(v)}</span><span role="cell">${cell(s.a)}</span><span role="cell">${cell(sx)}</span><span role="cell">${cell(t1 - s.t0)}</span></div>`;
     }).join('');

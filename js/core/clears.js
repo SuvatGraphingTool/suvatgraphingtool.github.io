@@ -102,7 +102,7 @@ export function solveClears(k = {}) {
 
   const f0 = flight({ u, theta, h: 0, g });
   const f = { ...f0, kind: 'clears', a, P, Q, R, wall: { x: P * a, H: Q * a }, Hmax, tWall: P * a / U };
-  return { ok: true, mode: 'clears', given: have(k.u) ? 'u' : 'a', P, Q, R, theta, tan, c, u, a, U, V, Hmax, T, angleRows, fixRows, heightRows, notes, derived, f };
+  return { ok: true, mode: 'clears', given: have(k.u) ? 'u' : 'a', P, Q, R, theta, tan, c, u, a, U, V, Hmax, T, hc, angleRows, fixRows, heightRows, notes, derived, f };
 }
 
 /** The working: the angle in the letter, then the numbers. */

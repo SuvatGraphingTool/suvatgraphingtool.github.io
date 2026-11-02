@@ -35,7 +35,7 @@ export const flighttime = {
 
   read(vals) {
     // the example keeps 5/3 as it is written, so its box shows a fraction
-    const frac = (v) => { const m = typeof v === 'string' && v.match(/^\s*(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*$/); return m ? Number(m[1]) / Number(m[2]) : v; };
+    const frac = (v) => { const m = typeof v === 'string' && v.match(/^\s*([−-]?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*$/); return m ? Number(m[1].replace('−', '-')) / Number(m[2]) : v; };
     return { T: vals.T, kx: frac(vals.kx), m: frac(vals.m), V: vals.V, d: vals.d, g: vals.g };
   },
   solve: solveFlightTime,

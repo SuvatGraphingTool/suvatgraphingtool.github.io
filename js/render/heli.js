@@ -105,7 +105,8 @@ export function render(canvas, cam, o) {
   const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
   for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(0, sp * 0.25 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
   const S = clamp(Math.min(w, h) * 0.2, 60, 96), pad = S * (phone ? 0.6 : 1.1);   // room all round for the helicopter and its arrow
-  const hudBoxes = hudOf(w, phone ? 3 : ROWS);   // as js/kits/heli.js shows them
+  const few = typeof matchMedia === 'function' && matchMedia('(max-width: 560px)').matches;
+  const hudBoxes = hudOf(w, few ? 3 : ROWS);   // as js/kits/heli.js shows them: the viewport decides
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 20), cY = h - cR - (phone ? 14 : 22);
   const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
   const F = fitPlanAround(box, all, { left: pad, right: w - pad, top: pad, bottom: h - pad }, { avoid: [...hudBoxes.map((b) => ({ ...b, h: b.h + 40 })), compassBox, ...(phone ? [{ x: 0, y: h - 40, w, h: 40 }] : [])], margin: pad * 0.7 });   // and, on a phone, the caption's band   // the lighthouse stands 40 px above its point
@@ -176,7 +177,7 @@ export function render(canvas, cam, o) {
       stroke(g, [{ x: R0.x, y: Math.min(R0.y, q.y) - 30 }, { x: R0.x, y: Math.max(R0.y, q.y) + 30 }], { color: P.mark, width: 1.6, dash: [6, 5], alpha: 0.85 });
       pulse(g, q.x, q.y, e.age, e.life, P.mark, { radius: 34 });
       dot(g, q.x, q.y, 5, { fill: P.mark, stroke: cssVar('--surface', '#131210'), width: 2 });
-      const gap = f.pos(ta).y - f.rock.y, say = T`t = ${s3(ta)} [s], ${s3(Math.abs(gap))} [m] ${gap > 0 ? '"north"' : '"south"'} "of the rock"`;
+      const gap = A.P.gaps[A.P.times.indexOf(ta)], say = T`t = ${s3(ta)} [s], ${s3(Math.abs(gap))} [m] ${gap > 0 ? '"north"' : '"south"'} "of the rock"`;
       if (!phone) Q.add(say, q.x, q.y, { color: P.mark, pri: 8, size: 13, weight: 700 }); said.push(say);
     }
     if (A.P.over) {
