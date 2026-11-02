@@ -138,6 +138,7 @@ this library: *covered* names the one of the twelve that does it.
 | 102 | AQA | MM1B | Jun 2011 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202011%20QP%20-%20M1%20AQA.pdf) | A helicopter hovering over a lighthouse sets off with constant acceleration: speed and bearing at a time; how long until it is a given distance from its start | – | **built** → `over-the-rock` |
 | 103 | CIE | 9709/41 | May/Jun 2017 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | Constant deceleration along ABCD, speeds 20, 12, 6 at A, B, C: ratio AB : BC; rests at D with AD = 80, find BC | – | **built** → `down-the-ice` |
 | 104 | Edexcel | 6677/01 M1 | Jan 2005 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202005%20QP.pdf) | A stone on ice along ABC against a 0.3 N resistance, 20 then 16 m/s over 24 m; speed at C 30 m on; show m = 0.1 kg; the wall's 2.4 N s impulse, time back to rest | – | **built** → `back-off-the-boards` |
+| 105 | AQA | MM1B | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202012%20QP%20-%20M1%20AQA.pdf) | A cyclist freewheels down a slope, 4 to 10 m/s over 50 m: a, time; 70 kg: resultant force; the slope's angle with no resistance, then against 30 N | 9.8 | **built** → `freewheeling` |
 
 ## Built, and why it is built the way it is
 
@@ -439,6 +440,29 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `freewheeling` — Freewheeling downhill
+
+**Papers.** AQA MM1B Jan 2012 Q6 (4 to 10 m s⁻¹ over 50 m down a slope:
+a = 0.84 m s⁻², 7.14 s; on 70 kg, 58.8 N; α = 4.92° with no resistance, 7.44°
+against 30 N).
+
+**Why the twelve cannot.** The run is SUVAT, which the road would do; but none
+of them takes the next step the paper asks for, F = ma along a slope, to the
+resultant force and the angle that gives it — with and without a resistance.
+
+**How it is solved.** js/core/hill.js: the twelve's `solve` from any three of
+the five; F = ma; then m g sin α = ma, and m g sin α − R = ma, for the angle,
+refused when sin α would not be between 0 and 1. Given the angle instead, the
+same equation gives a, and SUVAT the rest.
+
+**The stage.** Side on, at the slope's true angle: sky and far trees, the
+hillside, a lane with posts at the top and at 50 m, the cyclist on a road bike
+leaning with the slope; the angle marked at the foot; the forces along the
+slope on a card fixed to the screen.
+
+**Parts.** (a) `a`, 0.84; (b) `t`, 7.14; (c) `F`, 58.8; (d) `alpha0`, 4.92°;
+(e) `alphaR`, 7.44°.
 
 ### `back-off-the-boards` — Back off the boards
 

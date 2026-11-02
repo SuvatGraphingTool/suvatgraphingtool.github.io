@@ -26,6 +26,7 @@ import { resolveKit } from '../js/kitresolve.js';
 import { solveHeli } from '../js/core/heli.js';
 import { solveIce } from '../js/core/ice.js';
 import { solveWall } from '../js/core/wall.js';
+import { solveHill } from '../js/core/hill.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1473,7 +1474,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
@@ -1579,7 +1580,7 @@ group('A question in parts: every part of every library scenario reproduces its 
 {
   const { walk, pick, partBoxes, stepOf, live } = await import('../js/parts/parts.js');
   const { stripHTML, ticksHTML, answerHTML } = await import('../js/parts/strip.js');
-  const KINDS = ['time', 'height', 'distance', 'displacement', 'speed', 'velocity', 'acceleration', 'angle', 'position', 'meeting', 'time-above', 'area', 'show', 'graph', 'other', 'impulse'];
+  const KINDS = ['time', 'height', 'distance', 'displacement', 'speed', 'velocity', 'acceleration', 'angle', 'position', 'meeting', 'time-above', 'area', 'show', 'graph', 'other', 'impulse', 'force'];
   const half = (v) => 0.5 * 10 ** -((String(v).split('.')[1] || '').length);
   for (const s of LIBRARY) {
     ok(Array.isArray(s.parts) && live(s.parts).length > 0, `${s.id} lists its first paper’s parts`);
@@ -1669,6 +1670,16 @@ group('Edexcel M1 Jan 2005 Q5: a stone on ice, the boards, and back', () => {
   ok(Math.abs(solveWall({ uA: 20, uB: 16, AB: 24, AC: 30, m: 0.1, w: s.w }).I - 2.4) < 1e-6, 'the rebound speed instead gives the impulse back');
   ok(!solveWall({ uA: 20, uB: 16, AB: 24, AC: 300, R: 0.3, I: 2.4 }).ok, 'a wall it never reaches is said so');
   ok(!solveWall({ uA: 20, uB: 16, AB: 24, AC: 30, R: 0.3, I: 1 }).ok, 'an impulse too small to turn it round is refused');
+});
+
+group('AQA MM1B Jan 2012 Q6: freewheeling down a slope', () => {
+  const s = solveHill({ u: 4, v: 10, s: 50, m: 70, R: 30, g: 9.8 });
+  ok(s.ok && s.a === 0.84 && Math.abs(s.t - 50 / 7) < 1e-9 && s.F === 58.8, 'a = 0.84, t = 50⁄7, F = 58.8 N');
+  ok(Math.abs(s.alpha0 - 4.92) < 0.005 && Math.abs(s.alphaR - 7.44) < 0.005, 'α = 4.92° with no resistance, 7.44° against 30 N');
+  const back = solveHill({ u: 4, s: 50, alpha: s.alphaR, m: 70, R: 30, g: 9.8 });
+  ok(back.ok && Math.abs(back.v - 10) < 1e-6, 'the other way: the angle and the resistance give the acceleration, and 10 m s⁻¹ at the end');
+  ok(!solveHill({ u: 4, v: 100, s: 50, m: 70 }).ok, 'an acceleration no slope can give is refused');
+  ok(!solveHill({ u: 4, s: 50, alpha: 5, R: 30 }).ok, 'a resistance with no mass is refused when the angle is given');
 });
 
 group('Resolve opens on every library stage, from its engine', () => {

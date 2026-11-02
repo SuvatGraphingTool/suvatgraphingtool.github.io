@@ -80,6 +80,7 @@ A kit is an object with:
 | `heli` — `js/kits/heli.js` | `over-the-rock` (engine js/core/heli.js on plane.js's motion; stage js/render/heli.js: the sea from above, the lighthouse, the rock in its surf, a coastguard helicopter with its rotor turning; `heliTop` is exported) |
 | `ice` — `js/kits/ice.js` | `down-the-ice` (engine js/core/ice.js; stage js/render/ice.js: a curling sheet from above, lines A, B, C, the house round D, the stone turning as it slides) |
 | `wall` — `js/kits/wall.js` | `back-off-the-boards` (engine js/core/wall.js, with js/core/impulse.js at the wall; stage js/render/wall.js on ice.js's exported `rink` and `stoneTop`) |
+| `hill` — `js/kits/hill.js` | `freewheeling` (engine js/core/hill.js on the twelve's suvat `solve`, then F = ma along the slope; stage js/render/hill.js: a lane down a hillside at its true angle, a cyclist leaning into it, the forces on a card) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
 | `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
@@ -116,7 +117,7 @@ parts: [
 |---|---|
 | `label` | `'a'`, `'b'`, `'ii'`, `'c ii'`… — shown as (a), (b), (ii), (c)(ii) |
 | `ask` | what the part asks, in our OWN words (the papers are copyrighted). Prose; any maths in it goes between `$` signs and is set by `js/notation.js` (`'the velocity at $t = 2$'`) |
-| `kind` | what it answers: `time` `height` `distance` `displacement` `speed` `velocity` `acceleration` `angle` `position` `meeting` `time-above` `area` `impulse` `show` (a "show that"), `graph` (a sketch: no `find`, the stage is the answer, `say` tells the student where to look), `other`. The reader matches on it |
+| `kind` | what it answers: `time` `height` `distance` `displacement` `speed` `velocity` `acceleration` `angle` `position` `meeting` `time-above` `area` `impulse` `show` (a "show that"), `force` (a resultant from F = ma), `graph` (a sketch: no `find`, the stage is the answer, `say` tells the student where to look), `other`. The reader matches on it |
 | `find` | which engine output answers it: a dotted path into the kit's `solve()` answer (`'meet.t'`, `'f.tFlight'`, `'answers.0.value'`). A segment `name(3)` calls the engine's own function there (`'f.startOf(3)'`, `'f.posA(10).x'`). A segment that meets an array is an index if it is a number, else the element whose `key`, `name`, `id` or `kind` it is (`'extras.tMeet'`, `'events.overtake.t'`). A list of paths for a part with two answers (`['x.0', 'x.1']`: two times) |
 | `sym`, `unit`, `dp` | how the answer is typeset: `M`${sym} = ${num(v, dp)} [${unit}]`` — `sym` is notation source (`'v'`, `'t_1'`, `'theta'`), `unit` too (`'m s^-1'`). `dp` defaults to 2; `trim: true` drops trailing zeros. `suffix` is notation after the number, for an answer in letters (`suffix: 'u/g'` sets 2u/g; a coefficient of 1 is left out) or a degree sign. `vec: true` with two paths sets them as one vector in i and j. `words: { yes, no }` for an answer that is true/false |
 | `at` | the part's moment on the stage: a path like `find`, a number of seconds, or `'end'`. Left out: the moment of `find` if it is a time, else the end |
@@ -553,6 +554,14 @@ area from there sums to zero), a stop fixed by the total time `T`. Each
 segment's acceleration and displacement as working (`tripWorking`).
 
 Used by: `there-and-back`.
+
+### Freewheeling downhill — `js/core/hill.js`
+
+Down a slope with a constant acceleration, and F = ma along it. `solveHill({
+u, v, s, t, a, m, R, alpha, g })`: three of the five (or the angle and two of
+them) through the twelve's `solve`; with m, the resultant `F`, and the angle
+the slope must have with no resistance (`alpha0`) and against R (`alphaR`), from
+m g sin α − R = ma. Given α, the same equation gives a first.
 
 ### Back off the boards — `js/core/wall.js`
 
