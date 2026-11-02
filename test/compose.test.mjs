@@ -392,11 +392,28 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
   ok(check({ backdrop: 'court', engine: 'projectile', objects: [{ figure: 'tennisBall' }], numbers: { h: 2.5, u: 25, theta: 0 } }).recipe?.effects.join() === 'chalk', 'a tennis ball on a court kicks up chalk');
   const jet = check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'water' }], numbers: { h: 1, u: 10, theta: 40 } }).recipe;
   ok(figureOf(whoIn('A human cannonball is fired from a cannon at 15 m/s')).figure === 'diver' && placeIn('A human cannonball is fired from a cannon in the circus')?.backdrop === 'circus', 'a human cannonball is a person, in the circus');
-  ok(titleOf(check({ backdrop: 'stadium', engine: 'projectile', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 9, theta: 22 } }).recipe) === 'A long jumper in an athletics stadium' && check({ backdrop: 'stadium', engine: 'projectile', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 9, theta: 22 } }).recipe.effects.join() === 'sand,kick', 'a long jumper lands in the sand pit, kicking off the board');
+  ok(titleOf(check({ backdrop: 'stadium', engine: 'projectile', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 9, theta: 22 } }).recipe) === 'A long jumper in an athletics stadium' && check({ backdrop: 'stadium', engine: 'projectile', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 9, theta: 22 } }).recipe.effects.join() === 'sand', 'a long jumper lands in the sand pit (no dust off a synthetic runway)');
   ok(check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'kangaroo' }], numbers: { h: 0, u: 6, theta: 40 } }).recipe.effects.includes('kick') && check({ backdrop: 'orchard', engine: 'projectile', objects: [{ figure: 'apple' }], numbers: { h: 4 } }).recipe.effects.includes('rustle') && check({ backdrop: 'city', engine: 'projectile', objects: [{ figure: 'brick' }], numbers: { h: 30, u: 0, theta: 0 } }).recipe.effects.join() === 'shockwave', 'a leap kicks up dust, a branch sheds leaves, a brick on the street sends out a shockwave');
   ok(whoIn('A diver jumps from a board 10 m above the water') === 'diver' && whoIn('In a cricket match, a ball is hit') !== 'grasshopper', 'water below and a cricket match never take over what moves');
   ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });
+
+// every animal draws with every option the stage passes it (a heading, wet) without throwing:
+// a stand-in canvas that accepts any call
+{
+  console.log('\nEvery animal draws');
+  const noop = () => {}, grad = { addColorStop: noop };
+  const g = new Proxy({}, { get: (t, k) => (k === 'createLinearGradient' || k === 'createRadialGradient' ? () => grad : k in t ? t[k] : noop), set: (t, k, v) => { t[k] = v; return true; } });
+  globalThis.document ??= { documentElement: { dataset: {}, getAttribute: () => null } };
+  globalThis.getComputedStyle ??= () => ({ getPropertyValue: () => '' });
+  globalThis.matchMedia ??= () => ({ matches: false });
+  const { ANIMALS, SWIMMERS } = await import('../js/render/animals.js');
+  for (const [name, draw] of Object.entries({ ...ANIMALS, ...SWIMMERS })) {
+    let err = null;
+    try { for (const leap of [0, 0.5, 1]) draw(g, 0, 0, 40, {}, { leap, land: leap === 1 ? 1 : 0, spin: 0.2, ring: '#000', heading: -0.7, wet: leap === 1, ang: 0.3, phase: 1 }); } catch (e) { err = e.message; }
+    ok(!err, `${name} draws${err ? `: ${err}` : ''}`);
+  }
+}
 
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);

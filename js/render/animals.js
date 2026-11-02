@@ -82,7 +82,7 @@ function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears,
   else if (ears !== 'none') { g.beginPath(); g.ellipse(hx - hr * 0.3, hy - hr * 0.1, hr * 0.32, hr * 0.7, 0.5 - s * 0.6, 0, TAU); g.fill(); }
   eye(g, hx + hr * 0.4, hy - hr * 0.2, hr * 0.13);
   // what this animal's head has of its own (a goat's horns and beard)
-  if (head) head(g, hx, hy, hr);
+  if (typeof head === 'function') head(g, hx, hy, hr);
   g.restore();
 }
 
@@ -345,10 +345,10 @@ export function rabbit(g, x, y, L, P, o = {}) {
 /** A penguin, `L` px tall: black back and head, white front, a yellow flash
     at the neck and a dark beak; it leaps head first, flippers swept back,
     and stands upright, flippers out, before and after. */
-export function penguin(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null, head = 0, wet = false } = {}) {
+export function penguin(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null, heading = 0, wet = false } = {}) {
   // head first along its heading in the air; into the water it stays in its dive (and goes under)
   const E = env(), s = Math.max(0, Math.min(1, leap)), d = wet ? 0 : Math.max(0, Math.min(1, land)), fly = s * (1 - d);
-  g.save(); g.translate(x, y); g.rotate(spin + fly * (head + Math.PI / 2));
+  g.save(); g.translate(x, y); g.rotate(spin + fly * (heading + Math.PI / 2));
   const back = E.night ? '#0e1014' : '#1b1d22', front = E.night ? '#c8ccd2' : '#f6f8fa';
   // the feet, dark, under it
   g.fillStyle = '#3a3e46'; for (const dx of [-0.08, 0.06]) { g.beginPath(); g.ellipse(L * dx + L * 0.04, L * 0.42, L * 0.07, L * 0.025, 0, 0, TAU); g.fill(); }

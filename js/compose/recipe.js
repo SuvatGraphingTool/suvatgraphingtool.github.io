@@ -195,9 +195,10 @@ export function check(raw) {
   }
   // the moment it leaves: a leap from dry level ground kicks up dust; leaving a branch shakes leaves down
   if (!(raw.effects || []).length && engine === 'projectile') {
-    const leaper = objects.some((o) => FIGURES[o.figure]?.animal || o.figure === 'diver' || FIGURES[o.figure]?.rides);
-    if (leaper && !(numbers.h > 0) && dry && !effects.includes('kick')) effects.push('kick');
-    if ((backdrop === 'orchard' || (backdrop === 'forest' && numbers.h > 0)) && !effects.includes('rustle')) effects.push('rustle');
+    // (never off a synthetic runway or a rider gliding over snow)
+    const leaper = objects.some((o) => FIGURES[o.figure]?.animal || o.figure === 'diver');
+    if (leaper && !(numbers.h > 0) && dry && backdrop !== 'stadium' && !effects.includes('kick')) effects.push('kick');
+    if (backdrop === 'orchard' && !effects.includes('rustle')) effects.push('rustle');
     // a shot, a brick or a hammer down on tarmac, a floor or concrete: a shockwave of dust and cracks
     if (['road', 'floor'].includes(B.below) && objects.some((o) => ['shot', 'brick', 'hammer'].includes(o.figure)) && effects.length === 1 && ['dust', 'crack', 'ring'].includes(effects[0])) effects[0] = 'shockwave';
   }

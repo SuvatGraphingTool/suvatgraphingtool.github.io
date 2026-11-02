@@ -21,9 +21,9 @@ const held = (age, life) => (age >= 0 ? Math.min(age, life) / life : null);
 
 /** Bits thrown up and out from (x, y), falling back under gravity: each
     gets (px, py, i, r) to draw itself. */
-function thrown(x, y, u, n, size, r, draw, { up = 1, out = 1 } = {}) {
+function thrown(x, y, u, n, size, r, draw, { up = 1, out = 1, dir = 0 } = {}) {
   for (let i = 0; i < n; i++) {
-    const a = Math.PI * (0.12 + r() * 0.76), sp = (20 + r() * 34) * size, side = r() < 0.5 ? -1 : 1;
+    const a = Math.PI * (0.12 + r() * 0.76), sp = (20 + r() * 34) * size, s0 = r() < 0.5 ? -1 : 1, side = dir || s0;
     const px = x + Math.cos(a) * sp * u * 1.6 * side * out;
     const py = y - Math.sin(a) * sp * u * 2.2 * up + 60 * size * u * u;
     if (py > y + 2) continue;
@@ -488,15 +488,17 @@ export function chalk(g, x, y, age, life, o = {}) {
     left (the engine's time, rule 4). */
 export function kick(g, x, y, age, life, o = {}) {
   const p = phaseOf(age, life); if (p == null) return;
-  const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 131);
+  const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 131), snow = !!o.snow;
+  const puff = snow ? (E.night ? '200,208,220' : '240,246,252') : E.night ? '150,140,124' : '196,178,148';
   g.save();
-  for (let i = 0; i < 8; i++) {
-    const R = (4 + r() * 5) * size * (0.6 + p * 1.6), dx = -(6 + r() * 20) * size * ease(p), dy = -(2 + r() * 8) * size * ease(p);
+  for (let i = 0; i < 9; i++) {
+    const R = (5 + r() * 6) * size * (0.9 + p * 1.4), dx = -(8 + r() * 22) * size * (0.35 + 0.65 * ease(p)), dy = -(2 + r() * 9) * size * (0.3 + 0.7 * ease(p));
     const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, R);
-    gr.addColorStop(0, E.night ? `rgba(150,140,124,${0.7 * (1 - p)})` : `rgba(196,178,148,${0.75 * (1 - p)})`); gr.addColorStop(1, 'rgba(196,178,148,0)');
+    gr.addColorStop(0, `rgba(${puff},${0.85 * (1 - p)})`); gr.addColorStop(1, `rgba(${puff},0)`);
     g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, R, 0, TAU); g.fill();
   }
-  thrown(x, y, ease(p), 7, size * 0.8, r, (px, py) => { g.fillStyle = withAlpha(E.night ? '#4a3e30' : '#7a6248', 1 - p); g.fillRect(px - 2, py - 1.5, 3, 3); }, { up: 0.5, out: -0.9 });
+  // clods (or snow) thrown back, behind where it pushed off
+  thrown(x, y, ease(p), 8, size * 0.9, r, (px, py) => { g.fillStyle = withAlpha(snow ? (E.night ? '#c8d0dc' : '#ffffff') : E.night ? '#4a3e30' : '#7a6248', 1 - p); g.beginPath(); g.arc(px, py, 2.5 * size, 0, TAU); g.fill(); if (snow) { g.strokeStyle = withAlpha('#8aa0b8', 1 - p); g.lineWidth = 1; g.stroke(); } }, { up: 0.5, out: 0.9, dir: -1 });
   g.restore();
 }
 
@@ -505,12 +507,14 @@ export function kick(g, x, y, age, life, o = {}) {
 export function rustle(g, x, y, age, life, o = {}) {
   const p = phaseOf(age, life); if (p == null) return;
   const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 137);
+  const cols = E.night ? ['#2e4a2a', '#6a5a2a', '#7a5a2a'] : ['#5f9a48', '#d8b030', '#b08a3a'];
   g.save();
-  for (let i = 0; i < 9; i++) {
-    const x0 = x + (r() - 0.6) * 40 * size, y0 = y - r() * 16 * size, fall = (30 + r() * 50) * size * p, sway = Math.sin(p * 8 + i) * 8 * size;
+  for (let i = 0; i < 10; i++) {
+    const x0 = x + (r() - 0.6) * 44 * size, y0 = y - r() * 16 * size, fall = (80 + r() * 60) * size * p, sway = Math.sin(p * 8 + i) * 10 * size;
     g.save(); g.translate(x0 + sway, y0 + fall); g.rotate(p * 6 + i);
-    g.fillStyle = withAlpha(i % 3 ? (E.night ? '#2e4a2a' : '#5f9a48') : (E.night ? '#5a5a2a' : '#c8b04a'), 1 - p * 0.8);
-    g.beginPath(); g.ellipse(0, 0, 4 * size, 2 * size, 0, 0, TAU); g.fill();
+    g.fillStyle = withAlpha(cols[i % 3], 1 - p * 0.7); g.beginPath(); g.ellipse(0, 0, 6 * size, 3 * size, 0, 0, TAU); g.fill();
+    g.strokeStyle = withAlpha('#2a2414', 0.6 * (1 - p * 0.7)); g.lineWidth = 1; g.stroke();
+    g.beginPath(); g.moveTo(-6 * size, 0); g.lineTo(6 * size, 0); g.stroke();
     g.restore();
   }
   g.restore();
@@ -523,13 +527,17 @@ export function shockwave(g, x, y, age, life, o = {}) {
   const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 139);
   g.save();
   // the cracks, which stay
-  g.strokeStyle = withAlpha('#000000', 0.45); g.lineWidth = 1.2; const cl = 14 * size * ease(Math.min(1, u * 4));
-  for (let i = 0; i < 5; i++) { const a = (i - 2) * 0.5, sx = x, ex = x + Math.cos(a) * cl * (0.7 + r() * 0.6) * (i % 2 ? -1 : 1); g.beginPath(); g.moveTo(sx, y + 1); g.lineTo((sx + ex) / 2 + (r() - 0.5) * 4, y + 1 + r() * 2); g.lineTo(ex, y + 1 + r() * 3); g.stroke(); }
+  const cl = 16 * size * ease(Math.min(1, u * 4));
+  for (const [col, lw] of [[o.dark ? 'rgba(232,228,220,0.85)' : 'rgba(0,0,0,0.6)', 2.2], [o.dark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.35)', 1]]) {
+    g.strokeStyle = col; g.lineWidth = lw;
+    for (let i = 0; i < 6; i++) { const a = (i - 2.5) * 0.45, side = i % 2 ? -1 : 1, ex = x + Math.cos(a) * cl * (0.8 + ((i * 37) % 10) / 20) * side, ey = y + 1 + Math.abs(Math.sin(a)) * cl * 0.35 + 2; g.beginPath(); g.moveTo(x, y + 1); g.lineTo((x + ex) / 2 + (i % 3 - 1) * 2, (y + 1 + ey) / 2 + 1); g.lineTo(ex, ey); g.stroke(); }
+  }
   const p = phaseOf(age, life);
   if (p != null) {
     // the ring racing out, low and flat
     const R = 50 * size * ease(p);
-    g.strokeStyle = E.night ? `rgba(170,166,156,${0.7 * (1 - p)})` : `rgba(200,192,176,${0.8 * (1 - p)})`; g.lineWidth = 6 * size * (1 - p) + 1;
+    g.strokeStyle = `rgba(90,84,74,${0.5 * (1 - p)})`; g.lineWidth = 8 * size * (1 - p) + 2; g.beginPath(); g.ellipse(x, y - 2, R, R * 0.16, 0, Math.PI, TAU); g.stroke();
+    g.strokeStyle = E.night ? `rgba(190,186,176,${0.9 * (1 - p)})` : `rgba(214,206,190,${0.9 * (1 - p)})`; g.lineWidth = 6 * size * (1 - p) + 1;
     g.beginPath(); g.ellipse(x, y - 2, R, R * 0.16, 0, Math.PI, TAU); g.stroke();
     thrown(x, y, ease(p), 12, size, r, (px, py) => { g.fillStyle = withAlpha(E.night ? '#6a665e' : '#8a8478', 1 - p); g.fillRect(px - 1.5, py - 1.5, 3, 3); }, { up: 0.35, out: 1.6 });
   }

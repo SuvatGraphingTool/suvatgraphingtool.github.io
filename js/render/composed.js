@@ -448,7 +448,7 @@ function launch(canvas, o) {
   // the moment it leaves, on the engine's clock from the launch (rule 4): dust kicked up from
   // the ground it pushes off, leaves shaken down from the branch it leaves
   if (m.going && m.i === 0) {
-    if (R.effects.includes('kick')) kick(g, X(0) - 4, Y(H0), t, 0.9, { size: clamp(k / 30, 0.8, 2.2) });
+    if (R.effects.includes('kick')) kick(g, X(0) - 4, Y(H0), t, 0.9, { size: clamp(k / 30, 0.9, 2.2), snow: B.below === 'snow' });
     if (R.effects.includes('rustle')) rustle(g, X(0), Y(H0), t, 1.6, { size: clamp(k / 30, 0.8, 1.8) });
   }
   if (landed) {
@@ -463,7 +463,7 @@ function launch(canvas, o) {
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
       else if (e === 'net' || e === 'swish' || e === 'kick' || e === 'rustle') continue;
       // something heavy down on a hard surface: a flat ring of dust racing out, cracks left
-      else if (e === 'shockwave' && !wet) later.push(() => shockwave(g, lx, oy, age, life, { size: clamp(k / 25, 0.8, 2.4) }));
+      else if (e === 'shockwave' && !wet) later.push(() => shockwave(g, lx, oy, age, life, { size: clamp(Math.max(k / 25, Math.hypot(f.vel(f.tMax).x, f.vel(f.tMax).y) / 12), 1.6, 3), dark: B.below === 'road' }));
       // a tennis ball on a line: a puff of chalk off the court, its mark left
       else if (e === 'chalk' && !wet) chalk(g, lx, oy, age, life, { size: clamp(k / 14, 1, 2.4), puff: R.backdrop === 'court' && [0, 5.485, 18.285, 23.77].some((d) => Math.abs(end.x - d) <= 0.05) });
       // gone under: it sinks away and bubbles come up where it went in
@@ -686,7 +686,7 @@ function launch(canvas, o) {
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.4, Math.max(2, Lp * 0.05), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
       const pitch = aloft ? 0.35 * Math.atan2(-v.y, v.x) : 0;
       m.body = { x: cx, y: cy };
-      ANIMALS[kind](g, cx, cy, Lp, P, { leap: fired ? ease(0, 0.08, p) : 0, land: fired ? ease(0.8, 1, p) : 0, spin: kind === 'penguin' ? 0 : pitch, ring: m.ring, head: fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), wet: landed && wet });
+      ANIMALS[kind](g, cx, cy, Lp, P, { leap: fired ? ease(0, 0.08, p) : 0, land: fired ? ease(0.8, 1, p) : 0, spin: kind === 'penguin' ? 0 : pitch, ring: m.ring, heading: fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), wet: landed && wet });
     } else if (kind === 'skateboarder') {
       // the wheels carry the engine's point all the way down, the deck's front
       // at the edge before the off, landing level on all four wheels
