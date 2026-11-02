@@ -286,11 +286,15 @@ export function render(canvas, cam, o) {
     g.beginPath(); g.moveTo(foot.x, foot.y); g.lineTo(foot.x - R * 1.2, foot.y); g.stroke();
     g.beginPath(); g.arc(foot.x, foot.y, R, Math.PI, Math.PI + al); g.stroke();
     const bis = Math.PI + al / 2;
-    L.add(`${num(f.alpha, 2, { trim: true })}°`, foot.x + Math.cos(bis) * R * 0.72, foot.y + Math.sin(bis) * R * 0.72, { color: P.ink, pri: 10, size: 14, weight: 700, maxPush: 10 }); }
+    // at the end the object sits over the inside of the arc: the label goes just outside it
+    const rr = done ? R * 1.2 : R * 0.72;
+    L.add(`${num(f.alpha, 2, { trim: true })}°`, foot.x + Math.cos(bis) * rr, foot.y + Math.sin(bis) * rr, { color: P.ink, pri: 10, size: 14, weight: 700, maxPush: 10 }); }
 
   // ── the run, marked under the slope, further out than the acceleration arrow
   { const off = look === 'slipway' ? 58 : -(Lb * 0.75 + 18), a0 = { x: top.x + nx * off, y: top.y + ny * off }, a1 = { x: foot.x + nx * off, y: foot.y + ny * off };
     stroke(g, [a0, a1], { color: P.disp, width: 1.6, alpha: 0.9 });
+    // the ruler kept from other labels
+    for (let i = 0; i <= 4; i++) { const x = a0.x + (a1.x - a0.x) * i / 4, y = a0.y + (a1.y - a0.y) * i / 4; L.reserve({ x: x - 6, y: y - 6, w: 12, h: 12 }); }
     for (const p of [a0, a1]) stroke(g, [{ x: p.x - nx * 6, y: p.y - ny * 6 }, { x: p.x + nx * 6, y: p.y + ny * 6 }], { color: P.disp, width: 1.6 });
     const out = Math.sign(off) * 14;
     L.add(T`${num(f.s, 6, { trim: true })} [m]`, (a0.x + a1.x) / 2 + nx * out, (a0.y + a1.y) / 2 + ny * out, { color: P.disp, pri: 8, size: 14, weight: 700 }); }
@@ -345,7 +349,7 @@ export function render(canvas, cam, o) {
     else if (look === 'plane') flash(g, stopAt.x, stopAt.y - 6, e.age, e.life * 0.6, { radius: 18 });
     else pulse(g, foot.x, foot.y, e.age, e.life, P.mark, { radius: 22 });
     L.add(T`${s3(f.v)} [m s^-1] "after" ${s3(f.t)} [s]`, foot.x, foot.y - Lb * 1.1 - 18, { color: P.mark, pri: 9, size: 13, weight: 700, maxPush: 60 });
-    if (look === 'roof') L.add('over the edge of the roof', foot.x, foot.y - Lb * 1.1 - 38, { color: P.mark, pri: 7, size: 13, weight: 700, maxPush: 40 });
+    if (look === 'roof') L.add('over the edge of the roof', foot.x, foot.y - Lb * 1.1 - 38, { color: P.mark, pri: 9, size: 13, weight: 700, maxPush: 40 });
   }
   L.draw(g, w, h);
 
