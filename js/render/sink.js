@@ -135,7 +135,7 @@ export function render(canvas, cam, o) {
   }
   const patch = { x: lx, w: clamp(TH * 0.55, 22, 46), d: clamp(TH * 0.3, 12, 26) };
   soil(g, -20, w + 20, oy, h + 20, { soft: patch });
-  L.add('soft ground', lx + patch.w + 8, oy + 16, { color: P.ink, pri: 6, size: 13, weight: 700, align: 'left' });
+  L.add('soft ground', lx + patch.w + 8, oy + 16, { color: P.ink, pri: 8, size: 13, weight: 700, align: 'left' });
 
   const tw = clamp(f.h * k * 0.28, 40, 90);
   if (hi) tower(g, feet + TH * 0.18, standY, oy, tw);
@@ -147,10 +147,10 @@ export function render(canvas, cam, o) {
   if (f.h > 0.05) {
     stroke(g, [{ x: dx, y: oy }, { x: dx, y: Ay }], { color: P.ink, width: 1.4, alpha: 0.9 });
     for (const yy of [oy, Ay]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
-    L.add(T`${s3(f.h)} [m]`, dx - 8, (oy + Ay) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700 });
+    L.add(T`${s3(f.h)} [m]`, dx - 8, (oy + Ay) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700, maxPush: 0 });
   }
   dot(g, bx, Ay, 3.2, { fill: P.ink, stroke: P.card, width: 1.2 });
-  L.add('A', bx - 12, Ay - 10, { color: P.ink, pri: 9, size: 15, weight: 800, align: 'right' });
+  L.add('A', bx - 12, Ay - 12, { color: P.ink, pri: 9, size: 15, weight: 800, align: 'right', maxPush: 0 });
 
   // ── the greatest height, across; and a height the paper asks about
   const scr = (y) => (y >= 0 || f.h <= 0.05 ? Ay - y * k : oy - (f.h + y) * ((oy - Ay) / f.h)), yTop = scr(f.H);
@@ -162,11 +162,16 @@ export function render(canvas, cam, o) {
   }
   if (askY != null) {
     stroke(g, [{ x: bx - 50, y: askY }, { x: lx + 50, y: askY }], { color: P.mark, width: 1.6, alpha: 0.9 });
-    L.add(T`${s3(f.yAsk)} [m]`, near ? lx + 56 : bx - 56, askY, { color: P.mark, pri: 8, size: 13, weight: 700, align: near ? 'left' : 'right' });
-    for (const ta of f.tAt || []) if (t >= ta - 1e-9) {
-      const down = ta > f.tTop + 1e-9, rx = down ? lx : bx;
+    const passed = (f.tAt || []).filter((ta) => t >= ta - 1e-9);
+    for (const ta of passed) {
+      const rx = ta > f.tTop + 1e-9 ? lx : bx;
       g.save(); g.strokeStyle = P.mark; g.lineWidth = 2; g.beginPath(); g.arc(rx, askY, 9, 0, TAU); g.stroke(); g.restore();
-      L.add(T`${s3(ta)} [s]`, down ? rx + 16 : rx - 16, askY + (near ? 16 : -14), { color: P.mark, pri: 7, size: 13, weight: 700, align: down ? 'left' : 'right' });
+    }
+    // close under the top there is no room for a time at each ring: one label on the line's row
+    if (near) L.add(passed.length ? T`${s3(f.yAsk)} [m] "at" ${passed.map(s3).join(' "and" ')} [s]` : T`${s3(f.yAsk)} [m]`, lx + 56, askY, { color: P.mark, pri: 8, size: 13, weight: 700, align: 'left', maxPush: 0 });
+    else {
+      L.add(T`${s3(f.yAsk)} [m]`, bx - 56, askY, { color: P.mark, pri: 8, size: 13, weight: 700, align: 'right' });
+      for (const ta of passed) { const down = ta > f.tTop + 1e-9, rx = down ? lx : bx; L.add(T`${s3(ta)} [s]`, down ? rx + 16 : rx - 16, askY - 14, { color: P.mark, pri: 7, size: 13, weight: 700, align: down ? 'left' : 'right' }); }
     }
   }
 
@@ -194,7 +199,7 @@ export function render(canvas, cam, o) {
   const vMax = Math.max(f.u, f.vL, 1e-9);
   // no arrow for a speed that reads as 0; it shortens with the speed, no minimum
   if (show.velocity !== false && Math.abs(v) >= 0.05 && t < f.tLand) {
-    const len = Math.min((Math.abs(v) / vMax) * 80, 80), ax = q.x - 16;
+    const len = Math.min((Math.abs(v) / vMax) * 80, 80), ax = v > 0 ? q.x - 16 : q.x + 16;
     if (len >= 4) {
       if (v > 0) arrow(g, ax, q.y, ax, q.y - len, { color: P.vel, width: 2.6, head: Math.min(10, len * 0.6) });
       else {
@@ -202,13 +207,14 @@ export function render(canvas, cam, o) {
         const room = oy - q.y - 4, y0 = room >= len ? q.y : q.y - (len - Math.max(0, room)), y1 = y0 + len;
         arrow(g, ax, y0, ax, y1, { color: P.vel, width: 2.6, head: Math.min(10, len * 0.6) });
       }
-      L.add(T`${s3(Math.abs(v))} [m s^-1]`, ax - 8, v > 0 ? q.y - len * 0.6 : Math.min(q.y + len * 0.6, oy - 12), { color: P.vel, pri: 8, size: 14, weight: 700, align: 'right' });
+      L.add(T`${s3(Math.abs(v))} [m s^-1]`, v > 0 ? ax - 8 : ax + 8, v > 0 ? q.y - len * 0.6 : Math.min(q.y + len * 0.6, oy - 12), { color: P.vel, pri: 8, size: 14, weight: 700, align: v > 0 ? 'right' : 'left' });
     }
   }
   if (show.acceleration !== false && t < f.tLand && fired && t > 0) {
-    const ax = q.x + 30;
-    arrow(g, ax, q.y + 6, ax, q.y + 46, { color: P.acc, width: 2.2, head: 9 });
-    L.add(T`${s3(f.g)} [m s^-2]`, ax + 8, q.y + 28, { color: P.acc, pri: 7, size: 13, weight: 700, align: 'left' });
+    // out of the falling velocity's way; above the ball when there is no room below it
+    const ax = q.x + (v < 0 ? 44 : 30), y0 = q.y + 50 > h - 8 ? q.y - 46 : q.y + 6;
+    arrow(g, ax, y0, ax, y0 + 40, { color: P.acc, width: 2.2, head: 9 });
+    L.add(T`${s3(f.g)} [m s^-2]`, ax + 8, y0 + 22, { color: P.acc, pri: 7, size: 13, weight: 700, align: 'left' });
   }
   if (t >= f.tRest - 1e-9) { const e = ageOf(t, f.tRest, f.tMax, Math.max(0.4, f.tMax * 0.15)); pulse(g, lx, oy, e.age, e.life, P.mark, { radius: 18 }); }
   L.draw(g, w, h);
@@ -230,15 +236,18 @@ export function render(canvas, cam, o) {
   const sy = cy - R * 0.38, ki = (R * 0.95) / f.depth;
   const skyG = g.createLinearGradient(0, cy - R, 0, sy); skyG.addColorStop(0, E.skyMid); skyG.addColorStop(1, E.skyBottom);
   g.fillStyle = skyG; g.fillRect(cx - R, cy - R, 2 * R, sy - cy + R);
-  soil(g, cx - R, cx + R, sy, cy + R, { seed: 41, soft: { x: cx - R * 0.22, w: R * 0.5, d: R * 0.8 } });
+  soil(g, cx - R, cx + R, sy, cy + R, { seed: 41, soft: { x: cx - R * 0.1, w: R * 0.5, d: R * 0.8 } });
   // the clock in the lens: the real one, until the replay (the engine's) takes over
   const rt = f.replay(t), tt = rt ?? t, slowing = rt != null && t < f.tMax - 1e-9;
   const depthNow = -(f.pos(tt) + f.h);                 // into the ground, m; negative above it
-  const rb = R * 0.13, bxL = cx - R * 0.22, by = sy + depthNow * ki - rb;
+  const rb = R * 0.13, bxL = cx - R * 0.1, by = sy + depthNow * ki - rb;
   const showBall = t >= f.tLand - 1e-9 && by > cy - R - rb;
   // sinking: from the moment it reaches the ground until it stops (at rest no force needs drawing)
   const inGround = showBall && tt >= f.tLand - 1e-9 && tt < f.tRest - 1e-9;
   const sunk = Math.max(0, depthNow) * ki;
+  // the resting ball and its shaft fade out over the last moment before the replay begins
+  const fadeOut = f.tReplay != null && rt == null && t >= f.tRest ? clamp((f.tReplay - t) / 0.12, 0, 1) : 1;
+  g.globalAlpha = fadeOut;
   if (showBall && sunk > 0) {
     // the shaft it has pushed open: a rounded U, darker at the bottom, its left wall lit
     const hw = rb * 0.95, bot = sy + sunk;
@@ -267,6 +276,7 @@ export function render(canvas, cam, o) {
     }
   }
   if (showBall) ballSprite(g, bxL, by, rb);
+  g.globalAlpha = 1;
   // in the ground, the forces on it from its centre — the resistance up, the weight down,
   // drawn under the ball so it sits over their tails — and while it sinks its velocity
   if (inGround && f.R != null) {
@@ -276,9 +286,9 @@ export function render(canvas, cam, o) {
   }
   if (inGround) {
     const sp = -f.vel(tt), len = (sp / f.vL) * R * 0.5;
-    if (sp > 0.02 * f.vL && len >= 4) arrow(g, bxL - rb - 8, by - len / 2, bxL - rb - 8, by + len / 2, { color: P.vel, width: 2.4, head: Math.min(8, len * 0.6) });
+    if (sp > 0.02 * f.vL && len >= 4) arrow(g, bxL + rb + 8, by - len / 2, bxL + rb + 8, by + len / 2, { color: P.vel, width: 2.4, head: Math.min(8, len * 0.6) });
   }
-  const bxR = cx + R * (phone ? 0.12 : 0.2), yEnd = sy + f.depth * ki;
+  const bxR = cx + R * 0.55, yEnd = sy + f.depth * ki;
   g.strokeStyle = P.disp; g.lineWidth = 2;
   g.beginPath(); g.moveTo(bxR, sy); g.lineTo(bxR, yEnd); g.moveTo(bxR - 5, sy); g.lineTo(bxR + 5, sy); g.moveTo(bxR - 5, yEnd); g.lineTo(bxR + 5, yEnd); g.stroke();
   g.restore();
@@ -295,8 +305,8 @@ export function render(canvas, cam, o) {
     g.fillStyle = withAlpha(P.card, 0.88); g.beginPath(); g.roundRect?.(xs - 7, y - size * 0.75, tw2 + 14, size * 1.5, 6); g.fill();
     g.fillStyle = col; g.fillText(txt, xs, y); g.restore();
   };
-  lab(T`${s3(f.depth)} [m]`, bxR + 9, (sy + yEnd) / 2, P.disp);
-  if (inGround && f.R != null) { lab(T`R`, bxL + 8, by - R * 0.32, P.ink); lab(T`m g`, bxL + 8, by + rb + R * 0.12, P.ink); }
+  lab(T`${s3(f.depth)} [m]`, bxR + 6, sy - 13, P.disp, 'right');
+  if (inGround && f.R != null) { lab(T`R`, bxL - 14, by - R * 0.38, P.ink, 'right'); lab(T`m g`, bxL - 14, by + rb + R * 0.14, P.ink, 'right'); }
   // the replay's pace is against the flight's: the engine's factor
   const n = f.slow != null ? num(Math.round(f.slow), 0) : '';
   lab(slowing ? (phone ? `Slowed ${n} times` : `In the ground, ${n} times slower than the flight`) : tt >= f.tRest - 1e-9 && t >= f.tRest ? 'At rest in the ground' : 'In the ground, enlarged', cx, cy - R - 14, P.ink, 'center');

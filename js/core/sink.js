@@ -143,7 +143,7 @@ export function solveSink(k = {}) {
           : `It is ${M`${d(yAsk)} [m]`} above A twice: at ${M`${d(tAt[0])} [s]`} on the way up and ${M`${d(tAt[1])} [s]`} on the way down.`);
   const derived = [`${M`u = ${d(u)} [m s^-1]`}`, `lands after ${M`${d(tLand)} [s]`}`, R != null ? `${M`R = ${d(R)} [N]`}` : `${M`a = ${d(a)} [m s^-2]`}`, `sinks ${M`${d(depth)} [m]`}`];
 
-  const f = { kind: 'sink', u, h, H, g, m, vL, tTop, tLand, tSink, tRest, tMax, tFlight: tMax, a, R, depth, yAsk, tAt, slow, replay,
+  const f = { kind: 'sink', u, h, H, g, m, vL, tTop, tLand, tSink, tRest, tMax, tFlight: tMax, a, R, depth, yAsk, tAt, slow, replay, tReplay: slow == null ? null : snap(tRest + beat),
     pos, vel, acc, W: m != null ? snap(m * g) : null, tMid: snap(tLand / 2),
     params: { u, theta: 90, h, g } };
   return { ok: true, mode: 'sink', u, H, T: tLand, vL, a, decel: snap(-a), R, depth, tSink, tAt, rows: [...air, ...rows], air, ground: rows, notes, derived, f };
