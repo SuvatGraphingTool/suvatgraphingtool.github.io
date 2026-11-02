@@ -484,6 +484,11 @@ export const LIBRARY = [
       { label: 'b', kind: 'speed', ask: 'Find its speed 3 s after it leaves the ground.', find: 'v1', sym: 'v', unit: 'm s^-1', dp: 1, at: 'f.T', step: 'driven up', paper: 18, tol: 0.05 },
       { label: 'c', kind: 'height', ask: 'After 3 s it burns out and moves freely. Find its height 5 s after it leaves the ground.', find: 'atY', sym: 'h', unit: 'm', dp: 1, at: 5, step: 'after burn-out', paper: 43.4, tol: 0.05 },
     ],
+    answers: [
+      { kind: 'height', say: 'the greatest height the rocket reaches', find: 'Htop', sym: 'H', unit: 'm', dp: 2, trim: true, at: 'tTop', step: 'after burn-out' },
+      { kind: 'time', say: 'the time from leaving the ground to its greatest height', find: 'tTop', sym: 't', unit: 's', dp: 2, trim: true, at: 'tTop', step: 'after burn-out' },
+      { kind: 'time', say: 'the time from leaving the ground until it lands', find: 'tLand', sym: 't', unit: 's', dp: 2, trim: true, at: 'tLand', step: 'after burn-out' },
+    ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jan 2008', q: '2', part: 'all' },
     ],

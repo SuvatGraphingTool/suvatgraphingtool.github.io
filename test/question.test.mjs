@@ -547,5 +547,14 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(withChosenG({ understood: false, note: 'hi' }, 9.8).g === undefined, 'a chat reply is left alone');
 }
 
+// QA 2 Nov: "a firework accelerates up at 6 m/s² for 3 s — max height", read with answer "height": two heights, so none was given.
+// Of several answers of one kind, the one whose words the part shares is chosen; a tie is never guessed
+{
+  const { fromReader } = await import('../js/parts/answers.js');
+  ok(fromReader('firework-rocket', [{ label: 'a', asks: 'the greatest height it reaches', answer: 'height' }])[0].find === 'Htop', 'the greatest height is the greatest height, not the height at 5 s');
+  ok(fromReader('firework-rocket', [{ label: 'a', asks: 'how long until it lands', answer: 'time' }])[0].find === 'tLand', 'and the time until it lands, of two times');
+  ok(!fromReader('firework-rocket', [{ label: 'a', asks: 'a time', answer: 'time' }])[0].find, 'with nothing to tell them apart, none is guessed');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

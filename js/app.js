@@ -3572,9 +3572,10 @@ function quantityHTML(f, n) {
   // "A.u" is u for A; "a1" is a for stage 1; "tTop" the time to the top
   // (a start time, t0, is said in words: "Sets off at: 2 s")
   const m = /^(?:([A-Z])\.)?([A-Za-z]+?)([1-9]?)$/.exec(f.key);
-  const base = m && (QUANTITY.has(m[2]) ? m[2] : null);
+  // ("R.t1", R's time 1, is said in words: a symbol with two subscripts is no one's)
+  const base = m && !(m[1] && m[3]) && (QUANTITY.has(m[2]) ? m[2] : null);
   const who = /^([A-Z])\./.exec(f.key)?.[1];
-  if (!base) return `${who ? `${who} · ` : ''}${esc(plain.replace(/\s*\([^()]*\)\s*$/, '').replace(/^Or:\s*/i, '').replace(/^./, (c) => c.toUpperCase()))}: ${unit === '°' ? M`${val}°` : unit ? M`${val} [${unit}]` : M`${val}`}`;
+  if (!base) return `${who ? `${who} · ` : ''}${esc(plain.replace(/\s*\([^()]*\)\s*$/, '').replace(/^Or:\s*(.)/i, (_, c) => c.toUpperCase()))}: ${unit === '°' ? M`${val}°` : unit ? M`${val} [${unit}]` : M`${val}`}`;
   const sub = [m[1], m[3]].filter(Boolean).join(',');
   const sym = sub ? `${base}_${sub}` : base;
   return unit === '°' ? M`${sym} = ${val}°` : unit ? M`${sym} = ${val} [${unit}]` : M`${sym} = ${val}`;

@@ -77,6 +77,9 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
  * on its own. `boxes` are the keys a part's `given` may set (a library
  * scenario's boxes); the original twelve take no givens per part.
  */
+// words too common to tell two answers apart
+const STOP = new Set(['what', 'when', 'where', 'which', 'find', 'from', 'that', 'this', 'with', 'their', 'there', 'they', 'does', 'will', 'into', 'than', 'then', 'show', 'value', 'time', 'speed', 'height', 'distance', 'ball', 'particle']);
+
 export function fromReader(id, raw, boxes = []) {
   const s = byId(id);
   if (!s || !Array.isArray(raw)) return null;
@@ -89,7 +92,16 @@ export function fromReader(id, raw, boxes = []) {
     // the key it named; else, when it named none that exists, the one answer
     // of the kind its words ask for — a sketch, or the only speed there is
     const words = String(r.asks ?? '').toLowerCase();
-    const only = (k) => { const m = offer.filter((a) => a.kind === k); return m.length === 1 ? m[0] : null; };
+    // the one answer of a kind — or, of several, the one whose own words the part's share
+    // most: "greatest height" is the greatest height, not the height at 5 s
+    const only = (k) => {
+      const m = offer.filter((a) => a.kind === k);
+      if (m.length < 2) return m[0] || null;
+      const mine = new Set(words.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)));
+      const score = m.map((a) => String(a.say || '').toLowerCase().split(/[^a-z]+/).filter((w) => mine.has(w)).length);
+      const best = Math.max(...score);
+      return best > 0 && score.filter((x) => x === best).length === 1 ? m[score.indexOf(best)] : null;
+    };
     // a kind named for a key ("time" where the key is "meeting"), and "when do they
     // meet / catch up / draw level" — the one meeting there is
     const meets = /\b(when|catch(es)?|meet|level|overtakes?|pass(es)?|collide)\b/.test(words);
