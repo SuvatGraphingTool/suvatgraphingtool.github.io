@@ -51,14 +51,16 @@ export function solveTank(k = {}) {
   ] : [];
 
   // ── the liquid: m g − R = m a, then to the bottom (or to rest short of it)
-  const aL = have(k.aL) ? k.aL : snap(g - k.R / m), R = m != null ? snap(m * (g - aL)) : null;
+  // a given resistance is kept as given, not recomputed from the rounded acceleration
+  const aL = have(k.aL) ? k.aL : snap(g - k.R / m), R = have(k.R) ? k.R : m != null ? snap(m * (g - aL)) : null;
   const law = have(k.aL)
     ? (m != null ? { f: M`m g - R = ma`, s: M`${d(m)} * ${d(g)} - R = ${d(m)} * ${sb(aL)}`, r: M`R = ${d(R)} [N]` } : null)
     : { f: M`m g - R = ma`, s: M`${d(m)} * ${d(g)} - ${d(k.R)} = ${d(m)}a`, r: M`a = ${d(aL)} [m s^-2]` };
   const liquid = law ? [law] : [];
   const v22 = v1 * v1 + 2 * aL * D;
   let v2, t2, stops = false, sStop = null;
-  if (v22 <= 1e-9 && aL < 0) {
+  // slowing: does it come to rest strictly before the bottom? (relative, not a fixed tolerance on v²)
+  if (aL < 0 && (v1 * v1) / (-2 * aL) < D * (1 - 1e-9)) {
     // slowed to rest before the bottom: the paper's constant resistance has nothing to say after that
     stops = true; sStop = snap((v1 * v1) / (-2 * aL)); v2 = 0; t2 = snap(v1 / -aL);
     liquid.push({ f: M`v^2 = u^2 + 2as`, s: M`0 = ${d(v1)}^2 + 2 * ${sb(aL)}s`, r: M`s = ${d(sStop)} [m]` });
@@ -76,9 +78,11 @@ export function solveTank(k = {}) {
     if (t <= t1) { const c = Math.max(0, t); return u * c + 0.5 * g * c * c; }
     const c = Math.min(t, tB) - t1; return h + v1 * c + 0.5 * aL * c * c;
   };
+  // the motion ends at the bottom (or at rest): past tB everything is held at its value then, and
+  // the kit draws nothing past it — what happens next is not in the paper's model
   const vel = (t) => (t <= t1 ? u + g * Math.max(0, t) : t >= tB ? (stops ? 0 : v2) : v1 + aL * (t - t1));
-  const acc = (t) => (t < t1 ? g : t < tB ? aL : 0);
-  const tMax = snap(tB + Math.max(0.3, tB * 0.15));
+  const acc = (t) => (Math.min(t, tB) < t1 ? g : aL);
+  const tMax = snap(tB + Math.max(tB * 0.15, Math.min(0.3, tB * 0.5)));
 
   const how = aL > 1e-12 ? `still speeds up, at ${M`${d(aL)} [m s^-2]`}` : aL < -1e-12 ? `slows, at ${M`${d(-aL)} [m s^-2]`}` : 'goes on at a steady speed';
   const notes = [
@@ -88,7 +92,7 @@ export function solveTank(k = {}) {
       : `It reaches the bottom at ${M`${d(v2)} [m s^-1]`}, ${M`${d(tB)} [s]`} after it was let go.`,
   ];
   const derived = [...(R != null && have(k.aL) ? [M`R = ${d(R)} [N]`] : []), ...(!have(k.aL) ? [M`a = ${d(aL)} [m s^-2]`] : []),
-    stops ? `at rest ${M`${d(sStop)} [m]`} down` : `${M`v = ${d(v2)} [m s^-1]`} at the bottom`];
+    stops ? `at rest ${M`${d(sStop)} [m]`} below the surface` : `${M`v = ${d(v2)} [m s^-1]`} at the bottom`];
 
   const f = { kind: 'tank', look: k.look, g, h, u, D, m, R, aL, v1, t1, v2, t2, tB, stops, sStop, sIn, pos, vel, acc,
     tMax, tFlight: tMax, tMid: snap((t1 + tB) / 2), params: { u: 0, theta: 0, h: 0, g },

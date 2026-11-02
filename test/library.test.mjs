@@ -1753,12 +1753,18 @@ group('CIE 9709/41 Nov 2014 Q6: into the water', () => {
   const r = solveTank({ h: 5, D: 4, m: 3, R: 13.5, g: 10 });
   ok(r.ok && near(r.aL, 5.5) && near(r.v2, 12), 'the other way: the resistance gives a = 5.5');
   const f = s.f;
-  ok(near(f.pos(f.t1), 5) && near(f.pos(f.tB), 9) && near(f.vel(f.t1), 10) && f.acc(0.5) === 10 && f.acc(1.2) === 5.5 && f.acc(f.tMax) === 0, 'the motion: 5 m to the surface, 9 m to the bottom; g then 5.5');
+  ok(near(f.pos(f.t1), 5) && near(f.pos(f.tB), 9) && near(f.vel(f.t1), 10) && f.acc(0.5) === 10 && f.acc(1.2) === 5.5 && near(f.pos(f.tMax), 9), 'the motion: 5 m to the surface, 9 m to the bottom; g then 5.5; held at the bottom');
   const slow = solveTank({ h: 2, D: 6, m: 0.5, R: 8, g: 9.8 });
   ok(slow.ok && slow.stops && near(slow.sStop, 6.2612 ** 2 / 12.4, 0.01) && slow.f.vel(slow.f.tMax) === 0, 'a resistance more than the weight: it slows, and stops short of the bottom');
   ok(solveTank({ h: 0, u: 3, D: 2, aL: -1 }).ok && solveTank({ h: 0, u: 3, D: 2, aL: -1 }).R == null, 'no mass: the motion still, no resistance claimed');
   ok(!solveTank({ h: 5, D: 4, m: 3, R: 13.5, aL: 5.5 }).ok && !solveTank({ h: 5, D: 4, R: 13.5 }).ok && !solveTank({ h: 5, D: 4, m: 3, aL: 12, g: 10 }).ok && !solveTank({ h: 0, D: 4, m: 3, aL: 5 }).ok,
     'both given, a resistance with no mass, faster than g, or let go at the surface from rest: refused');
+  { const ex = solveTank({ h: 0, u: 2, D: 2, aL: -1 }); ok(ex.ok && !ex.stops && near(ex.v2, 0) && !ex.notes.some((n) => /short of the bottom/.test(n)), 'slowing to rest exactly at the bottom: it reaches the bottom, not short of it'); }
+  { const tiny = solveTank({ h: 0, u: 3e-5, D: 1, aL: -1e-11 }); ok(tiny.ok && !tiny.stops, 'a tiny slowing over a short depth: no stop 45 m down in 1 m of liquid'); }
+  { const K = KITS.tank, kv = K.solve(K.read({ h: 5, D: 4, m: 3, aL: 5.5, g: 10 })), P0 = { disp: '#0', vel: '#0', acc: '#0', mark: '#0' };
+    ok(K.graphs(kv.f, kv.f.tMax, P0).every((gr) => gr.series.every((x) => Number.isNaN(x.fn(kv.f.tMax)) && isFinite(x.fn(kv.f.tB)))), 'the graphs end at the bottom: nothing drawn past it');
+    ok(K.hud(kv.f, kv.f.tMax).left[2].v === '—', 'past the bottom the readouts give no acceleration'); }
+  { const sl = solveTank({ h: 2, D: 6, m: 0.5, R: 8, g: 9.8 }); ok(sl.R === 8 && sl.f.net < 0, 'a given resistance kept as given; slowing, the resultant is up'); }
   ok(tankWorking(s).length === 2 && tankWorking(solveTank({ h: 0, u: 3, D: 2, aL: -1 })).length === 1, 'the working: the air, then the liquid (or the liquid alone)');
   { const K = KITS.tank, kv = K.solve(K.read({ h: 5, D: 4, m: 3, aL: 5.5, g: 10 }));
     ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)), 'vertical: the graphs are solid (rule 2)');

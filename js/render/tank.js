@@ -141,7 +141,7 @@ export function render(canvas, cam, o) {
     const e = ageOf(t, f.tB, f.tMax);
     pulse(g, x0, yNow, e.age, e.life, P.mark, { radius: size * 2.2 });
     if (!f.stops) dust(g, x0, yBot, e.age, e.life, { size: 0.9, color: lab ? '#c8a050' : '#d8e8f0', n: 12 });
-    L.add(f.stops ? T`"at rest" ${sf(f.sStop)} [m] "down"` : T`${sf(f.v2)} [m s^-1] "at the bottom"`, x0 + size * 2.2, yNow - 14, { color: f.stops ? P.disp : P.vel, pri: 11, size: 13, weight: 700, align: 'left', maxPush: 20 });
+    L.add(f.stops ? T`"at rest" ${sf(f.sStop)} [m] "below the surface"` : T`${sf(f.v2)} [m s^-1] "at the bottom"`, x0 + size * 2.2, yNow - 14, { color: f.stops ? P.disp : P.vel, pri: 11, size: 13, weight: 700, align: 'left', maxPush: 20 });
   }
 
   // ── its velocity and acceleration, beside it, down positive (vertical: solid)
@@ -152,28 +152,37 @@ export function render(canvas, cam, o) {
       L.add(T`${sf(Math.abs(val))} [${unit}]`, bx + 8, yNow + sg * len * 0.6, { color: c, pri: 10, size: 13, weight: 700, align: 'left', maxPush: 24 });
     };
     if (moving && show.velocity !== false && f.vel(t) > 0.05) col(size * 1.5, f.vel(t), vMax, P.vel, 'm s^-1', 2.6);
-    if (moving && Math.abs(f.acc(t)) > 1e-9) col(size * 1.5 + (show.velocity !== false && f.vel(t) > 0.05 ? 90 : 0), f.acc(t), aMax, P.acc, 'm s^-2', 2.2); }
+    if (fired && moving && Math.abs(f.acc(t)) > 1e-9) col(size * 1.5 + (show.velocity !== false && f.vel(t) > 0.05 ? 90 : 0), f.acc(t), aMax, P.acc, 'm s^-2', 2.2); }
   L.draw(g, w, h);
 
   // ── the forces on it, from the engine: its weight, and in the liquid the resistance and the resultant
   if (hasCard) {
     unview(g);
-    const where = t < f.t1 ? 'In the air' : f.stops && t >= f.tB ? 'At rest' : t >= f.tB ? 'At the bottom' : 'In the liquid';
-    const live = t >= f.t1 && t < f.tB, items = [T`m g = ${s4(f.weight)} [N] "down"`, ...(live ? [T`R = ${s4(f.R)} [N] "up"`, T`m a = ${s4(f.net)} [N] ${f.net >= 0 ? '"down"' : '"up"'}`] : [])];
+    const where = t < f.t1 ? 'In the air' : 'In the liquid', over = fired && t > f.tB + 1e-9;
+    // the resultant as a size with its way; none past the end, where the model has no forces to give
+    const live = t >= f.t1 && t <= f.tB + 1e-9, net = Math.abs(f.net) < 1e-9 ? T`m a = 0 [N]` : T`m a = ${s4(Math.abs(f.net))} [N] ${f.net > 0 ? '"down"' : '"up"'}`;
+    const items = over ? [] : [T`m g = ${s4(f.weight)} [N] "down"`, ...(live ? [T`R = ${s4(f.R)} [N] "up"`, net] : [])];
+    const endWords = f.stops ? 'At rest: the paper’s model ends here' : 'At the bottom: the paper’s model ends here';
     if (cardW) {
       const cx = w - cardW - 16, cy = h - cardH - 16, txt = (s, x, y, c, al = 'left') => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = c; g.textAlign = al; g.textBaseline = 'middle'; g.fillText(s, x, y); g.restore(); };
-      paper(g, cx, cy, cardW, cardH);
-      txt(`${where}: the forces`, cx + 12, cy + 16, P.muted);
-      const bx = cx + 40, by = cy + 80, big = Math.max(f.weight, live ? f.R : 0, 1e-9), sc = 40 / big;
-      g.fillStyle = P.ink; g.beginPath(); g.arc(bx, by, 5, 0, TAU); g.fill();
-      arrow(g, bx, by + 5, bx, by + 5 + Math.max(10, f.weight * sc), { color: P.ink, width: 2.2, head: 8 });
-      if (live && f.R > 1e-9) arrow(g, bx, by - 5, bx, by - 5 - Math.max(10, f.R * sc), { color: P.ink, width: 2.2, head: 8 });
-      items.forEach((s, i) => txt(s, cx + cardW - 10, cy + 48 + i * 22, P.ink, 'right'));
-      if (!live && t < f.t1) txt('falling freely: no resistance', cx + cardW - 10, cy + 48 + 22, P.muted, 'right');
+      paper(g, cx, cy, cardW, over ? 56 : cardH);
+      if (over) { const [a1, a2] = endWords.split(': '); txt(`${a1}:`, cx + 12, cy + 18, P.ink); txt(a2, cx + 12, cy + 38, P.muted); }
+      else {
+        txt(`${where}: the forces`, cx + 12, cy + 16, P.muted);
+        const bx = cx + 40, by = cy + 80, big = Math.max(f.weight, live ? f.R : 0, 1e-9), sc = 40 / big;
+        g.fillStyle = P.ink; g.beginPath(); g.arc(bx, by, 5, 0, TAU); g.fill();
+        arrow(g, bx, by + 5, bx, by + 5 + Math.max(10, f.weight * sc), { color: P.ink, width: 2.2, head: 8 });
+        if (live && f.R > 1e-9) arrow(g, bx, by - 5, bx, by - 5 - Math.max(10, f.R * sc), { color: P.ink, width: 2.2, head: 8 });
+        items.forEach((s, i) => txt(s, cx + cardW - 10, cy + 48 + i * 22, P.ink, 'right'));
+        if (!live) txt('falling freely: no resistance', cx + cardW - 10, cy + 48 + 22, P.muted, 'right');
+      }
     } else {
+      // wrapped to the stage's width, never squeezed under 13px
       g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle';
-      const line = `${where}: ${items.join(', ')}`, tw = Math.min(w - 20, g.measureText(line).width + 14);
-      paper(g, 10, h - 38, tw, 26); g.fillStyle = P.ink; g.fillText(line, 17, h - 25, w - 34); g.restore();
+      const words = over ? [endWords] : [`${where}:`, ...items], lines = [];
+      for (const wd of words) { const next = lines.length ? `${lines[lines.length - 1]}${lines[lines.length - 1].endsWith(':') ? ' ' : ', '}${wd}` : wd; if (lines.length && g.measureText(next).width + 14 <= w - 20) lines[lines.length - 1] = next; else lines.push(wd); }
+      const tw = Math.min(w - 20, Math.max(...lines.map((x) => g.measureText(x).width)) + 14), bh = 8 + 18 * lines.length;
+      paper(g, 10, h - bh - 8, tw, bh); g.fillStyle = P.ink; lines.forEach((x, i) => g.fillText(x, 17, h - bh - 8 + 13 + i * 18)); g.restore();
     }
   }
   return null;

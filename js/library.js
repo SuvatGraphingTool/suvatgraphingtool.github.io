@@ -683,11 +683,11 @@ export const LIBRARY = [
     example: { look: 'pool', h: 5, D: 4, m: 3, aL: 5.5, g: 10 },
     parts: [
       { label: 'i', kind: 'force', ask: 'Find the resistance to motion of the particle while it is moving in the liquid.', find: 'R', sym: 'R', unit: 'N', trim: true, at: 'f.tMid', step: 'Through the liquid', paper: 13.5 },
-      { label: 'ii', kind: 'graph', graph: 'g-v', ask: 'Sketch the velocity–time graph from when it starts to move until it reaches the bottom, showing the velocity and the time when it enters the liquid and when it reaches the bottom.', say: 'The velocity–time graph: steeper through the air, less steep in the liquid; 10 m s⁻¹ at 1 s, 12 m s⁻¹ at 1.36 s.', at: 'end' },
+      { label: 'ii', kind: 'graph', graph: 'g-v', ask: 'Sketch the velocity–time graph from when it starts to move until it reaches the bottom, showing the velocity and the time when it enters the liquid and when it reaches the bottom.', say: 'The velocity–time graph: steeper through the air, less steep in the liquid; 10 m s⁻¹ at 1 s, 12 m s⁻¹ at 1.36 s.', at: 'f.tB' },
     ],
     answers: [
-      { kind: 'speed', say: 'its speed when it reaches the bottom of the container', find: 'v2', sym: 'v', unit: 'm s^-1', trim: true, at: 'end', step: 'Through the liquid' },
-      { kind: 'time', say: 'the time it takes to reach the bottom', find: 'tB', sym: 't', unit: 's', dp: 2, at: 'end', step: 'Through the liquid' },
+      { kind: 'speed', say: 'its speed when it reaches the bottom of the container', find: 'v2', sym: 'v', unit: 'm s^-1', trim: true, at: 'f.tB', step: 'Through the liquid' },
+      { kind: 'time', say: 'the time it takes to reach the bottom', find: 'tB', sym: 't', unit: 's', dp: 2, at: 'f.tB', step: 'Through the liquid' },
     ],
     sources: [
       { board: 'CIE', paper: '9709/41', session: 'Oct/Nov 2014', q: '6', part: 'all' },

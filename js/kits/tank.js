@@ -38,7 +38,6 @@ export const tank = {
 
   resolveAxis: 'down',
   resolveObjects: (f) => [{ name: '', pos: f.pos, vel: f.vel, acc: f.acc, from: 'where it was let go' }],
-  resolveWords: { pos: 'below where it was let go', neg: 'above it', plus: 'Down', line: 'the vertical line it falls along' },
   resolveEnds: true,
   read(v) { return { look: v.look === 'lab' ? 'lab' : 'pool', h: v.h, u: v.u, D: v.D, m: v.m, R: v.R, aL: v.aL, g: v.g }; },
   solve: solveTank,
@@ -46,12 +45,13 @@ export const tank = {
   render: stage.render,
 
   hud(f, t) {
-    const y = f.pos(t) - f.h;
+    const y = f.pos(t) - f.h, end = t >= f.tB - 1e-9, at = end ? (f.stops ? 'At rest: ' : 'At the bottom: ') : '';
     return {
       left: [
-        { k: y > 1e-9 ? `Down from the start (${num(y, 2)} m in)` : 'Down from the start', v: num(f.pos(t), 2), unit: 'm', hue: 'disp' },
-        { k: 'Velocity, down +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Acceleration, down +', v: num(f.acc(t), 2), unit: 'm s⁻²', hue: 'acc' },
+        { k: `${at}${y > 1e-9 ? `down from the start (${num(y, 2)} m in)` : 'down from the start'}`.replace(/^d/, (c) => (at ? c : c.toUpperCase())), v: num(f.pos(t), 2), unit: 'm', hue: 'disp' },
+        { k: `${at}${at ? 'velocity' : 'Velocity'}, down +`, v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+        // past the end the model has no acceleration to give: none is shown
+        { k: end && t > f.tB + 1e-9 ? 'Acceleration: the model ends here' : 'Acceleration, down +', v: end && t > f.tB + 1e-9 ? '—' : num(f.acc(t), 2), unit: end && t > f.tB + 1e-9 ? '' : 'm s⁻²', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };
@@ -59,13 +59,15 @@ export const tank = {
 
   /* One vertical line, down positive: solid (rule 2). The acceleration steps at the surface, and again at the bottom. */
   graphs(f, t, P) {
-    const cut = [f.t1, f.tB].filter((x) => x > 1e-9 && x < f.tMax);
+    const cut = [f.t1].filter((x) => x > 1e-9 && x < f.tMax);
+    // each line stops at the bottom (or at rest): the paper's graph runs from release to there
+    const upTo = (fn) => (tt) => (tt > f.tB + 1e-9 ? NaN : fn(tt));
     const surf = f.t1 > 1e-9 ? [{ t: f.t1, y: f.h, color: P.mark, label: 'the surface' }] : [];
     const end = { t: f.tB, color: P.mark, label: f.stops ? 'at rest' : 'the bottom' };
     return [
-      { canvas: 'g-s', title: 'Displacement–time, down +', unit: 'm', tMax: f.tMax, t, series: [{ label: 'down from the start', tag: T`s`, fn: f.pos, color: P.disp, dash: null, breaks: cut }], points: [...surf, { ...end, y: f.h + f.sIn }] },
-      { canvas: 'g-v', title: 'Velocity–time, down +', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash: null, breaks: cut }], points: [...(f.t1 > 1e-9 ? [{ t: f.t1, y: f.v1, color: P.mark }] : []), { ...end, y: f.v2, label: null }] },
-      { canvas: 'g-a', title: 'Acceleration–time, down +', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: f.acc, color: P.acc, dash: null, breaks: cut }] },
+      { canvas: 'g-s', title: 'Displacement–time, down +', unit: 'm', tMax: f.tMax, t, series: [{ label: 'down from the start', tag: T`s`, fn: upTo(f.pos), color: P.disp, dash: null, breaks: cut }], points: [...surf, { ...end, y: f.h + f.sIn }] },
+      { canvas: 'g-v', title: 'Velocity–time, down +', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: upTo(f.vel), color: P.vel, dash: null, breaks: cut }], points: [...(f.t1 > 1e-9 ? [{ t: f.t1, y: f.v1, color: P.mark }] : []), { ...end, y: f.v2, label: null }] },
+      { canvas: 'g-a', title: 'Acceleration–time, down +', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: upTo(f.acc), color: P.acc, dash: null, breaks: cut }] },
     ];
   },
 
