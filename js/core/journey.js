@@ -501,6 +501,11 @@ export function solveStages(spec) {
   for (const i of idx) Object.assign(J, { [`v${i}`]: J.w[i], [`t${i}`]: J.t[i], [`a${i}`]: J.a[i], [`s${i}`]: J.s[i] });
   const vStep = steps.find((s) => s.unknown.key === 'V');
   J.V = vStep ? J.w[vStep.unknown.at] : Math.max(...J.w);
+  // "the time spent accelerating", "the deceleration": the one stage of that kind, named by its kind not its number
+  for (const [kind, K] of [['up', 'Up'], ['hold', 'Hold'], ['down', 'Down']]) {
+    const of = idx.filter((i) => kindOf(i) === kind);
+    if (of.length === 1) Object.assign(J, { [`t${K}`]: J.t[of[0]], [`a${K}`]: Math.abs(J.a[of[0]]), [`s${K}`]: J.s[of[0]] });
+  }
   if (!(J.T > EPS)) return fail('Every stage takes no time: there is no journey to describe.');
   if (verdict(0)) return fail('Those numbers make one of the stages impossible. Check them against the paper.');
 

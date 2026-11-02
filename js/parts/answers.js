@@ -21,6 +21,8 @@ export const LAUNCH_ANSWERS = [
   { key: 'vLand', kind: 'speed', say: 'speed as it lands', find: 'f.vLanding', unit: 'm s^-1', at: 'end', step: 'time of flight' },
   { key: 'u', kind: 'speed', say: 'speed of projection', find: 'params.u', sym: 'u', unit: 'm s^-1', at: 0 },
   { key: 'theta', kind: 'angle', say: 'angle of projection', find: 'params.theta', sym: 'theta', suffix: '°', dp: 1, at: 0 },
+  // "the total time for which it is more than 19.6 m above O": the line's own answer
+  { key: 'above', kind: 'time', say: 'how long it spends above the height asked about (more than so many metres up)', find: 'above.above', sym: 't', unit: 's', at: 'above.t2', when: '\\b(above|more than|higher than|over)\\b' },
 ];
 export const ROAD_ANSWERS = [
   { key: 's', kind: 'distance', say: 'the distance between the two points', find: 'five.s.value', sym: 's', unit: 'm', at: 'end' },
@@ -116,7 +118,7 @@ export function fromReader(id, raw, boxes = []) {
       if (m.length < 2) return m[0] && (!thing || String(m[0].say || '').toLowerCase().includes(thing)) ? m[0] : null;
       // "how high does it go", "the highest point", "max height": the greatest height
       // and a "total" time or distance is the whole one
-      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}${/\b(hits?|reach(es)?|lands? on) the (floor|ground|water|sea|road|river)\b/.test(words) ? ' lands' : ''}`;
+      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}${/\b(hits?|reach(es)?|lands? on) the (floor|ground|water|sea|road|river)\b|\breturns?\b|\bcomes? back\b|\bback down\b/.test(words) ? ' lands' : ''}`;
       const mine = new Set(cue.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)));
       const score = m.map((a) => String(a.say || '').toLowerCase().split(/[^a-z]+/).filter((w) => mine.has(w)).length);
       const best = Math.max(...score);
@@ -134,7 +136,13 @@ export function fromReader(id, raw, boxes = []) {
     const how = HOW.find(([re]) => re.test(words))?.[1] || (/^\s*when\b/.test(words) && !offer.some((a) => a.kind === 'meeting') ? 'time' : undefined);
     if (how && !named.includes(how)) named.push(how);
     const asKind = (k) => only(k) || (k === 'time' && meets ? only('meeting') : null);
-    let hit = offer.find((a) => a.key === r.answer)
+    // a key whose own words say the opposite — "slow down" named for "the time spent accelerating" — is not trusted
+    const UP = /accelerat|speed(s|ing)? up/, DOWN = /decelerat|slow(s|ing)? down|brak|retard/;
+    const said = (a) => String(a?.say || '').toLowerCase();
+    const contra = (a) => a && ((UP.test(words) && !DOWN.test(words) && DOWN.test(said(a)) && !UP.test(said(a)))
+      || (DOWN.test(words) && !UP.test(words) && UP.test(said(a)) && !DOWN.test(said(a))));
+    const keyed = offer.find((a) => a.key === r.answer);
+    let hit = (contra(keyed) ? null : keyed)
       || (/sketch|graph/.test(words) ? only('graph') : null)
       || (typeof r.answer === 'string' ? asKind(r.answer.replace(/\d+$/, '')) : null)
       || named.map(asKind).find(Boolean)

@@ -18,6 +18,9 @@
 // here), then a steady 0.5i + 0.375j, asked at 20 s and at 500 m out; no rock.
 const H11 = { 'r0.x': 0, 'r0.y': 0, 'u.x': 0, 'u.y': 0, 'a.x': 0.5, 'a.y': 0.375, T: 20, D: 500, 'P.x': '', 'P.y': '' };
 
+// a journey that speeds up, holds and slows to rest — the shape the stage-kind answers need
+const JOURNEY_UHD = { n: 3, u: 8, k1: 'up', a1: 1.5, v1: 20, k2: 'hold', t2: 30, k3: 'down', v3: 0, D: 900 };
+
 export const LIBRARY = [
   { id: 'pair-vertical', group: 'library', kit: 'pair',
     name: 'Two in one vertical line',
@@ -72,6 +75,13 @@ export const LIBRARY = [
       { kind: 'distance', say: 'the whole distance from A to B', find: 'J.D', sym: 'D', unit: 'm', trim: true, at: 'end', step: 'area' },
       { kind: 'time', say: 'the whole time from A to B', find: 'J.T', sym: 'T', unit: 's', trim: true, at: 'end', step: 'whole journey' },
       { kind: 'speed', say: 'the greatest speed', find: 'J.V', sym: 'V', unit: 'm s^-1', trim: true, at: 'end', step: 'each stage' },
+      // by the kind of stage, whatever its number: one stage speeding up, one steady, one slowing down
+      { kind: 'time', say: 'the time it spends speeding up (accelerating)', find: 'J.tUp', sym: 't', unit: 's', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
+      { kind: 'time', say: 'the time it spends at constant speed (steady)', find: 'J.tHold', sym: 't', unit: 's', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
+      { kind: 'time', say: 'the time it spends slowing down (decelerating, braking)', find: 'J.tDown', sym: 't', unit: 's', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
+      { kind: 'acceleration', say: 'the acceleration while speeding up', find: 'J.aUp', sym: 'a', unit: 'm s^-2', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
+      { kind: 'acceleration', say: 'the deceleration while slowing down (braking, retardation)', find: 'J.aDown', sym: 'a', unit: 'm s^-2', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
+      { kind: 'distance', say: 'the distance it covers at constant speed (steady)', find: 'J.sHold', sym: 's', unit: 'm', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
     ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2012', q: '4' },

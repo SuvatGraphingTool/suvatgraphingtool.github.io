@@ -995,10 +995,15 @@ function stepsNow() {
     : scenario?.road ? roadWorking(solved)
     : buildWorking(traj, state.t);
 }
+/** One of the twelve's answers, as its parts read it: the solution, the flight, and the time above a line it has one. */
+function twelveSolved() {
+  const line = scenario?.dragLine ? state.markers?.heightLine : null;
+  return { ...solved, f: traj, ...(line != null && traj ? { above: { line, ...timeAbove(traj, line) } } : {}) };
+}
 /** The original twelve, with parts read by Ask Suvat: one motion, so every part shares it. */
 function originalParts() {
   state.part = -1; state.stopAt = null;
-  const one = traj && solved?.ok ? { ...solved, f: traj } : null;
+  const one = traj && solved?.ok ? twelveSolved() : null;
   state.runs = state.readerParts && one ? walk(() => one, {}, state.readerParts) : null;
   renderParts();
 }
@@ -3461,7 +3466,7 @@ function readOne(x, { graph = true, solve = false } = {}) {
     ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
   let html = readoutHTML(r, { name: scenario.name, solved, above, flight: !scenario.road && !scenario.descent ? traj : null });
   if (state.runs) html += replyHTML(state.runs);
-  else if (traj && solved?.ok) html += askedHTML(r.id, x, { ...solved, f: traj });
+  else if (traj && solved?.ok) html += askedHTML(r.id, x, twelveSolved());
   // SOLVE: the engine's own working, the same steps the working panel shows.
   if (solve && traj && solved?.ok) {
     const steps = scenario.road ? roadWorking(solved)

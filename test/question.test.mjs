@@ -700,6 +700,13 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const cv = HK.solve(HK.read({ ...cliffH.boxes, g: 9.81 }));
   ok(cv.ok && Math.abs(cv.h - 10.676) < 1e-3, 'a cliff’s height from where the stone lands: 10.68 m');
   ok(one('from-a-height', 'height of the cliff')?.find === 'h', '"the height of the cliff" is the height it starts from');
+  // round 9 (hand-written): a journey by its stages' kinds, a time above, a return
+  const jp = fromReader('journey-stages', [{ label: 'a', asks: 'time spent accelerating', answer: 'time1' }, { label: 'b', asks: 'deceleration' }]);
+  ok(jp[0].find === 'J.tUp' && jp[1].find === 'J.aDown', '"the time spent accelerating" is the speeding-up stage’s, never a "slow down" key the reader named; "the deceleration" the slowing stage’s');
+  const jv2 = JK.solve(JK.read({ n: 3, u: 8, k1: 'up', a1: 1.5, v1: 20, k2: 'hold', t2: 30, k3: 'down', v3: 0, D: 900 }));
+  ok(jv2.ok && jv2.J.tUp === 8 && Math.abs(jv2.J.aDown - 1.06383) < 1e-4 && jv2.J.tHold === 30, '8 s speeding up, 1.06 m s⁻² slowing down');
+  ok(one('up', 'time more than 19.6 m above O')?.find === 'above.above' && one('up', 'time of flight')?.find === 'f.tFlight', 'the time above a line is the line’s own answer; the time of flight stays the flight');
+  ok(one('up', 'time to return to the same height')?.find === 'f.tFlight', '"time to return" is the time it lands');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }
