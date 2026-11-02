@@ -33,7 +33,9 @@
 import { M, num } from './notation.js';
 
 const fin = (x) => typeof x === 'number' && isFinite(x);
-const d = (x, p = 2) => num(x, p, { trim: true });
+// as many places as the number needs, two at least and four at most: 0.375 stays 0.375
+const places = (x) => { for (let p = 2; p < 4; p++) if (Math.abs(x * 10 ** p - Math.round(x * 10 ** p)) < 1e-6) return p; return 4; };
+const d = (x, p = places(x)) => num(x, p, { trim: true });
 const UNITS = { s: 'm', v: 'm s⁻¹', a: 'm s⁻²' };
 const vec = (q) => (typeof q === 'number' ? { x: 0, y: q } : q || { x: 0, y: 0 });
 const three = (b) => String(Math.round(((b % 360) + 360) % 360) % 360).padStart(3, '0');
@@ -170,6 +172,7 @@ export function resolveKit(K, solved, f, t) {
   // in letters, or in km and hours: the numbers are in the question's own units
   const lu = K?.resolveUnits?.(f), U = lu ? { s: lu[0], v: lu[1], a: lu[2] } : UNITS;
   const blocks = objs.flatMap((o) => blocksFor(o, tt, tMax, K, U));
+  for (const b of blocks) for (const q of b.rows) q.dp = Math.min(places(q.value), 3);
   const letters = lu && /×/.test(lu[0]);
   return { t: tt, tUnit: lu?.[3], blocks, note: letters ? 'In the question’s letters: each number is a multiple of the unit beside it. Drag the time slider to watch it change.' : 'Read from the engine at this instant. Drag the time slider to watch it change.' };
 }

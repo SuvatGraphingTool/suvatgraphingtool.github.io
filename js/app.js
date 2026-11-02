@@ -2318,7 +2318,7 @@ function renderResolve(R) {
   const row = (q, part) => `
     <div class="rrow" data-part="${part}"${q.hue ? ` data-hue="${q.hue}"` : ''}>
       <div class="rrow-top"><span class="rrow-n">${q.name}</span>
-        <b class="rrow-v">${fmt(q.value, 2)}<small>${q.unit}</small></b></div>
+        <b class="rrow-v">${fmt(q.value, q.dp ?? 2)}<small>${q.unit}</small></b></div>
       <div class="rrow-f">${q.formula}${q.sub ? ` = ${q.sub}` : ''}</div>
       <div class="rrow-note">${q.note}</div>
     </div>`;

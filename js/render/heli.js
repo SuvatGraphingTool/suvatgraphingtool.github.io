@@ -104,7 +104,7 @@ export function render(canvas, cam, o) {
   const box = { xLo: Math.min(...all.map((p) => p.x)), xHi: Math.max(...all.map((p) => p.x)), yLo: Math.min(...all.map((p) => p.y)), yHi: Math.max(...all.map((p) => p.y)) };
   const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
   for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(0, sp * 0.25 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
-  const S = clamp(Math.min(w, h) * 0.2, 60, 96), pad = S * 1.1;   // room all round for the helicopter and its arrow
+  const S = clamp(Math.min(w, h) * 0.2, 60, 96), pad = S * (phone ? 0.6 : 1.1);   // room all round for the helicopter and its arrow
   const hudBoxes = hudOf(w, phone ? 3 : ROWS);   // as js/kits/heli.js shows them
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 20), cY = h - cR - (phone ? 14 : 22);
   const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
@@ -215,7 +215,7 @@ export function render(canvas, cam, o) {
     }
     arrow(g, p.x, p.y, p.x + ux * len, p.y - uy * len, { color: P.vel, width: 2.8, head: 11, dash: Math.abs(uy) < 1e-9 ? [6, 4] : null });
     Q.line([p, { x: p.x + ux * len, y: p.y - uy * len }], 8);
-    Q.add(T`${s3(spd)} [m s^-1]`, p.x + ux * len, p.y - uy * len, { color: P.vel, pri: 8, size: 14, weight: 700 });
+    if (!phone) Q.add(T`${s3(spd)} [m s^-1]`, p.x + ux * len, p.y - uy * len, { color: P.vel, pri: 8, size: 14, weight: 700 });   // on a phone the speed is in the readouts
   }
   if (show.acceleration !== false) {
     const am = Math.hypot(f.a.x, f.a.y), len = clamp(S * 0.6, 34, 60);
