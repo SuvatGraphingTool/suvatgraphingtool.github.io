@@ -29,9 +29,23 @@ const D2R = Math.PI / 180, TAU = Math.PI * 2, MIN_DRAW = 7;
 const s3 = (x) => num(Number(x.toPrecision(3)), 6, { trim: true });
 // a force to four figures: 1475 N is not rounded to 1480
 const s4 = (x) => num(Number(x.toPrecision(4)), 6, { trim: true });
+
+/** Words that must not be lost — a value, a flag, a measure — drawn where they belong on a
+    plate of the card colour, never moved or dropped by the label placer; their box reserved. */
+function plate(g, L, P, txt, x, y, color, { align = 'center', size = 13 } = {}) {
+  g.save(); g.font = `700 ${Math.max(13, size)}px system-ui, sans-serif`;
+  const tw = g.measureText(txt).width, bh = size + 7, W = g.canvas.clientWidth || Infinity;
+  let bx = align === 'left' ? x - 4 : align === 'right' ? x - tw - 4 : x - tw / 2 - 4;
+  // kept inside the stage: slid in from an edge rather than cut off
+  const shift = clamp(bx, 4, Math.max(4, W - tw - 12)) - bx; bx += shift; x += shift;
+  g.fillStyle = withAlpha(P.card, 0.82); g.beginPath(); g.roundRect?.(bx, y - bh / 2, tw + 8, bh, 4); g.fill();
+  g.fillStyle = color; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(txt, x, y + 0.5); g.restore();
+  L.reserve({ x: bx, y: y - bh / 2, w: tw + 8, h: bh });
+}
 const NAME = { up: 'Up the hill', down: 'Down the hill' };
-// the car coming down is painted red, its tag and card heading too: two silver cars cannot be told apart
-const DOWN_PAINT = '#b03a32', DOWN_INK = '#c2453c';
+// the car coming down is painted mustard — not one of the quantities' hues — its tag and card heading too:
+// two silver cars cannot be told apart from the back of the room
+const DOWN_PAINT = '#d4a017', DOWN_CHIP = '#8a6508';
 
 /** A cottage at the foot, its base on y = Y, x its left side, W wide: rendered walls, a slate roof, windows, a chimney. */
 function cottage(g, x, Y, W, { seed = 1, lit = false } = {}) {
@@ -62,7 +76,9 @@ export function render(canvas, cam, o) {
   const P = palette(), L = labels(), E = env(), phone = w < 520, compact = phone || h < 380 || w < 760;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
   const two = f.ways.length > 1;
-  const HB = hudBoxes(w, two ? 4 : 3); for (const b of HB) L.reserve(b);
+  // on a phone the two cars' readouts are their velocities alone (the kit says so too)
+  const HB = hudBoxes(w, two ? (phone ? 2 : 4) : 3); for (const b of HB) L.reserve(b);
+  const pair = two || (f.stalled || []).length > 0;
   // the forces along the road on each, from the engine; a found force says so
   const items = (n) => { const W = f[n], found = (q) => (f.find === q ? ' "found"' : ''); return [
     { txt: T`D = ${s4(W.D)} [N]${found('D')}`, sg: 1, size: W.D },
@@ -104,7 +120,8 @@ export function render(canvas, cam, o) {
     const k0 = fit.k, over = (Lc * 1.3 + 40) / k0;
     fit = fitSide({ xLo: -S * 0.04 - Lc * 0.6 / k0, xHi: S * ca + Lc * 0.6 / k0, yLo: -lift / k0, yHi: S * sa + over }, area, { sky: 0.45 });
     if (!cardW) continue;
-    const xw = (w - cardW - 16 - fit.X(0)) / fit.k, roadY = fit.Y(clamp(xw, 0, S * ca) * Math.tan(ad)), clear = h - cardH - 16 - 26;
+    // clear by the depth of the arrow rows under the road, not just the road
+    const xw = (w - cardW - 16 - fit.X(0)) / fit.k, roadY = fit.Y(clamp(xw, 0, S * ca) * Math.tan(ad)), clear = h - cardH - 16 - (two ? 96 : 72);
     if (roadY > clear) lift += roadY - clear; else break;
   }
   const { k, X, Y } = fit;
@@ -113,7 +130,7 @@ export function render(canvas, cam, o) {
   const off = (p, d) => ({ x: p.x + out.x * d, y: p.y + out.y * d });
   const road = [{ x: -40, y: foot.y }, foot, brow, { x: w + 40, y: brow.y }];
   // two lanes: the near one on the kerb's line, the far one a lane's width beyond it (seen a little from above)
-  const laneW = two ? clamp(Lc * 0.26, 10, 22) : 0;
+  const laneW = pair ? clamp(Lc * 0.3, 12, 26) : 0;
 
   // ── the place: the sky and far hills, the fields behind the road, the hillside under it
   skyscape(g, 0, 0, w, brow.y + 10, { seed: 41, far: 'hills', sun: !E.night });
@@ -161,38 +178,38 @@ export function render(canvas, cam, o) {
 
   // ── the road's angle at the foot: the horizontal on along the flat, the arc up to the road
   // drawn on the grass under the road, from the near kerb: the horizontal, the arc, a faint wedge between
-  { const R = clamp(k * S * 0.32, 70, 160), F = off(foot, -8), ink = E.night ? '#e8eef4' : '#22303c';
-    g.fillStyle = withAlpha(ink, 0.12); g.beginPath(); g.moveTo(F.x, F.y); g.arc(F.x, F.y, R, -ad, 0); g.closePath(); g.fill();
-    stroke(g, [F, { x: F.x + R * 1.15, y: F.y }], { color: ink, width: 1.4, dash: [4, 4], alpha: 0.9 });
-    stroke(g, [F, { x: F.x + R * 1.1 * Math.cos(ad), y: F.y - R * 1.1 * Math.sin(ad) }], { color: ink, width: 1.4, alpha: 0.9 });
-    g.strokeStyle = ink; g.lineWidth = 2; g.beginPath(); g.arc(F.x, F.y, R, -ad, 0); g.stroke();
+  { const R = clamp(k * S * 0.32, 70, 160), F = off(foot, -6), ink = E.night ? '#f2d16b' : '#7a4f00';
+    g.fillStyle = withAlpha(ink, 0.3); g.beginPath(); g.moveTo(F.x, F.y); g.arc(F.x, F.y, R, -ad, 0); g.closePath(); g.fill();
+    stroke(g, [F, { x: F.x + R * 1.15, y: F.y }], { color: ink, width: 1.6, dash: [4, 4] });
+    g.strokeStyle = ink; g.lineWidth = 2.5; g.beginPath(); g.arc(F.x, F.y, R, -ad, 0); g.stroke();
+    // α in the mouth of the angle, just past the arc
+    g.save(); g.font = 'italic 700 15px system-ui, sans-serif'; g.fillStyle = ink; g.textBaseline = 'middle'; g.fillText('α', F.x + R + 5, F.y - R * Math.sin(ad) / 2 + 1); g.restore();
     // as the paper gave it: the angle, or its sine (from the height risen, too)
-    const tag = f.angleGiven === 'alpha' ? `${num(f.alpha, 1, { trim: true })}°` : T`sin alpha = ${s4(f.sinA)}`;
-    // left of the foot, under the flat, clear of the climb's arrows; a road flatter than 7° is drawn at 7°, and the label says so
-    // under the horizontal, by the arc
-    L.add(steeper ? `${tag}, drawn steeper` : tag, F.x + R * 0.55, F.y + 18, { color: ink, pri: 11, size: 14, weight: 700, align: 'left', maxPush: 40, push: 'down' }); }
+    const tag = f.angleGiven === 'alpha' ? T`alpha = ${num(f.alpha, 1, { trim: true })}°` : T`sin alpha = ${s4(f.sinA)}`;
+    // left of the foot under the flat road, where no car's arrows go; a road flatter than 7° is drawn at 7°, and says so
+    plate(g, L, P, steeper ? `${tag}, drawn steeper` : tag, foot.x - 34, foot.y + 44, ink, { align: 'right', size: 14 }); }
 
   // ── the distance: a ruler under the road (solid: along the slope), and the height it rises at the top when given
-  { const d = laneW + Lc * 0.42 + (two ? 96 : 40), a0 = off(at(e), d), a1 = off(at(e + f.s), d);
+  { const d = laneW + Lc * 0.42 + (two ? 104 : 40), a0 = off(at(e), d), a1 = off(at(e + f.s), d);
     stroke(g, [a0, a1], { color: P.disp, width: 1.6 });
     for (const p of [a0, a1]) stroke(g, [off(p, -6), off(p, 6)], { color: P.disp, width: 1.6 });
-    // nothing written over the ruler or its ticks
-    for (let u = 0; u <= 1.0001; u += 0.1) L.reserve({ x: a0.x + (a1.x - a0.x) * u - 7, y: a0.y + (a1.y - a0.y) * u - 7, w: 14, h: 14 });
     for (const [l, a] of [[e, a0], [e + f.s, a1]]) stroke(g, [off(at(l), 30), a], { color: P.disp, width: 1, alpha: 0.35 });
-    L.add(T`${s3(f.s)} [m]`, (a0.x + a1.x) / 2 + out.x * 14, (a0.y + a1.y) / 2 + out.y * 14, { color: P.disp, pri: 10, size: 14, weight: 700, maxPush: 16 });
+    plate(g, L, P, T`${s3(f.s)} [m]`, (a0.x + a1.x) / 2 + out.x * 16, (a0.y + a1.y) / 2 + out.y * 16, P.disp, { size: 14 });
+    // nothing else written over the ruler or its ticks
+    for (let u = 0; u <= 1.0001; u += 0.1) L.reserve({ x: a0.x + (a1.x - a0.x) * u - 7, y: a0.y + (a1.y - a0.y) * u - 7, w: 14, h: 14 });
     if (f.h != null) {
       const top = at(e + f.s), lo = at(e), xR = top.x + Lc * 0.75;
       stroke(g, [lo, { x: xR + 6, y: lo.y }], { color: P.muted, width: 1, dash: [4, 4], alpha: 0.7 });
       stroke(g, [{ x: xR, y: lo.y }, { x: xR, y: top.y }], { color: P.disp, width: 1.6 });
       for (const y of [lo.y, top.y]) stroke(g, [{ x: xR - 6, y }, { x: xR + 6, y }], { color: P.disp, width: 1.6 });
-      L.add(T`${s3(f.h)} [m]`, xR + 8, (lo.y + top.y) / 2, { color: P.disp, pri: 10, size: 14, weight: 700, align: 'left', maxPush: 16 });
+      plate(g, L, P, T`${s3(f.h)} [m]`, xR + 10, (lo.y + top.y) / 2, P.disp, { align: 'left', size: 14 });
     } }
 
   // ── each vehicle: where it is along the road, from its own start
   const draw = f.look === 'lorry' ? lorry : car;
   const cars = f.ways.map((n) => {
     const W = f[n], d = W.pos(t), l = n === 'up' ? e + d : e + f.s - d, dir = n === 'up' ? 1 : -1;
-    const lane = two && n === 'down' ? laneW : 0, p = off(at(l), lane);
+    const lane = pair && n === 'down' ? laneW : 0, p = off(at(l), lane);
     return { n, W, d, l, dir, lane, p };
   });
   // the far lane first, so the near one passes in front of it
@@ -200,23 +217,24 @@ export function render(canvas, cam, o) {
     const { n, W, d, dir, p } = c;
     if (fired && t > 0 && t < 1.2) { const ex = off({ x: p.x - dir * along.x * Lc * 0.55, y: p.y - dir * along.y * Lc * 0.55 }, 4), e0 = ageOf(t, 0, f.tMax, 1.2); dust(g, ex.x, ex.y, e0.age, e0.life, { size: 1.5, color: E.night ? '#d4d8de' : '#6f757d', n: 16 }); }
     g.save(); g.translate(p.x, p.y); g.rotate(-ad);
-    // the one coming down painted red, so the two are told apart from the back of the room
-    draw(g, dir * Lc / 2, 0, Lc, P, { dir, phase: phaseFor(f.look, Lc, d * k), paint: two && n === 'down' ? DOWN_PAINT : null, ring: two && n === 'down' ? withAlpha('#5a1612', 0.9) : null });
+    // the one coming down painted mustard, so the two are told apart from the back of the room
+    draw(g, dir * Lc / 2, 0, Lc, P, { dir, phase: phaseFor(f.look, Lc, d * k), paint: pair && n === 'down' ? DOWN_PAINT : null });
     g.restore();
     for (let i = -1; i <= 1; i++) { const q = { x: p.x + along.x * i * Lc * 0.33, y: p.y + along.y * i * Lc * 0.33 }; L.reserve({ x: q.x - Lc * 0.2, y: q.y - Lc * 0.45, w: Lc * 0.4, h: Lc * 0.45 }); }
     // which is which: a tag above each, in the hue its graph lines take
     // the one coming down tagged above it, the one going up below the road: they never cover each other
     if (two) { const q = n === 'down' ? off(p, Lc * 0.42 + 14) : off(p, -22), txt = n === 'up' ? 'up the hill' : 'down the hill';
       g.save(); g.font = '700 13px system-ui, sans-serif'; const tw = g.measureText(txt).width + 14;
-      g.fillStyle = n === 'down' ? DOWN_PAINT : '#55657a'; g.beginPath(); g.roundRect?.(q.x - tw / 2, q.y - 10, tw, 20, 10); g.fill();
+      g.fillStyle = n === 'down' ? DOWN_CHIP : '#55657a'; g.beginPath(); g.roundRect?.(q.x - tw / 2, q.y - 10, tw, 20, 10); g.fill();
       g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, q.x, q.y + 1); g.restore();
       L.reserve({ x: q.x - tw / 2, y: q.y - 10, w: tw, h: 20 }); }
     // where its distance ends: a ring and its speed there
     if (fired && t >= W.t - 1e-9) {
       const endP = at(n === 'up' ? e + f.s : e), a = ageOf(t, W.t, f.tMax);
       pulse(g, endP.x, endP.y, a.age, a.life, P.mark, { radius: Lc * 0.7 });
-      const q = off(endP, Lc * 0.42 + (two ? 32 : 16));
-      L.add(`${two ? `${n}: ` : ''}${T`${s3(W.v)} [m s^-1] "after" ${s3(f.s)} [m]`}`, q.x, q.y, { color: P.vel, pri: 11, size: 13, weight: 700, maxPush: 40 });
+      // the answer, on a plate above where it ends: never moved or dropped
+      const q = off(endP, (n === 'down' ? laneW : 0) + Lc * 0.42 + (two ? 40 : 18));
+      plate(g, L, P, `${two ? `${n}: ` : ''}${T`${s3(W.v)} [m s^-1] "after" ${s3(f.s)} [m]`}`, q.x, q.y, P.vel);
     }
   }
 
@@ -225,8 +243,8 @@ export function render(canvas, cam, o) {
     const l = st.name === 'up' ? e : e + f.s, dir = st.name === 'up' ? 1 : -1, p = at(l);
     g.save(); g.globalAlpha = 0.75; g.translate(p.x, p.y); g.rotate(-ad); draw(g, dir * Lc / 2, 0, Lc, P, { dir, phase: 0 }); g.restore();
     L.reserve({ x: p.x - Lc * 0.5, y: p.y - Lc * 0.45, w: Lc, h: Lc * 0.45 });
-    const q = off(p, -26);
-    L.add(`${st.name === 'up' ? 'Up the hill' : 'Down the hill'}: ${st.short}`, q.x, q.y, { color: P.ink, pri: 12, size: 13, weight: 700, push: 'down' });
+    const q = off(p, Lc * 0.42 + 16);
+    plate(g, L, P, `${st.name === 'up' ? 'Up the hill' : 'Down the hill'}: ${st.short}`, q.x, q.y, P.ink);
   }
 
   // ── the velocity and the acceleration of each, along the road (solid: along a slope, rule 2):
@@ -234,7 +252,7 @@ export function render(canvas, cam, o) {
   const vMax = Math.max(1e-9, f.u, ...f.ways.map((n) => f[n].v)), aMax = Math.max(1e-9, ...f.ways.map((n) => Math.abs(f[n].a)));
   for (const c of cars) {
     const { W, dir, p } = c, under = !two || c.n === 'up';
-    const rowAt = (i) => (under ? off(p, -((two ? 46 : 30) + i * 22)) : off(p, laneW + Lc * 0.42 + 38 + i * 22));
+    const rowAt = (i) => (under ? off(p, -((two ? 50 : 30) + i * 26)) : off(p, laneW + Lc * 0.42 + 40 + i * 26));
     const row = (i, val, max, col, unit, wd) => {
       // one scale for both, so they compare; never shorter than a readable arrow
       const len = clamp((Math.abs(val) / max) * 80, 14, 80), sg = Math.sign(val) * dir;
@@ -243,8 +261,8 @@ export function render(canvas, cam, o) {
       arrow(g, b.x, b.y, tip.x, tip.y, { color: col, width: wd, head: Math.min(9, len * 0.6) });
       // the arrow itself kept clear of every label
       L.reserve({ x: Math.min(b.x, tip.x) - 4, y: Math.min(b.y, tip.y) - 5, w: Math.abs(tip.x - b.x) + 8, h: Math.abs(tip.y - b.y) + 10 });
-      // past the arrow's tip; a quantity is never dropped: it may move further, on a leader
-      L.add(T`${s3(Math.abs(val))} [${unit}]`, tip.x + sg * along.x * 6, tip.y + sg * along.y * 6, { color: col, pri: 10, size: 13, weight: 700, align: sg > 0 ? 'left' : 'right' });
+      // on its own row, just past the tip: never moved onto another car's row, never dropped
+      plate(g, L, P, T`${s3(Math.abs(val))} [${unit}]`, tip.x + sg * along.x * 8, tip.y + sg * along.y * 8, col, { align: sg > 0 ? 'left' : 'right' });
     };
     const moving = t < W.t - 1e-9 || !fired;
     // held where its distance ends, it is not shown moving: its speed there is on its flag
@@ -264,14 +282,15 @@ export function render(canvas, cam, o) {
     f.ways.forEach((n, i) => {
       const x0 = cx + i * cw, y0 = cy + 38, W = f[n];
       if (i) stroke(g, [{ x: x0, y: cy + 30 }, { x: x0, y: cy + cardH - 10 }], { color: P.muted, width: 1, alpha: 0.35 });
-      lab(NAME[n], x0 + 12, y0, n === 'down' && two ? DOWN_INK : P.ink);
+      lab(NAME[n], x0 + 12, y0, P.ink);
+      if (pair && n === 'down') { g.font = '700 13px system-ui, sans-serif'; g.fillStyle = DOWN_PAINT; g.beginPath(); g.roundRect?.(x0 + 12 + g.measureText(NAME[n]).width + 8, y0 - 5, 16, 10, 3); g.fill(); }
       items(n).forEach((it, j) => {
         const y = y0 + 19 + j * 17, mid = x0 + 22;
         arrow(g, mid - it.sg * 9, y, mid + it.sg * 9, y, { color: P.ink, width: 1.8, head: 6 });
         lab(it.txt, x0 + cw - 10, y, P.ink, 'right');
       });
       // a force, so in ink: the hues are for velocity, displacement and acceleration
-      lab(T`m a = ${s4(W.net)} [N]`, x0 + cw - 10, y0 + 19 + 3 * 17, P.ink, 'right');
+      lab(T`m a = ${s4(W.net)} [N]`, x0 + cw - 10, y0 + 19 + items(n).length * 17, P.ink, 'right');
     });
   } else {
     g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle';

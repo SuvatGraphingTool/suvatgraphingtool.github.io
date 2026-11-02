@@ -54,9 +54,12 @@ export const drive = {
 
   hud(f, t) {
     const two = f.ways.length > 1;
+    // on a phone the two cars' readouts would cover most of the stage: their velocities alone
+    const narrow = typeof window !== 'undefined' && window.innerWidth < 520;
     const rows = f.ways.flatMap((n) => {
       // held where its distance ends: the readouts are its values there, and say so
       const w = f[n], end = t >= w.t - 1e-9, who = two ? `${n === 'up' ? 'Up' : 'Down'}${end ? ', at the end' : ''}: ` : end ? 'At the end: ' : '';
+      if (two && narrow) return [{ k: `${who}velocity`, v: num(w.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' }];
       return [
         { k: two ? `${who}along the road` : `${who}${who ? 'along' : 'Along'} the road`, v: num(w.pos(t), 2), unit: 'm', hue: 'disp' },
         { k: two ? `${who}velocity` : `${who}${who ? 'velocity' : 'Velocity'}`, v: num(w.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
@@ -89,7 +92,7 @@ export const drive = {
       <path d="M0 46 L20 46 L104 22 L120 22" stroke="#4d5157" stroke-width="5" fill="none"/>
       <path d="M20 46 L104 22" stroke="#ffffff" stroke-width="0.8" stroke-dasharray="4 4" fill="none"/>
       <g transform="translate(40 40) rotate(-16)"><rect x="-10" y="-8" width="20" height="6" rx="2" fill="#7f90a6"/><circle cx="-6" cy="-1" r="2" fill="#222"/><circle cx="6" cy="-1" r="2" fill="#222"/></g>
-      <g transform="translate(86 27) rotate(-16)"><rect x="-10" y="-8" width="20" height="6" rx="2" fill="#b03a32"/><circle cx="-6" cy="-1" r="2" fill="#222"/><circle cx="6" cy="-1" r="2" fill="#222"/></g>
+      <g transform="translate(86 27) rotate(-16)"><rect x="-10" y="-8" width="20" height="6" rx="2" fill="#d4a017"/><circle cx="-6" cy="-1" r="2" fill="#222"/><circle cx="6" cy="-1" r="2" fill="#222"/></g>
     </svg>`;
   },
 
