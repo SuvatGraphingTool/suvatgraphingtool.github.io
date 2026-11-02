@@ -24,14 +24,17 @@ export function render(canvas, cam, o) {
   if (!f || f.kind !== 'hill') return null;
   const { ctx: g, w, h } = fitCanvas(canvas);
   const P = palette(), L = labels(), E = env(), phone = w < 520;
+  // a short or narrow stage has no room for the force card: a caption line instead
+  const compact = phone || h < 380 || w < 760;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
   const HB = hudBoxes(w, 3); for (const b of HB) L.reserve(b);
 
   // ── the slope in its own plane: the run of length s, from the top at (0, H) to the foot at (D, 0)
-  const al = f.alpha * D2R, D = f.s * Math.cos(al), H = f.s * Math.sin(al);
-  const cardW = phone ? 0 : 230;
+  // no angle found (no slope gives that acceleration): a slope drawn, its angle not claimed
+  const al = (f.alpha ?? 5) * D2R, D = f.s * Math.cos(al), H = f.s * Math.sin(al);
+  const cardW = compact ? 0 : 230;
   const box = { xLo: -f.s * 0.12, xHi: D + f.s * 0.12, yLo: -f.s * 0.05, yHi: H + f.s * 0.22 };
-  const area = { left: phone ? 14 : HB[0].w * 0.4, right: w - (phone ? 14 : cardW + 30), top: HB[0].h * (phone ? 1 : 0.55), bottom: h - 26 };
+  const area = { left: phone ? 14 : HB[0].w + 20, right: w - (compact ? 14 : cardW + 30), top: HB[0].h * (phone ? 1 : 0.55), bottom: h - (compact ? 40 : 26) };
   const { k, X, Y } = fitSide(box, area, { sky: 0.7 });
   const along = (d) => ({ x: X(d * Math.cos(al)), y: Y(H - d * Math.sin(al)) });
 
@@ -49,37 +52,40 @@ export function render(canvas, cam, o) {
   g.strokeStyle = E.night ? '#3a3d42' : '#5b5f66'; g.lineWidth = 12; g.beginPath(); g.moveTo(-20, top.y); g.lineTo(top.x, top.y); g.lineTo(foot.x, foot.y); g.lineTo(w + 20, foot.y); g.stroke();
   g.strokeStyle = 'rgba(255,255,255,0.75)'; g.lineWidth = 1.6; g.setLineDash([8, 8]); g.beginPath(); g.moveTo(top.x, top.y - 1); g.lineTo(foot.x, foot.y - 1); g.stroke();
   g.restore();
-  post(g, L, top.x, top.y - 6, 'top', P.ink, P, { height: 56 });
-  post(g, L, foot.x, foot.y - 6, T`${s3(f.s)} [m]`, P.ink, P, { height: 56 });
+  post(g, L, top.x, top.y - 6, T`0 [m]`, P.disp, P, { height: 56 });
+  post(g, L, foot.x, foot.y - 6, T`${s3(f.s)} [m]`, P.disp, P, { height: 56 });
 
   // ── the angle at the foot, with its arc
   { const R = clamp(k * f.s * 0.35, 46, 120);
     g.strokeStyle = P.ink; g.lineWidth = 1.5;
     g.beginPath(); g.moveTo(foot.x, foot.y); g.lineTo(foot.x - R * 1.2, foot.y); g.stroke();
     g.beginPath(); g.arc(foot.x, foot.y, R, Math.PI, Math.PI + al); g.stroke();
-    const tag = f.alphaGiven ? `${num(f.alpha, 1, { trim: true })}°` : T`alpha = ${num(f.alpha, 2)}°`;
-    // beside its arc, outside it, halfway round
-    L.add(tag, foot.x - (R + 16) * Math.cos(al / 2), foot.y - (R + 16) * Math.sin(al / 2) - 8, { color: P.ink, pri: 9, size: 14, weight: 700, align: 'right' }); }
+    // under the horizontal, by the arc: clear of the lane and the arrows on it
+    const tag = f.alpha == null ? 'angle not found' : f.alphaGiven ? `${num(f.alpha, 2, { trim: true })}°` : T`alpha = ${num(f.alpha, 2)}°`;
+    L.add(tag, foot.x - R * 0.8, foot.y + 18, { color: P.ink, pri: 9, size: 14, weight: 700 }); }
 
   // ── the cyclist, leaning with the slope, and the arrows along it
-  const d = f.pos(t), q = along(d), L0 = clamp(k * 1.8, 54, 96);
-  g.save(); g.translate(q.x, q.y - 6); g.rotate(al);
-  drawFigure(g, 'cyclist', 0, 0, L0, P, { dir: 1, phase: phaseFor('cyclist', L0, d * k) });
+  const d = f.pos(t), q = along(d), L0 = clamp(Math.min(w, h) * 0.17, 56, 110);
+  // on the lane's surface, 6 px above its centre line, square to the slope
+  g.save(); g.translate(q.x, q.y); g.rotate(al);
+  drawFigure(g, 'cyclist', 0, -6, L0, P, { dir: 1, phase: phaseFor('cyclist', L0, d * k) });
   g.restore();
   L.reserve({ x: q.x - L0 * 0.6, y: q.y - L0 * 1.1, w: L0 * 1.2, h: L0 * 1.1 });
   const ux = Math.cos(al), uy = Math.sin(al), v = f.vel(t);
   if (show.velocity !== false && v > 1e-9) {
-    const len = clamp((v / Math.max(f.v, f.u, 1e-9)) * 100, 18, 100), ax = q.x + ux * (L0 * 0.55) + uy * L0 * 0.5, ay = q.y + uy * (L0 * 0.55) - ux * L0 * 0.5;   // from the front of the bike, at its middle
+    // from the front of the bike, at its middle; short enough to stay on the stage
+    const ax = q.x + ux * (L0 * 0.55) + uy * L0 * 0.5, ay = q.y + uy * (L0 * 0.55) - ux * L0 * 0.5;
+    const len = Math.min(clamp((v / Math.max(f.v, f.u, 1e-9)) * 100, 18, 100), Math.max(18, (area.right - 70 - ax) / ux));
     arrow(g, ax, ay, ax + ux * len, ay + uy * len, { color: P.vel, width: 2.6, head: 10 });
     L.add(T`${s3(v)} [m s^-1]`, ax + ux * len + 8, ay + uy * len - 6, { color: P.vel, pri: 8, size: 14, weight: 700, align: 'left' });
   }
   if (f.acc(t) !== 0) {
-    const ax = q.x + ux * 10, ay = q.y + 16 + uy * 10;
+    // under the lane, square off it, pointing the way it speeds up
+    const ax = q.x - uy * 26, ay = q.y + ux * 26;
     arrow(g, ax, ay, ax + ux * 48, ay + uy * 48, { color: P.acc, width: 2.2, head: 9 });
-    L.add(T`${s3(f.a)} [m s^-2]`, ax + ux * 54, ay + uy * 54 + 8, { color: P.acc, pri: 6, size: 13, weight: 700, align: 'left' });
+    L.add(T`${s3(f.a)} [m s^-2]`, ax + ux * 24, ay + uy * 24 + 18, { color: P.acc, pri: 8, size: 13, weight: 700 });
   }
   // the speeds at each end, once reached
-  L.add(T`${s3(f.u)} [m s^-1]`, top.x, top.y - 74, { color: P.vel, pri: 7, size: 13, weight: 700 });
   if (fired && t >= f.tMax - 1e-9) {
     const e = ageOf(t, f.tMax, f.tMax); pulse(g, foot.x, foot.y, e.age, e.life, P.mark, { radius: 40 });
     L.add(T`${s3(f.v)} [m s^-1] "after" ${s3(f.t)} [s]`, foot.x, foot.y - 74, { color: P.mark, pri: 9, size: 13, weight: 700 });
@@ -87,17 +93,26 @@ export function render(canvas, cam, o) {
   L.draw(g, w, h);
 
   // ── the forces along the slope, on a card fixed to the screen
-  if (!phone && f.m != null) {
+  if (!compact && f.m != null && f.W != null) {
     unview(g);
     const cw = cardW, chh = 150, cx = w - cw - 16, cy = h - chh - 16;
     paper(g, cx, cy, cw, chh);
-    const W = f.m * f.g * Math.sin(al), lab = (txt, x, y, col, al2 = 'left') => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = al2; g.textBaseline = 'middle'; g.fillText(txt, x, y); g.restore(); };
+    const W = f.W ?? 0, lab = (txt, x, y, col, al2 = 'left') => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = al2; g.textBaseline = 'middle'; g.fillText(txt, x, y); g.restore(); };
     lab('Along the slope, down it +', cx + 12, cy + 18, P.muted);
     const sc = (cw - 90) / Math.max(W, f.R, Math.abs(f.F ?? 0), 1e-9), y0 = cy + 50, x0 = cx + 30;
     arrow(g, x0, y0, x0 + W * sc, y0, { color: P.ink, width: 2.4, head: 9 });
     lab(T`m g sin alpha = ${s3(W)} [N]`, x0, y0 + 16, P.ink);
     if (f.R > 0) { arrow(g, x0 + W * sc, y0 + 40, x0 + W * sc - f.R * sc, y0 + 40, { color: P.ink, width: 2.4, head: 9 }); lab(T`R = ${s3(f.R)} [N]`, x0 + W * sc, y0 + 56, P.ink, 'right'); }
     if (f.F != null) { const yF = cy + chh - 20; arrow(g, x0, yF - 10, x0 + f.F * sc, yF - 10, { color: P.acc, width: 3, head: 10 }); lab(T`F = ma = ${s3(f.F)} [N]`, x0 + f.F * sc + 8, yF - 10, P.acc); }
+  }
+  // on a phone or a short stage, the forces in one line along the foot of the stage
+  if (compact && f.W != null) {
+    unview(g);
+    const txt = T`m g sin alpha = ${s3(f.W)} [N]${f.R > 0 ? `, R = ${s3(f.R)} [N]` : ''}${f.F != null ? `, F = ${s3(f.F)} [N]` : ''}`;
+    g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle';
+    const tw = Math.min(w - 20, g.measureText(txt).width + 14);
+    g.fillStyle = withAlpha('#101418', 0.78); g.fillRect(10, h - 30, tw, 22);
+    g.fillStyle = '#e8eaee'; g.fillText(txt, 17, h - 19, w - 34); g.restore();
   }
   return null;
 }

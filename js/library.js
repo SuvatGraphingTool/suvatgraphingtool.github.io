@@ -590,8 +590,8 @@ export const LIBRARY = [
       { label: 'a', kind: 'acceleration', ask: 'Find the acceleration of the cyclist.', find: 'a', sym: 'a', unit: 'm s^-2', trim: true, at: 'end', step: 'Down the slope', paper: 0.84 },
       { label: 'b', kind: 'time', ask: 'Find the time it takes to travel the 50 m.', find: 't', sym: 't', unit: 's', dp: 2, at: 'end', step: 'Down the slope', paper: 7.14 },
       { label: 'c', kind: 'force', ask: 'The cyclist and bike have a mass of 70 kg. Find the size of the resultant force on them.', find: 'F', sym: 'F', unit: 'N', trim: true, at: 'end', step: 'Down the slope', paper: 58.8 },
-      { label: 'd', kind: 'angle', ask: 'Find the slope’s angle if there is no resistance.', find: 'alpha0', sym: 'alpha', suffix: '°', dp: 2, at: 'end', step: 'Down the slope', paper: 4.92, tol: 0.005 },
-      { label: 'e', kind: 'angle', ask: 'And if there is a constant resistance of 30 N.', find: 'alphaR', sym: 'alpha', suffix: '°', dp: 2, at: 'end', step: 'Down the slope', paper: 7.44, tol: 0.005 },
+      { label: 'd', kind: 'angle', ask: 'Find the slope’s angle if there is no resistance.', given: { R: '' }, find: 'alpha0', sym: 'alpha', suffix: '°', dp: 2, at: 'end', step: 'Down the slope', paper: 4.92, tol: 0.005 },
+      { label: 'e', kind: 'angle', ask: 'And if there is a constant resistance of 30 N.', given: { R: 30 }, find: 'alphaR', sym: 'alpha', suffix: '°', dp: 2, at: 'end', step: 'Down the slope', paper: 7.44, tol: 0.005 },
     ],
     sources: [
       { board: 'AQA', paper: 'MM1B', session: 'Jan 2012', q: '6', part: 'all' },

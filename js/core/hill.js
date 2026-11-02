@@ -68,40 +68,56 @@ export function solveHill(k = {}) {
   if (!(v >= 0)) return fail('It comes to rest before the end of the run: freewheeling, it does not roll back up.');
   rows.push(...r.steps.map((st) => ({ f: st.formula, s: st.substitution, r: M`${st.target} = ${d(snap(st.value))} [${UNIT[st.target]}]` })));
 
-  // ── F = ma: the resultant force, and the angle the slope must have
+  // ── F = ma: the resultant force, and the angle the slope must have.
+  //    With no resistance the mass cancels, m g sin α = ma, so sin α = a/g needs no
+  //    mass; against a resistance it does. A slope that cannot give the
+  //    acceleration is said so in a note, and the rest still stands.
   let F = null, alpha0 = null, alphaR = null;
+  const sayNo = [];
   if (have(k.m)) {
     F = snap(k.m * a);
     rows.push({ f: M`F = ma`, s: M`F = ${d(k.m)} * ${d(snap(a))}`, r: M`F = ${d(F)} [N]` });
-    if (!have(k.alpha)) {
-      // no resistance: the weight's component is the whole resultant
-      const s0 = (k.m * a) / (k.m * g);
-      if (!(s0 > 0 && s0 < 1)) return fail(`A slope cannot give that: ${M`sin alpha`} would be ${M`${d(snap(s0))}`}. With no push, it speeds up down a slope at less than g.`);
+  }
+  if (!have(k.alpha)) {
+    const s0 = a / g;
+    if (s0 > 0 && s0 < 1) {
       alpha0 = snap(Math.asin(s0) / D2R);
-      rows.push({ f: M`m g sin alpha = ma`, s: M`${d(k.m)} * ${d(g)} sin alpha = ${d(F)}`, r: M`alpha = ${num(alpha0, 2)}°` });
-      if (R > 0) {
-        const sR = (k.m * a + R) / (k.m * g);
-        if (!(sR > 0 && sR < 1)) return fail(`Against ${M`${d(R)} [N]`} no slope gives that acceleration: ${M`sin alpha`} would be ${M`${d(snap(sR))}`}.`);
+      rows.push(have(k.m)
+        ? { f: M`m g sin alpha = ma`, s: M`sin alpha = ${d(F)}/(${d(k.m)} * ${d(g)})`, r: M`sin alpha = ${d(snap(s0))}, alpha = ${num(alpha0, 2)}°` }
+        : { f: M`m g sin alpha = ma`, s: M`sin alpha = ${d(snap(a))}/${d(g)}`, r: M`sin alpha = ${d(snap(s0))}, alpha = ${num(alpha0, 2)}°` });
+    } else sayNo.push(s0 >= 1
+      ? `With no resistance no slope gives that: it would need ${M`sin alpha = ${d(snap(s0))}`}, and a slope alone accelerates it at less than ${M`g`}.`
+      : 'With no resistance no slope gives that: on any slope it would speed up, not keep its speed or slow down.');
+    if (R > 0 && have(k.m)) {
+      const sR = (k.m * a + R) / (k.m * g);
+      if (sR > 0 && sR < 1) {
         alphaR = snap(Math.asin(sR) / D2R);
-        rows.push({ f: M`m g sin alpha - R = ma`, s: M`${d(k.m)} * ${d(g)} sin alpha - ${d(R)} = ${d(F)}`, r: M`alpha = ${num(alphaR, 2)}°` });
-      }
+        rows.push({ f: M`m g sin alpha - R = ma`, s: M`sin alpha = (${d(F)} + ${d(R)})/(${d(k.m)} * ${d(g)})`, r: M`sin alpha = ${d(snap(sR))}, alpha = ${num(alphaR, 2)}°` });
+      } else sayNo.push(`Against ${M`${d(R)} [N]`} no slope gives that: it would need ${M`sin alpha = ${d(snap(sR))}`}.`);
     }
   }
   if (have(k.alpha)) alpha = k.alpha;
-  const shown = alpha ?? alphaR ?? alpha0 ?? 6;   // the slope the stage draws: the paper's, or the one the engine found
+  // the slope the stage draws, and the forces on it: the paper's angle, or the
+  // one the engine found for the resistance given — or none, when it found none
+  const shown = alpha ?? (R > 0 ? alphaR : alpha0) ?? null;
+  const Rs = shown == null ? null : R;
+  const W = shown != null && have(k.m) ? snap(k.m * g * Math.sin(shown * D2R)) : null;
 
   const notes = [`From ${M`${d(u)} [m s^-1]`} to ${M`${d(snap(v))} [m s^-1]`} over ${M`${d(snap(s))} [m]`}: an acceleration of ${M`${d(snap(a))} [m s^-2]`}, for ${M`${d(snap(t))} [s]`}.`];
   if (F != null) notes.push(`The resultant force on cyclist and bike is ${M`${d(F)} [N]`} down the slope.`);
-  if (alpha0 != null) notes.push(`With no resistance, the weight's component down the slope is the whole of it: the slope is at ${num(alpha0, 2)}° to the horizontal.${alphaR != null ? ` Against a resistance of ${M`${d(R)} [N]`}, the slope must be steeper, ${num(alphaR, 2)}°, to give the same acceleration.` : ''}`);
-  if (have(k.alpha)) notes.unshift(`On a ${num(alpha, 1)}° slope${R > 0 ? ` against ${M`${d(R)} [N]`}` : ' with no resistance'}, it accelerates at ${M`${d(snap(a))} [m s^-2]`}.`);
+  notes.push(...sayNo);
+  if (alpha0 != null) notes.push(`With no resistance, the weight's component down the slope is the whole of it: the slope is at ${num(alpha0, 2)}° to the horizontal.`);
+  if (alphaR != null) notes.push(`Against a resistance of ${M`${d(R)} [N]`}, the weight's component must be bigger by that much: the slope is at ${num(alphaR, 2)}°.`);
+  if (have(k.alpha)) notes.unshift(`On a ${num(alpha, 2, { trim: true })}° slope${R > 0 ? ` against ${M`${d(R)} [N]`}` : ' with no resistance'}, it accelerates at ${M`${d(snap(a))} [m s^-2]`}.`);
   const derived = [`${M`a = ${d(snap(a))} [m s^-2]`}`, `${M`t = ${d(snap(t))} [s]`}`, ...(F != null ? [`${M`F = ${d(F)} [N]`}`] : []),
     ...(alpha0 != null ? [`${num(alpha0, 2)}° with no resistance`] : []), ...(alphaR != null ? [`${num(alphaR, 2)}° against ${M`${d(R)} [N]`}`] : [])];
 
   const T = snap(t), A = snap(a);
   const pos = (tt) => { const c = Math.min(Math.max(tt, 0), T); return u * c + 0.5 * A * c * c; };
   const vel = (tt) => u + A * Math.min(Math.max(tt, 0), T);
-  const f = { kind: 'hill', u, v: snap(v), a: A, s: snap(s), t: T, tMax: T, tFlight: T, m: have(k.m) ? k.m : null, R, g, F, alpha: shown, alphaGiven: have(k.alpha), alpha0, alphaR,
-    pos, vel, acc: (tt) => (tt < T - 1e-9 ? A : 0), params: { u, theta: 0, h: 0, g } };
+  const f = { kind: 'hill', u, v: snap(v), a: A, s: snap(s), t: T, tMax: T, tFlight: T, m: have(k.m) ? k.m : null, R: Rs, g, F, W, alpha: shown, alphaGiven: have(k.alpha), alpha0, alphaR,
+    // still accelerating as it passes the end of the run
+    pos, vel, acc: (tt) => (tt <= T + 1e-9 ? A : 0), params: { u, theta: 0, h: 0, g } };
   return { ok: true, mode: 'hill', u, v: snap(v), a: A, s: snap(s), t: T, F, alpha0, alphaR, alpha: shown, rows, notes, derived, f };
 }
 

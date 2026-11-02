@@ -1678,7 +1678,10 @@ group('AQA MM1B Jan 2012 Q6: freewheeling down a slope', () => {
   ok(Math.abs(s.alpha0 - 4.92) < 0.005 && Math.abs(s.alphaR - 7.44) < 0.005, 'α = 4.92° with no resistance, 7.44° against 30 N');
   const back = solveHill({ u: 4, s: 50, alpha: s.alphaR, m: 70, R: 30, g: 9.8 });
   ok(back.ok && Math.abs(back.v - 10) < 1e-6, 'the other way: the angle and the resistance give the acceleration, and 10 m s⁻¹ at the end');
-  ok(!solveHill({ u: 4, v: 100, s: 50, m: 70 }).ok, 'an acceleration no slope can give is refused');
+  { const x = solveHill({ u: 4, v: 100, s: 50, m: 70 });
+    ok(x.ok && x.alpha0 == null && x.F > 0 && x.notes.some((n) => /no slope gives that/.test(n)), 'an acceleration no slope can give: a, t and F still stand, the angle is said to be impossible'); }
+  { const x = solveHill({ u: 5, v: 5, s: 50, m: 70, R: 30, g: 9.8 });
+    ok(x.ok && x.alpha0 == null && Math.abs(Math.sin(x.alphaR * Math.PI / 180) - 30 / 686) < 1e-9, 'a steady speed against 30 N: no slope without resistance, sin α = 30⁄686 with it'); }
   ok(!solveHill({ u: 4, s: 50, alpha: 5, R: 30 }).ok, 'a resistance with no mass is refused when the angle is given');
 });
 
