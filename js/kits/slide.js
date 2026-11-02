@@ -36,6 +36,8 @@ export const slide = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'along',
+  resolvePart: '',     // along a slope: neither across (dashed) nor up (rule 2)
+  resolveEnds: true,   // the run stops at its end: the engine follows it no further
   resolveFrom: 'where it was let go',
   resolveWords: { pos: 'going down the slope', neg: 'going up the slope', plus: 'Down the slope', line: 'along the slope' },
   read(v) { return { look: v.look ?? 'slipway', alpha: v.alpha, mu: v.mu, m: v.m, s: v.s, t: v.t, v: v.v, g: v.g }; },

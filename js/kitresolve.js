@@ -119,12 +119,14 @@ function blocksFor(o, t, tMax, K, U) {
   const Wd = K?.resolveWords;
   const [pos1, neg1, plus] = Wd && line === 'along' ? [Wd.pos, Wd.neg, Wd.plus] : down ? ['going down', 'going up', 'Down'] : line === 'along' ? ['going forwards', 'going backwards', 'Forwards'] : ['going up', 'going down', 'Up'];
   const dir = vv > 1e-9 ? pos1 : vv < -1e-9 ? neg1 : 'at rest';
-  const part = line === 'along' ? 'x' : 'y';
+  // a line along a slope is neither across nor up: a kit says so with `resolvePart: ''` (rule 2)
+  const part = K?.resolvePart ?? (line === 'along' ? 'x' : 'y');
   // the engine follows it no further from here: an impact, or the end of its run
   const before = (u) => { const b = o.acc?.(u); return fin(b) ? b : b && typeof b === 'object' ? b[k] : 0; };
-  const ended = Math.abs(vv) > 1e-9 && (t < tMax - 1e-9
+  // a kit whose run simply stops at its end (into the sea, off a roof) says so with `resolveEnds`
+  const ended = Math.abs(vv) > 1e-9 && ((K?.resolveEnds && t >= tMax - 1e-9) || (t < tMax - 1e-9
     ? Math.abs(vec(o.pos(Math.min(tMax, t + tMax * 1e-3)))[k] - s) < 1e-12
-    : Math.abs(vec(o.pos(t - tMax * 1e-3))[k] - s) < 1e-12 || (fin(aa) && Math.abs(aa) < 1e-9 && Math.abs(before(t - tMax * 1e-3)) > 1e-9));
+    : Math.abs(vec(o.pos(t - tMax * 1e-3))[k] - s) < 1e-12 || (fin(aa) && Math.abs(aa) < 1e-9 && Math.abs(before(t - tMax * 1e-3)) > 1e-9)));
   const rows = [
     { name: sN, value: s, unit: U.s, formula: M`s`, sub: d(s), note: sNote, hue: 'disp', part },
     { name: 'Velocity', value: vv, unit: U.v, formula: M`v`, sub: d(vv), note: `${dir[0].toUpperCase()}${dir.slice(1)}. ${plus} is positive.`, hue: 'vel', part },

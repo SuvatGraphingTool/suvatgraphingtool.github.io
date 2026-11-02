@@ -32,6 +32,7 @@ export const hill = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'along',
+  resolvePart: '',     // along a slope: neither across (dashed) nor up (rule 2)
   resolveFrom: 'the top',
   read(v) { return { u: v.u, v: v.v, s: v.s, t: v.t, a: v.a, m: v.m, R: v.R, alpha: v.alpha, g: v.g }; },
   solve: solveHill,

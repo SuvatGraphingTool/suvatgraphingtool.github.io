@@ -132,6 +132,6 @@ export function solveHill(k = {}) {
 /** The working: the run down the slope and F = ma along it (or, the angle given, F = ma first). */
 export function hillWorking(sv) {
   if (!sv?.ok) return [];
-  return [{ title: 'Down the slope, then F = ma along it', rows: sv.rows,
+  return [{ title: `Down the slope, then ${M`F = ma`} along it`, rows: sv.rows,
     note: `Along the slope, down it positive: the weight's component is ${M`m g sin alpha`} and any resistance ${M`R`} acts up it, so ${M`m g sin alpha - R = ma`}.` }];
 }

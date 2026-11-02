@@ -18,7 +18,8 @@ import { pulse, ageOf } from './effects.js';
 import { T, num } from '../notation.js';
 
 const D2R = Math.PI / 180, TAU = Math.PI * 2;
-const s3 = (x) => num(x, Math.abs(x) < 10 ? 2 : 1, { trim: true });
+// three significant figures: a small value never rounds to a false 0
+const s3 = (x) => num(Number(x.toPrecision(3)), 6, { trim: true });
 
 /** A lifeboat side on, keel along y = 0, L px long, bow towards +x: a dark
     hull below the rubbing strake, a bright upper hull, a white wheelhouse
@@ -191,7 +192,9 @@ export function render(canvas, cam, o) {
     g.strokeStyle = P.ink; g.lineWidth = 1.5;
     g.beginPath(); g.moveTo(foot.x, foot.y); g.lineTo(foot.x - R * 1.2, foot.y); g.stroke();
     g.beginPath(); g.arc(foot.x, foot.y, R, Math.PI, Math.PI + al); g.stroke();
-    L.add(`${num(f.alpha, 2, { trim: true })}°`, foot.x - R * 0.8, foot.y + 18, { color: P.ink, pri: 9, size: 14, weight: 700 }); }
+    // inside the angle it names, on its bisector
+    const bis = Math.PI + al / 2;
+    L.add(`${num(f.alpha, 2, { trim: true })}°`, foot.x + Math.cos(bis) * R * 0.72, foot.y + Math.sin(bis) * R * 0.72, { color: P.ink, pri: 9, size: 14, weight: 700 }); }
 
   // ── the run, marked beside the slope: let go at the top, the distance along it,
   // under the slope, square to it: clear of what slides on top

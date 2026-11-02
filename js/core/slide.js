@@ -22,6 +22,8 @@ import { M, num } from '../notation.js';
 
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x) => num(x, x !== 0 && Math.abs(x) < 1 ? 4 : 3, { trim: true });
+// a value the student typed, as typed: never rounded into something it is not
+const typed = (x) => num(x, 8, { trim: true });
 const D2R = Math.PI / 180;
 const UNIT = { s: 'm', a: 'm s^-2', v: 'm s^-1', u: 'm s^-1', t: 's' };
 export const LOOKS = ['slipway', 'roof', 'plane'];
@@ -45,6 +47,7 @@ export function solveSlide(k = {}) {
   for (const [q, what] of [['s', 'How far it slides'], ['t', 'The time'], ['v', 'Its speed at the end']]) {
     if (have(k[q]) && !(k[q] > 0)) return fail(`${what} is a positive number: it is let go from rest and slides down.`);
   }
+  if (have(k.s) && k.s > 5000) return fail('A slope more than 5 km long is not one surface with one coefficient of friction: give a run of a few metres to a few hundred.');
   const alpha = k.alpha, m = have(k.m) ? k.m : null, sn = Math.sin(alpha * D2R), cs = Math.cos(alpha * D2R), tan = sn / cs;
   const run = ['s', 't', 'v'].filter((q) => have(k[q]));
   const forces = [], motion = [];
@@ -60,11 +63,11 @@ export function solveSlide(k = {}) {
     if (m != null) {
       const R = snap(m * g * cs), F = snap(mu * R);
       forces.push({ f: M`R = m g cos alpha`, s: M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(R)} [N]` });
-      if (mu > 0) forces.push({ f: M`F = mu R`, s: M`F = ${d(mu)} * ${d(R)}`, r: M`F = ${d(F)} [N]` });
+      if (mu > 0) forces.push({ f: M`F = mu R`, s: M`F = ${typed(mu)} * ${d(R)}`, r: M`F = ${d(F)} [N]` });
       forces.push(mu > 0 ? { f: M`m g sin alpha - F = ma`, s: M`${d(m)} * ${d(g)} sin ${d(alpha)}° - ${d(F)} = ${d(m)}a`, r: M`a = ${d(a)} [m s^-2]` }
         : { f: M`m g sin alpha = ma`, s: M`a = ${d(g)} sin ${d(alpha)}°`, r: M`a = ${d(a)} [m s^-2]` });
     } else {
-      forces.push(mu > 0 ? { f: M`m g sin alpha - mu m g cos alpha = ma`, s: M`a = ${d(g)}(sin ${d(alpha)}° - ${d(mu)} cos ${d(alpha)}°)`, r: M`a = ${d(a)} [m s^-2]` }
+      forces.push(mu > 0 ? { f: M`m g sin alpha - mu m g cos alpha = ma`, s: M`a = ${d(g)}(sin ${d(alpha)}° - ${typed(mu)} cos ${d(alpha)}°)`, r: M`a = ${d(a)} [m s^-2]` }
         : { f: M`m g sin alpha = ma`, s: M`a = ${d(g)} sin ${d(alpha)}°`, r: M`a = ${d(a)} [m s^-2]` });
     }
   } else {
@@ -77,21 +80,36 @@ export function solveSlide(k = {}) {
   const known = { u: 0 };
   for (const q of run) known[q] = k[q];
   if (a != null) known.a = a;
-  const r = solve(known);
-  if (!r.ok) return fail('No slide from rest fits those numbers. Check them.');
-  const { s, v, t } = r.values;
-  if (a == null) a = snap(r.values.a);
+  let s, v, t;
+  if (a == null && have(k.s) && have(k.t)) {
+    // the distance in a time from rest: s = ut + ½at² in one step, as the mark schemes go
+    s = k.s; t = k.t; a = snap((2 * s) / (t * t)); v = a * t;
+    motion.push({ f: M`s = ut + ½at^2`, s: M`${d(s)} = ½a * ${d(t)}^2`, r: M`a = ${d(a)} [m s^-2]` });
+    motion.push({ f: M`v = u + at`, s: M`v = ${d(a)} * ${d(t)}`, r: M`v = ${d(snap(v))} [m s^-1]` });
+  } else {
+    const r = solve(known);
+    if (!r.ok) return fail('No slide from rest fits those numbers. Check them.');
+    ({ s, v, t } = r.values);
+    if (a == null) a = snap(r.values.a);
+    motion.push(...r.steps.map((st) => ({ f: st.formula, s: st.substitution, r: M`${st.target} = ${d(snap(st.value))} [${UNIT[st.target]}]` })));
+  }
   if (!(s > 0 && t > 0)) return fail('No slide from rest fits those numbers. Check them.');
-  motion.push(...r.steps.map((st) => ({ f: st.formula, s: st.substitution, r: M`${st.target} = ${d(snap(st.value))} [${UNIT[st.target]}]` })));
+  if (v > 200) return fail(`That would have it sliding at ${M`${d(v)} [m s^-1]`} by the end: faster than anything slides down a real slope. Check the numbers.`);
 
   if (mu == null) {
     const top = g * sn;
     if (!(a > 0)) return fail('Let go from rest it must speed up: those numbers give no acceleration down the slope.');
-    if (a > top + 1e-9) return fail(`Even with no friction it speeds up at only ${M`g sin alpha = ${d(snap(top))} [m s^-2]`} on this slope: ${M`${d(a)} [m s^-2]`} is too fast.`);
-    mu = snap(Math.max(0, (top - a) / (g * cs)));
-    forces.push(m != null
-      ? { f: M`m g sin alpha - mu m g cos alpha = ma`, s: M`${d(m)} * ${d(g)} sin ${d(alpha)}° - mu * ${d(m)} * ${d(g)} cos ${d(alpha)}° = ${d(m)} * ${d(a)}`, r: M`mu = ${d(mu)}` }
-      : { f: M`m g sin alpha - mu m g cos alpha = ma`, s: M`mu = (${d(g)} sin ${d(alpha)}° - ${d(a)})/(${d(g)} cos ${d(alpha)}°)`, r: M`mu = ${d(mu)}` });
+    // within a rounding (0.1 %) of a smooth slope's g sin α, it is a smooth slope
+    if (a > top * 1.001) return fail(`Even with no friction it speeds up at only ${M`g sin alpha = ${d(snap(top))} [m s^-2]`} on this slope: ${M`${d(a)} [m s^-2]`} is too fast.`);
+    mu = a >= top * 0.999 ? 0 : snap((top - a) / (g * cs));
+    if (m != null) {
+      const R = snap(m * g * cs), F = snap(m * (top - a));
+      forces.push({ f: M`R = m g cos alpha`, s: M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(R)} [N]` });
+      forces.push({ f: M`m g sin alpha - F = ma`, s: M`F = ${d(m)} * ${d(g)} sin ${d(alpha)}° - ${d(m)} * ${d(a)}`, r: M`F = ${d(mu === 0 ? 0 : F)} [N]` });
+      forces.push({ f: M`F = mu R`, s: M`mu = ${d(mu === 0 ? 0 : F)}/${d(R)}`, r: M`mu = ${d(mu)}` });
+    } else {
+      forces.push({ f: M`m g sin alpha - mu m g cos alpha = ma`, s: M`mu = (${d(g)} sin ${d(alpha)}° - ${d(a)})/(${d(g)} cos ${d(alpha)}°)`, r: M`mu = ${d(mu)}` });
+    }
   }
 
   const N = m != null ? snap(m * g * cs) : null, Fr = m != null ? snap(mu * m * g * cs) : null, W = m != null ? snap(m * g * sn) : null;
@@ -116,7 +134,7 @@ export function solveSlide(k = {}) {
 /** The working: the forces and the acceleration, and the run from rest — in the order the paper goes. */
 export function slideWorking(sv) {
   if (!sv?.ok) return [];
-  const forceStep = { title: sv.f.muGiven ? 'Down the slope: the forces give the acceleration' : 'Down the slope: F = ma gives the coefficient of friction', rows: sv.forces,
+  const forceStep = { title: sv.f.muGiven ? 'Down the slope: the forces give the acceleration' : `Down the slope: ${M`F = ma`} gives the coefficient of friction`, rows: sv.forces,
     note: `Down the slope is positive. Across it nothing moves, so ${M`R = m g cos alpha`}; sliding, the friction is ${M`mu R`}, up the slope against the motion.` };
   const runStep = { title: 'From rest: the run down the slope', rows: sv.motion, note: `Let go from rest, so ${M`u = 0`}.` };
   return sv.f.muGiven ? [forceStep, runStep] : [runStep, forceStep];

@@ -1715,6 +1715,12 @@ group('Edexcel M1 Jan 2013 Q4, Jan 2004 Q3, Jan 2010 Q5: down a rough slope', ()
   ok(!solveSlide({ alpha: 30, mu: 0.2, s: 3, t: 2 }).ok && !solveSlide({ alpha: 30, s: 3 }).ok, 'too much or too little of the run is refused');
   ok(solveSlide({ alpha: 30, s: 9.8, t: 2, g: 9.8 }).mu === 0, 'a run as fast as a smooth slope gives μ = 0');
   ok(slideWorking(boat)[0].title.startsWith('From rest') && slideWorking(tile)[0].title.startsWith('Down the slope'), 'the working goes the way the paper goes');
+  { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
+    ok(/s=ut\+½at2/.test(strip(pt.motion[0].f)) && pt.forces.some((r) => /^F=/.test(strip(r.r))) && pt.forces.some((r) => /^R=/.test(strip(r.r))), 'J10: s = ut + ½at² in one step; then R, F and μ = F/R, as the mark scheme');
+    ok(solveSlide({ alpha: 30, s: 10, v: 9.9, g: 9.8 }).mu === 0, 'a run within a rounding of a smooth slope is a smooth slope, not refused');
+    ok(!solveSlide({ alpha: 30, s: 1e9, v: 1 }).ok, 'a slope kilometres long is refused');
+    const K = KITS.slide, sv = K.solve(K.read({ alpha: 15, s: 50, v: 12.6, m: 800, g: 9.8 })), R = resolveKit(K, sv, sv.f, sv.f.tMax);
+    ok(R.blocks[0].rows.every((q) => q.part === '') && /ends here/.test(R.blocks[0].rows[2].note), 'Resolve along a slope: no dashed (horizontal) rows, and at the end its run ends'); }
 });
 
 group('Edexcel M1 Jan 2003 Q7 and Jun 2012 Q5: into soft ground', () => {

@@ -28,6 +28,7 @@ export const rough = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'along',
+  resolvePart: '',     // along a slope: neither across (dashed) nor up (rule 2)
   resolveFrom: 'where it started',
   resolveWords: { pos: 'going up the slope', neg: 'going down the slope', plus: 'Up the slope', line: 'along the slope' },
   read(v) { return { u: v.u, alpha: v.alpha, mu: v.mu, m: v.m, g: v.g }; },
