@@ -35,7 +35,7 @@ import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
 import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles, diveCatch } from './impacts.js';
 import { ANIMALS, FEET, javelin } from './animals.js';
-import { golfer, kicker, archer, archerHand, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
+import { golfer, kicker, archer, archerHand, server, batter, SERVE_AT, BAT_AT, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
 import { VEHICLES } from './vehicles.js';
 import { LAUNCHER_ART, launcherSize } from './launchers.js';
@@ -48,7 +48,7 @@ const HUD = 250, HUD_H = 290;
 const trimmed = (s) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s);
 /** Half a figure's drawn height, as a fraction of its drawn length L — so it
     is drawn round the engine's point, not standing on it. */
-const BALLS = new Set(['football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball']);
+const BALLS = new Set(['football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball', 'rugbyBall', 'cricketBall', 'baseball', 'volleyball']);
 const MIDDLE = { car: 0.16, lorry: 0.2, train: 0.11, cyclist: 0.45, motorcycle: 0.3, runner: 0.5 };
 const WET = new Set(['sea', 'river', 'pool', 'well']);
 
@@ -203,7 +203,7 @@ function launch(canvas, o) {
     // thrown from low down with nothing to stand on: the thrower stands on the
     // ground or the floor and lets go at hand height
     // (a golf ball is struck, never held: from a height it is a raised tee)
-    const byHand = thrown && kind !== 'golfBall' && !B.edge && R.backdrop !== 'sea' && H0 > 0 && H0 <= 2.6;
+    const byHand = thrown && kind !== 'golfBall' && !B.edge && R.backdrop !== 'sea' && H0 > 0 && H0 <= (kind === 'tennisBall' ? 3.4 : 2.6);
     const n = 160, pts = [];
     for (let j = 0; j <= n; j++) { const tt = (j / n) * f.tMax; pts.push({ t: tt, ...f.pos(tt) }); }
     return { i, f, kind, piece, thrown, small, byHand, pts, t0: m.t0 || 0, tag: twin ? 'AB'[i] : null, ring: i ? P.second : null,
@@ -317,11 +317,13 @@ function launch(canvas, o) {
     const clock = clocks[m.i];
   // ── who throws it: at the edge, wound up before the throw, through after it
   const v0 = f.vel(0), aim = (Math.atan2(v0.y, v0.x) * 180) / Math.PI;
+  // a tennis ball is served, a baseball or a cricket ball batted: where the racquet or the bat meets it
+  const hits = thrown && (kind === 'tennisBall' ? SERVE_AT : kind === 'baseball' || kind === 'cricketBall' ? BAT_AT : null);
   // at a well, the thrower stands at the well head, clear of the shaft
   let th = TH(k), feet = R.backdrop === 'well' ? x0 - 26 - 13 - 10 - th * 0.18 : x0 - th * (f.vertical ? 0.5 : 0.2), stand = top;
   if (byHand) {
     // sized so the hand is at the launch point, feet on the floor
-    const per = kind === 'arrow' ? archerHand(100, aim) : throwerHand(100, aim);
+    const per = kind === 'arrow' ? archerHand(100, aim) : hits ? { x: 100 * hits.x, y: 100 * hits.y } : throwerHand(100, aim);
     th = clamp((oy - top) / (per.y / 100), THROWER_MIN * 0.8, 3 * k);
     feet = x0 - th * (per.x / 100); stand = oy;
   }
@@ -331,10 +333,15 @@ function launch(canvas, o) {
   // an archer stands with the bow hand over where the arrow leaves from
   const shoots = thrown && kind === 'arrow';
   if (shoots) feet = x0 - archerHand(th, aim).x - sh - (byHand ? 0 : th * 0.12);
+  if (hits && !byHand) feet = x0 - hits.x * th - sh;
   // a golf ball is struck by a golfer, a football kicked: the ball where
   // the engine starts it, at the club's head or the boot
-  const striker = !byHand && (kind === 'golfBall' ? golfer : kind === 'football' ? kicker : null);
-  if (shoots) {
+  const striker = !byHand && (kind === 'golfBall' ? golfer : kind === 'football' || kind === 'rugbyBall' ? kicker : null);
+  if (hits) {
+    // the racquet or the bat meets it at the engine's point (rule 4) as the clock starts
+    const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.06 * f.tMax), 0, 1) : 0;
+    (kind === 'tennisBall' ? server : batter)(g, feet, stand, th, P, { pose, ring: m.ring, bat: kind === 'cricketBall' ? 'cricket' : 'baseball' });
+  } else if (shoots) {
     const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.05 * f.tMax), 0, 1) : 0;
     archer(g, feet, stand, th, P, { pose, aim, ring: m.ring });
   } else if (thrown && striker) {
@@ -475,7 +482,7 @@ function launch(canvas, o) {
     const hp = archerHand(th, aim), q = 1 - clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1), e = q * q * (3 - 2 * q);
     const a0 = Math.atan2(v0.y, v0.x), L = arrowLen;
     bx += (feet + hp.x - Math.cos(a0) * L * 0.3 - X(0)) * e; by += (stand - hp.y + Math.sin(a0) * L * 0.3 - Y(H0)) * e;
-  } else if (byHand && thrown && small) {
+  } else if (byHand && thrown && small && !hits) {
     const hp = throwerHand(th, aim), q = 1 - clamp(t / Math.max(1e-6, 0.08 * f.tMax), 0, 1), e = q * q * (3 - 2 * q);
     bx += (feet + hp.x - X(0)) * e; by += (stand - hp.y - Y(H0)) * e;
   }

@@ -116,7 +116,44 @@ function hammer(g, x, y, R, spin) {
 }
 
 /** Every prop, by the registry's figure name. */
-export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer };
+/** A rugby ball: a leather oval, end over end with `spin`, its laces and seams. */
+function rugbyBall(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(spin);
+  const gr = g.createRadialGradient(-R * 0.4, -R * 0.35, R * 0.1, 0, 0, R * 1.5);
+  gr.addColorStop(0, '#f4f1ea'); gr.addColorStop(0.6, '#dcd6ca'); gr.addColorStop(1, '#8a8478');
+  g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, R * 1.45, R * 0.95, 0, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = Math.max(1, R * 0.1); g.stroke();
+  g.strokeStyle = '#2f5fa8'; g.lineWidth = Math.max(1, R * 0.16); g.beginPath(); g.ellipse(0, 0, R * 1.45, R * 0.5, 0, Math.PI * 1.15, Math.PI * 1.85); g.stroke();
+  g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = Math.max(1, R * 0.08); g.beginPath(); g.moveTo(-R * 0.45, -R * 0.2); g.lineTo(R * 0.45, -R * 0.2); g.stroke();
+  for (let i = -2; i <= 2; i++) { g.beginPath(); g.moveTo(i * R * 0.2, -R * 0.32); g.lineTo(i * R * 0.2, -R * 0.08); g.stroke(); }
+  g.restore();
+}
+/** A cricket ball: deep cherry leather, its raised seam stitched white. */
+function cricketBall(g, x, y, R, spin) {
+  sphere(g, x, y, R, '#c45a6e', '#7a1a2e', '#3a0a14');
+  g.save(); g.translate(x, y); g.rotate(spin);
+  g.strokeStyle = 'rgba(255,240,230,0.9)'; g.lineWidth = Math.max(1, R * 0.1);
+  for (const o of [-R * 0.14, R * 0.14]) { g.beginPath(); g.ellipse(0, 0, R * 0.98, Math.abs(o) * 1.4 + 0.5, 0, 0, TAU); g.stroke(); }
+  g.restore(); rim(g, x, y, R, 'rgba(30,0,8,0.6)');
+}
+/** A baseball: white leather, its red stitches curving in two figure-of-eight halves. */
+function baseball(g, x, y, R, spin) {
+  sphere(g, x, y, R, '#ffffff', '#efebe4', '#a9a49d');
+  g.save(); g.translate(x, y); g.rotate(spin); g.strokeStyle = '#b5303a'; g.lineWidth = Math.max(1, R * 0.11); g.setLineDash([Math.max(1.2, R * 0.15), Math.max(1, R * 0.1)]);
+  g.beginPath(); g.arc(-R * 0.95, 0, R * 0.72, -0.95, 0.95); g.stroke(); g.beginPath(); g.arc(R * 0.95, 0, R * 0.72, Math.PI - 0.95, Math.PI + 0.95); g.stroke();
+  g.restore(); rim(g, x, y, R, 'rgba(0,0,0,0.45)');
+}
+/** A volleyball: white, blue and yellow panels curving round it. */
+function volleyball(g, x, y, R, spin) {
+  sphere(g, x, y, R, '#ffffff', '#eeeae4', '#a9a49d');
+  g.save(); g.beginPath(); g.arc(x, y, R, 0, TAU); g.clip(); g.translate(x, y); g.rotate(spin);
+  for (const [a, c] of [[0, '#2f5fa8'], [TAU / 3, '#f2c21b'], [(2 * TAU) / 3, '#2f5fa8']]) { g.fillStyle = c; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R, a, a + 0.9); g.quadraticCurveTo(Math.cos(a + 0.45) * R * 0.3, Math.sin(a + 0.45) * R * 0.3, 0, 0); g.fill(); }
+  g.restore();
+  const sg = g.createRadialGradient(x - R * 0.35, y - R * 0.38, R * 0.1, x, y, R); sg.addColorStop(0, 'rgba(255,255,255,0.35)'); sg.addColorStop(1, 'rgba(0,0,0,0.3)'); g.fillStyle = sg; g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill();
+  rim(g, x, y, R, 'rgba(0,0,0,0.45)');
+}
+
+export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball };
 
 /** Draw a prop by name at (x, y), R px, turned by spin, ringed for B. */
 export function drawProp(g, kind, x, y, R, spin = 0, ring = null, o = {}) {

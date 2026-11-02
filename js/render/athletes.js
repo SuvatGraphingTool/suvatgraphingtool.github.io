@@ -7,6 +7,7 @@
 // tell B from A. Nothing here is a quantity.
 
 import { env, softShadow } from './scenery.js';
+import { withAlpha } from './util.js';
 
 const TAU = Math.PI * 2;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -157,3 +158,74 @@ export function archer(g, X, Y, H, P, { pose = 0, aim = 20, ring = null } = {}) 
   g.fillStyle = C.skin; g.beginPath(); g.arc(draw.x, draw.y, H * 0.03, 0, TAU); g.fill();
   head(g, sh.x + H * 0.04, sh.y - H * 0.11, H * 0.075, C, null);
 }
+
+/** Where a server's racquet meets the ball, and a batter's bat: from the
+    feet, as fractions of the height (x ahead, y up). */
+export const SERVE_AT = { x: 0.17, y: 1.42 }, BAT_AT = { x: 0.43, y: 0.55 };
+
+/** A tennis player serving: the ball tossed up, the racquet dropped behind
+    the back (pose 0), swung up to meet the ball at full stretch above and
+    ahead (0.5), and down across the body in the follow-through (1). */
+export function server(g, X, Y, H, P, { pose = 0, ring = null } = {}) {
+  const C = colours(ring), E = env(), u = Math.max(0, Math.min(1, pose)), shirt = ring || (E.night ? '#c8ccd2' : '#f4f1ea');
+  softShadow(g, X, Y + 1, H * 0.3, H * 0.05, 0.8);
+  const lean = u < 0.5 ? lerp(-0.25, 0.1, u / 0.5) : lerp(0.1, 0.35, (u - 0.5) / 0.5);
+  const back = { x: X - H * 0.12, y: Y }, front = { x: X + H * 0.12, y: Y };
+  const hip = { x: X, y: Y - H * 0.5 }, sh = { x: hip.x + Math.sin(lean) * H * 0.3 + H * 0.02, y: hip.y - Math.cos(lean) * H * 0.3 };
+  const thigh = H * 0.25, shin = H * 0.26;
+  limb(g, [hip, knee(hip, back, thigh, shin, 1), back], C.skinFar, H * 0.065);
+  limb(g, [hip, knee(hip, front, thigh, shin, 1), front], C.skin, H * 0.07);
+  for (const F of [back, front]) { g.fillStyle = '#f2f2f0'; g.beginPath(); g.ellipse(F.x + H * 0.03, F.y - H * 0.015, H * 0.06, H * 0.025, 0, 0, TAU); g.fill(); }
+  g.fillStyle = E.night ? '#3a3e48' : '#2f3340'; g.beginPath(); g.moveTo(hip.x - H * 0.09, hip.y - H * 0.02); g.lineTo(hip.x + H * 0.09, hip.y - H * 0.02); g.lineTo(hip.x + H * 0.1, hip.y + H * 0.12); g.lineTo(hip.x - H * 0.1, hip.y + H * 0.12); g.closePath(); g.fill();
+  limb(g, [hip, sh], shirt, H * 0.16);
+  // the tossing arm: straight up as the ball goes up, down once it is struck
+  const toss = u < 0.55 ? { x: sh.x + H * 0.05, y: sh.y - H * 0.32 } : { x: sh.x + H * 0.08, y: sh.y + H * 0.25 };
+  limb(g, [sh, toss], C.skinFar, H * 0.05);
+  // the racquet arm and racquet in one line from the shoulder, swinging round
+  const phi = u < 0.5 ? lerp(-2.7, 0.2, (u / 0.5) ** 1.4) : lerp(0.2, 2.5, (u - 0.5) / 0.5);
+  const dir = { x: Math.sin(phi), y: -Math.cos(phi) }, hand = { x: sh.x + dir.x * H * 0.33, y: sh.y + dir.y * H * 0.33 };
+  limb(g, [sh, hand], C.skin, H * 0.055);
+  const head = { x: hand.x + dir.x * H * 0.36, y: hand.y + dir.y * H * 0.36 };
+  g.strokeStyle = '#2b2628'; g.lineWidth = Math.max(1.5, H * 0.02); g.beginPath(); g.moveTo(hand.x, hand.y); g.lineTo(hand.x + dir.x * H * 0.2, hand.y + dir.y * H * 0.2); g.stroke();
+  g.save(); g.translate(head.x, head.y); g.rotate(Math.atan2(dir.y, dir.x));
+  g.strokeStyle = E.night ? '#8a8e96' : '#2f5fa8'; g.lineWidth = Math.max(1.6, H * 0.022); g.beginPath(); g.ellipse(-H * 0.06, 0, H * 0.1, H * 0.07, 0, 0, TAU); g.stroke();
+  g.strokeStyle = withAlpha(E.night ? '#c8ccd2' : '#ffffff', 0.7); g.lineWidth = 0.7; for (let i = -2; i <= 2; i++) { g.beginPath(); g.moveTo(-H * 0.15, i * H * 0.022); g.lineTo(H * 0.03, i * H * 0.022); g.stroke(); g.beginPath(); g.moveTo(-H * 0.06 + i * H * 0.03, -H * 0.06); g.lineTo(-H * 0.06 + i * H * 0.03, H * 0.06); g.stroke(); }
+  g.restore();
+  head_(g, sh.x + H * 0.03, sh.y - H * 0.1, H * 0.075, C, E.night ? '#c9c2b6' : '#ffffff');
+}
+
+/** A batter side on: feet apart, knees bent, the bat held in both hands,
+    cocked up behind the head (pose 0), swung level through the ball at
+    waist height (0.5), and on round over the shoulder (1). `bat` is
+    'cricket' (a flat willow blade) or 'baseball' (a round tapered bat). */
+export function batter(g, X, Y, H, P, { pose = 0, ring = null, bat = 'baseball' } = {}) {
+  const C = colours(ring), E = env(), u = Math.max(0, Math.min(1, pose)), shirt = ring || (bat === 'cricket' ? (E.night ? '#c8ccd2' : '#f4f1ea') : (E.night ? '#3a4a6a' : '#2f5fa8'));
+  softShadow(g, X, Y + 1, H * 0.3, H * 0.05, 0.8);
+  const back = { x: X - H * 0.16, y: Y }, front = { x: X + H * 0.18, y: Y };
+  const hip = { x: X, y: Y - H * 0.47 }, sh = { x: X + H * 0.03, y: Y - H * 0.76 };
+  const thigh = H * 0.25, shin = H * 0.25, trousers = bat === 'cricket' ? (E.night ? '#c8ccd2' : '#f4f1ea') : (E.night ? '#8a8e96' : '#e8e8ea');
+  limb(g, [hip, knee(hip, back, thigh, shin, 1), back], trousers, H * 0.08);
+  limb(g, [hip, knee(hip, front, thigh, shin, 1), front], trousers, H * 0.085);
+  if (bat === 'cricket') for (const F of [back, front]) { g.fillStyle = E.night ? '#d8d8dc' : '#ffffff'; g.fillRect(F.x - H * 0.04, F.y - H * 0.26, H * 0.08, H * 0.22); }
+  for (const F of [back, front]) { g.fillStyle = C.shoe; g.beginPath(); g.ellipse(F.x + H * 0.03, F.y - H * 0.015, H * 0.06, H * 0.025, 0, 0, TAU); g.fill(); }
+  limb(g, [hip, sh], shirt, H * 0.17);
+  // the bat's angle from level-forward, up positive: cocked back, level at the ball, round over
+  const a = u < 0.5 ? lerp(2.4, 0, (u / 0.5) ** 1.4) : lerp(0, 2.7, ((u - 0.5) / 0.5) ** 0.8);
+  const hands = { x: X + lerp(-0.05, 0.15, Math.min(1, u * 2)) * H - (u > 0.5 ? (u - 0.5) * 0.2 * H : 0), y: Y - lerp(0.82, 0.55, Math.min(1, u * 2)) * H - (u > 0.5 ? (u - 0.5) * 0.4 * H : 0) };
+  limb(g, [sh, { x: (sh.x + hands.x) / 2 - H * 0.04, y: (sh.y + hands.y) / 2 + H * 0.04 }, hands], C.skin, H * 0.055);
+  const d = { x: Math.cos(a), y: -Math.sin(a) }, L = H * 0.42;
+  g.save(); g.translate(hands.x, hands.y); g.rotate(Math.atan2(d.y, d.x));
+  if (bat === 'cricket') {
+    g.fillStyle = '#2b2628'; g.fillRect(-H * 0.05, -H * 0.012, H * 0.12, H * 0.024);
+    g.fillStyle = E.night ? '#b8a07a' : '#e8d2a0'; g.beginPath(); g.roundRect(H * 0.07, -H * 0.04, L - H * 0.07, H * 0.08, H * 0.02); g.fill();
+    g.fillStyle = withAlpha('#000000', 0.15); g.fillRect(H * 0.07, H * 0.015, L - H * 0.07, H * 0.025);
+  } else {
+    g.fillStyle = E.night ? '#a8885a' : '#c99a5c'; g.beginPath(); g.moveTo(-H * 0.04, -H * 0.014); g.lineTo(L, -H * 0.035); g.quadraticCurveTo(L + H * 0.03, 0, L, H * 0.035); g.lineTo(-H * 0.04, H * 0.014); g.closePath(); g.fill();
+    g.fillStyle = withAlpha('#ffffff', 0.3); g.fillRect(H * 0.05, -H * 0.022, L * 0.8, H * 0.01);
+  }
+  g.restore();
+  // the helmet
+  head_(g, sh.x + H * 0.05, sh.y - H * 0.1, H * 0.078, C, bat === 'cricket' ? (E.night ? '#3a4a6a' : '#2f3a5a') : (E.night ? '#3a4a6a' : '#1f3a6a'));
+  if (bat === 'cricket') { g.strokeStyle = '#8a9098'; g.lineWidth = 1; for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(sh.x + H * 0.08, sh.y - H * 0.13 + i * H * 0.03); g.lineTo(sh.x + H * 0.14, sh.y - H * 0.12 + i * H * 0.03); g.stroke(); } }
+}
+const head_ = head;

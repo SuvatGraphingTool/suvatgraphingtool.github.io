@@ -438,6 +438,18 @@ point, swinging up against its padded crossbar as it lets go). Titles say
 "fired from a cannon", "off a ramp", "flung from a catapult"; the reader
 composes a ball or a stone that a launcher sends off.
 
+Batch 13, more balls and who strikes them. Props `rugbyBall` (a leather
+oval, end over end, kicked by the kicker), `cricketBall` (deep cherry with
+its white seam), `baseball` (white with red stitching) and `volleyball`
+(white, blue and yellow panels). In `athletes.js`: `server(…, { pose })`, a
+tennis player whose racquet drops behind the back, swings up to meet the
+ball at full stretch (`SERVE_AT`) and follows through; `batter(…, { pose,
+bat })`, side on, the bat cocked behind the head, swung level through the
+ball at waist height (`BAT_AT`) and round over the shoulder, a flat willow
+blade and pads for cricket, a round bat and helmet for baseball. A serve
+from up to 3.4 m is struck by the racquet, never off a wall; the reply says
+"struck by the racquet" or "by the bat".
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

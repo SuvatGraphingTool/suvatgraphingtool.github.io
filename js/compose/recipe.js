@@ -229,7 +229,7 @@ export function titleOf(r) {
     // (a place that draws a ledge of its own says so)
     // thrown from a hand's height, the thrower stands on the ground: no wall
     // (an archer's arrow is loosed from the hand's height too)
-    const byHand = (F.thrown || r.objects[0].figure === 'arrow') && r.objects[0].figure !== 'golfBall' && r.numbers.h > 0 && r.numbers.h <= 2.6;
+    const byHand = (F.thrown || r.objects[0].figure === 'arrow') && r.objects[0].figure !== 'golfBall' && r.numbers.h > 0 && r.numbers.h <= (r.objects[0].figure === 'tennisBall' ? 3.4 : 2.6);
     if (byHand && r.backdrop === 'ground') return `${what} ${F.verb || 'thrown'}`;
     if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${B.high || 'a wall'}`;
     const how = F.verb || (F.thrown ? 'thrown' : F.animal ? 'leaping' : 'launched');
@@ -394,7 +394,7 @@ const TWELVE_KEYS = { flight: 'time1', range: 'distance', vLand: 'speed1', top: 
 // found from the time (the older single keys kept for readings that use them)
 const HEIGHT_KEYS = { height: 'height1', height1: 'height1', speed: 'speed1', time: 'time1', distance: 'distance', distance1: 'distance', distance2: 'distance2', height2: 'height3', graph: 'graph' };
 /** From a height's places, as the composer's backdrops (a well is From a height's alone). */
-const BALLISH = ['ball', 'stone', 'particle', 'football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball'];
+const BALLISH = ['ball', 'stone', 'particle', 'football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball', 'rugbyBall', 'cricketBall', 'baseball', 'volleyball'];
 // From a height's own places, and every place the composer draws, by the
 // engine's place name or the backdrop's own (a reading may give either:
 // "ground", "snow", "ledge", "branch")
@@ -481,8 +481,8 @@ export function fromReading(x) {
   const launcher = backdrop !== 'air' ? launcherIn(words)?.launcher : null;
   // a release height a hand can reach is the thrower's hand above the
   // ground, not a wall: a hammer, a shot, a basketball from 2 m
-  const fromHand = FIGURES[figure].thrown && figure !== 'golfBall' && numbers.h > 0 && numbers.h <= 2.6;
-  if (backdrop === 'ground' && fromHand) notes.push(`Let go ${num(numbers.h, 2, { trim: true })} m above the ground, from the thrower’s hand.`);
+  const fromHand = FIGURES[figure].thrown && figure !== 'golfBall' && numbers.h > 0 && numbers.h <= (figure === 'tennisBall' ? 3.4 : 2.6);
+  if (backdrop === 'ground' && fromHand) notes.push(`${figure === 'tennisBall' ? 'Struck' : 'Let go'} ${num(numbers.h, 2, { trim: true })} m above the ground, ${{ tennisBall: 'by the racquet', baseball: 'by the bat', cricketBall: 'by the bat' }[figure] || 'from the thrower’s hand'}.`);
   else if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
   notes.push(...assumedNotes(x));
   if (x.scenario === 'dropped' && JUMPS.test(`${x.summary || ''} ${x.words || ''}`)) notes.push('No speed was given for the jump, so it is taken as stepping off from rest. Give the speed on the values screen if the question has one.');

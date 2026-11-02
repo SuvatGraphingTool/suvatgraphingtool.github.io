@@ -101,9 +101,13 @@ export const FIGURES = {
   robot:    { label: 'a robot', m: 0.6, min: 30, views: ['plan'] },
   // the props (js/render/props.js): each drawn as itself, thrown, kicked or dropped
   football: { label: 'a football', m: 0.22, min: 12, views: ['side'], thrown: true, prop: true, verb: 'kicked' },
-  tennisBall: { label: 'a tennis ball', m: 0.067, min: 10, views: ['side'], thrown: true, prop: true },
+  tennisBall: { label: 'a tennis ball', m: 0.067, min: 10, views: ['side'], thrown: true, prop: true, verb: 'served' },
   golfBall: { label: 'a golf ball', m: 0.043, min: 10, views: ['side'], thrown: true, prop: true, verb: 'hit' },
   basketball: { label: 'a basketball', m: 0.24, min: 12, views: ['side'], thrown: true, prop: true },
+  rugbyBall: { label: 'a rugby ball', m: 0.29, min: 12, views: ['side'], thrown: true, prop: true, verb: 'kicked' },
+  cricketBall: { label: 'a cricket ball', m: 0.072, min: 10, views: ['side'], thrown: true, prop: true, verb: 'hit' },
+  baseball: { label: 'a baseball', m: 0.074, min: 10, views: ['side'], thrown: true, prop: true, verb: 'hit' },
+  volleyball: { label: 'a volleyball', m: 0.21, min: 12, views: ['side'], thrown: true, prop: true },
   shot:     { label: 'a shot', m: 0.12, min: 11, views: ['side'], thrown: true, prop: true },
   snowball: { label: 'a snowball', m: 0.08, min: 10, views: ['side'], thrown: true, prop: true },
   waterBalloon: { label: 'a water balloon', m: 0.15, min: 11, views: ['side'], thrown: true, prop: true, lands: 'splat' },
@@ -352,7 +356,8 @@ const WORDS = [
   [/\b(runner|sprinter|jogger)\b/, 'runner'],
   [/\b(coin|penny|pound coin)\b/, 'coin'], [/\b(marble|ball ?bearing|bead)\b/, 'marble'],
   [/\b(football|soccer ball)\b/, 'football'], [/\b(tennis ?ball)\b/, 'tennisBall'], [/\b(golf ?ball)\b/, 'golfBall'],
-  [/\b(basket ?ball|netball)\b/, 'basketball'], [/\b(snowball)\b/, 'snowball'], [/\b(water ?balloon|water bomb)\b/, 'waterBalloon'],
+  [/\b(basket ?ball|netball)\b/, 'basketball'], [/\b(rugby ball|rugby)\b/, 'rugbyBall'], [/\b(cricket ball)\b/, 'cricketBall'],
+  [/\b(baseball|softball|rounders ball)\b/, 'baseball'], [/\b(volley ?ball|beach ball)\b/, 'volleyball'], [/\b(snowball)\b/, 'snowball'], [/\b(water ?balloon|water bomb)\b/, 'waterBalloon'],
   [/\b(shot ?put|the shot|a shot|cannonball|cannon ball|iron ball|lead shot)\b/, 'shot'],
   // an athlete's hammer is a heavy ball on a wire: drawn as the shot
   [/\b(hammer throw(?:er|ing)?|athletics hammer)\b/, 'shot'],
@@ -364,7 +369,7 @@ const WORDS = [
   [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
   [/\b(bird|kingfisher|gannet|seagull|gull|eagle|hawk|falcon|osprey|pelican|heron|tern|cormorant|puffin|swallow|pigeon|owl|crow|duck)\b/, 'bird'],
   [/\b(stone|pebble|rock|brick|key|object|mass)\b/, 'stone'],
-  [/\b(ball|cricket ball|rugby ball|dart)\b/, 'ball'],
+  [/\b(ball|dart)\b/, 'ball'],
   [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
 ];
 /** The figures a thing with none of its own is drawn as, and how to say so. */
