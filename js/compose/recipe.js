@@ -434,15 +434,18 @@ export function fromReading(x) {
   else if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
   notes.push(...assumedNotes(x));
   if (x.scenario === 'dropped' && JUMPS.test(`${x.summary || ''} ${x.words || ''}`)) notes.push('No speed was given for the jump, so it is taken as stepping off from rest. Give the speed on the values screen if the question has one.');
-  const parts = Array.isArray(x.parts) ? x.parts.map((p) => {
+  const rekey = (p) => {
     if (!p || typeof p !== 'object') return p;
     // the twelve's own key, kept by the Worker when From a height had no name for it
     const { answer, twelve, ...rest } = p;
     const key = (twelve && TWELVE_KEYS[twelve]) || keys[answer];
     return key ? { ...rest, answer: key } : rest;
-  }) : undefined;
+  };
+  const parts = Array.isArray(x.parts) ? x.parts.map(rekey) : undefined;
+  // what a question with no parts asks goes with it, for the reply to answer
+  const asked = Array.isArray(x.asked) ? { asked: x.asked.map(rekey) } : Array.isArray(x.asks) ? { asks: x.asks } : {};
   return {
-    understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes,
+    understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes, ...asked,
     recipe: { backdrop, ...(under ? { below: under } : {}), ...(carrier ? { carrier } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} off ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
   };
 }

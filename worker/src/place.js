@@ -199,7 +199,61 @@ function lanes(x) {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(marked(x, words), words), words), words), words)), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(cleared(timed(marked(x, words), words), words), words), words), words), words)), words);
+}
+
+/**
+ * A time the reader left out of a straight-line motion: "accelerates at
+ * 1.5 m/s² for 6 s" came back with u and a alone, and two of the five run
+ * nothing. One time in the words, and none in the reading, is that time.
+ */
+function timed(x, words) {
+  if (x?.scenario !== 'road' || x.t != null) return x;
+  const n = ['u', 'v', 'a', 's'].filter((k) => typeof x[k] === 'number' && isFinite(x[k])).length;
+  if (n >= 3) return x;
+  const all = [...String(words || '').matchAll(/(\d+(?:\.\d+)?)\s*(?:s|secs?|seconds)\b(?!\s*[²2^-])/gi)].map((m) => Number(m[1]));
+  const t = [...new Set(all)];
+  return t.length === 1 && t[0] > 0 ? { ...x, t: t[0] } : x;
+}
+
+/**
+ * "Does it clear the net?" — a projectile with a wall, a fence, a net or a
+ * tree it has to pass, its height and how far away it is in the question:
+ * the target scenario, which says whether it clears and by how much. A
+ * reader that composed it, or read it as one of the twelve, lost the net.
+ */
+const OBSTACLE = /\b(net|wall|fence|hedge|tree)\b/i;
+const NUM = '(\\d+(?:\\.\\d+)?)';
+function cleared(x, words) {
+  if (!x?.understood || x.library === 'over-the-wall' || !/\b(clears?|over|passes)\b/i.test(words)) return x;
+  const clause = String(words).split(/[.;?!](?!\d)/).find((c) => OBSTACLE.test(c));
+  if (!clause) return x;
+  const H = new RegExp(`${NUM}\\s*m\\s*(?:high|tall)\\b|${NUM}\\s*m(?:-|\\s+)(?:high\\s+)?(?:net|wall|fence|hedge|tree)\\b`, 'i').exec(clause);
+  const d = new RegExp(`${NUM}\\s*m\\s*(?:away|from|in front|horizontally|beyond)\\b|distance of\\s*${NUM}\\s*m\\b`, 'i').exec(clause);
+  if (!H || !d) return x;
+  // the launch, as the reader had it
+  let h0, u, theta;
+  if (x.scenario === 'compose' && (!x.recipe?.engine || x.recipe.engine === 'projectile')) {
+    const n = x.recipe?.numbers || {};
+    ({ h: h0, u, theta } = n);
+  } else if (x.scenario === 'library' && x.library === 'from-a-height' && x.boxes) {
+    ({ h: h0, u, theta } = x.boxes);
+  } else if (x.scenario === 'arc' || x.scenario in ANGLE) {
+    h0 = x.scenario === 'arc' ? 0 : x.h;
+    u = x.u;
+    theta = x.scenario === 'arc' ? x.angleDegrees : ANGLE[x.scenario](x);
+  } else return x;
+  if (!(Number(u) > 0) || theta == null || !isFinite(Number(theta))) return x;
+  const kind = OBSTACLE.exec(clause)[1].toLowerCase().replace('hedge', 'fence');
+  const boxes = { u: Number(u), theta: Number(theta), d: Number(d[1] ?? d[2]), H: Number(H[1] ?? H[2]), kind };
+  if (Number(h0) > 0) boxes.h0 = Number(h0);
+  if (typeof x.g === 'number' && x.g > 0) boxes.g = x.g;
+  const out = { understood: true, confidence: x.confidence || 'high', scenario: 'library', library: 'over-the-wall', summary: x.summary, boxes };
+  if (x.who) out.who = x.who;
+  // what it asks stays in words: "does it clear" is the engine's own line, not a height
+  const asked = (x.asked || x.parts || []).filter((p) => p && typeof p === 'object').map((p) => ({ asks: p.asks }));
+  if (asked.length) out.asked = asked;
+  return out;
 }
 
 function placed(x, words) {

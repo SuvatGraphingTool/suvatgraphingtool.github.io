@@ -738,6 +738,9 @@ export const LIBRARY = [
       { label: 'b', kind: 'speed', ask: 'How fast is it moving when it hits the ground?', sym: 'v', find: 'vL', unit: 'm s^-1', dp: 1, at: 'end', paper: 34.3 },
       { label: 'c', kind: 'time', ask: 'How long is it in the air?', find: 'T', sym: 't', unit: 's', trim: true, at: 'end', paper: 5 },
     ],
+    answers: [
+      { kind: 'distance', say: 'how far out it lands, horizontally, from below where it was thrown', find: 'out', sym: 'x', unit: 'm', trim: true, at: 'end', step: 'horizontal' },
+    ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2010', q: '6' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2012', q: '5' },

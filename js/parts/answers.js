@@ -13,7 +13,7 @@ import { byId } from '../scenarios.js';
 /** The answers the original twelve can give, by key. Paths are into the
     launch (or road) solution with the flight as `f`. */
 export const LAUNCH_ANSWERS = [
-  { key: 'flight', kind: 'time', say: 'time of flight', find: 'f.tFlight', sym: 't', unit: 's', at: 'end', step: 'time of flight' },
+  { key: 'flight', kind: 'time', say: 'time of flight, until it lands', find: 'f.tFlight', sym: 't', unit: 's', at: 'end', step: 'time of flight' },
   { key: 'top', kind: 'height', say: 'greatest height above the GROUND (not above the launch)', find: 'f.apexHeight', sym: 'H', unit: 'm', at: 'f.tApex', step: 'greatest height' },
   { key: 'rise', kind: 'height', say: 'greatest height above the point it was launched from', find: 'f.apexRise', sym: 'H', unit: 'm', at: 'f.tApex', step: 'greatest height' },
   { key: 'tTop', kind: 'time', say: 'time to the greatest height', find: 'f.tApex', sym: 't', unit: 's', at: 'f.tApex', step: 'greatest height' },
@@ -80,6 +80,10 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
 // words too common to tell two answers apart
 const STOP = new Set(['what', 'when', 'where', 'which', 'find', 'from', 'that', 'this', 'with', 'their', 'there', 'they', 'does', 'will', 'into', 'than', 'then', 'show', 'value', 'time', 'speed', 'height', 'distance', 'ball', 'particle']);
 
+// "how long is the ramp" is a distance; "how long until it lands" a time
+const HOW = [[/\bhow (high|tall)\b/, 'height'], [/\bhow far\b/, 'distance'], [/\bhow (fast|quickly)\b/, 'speed'],
+  [/\bhow long (is|was) (the|a|an)\b/, 'distance'], [/\bhow long\b|\bhow many seconds\b/, 'time']];
+
 export function fromReader(id, raw, boxes = []) {
   const s = byId(id);
   if (!s || !Array.isArray(raw)) return null;
@@ -93,20 +97,29 @@ export function fromReader(id, raw, boxes = []) {
     // of the kind its words ask for — a sketch, or the only speed there is
     const words = String(r.asks ?? '').toLowerCase();
     // the one answer of a kind — or, of several, the one whose own words the part's share
-    // most: "greatest height" is the greatest height, not the height at 5 s
+    // most: "greatest height" is the greatest height, not the height at 5 s. A tie is
+    // kept as `either`: the reply may say it when every one of them comes to the same
+    let tie = null;
     const only = (k) => {
       const m = offer.filter((a) => a.kind === k);
       if (m.length < 2) return m[0] || null;
-      const mine = new Set(words.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)));
+      // "how high does it go", "the highest point", "max height": the greatest height
+      const cue = /\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? `${words} greatest` : words;
+      const mine = new Set(cue.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)));
       const score = m.map((a) => String(a.say || '').toLowerCase().split(/[^a-z]+/).filter((w) => mine.has(w)).length);
       const best = Math.max(...score);
-      return best > 0 && score.filter((x) => x === best).length === 1 ? m[score.indexOf(best)] : null;
+      if (best > 0 && score.filter((x) => x === best).length === 1) return m[score.indexOf(best)];
+      tie ??= m.filter((_, i) => score[i] === best);
+      return null;
     };
     // a kind named for a key ("time" where the key is "meeting"), and "when do they
     // meet / catch up / draw level" — the one meeting there is
     const meets = /\b(when|catch(es)?|meet|level|overtakes?|pass(es)?|collide)\b/.test(words);
     // "the deceleration" or "the retardation" asks for the acceleration (deceleration does not contain the word)
     const named = ['speed', 'time', 'height', 'distance', 'acceleration', 'angle', 'impulse'].filter((k) => words.includes(k) || (k === 'acceleration' && /decelerat|retard/.test(words)));
+    // a student's "how high", "how far", "how fast", "how long until": the kind, in their words
+    const how = HOW.find(([re]) => re.test(words))?.[1];
+    if (how && !named.includes(how)) named.push(how);
     const asKind = (k) => only(k) || (k === 'time' && meets ? only('meeting') : null);
     let hit = offer.find((a) => a.key === r.answer)
       || (/sketch|graph/.test(words) ? only('graph') : null)
@@ -125,6 +138,7 @@ export function fromReader(id, raw, boxes = []) {
     if (base?.kind === 'graph') p.say = 'The stage’s own graphs are the sketch: choosing this part opens them.';
     delete p.key; delete p.part; delete p.paper; delete p.tol; delete p.given; delete p.carry; delete p.example;
     if (!base) p.say = 'Not one this app works out for you — it may need another topic. The stage, the working and the graphs show the motion it is about.';
+    if (!base && tie) p.either = tie.map((a) => { const q = { ...(a.part || a) }; delete q.key; delete q.part; delete q.paper; delete q.example; return q; });
     // every part's own answer is the engine's; a reader part's `uses` only says so
     p.uses = Array.isArray(r.uses) ? r.uses.map((x) => clip(x, 5).toLowerCase()).filter((x) => out.some((q) => q.label === x)) : [];
     if (!p.uses.length) delete p.uses;

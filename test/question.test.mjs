@@ -587,5 +587,40 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(gAskHTML(null) === '', 'nothing asked, nothing shown');
 }
 
+// QA, 2 Nov: a ramp's 6 s, a net to clear, and a student's "how high", "how far", "how long"
+{
+  const { toPlace } = await import('../worker/src/place.js');
+  const { fromReader } = await import('../js/parts/answers.js');
+  const { byId } = await import('../js/scenarios.js'), { KITS } = await import('../js/kits/index.js');
+  const ramp = 'A skateboarder starts from rest and accelerates at 1.5 m/s² for 6 s. (a) how fast at the bottom (b) how long is the ramp';
+  ok(toPlace({ understood: true, scenario: 'road', summary: 'x', u: 0, a: 1.5 }, ramp).t === 6, 'a time the reader left out of a road question is the one time in its words');
+  ok(toPlace({ understood: true, scenario: 'road', summary: 'x', u: 0, a: 1.5 }, 'from rest at 1.5 m/s² for 6 s, then 4 s more').t == null, 'two times in the words: neither is guessed');
+  ok(toPlace({ understood: true, scenario: 'road', summary: 'x', u: 0, a: 1.5, v: 9 }, ramp).t == null, 'three of the five already: nothing added');
+  const serve = 'a tennis ball is served horizontally at 30 m/s from 2.8 m above the court. the net is 0.9 m high and 12 m away. does it clear the net';
+  const x = toPlace({ understood: true, scenario: 'compose', summary: 'x', who: 'tennis ball', recipe: { backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'tennisBall' }], numbers: { h: 2.8, u: 30, theta: 0 } }, asked: [{ asks: 'does it clear the net', answer: 'height' }] }, serve);
+  ok(x.library === 'over-the-wall' && x.boxes.h0 === 2.8 && x.boxes.u === 30 && x.boxes.theta === 0 && x.boxes.d === 12 && x.boxes.H === 0.9 && x.boxes.kind === 'net', 'a net to clear, composed by the reader: over the wall, with the net 0.9 m high and 12 m away');
+  ok(x.asked?.length === 1 && !x.asked[0].answer, 'and "does it clear" is the engine’s own line, not a height');
+  const K = KITS[byId('over-the-wall').kit], sv = K.solve(K.read({ ...x.boxes, g: 9.81 }));
+  ok(sv.ok && /clears by .*1\.115/.test(sv.derived[0]), 'it clears by 1.115 m');
+  ok(toPlace({ understood: true, scenario: 'arc', summary: 'x', u: 20, angleDegrees: 30 }, 'a ball is kicked at 20 m/s at 30° over a 2 m wall 15 m away').boxes?.kind === 'wall', 'one of the twelve, with a wall in the words: over the wall too');
+  ok(toPlace({ understood: true, scenario: 'arc', summary: 'x', u: 20, angleDegrees: 30 }, 'a ball is kicked at 20 m/s at 30° from a wall').scenario === 'arc', 'a wall with no height or distance: left as it was');
+  const one = (id, asks) => fromReader(id, [{ label: 'a', asks }])?.[0];
+  ok(one('road', 'how long is the ramp')?.find === 'five.s.value' && one('up', 'how long until it lands')?.find === 'f.tFlight', '"how long is the ramp" is a distance; "how long until it lands" a time');
+  ok(one('from-a-height', 'how far out does it land')?.find === 'out' && one('from-a-height', 'horizontal distance')?.find === 'out', 'From a height answers how far out it lands');
+  ok(one('the-lift', 'how far it rises')?.kind === 'distance' && one('from-a-height', 'how fast is it going when it lands')?.find === 'vL', '"how far" and "how fast" name their kind');
+  const C = (await import('../js/compose/recipe.js')).compose({ title: 'A rock on the Moon', backdrop: 'moon', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 0, u: 4, theta: 90, g: 1.6 } });
+  const { COMPOSED } = await import('../js/scenarios.js');
+  if (C?.ok) COMPOSED.push(C.scenario);
+  const moon = C?.ok ? fromReader(C.scenario.id, [{ label: 'a', asks: 'how high does it go' }])?.[0] : null;
+  if (C?.ok) COMPOSED.splice(COMPOSED.indexOf(C.scenario), 1);
+  ok(moon && moon.either?.length === 2 && moon.either.every((q) => /greatest/.test(q.say)), '"how high does it go", composed: the greatest height — above the ground or the start, which from the ground are one — never the height it started from');
+  const { fromReading } = await import('../js/compose/recipe.js');
+  const lunar = fromReading({ understood: true, scenario: 'up', summary: 'An astronaut throws a rock straight up on the Moon at 4 m/s.', h: 0, u: 4, angleDegrees: 90, g: 1.6, who: 'rock', asks: ['how high does it go'], words: 'on the moon an astronaut throws a rock straight up at 4 m/s. how high does it go' });
+  ok(lunar?.scenario === 'compose' && lunar.asks?.[0] === 'how high does it go', 'composed from one of the twelve, what the question asks goes with it');
+  ok(fromReading({ understood: true, scenario: 'platform', summary: 'x', h: 0.8, u: 2, who: 'coin', asked: [{ asks: 'how far out', answer: 'range' }] })?.asked?.[0]?.answer === 'distance', 'and its answer key is the composed scene’s own');
+  const hi = one('up', 'how high does it go');
+  ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

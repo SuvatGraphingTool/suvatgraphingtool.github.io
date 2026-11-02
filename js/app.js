@@ -3572,7 +3572,17 @@ function askedHTML(id, x, solvedLike) {
   const raw = Array.isArray(x.asked) ? x.asked
     : Array.isArray(x.asks) ? x.asks.filter((a) => typeof a === 'string').map((a) => ({ asks: a })) : [];
   const ps = raw.length ? fromReader(id, raw.slice(0, 4).map((p, i) => ({ ...p, label: String.fromCharCode(97 + i) }))) || [] : [];
-  const rows = ps.filter((p) => p.find).map((p) => {
+  const rows = ps.map((p) => {
+    // of two answers the question's words cannot tell apart, the one they both come to:
+    // from the ground, the greatest height above it and above the launch are one
+    if (!p.find && p.either) {
+      const all = p.either.map((q) => ({ q, a: answerOf(q, solvedLike) }));
+      const same = all.every(({ a }) => a.ok && a.values.length === all[0].a.values.length
+        && a.values.every((v, i) => Math.abs(v - all[0].a.values[i]) <= 1e-9 * Math.max(1, Math.abs(v))));
+      if (!all.length || !same) return '';
+      p = { ...all[0].q, label: p.label, ask: p.ask, prose: true };
+    }
+    if (!p.find) return '';
     const a = answerOf(p, solvedLike);
     return a.ok ? `<li>${askHTML(p).replace(/^./, (c) => c.toUpperCase())}: ${answerHTML({ part: p, answer: a })}</li>` : '';
   }).filter(Boolean);
@@ -3600,7 +3610,9 @@ function quantityHTML(f, n) {
   // ("R.t1", R's time 1, is said in words: a symbol with two subscripts is no one's)
   const base = m && !(m[1] && m[3]) && (QUANTITY.has(m[2]) ? m[2] : null);
   const who = /^([A-Z])\./.exec(f.key)?.[1];
-  if (!base) return `${who ? `${who} · ` : ''}${esc(plain.replace(/\s*\([^()]*\)\s*$/, '').replace(/^Or:\s*(.)/i, (_, c) => c.toUpperCase()))}: ${unit === '°' ? M`${val}°` : unit ? M`${val} [${unit}]` : M`${val}`}`;
+  // an "i part" says of what: "Initial velocity · i part: 3 m s⁻¹"
+  const of = /^\W*[ij] part\b/.test(plain) && f.col && kit()?.cols?.[f.col];
+  if (!base) return `${who ? `${who} · ` : of ? `${esc(of)} · ` : ''}${esc(plain.replace(/\s*\([^()]*\)\s*$/, '').replace(/^Or:\s*(.)/i, (_, c) => c.toUpperCase()))}: ${unit === '°' ? M`${val}°` : unit ? M`${val} [${unit}]` : M`${val}`}`;
   const sub = [m[1], m[3]].filter(Boolean).join(',');
   const sym = sub ? `${base}_${sub}` : base;
   return unit === '°' ? M`${sym} = ${val}°` : unit ? M`${sym} = ${val} [${unit}]` : M`${sym} = ${val}`;
