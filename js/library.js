@@ -220,6 +220,9 @@ export const LIBRARY = [
       { label: 'd', kind: 'graph', ask: 'Sketch the velocity–time graph from release to the second impact.', say: 'The velocity–time graph is drawn: a straight line down to the impact, a jump, then the same gradient again.', at: 'end' },
       { label: 'e', kind: 'time', ask: 'How long is it from release to the second impact?', find: 'f.tMax', sym: 't', unit: 's', at: 'end', step: 'from the start', uses: ['b'], paper: 1.75 },
     ],
+    answers: [
+      { kind: 'height', say: 'the greatest height after the first bounce', find: 'extras.H1', sym: 'H', unit: 'm', trim: true, at: 'extras.t1' },
+    ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2014', q: '3', part: 'all but the impulse' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2018', q: '4', part: '(b) and (c); the impact speed given instead of found from the impulse' },

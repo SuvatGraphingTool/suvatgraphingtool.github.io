@@ -38,7 +38,7 @@ import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
 import { readoutHTML, solutionHTML, resultsHTML, esc } from './ai/readout.js';
 import { walk, stepOf, labelOf, ownScene, sceneOf } from './parts/parts.js';
-import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML } from './parts/strip.js';
+import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML, askHTML, answerHTML } from './parts/strip.js';
 import { answerOf } from './parts/parts.js';
 import { fromReader, boxesOf } from './parts/answers.js';
 import { initShell } from './shell.js';
@@ -3421,6 +3421,7 @@ function readOne(x, { graph = true, solve = false } = {}) {
     ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
   let html = readoutHTML(r, { name: scenario.name, solved, above, flight: !scenario.road && !scenario.descent ? traj : null });
   if (state.runs) html += replyHTML(state.runs);
+  else if (traj && solved?.ok) html += askedHTML(r.id, x, { ...solved, f: traj });
   // SOLVE: the engine's own working, the same steps the working panel shows.
   if (solve && traj && solved?.ok) {
     const steps = scenario.road ? roadWorking(solved)
@@ -3470,7 +3471,7 @@ function applyLibrary(x, { graph = true } = {}) {
   const head = `<p class="ro-eyebrow">Read as, from the Past-paper library</p><h3 class="ro-name">${esc(s.name)}</h3>`
     + (typeof x.summary === 'string' && x.summary ? `<p class="ro-sum">${esc(x.summary)}</p>` : '');
   const body = solved?.ok
-    ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${resultsHTML(solved.derived)}</div>`)
+    ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
   return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example) + body };
 }
@@ -3516,6 +3517,23 @@ function libraryGiven(fields, gAssumed, summary = '', example = false) {
     rows.push(`<li class="ro-row" data-how="assumed"><span class="ro-val">${M`g = 9.81 [m s^-2]`}</span><span class="ro-how">assumed · on Earth</span></li>`);
   }
   return rows.length ? `<ul class="ro-list">${rows.join('')}</ul>` : '';
+}
+/**
+ * What a question with no parts asks — "how far does he land", "how high does
+ * it go after" — answered plainly, one line each, from the engine's answer
+ * (js/parts/answers.js finds where it is). Never a part strip: the question
+ * was not set in parts. Nothing the engine did not find is said.
+ */
+function askedHTML(id, x, solvedLike) {
+  if (!solvedLike?.ok || state.runs?.some(Boolean)) return '';
+  const raw = Array.isArray(x.asked) ? x.asked
+    : Array.isArray(x.asks) ? x.asks.filter((a) => typeof a === 'string').map((a) => ({ asks: a })) : [];
+  const ps = raw.length ? fromReader(id, raw.slice(0, 4).map((p, i) => ({ ...p, label: String.fromCharCode(97 + i) }))) || [] : [];
+  const rows = ps.filter((p) => p.find).map((p) => {
+    const a = answerOf(p, solvedLike);
+    return a.ok ? `<li>${askHTML(p).replace(/^./, (c) => c.toUpperCase())}: ${answerHTML({ part: p, answer: a })}</li>` : '';
+  }).filter(Boolean);
+  return rows.length ? `<ul class="ro-res ro-asked" aria-label="What the question asks">${rows.join('')}</ul>` : '';
 }
 /** Whether a number is among the ones typed: 20 in "a 20 m cliff", not in "dropped". */
 function saidIn(words, n) {
@@ -3581,7 +3599,7 @@ function applyComposed(x, { graph = true } = {}) {
   const head = `<p class="ro-eyebrow">Drawn for your question</p><h3 class="ro-name">${esc(s.name)}</h3>`
     + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;
   const body = solved?.ok
-    ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${resultsHTML(solved.derived)}</div>`)
+    ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
   // the values it read, each from the question or assumed, as a library reply lists them
   const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g,

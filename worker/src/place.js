@@ -127,8 +127,11 @@ const MARKED = /\(\s*(?:[a-h]|i{1,3}|iv|vi{0,3})\s*\)|(?:^|[\s.;:?])(?:[a-h]|i{1
  */
 function marked(x, words) {
   if (!x || !Array.isArray(x.parts) || !String(words || '').trim() || MARKED.test(words)) return x;
+  // what the reader thought were parts are what the question asks, said plainly:
+  // their answer keys kept, so the reply still answers each
   const { parts, ...rest } = x;
-  return rest;
+  const asked = parts.filter((p) => p && typeof p === 'object' && !p.scene && !p.recipe).map((p) => ({ asks: p.asks, answer: p.answer }));
+  return asked.length ? { ...rest, asked } : rest;
 }
 
 /**

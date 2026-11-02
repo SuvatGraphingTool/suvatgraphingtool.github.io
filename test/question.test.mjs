@@ -468,5 +468,19 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(/<ul class="ro-res"><li>It hits the water<\/li><li>X<\/li><\/ul>/.test(list), 'what the engine found is a list, one result to a line, each a sentence');
 }
 
+// QA 2 Nov: "a ball is dropped from 2 m and rebounds with half its speed, how high does it go after" — never answered.
+// A one-line question's made-up parts are dropped (they are not parts), but what they ask is kept, with its answer key
+{
+  const one = toPlace({ understood: true, scenario: 'library', library: 'bounce', summary: 'x', boxes: { start: 'drop', h: 2, e: 0.5 },
+    parts: [{ label: 'a', asks: 'how high it goes after', answer: 'height' }] }, 'a ball is dropped from 2 m and rebounds with half its speed, how high does it go after');
+  ok(!one.parts && one.asked?.[0]?.answer === 'height', 'no parts, but what it asks is kept, with its answer key');
+  const { fromReader } = await import('../js/parts/answers.js');
+  const { answerOf } = await import('../js/parts/parts.js');
+  const { byId } = await import('../js/scenarios.js'), { KITS } = await import('../js/kits/index.js');
+  const p = fromReader('bounce', [{ label: 'a', ...one.asked[0] }])[0];
+  const K = KITS[byId('bounce').kit], sv = K.solve(K.read({ start: 'drop', h: 2, e: 0.5, g: 9.81 }));
+  ok(p.find === 'extras.H1' && Math.abs(answerOf(p, sv).values[0] - 0.5) < 1e-9, 'and the engine answers it: 0.5 m after the bounce');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
