@@ -76,7 +76,8 @@ export function check(raw) {
   for (const o of objs) {
     // the question's own word for it, drawn as itself or as the closest figure
     // there is — and then the reply says so
-    let figure = word(o.figure);
+    // a registry name as it is (tennisBall), else the question's word
+    let figure = FIGURES[o.figure] ? o.figure : word(o.figure);
     if (!FIGURES[figure]) {
       const m = figureOf(figure);
       if (!m.figure) return no(`The recipe does not say what moves. The figures are: ${listOf(FIGURES)}.`);
@@ -97,10 +98,12 @@ export function check(raw) {
     }
     objects.push({ figure, name: clip(o.name, 30) });
   }
-  // unnamed, they are told apart: "the first ball", "the second ball"
+  // unnamed, they are told apart: "the first ball", "the second ball" — or,
+  // two different things, by what they are: "the car", "the stone"
+  const same = new Set(objects.map((o) => o.figure)).size < objects.length;
   objects.forEach((o, i) => {
     const noun = FIGURES[o.figure].label.replace(/^an? /, '');
-    if (!o.name) o.name = objects.length > 1 ? `the ${['first', 'second'][i]} ${noun}` : `the ${noun}`;
+    if (!o.name) o.name = same ? `the ${['first', 'second'][i]} ${noun}` : `the ${noun}`;
   });
 
   const numbers = {};
@@ -339,6 +342,7 @@ const LAUNCHES = ['up', 'arc', 'dropped', 'down', 'platform-down', 'platform', '
 const TWELVE_KEYS = { flight: 'time1', range: 'distance', vLand: 'speed1', top: 'height1', rise: 'height2', tTop: 'time2', u: 'speed2', theta: 'angle' };
 const HEIGHT_KEYS = { height: 'height1', speed: 'speed1', time: 'time1', graph: 'graph' };
 /** From a height's places, as the composer's backdrops (a well is From a height's alone). */
+const BALLISH = ['ball', 'stone', 'particle', 'football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball'];
 const HEIGHT_PLACES = { cliff: 'cliff', tower: 'tower', bridge: 'bridge', board: 'board', well: 'well', balloon: 'air' };
 const CARRIER = /\b(helicopter|aeroplane|airplane|aircraft|plane|drone|airship|glider)\b/i;
 const JUMPS = /\b(jump|jumps|jumped|leaps?|leapt)\b/i;
@@ -366,8 +370,10 @@ export function fromReading(x) {
   const under = fromHeight && HEIGHT_PLACES[x.boxes.place] ? belowOf(HEIGHT_PLACES[x.boxes.place], x.below) : null;
   // a ball, a stone or a particle is the twelve's own, unless a place only
   // the composer draws (a table, a balcony) or a surface the place does not
-  // have says otherwise; a coin or a marble is always drawn as itself
-  const small = !m.figure || (m.exact && ['ball', 'stone', 'particle'].includes(m.figure));
+  // have says otherwise; a coin or a marble is always drawn as itself, and
+  // so is a phone, a book, a hammer or a water balloon. A ball of any sport
+  // stays: the twelve's pitch is a ball's own place
+  const small = !m.figure || (m.exact && BALLISH.includes(m.figure));
   const words = `${x.summary || ''} ${x.words || ''}`;
   const where = fromHeight || LAUNCHES.includes(x.scenario) ? placeIn(words) : null;
   const own = where?.backdrop ?? null;

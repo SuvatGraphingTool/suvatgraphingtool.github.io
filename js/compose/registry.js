@@ -75,6 +75,17 @@ export const FIGURES = {
   arrow:    { label: 'an arrow', m: 0.75, min: 34, views: ['side'] },
   ship:     { label: 'a ship', m: 60, min: 40, views: ['plan'] },
   robot:    { label: 'a robot', m: 0.6, min: 30, views: ['plan'] },
+  // the props (js/render/props.js): each drawn as itself, thrown, kicked or dropped
+  football: { label: 'a football', m: 0.22, min: 12, views: ['side'], thrown: true, prop: true },
+  tennisBall: { label: 'a tennis ball', m: 0.067, min: 10, views: ['side'], thrown: true, prop: true },
+  golfBall: { label: 'a golf ball', m: 0.043, min: 10, views: ['side'], thrown: true, prop: true },
+  basketball: { label: 'a basketball', m: 0.24, min: 12, views: ['side'], thrown: true, prop: true },
+  shot:     { label: 'a shot', m: 0.12, min: 11, views: ['side'], thrown: true, prop: true },
+  snowball: { label: 'a snowball', m: 0.08, min: 10, views: ['side'], thrown: true, prop: true },
+  waterBalloon: { label: 'a water balloon', m: 0.15, min: 11, views: ['side'], thrown: true, prop: true },
+  phone:    { label: 'a phone', m: 0.15, min: 10, views: ['side'], thrown: true, prop: true },
+  book:     { label: 'a book', m: 0.24, min: 10, views: ['side'], thrown: true, prop: true },
+  hammer:   { label: 'a hammer', m: 0.33, min: 11, views: ['side'], thrown: true, prop: true },
 };
 
 /** What happens, at the engine's own moments (rule 4: the engine says when). */
@@ -129,7 +140,7 @@ export const ENGINES = {
   pair: {
     label: 'Two in one vertical line', kit: 'pair', view: 'side', objects: [2, 2], ready: true,
     what: 'two things thrown up, thrown down or dropped on the same vertical line — one from the top of the place, one from the ground below it, or both: when and where they meet',
-    figures: ['ball', 'stone', 'particle'], below: ['ground', 'road', 'floor'],
+    figures: ['ball', 'stone', 'particle', 'football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball', 'waterBalloon', 'phone', 'book', 'hammer'], below: ['ground', 'road', 'floor'],
     boxes: {
       'A.h': 'height the first object (objects[0]) starts at, m (0 on the ground)',
       'A.u': 'its velocity at the start, m/s, up positive (negative thrown down, 0 dropped)',
@@ -143,7 +154,7 @@ export const ENGINES = {
   bounce: {
     label: 'A ball that bounces', kit: 'bounce', view: 'side', objects: [1, 1], ready: true,
     what: 'a ball dropped, thrown down or thrown up that bounces on the ground or floor, keeping a fraction of its speed at each bounce',
-    figures: ['ball', 'particle'], below: ['ground', 'road', 'floor'],
+    figures: ['ball', 'particle', 'football', 'tennisBall', 'golfBall', 'basketball'], below: ['ground', 'road', 'floor'],
     boxes: {
       start: 'how it sets off: drop | down | up',
       h: 'height it starts from, m', U: 'speed it is thrown with, m/s (a size)', V: 'speed it hits the ground with, m/s',
@@ -260,15 +271,19 @@ const WORDS = [
   [/\b(cyclist|bike|bicycle|cycle)\b/, 'cyclist'], [/\b(motorcycl(e|ist)|motorbike|scooter|moped)\b/, 'motorcycle'],
   [/\b(runner|sprinter|jogger)\b/, 'runner'],
   [/\b(coin|penny|pound coin)\b/, 'coin'], [/\b(marble|ball ?bearing|bead)\b/, 'marble'],
+  [/\b(football|soccer ball)\b/, 'football'], [/\b(tennis ?ball)\b/, 'tennisBall'], [/\b(golf ?ball)\b/, 'golfBall'],
+  [/\b(basket ?ball|netball)\b/, 'basketball'], [/\b(snowball)\b/, 'snowball'], [/\b(water ?balloon|water bomb)\b/, 'waterBalloon'],
+  [/\b(shot ?put|the shot|a shot|cannonball|cannon ball|iron ball|lead shot)\b/, 'shot'],
+  [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
   [/\b(stone|pebble|rock|brick|key|object|mass)\b/, 'stone'],
-  [/\b(ball|football|tennis ball|cricket ball|golf ball|basketball|netball|rugby ball|shot|cannonball|snowball|dart)\b/, 'ball'],
+  [/\b(ball|cricket ball|rugby ball|dart)\b/, 'ball'],
   [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
 ];
 /** The figures a thing with none of its own is drawn as, and how to say so. */
 const NEAREST = [
   [/\b(dart|javelin|crossbow bolt|spear)\b/, 'arrow'],
   [/\b(ski(er)?|snowboard(er)?|surfer|horse|rider|bmx)\b/, 'diver'],
-  [/\b(missile|projectile|shell|bullet|discus|hammer|stick|bottle|can|phone|book|bag|helmet|bomb|drop of water|raindrop|hailstone)\b/, 'particle'],
+  [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone)\b/, 'particle'],
   [/\b(dog|cat|bird|animal|squirrel|monkey|frog)\b/, 'particle'],
 ];
 /**

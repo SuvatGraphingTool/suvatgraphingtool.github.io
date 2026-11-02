@@ -587,11 +587,16 @@ export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still =
  * and a stance read on a phone.
  */
 export const THROWER_MIN = 50;
-export function thrower(g, X, Y, H, P, { dir = 1, pose = 0, aim = 45, ring = null } = {}) {
+export function thrower(g, X, Y, H, P, { dir = 1, pose = 0, aim = 45, ring = null, suit = false } = {}) {
   H = Math.max(THROWER_MIN * 0.8, H);
   const u = Math.max(0, Math.min(1, pose)), e = u * u * (3 - 2 * u);
-  const E = env(), skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
-  const shirt = ring || (E.night ? '#6c7f9a' : '#5f7392'), shorts = '#2f3340', lw = Math.max(3, H * 0.075);
+  const E = env();
+  // in a spacesuit (on the Moon, on Mars) the limbs are the suit's white,
+  // thicker, and the head a helmet with its visor
+  const skin = suit ? (E.night ? '#d4d6da' : '#f1f2f4') : E.night ? '#b08a74' : '#d9a988';
+  const skinFar = suit ? (E.night ? '#9a9da3' : '#c3c6cc') : E.night ? '#7d6253' : '#b5876a';
+  const shirt = ring || (suit ? (E.night ? '#c7cad0' : '#e4e6ea') : E.night ? '#6c7f9a' : '#5f7392');
+  const shorts = suit ? (E.night ? '#aeb2b8' : '#d3d6db') : '#2f3340', lw = Math.max(3, H * (suit ? 0.095 : 0.075));
   const thigh = H * 0.25, shin = H * 0.26, upper = H * 0.17, fore = H * 0.16;
   softShadow(g, X, Y + 1, H * 0.3, H * 0.05, 0.8);
   at(g, X, Y, dir, () => {
@@ -613,6 +618,12 @@ export function thrower(g, X, Y, H, P, { dir = 1, pose = 0, aim = 45, ring = nul
     const HA2 = { x: EL2.x + Math.cos(bal + 0.5) * fore, y: EL2.y + Math.sin(bal + 0.5) * fore };
     limb(g, farLeg, skinFar, lw); limb(g, farLeg.slice(0, 2), withAlpha(shorts, 0.85), lw * 1.15);
     limb(g, [SH, EL2, HA2], skinFar, lw * 0.8);
+    if (suit) {
+      // the life-support pack on the back
+      g.save(); g.translate(SH.x - H * 0.13, SH.y - H * 0.02); g.rotate(lean);
+      g.fillStyle = E.night ? '#a3a7ad' : '#cfd2d7'; g.beginPath(); g.roundRect(-H * 0.06, -H * 0.02, H * 0.12, H * 0.24, H * 0.025); g.fill();
+      g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.stroke(); g.restore();
+    }
     limb(g, [HIP, SH], shirt, lw * 2.1);
     limb(g, [HIP, { x: HIP.x + (SH.x - HIP.x) * 0.18, y: HIP.y + (SH.y - HIP.y) * 0.18 }], shorts, lw * 2.15);
     limb(g, nearLeg, skin, lw); limb(g, nearLeg.slice(0, 2), shorts, lw * 1.15);
@@ -620,6 +631,17 @@ export function thrower(g, X, Y, H, P, { dir = 1, pose = 0, aim = 45, ring = nul
     for (const F of [back, front]) { g.fillStyle = '#2b2628'; g.beginPath(); g.ellipse(F.x + lw * 0.4, F.y - lw * 0.25, lw * 0.8, lw * 0.42, 0, 0, TAU); g.fill(); }
     // the head, turned to the throw, with hair and an eye
     const hx = SH.x + Math.sin(lean) * H * 0.1, hy = SH.y - H * 0.095, hr = H * 0.08;
+    if (suit) {
+      // a round helmet, a gold visor catching the light, a dark rim
+      const R = hr * 1.45;
+      const sg = g.createRadialGradient(hx - R * 0.35, hy - R * 0.35, R * 0.1, hx, hy, R); sg.addColorStop(0, '#ffffff'); sg.addColorStop(1, E.night ? '#9a9da3' : '#bfc3c9');
+      g.fillStyle = sg; g.beginPath(); g.arc(hx, hy, R, 0, TAU); g.fill();
+      const vg = g.createLinearGradient(hx, hy - R * 0.5, hx + R, hy + R * 0.4); vg.addColorStop(0, '#e7c66b'); vg.addColorStop(0.5, '#a3782c'); vg.addColorStop(1, '#3b2c18');
+      g.fillStyle = vg; g.beginPath(); g.ellipse(hx + R * 0.32, hy, R * 0.55, R * 0.62, 0, 0, TAU); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.7)'; g.beginPath(); g.ellipse(hx + R * 0.18, hy - R * 0.25, R * 0.12, R * 0.2, -0.4, 0, TAU); g.fill();
+      g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = 1.2; g.beginPath(); g.arc(hx, hy, R, 0, TAU); g.stroke();
+      return;
+    }
     const hg = g.createRadialGradient(hx - hr * 0.3, hy - hr * 0.3, hr * 0.1, hx, hy, hr); hg.addColorStop(0, skin); hg.addColorStop(1, skinFar);
     g.fillStyle = hg; g.beginPath(); g.arc(hx, hy, hr, 0, TAU); g.fill();
     g.fillStyle = '#3a2c26'; g.beginPath(); g.arc(hx - hr * 0.2, hy - hr * 0.25, hr * 0.85, Math.PI * 1.0, Math.PI * 1.9); g.fill();

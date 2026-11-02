@@ -1,7 +1,7 @@
 // compose.test.mjs — the composer: recipes held to the registry, refused with
 // reasons, and played by the engine's own kit. Run: node test/compose.test.mjs
 import fs from 'node:fs';
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, figureOf } from '../js/compose/registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, figureOf, whoIn } from '../js/compose/registry.js';
 import { check, compose, scenesOf, fromReading } from '../js/compose/recipe.js';
 import { steps } from '../js/compose/reveal.js';
 import { answersFor, fromReader } from '../js/parts/answers.js';
@@ -169,7 +169,7 @@ group('A part in a scene of its own', () => {
 group('What moves is what is drawn', () => {
   const f = (w) => figureOf(w);
   ok(f('diver').figure === 'diver' && f('a person').figure === 'diver' && f('she').figure === 'diver', 'a diver, a person, she: a person');
-  ok(f('skateboarder').figure === 'skateboarder' && f('parcel').figure === 'parcel' && f('football').figure === 'ball' && f('pebble').figure === 'stone', 'skateboarder, parcel, football, pebble');
+  ok(f('skateboarder').figure === 'skateboarder' && f('parcel').figure === 'parcel' && f('football').figure === 'football' && f('pebble').figure === 'stone', 'skateboarder, parcel, football, pebble');
   ok(!f('missile').exact && f('missile').figure === 'particle' && f('rocket').figure === 'rocket', 'a missile has no figure yet: the closest, and not exact; a rocket has its own');
   ok(f('').figure === null, 'nothing named: nothing assumed');
   // the user's own question, as the Worker hands it on
@@ -259,12 +259,18 @@ group('Places only the composer draws, and more of what students name', () => {
   ok(!sr.ok && /straight up or down/.test(sr.reason), 'down a well at an angle: the engine says, in words, it moves straight up or down');
   ok(fromReading({ understood: true, scenario: 'up', h: 0, u: 4, summary: 'A coin is tossed up at 4 m/s.', who: 'coin' }).recipe.objects[0].figure === 'coin', 'a coin tossed up is drawn as a coin, wherever it is');
   const shelf = fromReading({ understood: true, scenario: 'platform', h: 2, u: 1, summary: 'A book slides off a shelf 2 m high at 1 m/s.', who: 'book' });
-  ok(shelf.recipe.backdrop === 'table' && compose(shelf.recipe).scenario.name === 'A particle off a shelf' && /shelf is drawn as a table/.test(shelf.notes.join(' ')), 'a shelf: drawn as a table, named a shelf, and said');
+  ok(shelf.recipe.backdrop === 'table' && compose(shelf.recipe).scenario.name === 'A book off a shelf' && /shelf is drawn as a table/.test(shelf.notes.join(' ')), 'a shelf: drawn as a table, named a shelf, and said');
   ok(compose(fromReading({ understood: true, scenario: 'platform', h: 6, u: 4, summary: 'A ball is thrown from a balcony 6 m up.', who: 'ball' }).recipe).scenario.name === 'A ball off a balcony', '“A ball off a balcony”');
   ok(fromReading({ understood: true, scenario: 'arc', h: 0, u: 20, angleDegrees: 30, summary: 'Using the table of g values, a ball is kicked at 20 m/s at 30°.', who: 'ball' }) === null, 'a table of values is no table');
   const ap = fromReading({ understood: true, scenario: 'dropped', h: 3.2, summary: 'An apple falls from a branch 3.2 m up.', who: 'apple' });
   ok(ap.recipe.backdrop === 'orchard' && ap.recipe.objects[0].figure === 'apple' && !ap.notes.some((n) => /no place/.test(n)), 'an apple from a branch: the orchard’s tree, never a wall');
   ok(/above the floor/.test(check({ backdrop: 'table', engine: 'projectile', objects: [{ figure: 'coin' }], numbers: { h: 0 } }).reason), 'a table with no height: it starts above the floor');
+  for (const [w, f] of [['football', 'football'], ['tennis ball', 'tennisBall'], ['golf ball', 'golfBall'], ['basketball', 'basketball'], ['shot put', 'shot'], ['cannonball', 'shot'], ['snowball', 'snowball'], ['water balloon', 'waterBalloon'], ['mobile phone', 'phone'], ['textbook', 'book'], ['hammer', 'hammer'], ['cricket ball', 'ball']]) ok(figureOf(w).figure === f && figureOf(w).exact, `prop: “${w}” is drawn as ${f}`);
+  ok(whoIn('a builder drops a hammer from scaffolding') === 'hammer' && whoIn('a girl throws a tennis ball up') === 'tennis ball', 'props: the thing named, never the person');
+  ok(fromReading({ understood: true, scenario: 'dropped', h: 20, summary: 'A phone is dropped from a bridge 20 m up.', who: 'phone' })?.recipe.objects[0].figure === 'phone', 'a dropped phone is drawn as a phone');
+  ok(fromReading({ understood: true, scenario: 'arc', h: 0, u: 20, angleDegrees: 30, summary: 'A football is kicked at 20 m/s at 30°.', who: 'football' }) === null, 'a football kicked on a pitch stays on the twelve’s pitch');
+  ok(check({ backdrop: 'house', engine: 'twin', objects: [{ figure: 'tennisBall' }, { figure: 'golfBall' }], numbers: { h: 6, 'A.u': 8, 'A.theta': 40, 'B.u': 5, 'B.theta': 10 } }).recipe?.objects.map((o) => o.figure).join() === 'tennisBall,golfBall', 'a recipe naming tennisBall and golfBall gets them, not particles');
+  ok(check({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'tennisBall' }], numbers: { start: 'drop', h: 2, e: 0.5 } }).ok, 'a tennis ball bounces as itself');
   for (const [w, f] of [['rocket', 'rocket'], ['firework', 'rocket'], ['arrow', 'arrow'], ['sandbag', 'sandbag'], ['bag of flour', 'sandbag'], ['pail', 'bucket'], ['marble', 'marble'], ['penny', 'coin']]) ok(figureOf(w).figure === f && figureOf(w).exact, `“${w}” is drawn as ${f}`);
 });
 

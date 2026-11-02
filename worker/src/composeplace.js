@@ -43,10 +43,11 @@ export function toComposed(x, words = '') {
   const engine = ENGINE[x.library], backdrop = hit[1];
   const numbers = {};
   for (const k of BOXES[engine]) if (x.boxes[k] != null) numbers[k] = x.boxes[k];
-  const thing = /\bstone/i.test(text) ? 'stone' : /\bparticle/i.test(text) ? 'particle' : 'ball';
-  const objects = engine === 'pair'
-    ? [{ figure: thing }, { figure: thing }]
-    : [{ figure: thing === 'stone' ? 'ball' : thing }];
+  // what moves, drawn as itself where the engine has it (a tennis ball
+  // bounces as a tennis ball), a ball where it does not
+  const said = figureOf(whoIn(text)).figure;
+  const thing = ENGINES[engine].figures.includes(said) ? said : 'ball';
+  const objects = engine === 'pair' ? [{ figure: thing }, { figure: thing }] : [{ figure: thing }];
   const out = { understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary,
     recipe: { title: TITLE[engine][backdrop], backdrop, engine, objects, numbers } };
   if (Array.isArray(x.parts)) {
@@ -69,7 +70,7 @@ export function toComposed(x, words = '') {
    "upwards" or "vertically" IS given: straight up, and nothing assumed.
    Nothing is calculated: an angle the question did not give is set to the
    one it means, and said. */
-import { figureOf, whoIn } from '../../js/compose/registry.js';
+import { figureOf, whoIn, ENGINES } from '../../js/compose/registry.js';
 
 const JUMP = /\b(jump|jumps|jumped|jumping|leaps?|leapt|springs|sprang)\b/i;
 const UP = /\b(straight up|upwards?|vertically( up(wards)?)?|directly up)\b/i;

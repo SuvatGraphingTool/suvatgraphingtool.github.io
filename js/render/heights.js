@@ -257,7 +257,9 @@ function wellFrame(D, rise) {
     edge with tufts along it. The face only leans back from the edge, so a
     stone dropped from the edge falls clear of it. */
 export function seaCliff(g, x0, edge, top, Y, o = {}) {
-  const C = tones(), E = C.E, r = rng(o.seed ?? 41), H = Math.max(1, Y - top);
+  // o.tones recolours the rock (the Moon's grey, Mars's red); o.cap false
+  // leaves the turf off, o.foam false the sea's foot (a cliff over dry land)
+  const C = { ...tones(), ...(o.tones || {}) }, E = C.E, turf = o.cap !== false, sea = o.foam !== false, r = rng(o.seed ?? 41), H = Math.max(1, Y - top);
   const lean = Math.min(26, H * 0.09), nL = clamp(Math.round(H / 24), 4, 16);
   const face = [];
   for (let i = 0; i <= nL; i++) {
@@ -314,17 +316,25 @@ export function seaCliff(g, x0, edge, top, Y, o = {}) {
   for (let i = face.length - 1; i >= 0; i--) g.lineTo(face[i].x - 9 - (i % 3), face[i].y);
   g.closePath(); g.fill();
   // wet and weedy at the foot
+  if (sea) {
   const wet = g.createLinearGradient(0, Y - Math.min(30, H * 0.2), 0, Y + 4);
   wet.addColorStop(0, withAlpha('#2f3d33', 0)); wet.addColorStop(1, withAlpha(C.n ? '#1b241f' : '#3a4a3a', 0.65));
   g.fillStyle = wet; g.fillRect(x0, Y - Math.min(30, H * 0.2), edge - x0 + 40, Math.min(30, H * 0.2) + 4);
+  }
   // tiny tufts on the ledges
-  for (let i = 2; i < face.length - 3; i += 3) tuft(g, face[i].x - 4, face[i].y + 1, 4 + r() * 3, r, withAlpha(E.grass, 0.9), 4);
+  if (turf) for (let i = 2; i < face.length - 3; i += 3) tuft(g, face[i].x - 4, face[i].y + 1, 4 + r() * 3, r, withAlpha(E.grass, 0.9), 4);
   g.restore();
   // boulders at the foot, behind the line of the face
   const fx = face[face.length - 1].x;
   for (let i = 0; i < 6; i++) rock(g, fx - 8 - i * 11 - r() * 6, Y - 2 - r() * 2, 4 + r() * 6, 70 + i, C.rockHi, C.rockLo);
   // the turf cap: a soil line, the turf overhanging the edge, tufts along it
   const tk = clamp(H * 0.04, 5, 10);
+  if (!turf) {
+    // bare rock to the lip: a lit edge and a dark undercut beneath it
+    g.fillStyle = C.rockHi; g.fillRect(x0, top - 2, edge - x0 + 2, 3);
+    g.fillStyle = withAlpha('#000000', 0.3); g.fillRect(x0, top + 1, edge - x0, 2);
+    return;
+  }
   g.save();
   g.fillStyle = C.soil; g.fillRect(x0, top + tk - 1, edge - x0 - 2, 4);
   const tg = g.createLinearGradient(0, top - 3, 0, top + tk);
@@ -344,6 +354,7 @@ export function seaCliff(g, x0, edge, top, Y, o = {}) {
   for (let x = x0 + 30 + r() * 40; x < edge - 20; x += 60 + r() * 90) { g.fillStyle = r() < 0.5 ? '#efe6c8' : '#d8c27a'; g.beginPath(); g.arc(x, top - 5 - r() * 3, 1.6, 0, TAU); g.fill(); }
   g.restore();
   // foam where the swell meets the foot
+  if (!sea) return;
   const ph = o.phase ?? 0;
   g.save();
   for (let i = 0; i < 9; i++) {

@@ -233,17 +233,38 @@ and a bridge over a road; the landing kicks up dust.
 
 Places in `js/render/places.js` (PLACE_ART, by the registry's backdrop
 name; each paints the backdrop and what it is launched from, called by
-composed.js scenery()): `mountain` (snow-capped peaks, a pine ridge, meadows
-to the valley floor, a rock ledge), `forest` (layered trees thinning into
-mist, leaf litter and ferns, a platform among the trunks from a height),
-`harbour` (a stone quay with a bollard and a ladder, boats at their
-moorings rocking with the swell, a breakwater and a lighthouse), `city` (a
-skyline, nearer lit blocks, the office block it leaves from, the street),
-`moon` (stars, the Earth half lit, a cratered grey plain; g 1.62) and `mars`
-(a butterscotch sky, a mesa, red dust and rock; g 3.71). A backdrop with its
-own g (registry `g`) uses it unless the question gives one, and the reply
-says so. Two from one place: the `twin` engine (js/core/twin.js,
-js/kits/twin.js), drawn by launch() as one mover or two.
+composed.js scenery()): `mountain` (two ranges of peaks lit on one face and
+shaded on the other, snow to a ragged line, the far range hazed; a pine
+shoulder, hillsides falling away to the valley floor and its stream; the
+library's cliff as the ledge, scree at its foot), `forest` (trees to scale,
+15–25 m, in three layers with mist between, light slanting through, great
+foreground trunks, a forest floor of litter, moss, ferns and a path; a timber
+platform with a rail and a ladder), `harbour` (a quay with its coping, tide
+line, fenders, chain, bollard and ladder; boats with wheelhouses, masts and
+reflections out in the harbour; a breakwater and a lighthouse), `city` (a
+skyline, nearer blocks, the office block with a parapet and rooftop plant;
+the street with a kerb, lamps and parked cars; `cityWidth()` frames the
+block and puts the height's dimension beside it), `moon` (stars, the Earth
+across a curved terminator, a far crater rim, a cratered plain, the cliff in
+grey; g 1.62) and `mars` (a butterscotch sky with dust low over the plain,
+stepped mesas, the cliff in red, or a launch pad with a gantry; g 3.71). On
+the Moon and Mars the thrower wears a spacesuit (`thrower(…, { suit })`).
+`seaCliff(…, { tones, cap, foam })` recolours the library cliff, leaves its
+turf off, or its sea foot. A backdrop with its own g (registry `g`) uses it
+unless the question gives one, and the reply says so. Two from one place:
+the `twin` engine (js/core/twin.js, js/kits/twin.js), drawn by launch() as
+one mover or two: B waits behind A (a thrower's span, or a vehicle's
+length) and eases onto the engine's point as it goes; each has its own
+H_max, and its labels carry its letter.
+
+Props in `js/render/props.js` (`drawProp(g, kind, x, y, R, spin, ring)`,
+each shaded and lit from the left, turning as it flies): `football`,
+`tennisBall`, `golfBall`, `basketball`, `shot`, `snowball`, `waterBalloon`,
+`phone`, `book`, `hammer` — registry figures with `prop: true`, read from a
+question's words by `figureOf()`. A ball of a sport stays on the twelve's
+pitch (fromReading's BALLISH); a phone, a book, a hammer or a water balloon
+is composed and drawn as itself. Two on one vertical line can be any prop;
+a bounce, a ball of a sport.
 
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
