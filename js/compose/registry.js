@@ -67,6 +67,9 @@ export const BACKDROPS = {
   garden:  { label: 'A back garden', what: 'a back garden: the lawn, a fence with a flower border, a greenhouse and a washing line; from a height, the shed roof (to about 3.5 m), or a balcony at the back of the house or a block of flats', place: 'garden', below: 'ground', art: true, on: 'in a garden', high: 'the shed roof', higher: [3.5, 'a balcony'] },
   farm:    { label: 'A farm', what: 'a farm: hedged fields, sheep, round hay bales; from a height, the hayloft door of a timber barn (to about 8 m) or the top of a grain silo', place: 'farm', below: 'ground', art: true, on: 'on a farm', high: 'the hayloft of a barn', higher: [8, 'a grain silo'] },
   cricket: { label: 'A cricket ground', what: 'a cricket ground: the pavilion and sight screen across the outfield, the pitch and its stumps (the far stumps only where the ball clears them); from a height, the pavilion’s stand', place: 'cricket', below: 'ground', art: true, on: 'at a cricket ground', high: 'the pavilion’s stand' },
+  lake:    { label: 'A lake', what: 'a lake among wooded hills, reeds, a rowing boat and ducks; from its shingle shore, or (from a height) the end of a timber jetty, or a rocky bluff above about 2 m', place: 'lake', below: 'river', art: true, on: 'at a lake', high: 'the end of a jetty', higher: [2, 'a bluff over a lake'] },
+  island:  { label: 'A tropical island', what: 'a tropical island: white sand, palms and a deep blue lagoon inside the reef; from a height, the crown of a palm tree (a coconut falls from it)', place: 'island', below: 'beach', art: true, on: 'on a tropical island', high: 'a palm tree', lands: 'sand' },
+  skatepark: { label: 'A skatepark', what: 'a skatepark: smooth concrete, a funbox and its rail, a graffiti wall; from a height, the deck of a half-pipe', place: 'skatepark', below: 'road', art: true, on: 'in a skatepark', high: 'the deck of a half-pipe' },
   carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
   volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
   quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
@@ -136,6 +139,8 @@ export const FIGURES = {
   // fired, never thrown: a rifle sends it off unless the recipe names another launcher
   bullet:   { label: 'a bullet', m: 0.03, min: 10, views: ['side'], thrown: true, prop: true, verb: 'fired' },
   // a jet of water, drawn as the stream along its path; a hose sends it unless another launcher is named
+  brick:    { label: 'a brick', m: 0.22, min: 12, views: ['side'], thrown: true, prop: true },
+  coconut:  { label: 'a coconut', m: 0.15, min: 11, views: ['side'], thrown: true, prop: true },
   water:    { label: 'a jet of water', m: 0.03, min: 10, views: ['side'], thrown: true, lands: 'splat' },
   // animals that leap by themselves (js/render/animals.js): `m` is nose to tail
   cat:      { label: 'a cat', m: 0.5, min: 30, views: ['side'], animal: true },
@@ -403,9 +408,10 @@ const WORDS = [
   [/\b(jet ?ski|water scooter)\b/, 'jetski'], [/\b(ski jumper|skier|ski)\b/, 'skier'], [/\b(snowboard(?:er)?)\b/, 'snowboarder'],
   [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
   [/\b(bird|kingfisher|gannet|seagull|gull|eagle|hawk|falcon|osprey|pelican|heron|tern|cormorant|puffin|swallow|pigeon|owl|crow|duck)\b/, 'bird'],
-  [/\b(stone|pebble|rock|brick|key|object|mass)\b/, 'stone'],
+  [/\b(bricks?)\b/, 'brick'], [/\b(coconuts?)\b/, 'coconut'],
+  [/\b(stone|pebble|rock|key|object|mass)\b/, 'stone'],
   [/\b(ball)\b/, 'ball'],
-  [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
+  [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit)\b/, 'apple'],
 ];
 /** The figures a thing with none of its own is drawn as, and how to say so. */
 const NEAREST = [
@@ -481,6 +487,9 @@ const ONLY_HERE = [
   [/\b(?:in|across|into|around)\s+(?:a|the|his|her|their|my)\s+(?:back ?)?(garden)\b|\b(garden shed|shed roof|washing line|greenhouse)\b/, 'garden'],
   [/\b(farm|farmyard|barn|hayloft|hay loft|hay bales?)\b/, 'farm'],
   [/\b(cricket (?:ground|pitch|match|field|square)|batsman|batswoman|the crease|wicket ?keeper|stumps|boundary rope)\b/, 'cricket'],
+  [/\b(?:into|across|over|on|from|beside|by)\s+(?:a|the)\s+(lake|pond|loch|lagoon|mere)\b/, 'lake'],
+  [/\b(palm tree|coconut palm|desert island|tropical island|coconut)\b/, 'island'],
+  [/\b(skate ?park|half-?pipe|skate ramp|quarter-?pipe)\b/, 'skatepark'],
   [/\b(tennis court|centre court|grass court|hard court|clay court|tennis match|tennis player)\b/, 'court'],
   [/\b(basketball (?:court|hoop|player|ring|net|arena)|netball (?:court|hoop|post|ring)|(?:through|into|at) the (?:hoop|ring)|free throw|jump shot|slam dunk)\b/, 'arena'],
   // on a beach, but not a cliff, pier or harbour over one ("off the cliff onto the beach" is the cliff's)

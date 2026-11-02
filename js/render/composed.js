@@ -204,7 +204,7 @@ function launch(canvas, o) {
     // it leaves the table's edge: no one stands on the table
     // (a cannon, a ramp or a catapult sends it off: no one throws it)
     // (a volcano throws its own rocks: no one stands in the crater)
-    const thrown = (!!piece.thrown || kind === 'arrow') && !['orchard', 'table', 'volcano'].includes(R.backdrop) && !carried && !LAUNCHER_ART[R.launcher];
+    const thrown = (!!piece.thrown || kind === 'arrow') && !['orchard', 'table', 'volcano'].includes(R.backdrop) && !(R.backdrop === 'island' && H0 > 0 && kind === 'coconut') && !carried && !LAUNCHER_ART[R.launcher];
     const small = !!piece.thrown || !!piece.small || kind === 'arrow';
     // thrown from low down with nothing to stand on: the thrower stands on the
     // ground or the floor and lets go at hand height
@@ -767,7 +767,7 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const name = { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', lake: 'the lake', island: 'the sand', skatepark: 'the concrete', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);

@@ -247,7 +247,29 @@ function bullet(g, x, y, R, spin, { ang = 0 } = {}) {
   });
 }
 
-export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball, hailstone, raindrop, discus, frisbee, dart, shuttlecock, hockeyBall, egg, bullet };
+/** A brick: a yellow London stock brick tumbling end over end, its long face
+    and its end lit, a frog pressed in its top. */
+function brick(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(spin * 0.8);
+  const L = R * 2, H = R * 0.62, D = R * 0.35;
+  g.fillStyle = '#b89a62'; g.beginPath(); g.moveTo(-L / 2, -H / 2); g.lineTo(-L / 2 + D, -H / 2 - D * 0.6); g.lineTo(L / 2 + D, -H / 2 - D * 0.6); g.lineTo(L / 2, -H / 2); g.closePath(); g.fill();
+  g.fillStyle = '#8e7448'; g.beginPath(); g.moveTo(L / 2, -H / 2); g.lineTo(L / 2 + D, -H / 2 - D * 0.6); g.lineTo(L / 2 + D, H / 2 - D * 0.6); g.lineTo(L / 2, H / 2); g.closePath(); g.fill();
+  const gr = g.createLinearGradient(0, -H / 2, 0, H / 2); gr.addColorStop(0, '#d8bc84'); gr.addColorStop(1, '#a88a56');
+  g.fillStyle = gr; g.fillRect(-L / 2, -H / 2, L, H);
+  g.fillStyle = 'rgba(60,40,20,0.35)'; for (let i = 0; i < 6; i++) g.fillRect(-L / 2 + ((i * 37) % 10) / 10 * L, -H / 2 + ((i * 53) % 10) / 10 * H, 1.5, 1.2);
+  g.strokeStyle = 'rgba(40,30,15,0.65)'; g.lineWidth = 1; g.strokeRect(-L / 2, -H / 2, L, H);
+  g.restore();
+}
+/** A coconut: a hairy brown husk, darker underneath, its three eyes. */
+function coconut(g, x, y, R, spin) {
+  sphere(g, x, y, R, '#8a6a46', '#5a4228', '#2e2014');
+  g.save(); g.translate(x, y); g.rotate(spin);
+  g.strokeStyle = 'rgba(160,130,90,0.55)'; g.lineWidth = 1; for (let i = 0; i < 10; i++) { const a = i * 0.63; g.beginPath(); g.moveTo(Math.cos(a) * R * 0.3, Math.sin(a) * R * 0.3); g.lineTo(Math.cos(a + 0.3) * R * 0.95, Math.sin(a + 0.3) * R * 0.95); g.stroke(); }
+  g.fillStyle = '#1e140c'; for (const a of [0, 2.1, 4.2]) { g.beginPath(); g.arc(Math.cos(a) * R * 0.18 - R * 0.2, Math.sin(a) * R * 0.18 - R * 0.2, Math.max(0.8, R * 0.08), 0, TAU); g.fill(); }
+  g.restore(); rim(g, x, y, R, 'rgba(20,12,6,0.6)');
+}
+
+export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball, hailstone, raindrop, discus, frisbee, dart, shuttlecock, hockeyBall, egg, bullet, brick, coconut };
 
 /** Draw a prop by name at (x, y), R px, turned by spin, ringed for B. */
 export function drawProp(g, kind, x, y, R, spin = 0, ring = null, o = {}) {

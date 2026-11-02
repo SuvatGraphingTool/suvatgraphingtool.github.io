@@ -2379,5 +2379,168 @@ function cricket(g, c) {
   if (X(20.12 - 1.22) < w - 6 && (land < X(20.12 - 1.22) - 6 || at == null || at > 0.85)) stumps(X(20.12 - 1.22));
 }
 
+/* ── a lake, an island, a skatepark ─────────────────────────────────────── */
+
+/** A lake: wooded hills and their pines mirrored in still water, reeds at the
+    margins, a rowing boat at its mooring and a pair of ducks clear of the
+    flight; from the shore's shingle, or (from a height) the end of a timber
+    jetty on its piles, or a rocky bluff above about 2 m. */
+function lake(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(251), horizon = oy - clamp((oy - 40) * 0.25, 34, 130);
+  sky(g, w, horizon, x0, { far: 'none', seed: 179, clouds: 3 });
+  // the far shore: hills, pines along the water
+  g.fillStyle = n ? '#25332a' : '#6a8a68'; g.beginPath(); g.moveTo(0, horizon);
+  for (let x = 0; x <= w; x += 30) g.lineTo(x, horizon - 26 - Math.sin(x * 0.005 + 2) * 16 - Math.sin(x * 0.013) * 6);
+  g.lineTo(w, horizon); g.closePath(); g.fill();
+  for (let x = r() * 12; x < w; x += 9 + r() * 12) pine(g, x, horizon + 1, 14 + r() * 14, n ? '#1a2a1e' : '#2f4a34', n ? '#22362a' : '#3e5e42');
+  // the water, with the far shore mirrored faintly in it
+  water(g, 0, w, horizon, h, { phase });
+  g.save(); g.globalAlpha = 0.18; g.translate(0, horizon * 2); g.scale(1, -1);
+  g.fillStyle = n ? '#25332a' : '#4a6a4a'; g.beginPath(); g.moveTo(0, horizon); for (let x = 0; x <= w; x += 30) g.lineTo(x, horizon - 26 - Math.sin(x * 0.005 + 2) * 16); g.lineTo(w, horizon); g.closePath(); g.fill();
+  g.restore();
+  const land = (c.clearX || [])[0] ?? w;
+  // reeds in clumps along the far margin
+  g.strokeStyle = n ? '#3a4a2a' : '#6a7a3a'; g.lineWidth = 1.2;
+  for (let x = r() * 30; x < w; x += 40 + r() * 80) for (let i = 0; i < 6; i++) { const rx = x + i * 3, ry = horizon + 4; g.beginPath(); g.moveTo(rx, ry); g.quadraticCurveTo(rx + 2, ry - 8, rx + (r() - 0.3) * 5, ry - 12 - r() * 6); g.stroke(); }
+  // a rowing boat at its mooring, and a pair of ducks, clear of where it lands
+  const bl = clamp(4 * k, 40, 120), byy = lerp(horizon, oy, 0.4);
+  const bx = [land + 80 + bl / 2, w - bl / 2 - 20].find((x) => x - bl / 2 > x0 + 30 && x + bl / 2 < w - 6 && Math.abs(x - land) > bl / 2 + 50 && underSky(c, x - bl / 2, x + bl / 2, byy - bl * 0.25, 30));
+  if (bx != null) {
+    g.fillStyle = n ? '#4a3a2c' : '#2f5fa8'; g.beginPath(); g.moveTo(bx - bl / 2, byy - bl * 0.12); g.lineTo(bx + bl / 2, byy - bl * 0.14); g.quadraticCurveTo(bx + bl * 0.42, byy, bx + bl * 0.3, byy + 1); g.lineTo(bx - bl * 0.35, byy + 1); g.quadraticCurveTo(bx - bl * 0.47, byy - bl * 0.02, bx - bl / 2, byy - bl * 0.12); g.closePath(); g.fill();
+    g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(bx - bl / 2, byy - bl * 0.14, bl, Math.max(2, bl * 0.03));
+    g.strokeStyle = n ? '#8a7a5a' : '#c8a870'; g.lineWidth = 2; g.beginPath(); g.moveTo(bx - bl * 0.1, byy - bl * 0.1); g.lineTo(bx + bl * 0.35, byy + bl * 0.05); g.stroke();
+    g.strokeStyle = withAlpha('#ffffff', 0.4); g.lineWidth = 1; g.beginPath(); g.ellipse(bx, byy + 3, bl * 0.55, 3, 0, 0, TAU); g.stroke();
+    c.reserve?.({ x: bx - bl / 2 - 4, y: byy - bl * 0.3, w: bl + 8, h: bl * 0.3 + 6 });
+  }
+  for (const [dx, dy] of [[0, 0], [22, 5]]) {
+    const dxx = (bx ?? w * 0.7) - bl - 40 + dx, dyy = lerp(horizon, oy, 0.25) + dy;
+    if (Math.abs(dxx - land) < 50 || dxx < x0 + 30 || !underSky(c, dxx - 10, dxx + 10, dyy - 12, 20)) continue;
+    g.fillStyle = n ? '#5a5040' : '#8a6a4a'; g.beginPath(); g.ellipse(dxx, dyy - 3, 7, 3.5, 0, 0, TAU); g.fill();
+    g.fillStyle = n ? '#2a4a3a' : '#2f6a4a'; g.beginPath(); g.arc(dxx + 6, dyy - 7, 2.6, 0, TAU); g.fill();
+    g.fillStyle = '#e8c547'; g.fillRect(dxx + 8, dyy - 7, 2.5, 1.2);
+  }
+  if (!(H0 > 0)) {
+    // the shore it is thrown from: shingle, sloping into the water at its edge
+    g.fillStyle = n ? '#5a5650' : '#b8b0a2'; g.beginPath(); g.moveTo(-4, oy - 3); g.lineTo(x0 + 6, oy - 3); g.quadraticCurveTo(x0 + 18, oy + 2, x0 + 24, h); g.lineTo(-4, h); g.closePath(); g.fill();
+    g.fillStyle = withAlpha('#000000', 0.15); for (let i = 0; i < 60; i++) { const sx = r() * (x0 + 10), sy = oy + r() * (h - oy); g.beginPath(); g.arc(sx, sy, 1 + r() * 1.8, 0, TAU); g.fill(); }
+    return;
+  }
+  const H = oy - top;
+  if (H0 <= 2) {
+    // the jetty: a deck of planks on piles out over the water, its end the edge
+    const len = clamp(Math.max(x0 - 6, 6 * k), 80, x0 + 4), deck = clamp(0.25 * k, 4, 10), wood = n ? '#5a4a3a' : '#8a6a4a', woodLo = n ? '#3a2e24' : '#5e4630';
+    for (let x = x0 - 6; x > x0 - len; x -= clamp(2 * k, 30, 90)) { g.fillStyle = woodLo; g.fillRect(x - 3, top + deck, 6, oy - top - deck + clamp((h - oy) * 0.3, 6, 30)); g.fillStyle = withAlpha('#ffffff', 0.25); g.fillRect(x - 3, oy - 1, 6, 2); }
+    g.fillStyle = wood; g.fillRect(x0 - len, top, len, deck); g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; for (let x = x0 - 6; x > x0 - len; x -= 8) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, top + deck); g.stroke(); }
+    g.fillStyle = withAlpha('#ffffff', 0.2); g.fillRect(x0 - len, top, len, 1);
+    // a mooring post with its rope at the end
+    g.fillStyle = woodLo; g.fillRect(x0 - clamp(0.8 * k, 8, 24), top - clamp(0.6 * k, 6, 18), 5, clamp(0.6 * k, 6, 18));
+  } else {
+    // a rocky bluff over the lake
+    seaCliff(g, -4, x0, top, oy, { phase, foam: false });
+  }
+}
+
+/** A palm tree, its trunk rising in a gentle curve from (bx, by) to its crown
+    at (cx, cy): ringed segments, fronds drooping all round, coconuts under them. */
+function palm(g, bx, by, cx, cy, s, n, nuts = true) {
+  const mx = lerp(bx, cx, 0.5) - (cy - by) * 0.12, my = lerp(by, cy, 0.5);
+  const tw = Math.max(4, s * 0.06);
+  g.strokeStyle = n ? '#4a3e30' : '#8a6e4a'; g.lineWidth = tw; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(bx, by); g.quadraticCurveTo(mx, my, cx, cy); g.stroke();
+  g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1;
+  for (let i = 1; i < 14; i++) { const u = i / 14, x = (1 - u) ** 2 * bx + 2 * (1 - u) * u * mx + u * u * cx, y = (1 - u) ** 2 * by + 2 * (1 - u) * u * my + u * u * cy; g.beginPath(); g.moveTo(x - tw / 2, y); g.lineTo(x + tw / 2, y - 1); g.stroke(); }
+  // the fronds: arching out and drooping, a midrib and leaflets
+  for (let i = 0; i < 8; i++) {
+    const a = -Math.PI / 2 + (i - 3.5) * 0.42, L = s * (0.42 + (i % 2) * 0.08), ex = cx + Math.cos(a) * L, ey = cy + Math.sin(a) * L * 0.55 + L * 0.35;
+    const qx = cx + Math.cos(a) * L * 0.55, qy = cy + Math.sin(a) * L * 0.6 - L * 0.1;
+    g.strokeStyle = n ? '#1e3a24' : '#3e7a3a'; g.lineWidth = Math.max(2, s * 0.025); g.beginPath(); g.moveTo(cx, cy); g.quadraticCurveTo(qx, qy, ex, ey); g.stroke();
+    g.strokeStyle = n ? '#24442a' : '#4f9a44'; g.lineWidth = Math.max(1, s * 0.012);
+    for (let j = 1; j < 8; j++) { const u = j / 8, x = (1 - u) ** 2 * cx + 2 * (1 - u) * u * qx + u * u * ex, y = (1 - u) ** 2 * cy + 2 * (1 - u) * u * qy + u * u * ey, ll = s * 0.08 * (1 - u * 0.5); g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a + 1.2) * ll, y + Math.sin(a + 1.2) * ll + ll * 0.5); g.moveTo(x, y); g.lineTo(x + Math.cos(a - 1.2) * ll, y + Math.sin(a - 1.2) * ll + ll * 0.5); g.stroke(); }
+  }
+  if (nuts) for (const [dx, dy] of [[-0.04, 0.05], [0.03, 0.06], [-0.005, 0.085]]) { g.fillStyle = n ? '#3a2e20' : '#5a4228'; g.beginPath(); g.arc(cx + dx * s, cy + dy * s, s * 0.035, 0, TAU); g.fill(); }
+}
+
+/** A tropical island: a deep blue lagoon and the reef's line of surf, white
+    sand, palms and a thatched hut; from a height, the crown of a palm leaning
+    out over the sand, from which a coconut falls. */
+function island(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(257), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
+  // a hot blue sky, the sea a deep cobalt blue (never the teal of displacement)
+  sky(g, w, horizon, x0, { far: 'none', seed: 181, clouds: 2 });
+  const sg = g.createLinearGradient(0, horizon, 0, lerp(horizon, oy, 0.6)); sg.addColorStop(0, n ? '#14284a' : '#2a6ab8'); sg.addColorStop(1, n ? '#1c3a5e' : '#4a92d8');
+  g.fillStyle = sg; g.fillRect(0, horizon, w, lerp(horizon, oy, 0.6) - horizon);
+  g.strokeStyle = withAlpha('#ffffff', 0.7); g.lineWidth = 1.5; const reef = lerp(horizon, oy, 0.15);
+  g.beginPath(); for (let x = 0; x <= w; x += 12) g.lineTo(x, reef + Math.sin(x * 0.05 + phase * 2) * 1.2); g.stroke();
+  // the sand: white, a wet band at the water's edge, shells
+  const shore = lerp(horizon, oy, 0.6);
+  const bg = g.createLinearGradient(0, shore, 0, h); bg.addColorStop(0, n ? '#8a8676' : '#f4ead2'); bg.addColorStop(1, n ? '#6a6658' : '#e8dab8');
+  g.fillStyle = bg; g.fillRect(0, shore, w, h - shore);
+  g.fillStyle = withAlpha(n ? '#5a5a54' : '#c8bc98', 0.6); g.fillRect(0, shore, w, 4);
+  g.strokeStyle = withAlpha('#ffffff', 0.8); g.lineWidth = 2; g.beginPath(); for (let x = 0; x <= w; x += 10) g.lineTo(x, shore + 1 + Math.sin(x * 0.04 + phase * 3) * 1.5); g.stroke();
+  g.fillStyle = withAlpha('#000000', 0.08); for (let i = 0; i < (w * (h - shore)) / 80; i++) g.fillRect(r() * w, shore + 5 + r() * (h - shore), 1.5, 1);
+  const land = (c.clearX || [])[0] ?? w;
+  // palms and a hut along the back of the beach, clear of the flight
+  const ps = clamp(5 * k, 50, 160);
+  for (const px of [w - ps * 0.6, land + ps * 0.9, w * 0.55]) {
+    if (px < x0 + ps * 0.6 || px > w - 10 || Math.abs(px - land) < ps * 0.5 || !underSky(c, px - ps * 0.5, px + ps * 0.5, shore - ps, 30)) continue;
+    palm(g, px, shore + 6, px + ps * 0.15, shore + 6 - ps, ps, n);
+    c.reserve?.({ x: px - ps * 0.45, y: shore - ps * 1.05, w: ps * 0.9, h: ps * 1.1 });
+    break;
+  }
+  if (!(H0 > 0)) return;
+  // the palm it falls from: its crown at the launch point, leaning out over the sand
+  const H = oy - top;
+  palm(g, x0 - H * 0.45, oy + 2, x0, top, clamp(H * 0.9, 60, 260), n, false);
+}
+
+/** A skatepark: smooth concrete, a half-pipe whose deck and coping are the
+    edge it leaves from (from a height), a funbox and rails clear of the flight,
+    a graffiti wall behind and the town beyond. */
+function skatepark(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(263), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
+  sky(g, w, horizon - clamp(2.5 * k, 20, 60), x0, { far: 'none', seed: 191, clouds: 3 });
+  // the town beyond, then the graffiti wall along the back
+  for (let x = 0; x < w; x += 30 + r() * 30) { const bh = 20 + r() * 50, bw = 24 + r() * 30; g.fillStyle = n ? '#2a2e38' : '#b8c0cc'; g.fillRect(x, horizon - clamp(2.5 * k, 20, 60) - bh, bw, bh + 2); }
+  const wh = clamp(2.5 * k, 20, 60);
+  g.fillStyle = n ? '#4a4e56' : '#a8acb2'; g.fillRect(0, horizon - wh, w, wh);
+  const tags = n ? ['#5a6a8a', '#8a8a5a', '#8a5a6a', '#5a8a7a'] : ['#2f5fa8', '#e8c547', '#e86a9a', '#5fae7a', '#1b1d22', '#ffffff'];
+  for (let x = r() * 30; x < w; x += 40 + r() * 60) {
+    const tw2 = 30 + r() * 50, th2 = wh * (0.4 + r() * 0.4), ty = horizon - wh + (wh - th2) * r();
+    g.fillStyle = tags[Math.floor(r() * tags.length)]; g.beginPath(); g.roundRect(x, ty, tw2, th2, th2 * 0.45); g.fill();
+    g.strokeStyle = tags[Math.floor(r() * tags.length)]; g.lineWidth = 2.5; g.beginPath(); g.moveTo(x + 4, ty + th2 * 0.5); for (let i = 1; i < 6; i++) g.lineTo(x + 4 + i * tw2 * 0.17, ty + th2 * (0.3 + (i % 2) * 0.4)); g.stroke();
+  }
+  // the concrete: pale, its expansion joints
+  const cg = g.createLinearGradient(0, horizon, 0, h); cg.addColorStop(0, n ? '#5a5e66' : '#cfd1d4'); cg.addColorStop(1, n ? '#44484e' : '#b4b7bb');
+  g.fillStyle = cg; g.fillRect(0, horizon, w, h - horizon);
+  g.strokeStyle = withAlpha('#000000', 0.12); g.lineWidth = 1; for (let x = 0; x < w; x += clamp(3 * k, 40, 120)) { g.beginPath(); g.moveTo(x + (oy - horizon) * 0.3, horizon); g.lineTo(x - (h - oy) * 0.3, h); g.stroke(); }
+  const land = (c.clearX || [])[0] ?? w;
+  // a funbox with its grind rail, clear of the flight
+  const fw = clamp(4 * k, 50, 160), fh = clamp(0.6 * k, 8, 24), fy = lerp(horizon, oy, 0.5);
+  const fx = [land + 70 + fw / 2, w - fw / 2 - 16].find((x) => x - fw / 2 > x0 + 20 && x + fw / 2 < w - 6 && Math.abs(x - land) > fw / 2 + 40 && underSky(c, x - fw / 2, x + fw / 2, fy - fh, 30));
+  if (fx != null) {
+    g.fillStyle = n ? '#6a6e76' : '#e2e4e6'; g.beginPath(); g.moveTo(fx - fw / 2, fy); g.lineTo(fx - fw * 0.3, fy - fh); g.lineTo(fx + fw * 0.3, fy - fh); g.lineTo(fx + fw / 2, fy); g.closePath(); g.fill();
+    g.strokeStyle = withAlpha('#000000', 0.25); g.stroke();
+    g.strokeStyle = n ? '#8a9098' : '#5a6070'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(fx - fw * 0.3, fy - fh - 6); g.lineTo(fx + fw * 0.3, fy - fh - 6); g.stroke();
+    for (const px of [fx - fw * 0.25, fx + fw * 0.25]) { g.lineWidth = 1.5; g.beginPath(); g.moveTo(px, fy - fh - 6); g.lineTo(px, fy - fh); g.stroke(); }
+    softShadow(g, fx, fy + 1, fw * 0.55, 3, 0.5);
+    c.reserve?.({ x: fx - fw / 2 - 4, y: fy - fh - 10, w: fw + 8, h: fh + 14 });
+  }
+  if (!(H0 > 0)) return;
+  // the half-pipe: its deck at the launch height, the coping at the edge, the transition curving
+  // down to the flat bottom behind it, the framework under the deck seen through its side
+  const H = oy - top, R = Math.min(H * 0.9, clamp(H, 30, x0 * 0.6)), deck = clamp(1.6 * k, 16, 60);
+  const dx0 = x0 - deck, bx = dx0 - R;
+  g.fillStyle = n ? '#5a5e66' : '#d8dadd'; g.beginPath(); g.moveTo(x0, top); g.lineTo(x0, oy); g.lineTo(bx - 6, oy); g.lineTo(bx, oy); g.quadraticCurveTo(dx0, oy, dx0, top); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = 1; for (let x = dx0 + 6; x < x0; x += 7) { g.beginPath(); g.moveTo(x, top + 4); g.lineTo(x, oy); g.stroke(); }
+  g.strokeStyle = n ? '#3a3e46' : '#8a9098'; g.lineWidth = 2; g.beginPath(); g.moveTo(bx, oy); g.quadraticCurveTo(dx0, oy, dx0, top); g.stroke();
+  g.fillStyle = n ? '#6a6e76' : '#b8bcc2'; g.fillRect(dx0, top - 3, deck, 5);
+  g.strokeStyle = n ? '#9aa0a8' : '#5a6070'; g.lineWidth = Math.max(3, 0.12 * k); g.beginPath(); g.moveTo(dx0, top - 1); g.lineTo(dx0 + 3, top - 1); g.stroke();
+  g.strokeStyle = n ? '#7a7e86' : '#6a7280'; g.lineWidth = 1.5; const rh = clamp(1 * k, 10, 40); g.beginPath(); g.moveTo(dx0 + 4, top - rh); g.lineTo(dx0 + deck * 0.5, top - rh); g.moveTo(dx0 + 4, top); g.lineTo(dx0 + 4, top - rh); g.stroke();
+  softShadow(g, (bx + x0) / 2, oy + 2, (x0 - bx) * 0.55, 4, 0.5);
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark };
