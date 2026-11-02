@@ -18,6 +18,7 @@ import { prepareImage, readQuestion, readText, READER } from './capture.js';
 import { esc, proseHTML, sourcesHTML } from './readout.js';
 import { typeOut } from './typewriter.js';
 import { gAskHTML, parseG } from './gchoice.js';
+import { loadChats, getChat, saveChat, deleteChat, newChatRecord, titleOf, whenOf, thumbOf } from './chats.js';
 
 const $ = (id) => document.getElementById(id);
 const PDF_MAX = 4_000_000;          // the Worker's own limit, checked here first
@@ -45,6 +46,10 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   const HISTORY_MAX = 8;
   let current = null;              // this turn's reply, while it is being written
   let typing = null;               // the reply being typed out, if one is
+  // The chat on show, as it is kept in this browser (js/ai/chats.js): made by
+  // its first message, saved after every message and reply.
+  let chat = null;
+  const keep = () => { if (chat) { chat.updated = Date.now(); chat.history = [...history]; saveChat(chat); } };
 
   /* ── the chat screen ────────────────────────────────────────────────────
      The box is one element, moved to wherever the screen on show wants it:
@@ -54,7 +59,10 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   function dock() {
     const slot = inChat() ? $('chat-dock') : $('ask-slot');
     if (composer.parentNode !== slot) slot.append(composer);
-    $('ask-resume').hidden = inChat() || !thread.childElementCount;
+    // Back to the chat on show, or — with none on show — to the chats kept.
+    const kept = !thread.childElementCount && loadChats().length > 0;
+    $('ask-resume').hidden = inChat() || (!thread.childElementCount && !kept);
+    $('ask-resume-t').textContent = kept ? 'Your chats' : 'Back to your chat';
   }
   new MutationObserver(dock).observe(app, { attributes: true, attributeFilter: ['data-step'] });
 
@@ -89,7 +97,8 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     typing?.finish(); busy?.abort();
     for (const img of thread.querySelectorAll('img.ask-shot')) URL.revokeObjectURL(img.src);
     thread.replaceChildren();
-    history.length = 0; current = null;
+    history.length = 0; current = null; chat = null;
+    closeList();
     show('scenario');
     focus();
   }
@@ -211,6 +220,7 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     if (!thinking) {
       typing?.finish();
       typing = typeOut(r.querySelector('.ask-bubble'), { tick: follow });
+      if (chat) { r.turn = { who: 'suvat', html }; chat.turns.push(r.turn); keep(); }
     }
     follow();
     return r;
@@ -221,15 +231,23 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     // question is set up now, not the one it was written for.
     for (const old of thread.querySelectorAll('.ask-acts')) old.remove();
     current = null;
+    mine(words, a && { kind: a.kind, name: a.file.name || '' }, a?.kind === 'image' ? URL.createObjectURL(a.file) : null);
+    follow(true);
+    // kept: the words, and a small copy of a photo — the photo itself is not
+    if (!chat) { chat = newChatRecord(); chat.title = titleOf(words, a); }
+    const turn = { who: 'me', words, ...(a ? { att: { kind: a.kind, name: a.file.name || '' } } : {}) };
+    chat.turns.push(turn); keep();
+    if (a?.kind === 'image') thumbOf(a.file).then((t) => { if (t) { turn.att.thumb = t; keep(); } });
+  }
+  /** The student's message in the thread. A photo stays as a picture, so the chat reads back. */
+  function mine(words, att, src) {
     const q = document.createElement('div');
     q.className = 'ask-msg ask-mine';
-    // A photo stays in the thread as a picture, so the chat reads back.
-    const what = !a ? ''
-      : a.kind === 'image' ? `<img class="ask-shot" src="${URL.createObjectURL(a.file)}" alt="The photo sent">`
-      : `<span class="ask-chip">PDF · ${esc(a.file.name || '')}</span>`;
+    const what = !att ? ''
+      : att.kind === 'image' ? (src ? `<img class="ask-shot" src="${esc(src)}" alt="The photo sent">` : '<span class="ask-chip">Photo</span>')
+      : `<span class="ask-chip">PDF · ${esc(att.name)}</span>`;
     q.innerHTML = `<div class="ask-bubble">${what}${words ? `<p>${esc(words)}</p>` : ''}</div>`;
     thread.append(q);
-    follow(true);
   }
   function remember(words, a, extraction) {
     const said = a ? `[sent ${a.kind === 'pdf' ? 'the question paper as a PDF' : 'a photo of the question'}]${words ? ` ${words}` : ''}` : words;
@@ -273,6 +291,9 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     clearTimeout(slow);
     const stopped = busy?.signal.aborted;
     busy = null; sync();
+    // the newest reading is the one a reopened chat sets up again; any other
+    // answer leaves no buttons, so none is set up
+    if (chat) chat.last = null;
     if (stopped) { reply('<p class="ro-sum">Stopped.</p>'); return; }
 
     if (!res?.ok) { reply(`<p class="ro-bad">${esc(res?.message || 'Could not read that.')}</p>`); return; }
@@ -291,8 +312,21 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     // wording ("dropped" is u = 0); a photo's numbers are in the photo, so none
     // (a follow-up — "same but g = 9.8" — keeps the numbers typed before it; after a photo, none can be told)
     const said = history.filter((h) => h.role === 'user').map((h) => h.text);
-    const r = apply(res.extraction, { graph: modes.graph, solve: modes.solve, words: a || said.some((t) => t.startsWith('[sent ')) ? null : said.join('\n') });
+    const opts = { graph: modes.graph, solve: modes.solve, words: a || said.some((t) => t.startsWith('[sent ')) ? null : said.join('\n') };
+    const r = apply(res.extraction, opts);
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
+    if (chat) chat.last = { extraction: res.extraction, opts };
+    reading(r);
+    // A scene composed for this question is what they asked to see: the stage
+    // opens on it straight away, behind its veil (js/compose/reveal.js), and
+    // the reply stays in the chat to come back to.
+    if (r.composed && r.runnable) setTimeout(run, 700);
+  }
+
+  /** A reading's reply: what the engine made of it, and its buttons, wired.
+      With `node`, the reply already in the thread is filled in place, as it
+      is when a kept chat is opened again — not typed out a second time. */
+  function reading(r, node = null) {
 
     // Typeset maths arrives as markup, so it goes in with innerHTML (rule 1).
     // EVERY READING THAT RUNS CAN BE VIEWED (the user, 1 Nov): the buttons no
@@ -307,8 +341,9 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
       : '';
     // The box keeps the focus, as in any chat: the next question is the
     // likelier next thing than the flight.
-    const wireScenes = (el) => { for (const b of el.querySelectorAll('.ask-scene')) b.addEventListener('click', () => scene?.(b.dataset.id)); };
-    reply(`<div class="ask-body">${r.html}</div>`, { acts, before(node) {
+    const wireScenes = (el) => { for (const b of el.querySelectorAll('.ask-scene')) { b.disabled = false; b.addEventListener('click', () => scene?.(b.dataset.id)); } };
+    const html = `<div class="ask-body">${r.html}</div>`;
+    const wire = (node) => {
       node.querySelector('.ask-run')?.addEventListener('click', run);
       node.querySelector('.ask-edit')?.addEventListener('click', edit);
       wireScenes(node);
@@ -323,6 +358,9 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
         const body = node.querySelector('.ask-body');
         body.innerHTML = again.html;
         wireScenes(body);
+        // kept as it now reads, and opened again with this g
+        if (node.turn) node.turn.html = `<div class="ask-body">${again.html}</div>`;
+        if (chat?.last) { chat.last.opts = { ...chat.last.opts, g }; keep(); }
         const fresh = document.createElement('div');
         fresh.innerHTML = gAskHTML(again.gAsk);
         const now = fresh.firstElementChild;
@@ -344,12 +382,89 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
       };
       box.addEventListener('change', typed);
       box.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); typed(); } });
-    } });
-    // A scene composed for this question is what they asked to see: the stage
-    // opens on it straight away, behind its veil (js/compose/reveal.js), and
-    // the reply stays in the chat to come back to.
-    if (r.composed && r.runnable) setTimeout(run, 700);
+    };
+    if (!node) { reply(html, { acts, before: wire }); return; }
+    node.querySelector('.ask-bubble').innerHTML = html + acts;
+    wire(node);
   }
+
+  /* ── the chats kept ─────────────────────────────────────────────────────
+     Every chat is kept in this browser as it is had (js/ai/chats.js). The
+     bar's "Chats" lists them; one opened reads back as it was, and its newest
+     reading is set up again, so "Show me the flight" shows that flight. */
+  const list = $('chat-list'), listBtn = $('chat-hist');
+  function openList() {
+    const all = loadChats();
+    const ul = $('chat-list-ul');
+    ul.replaceChildren(...all.map((c) => {
+      const li = document.createElement('li');
+      li.className = 'cl-row';
+      if (c.id === chat?.id) li.setAttribute('aria-current', 'true');
+      li.innerHTML = `<button type="button" class="cl-open" data-id="${esc(c.id)}"><span class="cl-t">${esc(c.title || 'A chat')}</span><span class="cl-when">${esc(whenOf(c.updated))}</span></button>
+        <button type="button" class="cl-x" data-id="${esc(c.id)}" aria-label="Delete this chat" title="Delete this chat"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>`;
+      return li;
+    }));
+    $('chat-list-none').hidden = all.length > 0;
+    list.hidden = false;
+    listBtn.setAttribute('aria-expanded', 'true');
+    (ul.querySelector('[aria-current] .cl-open') || ul.querySelector('.cl-open') || list).focus({ preventScroll: true });
+  }
+  function closeList() {
+    if (list.hidden) return;
+    list.hidden = true;
+    listBtn.setAttribute('aria-expanded', 'false');
+  }
+  function openKept(id) {
+    const c = getChat(id);
+    closeList();
+    if (!c || c.id === chat?.id) return;
+    typing?.finish(); busy?.abort();
+    for (const img of thread.querySelectorAll('img.ask-shot')) if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    thread.replaceChildren();
+    current = null;
+    chat = c;
+    history.length = 0; history.push(...(c.history || []));
+    let last = null;
+    for (const t of c.turns) {
+      if (t.who === 'me') { mine(t.words, t.att, t.att?.thumb || null); continue; }
+      const r = document.createElement('div');
+      r.className = 'ask-msg ask-reply';
+      r.dataset.busy = 'false';
+      r.innerHTML = `<span class="ai-orb sm" aria-hidden="true">${SPARK}</span><div class="ask-bubble">${t.html}</div>`;
+      // an older reply's part buttons would open the reading on show, not its own
+      for (const b of r.querySelectorAll('button')) b.disabled = true;
+      r.turn = t;
+      thread.append(r);
+      last = r;
+    }
+    // the newest reading, set up again on the stage, its buttons live
+    if (c.last && last && c.turns.at(-1)?.who === 'suvat') {
+      const r = apply(c.last.extraction, c.last.opts);
+      if (r?.ok) reading(r, last);
+    }
+    if (!inChat()) openChat({ instant: true });
+    dock();
+    follow(true);
+  }
+  listBtn.addEventListener('click', () => (list.hidden ? openList() : closeList()));
+  list.addEventListener('click', (e) => {
+    const x = e.target.closest('.cl-x');
+    if (x) {
+      deleteChat(x.dataset.id);
+      if (x.dataset.id === chat?.id) chat = null;   // the thread stays on screen, no longer kept
+      const row = x.closest('.cl-row'), next = row.nextElementSibling || row.previousElementSibling;
+      row.remove();
+      $('chat-list-none').hidden = !!$('chat-list-ul').childElementCount;
+      (next?.querySelector('.cl-open') || listBtn).focus();
+      return;
+    }
+    const o = e.target.closest('.cl-open');
+    if (o) openKept(o.dataset.id);
+  });
+  list.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeList(); listBtn.focus(); } });
+  document.addEventListener('pointerdown', (e) => {
+    if (!list.hidden && !list.contains(e.target) && !listBtn.contains(e.target)) closeList();
+  });
 
   /* ── voice ──────────────────────────────────────────────────────────── */
   let clock = null;
@@ -415,7 +530,10 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     $('ask-view').showModal?.();
   });
   $('ask-view-x').addEventListener('click', () => $('ask-view').close());
-  $('ask-resume').addEventListener('click', () => openChat());
+  $('ask-resume').addEventListener('click', () => {
+    if (thread.childElementCount) { openChat(); return; }
+    openChat({ instant: true }); openList();
+  });
   $('chat-back').addEventListener('click', () => show('scenario'));
   $('chat-new').addEventListener('click', newChat);
   $('ask-view').addEventListener('click', (e) => { if (e.target === $('ask-view')) $('ask-view').close(); });

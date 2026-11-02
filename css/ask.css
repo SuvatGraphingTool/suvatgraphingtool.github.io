@@ -318,3 +318,48 @@
 .preply-q { font-size: var(--fs-sm); color: var(--ink-strong); }
 .preply .pans { font-size: var(--fs-base); font-weight: var(--w-semi); color: var(--ink-strong); background: none; border: 0; padding: 0; white-space: normal; }
 .preply .pans-none, .preply .pans-say { font-size: var(--fs-xs); color: var(--ink-muted); font-weight: var(--w-body); }
+
+/* ── the chats kept (js/ai/chats.js) ─────────────────────────────────────
+   "Chats" in the bar opens the list under it, newest first: open one, or
+   delete it. Solid, not frosted — the bar it hangs from is already glass. */
+.chat-bar { position: relative; z-index: 5; }   /* above the conversation, which is a layer of its own (its fade mask) */
+.chat-end { justify-self: end; display: inline-flex; gap: var(--sp-1); }
+.chat-btn[aria-expanded='true'] { background: var(--hover); color: var(--ink); }
+.chat-list {
+  position: absolute; z-index: 30; top: calc(100% + 6px); right: var(--sp-6);
+  width: min(380px, calc(100vw - 2 * var(--sp-4))); max-height: min(70vh, 560px);
+  display: flex; flex-direction: column; padding: var(--sp-2);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow-lg);
+  animation: cl-in 160ms cubic-bezier(.2,.8,.2,1);
+}
+.chat-list[hidden] { display: none; }
+.chat-list:focus { outline: none; }
+@keyframes cl-in { from { opacity: 0; transform: translateY(-4px); } }
+.cl-h { margin: var(--sp-1) var(--sp-2) var(--sp-2); font-size: var(--fs-sm); font-weight: var(--w-semi); color: var(--ink-strong); }
+.cl-ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; }
+.cl-row { display: flex; align-items: center; gap: 2px; border-radius: var(--r-md); }
+.cl-row:hover, .cl-row:focus-within { background: var(--hover); }
+.cl-row[aria-current='true'] { background: var(--hover); box-shadow: inset 2px 0 0 var(--ink-strong); }
+.cl-open {
+  flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 8px var(--sp-2); text-align: left; border-radius: var(--r-md); color: var(--ink);
+}
+.cl-t { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); }
+.cl-when { font-size: 13px; color: var(--ink-muted); }
+.cl-x {
+  flex: none; display: grid; place-items: center; width: 32px; height: 32px; margin-right: 4px;
+  border-radius: var(--r-md); color: var(--ink-muted); opacity: 0; transition: opacity 120ms, background 120ms, color 120ms;
+}
+.cl-x svg { width: 16px; height: 16px; }
+.cl-row:hover .cl-x, .cl-row:focus-within .cl-x { opacity: 1; }
+.cl-x:hover { color: var(--bad); background: var(--card); }
+.cl-open:focus-visible, .cl-x:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@media (hover: none) { .cl-x { opacity: 1; } }
+.cl-none { margin: var(--sp-2); font-size: var(--fs-sm); color: var(--ink-muted); }
+.cl-note { margin: var(--sp-2) var(--sp-2) var(--sp-1); padding-top: var(--sp-2); border-top: 1px solid var(--border-soft);
+           font-size: 13px; color: var(--ink-muted); }
+@media (max-width: 600px) {
+  .chat-bar { padding-inline: var(--sp-4); }
+  .chat-end .chat-btn-t { display: none; }
+  .chat-list { right: var(--sp-4); }
+}

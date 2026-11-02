@@ -100,4 +100,5 @@ node test/notation.test.mjs     # that no computer maths reaches a student
 node test/blueprint.test.mjs    # the whiteboard: the model lays out, the engine calculates
 node test/compose.test.mjs      # the composer: recipes held to the registry, played by the engine's kit
 node test/library.test.mjs      # the Past-paper library: each scenario against its mark schemes
+node test/chats.test.mjs       # Ask Suvat's chats, kept in this browser
 ```
