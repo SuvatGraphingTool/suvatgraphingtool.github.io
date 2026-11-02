@@ -29,10 +29,12 @@ export function render(canvas, cam, o) {
 
   // ── the frame: beside the readouts where there is room, else full width below them
   const narrow = w - HB[0].w < w * 0.62;
-  const left = narrow ? 26 : HB[0].w + 40, right = w - (narrow ? 44 : 70);
-  const k = (right - left) / f.AC, X = (x) => left + x * k;
+  const left = narrow ? 64 : HB[0].w + 40, right = w - (narrow ? 44 : 70);
+  // A to C, and further back if it comes to rest behind A
+  const x0 = Math.min(0, f.stopAt), k = (right - left) / (f.AC - x0), X = (x) => left + (x - x0) * k;
   const sheetH = clamp(h * (narrow ? 0.26 : 0.34), 90, 170);
-  const cy = narrow ? clamp(HB[0].h + 56 + sheetH / 2, 0, h - sheetH / 2 - 54) : clamp(h * 0.58, HB[0].h * 0.35 + sheetH / 2, h - sheetH / 2 - 54);
+  // narrow, room under the sheet for two rows of distances
+  const cy = narrow ? clamp(HB[0].h + 56 + sheetH / 2, 0, h - sheetH / 2 - 100) : clamp(h * 0.58, HB[0].h * 0.35 + sheetH / 2, h - sheetH / 2 - 54);
   const top = cy - sheetH / 2, bot = cy + sheetH / 2;
   rink(g, w, h, top, bot, cy, sheetH, E);
 
@@ -56,7 +58,8 @@ export function render(canvas, cam, o) {
     if (crossed && fired) L.add(T`${s3(m.v)} [m s^-1]`, x, top - 44, { color: P.vel, pri: 8, size: 13, weight: 700 });
   }
   L.add('C', Cx - 2, top - 24, { color: hit ? P.mark : ink, pri: 9, size: 16, weight: 800 });
-  if (hit) L.add(T`"into the boards" ${s3(f.vC)} [m s^-1], "out" ${s3(f.w)} [m s^-1]`, Cx - 6, bot + 64, { color: P.vel, pri: 9, size: 13, weight: 700, align: 'right' });
+  // the speeds in and out, while the moment at the wall is fresh; at the end the distance back has the room
+  if (hit && t < f.tMax - 1e-9) L.add(T`"into the boards" ${s3(f.vC)} [m s^-1], "out" ${s3(f.w)} [m s^-1]`, Cx - 6, bot + 64, { color: P.vel, pri: 9, size: 13, weight: 700, align: 'right' });
 
   // ── the distances under the sheet, and where it comes to rest
   const dimY = bot + 30;
@@ -76,19 +79,22 @@ export function render(canvas, cam, o) {
   }
 
   // ── the stone, its track, its arrows; and the impulse at the wall
-  const x = X(f.pos(t)), v = f.vel(t);
+  const x = Math.min(X(f.pos(t)), Cx - 4 - r), v = f.vel(t);   // the stone touches the boards, it does not go into them
   stoneTop(g, x, cy, r, f.pos(t) * 0.12 + 0.4);
   L.reserve({ x: x - r - 4, y: cy - r - 4, w: 2 * r + 8, h: 2 * r + 8 });
   if (Math.abs(v) > 1e-9) {
-    const len = clamp((Math.abs(v) / f.uA) * 110, 18, 110), dir = Math.sign(v), y = cy - r - 10;
-    arrow(g, x + dir * (r + 2), y, x + dir * (r + 2 + len), y, { color: P.vel, width: 2.6, head: 10, dash: [6, 4] });
-    L.add(T`${s3(Math.abs(v))} [m s^-1]`, x + dir * (r + 8 + len), y, { color: P.vel, pri: 8, size: 14, weight: 700, align: dir > 0 ? 'left' : 'right' });
+    // towards the wall the arrow stops at the boards; its label goes behind the stone there
+    const dir = Math.sign(v), y = cy - r - 10, room = dir > 0 ? Cx - 6 - (x + r + 2) : Infinity;
+    const len = Math.min(clamp((Math.abs(v) / f.uA) * 110, 18, 110), room);
+    if (len > 10) arrow(g, x + dir * (r + 2), y, x + dir * (r + 2 + len), y, { color: P.vel, width: 2.6, head: 10, dash: [6, 4] });
+    const lx = dir > 0 ? x - r - 6 : x - r - 8 - len;
+    L.add(T`${s3(Math.abs(v))} [m s^-1]`, lx, y, { color: P.vel, pri: 8, size: 14, weight: 700, align: 'right' });
   }
   if (f.acc(t) !== 0) {
     // kept on the ice: near the boards, an arrow towards them starts further back
-    const dir = Math.sign(f.acc(t)), y = cy + r + 10, x0 = dir > 0 ? Math.min(x + r + 2, Cx - 58) : x - r - 2;
+    const dir = Math.sign(f.acc(t)), y = cy + r + 10, x0 = dir > 0 ? Math.min(x + r + 2, Cx - 58) : Math.max(x - r - 2, 54);
     arrow(g, x0, y, x0 + dir * 46, y, { color: P.acc, width: 2.2, head: 9, dash: [6, 4] });
-    L.add(T`${s3(f.a)} [m s^-2]`, dir > 0 ? x0 - 6 : x0 - 52, y, { color: P.acc, pri: 6, size: 13, weight: 700, align: 'right' });
+    L.add(T`${s3(f.a)} [m s^-2]`, dir > 0 ? x0 - 6 : x0 + 4, y, { color: P.acc, pri: 6, size: 13, weight: 700, align: 'right' });
   }
   if (hit && hit.age < hit.life) {
     arrow(g, Cx - 6, cy + sheetH * 0.3, Cx - 6 - 70, cy + sheetH * 0.3, { color: P.mark, width: 3, head: 11, dash: [6, 4] });   // along the line: dashed

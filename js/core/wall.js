@@ -19,6 +19,7 @@ import { M, num } from '../notation.js';
 
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x) => num(x, x !== 0 && Math.abs(x) < 1 ? 4 : 3, { trim: true });
+const sb = (x) => (x < 0 ? `(${d(x)})` : d(x));
 
 /**
  * @param k { uA, uB, AB, AC, R, m, I, w }
@@ -58,13 +59,15 @@ export function solveWall(k = {}) {
   const L = impulseLink({ m, I: have(k.I) ? -k.I : undefined, u: vC, v: have(k.w) ? -k.w : undefined });
   if (!L.ok) return fail(L.reason);
   const w = snap(-L.v), I = snap(-L.I);
+  if (Math.abs(w) <= 1e-9) return fail(`An impulse of ${M`${d(I)} [N s]`} stops it dead against the wall: it does not come back.`);
   if (!(w > 1e-9)) return fail(`An impulse of ${M`${d(I)} [N s]`} is not enough to send it back: it would only slow it to ${M`${d(Math.abs(w))} [m s^-1]`} against the wall.`);
   rows.push(L.row.r ? L.row : { f: L.row.f, s: L.row.s, r: M`v = ${d(-w)} [m s^-1]` });
 
   // ── back, against the same resistance, to rest
   const tC = snap((uA - vC) / a), tBack = snap(w / a), back = snap((w * w) / (2 * a)), stopAt = snap(AC - back);
-  rows.push({ f: M`v = u - at`, s: M`0 = ${d(w)} - ${d(a)}t`, r: M`t = ${d(tBack)} [s]` });
-  rows.push({ f: M`v^2 = u^2 - 2as`, s: M`0 = ${d(w)}^2 - 2 * ${d(a)}s`, r: M`s = ${d(back)} [m]` });
+  // still towards the wall positive: it moves at −w, and the resistance now acts towards the wall, +a
+  rows.push({ f: M`v = u + at`, s: M`0 = ${sb(-w)} + ${d(a)}t`, r: M`t = ${d(tBack)} [s]` });
+  rows.push({ f: M`v^2 = u^2 + 2as`, s: M`0 = ${sb(-w)}^2 + 2 * ${d(a)}s`, r: M`s = ${d(-back)} [m]` });
   const tMax = snap(tC + tBack);
 
   const notes = [
@@ -80,7 +83,7 @@ export function solveWall(k = {}) {
     const s = c - tC; return AC - (w * s - 0.5 * a * s * s);
   };
   const vel = (t) => { const c = Math.min(Math.max(t, 0), tMax); return c <= tC ? uA - a * c : -(w - a * (c - tC)); };
-  const acc = (t) => (t < tC ? -a : t < tMax - 1e-9 ? a : 0);
+  const acc = (t) => (t <= tC ? -a : t < tMax - 1e-9 ? a : 0);   // at the wall itself, still the way in
   const tB = snap((uA - uB) / a);
   const f = { kind: 'wall', uA, uB, AB, AC, a, vC, w, m, R, I, tB, tC, tBack, back, stopAt, tMax, tFlight: tMax, pos, vel, acc,
     params: { u: uA, theta: 0, h: 0, g: 9.8 } };
@@ -94,6 +97,6 @@ export function wallWorking(s) {
     { title: 'To the wall: the deceleration, the speed at C, the mass', rows: s.rows.slice(0, 3),
       note: `The resistance is the only force along the line, so it gives the deceleration: ${M`F = ma`}.` },
     { title: 'The wall’s impulse, and back to rest', rows: s.rows.slice(3),
-      note: `Towards the wall is positive: it arrives at ${M`+${d(s.vC)}`} and the impulse acts back towards A, so ${M`I = m(v - u)`} is negative. On the way back the same resistance acts, now against its new direction.` },
+      note: `Towards the wall is positive throughout: it arrives at ${M`+${d(s.vC)}`} and the impulse acts back towards A, so ${M`I`} is negative and it leaves with a negative velocity. On the way back the same resistance acts against its new direction, so its acceleration is now positive, and its displacement back from the wall negative.` },
   ];
 }

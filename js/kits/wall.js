@@ -53,10 +53,11 @@ export const wall = {
     const ring = (tt, y) => ({ t: tt, y, color: P.mark });
     return [
       { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax: f.tMax, t, series: [{ label: 'from A', tag: T`s`, fn: f.pos, color: P.disp, dash: [6, 4] }],
-        points: [ring(f.tB, f.AB), { ...ring(f.tC, f.AC), label: 'C' }, ring(f.tMax, f.stopAt)] },
-      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash: [6, 4] }],
-        points: [ring(f.tC, f.vC), { ...ring(f.tC, -f.w), label: 'the wall' }] },
-      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: f.acc, color: P.acc, dash: [6, 4] }] },
+        points: [{ ...ring(f.tB, f.AB), label: 'B' }, { ...ring(f.tC, f.AC), label: 'C' }, ring(f.tMax, f.stopAt)] },
+      // the velocity jumps at the wall, and the acceleration changes sign there: the graphs break, not join
+      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash: [6, 4], jumps: [f.tC] }],
+        points: [{ ...ring(f.tC, f.vC), label: T`${num(f.vC, 3, { trim: true })}` }, { ...ring(f.tC, -f.w), label: T`${num(-f.w, 3, { trim: true })}` }] },
+      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: f.acc, color: P.acc, dash: [6, 4], breaks: [f.tC] }] },
     ];
   },
 
@@ -73,7 +74,7 @@ export const wall = {
   ending(s) {
     return {
       eyebrow: 'Back off the boards',
-      title: `At rest ${num(s.tBack, 3, { trim: true })} s after the wall, ${num(s.back, 3, { trim: true })} m back.`,
+      title: `At rest ${num(s.tBack, 2)} s after the wall, ${num(s.back, 3, { trim: true })} m back.`,
       body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}`,
       real: true,
     };
