@@ -241,6 +241,8 @@ export function titleOf(r) {
     // (an archer's arrow is loosed from the hand's height too)
     const byHand = (F.thrown || r.objects[0].figure === 'arrow') && r.objects[0].figure !== 'golfBall' && r.numbers.h > 0 && r.numbers.h <= (r.objects[0].figure === 'tennisBall' ? 3.4 : 2.6);
     if (byHand && r.backdrop === 'ground') return `${what} ${F.verb || 'thrown'}`;
+    // (a coconut let go from rest falls from its palm)
+    if (r.backdrop === 'island' && r.objects[0].figure === 'coconut' && r.numbers.h > 0 && !(r.numbers.u > 0)) return `${what} falling from a palm tree`;
     if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${(B.higher && r.numbers.h > B.higher[0] ? B.higher[1] : B.high) || 'a wall'}`;
     const how = F.verb || (F.thrown ? 'thrown' : F.animal || F.swims ? 'leaping' : 'launched');
     return r.backdrop === 'ground' ? `${what} ${how} from the ground` : `${what} ${how} ${where}`;

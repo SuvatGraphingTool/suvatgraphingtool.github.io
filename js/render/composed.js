@@ -87,10 +87,10 @@ const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 /** The backdrop and the place things start from, for either stage: the
     library's own scenery for the recipe's backdrop, its top at `top` (H0 m),
     its edge at x0, the ground or the water at oy. */
-function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false, over, hoop }) {
+function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false, over, hoop, held = false }) {
   const P = palette();
   // the places in js/render/places.js draw themselves and what they launch from
-  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, hoop }); return; }
+  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, hoop, held }); return; }
   const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
   // the place it is launched from, where the backdrop has no edge of its own:
   // a stone wall to stand on, a jetty over the sea, or the ground itself
@@ -204,7 +204,7 @@ function launch(canvas, o) {
     // it leaves the table's edge: no one stands on the table
     // (a cannon, a ramp or a catapult sends it off: no one throws it)
     // (a volcano throws its own rocks: no one stands in the crater)
-    const thrown = (!!piece.thrown || kind === 'arrow') && !['orchard', 'table', 'volcano'].includes(R.backdrop) && !(R.backdrop === 'island' && H0 > 0 && kind === 'coconut') && !carried && !LAUNCHER_ART[R.launcher];
+    const thrown = (!!piece.thrown || kind === 'arrow') && !['orchard', 'table', 'volcano'].includes(R.backdrop) && !(R.backdrop === 'island' && H0 > 0 && kind === 'coconut' && Math.hypot(f.ux, f.uy) < 1e-9) && !carried && !LAUNCHER_ART[R.launcher];
     const small = !!piece.thrown || !!piece.small || kind === 'arrow';
     // thrown from low down with nothing to stand on: the thrower stands on the
     // ground or the floor and lets go at hand height
@@ -287,7 +287,7 @@ function launch(canvas, o) {
   // a hoop at the height a part asks about, where the engine passes it on the way down (rule 4)
   const lvl = lead.f.level, tDown = lvl?.times?.length ? lvl.times[lvl.times.length - 1] : null;
   const hoop = R.backdrop === 'arena' && lvl && lvl.xDown != null && tDown != null && !lvl.atTop ? { x: X(lvl.xDown), y: Y(lvl.L), age: lead.t >= tDown ? lead.t - tDown : -1, at: (cx) => { const y = over((cx - X(0)) / k); return y == null ? null : Y(y); } } : null;
-  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, hoop });
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, hoop, held: lead.thrown });
 
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {
@@ -576,7 +576,7 @@ function launch(canvas, o) {
       else if (piece.prop) {
         // a ball to scale, never smaller than reads; resting on the turf or the
         // tee one radius up before it is struck and once it has landed
-        const ball = BALLS.has(kind), Rp = kind === 'bullet' ? 5 : clamp(k * piece.m * 0.5, ball ? (kind === 'golfBall' ? 3.5 : 4) : kind === 'dart' ? 11 : 7, POINTED.has(kind) || kind === 'discus' || kind === 'frisbee' ? 13 : 10);
+        const ball = BALLS.has(kind), Rp = kind === 'bullet' ? 5 : clamp(k * piece.m * 0.5, ball ? (kind === 'golfBall' ? 3.5 : 4) : kind === 'dart' || kind === 'brick' ? 11 : 7, POINTED.has(kind) || kind === 'discus' || kind === 'frisbee' || kind === 'brick' ? 13 : 10);
         const lift = ball && !aloft && !(landed && wet) ? Rp : 0;
         // pointed along its flight, and a dart stuck point first where it lands
         const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), dig = landed && kind === 'dart' ? Rp * 0.75 : 0;
@@ -768,7 +768,9 @@ function launch(canvas, o) {
 
   // ── what it lands on, named on it
   const name = { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', lake: 'the lake', island: 'the sand', skatepark: 'the concrete', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
-  L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
+  // (at a lake thrown by hand, the place drew the shore: the name goes over the water)
+  const under = wet && H0 > 0 && !(R.backdrop === 'lake' && byHand);
+  L.add(name, under ? x0 - 12 : w - 14, under ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);
   return null;

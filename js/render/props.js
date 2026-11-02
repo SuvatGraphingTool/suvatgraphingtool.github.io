@@ -251,13 +251,13 @@ function bullet(g, x, y, R, spin, { ang = 0 } = {}) {
     and its end lit, a frog pressed in its top. */
 function brick(g, x, y, R, spin) {
   g.save(); g.translate(x, y); g.rotate(spin * 0.8);
-  const L = R * 2, H = R * 0.62, D = R * 0.35;
+  const L = R * 2, H = R * 0.75, D = R * 0.4;
   g.fillStyle = '#b89a62'; g.beginPath(); g.moveTo(-L / 2, -H / 2); g.lineTo(-L / 2 + D, -H / 2 - D * 0.6); g.lineTo(L / 2 + D, -H / 2 - D * 0.6); g.lineTo(L / 2, -H / 2); g.closePath(); g.fill();
   g.fillStyle = '#8e7448'; g.beginPath(); g.moveTo(L / 2, -H / 2); g.lineTo(L / 2 + D, -H / 2 - D * 0.6); g.lineTo(L / 2 + D, H / 2 - D * 0.6); g.lineTo(L / 2, H / 2); g.closePath(); g.fill();
   const gr = g.createLinearGradient(0, -H / 2, 0, H / 2); gr.addColorStop(0, '#d8bc84'); gr.addColorStop(1, '#a88a56');
   g.fillStyle = gr; g.fillRect(-L / 2, -H / 2, L, H);
   g.fillStyle = 'rgba(60,40,20,0.35)'; for (let i = 0; i < 6; i++) g.fillRect(-L / 2 + ((i * 37) % 10) / 10 * L, -H / 2 + ((i * 53) % 10) / 10 * H, 1.5, 1.2);
-  g.strokeStyle = 'rgba(40,30,15,0.65)'; g.lineWidth = 1; g.strokeRect(-L / 2, -H / 2, L, H);
+  g.strokeStyle = 'rgba(40,30,15,0.9)'; g.lineWidth = 1.5; g.strokeRect(-L / 2, -H / 2, L, H);
   g.restore();
 }
 /** A coconut: a hairy brown husk, darker underneath, its three eyes. */

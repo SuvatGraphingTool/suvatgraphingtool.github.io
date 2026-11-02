@@ -68,8 +68,8 @@ export const BACKDROPS = {
   farm:    { label: 'A farm', what: 'a farm: hedged fields, sheep, round hay bales; from a height, the hayloft door of a timber barn (to about 8 m) or the top of a grain silo', place: 'farm', below: 'ground', art: true, on: 'on a farm', high: 'the hayloft of a barn', higher: [8, 'a grain silo'] },
   cricket: { label: 'A cricket ground', what: 'a cricket ground: the pavilion and sight screen across the outfield, the pitch and its stumps (the far stumps only where the ball clears them); from a height, the pavilion’s stand', place: 'cricket', below: 'ground', art: true, on: 'at a cricket ground', high: 'the pavilion’s stand' },
   lake:    { label: 'A lake', what: 'a lake among wooded hills, reeds, a rowing boat and ducks; from its shingle shore, or (from a height) the end of a timber jetty, or a rocky bluff above about 2 m', place: 'lake', below: 'river', art: true, on: 'at a lake', high: 'the end of a jetty', higher: [2, 'a bluff over a lake'] },
-  island:  { label: 'A tropical island', what: 'a tropical island: white sand, palms and a deep blue lagoon inside the reef; from a height, the crown of a palm tree (a coconut falls from it)', place: 'island', below: 'beach', art: true, on: 'on a tropical island', high: 'a palm tree', lands: 'sand' },
-  skatepark: { label: 'A skatepark', what: 'a skatepark: smooth concrete, a funbox and its rail, a graffiti wall; from a height, the deck of a half-pipe', place: 'skatepark', below: 'road', art: true, on: 'in a skatepark', high: 'the deck of a half-pipe' },
+  island:  { label: 'A tropical island', what: 'a tropical island: white sand, palms and a deep blue lagoon inside the reef; from a height, the crown of a palm tree a coconut falls from, or the deck of a beach hut on stilts for anything thrown', place: 'island', below: 'beach', art: true, on: 'on a tropical island', high: 'the deck of a beach hut', lands: 'sand' },
+  skatepark: { label: 'A skatepark', what: 'a skatepark: smooth concrete, a funbox and its rail, a graffiti wall; from a height, a concrete ledge with its stair set (to about 4 m) or the roof of the skate shop', place: 'skatepark', below: 'road', art: true, on: 'in a skatepark', high: 'a ledge in a skatepark', higher: [4, 'the roof of the skate shop'] },
   carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
   volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
   quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
@@ -139,7 +139,7 @@ export const FIGURES = {
   // fired, never thrown: a rifle sends it off unless the recipe names another launcher
   bullet:   { label: 'a bullet', m: 0.03, min: 10, views: ['side'], thrown: true, prop: true, verb: 'fired' },
   // a jet of water, drawn as the stream along its path; a hose sends it unless another launcher is named
-  brick:    { label: 'a brick', m: 0.22, min: 12, views: ['side'], thrown: true, prop: true },
+  brick:    { label: 'a brick', m: 0.22, min: 18, views: ['side'], thrown: true, prop: true },
   coconut:  { label: 'a coconut', m: 0.15, min: 11, views: ['side'], thrown: true, prop: true },
   water:    { label: 'a jet of water', m: 0.03, min: 10, views: ['side'], thrown: true, lands: 'splat' },
   // animals that leap by themselves (js/render/animals.js): `m` is nose to tail
