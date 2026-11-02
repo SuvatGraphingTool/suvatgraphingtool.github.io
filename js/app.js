@@ -36,7 +36,7 @@ import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
-import { readoutHTML, solutionHTML, esc } from './ai/readout.js';
+import { readoutHTML, solutionHTML, resultsHTML, esc } from './ai/readout.js';
 import { walk, stepOf, labelOf, ownScene, sceneOf } from './parts/parts.js';
 import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML } from './parts/strip.js';
 import { answerOf } from './parts/parts.js';
@@ -3322,7 +3322,10 @@ for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) 
    exactly the route a typed question takes: chooseScenario, the five, and
    recompute, where solveLaunch works out the rest or says what is missing.
    Nothing on this route calculates a flight that the engine did not. */
+/** The words the student typed for the reading on show — '' for a photo, or none known. */
+let heard = '';
 function applyReading(x, opts) {
+  if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? opts.words : '';
   stayPut = true;
   try { return readInto(x, opts); } finally { stayPut = false; }
 }
@@ -3467,7 +3470,7 @@ function applyLibrary(x, { graph = true } = {}) {
   const head = `<p class="ro-eyebrow">Read as, from the Past-paper library</p><h3 class="ro-name">${esc(s.name)}</h3>`
     + (typeof x.summary === 'string' && x.summary ? `<p class="ro-sum">${esc(x.summary)}</p>` : '');
   const body = solved?.ok
-    ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
+    ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${resultsHTML(solved.derived)}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
   return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example) + body };
 }
@@ -3485,27 +3488,56 @@ function libraryGiven(fields, gAssumed, summary = '', example = false) {
   for (const f of fields) {
     const v = state.kit[f.key];
     if (v == null || v === '') continue;
-    let shown;
+    let shown, fromWords = false;
     if (f.type === 'choice') {
+      // a choice stays in words: "A diving board"
       const o = f.options.find((q) => String(q.v) === String(v));
       if (!o) continue;
-      shown = `<b>${esc(plain(o.label))}</b>`;
+      shown = `${esc(plain(f.label))}: <b>${esc(plain(o.label))}</b>`;
     } else {
       const n = typeof v === 'number' ? v : Number(v);
-      shown = isFinite(n) ? M`${num(n, 2, { trim: true })}` : esc(String(v));
+      if (!isFinite(n)) { shown = `${esc(plain(f.label))}: ${esc(String(v))}`; }
+      else {
+        shown = quantityHTML(f, n);
+        // a number the student never typed was read from their words: "dropped" is u = 0
+        fromWords = !!heard && !saidIn(heard, n);
+      }
     }
     const how = f.key === 'g' && gAssumed ? 'assumed · on Earth'
       : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given'
       : f.key === 'u' && atRest ? 'assumed · no speed was given'
       // "surprise me": the numbers are the paper's, not anything the student said
-      : example ? 'from the paper' : 'in the question';
+      : example ? 'from the paper'
+      : fromWords ? 'read from the wording' : 'in the question';
     rows.push(`<li class="ro-row" data-how="${how.startsWith('assumed') ? 'assumed' : 'given'}">
-      <span class="ro-val">${esc(plain(f.label))}: ${shown}</span><span class="ro-how">${how}</span></li>`);
+      <span class="ro-val">${shown}</span><span class="ro-how">${how}</span></li>`);
   }
   if (!fields.some((f) => f.key === 'g') && gAssumed) {
     rows.push(`<li class="ro-row" data-how="assumed"><span class="ro-val">${M`g = 9.81 [m s^-2]`}</span><span class="ro-how">assumed · on Earth</span></li>`);
   }
   return rows.length ? `<ul class="ro-list">${rows.join('')}</ul>` : '';
+}
+/** Whether a number is among the ones typed: 20 in "a 20 m cliff", not in "dropped". */
+function saidIn(words, n) {
+  const want = String(+Math.abs(n).toFixed(6));
+  return (String(words).replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?|\.\d+/g) || []).some((x) => String(+x) === want);
+}
+// the quantities a box can be, set as maths; any other box is said in its own words
+const QUANTITY = new Set(['h', 'u', 'v', 's', 't', 'a', 'g', 'H', 'T', 'D', 'd', 'V', 'U', 'w', 'e', 'x', 'y', 'theta', 'tTop']);
+/** One value read into a box, set as maths: "h = 20 m", "θ = 90°", "u_A = 6 m s⁻¹" — the unit is the box's own. */
+function quantityHTML(f, n) {
+  const plain = String(f.label ?? '').replace(/<[^>]+>/g, '');
+  const unit = (/\(([^()]*)\)\s*$/.exec(plain)?.[1] || '').trim().replace(/⁻¹/g, '^-1').replace(/⁻²/g, '^-2');
+  const val = num(n, 2, { trim: true });
+  // "A.u" is u for A; "a1" is a for stage 1; "tTop" the time to the top
+  // (a start time, t0, is said in words: "Sets off at: 2 s")
+  const m = /^(?:([A-Z])\.)?([A-Za-z]+?)([1-9]?)$/.exec(f.key);
+  const base = m && (QUANTITY.has(m[2]) ? m[2] : null);
+  const who = /^([A-Z])\./.exec(f.key)?.[1];
+  if (!base) return `${who ? `${who} · ` : ''}${esc(plain.replace(/\s*\([^()]*\)\s*$/, ''))}: ${unit === '°' ? M`${val}°` : unit ? M`${val} [${unit}]` : M`${val}`}`;
+  const sub = [m[1], m[3]].filter(Boolean).join(',');
+  const sym = base === 'tTop' ? 't_top' : sub ? `${base}_${sub}` : base;
+  return unit === '°' ? M`${sym} = ${val}°` : unit ? M`${sym} = ${val} [${unit}]` : M`${sym} = ${val}`;
 }
 /**
  * A question no scenario fits, composed by the reader from the app's own
@@ -3549,7 +3581,7 @@ function applyComposed(x, { graph = true } = {}) {
   const head = `<p class="ro-eyebrow">Drawn for your question</p><h3 class="ro-name">${esc(s.name)}</h3>`
     + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;
   const body = solved?.ok
-    ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
+    ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${resultsHTML(solved.derived)}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
   // the values it read, each from the question or assumed, as a library reply lists them
   const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g,

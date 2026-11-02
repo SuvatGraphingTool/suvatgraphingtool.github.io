@@ -285,7 +285,9 @@ export function createAsk({ apply, run, edit, show, scene }) {
     }
 
     remember(words, a, res.extraction);
-    const r = apply(res.extraction, { graph: modes.graph, solve: modes.solve });
+    // the words typed, so the reply can tell a number given from one read from the
+    // wording ("dropped" is u = 0); a photo's numbers are in the photo, so none
+    const r = apply(res.extraction, { graph: modes.graph, solve: modes.solve, words: a ? null : words });
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
 
     // Typeset maths arrives as markup, so it goes in with innerHTML (rule 1).

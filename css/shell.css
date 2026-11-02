@@ -957,3 +957,17 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
 .rblock .rrow[data-hue='vel'] .rrow-v { color: var(--vel); }
 .rblock .rrow[data-hue='acc'] .rrow-v { color: var(--acc); }
 .canvas-wrap[data-panes='on'][data-resolve='on'] .hud-r { display: none; }
+
+/* ── Ask Suvat's reply ────────────────────────────────────────────────────
+   Chrome is monochrome (design/redesign.md): the eyebrow is ink and the
+   engine's box a neutral fill, never the brand's orange. Each value read is
+   one row, the value set as maths on the left and where it came from right-
+   aligned; what the engine found is a list, one result to a line. */
+.ro-eyebrow { color: var(--ink-muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.ro-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: var(--sp-3); }
+.ro-val { min-width: 0; overflow-wrap: anywhere; }
+.ro-how { text-align: right; white-space: nowrap; }
+.ro-engine[data-ok='true'] { background: var(--secondary); border: 1px solid var(--border-soft); color: var(--ink); }
+.ro-res { list-style: none; margin: var(--sp-1) 0 0; padding: 0; display: grid; gap: 2px; }
+.ro-res li { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .ro-how { white-space: normal; } }

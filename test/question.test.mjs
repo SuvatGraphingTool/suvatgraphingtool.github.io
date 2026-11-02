@@ -457,5 +457,16 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(!/m out/.test(solveHeight({ place: 'tower', h: 20, u: 0, theta: 0, g: 9.81 }).derived.join(' ')), 'and says nothing of it for a drop, which lands at the foot');
 }
 
+// UI critic, 2 Nov: the engine's box said t twice, gave v with no unit, and wrapped badly on a phone
+{
+  const { readoutHTML, resultsHTML } = await import('../js/ai/readout.js');
+  const r = toApp({ understood: true, confidence: 'high', scenario: 'up', summary: 'A ball is thrown up at 20 m/s.', h: 0, u: 20 });
+  const sv = solveLaunch({ u: 20, theta: 90, h: 0, g: 9.81 });
+  const said = readoutHTML(r, { name: 'Thrown straight up', solved: sv, flight: sv.f }).replace(/<[^>]+>/g, '');
+  ok(!/→/.test(said) && (said.match(/t=/g) || []).length === 1 && /lands at 20\s*m s/.test(said), 'the twelve say t once, and every speed with its unit');
+  const list = resultsHTML(['it hits the water', 'x']);
+  ok(/<ul class="ro-res"><li>It hits the water<\/li><li>X<\/li><\/ul>/.test(list), 'what the engine found is a list, one result to a line, each a sentence');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

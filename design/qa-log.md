@@ -58,6 +58,8 @@ Gemma's allowance was already spent when the day began: my first call came back 
 | a lift: 1.5 m/s² for 2 s, steady 5 s, stops in 3 s; two cars at the lights, B 2 s later; braking from 30 m/s in 75 m | 22.5 m, 14.93 s and 6 m s⁻² are right. But the reply listed "g = 9.81, assumed · on Earth" for a lift and a road, where g plays no part. | g is said to be assumed only where the engine uses g (its kit offers one). Checked in the page. |
 | tennis serve flat at 25 m/s from 2.5 m, net 0.9 m high at 12 m | Clears by 0.47 m and lands 17.85 m out, both right. | — |
 | an apple falls from a branch 3.2 m up | Composed "off a wall": a branch is a tree. | Passed to helper one. |
+| *(UI critic, via the lead)* the reply's value list and engine box | Rows were form labels ("Height it starts at (m): 20"). A "dropped" u = 0 was tagged "in the question". The engine box said t twice, gave v with no unit and wrapped badly on a phone. The eyebrow and box were orange. | Rows are set as maths (h = 20 m, θ = −90°, u_A = 0 m s⁻¹); choices and other boxes stay words. A number the student never typed is tagged "read from the wording" (ask.js passes the typed words; a photo passes none). Tags are right-aligned in a grid. The engine's results are a list, one sentence a line, and the twelve drop the rearrangements their flight sentence repeats. Eyebrow in ink, box in the neutral --secondary (css/shell.css). Test; checked on a phone. |
+| *(re-check)* an apple from a branch; g on a lift | Composer milestone 5: the orchard's tree, and no g row for a lift. | — |
 
 Passed to helper one: a composed reply lists none of the values it read, which library replies do; and the diver's reply says "it … where it was thrown from".
 

@@ -79,9 +79,10 @@ export function readoutHTML(reading, { name, solved, above, flight } = {}) {
   let engine = '';
   if (solved?.ok) {
     const said = flightHTML(flight);
-    const rest = Array.isArray(solved.derived) && solved.derived.length
-      ? solved.derived.join('  ·  ') + (said ? `<br><b>So</b> ${said}` : '')
-      : said || 'nothing else was needed.';
+    // with the flight said in a sentence, the rearrangements that found it
+    // ("t = (v − u)/a → t = 4.08") would say t twice, the second without its unit
+    const rows = (Array.isArray(solved.derived) ? solved.derived : []).filter((x) => !(said && /→/.test(x)));
+    const rest = rows.length || said ? resultsHTML([...rows, ...(said ? [said.replace(/^./, (c) => c.toUpperCase())] : [])]) : 'nothing else was needed.';
     let line = '';
     if (above) {
       const L = M`${num(above.line, 2, { trim: true })} [m]`;
@@ -102,6 +103,13 @@ export function readoutHTML(reading, { name, solved, above, flight } = {}) {
     ${reading.summary ? `<p class="ro-sum">${esc(reading.summary)}</p>` : ''}
     <ul class="ro-list">${rows}</ul>
     ${asks}${unsure}${notes}${engine}`;
+}
+
+/** What the engine found, one result to a line: a list, so a phone wraps each on its own. */
+export function resultsHTML(list) {
+  const rows = (list || []).filter(Boolean);
+  // each line a sentence of its own: "It hits the water…"
+  return rows.length ? `<ul class="ro-res">${rows.map((x) => `<li>${String(x).replace(/^[a-z]/, (c) => c.toUpperCase())}</li>`).join('')}</ul>` : '';
 }
 
 /** The flight, as the engine found it: in the air for how long, where and how fast it lands,
