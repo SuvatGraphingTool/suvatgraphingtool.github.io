@@ -45,13 +45,14 @@ export const tank = {
   render: stage.render,
 
   hud(f, t) {
-    const y = f.pos(t) - f.h, end = t >= f.tB - 1e-9, at = end ? (f.stops ? 'At rest: ' : 'At the bottom: ') : '';
+    // short labels: a long one widens the readout over the scene
+    const gone = t > f.tB + 1e-9;
     return {
       left: [
-        { k: `${at}${at ? 'down' : 'Down'} from the start${y > 1e-9 ? `, ${num(y, 2)} m below the surface` : ''}`, v: num(f.pos(t), 2), unit: 'm', hue: 'disp' },
-        { k: `${at}${at ? 'velocity' : 'Velocity'}, down +`, v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+        { k: 'Down from the start', v: num(f.pos(t), 2), unit: 'm', hue: 'disp' },
+        { k: 'Velocity, down +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
         // past the end the model has no acceleration to give: none is shown
-        { k: end && t > f.tB + 1e-9 ? 'Acceleration: the model ends here' : 'Acceleration, down +', v: end && t > f.tB + 1e-9 ? '—' : num(f.acc(t), 2), unit: end && t > f.tB + 1e-9 ? '' : 'm s⁻²', hue: 'acc' },
+        { k: 'Acceleration, down +', v: gone ? '—' : num(f.acc(t), 2), unit: gone ? '' : 'm s⁻²', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };

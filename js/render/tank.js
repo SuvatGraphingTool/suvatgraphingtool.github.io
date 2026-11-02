@@ -31,9 +31,10 @@ const s4 = (x) => num(Number(x.toPrecision(4)), 6, { trim: true });
 
 /** Words that must not be lost — a measure, a speed — on a plate of the card colour where they
     belong, kept inside the stage, never moved or dropped by the label placer; their box reserved. */
-function plate(g, L, P, txt, x, y, color, { align = 'center', size = 13 } = {}) {
+function plate(g, L, P, txt, x, y, color, { align = 'center', size = 13, maxX = Infinity } = {}) {
   g.save(); g.font = `700 ${Math.max(13, size)}px system-ui, sans-serif`;
-  const tw = g.measureText(txt).width, bh = size + 7, W = g.canvas.clientWidth || Infinity;
+  // kept inside the stage, and left of the forces card (maxX)
+  const tw = g.measureText(txt).width, bh = size + 7, W = Math.min(g.canvas.clientWidth || Infinity, maxX + 8);
   let bx = align === 'left' ? x - 4 : align === 'right' ? x - tw - 4 : x - tw / 2 - 4;
   const shift = clamp(bx, 4, Math.max(4, W - tw - 12)) - bx; bx += shift; x += shift;
   g.fillStyle = withAlpha(P.card, 0.85); g.beginPath(); g.roundRect?.(bx, y - bh / 2, tw + 8, bh, 4); g.fill();
@@ -57,7 +58,7 @@ export function render(canvas, cam, o) {
   const net = !hasCard ? '' : Math.abs(f.net) < 1e-9 ? T`m a = 0 [N]` : T`m a = ${s4(Math.abs(f.net))} [N] ${f.net > 0 ? '"down"' : '"up"'}`;
   const items = !hasCard || over ? [] : [T`m g = ${s4(f.weight)} [N] "down"`, ...(live ? [T`R = ${s4(f.R)} [N] "up"`, net] : [])];
   const where = t < f.t1 ? 'In the air' : 'In the liquid';
-  const endWords = over ? (f.stops ? 'At rest: the paper’s model ends here' : 'At the bottom: the paper’s model ends here') : !hasCard ? 'Give its mass for the forces in newtons' : null;
+  const endWords = over ? (f.stops ? 'At rest: the paper’s model ends here' : 'At the bottom: the paper’s model ends here') : !hasCard ? 'No mass given: so no forces in newtons' : null;
   const capLines = [];
   if (!cardW) {
     g.save(); g.font = '700 13px system-ui, sans-serif';
@@ -70,7 +71,8 @@ export function render(canvas, cam, o) {
 
   // ── the scene in metres: the surface at y = 0, let go at y = h, the bottom at y = −D; the drop line at x = 0
   const H = f.h + f.D, half = H * 0.6, headroom = Math.max(f.h + H * 0.1, H * 0.35);
-  const area = { left: phone ? 12 : HB[0].w + 12, right: w - (cardW ? cardW + 28 : 14), top: HB[1].h + 8, bottom: h - (capH ? capH + 16 : 14) };
+  // on a phone the readouts on the left run down the stage: the scene starts below them
+  const area = { left: phone ? 12 : HB[0].w + 12, right: w - (cardW ? cardW + 28 : 14), top: phone ? HB[0].h + 6 : HB[1].h + 8, bottom: h - (capH ? capH + 16 : 14) };
   const { k, X, Y } = fitSide({ xLo: -half, xHi: half * 0.8, yLo: -f.D - H * 0.06, yHi: headroom }, area, { sky: 0.5 });
   const x0 = X(0), ySurf = Y(0), yTop = Y(f.h), yBot = Y(-f.D);
   const size = clamp(k * H * 0.035, 9, 18);
@@ -84,12 +86,16 @@ export function render(canvas, cam, o) {
     const tileH = Math.min(70, (ySurf - 10) * 0.35);
     // the hall: a wall with high windows, tiles on its lower part, backstroke flags strung across
     interior(g, -10, -10, w + 10, ySurf);
-    { g.fillStyle = withAlpha(E.night ? '#5f7d8c' : '#d7e9f0', 0.9); g.fillRect(-10, ySurf - tileH, w + 20, tileH);
+    // warm tiles, so the wall never reads as a second body of water; a skirting at the deck
+    { g.fillStyle = withAlpha(E.night ? '#5a5048' : '#e8dcc8', 0.95); g.fillRect(-10, ySurf - tileH, w + 20, tileH);
+      g.fillStyle = E.night ? '#3f3833' : '#b9a88e'; g.fillRect(-10, ySurf - 9, w + 20, 5);
       g.strokeStyle = withAlpha('#ffffff', E.night ? 0.12 : 0.6); g.lineWidth = 1;
       for (let y = ySurf - 12; y > ySurf - tileH; y -= 12) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
       for (let x = 0; x < w; x += 12) { g.beginPath(); g.moveTo(x, ySurf - tileH); g.lineTo(x, ySurf); g.stroke(); } }
     { const fy = Math.max(HB[1].h + 14, ySurf - Math.min(110, (ySurf - 10) * 0.6)), cols = ['#d0342c', '#f4f4f0', '#2f6db0'];
-      stroke(g, [{ x: poolL, y: fy }, { x: poolR, y: fy }], { color: E.night ? '#8d949c' : '#5b6068', width: 1 });
+      // on two posts at the pool's ends, as backstroke flags are
+      for (const px of [poolL - 4, poolR + 4]) { g.fillStyle = E.night ? '#9aa1aa' : '#6f757d'; g.fillRect(px - 1.5, fy - 4, 3, ySurf - 4 - fy + 4); }
+      stroke(g, [{ x: poolL - 4, y: fy }, { x: poolR + 4, y: fy }], { color: E.night ? '#8d949c' : '#5b6068', width: 1 });
       for (let x = poolL + 6, i = 0; x < poolR - 6; x += 14, i++) { g.fillStyle = cols[i % 3]; g.beginPath(); g.moveTo(x - 5, fy); g.lineTo(x + 5, fy); g.lineTo(x, fy + 10); g.closePath(); g.fill(); } }
     // the ground the pool is sunk into, and its concrete shell
     g.fillStyle = E.night ? '#3b3530' : '#8c7b68'; g.fillRect(-10, ySurf, w + 20, h - ySurf + 10);
@@ -194,18 +200,27 @@ export function render(canvas, cam, o) {
   if (rodX != null) L.reserve({ x: rodX - 8, y: yTop - 40, w: 16, h: yBot - yTop + 48 });
 
   // ── its velocity and acceleration beside it, down positive (vertical: solid); kept between the surface and the floor
-  const ax = x0 + size * 1.6;
+  // in the lab the column stands just outside the glass, not on the amber oil
+  const maxX = cardW ? w - cardW - 24 : w, ax = lab ? x0 + Math.max(size * 5, k * H * 0.16) / 2 + 14 : x0 + size * 1.6;
   { const vMax = Math.max(1e-9, f.v1, f.v2, f.u), aMax = Math.max(1e-9, f.g, Math.abs(f.aL));
     const room = (sg) => Math.max(14, sg > 0 ? yBot - yNow - 6 : (inLiquid ? yNow - ySurf - 6 : yNow - 10));
-    const col = (dx, val, max, c, unit, wd) => {
-      const sg = Math.sign(val), len = Math.min(clamp((Math.abs(val) / max) * 70, 14, 70), room(sg)), bx = ax + dx;
-      arrow(g, bx, yNow, bx, yNow + sg * len, { color: c, width: wd, head: Math.min(9, len * 0.5) });
+    // no room for a readable arrow (at the floor), none at all: the speed there is on its plate
+    const col = (bx, val, max, c, unit, wd, left = false) => {
+      const sg = Math.sign(val), r = room(sg); if (r < 22) return;
+      const len = Math.min(clamp((Math.abs(val) / max) * 70, 22, 70), r);
+      arrow(g, bx, yNow, bx, yNow + sg * len, { color: c, width: wd, head: 9 });
       L.reserve({ x: bx - 6, y: Math.min(yNow, yNow + sg * len) - 4, w: 12, h: len + 8 });
-      plate(g, L, P, T`${sf(Math.abs(val))} [${unit}]`, bx + 9, yNow + sg * len * 0.55, c, { align: 'left' });
+      plate(g, L, P, T`${sf(Math.abs(val))} [${unit}]`, left ? bx - 9 : bx + 9, yNow + sg * len * 0.55, c, { align: left ? 'right' : 'left', maxX });
     };
-    const vOn = !over && show.velocity !== false && f.vel(t) > 0.05;
-    if (vOn) col(0, f.vel(t), vMax, P.vel, 'm s^-1', 2.6);
-    if (fired && !over && Math.abs(f.acc(t)) > 1e-9) col(vOn ? 96 : 0, f.acc(t), aMax, P.acc, 'm s^-2', 2.2); }
+    // while it moves: at the moment it reaches the bottom or rest, its plate says it instead
+    const moving = !fired || t < f.tB - 1e-9;
+    const vOn = moving && show.velocity !== false && f.vel(t) > 0.05;
+    if (vOn) col(ax, f.vel(t), vMax, P.vel, 'm s^-1', 2.6);
+    if (fired && moving && Math.abs(f.acc(t)) > 1e-9) {
+      // the second column to the right — or, if that would run under the card, to the left of the drop
+      const right = !vOn || ax + 96 + 90 < maxX;
+      col(!vOn ? ax : right ? ax + 96 : x0 - size * 1.6, f.acc(t), aMax, P.acc, 'm s^-2', 2.2, vOn && !right);
+    } }
 
   // ── the moments: into the liquid, and at the bottom (or at rest); their speeds on plates
   if (fired && f.h > 0 && t >= f.t1 - 1e-9) {
@@ -213,13 +228,14 @@ export function render(canvas, cam, o) {
     if (lab) { g.strokeStyle = withAlpha('#ffffff', 0.7 * (1 - Math.min(1, e.age / e.life))); g.lineWidth = 1.4; g.beginPath(); g.ellipse(x0, ySurf, size * (1 + 3 * e.age / e.life), 2.5, 0, 0, TAU); g.stroke(); }
     else splash(g, x0, ySurf, e.age, e.life, { size: clamp(size / 10, 0.8, 1.6) });
     // above the surface, left of the drop: the arrows are on its right
-    plate(g, L, P, T`${sf(f.v1)} [m s^-1] "at the surface"`, x0 - size * 1.4, ySurf - 16, P.vel, { align: 'right' });
+    // right of the drop, above the surface: clear of the dimension line, the tower and the clamp rod
+    plate(g, L, P, T`${sf(f.v1)} [m s^-1] "at the surface"`, x0 + size * 1.4, ySurf - 16, P.vel, { align: 'left', maxX });
   }
   if (fired && t >= f.tB - 1e-9) {
     const e = ageOf(t, f.tB, f.tMax);
     pulse(g, x0, yNow, e.age, e.life, P.mark, { radius: size * 2.2 });
     if (!f.stops) dust(g, x0, yBot - 2, e.age, e.life, { size: 1.3, color: lab ? '#f2d38a' : '#ffffff', n: 16 });
-    plate(g, L, P, f.stops ? T`"at rest" ${sf(f.sStop)} [m] "below the surface"` : T`${sf(f.v2)} [m s^-1] "at the bottom"`, x0 + size * 1.6, yNow - size - 12, f.stops ? P.disp : P.vel, { align: 'left' });
+    plate(g, L, P, f.stops ? T`"at rest" ${sf(f.sStop)} [m] "below the surface"` : T`${sf(f.v2)} [m s^-1] "at the bottom"`, x0 + size * 1.6, yNow - size - 12, f.stops ? P.disp : P.vel, { align: 'left', maxX });
   }
   L.draw(g, w, h);
 
