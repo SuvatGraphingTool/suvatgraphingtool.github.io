@@ -193,8 +193,12 @@ export function titleOf(r) {
     if (B.edge) return `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
     // (a place that draws a ledge of its own says so)
-    if (r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${B.high || 'a wall'}`;
-    return r.backdrop === 'ground' ? `${what} ${F.thrown ? 'thrown' : 'launched'} from the ground` : `${what} ${F.thrown ? 'thrown' : 'launched'} ${where}`;
+    // thrown from a hand's height, the thrower stands on the ground: no wall
+    const byHand = F.thrown && r.numbers.h > 0 && r.numbers.h <= 2.6;
+    if (byHand && r.backdrop === 'ground') return `${what} thrown`;
+    if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${B.high || 'a wall'}`;
+    const how = F.thrown ? 'thrown' : F.animal ? 'leaping' : 'launched';
+    return r.backdrop === 'ground' ? `${what} ${how} from the ground` : `${what} ${how} ${where}`;
   }
   const by = B.edge ? `by ${B.at}` : where;
   if (r.engine === 'pair') return `Two on one line ${by}: when do they meet?`;

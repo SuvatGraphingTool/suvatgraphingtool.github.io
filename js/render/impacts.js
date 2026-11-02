@@ -31,62 +31,77 @@ function thrown(x, y, u, n, size, r, draw, { up = 1, out = 1 } = {}) {
 }
 
 /** A crater punched in dust: a dark bowl with a lit rim forms at once, the
-    ejecta flies out in rays and settles; the bowl stays. */
+    ejecta flies out in rays fanned upward and settles; the bowl stays.
+    `blanket` lays a fresh pale apron round it, so it stands apart from the
+    old craters of the place (Mars). */
 export function crater(g, x, y, age, life, o = {}) {
   const u = held(age, life); if (u == null) return;
   const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 61);
-  const R = 16 * size * ease(Math.min(1, u * 5)), dark = o.dark ?? (E.night ? '#3f3d3a' : '#5c5650'), lit = o.light ?? '#d8d2c8';
+  const R = 18 * size * ease(Math.min(1, u * 5)), dark = o.dark ?? (E.night ? '#3f3d3a' : '#5c5650'), lit = o.light ?? '#e2ddd4';
   g.save();
-  g.fillStyle = withAlpha(dark, 0.85); g.beginPath(); g.ellipse(x, y + 1, R, R * 0.28, 0, 0, TAU); g.fill();
-  g.strokeStyle = withAlpha(lit, 0.85); g.lineWidth = 1.6; g.beginPath(); g.ellipse(x, y, R * 1.1, R * 0.32, 0, Math.PI * 1.02, Math.PI * 1.98); g.stroke();
-  g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 1.2; g.beginPath(); g.ellipse(x, y + 2, R * 1.1, R * 0.32, 0, 0.05 * Math.PI, 0.95 * Math.PI); g.stroke();
-  // rays of ejecta on the ground, fading but not gone
-  g.strokeStyle = withAlpha(lit, 0.35 + 0.3 * (1 - u)); g.lineWidth = 1.2;
-  for (let i = 0; i < 8; i++) { const s = r() < 0.5 ? -1 : 1, L = R * (1.4 + r() * 1.2); g.beginPath(); g.moveTo(x + s * R * 1.05, y + (r() - 0.5) * 2); g.lineTo(x + s * L * 1.6, y + (r() - 0.3) * 4); g.stroke(); }
+  if (o.blanket) { g.fillStyle = withAlpha(lit, 0.45); g.beginPath(); g.ellipse(x, y + 1, R * 2.4, R * 0.5, 0, 0, TAU); g.fill(); }
+  // rays: short tapered wedges fanned up and out from the rim
+  g.fillStyle = withAlpha(lit, 0.45 + 0.4 * (1 - u));
+  for (let i = 0; i < 10; i++) {
+    const s = i % 2 ? 1 : -1, a = (10 + r() * 25) * Math.PI / 180, L = R * (0.9 + r() * 0.9), bx = x + s * R * 0.85, by = y - R * 0.05;
+    const tx = bx + s * Math.cos(a) * L, ty = by - Math.sin(a) * L * 0.6, nx = Math.sin(a) * R * 0.12, ny = Math.cos(a) * R * 0.12 * s;
+    g.beginPath(); g.moveTo(bx - nx, by - ny); g.lineTo(tx, ty); g.lineTo(bx + nx, by + ny); g.closePath(); g.fill();
+  }
+  g.fillStyle = withAlpha(dark, 0.9); g.beginPath(); g.ellipse(x, y + 1, R, R * 0.3, 0, 0, TAU); g.fill();
+  g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.ellipse(x + R * 0.15, y + 1.5, R * 0.75, R * 0.2, 0, 0, TAU); g.fill();
+  // the raised rim: lit on its far side, shadowed in front
+  g.strokeStyle = withAlpha(lit, 0.95); g.lineWidth = Math.max(1.6, R * 0.12); g.beginPath(); g.ellipse(x, y, R * 1.08, R * 0.33, 0, Math.PI * 1.02, Math.PI * 1.98); g.stroke();
+  g.strokeStyle = withAlpha('#000000', 0.4); g.lineWidth = Math.max(1.2, R * 0.08); g.beginPath(); g.ellipse(x, y + 2, R * 1.08, R * 0.33, 0, 0.05 * Math.PI, 0.95 * Math.PI); g.stroke();
   const p = phaseOf(age, life);
   if (p != null) {
-    thrown(x, y, ease(p), o.n ?? 26, size, r, (px, py) => {
-      g.fillStyle = withAlpha(lit, 0.8 * (1 - p)); g.fillRect(px - 1.5, py - 1.5, 3, 3);
+    thrown(x, y, ease(p), o.n ?? 30, size, r, (px, py) => {
+      g.fillStyle = withAlpha(lit, 0.85 * (1 - p)); g.fillRect(px - 2, py - 2, 4, 4);
     }, { up: 1.2 });
-    g.fillStyle = withAlpha(lit, 0.25 * (1 - p)); g.beginPath(); g.ellipse(x, y - 6 * size, R * (1 + p * 2), R * 0.6 * (1 + p), 0, 0, TAU); g.fill();
+    g.fillStyle = withAlpha(lit, 0.3 * (1 - p)); g.beginPath(); g.ellipse(x, y - 8 * size, R * (1 + p * 2), R * 0.6 * (1 + p), 0, 0, TAU); g.fill();
   }
   g.restore();
 }
 
-/** Snow thrown up where it lands: soft puffs swelling and thinning, clods
-    arcing out; a dent stays in the snow. */
+/** Snow thrown up where it lands: puffs shaded blue-grey beneath so they
+    read on white, solid clods arcing out; a dent stays, its lip catching
+    the light and its hollow in shadow. */
 export function snowPuff(g, x, y, age, life, o = {}) {
   const u = held(age, life); if (u == null) return;
-  const size = o.size ?? 1, r = rng(o.seed ?? 67);
+  const size = Math.max(1.4, o.size ?? 1), r = rng(o.seed ?? 67);
   g.save();
-  g.fillStyle = 'rgba(160,185,210,0.55)'; g.beginPath(); g.ellipse(x, y + 1, 12 * size, 3 * size, 0, 0, TAU); g.fill();
+  g.fillStyle = 'rgba(120,145,175,0.55)'; g.beginPath(); g.ellipse(x, y + 2, 13 * size, 3.2 * size, 0, 0, Math.PI); g.fill();
+  g.strokeStyle = 'rgba(90,115,145,0.7)'; g.lineWidth = 1.4; g.beginPath(); g.ellipse(x, y + 1, 13 * size, 3.2 * size, 0, 0.1, Math.PI - 0.1); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,0.95)'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(x, y, 14 * size, 3.6 * size, 0, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
   const p = phaseOf(age, life);
   if (p != null) {
-    for (let i = 0; i < 7; i++) {
-      const dx = (r() - 0.5) * 34 * size * ease(p), dy = -(6 + r() * 22) * size * ease(p), R = (6 + r() * 8) * size * (0.5 + p);
-      const gr = g.createRadialGradient(x + dx - R * 0.3, y + dy - R * 0.3, 0, x + dx, y + dy, R);
-      gr.addColorStop(0, `rgba(255,255,255,${0.9 * (1 - p)})`); gr.addColorStop(1, 'rgba(225,235,245,0)');
+    for (let i = 0; i < 8; i++) {
+      const dx = (r() - 0.5) * 38 * size * ease(p), dy = -(6 + r() * 24) * size * ease(p), R = (6 + r() * 8) * size * (0.5 + p);
+      const gr = g.createRadialGradient(x + dx - R * 0.35, y + dy - R * 0.35, 0, x + dx, y + dy, R);
+      gr.addColorStop(0, `rgba(255,255,255,${0.95 * (1 - p)})`); gr.addColorStop(0.6, `rgba(230,238,246,${0.8 * (1 - p)})`); gr.addColorStop(1, `rgba(159,179,200,${0.5 * (1 - p)})`);
       g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, R, 0, TAU); g.fill();
     }
     thrown(x, y, ease(p), 14, size, r, (px, py) => {
-      g.fillStyle = `rgba(255,255,255,${0.95 * (1 - p)})`; g.beginPath(); g.arc(px, py, 2.2 * size, 0, TAU); g.fill();
-      g.strokeStyle = `rgba(120,150,180,${0.5 * (1 - p)})`; g.lineWidth = 0.8; g.stroke();
+      g.fillStyle = `rgba(214,226,238,${1 - p})`; g.beginPath(); g.arc(px, py, 2 * size, 0, TAU); g.fill();
+      g.fillStyle = `rgba(255,255,255,${1 - p})`; g.beginPath(); g.arc(px - 0.5 * size, py - 0.5 * size, 1.3 * size, 0, TAU); g.fill();
     });
   }
   g.restore();
 }
 
-/** A divot: clods of turf and soil kicked up, and a bare brown scar left. */
+/** A divot: clods of turf and soil kicked up, and a bare brown scar left
+    with a lip of torn turf. */
 export function divot(g, x, y, age, life, o = {}) {
   const u = held(age, life); if (u == null) return;
-  const E = env(), size = o.size ?? 1, r = rng(o.seed ?? 71);
+  const E = env(), size = Math.max(1.4, o.size ?? 1), r = rng(o.seed ?? 71);
   g.save();
-  g.fillStyle = E.night ? '#3a2a20' : '#6e4e32'; g.beginPath(); g.ellipse(x + 3 * size, y + 1, 10 * size, 2.6 * size, 0, 0, TAU); g.fill();
+  g.fillStyle = E.night ? '#3a2a20' : '#6e4e32'; g.beginPath(); g.ellipse(x + 4 * size, y + 1, 13 * size, 3.2 * size, 0, 0, TAU); g.fill();
+  g.fillStyle = E.night ? '#2a1d16' : '#4f3622'; g.beginPath(); g.ellipse(x + 5 * size, y + 1.5, 9 * size, 2 * size, 0, 0, TAU); g.fill();
+  g.strokeStyle = E.night ? '#3e5a2c' : '#5f8a3c'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(x + 4 * size, y, 13.5 * size, 3.5 * size, 0, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
   const p = phaseOf(age, life);
   if (p != null) thrown(x, y, ease(p), 12, size, r, (px, py, i) => {
     g.save(); g.translate(px, py); g.rotate(p * 8 + i);
-    g.fillStyle = withAlpha(E.night ? '#4a3626' : '#7a5636', 1 - p * 0.6); g.fillRect(-3 * size, -1.5 * size, 6 * size, 3 * size);
-    g.fillStyle = withAlpha(E.night ? '#3e5a2c' : '#6d9a44', 1 - p * 0.6); g.fillRect(-3 * size, -2.5 * size, 6 * size, 1.4 * size);
+    g.fillStyle = withAlpha(E.night ? '#4a3626' : '#7a5636', 1 - p * 0.6); g.fillRect(-4 * size, -2 * size, 8 * size, 4 * size);
+    g.fillStyle = withAlpha(E.night ? '#3e5a2c' : '#6d9a44', 1 - p * 0.6); g.fillRect(-4 * size, -3.2 * size, 8 * size, 1.8 * size);
     g.restore();
   }, { out: 1.3 });
   g.restore();
@@ -117,7 +132,8 @@ export function sparks(g, x, y, age, life, o = {}) {
 export function confetti(g, x, y, age, life, o = {}) {
   const p = phaseOf(age, life); if (p == null) return;
   const size = o.size ?? 1, r = rng(o.seed ?? 79);
-  const colours = ['#e9c46a', '#8ab6d6', '#e8a2b5', '#9fd3a8', '#c9b6e4', '#f2f0ea'];
+  // saturated enough to show on grass and a pale sky alike
+  const colours = ['#f2b705', '#2f7ec1', '#e0457b', '#2fa36b', '#8e5bd1', '#ffffff'];
   g.save();
   for (let i = 0; i < 46; i++) {
     const a = Math.PI * (0.25 + r() * 0.5), sp = (60 + r() * 90) * size, side = (r() - 0.5) * 2;
@@ -143,7 +159,8 @@ export function smokeTrail(g, at, t, o = {}) {
   for (let j = n; j >= 1; j--) {
     const tt = t - j * dt;
     if (tt < 0) { r(); continue; }
-    const q = at(tt), a = j / n, R = (3 + 10 * a) * size, jitter = (r() - 0.5) * 4 * a;
+    // close together and overlapping, so the trail is one plume, not beads
+    const q = at(tt), a = j / n, R = (4 + 11 * a) * size, jitter = (r() - 0.5) * 4 * a;
     // grey enough to read against a pale sky as well as a dark one
     const c = E.night ? '205,205,210' : '168,168,172';
     g.fillStyle = `rgba(${c},${0.65 * (1 - a) + 0.1})`;

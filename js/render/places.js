@@ -32,6 +32,10 @@ function sky(g, w, horizon, x0, o = {}) {
   g.fillStyle = withAlpha(E.sun, E.night ? 0.55 : 0.85); g.beginPath(); g.arc(sx, sy, R, 0, TAU); g.fill();
 }
 
+/** Whether x is clear of where it lands and of the surface's label: a
+    place's props (a cactus, a rock) never stand there. */
+const clearOf = (x, c, gap = 60) => !(c.clearX || []).some((cx) => Math.abs(cx - x) < gap);
+
 /** A night sky with stars (seeded), for the Moon and Mars. */
 function starfield(g, w, horizon, seed, tint = '#ffffff') {
   const r = rng(seed);
@@ -495,10 +499,12 @@ function regolith(g, w, h, horizon, oy, k, { base, dark, light, seed }) {
 /** A snowfield: snowy peaks behind, pines heavy with snow, drifts and ski
     tracks across the snow; from a height, a rock ledge capped with snow,
     a cornice overhanging its edge. */
-function snow(g, { w, h, k, oy, x0, top, H0 }) {
+function snow(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
   const E = env(), n = E.night, r = rng(113), phone = w < 520;
   const horizon = oy - clamp((oy - 40) * 0.38, 50, 240);
-  const ceil = phone ? Math.min(horizon - 30, 190) : 24, tall = Math.max(30, horizon - ceil);
+  // on a phone the readouts cover the top, but the peaks keep some height
+  const ceil = phone ? Math.min(horizon - 30, 190, horizon * 0.45) : 24, tall = Math.max(30, horizon - ceil);
   sky(g, w, horizon, x0, { far: 'none', seed: 31, clouds: 2 });
   range(g, w, horizon + 4, tall * 0.85, r, { rock: n ? '#5a5d6c' : '#b3bccb', shade: n ? '#43465a' : '#8f9ab0', snow: n ? '#d3d7e3' : '#fbfcfe', snowShade: n ? '#a7aec4' : '#d7dfec', haze: n ? '#2c3040' : '#dde6ef' });
   // the snowfield runs from the forest's foot to the near ground, faintly blue in its hollows
@@ -508,6 +514,8 @@ function snow(g, { w, h, k, oy, x0, top, H0 }) {
   // pines along the forest edge, snow on their tiers
   for (let x = r() * 20; x < w; x += 8 + r() * 12) {
     const ph = 16 + r() * 22, by = horizon + 6 + r() * 8;
+    // none behind the ledge, where they would swallow its cornice
+    if (H0 > 0 && x < x0 + 14 && by - ph < top + 20) continue;
     pine(g, x, by, ph, n ? '#1f2a28' : '#2f4a3e', n ? '#2b3a36' : '#3f5f50');
     g.fillStyle = n ? '#cfd5e2' : '#ffffff';
     for (let i = 0; i < 3; i++) { const yb = by - ph * (0.12 + i * 0.1) - ph * 0.3 * (i / 3) - ph * 0.12, hw = ph * (0.2 - i * 0.05); g.beginPath(); g.ellipse(x - hw * 0.2, yb, hw * 0.7, ph * 0.035 + 0.8, -0.2, 0, TAU); g.fill(); }
@@ -520,11 +528,16 @@ function snow(g, { w, h, k, oy, x0, top, H0 }) {
     g.fillStyle = dg; g.beginPath(); g.ellipse(dx, y, dw / 2, 5 + r() * 6, 0, Math.PI, 0); g.fill();
   }
   // ski tracks curving down across the snow
+  // (out on the open snow, above the ground line where the measurements go)
+  g.save(); g.beginPath(); g.rect(x0 + 40, 0, w, oy - 8); g.clip();
   g.strokeStyle = withAlpha(n ? '#6d7891' : '#a9bad0', 0.6); g.lineWidth = 1.3;
-  for (const off of [0, 5]) { g.beginPath(); g.moveTo(w * 0.35 + off, horizon + 14); g.bezierCurveTo(w * 0.55 + off, horizon + (oy - horizon) * 0.4, w * 0.4 + off, oy - 10, w * 0.75 + off, h); g.stroke(); }
+  const sx0 = Math.max(x0 + 60, w * 0.4);
+  for (const off of [0, 5]) { g.beginPath(); g.moveTo(sx0 + off, horizon + 14); g.bezierCurveTo(sx0 + (w - sx0) * 0.5 + off, horizon + (oy - horizon) * 0.4, sx0 + off, oy - 30, w * 0.95 + off, oy - 14); g.stroke(); }
+  g.restore();
   // rocks poking through, snow on their tops
   for (let i = 0; i < 5; i++) {
     const x = r() * w, y = lerp(oy + 6, h - 4, r()), R = 4 + r() * 8;
+    if (!clearOf(x, c)) continue;
     g.fillStyle = n ? '#4a4c56' : '#77787f'; g.beginPath(); g.ellipse(x, y, R, R * 0.6, 0, Math.PI, 0); g.fill();
     g.fillStyle = n ? '#d3d7e3' : '#ffffff'; g.beginPath(); g.ellipse(x - R * 0.1, y - R * 0.45, R * 0.8, R * 0.22, 0, 0, TAU); g.fill();
   }
@@ -547,7 +560,8 @@ function snow(g, { w, h, k, oy, x0, top, H0 }) {
 /** A desert: a hot, hazy sky, far rock under a shimmer of heat, dunes in
     layers with sharp crests lit on one face, ripples in the sand, a cactus
     or two; from a height, a sandstone outcrop. */
-function desert(g, { w, h, k, oy, x0, top, H0 }) {
+function desert(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
   const E = env(), n = E.night, r = rng(127);
   const horizon = oy - clamp((oy - 40) * 0.3, 40, 200);
   if (n) sky(g, w, horizon, x0, { far: 'none', seed: 41, clouds: 0 });
@@ -565,10 +579,19 @@ function desert(g, { w, h, k, oy, x0, top, H0 }) {
     g.fillStyle = withAlpha(n ? '#4a3a40' : '#b98f6c', 0.6);
     g.beginPath(); g.moveTo(x - W / 2 - 10, horizon + 2); g.lineTo(x - W / 2, horizon - H); g.lineTo(x + W / 2, horizon - H * 0.95); g.lineTo(x + W / 2 + 12, horizon + 2); g.closePath(); g.fill();
   }
-  // a band of heat shimmer at the horizon
-  const hz = g.createLinearGradient(0, horizon - 16, 0, horizon + 10);
-  hz.addColorStop(0, withAlpha(n ? '#2a2a3a' : '#f3e2c0', 0)); hz.addColorStop(0.6, withAlpha(n ? '#2a2a3a' : '#f3e2c0', 0.7)); hz.addColorStop(1, withAlpha(n ? '#2a2a3a' : '#f3e2c0', 0));
-  g.fillStyle = hz; g.fillRect(0, horizon - 16, w, 26);
+  // the far sand plain under the buttes, so no sky shows below the horizon
+  const fp = g.createLinearGradient(0, horizon, 0, oy);
+  fp.addColorStop(0, n ? '#4e4040' : '#d9b98c'); fp.addColorStop(1, n ? '#5e4c46' : '#e3c59a');
+  g.fillStyle = fp; g.fillRect(0, horizon, w, oy - horizon);
+  // heat shimmer at the horizon: a warm, thin band, wavering
+  const hz = g.createLinearGradient(0, horizon - 14, 0, horizon + 8);
+  const warm = n ? '#3a3040' : '#e9c99a';
+  hz.addColorStop(0, withAlpha(warm, 0)); hz.addColorStop(0.6, withAlpha(warm, 0.4)); hz.addColorStop(1, withAlpha(warm, 0));
+  g.fillStyle = hz; g.fillRect(0, horizon - 14, w, 22);
+  if (!n) {
+    g.strokeStyle = withAlpha('#fff3dc', 0.35); g.lineWidth = 1;
+    for (let i = 0; i < 3; i++) { const yy = horizon - 8 + i * 4; g.beginPath(); for (let x = 0; x <= w; x += 8) g.lineTo(x, yy + Math.sin(x / 18 + phase * 3 + i * 2) * 1.2); g.stroke(); }
+  }
   // dunes, far to near: a long gentle windward slope up to a sharp crest,
   // then the steep slip face falling into shadow
   const D = Math.max(20, oy - horizon), sm = (u) => u * u * (3 - 2 * u);
@@ -590,9 +613,11 @@ function desert(g, { w, h, k, oy, x0, top, H0 }) {
       const xt = xp + 0.22 * P, yp = crest(xp + 0.5), yt = crest(xt - 0.5);
       const sg = g.createLinearGradient(0, yp, 0, yt + amp * 0.6);
       sg.addColorStop(0, withAlpha(shade, 0.95)); sg.addColorStop(1, withAlpha(shade, 0));
+      // a wedge under the falling face, its lower edge slanting back to the
+      // crest, so no hard upright edge shows
       g.fillStyle = sg; g.beginPath(); g.moveTo(xp, yp);
       for (let x = xp; x <= xt; x += 3) g.lineTo(x, crest(x));
-      g.lineTo(xt + amp * 0.3, yt + amp * 0.6); g.lineTo(xp, yp + amp * 0.9); g.closePath(); g.fill();
+      g.lineTo(xt + amp * 0.15, yt + amp * 0.35); g.quadraticCurveTo(xp + (xt - xp) * 0.3, yt + amp * 0.3, xp, yp); g.closePath(); g.fill();
     }
     g.restore();
     // the crest lines, catching the light
@@ -607,16 +632,35 @@ function desert(g, { w, h, k, oy, x0, top, H0 }) {
   g.strokeStyle = withAlpha(n ? '#3e3028' : '#b88f5a', 0.35); g.lineWidth = 1;
   for (let y = oy + 6; y < h; y += 6 + (y - oy) * 0.12) { g.beginPath(); for (let x = 0; x <= w; x += 12) g.lineTo(x, y + Math.sin(x / 22 + y) * 2); g.stroke(); }
   // a cactus or two, and stones
-  for (const cx of [x0 + (w - x0) * 0.78, w * 0.06]) {
-    if (cx < 10 || (H0 > 0 && cx < x0)) continue;
+  for (const cx of [x0 + (w - x0) * 0.78, x0 + (w - x0) * 0.42, w * 0.06]) {
+    if (cx < 10 || (H0 > 0 && cx < x0) || !clearOf(cx, c, 70)) continue;
     const ch = clamp(3.5 * k, 24, 90), cw = ch * 0.14, col = n ? '#3a4a36' : '#5f7d4c';
     g.fillStyle = col; g.beginPath(); g.roundRect(cx - cw / 2, oy - ch, cw, ch, cw / 2); g.fill();
     g.beginPath(); g.roundRect(cx - cw * 2.2, oy - ch * 0.62, cw * 0.8, ch * 0.32, cw * 0.4); g.fill(); g.fillRect(cx - cw * 2.2, oy - ch * 0.36, cw * 1.8, cw * 0.7);
     g.beginPath(); g.roundRect(cx + cw * 1.4, oy - ch * 0.78, cw * 0.8, ch * 0.36, cw * 0.4); g.fill(); g.fillRect(cx + cw * 0.4, oy - ch * 0.46, cw * 1.6, cw * 0.7);
-    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.22); g.fillRect(cx - cw / 2 + 1, oy - ch + cw * 0.4, cw * 0.25, ch - cw);
+    // ribs down the stem and arms, a lit side and a shaded one
+    g.fillStyle = withAlpha('#000000', 0.22); g.fillRect(cx + cw * 0.1, oy - ch + cw * 0.4, cw * 0.4, ch - cw * 0.4);
+    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.25); g.fillRect(cx - cw / 2 + 1, oy - ch + cw * 0.4, cw * 0.22, ch - cw);
+    g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 0.8;
+    for (const f of [-0.15, 0.15]) { g.beginPath(); g.moveTo(cx + cw * f, oy - ch + cw * 0.5); g.lineTo(cx + cw * f, oy); g.stroke(); }
+    g.fillStyle = withAlpha('#f2e6c8', 0.7); for (let y = oy - ch + cw; y < oy - 4; y += cw * 0.9) { g.fillRect(cx - cw / 2 - 1, y, 1.2, 1.2); g.fillRect(cx + cw / 2, y + cw * 0.4, 1.2, 1.2); }
     softShadow(g, cx + cw, oy + 1, ch * 0.3, 3, 0.7);
   }
-  if (H0 > 0) seaCliff(g, -4, x0, top, oy, { foam: false, cap: false, tones: rockTones(n ? '#8d6a58' : '#e0a978', n ? '#6c4e40' : '#c08458', n ? '#3e2a22' : '#7d4f33') });
+  if (H0 > 0) {
+    seaCliff(g, -4, x0, top, oy, { foam: false, cap: false, tones: rockTones(n ? '#8d6a58' : '#e0a978', n ? '#6c4e40' : '#c08458', n ? '#3e2a22' : '#7d4f33') });
+    // the wind has cut it: dark undercuts under harder bands, a cap that overhangs
+    const H = oy - top;
+    for (const f of [0.3, 0.62]) {
+      const y = top + H * f, d = clamp(0.5 * k, 4, 14);
+      const ug = g.createLinearGradient(0, y, 0, y + d * 1.6); ug.addColorStop(0, withAlpha('#2a160e', 0.55)); ug.addColorStop(1, withAlpha('#2a160e', 0));
+      g.fillStyle = ug; g.beginPath(); g.moveTo(-4, y); g.lineTo(x0 - d * 0.3 - H * 0.04 * f, y); g.quadraticCurveTo(x0 - d * 1.4, y + d * 0.8, x0 - d * 0.6 - H * 0.05 * f, y + d * 1.6); g.lineTo(-4, y + d * 1.6); g.closePath(); g.fill();
+    }
+    g.fillStyle = n ? '#9a7662' : '#ecb886'; g.beginPath(); g.moveTo(-4, top - 3); g.lineTo(x0 + 4, top - 3); g.lineTo(x0 + 2, top + 4); g.lineTo(-4, top + 5); g.closePath(); g.fill();
+    // a talus fan of fallen blocks and sand at its foot
+    // against the face, so what drops from the edge still lands on the open sand
+    g.fillStyle = n ? '#6c5444' : '#d7ae7c'; g.beginPath(); g.moveTo(x0 - clamp(3 * k, 30, 90), oy + 1); g.quadraticCurveTo(x0 - 4, oy - clamp(0.8 * k, 6, 20), x0 - 1, oy + 1); g.closePath(); g.fill();
+    scree(g, x0, oy, k);
+  }
 }
 
 /** The places this file draws, by the registry's names. */

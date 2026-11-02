@@ -75,10 +75,10 @@ const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 /** The backdrop and the place things start from, for either stage: the
     library's own scenery for the recipe's backdrop, its top at `top` (H0 m),
     its edge at x0, the ground or the water at oy. */
-function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand }) {
+function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [] }) {
   const P = palette();
   // the places in js/render/places.js draw themselves and what they launch from
-  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P }); return; }
+  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX }); return; }
   const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
   // the place it is launched from, where the backdrop has no edge of its own:
   // a stone wall to stand on, a jetty over the sea, or the ground itself
@@ -233,7 +233,7 @@ function launch(canvas, o) {
     const p = pads(k), box = { xLo: -p.l / k, xHi: xMax + p.r / k, yLo: 0, yHi: yTop + p.t / k };
     // on a phone the readouts sit over the top of the stage: the sky takes the
     // spare height, and the place stands low, clear of them
-    F = fitClear(box, w, h, phone, R.backdrop === 'table' ? 0.75 : phone ? 0.6 : 0.35, (fs) => clear(fs, p));
+    F = fitClear(box, w, h, phone, R.backdrop === 'table' ? 0.75 : phone ? 0.6 : 0.35, (fs) => clear(fs, p), 76);
     if (!F) return null;
     k = F.k;
   }
@@ -241,7 +241,9 @@ function launch(canvas, o) {
   const phase = (fired ? tRaw : 0) * 1.3;
 
   // ── the backdrop, and the place it is launched from
-  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand });
+  // where each lands, and where the surface is named, kept clear of the place's props
+  const clearX = [...movers.map((m) => X(m.f.pos(m.f.tMax).x)), w - 60];
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX });
 
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {
@@ -304,6 +306,9 @@ function launch(canvas, o) {
   const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'arrow', 'javelin'].includes(kind) || !!piece.animal;
   stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
+  // a rocket's smoke, left along the way it has come, under the marks
+  if (R.effects.includes('smoke') && m.going && !(t >= f.tMax - 1e-9 && wet)) smokeTrail(g, (tt) => at(f.pos(tt)), t, { dt: f.tMax / 130, n: 46, size: clamp(k / 12, 0.8, 2) });
+
   if (show.apex && f.uy > 0) {
     const q = at(f.pos(f.tApex));
     dot(g, q.x, q.y, 4.5, { fill: P.card, stroke: P.disp, width: 2 });
@@ -312,6 +317,7 @@ function launch(canvas, o) {
   }
 
   // ── where it lands, once it has: the recipe's effect, at the engine's time
+  const later = [];
   const landed = t >= f.tMax - 1e-9;
   const end = f.pos(f.tMax), lx = X(end.x);
   if (!landed) clock.at = null;
@@ -328,11 +334,19 @@ function launch(canvas, o) {
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
       else if (wet) continue;
-      // what a landing does to dry ground, sized to what lands
-      else if (e === 'crater') crater(g, lx, oy, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 14, 0.8, 3), ...(R.backdrop === 'mars' ? { dark: '#5e2e1d', light: '#d89a6c' } : {}) });
-      else if (e === 'snow') snowPuff(g, lx, oy, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 14, 0.8, 3) });
-      else if (e === 'divot') divot(g, lx, oy, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 14, 0.8, 2.5) });
-      else if (e === 'sparks') sparks(g, lx, oy - 2, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 16, 0.7, 2) });
+      // what a landing does to dry ground, sized to what lands and drawn over
+      // it, so it is seen: it sits in its crater, half in the snow
+      else if (['crater', 'snow', 'divot'].includes(e)) {
+        const sz = clamp((small ? 10 : size(k, piece) * 0.5) / 12, 1.4, 3.2);
+        later.push(() => (e === 'crater' ? crater(g, lx, oy, age, life, { size: sz, ...(R.backdrop === 'mars' ? { dark: '#5e2e1d', light: '#e2a77a', blanket: true } : {}) })
+          : e === 'snow' ? snowPuff(g, lx, oy, age, life, { size: sz }) : divot(g, lx, oy, age, life, { size: sz })));
+      }
+      else if (e === 'sparks') {
+        // on the open side, never across the face it fell beside
+        g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); }
+        sparks(g, lx, oy - 2, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 16, 0.7, 2) });
+        g.restore();
+      }
       else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
       else if (e === 'splat') splat(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
       else if (e === 'crack') crack(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
@@ -344,9 +358,6 @@ function launch(canvas, o) {
       L.add(T`${sig3(end.x)} [m]`, Math.min((x0 + lx) / 2, lx - 40), ry + 15, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700, maxPush: 20 });
     }
   }
-
-  // a rocket's smoke, left along the way it has come
-  if (R.effects.includes('smoke') && m.going && !(landed && wet)) smokeTrail(g, (tt) => at(f.pos(tt)), t, { dt: f.tMax / 70, size: clamp(k / 12, 0.8, 2) });
 
   // ── the moving thing, at the engine's point
   const r = f.pos(t), v = f.vel(t), by = Y(r.y);
@@ -399,7 +410,8 @@ function launch(canvas, o) {
       // stands on the board's end, then the hip carries the engine's point;
       // a jump upwards tucks and turns one and a half times to go in head
       // first, a dive out tips over gently; in the water it is gone under
-      cy = by - DIVER_FEET * Lp * (1 - ease(0, 0.12, p)) + (landed && wet ? Lp * 1.4 * ease(0, 0.3, after) : 0);
+      // on dry ground it comes down on its feet again, never buried head first
+      cy = by - DIVER_FEET * Lp * (1 - ease(0, 0.12, p) + (wet ? 0 : ease(0.82, 1, p))) + (landed && wet ? Lp * 1.4 * ease(0, 0.3, after) : 0);
       // at a well they stand on the stone beside the shaft, and step off over it
       if (R.backdrop === 'well') cx = bx - (26 + 10 + Lp * 0.15) * (1 - ease(0, 0.12, p));
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
@@ -408,13 +420,16 @@ function launch(canvas, o) {
       const down = Math.hypot(v0.x, v0.y) < 1e-6 || (v0.y < 0 && Math.abs(v0.x) < Math.abs(v0.y) * 0.25);
       const steep = !down && Math.atan2(v0.y, v0.x) > Math.PI / 4;
       const tuck = steep ? ease(0.15, 0.35, p) * (1 - ease(0.6, 0.8, p)) : 0;
-      const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * 3 : ease(0.05, 1, p) * Math.PI * 0.85;
+      // into water: one and a half turns to go in head first; onto dry ground:
+      // a full turn (or a lean and back) so it lands upright
+      const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * (wet ? 3 : 2) : wet ? ease(0.05, 1, p) * Math.PI * 0.85 : Math.sin(ease(0.05, 0.95, p) * Math.PI) * 0.6;
       m.body = { x: cx, y: cy - (fired ? 0 : Lp * 0.25) };
       diver(g, cx, cy, Lp, P, { ring: m.ring, tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
     } else if (piece.animal) {
       // crouched on the edge, its feet at the engine's point; it springs,
       // stretches out in the air, and reaches down to land
-      cx = bx - Lp * 0.3 * (1 - ease(0, 0.1, p)); cy = by - Lp * 0.3;
+      // its body on the path in the air, its feet on the edge and the ground
+      cx = bx - Lp * 0.3 * (1 - ease(0, 0.1, p)); cy = by - Lp * 0.3 * (1 - ease(0, 0.12, p) + (landed && wet ? 0 : ease(0.85, 1, p)));
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.4, Math.max(2, Lp * 0.05), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
       const pitch = aloft ? 0.35 * Math.atan2(-v.y, v.x) : 0;
       m.body = { x: cx, y: cy };
@@ -466,6 +481,8 @@ function launch(canvas, o) {
     g.restore();
     if (landed && wet) water(g, lx - Lp * 0.7, lx + Lp * 0.7, oy, oy + 3, { phase });
   }
+
+  for (const draw of later) draw();
 
   // ── its velocity and its acceleration, on it
   const pv = pts.map((p) => f.vel(p.t));
