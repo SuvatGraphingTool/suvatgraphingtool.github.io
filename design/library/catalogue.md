@@ -140,6 +140,8 @@ this library: *covered* names the one of the twelve that does it.
 | 104 | Edexcel | 6677/01 M1 | Jan 2005 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202005%20QP.pdf) | A stone on ice along ABC against a 0.3 N resistance, 20 then 16 m/s over 24 m; speed at C 30 m on; show m = 0.1 kg; the wall's 2.4 N s impulse, time back to rest | – | **built** → `back-off-the-boards` |
 | 105 | AQA | MM1B | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202012%20QP%20-%20M1%20AQA.pdf) | A cyclist freewheels down a slope, 4 to 10 m/s over 50 m: a, time; 70 kg: resultant force; the slope's angle with no resistance, then against 30 N | 9.8 | **built** → `freewheeling` |
 | 106 | CIE | 9709/41 | May/Jun 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | 0.8 kg projected at 12 m/s up a rough 10° plane, μ = 0.4: the acceleration; the distance up the plane to rest | 10 | **built** → `up-a-rough-slope` |
+| 112 | Edexcel | 6677 M1 | Jun 2002 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A lift with an 80 kg man rises 27 m from rest: 2 m/s² to 3 m/s, steady for T s, slows to rest in 2.5 s: v–t sketch, T, a–t sketch; 120 kg lift: the cable's tension speeding up, the floor's force on the man slowing | 9.8 | **built** → `lift-cable-floor` |
+| 113 | Edexcel | 6677/01 M1 | Jun 2013 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 950 kg lift with a 50 kg woman, moving up and slowing at 2 m/s²: the tension, the floor's force on her | 9.8 | **candidate**: the forces are `lift-cable-floor`'s, but the paper gives no journey to play: needs a one-stage mode |
 | 109 | Edexcel | 6677/01 M1 | Jan 2013 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | An 800 kg lifeboat let go from rest down a 50 m ramp at 15°, 12.6 m/s at the end: the coefficient of friction | 9.8 | **built** → `down-a-rough-slope` |
 | 110 | Edexcel | 6677 M1 | Jan 2004 | 3 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A loose tile slides from rest down a 30° roof, μ = 0.4: its acceleration; its speed at the edge 3 m on; the acceleration for twice the mass | 9.8 | **built** → `down-a-rough-slope` |
 | 111 | Edexcel | 6677/01 M1 | Jan 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | (a), (b): 0.8 kg released from rest on a rough 30° plane moves 2.7 m in 3 s: its acceleration, μ ((c), held by a horizontal force, is equilibrium: out) | 9.8 | **built** → `down-a-rough-slope` |
@@ -446,6 +448,27 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `lift-cable-floor` — The lift, its cable and its floor
+
+**Papers.** Edexcel 6677 M1 Jun 2002 Q6 (from rest at 2 m s⁻² to 3 m s⁻¹, steady,
+then to rest in 2.5 s, 27 m in all: T = 7 s; with a 120 kg lift and an 80 kg man,
+the tension speeding up 2360 N, the floor on the man slowing 688 N).
+
+**Why `the-lift` cannot.** It is the motion alone: no masses, no cable, no
+floor. Here the motion is the first half, and F = ma in each stage the second —
+on lift and passenger together for the cable, on the passenger alone for the
+floor.
+
+**How it is solved.** js/core/cable.js: the journey's engine for the stages and
+the steady time from the area; then T − (M + m)g = (M + m)a and R − mg = ma
+with each stage's acceleration.
+
+**The stage.** The lift's: the building cut away, the shaft, the car on its
+cables with the passenger, the enlarged car with its floor indicator; beside
+it, a card with the two free-body diagrams, their arrows to one scale, changing
+as the stages change — the tension above the weight speeding up, equal to it at
+a steady speed, below it slowing down.
 
 ### `down-a-rough-slope` — Down a rough slope
 

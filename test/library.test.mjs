@@ -30,6 +30,7 @@ import { solveHill } from '../js/core/hill.js';
 import { solveRough } from '../js/core/rough.js';
 import { solveSink, sinkWorking } from '../js/core/sink.js';
 import { solveSlide, slideWorking } from '../js/core/slide.js';
+import { solveCable, cableWorking } from '../js/core/cable.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1477,7 +1478,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope', 'into-soft-ground', 'down-a-rough-slope']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope', 'into-soft-ground', 'down-a-rough-slope', 'lift-cable-floor']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
@@ -1699,6 +1700,18 @@ group('CIE 9709/41 May/Jun 2017 Q2: up a rough slope', () => {
   { const z = solveRough({ u: 5, alpha: 30, mu: 0, m: 2, g: 9.8 }), strip = (x) => String(x).replace(/<[^>]+>/g, '');
     ok(z.ok && !/friction both/.test(z.notes[0]) && !z.notes.some((x) => /0\s*N\b/.test(strip(x)) && /friction/.test(x)) && !z.rows.some((r) => /0cos/.test(strip(r.s))), 'μ = 0: no friction in the words, no zero term in the working'); }
   ok(/A slope’s angle is between/.test(solveRough({ u: 12, alpha: 95, mu: 0.4 }).reason), 'an angle out of range is said as out of range, not as missing');
+});
+
+group('Edexcel M1 Jun 2002 Q6: the lift, its cable and its floor', () => {
+  const s = solveCable({ a1: 2, V: 3, t3: 2.5, D: 27, M: 120, m: 80, g: 9.8 });
+  ok(s.ok && s.J.t2 === 7 && s.T1 === 2360 && s.R3 === 688, '(b) T = 7 s; (d) tension 2360 N speeding up; (e) floor on the man 688 N slowing', s.reason);
+  ok(s.T2 === 1960 && s.R2 === 784 && s.T3 === 1720 && s.R1 === 944, 'at a steady speed the weights exactly; slowing, less; speeding up, more');
+  ok(s.f.tension(s.f.tUp) === 2360 && s.f.floor(s.f.tDown) === 688 && s.f.tension(s.f.tMax) === 1960, 'the forces follow the stage, and at rest hold the weight');
+  ok(cableWorking(s).at(-1).rows.length === 6, 'the working: the journey, then T and R in each of the three stages');
+  const lone = solveCable({ a1: 2, V: 3, t3: 2.5, D: 27, M: 120, g: 9.8 });
+  ok(lone.ok && lone.R1 == null && Math.abs(lone.T1 - 1416) < 1e-9, 'no passenger: the cable alone');
+  ok(!solveCable({ a1: 2, V: 3, t3: 0.2, D: 27, M: 120, m: 80, g: 9.8 }).ok, 'slowing faster than g: the cable would go slack, refused');
+  ok(!solveCable({ a1: 2, V: 3, t3: 2.5, D: 27, g: 9.8 }).ok, 'no lift mass: refused');
 });
 
 group('Edexcel M1 Jan 2013 Q4, Jan 2004 Q3, Jan 2010 Q5: down a rough slope', () => {

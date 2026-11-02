@@ -29,7 +29,8 @@ export function render(canvas, cam, o) {
   // floors about 3 m apart, so many that the lift stops level with a landing
   const D = f.range, STOREY = D / Math.max(1, Math.round(D / 3)), floors = Math.round(D / STOREY) + 2, Hb = floors * STOREY + 1.2;
   const box = { xLo: -5.5, xHi: 6.5, yLo: -1.2, yHi: Hb + 1 };
-  const area = { left: HB[0].w + (phone ? 8 : 24), right: w - (phone ? 10 : 18), top: phone ? HB[1].h + 8 : 24, bottom: h - 12 };
+  // a stage drawn over this one (the forces on a card) may keep room on the right: `o.keepRight`
+  const area = { left: HB[0].w + (phone ? 8 : 24), right: w - (phone ? 10 : 18) - (o.keepRight || 0), top: phone ? HB[1].h + 8 : 24, bottom: h - 12 - (o.keepBottom || 0) };
   const { k, X, Y } = fitSide(box, area, { sky: 0.5 });
   const oy = Y(0);
   skyscape(g, 0, 0, w, oy - 30, { seed: 91, far: 'skyline' });
