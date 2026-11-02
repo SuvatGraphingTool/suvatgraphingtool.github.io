@@ -116,7 +116,8 @@ export function render(canvas, cam, o) {
     lab(upTxt, ul, uy, upCol, ua);
     const [dl, da] = fit(downTxt, x + 20);
     lab(downTxt, dl, Math.min(py + ph - 10, wy + ld - 6), P.ink, da);
-    if (short) lab(name, px + cw - 10, py + 10, P.muted, 'right', 600);
+    // a short panel names its body on the body's own row (the lift's), clear of the T label above it
+    if (short) lab(name, px + cw - 10, kind === 'lift' ? y : py + 10, P.muted, 'right', 600);
   };
   // the acceleration the difference makes — the same for both — once, on the title row:
   // a short solid arrow (it is vertical, rule 2) and its value
