@@ -457,9 +457,9 @@ export function diveCatch(g, x, y, u, o = {}) {
   if (fly >= 1 && o.age != null) { const p = Math.min(1, o.age / 0.8); g.fillStyle = `rgba(200,190,170,${0.5 * (1 - p)})`; g.beginPath(); g.ellipse(x + H * 0.5, y + 1, H * 0.6 * (0.6 + p), H * 0.08, 0, 0, TAU); g.fill(); }
 }
 
-/** A tennis ball landing on the court: a puff of chalk (or the court's own
-    dust) kicked up and drifting on, low and pale, and the ball's mark left
-    on the surface, a fuzzy oval that stays. */
+/** A tennis ball landing on the court: the ball's mark left on the surface,
+    a fuzzy oval that stays, and (`puff`, only when the engine lands it on a
+    line) a puff of chalk kicked up and drifting on, low and pale. */
 export function chalk(g, x, y, age, life, o = {}) {
   const u = held(age, life); if (u == null) return;
   const size = o.size ?? 1, r = rng(o.seed ?? 127);
@@ -469,7 +469,7 @@ export function chalk(g, x, y, age, life, o = {}) {
   g.fillStyle = withAlpha('#f6f4ee', 0.55); g.beginPath(); g.ellipse(x + ml * 0.4, y + 1, Math.max(2, ml), 2.2 * size, 0, 0, TAU); g.fill();
   g.strokeStyle = withAlpha('#ffffff', 0.7); g.lineWidth = 1; g.stroke();
   const p = phaseOf(age, life * 0.8);
-  if (p != null) {
+  if (p != null && o.puff) {
     // the puff: low, forward, pale, thinning as it spreads
     for (let i = 0; i < 9; i++) {
       const R = (3 + r() * 4) * size * (0.6 + p * 1.8), dx = (r() * 18 + 4) * size * ease(p), dy = -(2 + r() * 8) * size * ease(p) - R * 0.2;

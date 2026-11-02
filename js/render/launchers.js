@@ -181,4 +181,5 @@ export function rifle(g, x, y, s, P, { aim = 0, t = -1, gy = y } = {}) {
 
 /** Each launcher by the registry's name: `size` px at k px a metre. */
 export const LAUNCHER_ART = { cannon, ramp, catapult, rifle };
-export const launcherSize = (kind, k) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? clamp(1.1 * k, 56, 96) : clamp(3 * k, 60, 160));
+// (a rifle near its true length, and never longer than half again the height it fires from)
+export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : clamp(3 * k, 60, 160));

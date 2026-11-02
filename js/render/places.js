@@ -1809,7 +1809,8 @@ function court(g, c) {
   g.strokeStyle = n ? '#5a6068' : '#9aa2aa'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, horizon - fence); g.lineTo(w, horizon - fence); g.stroke();
   for (let x = 20; x < w; x += 90) { g.beginPath(); g.moveTo(x, horizon - fence - 3); g.lineTo(x, horizon); g.stroke(); }
   // the surround, then the court on it: blue, with its tramlines
-  const yF = lerp(horizon, oy, 0.34), yN = oy + clamp((h - oy) * 0.55, 14, 70);
+  // (a shallow court in depth, so the net's height reads against it)
+  const yF = Math.max(lerp(horizon, oy, 0.34), oy - 46), yN = oy + clamp((h - oy) * 0.4, 10, 40);
   g.fillStyle = n ? '#22382a' : '#4f8a5e'; g.fillRect(0, horizon, w, h - horizon);
   g.fillStyle = withAlpha('#000000', 0.08); for (let y = horizon + 6; y < h; y += 9) g.fillRect(0, y, w, 1);
   const xa = X(0), xb = X(23.77);
@@ -1826,25 +1827,38 @@ function court(g, c) {
   g.beginPath(); g.moveTo(X(5.485) + (oy - (yF + yN) / 2) * s, (yF + yN) / 2); g.lineTo(X(18.285) + (oy - (yF + yN) / 2) * s, (yF + yN) / 2); g.stroke();
   // the net, where the path clears it or lands short of it
   const xn = X(11.885), land = (c.clearX || [])[0], at = c.over?.(11.885);
-  if (xn < w + 40 && (land == null || land < xn - 4 || at == null || at > 0.95)) {
-    const fx = xn + (oy - yF) * s, nx = xn - (yN - oy) * s, ph = 1.07 * k, mh = 0.914 * k;
-    // the umpire's chair, behind the far post
+  const fx = xn + (oy - yF) * s, nx = xn - (yN - oy) * s, ph = 1.07 * k, mh = 0.914 * k;
+  // the umpire's chair, beside the far post, net or no net
+  if (xn < w + 40) {
     const cs = clamp(2 * k, 18, 50), cx = fx + clamp(1.5 * k, 10, 30), cy = yF - 2;
     g.strokeStyle = n ? '#4a4e56' : '#2f3a44'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - cs * 0.2, cy); g.lineTo(cx, cy - cs); g.lineTo(cx + cs * 0.2, cy); g.moveTo(cx - cs * 0.12, cy - cs * 0.5); g.lineTo(cx + cs * 0.12, cy - cs * 0.5); g.stroke();
     g.fillStyle = n ? '#4a4e56' : '#2f3a44'; g.fillRect(cx - cs * 0.16, cy - cs - 2, cs * 0.32, 3);
     g.fillStyle = n ? '#3a4a5a' : '#2f5fa8'; g.beginPath(); g.roundRect(cx - cs * 0.12, cy - cs * 1.42, cs * 0.24, cs * 0.4, 3); g.fill();
     g.fillStyle = n ? '#7d6253' : '#d9a988'; g.beginPath(); g.arc(cx, cy - cs * 1.55, cs * 0.1, 0, TAU); g.fill();
-    // the mesh: from the far post's top to the near post's, sagging to 0.914 m mid-court
-    g.fillStyle = withAlpha(n ? '#0c0e12' : '#1b1d22', 0.42);
-    g.beginPath(); g.moveTo(fx, yF); g.lineTo(fx, yF - ph); g.quadraticCurveTo(xn, oy - mh * 2 + ph, nx, yN - ph); g.lineTo(nx, yN); g.closePath(); g.fill();
-    g.save(); g.clip(); g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 0.8;
-    for (let i = 0; i < 24; i++) { const u = i / 24; g.beginPath(); g.moveTo(lerp(fx, nx, u), lerp(yF, yN, u)); g.lineTo(lerp(fx, nx, u), lerp(yF, yN, u) - ph); g.stroke(); }
-    for (let y = -ph; y < 0; y += 4) { g.beginPath(); g.moveTo(fx, yF + y); g.lineTo(nx, yN + y); g.stroke(); }
-    g.restore();
-    // the white tape along its top, the centre strap, the posts
-    g.strokeStyle = withAlpha('#ffffff', n ? 0.6 : 0.95); g.lineWidth = 2.4; g.beginPath(); g.moveTo(fx, yF - ph); g.quadraticCurveTo(xn, oy - mh * 2 + ph, nx, yN - ph); g.stroke();
-    g.lineWidth = 2; g.beginPath(); g.moveTo(xn, oy); g.lineTo(xn, oy - mh); g.stroke();
-    g.fillStyle = n ? '#2a3a30' : '#1f4a32'; for (const [px, py] of [[fx, yF], [nx, yN]]) g.fillRect(px - 2, py - ph - 3, 4, ph + 3);
+  }
+  if (xn < w + 40 && (land == null || land < xn - 4 || at == null || at > 0.95)) {
+    // the tape's height across the court: 1.07 m at the posts, 0.914 m where the path crosses
+    const tapeY = (u) => { const y = lerp(yF, yN, u), mid = (oy - yF) / (yN - yF), d = u < mid ? u / mid : (1 - u) / (1 - mid); return y - lerp(ph, mh, Math.max(0, d)); };
+    const half = (u0, u1, a) => {
+      g.beginPath(); g.moveTo(lerp(fx, nx, u0), lerp(yF, yN, u0));
+      for (let i = 0; i <= 12; i++) { const u = lerp(u0, u1, i / 12); g.lineTo(lerp(fx, nx, u), tapeY(u)); }
+      g.lineTo(lerp(fx, nx, u1), lerp(yF, yN, u1)); g.closePath();
+      g.fillStyle = withAlpha(n ? '#0c0e12' : '#1b1d22', a); g.fill();
+      g.save(); g.clip(); g.strokeStyle = withAlpha('#000000', a * 0.8); g.lineWidth = 0.8;
+      for (let i = 0; i <= 14; i++) { const u = lerp(u0, u1, i / 14); g.beginPath(); g.moveTo(lerp(fx, nx, u), lerp(yF, yN, u)); g.lineTo(lerp(fx, nx, u), lerp(yF, yN, u) - ph); g.stroke(); }
+      for (let y = -ph; y < 0; y += 4) { g.beginPath(); g.moveTo(fx, yF + y); g.lineTo(nx, yN + y); g.stroke(); }
+      g.restore();
+      g.strokeStyle = withAlpha('#ffffff', (n ? 0.6 : 0.95) * (a > 0.3 ? 1 : 0.45)); g.lineWidth = 2.4; g.beginPath();
+      for (let i = 0; i <= 12; i++) { const u = lerp(u0, u1, i / 12); g.lineTo(lerp(fx, nx, u), tapeY(u)); } g.stroke();
+    };
+    const mid = (oy - yF) / (yN - yF);
+    // the far half behind the plane of the flight, faint; the near half in front, solid
+    half(0, mid, 0.18);
+    g.fillStyle = n ? '#2a3a30' : '#1f4a32'; g.fillRect(fx - 2, yF - ph - 3, 4, ph + 3);
+    half(mid, 1, 0.5);
+    // the centre strap, where the path crosses: its 0.914 m clearance
+    g.strokeStyle = withAlpha('#ffffff', n ? 0.7 : 1); g.lineWidth = 3; g.beginPath(); g.moveTo(xn, oy); g.lineTo(xn, oy - mh); g.stroke();
+    g.fillStyle = n ? '#2a3a30' : '#1f4a32'; g.fillRect(nx - 2, yN - ph - 3, 4, ph + 3);
     softShadow(g, nx, yN + 1, 8, 2, 0.6);
   }
   if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
@@ -1864,6 +1878,7 @@ function arena(g, c) {
   const rg = g.createLinearGradient(0, 0, 0, horizon); rg.addColorStop(0, '#0e1118'); rg.addColorStop(1, '#232838');
   g.fillStyle = rg; g.fillRect(0, 0, w, horizon);
   const ty = clamp(horizon * 0.14, 16, 60);
+  c.truss = ty + 14;
   g.strokeStyle = '#3a4050'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(0, ty); g.lineTo(w, ty); g.moveTo(0, ty + 14); g.lineTo(w, ty + 14);
   for (let x = 0; x < w; x += 28) { g.moveTo(x, ty); g.lineTo(x + 14, ty + 14); g.lineTo(x + 28, ty); } g.stroke();
   for (let x = 40; x < w; x += 120) {
@@ -1921,17 +1936,15 @@ function arena(g, c) {
   // ── the hoop: the ring through which the engine's path passes, on the way down
   // (the ring and the board drawn at least big enough to read, as the ball is)
   const { x: hx, y: hy, age = -1 } = hoop, R = Math.max(0.225 * k, 11), rimH = Math.max(2.5, R * 0.22);
-  const bx = hx + R * 1.65, bTop = hy - Math.max(0.9 * k, R * 4), bBot = hy + Math.max(0.15 * k, R * 0.6), D = clamp(0.9 * k, 16, 54);
+  const bx = hx + R * 1.65, bTop = hy - Math.max(0.9 * k, R * 4), D = clamp(0.9 * k, 16, 54);
+  // the board's foot stays above where the path passes under it, never through it (rule 4)
+  const under = hoop.at?.(bx - (D / 2) * s), bBot = under == null ? hy + Math.max(0.15 * k, R * 0.6) : clamp(under - Math.max(8, R * 0.7), hy + 3, hy + Math.max(0.15 * k, R * 0.6));
   // the board's face spans the court's depth: a parallelogram, leaning as the lines do
   const face = (x, y0, y1) => { g.beginPath(); g.moveTo(x + (D / 2) * s, y0 - D / 2); g.lineTo(x + (D / 2) * s, y1 - D / 2); g.lineTo(x - (D / 2) * s, y1 + D / 2); g.lineTo(x - (D / 2) * s, y0 + D / 2); g.closePath(); };
-  // the stanchion: a padded arm back from the board to its post, down to its base on the floor
-  const px = bx + clamp(1.4 * k, 26, 80), armY = (bTop + bBot) / 2, steel = n ? '#2a4a7a' : '#2f5fa8';
-  g.strokeStyle = steel; g.lineWidth = clamp(0.14 * k, 5, 10); g.lineCap = 'round';
-  g.beginPath(); g.moveTo(bx + 2, armY); g.lineTo(px, armY - clamp(0.3 * k, 6, 16)); g.moveTo(bx + 2, bBot - 2); g.lineTo(px, armY + clamp(0.4 * k, 8, 20)); g.stroke();
-  g.fillStyle = steel; g.fillRect(px - clamp(0.15 * k, 4, 9), armY - clamp(0.4 * k, 8, 20), clamp(0.3 * k, 8, 18), oy - armY + clamp(0.4 * k, 8, 20));
-  g.fillStyle = withAlpha('#ffffff', 0.25); g.fillRect(px - clamp(0.15 * k, 4, 9) + 2, armY - clamp(0.4 * k, 8, 20), 2, oy - armY);
-  g.fillStyle = n ? '#1a2e50' : '#1e3e70'; g.beginPath(); g.roundRect(px - clamp(0.6 * k, 14, 36), oy - clamp(0.5 * k, 10, 24), clamp(1.2 * k, 28, 72), clamp(0.5 * k, 10, 24), 4); g.fill();
-  softShadow(g, px, oy + 2, clamp(0.8 * k, 18, 48), 4, 0.7);
+  // the rig: hung from the roof trusses on two steel rods and a brace, nothing on the floor in the way
+  const steel = n ? '#3a4a6a' : '#5a6478', roof = c.truss ?? 24;
+  g.strokeStyle = steel; g.lineWidth = clamp(0.06 * k, 2.5, 5); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(bx + (D / 2) * s, bTop - D / 2); g.lineTo(bx + (D / 2) * s, roof); g.moveTo(bx - (D / 2) * s, bTop + D / 2); g.lineTo(bx - (D / 2) * s + 6, roof); g.moveTo(bx, bTop); g.lineTo(bx + clamp(1.2 * k, 24, 70), roof); g.stroke();
   // the backboard: a dark backing behind clear glass, a white frame and its target square
   face(bx, bTop, bBot); g.fillStyle = withAlpha('#0e1118', 0.55); g.fill(); g.fillStyle = withAlpha('#dfe8f0', 0.3); g.fill();
   g.strokeStyle = '#f6f8fa'; g.lineWidth = 2.5; g.stroke();
@@ -1947,7 +1960,7 @@ function arena(g, c) {
   g.strokeStyle = '#1b1d22'; g.lineWidth = rimH + 2; g.beginPath(); g.ellipse(hx, hy, R, R * 0.3, 0, 0, TAU); g.stroke();
   g.strokeStyle = '#d23a3c'; g.lineWidth = rimH; g.stroke();
   g.lineWidth = Math.max(2.5, rimH); g.beginPath(); g.moveTo(hx + R, hy); g.lineTo(bx - 1, hy); g.stroke();
-  c.reserve?.({ x: hx - R - 4, y: bTop - D / 2 - 4, w: px - hx + R + 20, h: hy + drop - bTop + D / 2 + 8 });
+  c.reserve?.({ x: hx - R - 4, y: bTop - D - 4, w: bx - hx + R + D + 12, h: hy + drop - bTop + D + 8 });
 }
 
 /** A castle: its curtain wall to the battlements it is thrown from, a keep
@@ -1963,19 +1976,20 @@ function castle(g, c) {
   for (let x = 0; x <= w; x += 40) g.lineTo(x, horizon - 18 - Math.sin(x * 0.006 + 1) * 14 - Math.sin(x * 0.017) * 6);
   g.lineTo(w, horizon); g.closePath(); g.fill();
   const vx = clamp(x0 + (w - x0) * 0.62, w * 0.5, w - 70);
-  for (let i = 0; i < 6; i++) { const hx = vx + i * 14 - 40, hw = 10 + r() * 6, hh = 7 + r() * 5; g.fillStyle = n ? '#5a5a62' : '#e8e0d0'; g.fillRect(hx, horizon - hh, hw, hh); g.fillStyle = n ? '#3a2e30' : '#8a4a3a'; g.beginPath(); g.moveTo(hx - 1, horizon - hh); g.lineTo(hx + hw / 2, horizon - hh - 5); g.lineTo(hx + hw + 1, horizon - hh); g.closePath(); g.fill(); }
+  for (let i = 0; i < 6; i++) { const hx = vx + i * 14 - 40, hw = 10 + r() * 6, hh = 7 + r() * 5; g.fillStyle = n ? '#5a5a62' : '#e8e0d0'; g.fillRect(hx, horizon - hh, hw, hh); g.fillStyle = n ? '#3a3e48' : '#5a6070'; g.beginPath(); g.moveTo(hx - 1, horizon - hh); g.lineTo(hx + hw / 2, horizon - hh - 5); g.lineTo(hx + hw + 1, horizon - hh); g.closePath(); g.fill(); }
   g.fillStyle = n ? '#6a6a72' : '#d8d0c0'; g.fillRect(vx + 46, horizon - 22, 8, 22); g.beginPath(); g.moveTo(vx + 45, horizon - 22); g.lineTo(vx + 50, horizon - 40); g.lineTo(vx + 55, horizon - 22); g.closePath(); g.fill();
+  c.reserve?.({ x: vx - 42, y: horizon - 42, w: 100, h: 44 });
   grass(g, 0, w, horizon, h);
   // the moat at the wall's foot, when it lands beyond it
   const land = (c.clearX || [])[0] ?? w, mw = clamp(5 * k, 24, 110), wet = H0 > 0 && land > x0 + mw + 24;
   if (wet) {
-    // it runs along the wall's foot, into the distance: wide near us, narrower far off
-    const yf = lerp(horizon, oy, 0.55), nearW = mw * 1.25, farW = mw * 0.6;
-    g.save(); g.beginPath(); g.moveTo(x0, yf); g.lineTo(x0 + farW, yf); g.lineTo(x0 + nearW, h); g.lineTo(x0, h); g.closePath(); g.clip();
-    water(g, x0 - 4, x0 + nearW + 4, yf, h, { phase });
+    // cut away in section, as the well is: a ditch at the wall's foot, its water a little below the field
+    const dep = clamp(2.5 * k, 10, 44), lip = Math.max(3, dep * 0.15);
+    g.fillStyle = n ? '#2e261e' : '#6a5038'; g.beginPath(); g.moveTo(x0, oy); g.lineTo(x0 + mw, oy); g.quadraticCurveTo(x0 + mw - 2, oy + dep, x0 + mw * 0.5, oy + dep + 3); g.quadraticCurveTo(x0 + 2, oy + dep, x0, oy + dep * 0.6); g.closePath(); g.fill();
+    g.save(); g.beginPath(); g.moveTo(x0, oy + lip); g.lineTo(x0 + mw - 3, oy + lip); g.quadraticCurveTo(x0 + mw - 5, oy + dep - 2, x0 + mw * 0.5, oy + dep); g.quadraticCurveTo(x0 + 3, oy + dep - 2, x0, oy + dep * 0.55); g.closePath(); g.clip();
+    water(g, x0 - 4, x0 + mw + 4, oy + lip, oy + dep + 4, { phase });
     g.restore();
-    g.strokeStyle = n ? '#2a2e22' : '#5a6a3a'; g.lineWidth = 3; g.beginPath(); g.moveTo(x0 + farW, yf); g.lineTo(x0 + nearW, h); g.stroke();
-    g.strokeStyle = withAlpha('#ffffff', 0.35); g.lineWidth = 1; g.beginPath(); g.moveTo(x0 + 2, yf); g.lineTo(x0 + 2, h); g.stroke();
+    g.strokeStyle = withAlpha('#ffffff', 0.45); g.lineWidth = 1; g.beginPath(); g.moveTo(x0 + 1, oy + lip); g.lineTo(x0 + mw - 3, oy + lip); g.stroke();
   }
   if (!(H0 > 0)) return;
   const H = oy - top, stoneCol = n ? '#6a665e' : '#c8bca6', course = clamp(0.5 * k, 5, 14);
@@ -1995,15 +2009,21 @@ function castle(g, c) {
   // the curtain wall: battered at its foot, its stones, the gateway
   const ww = clamp(H * 1.1, 60, x0 + 4), plinth = clamp(H * 0.12, 6, 40);
   stone(g, x0 - ww, top, ww, oy - top, { course, color: stoneCol, seed: 43 });
-  g.fillStyle = n ? '#5a564e' : '#b0a48e'; g.beginPath(); g.moveTo(x0 - ww, oy - plinth); g.lineTo(x0, oy - plinth); g.lineTo(x0 + plinth * 0.35, oy); g.lineTo(x0 - ww, oy); g.closePath(); g.fill();
+  g.fillStyle = n ? '#5a564e' : '#b0a48e'; g.beginPath(); g.moveTo(x0 - ww, oy - plinth); g.lineTo(x0 - plinth * 0.35, oy - plinth); g.lineTo(x0, oy); g.lineTo(x0 - ww, oy); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1; g.beginPath(); g.moveTo(x0 - ww, oy - plinth); g.lineTo(x0 - plinth * 0.35, oy - plinth); g.lineTo(x0, oy); g.stroke();
   const gw = clamp(3 * k, 20, 60), gh = Math.min(H * 0.4, gw * 1.3), gx = x0 - ww * 0.55;
   if (gx - gw / 2 > 4) {
     g.fillStyle = '#14161a'; g.beginPath(); g.moveTo(gx - gw / 2, oy); g.lineTo(gx - gw / 2, oy - gh + gw / 2); g.arc(gx, oy - gh + gw / 2, gw / 2, Math.PI, 0); g.lineTo(gx + gw / 2, oy); g.closePath(); g.fill();
     g.strokeStyle = withAlpha('#3a3026', 0.9); g.lineWidth = 1.5; for (let x = gx - gw / 2 + 4; x < gx + gw / 2; x += 6) { g.beginPath(); g.moveTo(x, oy - gh + gw * 0.3); g.lineTo(x, oy - gh * 0.45); g.stroke(); }
   }
   // arrow slits down the wall
-  g.fillStyle = '#1b1d22';
-  for (let j = 0; j < Math.floor(H / 40); j++) for (const u of [0.2, 0.85]) { const sx = x0 - ww * u; if (sx > 4) g.fillRect(sx - 1.5, top + 20 + j * 40, 3, clamp(0.9 * k, 8, 20)); }
+  const sl = clamp(0.9 * k, 10, 22);
+  for (const [u, v] of [[0.3, 0.22], [0.62, 0.38], [0.82, 0.18]]) {
+    const sx = x0 - ww * u, sy = top + H * v;
+    if (sx < 6 || sx > x0 - 20 || sy + sl > oy - plinth - 4 || Math.abs(sx - (x0 - ww * 0.55)) < 14 && sy + sl > oy - H * 0.45) continue;
+    g.fillStyle = withAlpha('#ffffff', n ? 0.08 : 0.35); g.fillRect(sx - 4, sy - 3, 8, sl + 6);
+    g.fillStyle = '#1b1d22'; g.fillRect(sx - 1.5, sy, 3, sl); g.fillRect(sx - 3.5, sy + sl * 0.4, 7, 2);
+  }
   // the battlements: merlons along the top, a gap (a crenel) at the front edge it leaves from
   const mH = clamp(0.9 * k, 7, 24), mW = clamp(0.8 * k, 7, 20);
   g.fillStyle = stoneCol;

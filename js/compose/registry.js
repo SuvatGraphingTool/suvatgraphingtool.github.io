@@ -198,7 +198,7 @@ export const EFFECTS = {
   bubbles: { label: 'bubbles', what: 'something heavy sinking after it goes into water' },
   net:    { label: 'a goal net', what: 'a goal where it lands: its net bulges as the ball meets it' },
   burst:  { label: 'a firework burst', what: 'at the top of a firework’s flight' },
-  chalk:  { label: 'a puff of chalk', what: 'a tennis ball landing on a court: chalk kicked up, its mark left' },
+  chalk:  { label: 'a ball mark', what: 'a tennis ball landing on a court: its mark left, and a puff of chalk when it lands on a line' },
 };
 
 /** How it moves. `kit` is the library kit whose engine, boxes, working,

@@ -242,7 +242,7 @@ function launch(canvas, o) {
       : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? (carried ? carrierSize(R.carrier, k, w).s * 0.6 : Math.max(26, 0.75 * k) * 1.4)
       : R.backdrop === 'table' ? tableW(k, w) + 20 : R.backdrop === 'well' ? 90
       : R.backdrop === 'city' && H0 > 0 ? cityWidth(H0, k, w) + 30
-      : LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k) * (R.launcher === 'ramp' ? 1.6 : 1.3) : 0;
+      : LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k, H0) * (R.launcher === 'ramp' ? 1.6 : 1.3) : 0;
     // a person stands upright on the edge before the off: room for all of them
     const upright = movers.some((m) => m.kind === 'diver' || m.kind === 'skateboarder');
     const head = (thrown && !byHand ? TH(k) : size(k) * (upright ? 1.05 : 0.6)) + 16 - (yTop - H0) * k;
@@ -278,14 +278,14 @@ function launch(canvas, o) {
   const clearX = [...movers.map((m) => X(m.f.pos(m.f.tMax).x)), w - 60];
   // a launcher on level ground stands on it and reaches up to where it lets go:
   // a ramp always, a cannon or a catapult up to its own height; no wall is drawn
-  const ls = LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k) : 0;
+  const ls = LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k, H0) : 0;
   // (a cannon is dug in where it fires from: on the ground, or on the wall it fires from)
   const grounded = !!ls && !B.edge && H0 > 0 && R.launcher !== 'cannon' && (R.launcher === 'ramp' || H0 * k <= ls * 2.4);
   // how high the lead's path is where it crosses x (a net across a court), or null
   const over = (x) => { const p = lead.pts; for (let j = 1; j < p.length; j++) if ((p[j - 1].x - x) * (p[j].x - x) <= 0 && p[j].x !== p[j - 1].x) return p[j - 1].y + (p[j].y - p[j - 1].y) * (x - p[j - 1].x) / (p[j].x - p[j - 1].x); return null; };
   // a hoop at the height a part asks about, where the engine passes it on the way down (rule 4)
   const lvl = lead.f.level, tDown = lvl?.times?.length ? lvl.times[lvl.times.length - 1] : null;
-  const hoop = R.backdrop === 'arena' && lvl && lvl.xDown != null && tDown != null && !lvl.atTop ? { x: X(lvl.xDown), y: Y(lvl.L), age: lead.t >= tDown ? lead.t - tDown : -1 } : null;
+  const hoop = R.backdrop === 'arena' && lvl && lvl.xDown != null && tDown != null && !lvl.atTop ? { x: X(lvl.xDown), y: Y(lvl.L), age: lead.t >= tDown ? lead.t - tDown : -1, at: (cx) => { const y = over((cx - X(0)) / k); return y == null ? null : Y(y); } } : null;
   scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, hoop });
 
   // ── the height it starts at, as a dimension line beside the place
@@ -317,7 +317,7 @@ function launch(canvas, o) {
       if (t < tc - 1e-9) continue;
       const q = lead.f.pos(tc);
       dot(g, X(q.x), Y(q.y), 7, { stroke: P.mark, width: 2.4 });
-      L.add(T`t = ${sig3(tc)} [s]`, X(q.x) + 12, Y(q.y) - 16, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 });
+      const left = R.backdrop === 'arena'; L.add(T`t = ${sig3(tc)} [s]`, X(q.x) + (left ? -14 : 12), Y(q.y) - 16, { color: P.mark, align: left ? 'right' : 'left', pri: 8, size: 14, weight: 700 });
     }
   }
 
@@ -439,7 +439,7 @@ function launch(canvas, o) {
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
       else if (e === 'net' || e === 'swish') continue;
       // a tennis ball on a line: a puff of chalk off the court, its mark left
-      else if (e === 'chalk' && !wet) later.push(() => chalk(g, lx, oy, age, life, { size: clamp(k / 14, 1, 2.4) }));
+      else if (e === 'chalk' && !wet) chalk(g, lx, oy, age, life, { size: clamp(k / 14, 1, 2.4), puff: R.backdrop === 'court' && [0, 5.485, 18.285, 23.77].some((d) => Math.abs(end.x - d) <= 0.05) });
       // gone under: it sinks away and bubbles come up where it went in
       else if (e === 'bubbles' && wet) bubbles(g, lx - (small ? 10 : 0), oy, age, life, { size: clamp((small ? 12 : size(k, piece)) / 14, phone ? 0.8 : 1.1, 3), depth: clamp((h - oy) * 0.7, 30, 160) });
       // a vehicle down hard on dry ground: tyre marks and smoke as it brakes
@@ -463,7 +463,7 @@ function launch(canvas, o) {
       // a fielder dives and takes it just above the ground
       else if (e === 'catch') continue;
       else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
-      else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: clamp(k / 14, 1, 3), egg: kind === 'egg' }); g.restore(); }
+      else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: kind === 'egg' ? clamp(k / 45, 0.5, 1.2) : clamp(k / 14, 1, 3), egg: kind === 'egg' }); g.restore(); }
       else if (e === 'crack') crack(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
     }
     if (!f.vertical) {
@@ -541,7 +541,7 @@ function launch(canvas, o) {
       else if (piece.prop) {
         // a ball to scale, never smaller than reads; resting on the turf or the
         // tee one radius up before it is struck and once it has landed
-        const ball = BALLS.has(kind), Rp = clamp(k * piece.m * 0.5, ball ? (kind === 'golfBall' ? 3.5 : 4) : 7, POINTED.has(kind) || kind === 'discus' || kind === 'frisbee' ? 13 : 10);
+        const ball = BALLS.has(kind), Rp = kind === 'bullet' ? 5 : clamp(k * piece.m * 0.5, ball ? (kind === 'golfBall' ? 3.5 : 4) : kind === 'dart' ? 11 : 7, POINTED.has(kind) || kind === 'discus' || kind === 'frisbee' ? 13 : 10);
         const lift = ball && !aloft && !(landed && wet) ? Rp : 0;
         // pointed along its flight, and a dart stuck point first where it lands
         const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), dig = landed && kind === 'dart' ? Rp * 0.75 : 0;

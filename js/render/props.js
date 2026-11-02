@@ -168,14 +168,15 @@ function raindrop(g, x, y, R) {
 
 /** A discus: a flat disc seen almost edge on, tipped up a little, its steel
     rim catching the light and its dark centre plate, the glint turning. */
-function discus(g, x, y, R, spin) {
-  g.save(); g.translate(x, y); g.rotate(-0.25);
+function discus(g, x, y, R, spin, { ang = -0.4 } = {}) {
+  g.save(); g.translate(x, y); g.rotate(ang * 0.6);
   const gr = g.createLinearGradient(0, -R * 0.4, 0, R * 0.4); gr.addColorStop(0, '#e8eaee'); gr.addColorStop(0.5, '#9aa0a8'); gr.addColorStop(1, '#4a4e56');
   g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, R, R * 0.36, 0, 0, TAU); g.fill();
   g.fillStyle = '#2b2a2e'; g.beginPath(); g.ellipse(0, -R * 0.03, R * 0.62, R * 0.2, 0, 0, TAU); g.fill();
   g.fillStyle = '#b8bcc2'; g.beginPath(); g.ellipse(0, -R * 0.05, R * 0.18, R * 0.07, 0, 0, TAU); g.fill();
   const q = Math.cos(spin * 3); g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.ellipse(q * R * 0.7, -R * 0.2, R * 0.16, R * 0.05, 0, 0, TAU); g.fill();
   g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = Math.max(1, R * 0.1); g.beginPath(); g.ellipse(0, 0, R, R * 0.36, 0, 0, TAU); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,0.75)'; g.lineWidth = 1; g.beginPath(); g.ellipse(0, 0, R + 1.5, R * 0.36 + 1.5, 0, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
   g.restore();
 }
 /** A frisbee: a yellow flying disc, its domed top lit, the lip's shadow
@@ -200,11 +201,11 @@ function dart(g, x, y, R, spin, { ang = 0 } = {}) {
   along(g, x, y, ang, () => {
     g.strokeStyle = '#c8ccd2'; g.lineWidth = Math.max(1, R * 0.08); g.beginPath(); g.moveTo(L * 0.25, 0); g.lineTo(L * 0.5, 0); g.stroke();
     const gr = g.createLinearGradient(0, -R * 0.14, 0, R * 0.14); gr.addColorStop(0, '#d8dce2'); gr.addColorStop(1, '#4a4e56');
-    g.fillStyle = gr; g.beginPath(); g.roundRect(-L * 0.08, -R * 0.13, L * 0.34, R * 0.26, R * 0.08); g.fill();
-    g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 0.8; for (let i = 0; i < 5; i++) { const xx = -L * 0.04 + i * L * 0.055; g.beginPath(); g.moveTo(xx, -R * 0.13); g.lineTo(xx, R * 0.13); g.stroke(); }
+    const bt = Math.max(1.6, R * 0.13); g.fillStyle = gr; g.beginPath(); g.roundRect(-L * 0.08, -bt, L * 0.34, bt * 2, bt * 0.6); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 0.8; for (let i = 0; i < 5; i++) { const xx = -L * 0.04 + i * L * 0.055; g.beginPath(); g.moveTo(xx, -bt); g.lineTo(xx, bt); g.stroke(); }
     g.strokeStyle = '#2b2a2e'; g.lineWidth = Math.max(1.2, R * 0.1); g.beginPath(); g.moveTo(-L * 0.08, 0); g.lineTo(-L * 0.38, 0); g.stroke();
     g.fillStyle = '#2f5fa8'; g.strokeStyle = '#173a70'; g.lineWidth = 1;
-    for (const sgn of [-1, 1]) { g.beginPath(); g.moveTo(-L * 0.22, 0); g.lineTo(-L * 0.42, sgn * R * 0.5); g.lineTo(-L * 0.5, sgn * R * 0.5); g.lineTo(-L * 0.46, 0); g.closePath(); g.fill(); g.stroke(); }
+    for (const sgn of [-1, 1]) { g.beginPath(); g.moveTo(-L * 0.18, 0); g.lineTo(-L * 0.44, sgn * R * 0.75); g.lineTo(-L * 0.55, sgn * R * 0.75); g.lineTo(-L * 0.5, 0); g.closePath(); g.fill(); g.stroke(); }
   });
 }
 /** A shuttlecock: the cork nose in its white cap leading, the skirt of
