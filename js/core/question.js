@@ -278,11 +278,14 @@ export function toApp(x) {
     // "its distance from O after 6 s": a time the question asks about
     const at = isNum(x.atTime) && x.atTime > 0 && mark == null ? x.atTime : undefined;
     if (at != null) put('at', at, 'given');
+    // "50 m during the fifth second": the distance in one second, not the five's s and t
+    const nth = isNum(x.nthSecond) && Number.isInteger(x.nthSecond) && x.nthSecond >= 1 && isNum(x.sInSecond) ? { n: x.nthSecond, s: x.sInSecond } : undefined;
+    if (nth) { delete given.s; delete given.t; for (let i = items.length - 1; i >= 0; i--) if (['s', 't'].includes(items[i].k)) items.splice(i, 1); put('nth', nth.s, 'given', { n: nth.n }); }
     // What is moving, so the stage can draw it: the reader's own word for it,
     // or the first traveller its summary names. Lorry when it names none.
     const who = travellerIn(`${typeof x.object === 'string' ? x.object : ''} ${typeof x.summary === 'string' ? x.summary : ''}`);
     return {
-      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, at, who, items, notes,
+      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, at, nth, who, items, notes,
       asks: Array.isArray(x.asks) ? x.asks.filter((q) => typeof q === 'string').slice(0, 6) : [],
       summary: typeof x.summary === 'string' ? x.summary : '',
       confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium',

@@ -228,7 +228,7 @@ function lanes(x) {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(atTimed(timed(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words)), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(atTimed(timed(nthSecond(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words), words)), words);
 }
 
 /**
@@ -294,6 +294,22 @@ function timed(x, words) {
   const all = [...String(words || '').matchAll(/(\d+(?:\.\d+)?)\s*(?:s|secs?|seconds)\b(?!\s*[²2^-])/gi)].map((m) => Number(m[1]));
   const t = [...new Set(all)];
   return t.length === 1 && t[0] > 0 ? { ...x, t: t[0] } : x;
+}
+
+/**
+ * "It travels 50 m during the fifth second": the distance in one second, never
+ * 50 m in 5 s. A small reader writes s = 50 and t = 5; they become
+ * nthSecond and sInSecond, for the road to work u + a(n − ½).
+ */
+const ORD = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10 };
+function nthSecond(x, words) {
+  if (x?.scenario !== 'road' || x.nthSecond != null) return x;
+  const m = /\b(?:during|in) the (\d+)(?:st|nd|rd|th)? second\b|\b(?:during|in) the (first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth) second\b/i.exec(String(words || ''));
+  if (!m) return x;
+  const n = m[1] ? Number(m[1]) : ORD[m[2].toLowerCase()];
+  if (!(n >= 1) || !(typeof x.s === 'number')) return x;
+  const { s, t, ...rest } = x;
+  return { ...rest, nthSecond: n, sInSecond: s };
 }
 
 /**

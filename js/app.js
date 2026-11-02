@@ -431,6 +431,7 @@ function chooseScenario(id, { example = false } = {}) {
   state.descent = {};
   state.mark = undefined;            // the point a road question times it at
   state.atTime = undefined;          // or the time it asks about
+  state.nth = undefined;             // or a distance in one second: { n, s }
   state.who = 'lorry';               // and what it is that moves along the road
   state.kit = {};                    // a library scenario's own boxes
   state.runs = null; state.part = -1; state.stopAt = null;   // a question in parts, see js/parts/
@@ -1185,7 +1186,7 @@ function recomputeOne() {
 function recomputeRoad() {
   const g = state.given;
   const fig = FIGURES[state.who] || FIGURES.lorry;
-  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, at: state.atTime, who: fig.noun, brakes: fig.brakes, turns: !!fig.turns });
+  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, at: state.atTime, nth: state.nth?.n, sNth: state.nth?.s, who: fig.noun, brakes: fig.brakes, turns: !!fig.turns });
   const msg = $('solve-msg'), btn = $('launch');
   if (!solved.ok) {
     if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
@@ -3458,7 +3459,7 @@ function readOne(x, { graph = true, solve = false } = {}) {
   if (r.markers.heightLine != null && state.markers) state.markers.heightLine = r.markers.heightLine;
   if (r.markers.target && state.markers) state.markers.target = r.markers.target;
   if (scenario.descent) state.descent = { ...r.descent };
-  if (scenario.road) { state.mark = r.mark; state.atTime = r.at; state.who = r.who || 'lorry'; }
+  if (scenario.road) { state.mark = r.mark; state.atTime = r.at; state.nth = r.nth; state.who = r.who || 'lorry'; }
   buildValuesScreen();              // which recomputes
   // The answer is shown in the chat, where the question was asked (js/ai/
   // ask.js opens it); the flight waits for the student to ask for it.

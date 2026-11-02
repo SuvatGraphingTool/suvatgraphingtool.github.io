@@ -114,7 +114,22 @@ export function timeToReach(f, s1) {
  * @returns the shape of solveLaunch: { ok, reason?, mode, params, f, derived,
  *          notes, five, extras, moment, convention, steps, ... }
  */
-export function solveRoad(k = {}) {
+export function solveRoad(k0 = {}) {
+  let k = k0;
+  // "50 m during the fifth second": s(n) − s(n − 1) = u + a(n − ½). With u (or a)
+  // that is a, and the motion is the five to t = n
+  let nthRows = null;
+  if (have(k.nth) && k.nth >= 1 && Number.isInteger(k.nth) && have(k.sNth)) {
+    const n = k.nth, hn = n - 0.5;
+    if (have(k.u) === have(k.a)) {
+      return { ok: false, reason: `A distance in one second fixes one more number: give the speed it starts with, or its acceleration — not ${have(k.u) ? 'both' : 'neither'}.`, derived: [], notes: [], given: [], used: [], spare: [], clash: [] };
+    }
+    const uu = have(k.u) ? k.u : snap(k.sNth - k.a * hn), aa = have(k.a) ? k.a : snap((k.sNth - k.u) / hn);
+    nthRows = [
+      { f: M`s_${n} - s_${n - 1} = u + a(n - ½)`, s: have(k.u) ? M`${d(k.sNth)} = ${d(uu)} + a(${n} - ½)` : M`${d(k.sNth)} = u + ${sb(aa)}(${n} - ½)`, r: have(k.u) ? eqv('a', aa) : eqv('u', uu) },
+    ];
+    k = { u: uu, a: aa, t: n, mark: k.mark, at: k.at, who: k.who, brakes: k.brakes, turns: k.turns };
+  }
   const given = FIVE.filter((x) => have(k[x]));
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [], given, used: [], spare: [], clash: [] });
 
@@ -219,8 +234,9 @@ export function solveRoad(k = {}) {
                   { key: 'vMark', label: moment.mid ? 'speed at the mid-point' : 'speed there', value: moment.v, unit: 'm s⁻¹' }] : []),
   ].filter((x) => isFinite(x.value));
 
+  if (nthRows) derived.unshift(`${M`${d(k0.sNth)} [m]`} in second ${k0.nth}: ${nthRows[0].r}`);
   return {
-    ok: true, mode: 'road', axis: 'along', params: f.params, f,
+    ok: true, mode: 'road', axis: 'along', params: f.params, f, nthRows, nth: nthRows ? k0.nth : undefined,
     derived, notes, five, extras, moment, answer: null, steps: r.steps, markStep,
     given, used: use, spare, clash: [], filled: {}, altTheta: null, assumedH: false,
     convention: 'Taking the direction from A towards B as positive.',
@@ -232,11 +248,16 @@ export function solveRoad(k = {}) {
    leaves out what nobody asked about, the rearrangement, and the numbers. */
 export function roadWorking(solved) {
   if (!solved?.ok) return [];
-  const out = [{
+  const out = solved.nthRows ? [{
+    title: `The distance in second ${solved.nth}`,
+    rows: solved.nthRows,
+    note: `In second ${solved.nth} it goes from ${M`t = ${solved.nth - 1}`} to ${M`t = ${solved.nth}`}: the distance then is ${M`s(n) - s(n - 1)`}, which comes to ${M`u + a(n - ½)`}.`,
+  }] : [];
+  out.push({
     title: 'Three of the five',
     rows: solved.used.map((x) => ({ f: NAMES[x].replace(/^./, (c) => c.toUpperCase()), s: eqv(x, solved.params[x]) })),
     note: 'Three is enough: each equation leaves one of the five out, so there is always one with a single unknown.',
-  }];
+  });
   for (const st of solved.steps) {
     out.push({
       title: `${NAMES[st.target].replace(/^./, (c) => c.toUpperCase())}, from ${st.formula}`,

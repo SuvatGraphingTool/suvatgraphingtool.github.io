@@ -51,6 +51,8 @@ export const EXTRACTION_SCHEMA = {
     a: { type: 'number', description: 'road only: the acceleration in m/s². NEGATIVE when it is slowing down (braking, decelerating, retarding). Only if given.' },
     atMidpoint: { type: 'boolean', description: 'road only: true if a part asks about the mid-point between the two points.' },
     atDisplacement: { type: 'number', description: 'road only: a distance from the first point that a part asks about (not the mid-point).' },
+    nthSecond: { type: 'integer', description: 'road only: "it travels 50 m during the fifth second" — the second, 5 (then s and t are left out).' },
+    sInSecond: { type: 'number', description: 'road only, with nthSecond: the distance travelled in that one second, 50.' },
     atTime: { type: 'number', description: 'road only: a time from the first point that a part asks about, other than t itself ("its distance from O 6 s after passing O").' },
     apexAboveLaunch: { type: 'number', description: 'Greatest height ABOVE THE LAUNCH POINT, if GIVEN.' },
 

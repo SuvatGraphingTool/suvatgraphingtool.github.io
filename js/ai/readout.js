@@ -28,6 +28,7 @@ function valueHTML(it) {
     case 't': return M`t = ${num(x, 2, { trim: true })} [s]`;
     case 'g': return M`g = ${num(x, 2, { trim: true })} [m s^-2]`;
     case 'a': return M`a = ${num(x, 2, { trim: true })} [m s^-2]`;
+    case 'nth': return `${M`${num(x, 2, { trim: true })} [m]`} in second ${it.n}`;
     case 'at': return `asks about ${M`t = ${num(x, 2, { trim: true })} [s]`}`;
     case 'mark': return it.mid ? 'times it at the mid-point' : `times it at ${M`${num(x, 2, { trim: true })} [m]`} from the start`;
     case 'h': return M`h = ${num(x, 2, { trim: true })} [m]`;

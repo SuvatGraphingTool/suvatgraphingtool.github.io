@@ -637,7 +637,7 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(light.library === 'journey-stages' && light.boxes.k1 === 'hold' && light.boxes.t1 === 0.6 && light.boxes.k2 === 'down' && light.boxes.a2 === 6 && light.boxes.v2 === 0 && light.boxes['at.s'] === 50, 'a reaction time, then braking: two stages, steady then braking to rest, timed at the light');
   const JK = KITS[byId('journey-stages').kit], jv = JK.solve(JK.read(light.boxes));
   ok(jv.ok && Math.abs(jv.J.D - 53.533) < 1e-3, 'and it needs 53.53 m: it does not stop before the light');
-  const { solveRoad } = await import('../js/core/road.js');
+  const { solveRoad, roadWorking } = await import('../js/core/road.js');
   ok(/stops before it has gone/.test(solveRoad({ u: 22, a: -6, s: 50 }).reason) && /40\.33/.test(solveRoad({ u: 22, a: -6, s: 50 }).reason), 'braking that stops short of the distance says where it stops, not that the three do not fix it');
   ok(one('road', 'how long does it take')?.find === 'five.t.value' && one('road', 'how long to the mid-point')?.find === 'moment.t', 'a road\'s "how long" is its whole time, unless a mid-point is asked about');
   ok(one('up', 'when it hits the floor')?.find === 'f.tFlight', '"when it hits the floor" is the time it lands');
@@ -707,6 +707,15 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(jv2.ok && jv2.J.tUp === 8 && Math.abs(jv2.J.aDown - 1.06383) < 1e-4 && jv2.J.tHold === 30, '8 s speeding up, 1.06 m s⁻² slowing down');
   ok(one('up', 'time more than 19.6 m above O')?.find === 'above.above' && one('up', 'time of flight')?.find === 'f.tFlight', 'the time above a line is the line’s own answer; the time of flight stays the flight');
   ok(one('up', 'time to return to the same height')?.find === 'f.tFlight', '"time to return" is the time it lands');
+  // round 10 (hand-written): the fifth second, a speed of projection, the speed at the top
+  const fifth = toPlace({ understood: true, scenario: 'road', summary: 'x', u: 0, s: 50, t: 5 }, 'A car starts from rest and moves with constant acceleration. It travels 50 m during the fifth second of its motion. Find its acceleration.');
+  ok(fifth.nthSecond === 5 && fifth.sInSecond === 50 && fifth.s == null && fifth.t == null, '"50 m during the fifth second" is the distance in one second, never 50 m in 5 s');
+  const fr = solveRoad({ u: 0, nth: 5, sNth: 50 });
+  ok(fr.ok && Math.abs(fr.params.a - 100 / 9) < 1e-9 && roadWorking(fr)[0].title === 'The distance in second 5', 'u + a(n − ½) gives a = 11.11 m s⁻², worked first');
+  const fapp = toApp({ ...fifth });
+  ok(fapp.nth?.n === 5 && fapp.given.s == null && fapp.given.t == null, 'the page reads it, with no s or t of its own');
+  ok(one('from-a-height', 'speed of projection')?.find === 'params.u' && one('from-a-height', 'speed as it hits the sea')?.find === 'vL', 'a speed of projection is the speed it is thrown with, never the speed it lands at');
+  ok(one('arc', 'speed at the highest point')?.find === 'f.ux' && one('arc', 'range')?.find === 'f.range', 'the speed at the top is the horizontal part; "range" is a distance');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

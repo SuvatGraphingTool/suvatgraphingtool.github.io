@@ -885,6 +885,8 @@ export const LIBRARY = [
     ],
     answers: [
       { kind: 'distance', say: 'how far out it lands, horizontally, from below where it was thrown', find: 'out', sym: 'x', unit: 'm', trim: true, at: 'end', step: 'horizontal' },
+      // "the speed with which it was thrown": found from where it lands, the time or the speed it lands at
+      { kind: 'speed', say: 'the speed it is thrown with (the speed of projection)', find: 'params.u', sym: 'u', unit: 'm s^-1', trim: true, at: 0, example: { place: 'tower', h: 45, theta: 0, s: 30, g: 9.81 } },
       // a hoop, a basket or a target at a height: where it passes it, on the way down
       { kind: 'distance', say: 'how far out it is when it is at the height asked, on its way down: the hoop, the basket or the target', find: 'level.xDown', sym: 'x', unit: 'm', trim: true, at: 'level.times.1', when: '\\b(hoop|basket|ring|target|bull)|\\bway down\\b|\\d m (above|high|up)\\b', example: { place: 'tower', h: 2.1, u: 8, theta: 50, level: 0.95, g: 9.81 } },
       // "hits the water 2.5 s later: how deep is the well"

@@ -20,6 +20,8 @@ export const LAUNCH_ANSWERS = [
   { key: 'range', kind: 'distance', say: 'horizontal distance to where it lands', find: 'f.range', sym: 'x', unit: 'm', at: 'end', step: 'horizontal' },
   { key: 'vLand', kind: 'speed', say: 'speed as it lands', find: 'f.vLanding', unit: 'm s^-1', at: 'end', step: 'time of flight' },
   { key: 'u', kind: 'speed', say: 'speed of projection', find: 'params.u', sym: 'u', unit: 'm s^-1', at: 0 },
+  // at the top of its path it moves only across: the horizontal part of its velocity
+  { key: 'vTop', kind: 'speed', say: 'speed at its highest point (the top of its path)', find: 'f.ux', sym: 'v', unit: 'm s^-1', at: 'f.tApex' },
   { key: 'theta', kind: 'angle', say: 'angle of projection', find: 'params.theta', sym: 'theta', suffix: '°', dp: 1, at: 0 },
   // "the total time for which it is more than 19.6 m above O": the line's own answer
   { key: 'above', kind: 'time', say: 'how long it spends above the height asked about (more than so many metres up)', find: 'above.above', sym: 't', unit: 's', at: 'above.t2', when: '\\b(above|more than|higher than|over)\\b' },
@@ -89,7 +91,7 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
 const STOP = new Set(['what', 'when', 'where', 'which', 'find', 'from', 'that', 'this', 'with', 'their', 'there', 'they', 'does', 'will', 'into', 'than', 'then', 'show', 'value', 'time', 'speed', 'height', 'distance', 'ball', 'particle']);
 
 // "how long is the ramp" is a distance; "how long until it lands" a time
-const HOW = [[/\bhow (high|tall|deep)\b/, 'height'], [/\bhow far\b/, 'distance'], [/\bhow (fast|quickly)\b/, 'speed'],
+const HOW = [[/\bhow (high|tall|deep)\b/, 'height'], [/\brange\b/, 'distance'], [/\bhow far\b/, 'distance'], [/\bhow (fast|quickly)\b/, 'speed'],
   [/\bhow long (is|was) (the|a|an)\b/, 'distance'], [/\bhow long\b|\bhow many seconds\b/, 'time']];
 
 export function fromReader(id, raw, boxes = []) {
@@ -115,7 +117,7 @@ export function fromReader(id, raw, boxes = []) {
         && (!(a.part || a).when || new RegExp((a.part || a).when, 'i').test(words)));
       // "how far away is the hoop": the hoop's distance, never where it lands — unless the answer is about a hoop
       const thing = /\bhow far away (?:is|are) (?:the|a|an) ([a-z]+)/.exec(words)?.[1];
-      if (m.length < 2) return m[0] && (!thing || String(m[0].say || '').toLowerCase().includes(thing)) ? m[0] : null;
+      if (m.length < 2) return m[0] && (!thing || String(m[0].say || '').toLowerCase().includes(thing)) && !ends(m[0]) ? m[0] : null;
       // "how high does it go", "the highest point", "max height": the greatest height
       // and a "total" time or distance is the whole one
       const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}${/\b(hits?|reach(es)?|lands? on) the (floor|ground|water|sea|road|river)\b|\breturns?\b|\bcomes? back\b|\bback down\b/.test(words) ? ' lands' : ''}`;
@@ -141,8 +143,12 @@ export function fromReader(id, raw, boxes = []) {
     const said = (a) => String(a?.say || '').toLowerCase();
     const contra = (a) => a && ((UP.test(words) && !DOWN.test(words) && DOWN.test(said(a)) && !UP.test(said(a)))
       || (DOWN.test(words) && !UP.test(words) && UP.test(said(a)) && !DOWN.test(said(a))));
+    // and a speed it is thrown with is never the speed it lands at, nor the other way round
+    const START = /projection|projected|launch|thrown with|initial|it was thrown|kicked with|hit with/, END = /hits?|lands?|landing|strikes?|enters?/;
+    const ends = (a) => a && ((START.test(words) && !END.test(words) && END.test(said(a)) && !START.test(said(a)))
+      || (END.test(words) && !START.test(words) && START.test(said(a)) && !END.test(said(a))));
     const keyed = offer.find((a) => a.key === r.answer);
-    let hit = (contra(keyed) ? null : keyed)
+    let hit = (contra(keyed) || ends(keyed) ? null : keyed)
       || (/sketch|graph/.test(words) ? only('graph') : null)
       || (typeof r.answer === 'string' ? asKind(r.answer.replace(/\d+$/, '')) : null)
       || named.map(asKind).find(Boolean)
