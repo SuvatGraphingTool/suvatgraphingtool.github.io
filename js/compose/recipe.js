@@ -20,7 +20,7 @@
 // Nothing here calculates (CLAUDE.md rule 4). The engine solves; this file
 // only says which engine, with which boxes.
 
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, figureOf, belowOf, placeOf, placeIn } from './registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, CARRIERS, figureOf, belowOf, placeOf, placeIn, carrierIn } from './registry.js';
 import { toApp } from '../core/question.js';
 import { KITS } from '../kits/index.js';
 import { GRAVITY } from '../scenarios.js';
@@ -178,7 +178,14 @@ export function check(raw) {
   // a place with its own gravity says so
   if (B.g && !isNum(numbers.g)) notes.push(`${Up(B.on || B.label)} g is ${M`${num(B.g, 2, { trim: true })} [m s^-2]`}, not Earth’s ${M`9.81 [m s^-2]`}: the engine uses it.`);
 
-  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), engine, objects, numbers, effects, notes } };
+  // let go high in the air: from what the recipe says, or a balloon
+  let carrier;
+  if (backdrop === 'air') {
+    const said = typeof raw.carrier === 'string' ? raw.carrier.toLowerCase().trim() : '';
+    carrier = CARRIERS[said] ? said : carrierIn(said)?.carrier || 'balloon';
+    if (said && carrier === 'balloon' && !CARRIERS.balloon.words.test(said)) notes.push(`Drawn let go from a balloon: there is no ${clip(said, 20)} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);
+  }
+  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), engine, objects, numbers, effects, notes } };
 }
 
 /** "A car off a cliff" — a title for a recipe that brought none. */
@@ -354,7 +361,6 @@ const HEIGHT_KEYS = { height: 'height1', speed: 'speed1', time: 'time1', graph: 
 /** From a height's places, as the composer's backdrops (a well is From a height's alone). */
 const BALLISH = ['ball', 'stone', 'particle', 'football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball'];
 const HEIGHT_PLACES = { cliff: 'cliff', tower: 'tower', bridge: 'bridge', board: 'board', well: 'well', balloon: 'air' };
-const CARRIER = /\b(helicopter|aeroplane|airplane|aircraft|plane|drone|airship|glider)\b/i;
 const JUMPS = /\b(jump|jumps|jumped|leaps?|leapt)\b/i;
 /** What the reading assumed, said: a jump with no angle taken as straight up. */
 export function assumedNotes(x) {
@@ -409,7 +415,7 @@ export function fromReading(x) {
     if (typeof x.g === 'number') numbers.g = x.g;
     // a named place stands; one with an edge to leave from needs a height to stand on it
     backdrop = own && (numbers.h !== 0 || !BACKDROPS[own].edge) ? own
-      : !(numbers.h === 0) && CARRIER.test(words) ? 'air' : 'ground';
+      : !(numbers.h === 0) && carrierIn(words) ? 'air' : 'ground';
     keys = TWELVE_KEYS;
   } else return null;
   const notes = [];
@@ -417,8 +423,8 @@ export function fromReading(x) {
   // the question's own word for the place, in the title and said if it is drawn as another
   const at = own && BACKDROPS[own].edge && where.word && !['table', 'house'].includes(where.word) ? where.word : null;
   if (at && own === 'table') notes.push(`The ${at} is drawn as a table: only its height matters to the motion.`);
-  const carrier = `${x.summary || ''} ${x.words || ''}`.match(CARRIER);
-  if (backdrop === 'air' && carrier) notes.push(`Drawn let go from a balloon: there is no ${carrier[1].toLowerCase()} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);
+  // what it is let go from, drawn as itself
+  const carrier = backdrop === 'air' ? carrierIn(words)?.carrier : null;
   if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
   notes.push(...assumedNotes(x));
   if (x.scenario === 'dropped' && JUMPS.test(`${x.summary || ''} ${x.words || ''}`)) notes.push('No speed was given for the jump, so it is taken as stepping off from rest. Give the speed on the values screen if the question has one.');
@@ -431,6 +437,6 @@ export function fromReading(x) {
   }) : undefined;
   return {
     understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes,
-    recipe: { backdrop, ...(under ? { below: under } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} off ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
+    recipe: { backdrop, ...(under ? { below: under } : {}), ...(carrier ? { carrier } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} off ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
   };
 }

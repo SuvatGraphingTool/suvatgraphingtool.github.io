@@ -7,7 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES } from '../js/compose/registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, CARRIERS } from '../js/compose/registry.js';
 import { compose } from '../js/compose/recipe.js';
 import { answersFor } from '../js/parts/answers.js';
 
@@ -27,6 +27,8 @@ export function catalogue() {
     ...Object.entries(BACKDROPS).map(([k, B]) => `  ${k} — ${B.what}${B.edge ? '; it is launched from its top, so it needs h' : ''}`),
     'figures (what moves):',
     ...Object.entries(FIGURES).map(([k, F]) => `  ${k} — ${F.label}${F.thrown ? ', thrown by a person' : ''}${F.views.includes('side') ? '' : ' (seen from above only)'}`),
+    'carriers (backdrop air only, as "carrier": what it is let go from; balloon if left out):',
+    `  ${Object.entries(CARRIERS).map(([k, C]) => `${k} — ${C.label}`).join('; ')}`,
     'effects (optional; the app picks one from what it lands on):',
     ...Object.entries(EFFECTS).map(([k, X]) => `  ${k} — ${X.label}, ${X.what}`),
     'engines (how it moves):',

@@ -98,6 +98,24 @@ export const FIGURES = {
   frog:     { label: 'a frog', m: 0.12, min: 24, views: ['side'], animal: true },
 };
 
+/** What it is let go from, high in the air (backdrop `air` only): drawn at
+    the point it is let go, moving with it across if it moves (a plane keeps
+    above what it drops). js/render/carriers.js draws them. */
+export const CARRIERS = {
+  balloon:    { label: 'a hot-air balloon', words: /\b(hot[- ]air balloon|airship|blimp)\b|(?<!water )\bballoon\b/ },
+  helicopter: { label: 'a helicopter', words: /\b(helicopter|chopper)\b/ },
+  plane:      { label: 'a plane', words: /\b(aeroplane|airplane|aircraft|plane|glider|jet|bomber)\b/ },
+  drone:      { label: 'a drone', words: /\b(drone|quadcopter)\b/ },
+  bird:       { label: 'a bird', words: /\b(bird|eagle|seagull|gull|hawk|crow|pelican|heron|osprey|owl)\b/ },
+};
+/** What a question says it is let go from, or null. */
+export function carrierIn(text) {
+  const t = String(text ?? '').toLowerCase();
+  let best = null;
+  for (const [k, C] of Object.entries(CARRIERS)) { const m = t.match(C.words); if (m && (!best || m.index < best.at)) best = { carrier: k, word: m[1], at: m.index }; }
+  return best && { carrier: best.carrier, word: best.word };
+}
+
 /** What happens, at the engine's own moments (rule 4: the engine says when). */
 export const EFFECTS = {
   splash: { label: 'a splash', what: 'where it enters water' },
@@ -303,7 +321,7 @@ const WORDS = [
 const NEAREST = [
   [/\b(dart|crossbow bolt|spear)\b/, 'arrow'],
   [/\b(ski(er)?|snowboard(er)?|surfer|horse|rider|bmx)\b/, 'diver'],
-  [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone)\b/, 'particle'],
+  [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone|fish|nut|clam|mussel|prey|mouse)\b/, 'particle'],
   [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|kangaroo|locust)\b/, 'frog'],
   [/\b(bird|animal)\b/, 'particle'],
 ];
@@ -317,6 +335,11 @@ export function whoIn(text) {
   const t = String(text ?? '').toLowerCase();
   const person = WORDS[0][0], hits = [];
   for (const [re, f] of [...WORDS.slice(1), ...NEAREST]) { const m = t.match(re); if (m) hits.push({ at: m.index, word: m[1] || m[0], f }); }
+  // "a bird drops a fish", "a plane releases a package": what is let go
+  // moves, not what lets it go
+  const carried = (h) => Object.values(CARRIERS).some((C) => C.words.test(h.word));
+  const own = hits.filter((h) => !carried(h));
+  if (own.length) return own.sort((a, b) => a.at - b.at)[0].word;
   if (hits.length) return hits.sort((a, b) => a.at - b.at)[0].word;
   const p = t.match(person);
   return p ? p[1] : null;

@@ -36,6 +36,7 @@ import { drawProp } from './props.js';
 import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack } from './impacts.js';
 import { ANIMALS, javelin } from './animals.js';
 import { golfer, kicker, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
+import { CARRIER_ART, carrierSize } from './carriers.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
 import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, skyscape, env, rng, softShadow } from './scenery.js';
@@ -146,8 +147,10 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
       break;
     }
     case 'air': {
-      // high over fields, let go from beside a hovering balloon's basket
+      // high over fields, let go from beside a hovering balloon's basket; a
+      // helicopter, a plane, a drone or a bird is drawn with the motion
       fields(g, w, horizon(0.3), oy); grass(g, 0, w, oy, h);
+      if (CARRIER_ART[R.carrier]) break;
       const bs = Math.max(26, 0.75 * k);
       balloon(g, x0 - bs * 0.31 - Math.max(10, size(k) * 0.5), top, bs, P, { groundY: oy });
       break;
@@ -204,11 +207,14 @@ function launch(canvas, o) {
   const behind = (k) => (!twin ? 0 : (movers[0].thrown ? TH(k) : size(k, movers[0].piece))
     + (movers[1].thrown ? TH(k) * 0.4 : size(k, movers[1].piece) * 0.6));
 
+  // let go from a helicopter, a plane, a drone or a bird, not a balloon
+  const carried = R.backdrop === 'air' && !!CARRIER_ART[R.carrier];
+
   // ── the frame: the motion and the room its pieces need, at one scale
   const pads = (k) => {
     const body = Math.max(...movers.map((m) => (m.thrown ? TH(k) : size(k, m.piece))));
     const place = R.backdrop === 'house' ? houseW(k) + 30 : R.backdrop === 'orchard' ? 2.4 * k
-      : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 1.4
+      : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? (carried ? carrierSize(R.carrier, k, w).s * 0.6 : Math.max(26, 0.75 * k) * 1.4)
       : R.backdrop === 'table' ? tableW(k, w) + 20 : R.backdrop === 'well' ? 90
       : R.backdrop === 'city' && H0 > 0 ? cityWidth(H0, k, w) + 30 : 0;
     // a person stands upright on the edge before the off: room for all of them
@@ -216,7 +222,7 @@ function launch(canvas, o) {
     const head = (thrown && !byHand ? TH(k) : size(k) * (upright ? 1.05 : 0.6)) + 16 - (yTop - H0) * k;
     // an orchard's crown stands well above the branch
     const crown = R.backdrop === 'orchard' ? 1.9 * k + 16 - (yTop - H0) * k
-      : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 2.95 + 12 - (yTop - H0) * k : 0;
+      : R.backdrop === 'air' ? (carried ? carrierSize(R.carrier, k, w).up + size(k) + 16 : Math.max(26, 0.75 * k) * 2.95 + 12) - (yTop - H0) * k : 0;
     // a well's head and winch stand well above its mouth
     const winch = R.backdrop === 'well' ? 130 - (yTop - H0) * k : 0;
     // on a phone a table takes only its own room, so the motion has the rest
@@ -250,7 +256,7 @@ function launch(canvas, o) {
   if (H0 > 0) {
     // beside the place, never across it: outside the house's front, behind the thrower
     const dx = R.backdrop === 'house' ? x0 - houseW(k) - 16 : R.backdrop === 'board' ? x0 - boardLen(k, oy - top) - 26
-      : R.backdrop === 'air' ? x0 - Math.max(26, 0.75 * k) * 1.25 - 20
+      : R.backdrop === 'air' ? x0 - (carried ? carrierSize(R.carrier, k, w).s * 0.55 : Math.max(26, 0.75 * k) * 1.25) - 20
       : R.backdrop === 'table' ? x0 - tableW(k, w) - 16 : R.backdrop === 'well' ? x0 - 26 - 30
       // beside the block, not across its windows, where the frame has room
       : R.backdrop === 'city' && x0 - cityWidth(H0, k, w) - 16 > 60 ? x0 - cityWidth(H0, k, w) - 16
@@ -366,6 +372,17 @@ function launch(canvas, o) {
     }
   }
 
+  // what it is let go from: holding it before, flying on above it after
+  // (a plane keeps over what it drops: across at the engine's speed), and
+  // fading once it has landed
+  if (carried && m.i === 0) {
+    const C = carrierSize(R.carrier, k, w), above = small ? 10 : size(k, piece) * 0.85;
+    const cx = Math.abs(v0.x) > 1e-9 ? X(f.pos(t).x) : X(0);
+    g.save(); g.globalAlpha = landed ? clamp(1 - age / life, 0, 1) : 1;
+    CARRIER_ART[R.carrier](g, cx, top - above, C.s, P, { phase: tRaw * 1.3, groundY: oy });
+    g.restore();
+  }
+
   // ── the moving thing, at the engine's point
   const r = f.pos(t), v = f.vel(t), by = Y(r.y);
   const held = sh ? 1 - clamp(t / Math.max(1e-6, 0.1 * f.tMax), 0, 1) : 0;
@@ -462,7 +479,7 @@ function launch(canvas, o) {
       if (!hung && H0 > 0) cx = bx - Lp * 0.5 * (1 - ease(0, 0.1, p));
       m.body = { x: cx, y: cy };
       if (!fired && (R.backdrop === 'air' || R.backdrop === 'well')) {
-        const end = R.backdrop === 'air' ? { x: bx - Lp * 0.5 - 4, y: top - 2 } : { x: bx, y: Math.max(8, top - 70) };
+        const end = carried ? { x: bx, y: top - Lp * 0.85 } : R.backdrop === 'air' ? { x: bx - Lp * 0.5 - 4, y: top - 2 } : { x: bx, y: Math.max(8, top - 70) };
         stroke(g, [{ x: bx, y: cy - Lp * half }, end], { color: P.ink, width: 1.3, alpha: 0.75 });
       }
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.5, Math.max(2, Lp * 0.06), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
