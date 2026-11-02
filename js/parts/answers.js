@@ -102,8 +102,12 @@ export function fromReader(id, raw, boxes = []) {
     let tie = null;
     const only = (k) => {
       // the road's mid-point answers only where a mid-point or a mark is asked about
-      const m = offer.filter((a) => a.kind === k && (!/Mid$/.test(a.key || '') || /mid-?point|\bmark\b|halfway/.test(words)));
-      if (m.length < 2) return m[0] || null;
+      // an answer with a `when` is offered only to the words it names ("the hoop")
+      const m = offer.filter((a) => a.kind === k && (!/Mid$/.test(a.key || '') || /mid-?point|\bmark\b|halfway/.test(words))
+        && (!a.part?.when || new RegExp(a.part.when, 'i').test(words)));
+      // "how far away is the hoop": the hoop's distance, never where it lands — unless the answer is about a hoop
+      const thing = /\bhow far away (?:is|are) (?:the|a|an) ([a-z]+)/.exec(words)?.[1];
+      if (m.length < 2) return m[0] && (!thing || String(m[0].say || '').toLowerCase().includes(thing)) ? m[0] : null;
       // "how high does it go", "the highest point", "max height": the greatest height
       // and a "total" time or distance is the whole one
       const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}${/\b(hits?|reach(es)?|lands? on) the (floor|ground|water|sea|road|river)\b/.test(words) ? ' lands' : ''}`;
@@ -139,7 +143,7 @@ export function fromReader(id, raw, boxes = []) {
       : { label, kind: 'other', ask: clip(r.asks, 160) || 'This part', prose: true };
     // a sketch read from another paper says only where it is drawn
     if (base?.kind === 'graph') p.say = 'The stage’s own graphs are the sketch: choosing this part opens them.';
-    delete p.key; delete p.part; delete p.paper; delete p.tol; delete p.given; delete p.carry; delete p.example;
+    delete p.key; delete p.part; delete p.paper; delete p.when; delete p.tol; delete p.given; delete p.carry; delete p.example;
     if (!base) p.say = 'Not one this app works out for you — it may need another topic. The stage, the working and the graphs show the motion it is about.';
     if (!base && tie) p.either = tie.map((a) => { const q = { ...(a.part || a) }; delete q.key; delete q.part; delete q.paper; delete q.example; return q; });
     // every part's own answer is the engine's; a reader part's `uses` only says so

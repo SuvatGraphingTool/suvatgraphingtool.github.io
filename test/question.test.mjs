@@ -648,6 +648,17 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(bus.boxes.a1 === 0.8, 'the one rate in the words no stage has goes to the one stage missing its rate');
   const BV = JK.solve(JK.read(bus.boxes));
   ok(BV.ok && Math.abs(BV.J.D - 132.25) < 1e-6, 'and the bus goes 132.25 m');
+  // round 5 (hand-written): a hoop, and what a re-placed question asks
+  const hoopWords = 'a basketball is thrown at 8 m/s at 50° from 2.1 m and goes through a hoop 3.05 m high. how far away is the hoop';
+  const hoop = toPlace({ understood: true, scenario: 'platform-angle', summary: 'x', h: 2.1, u: 8, angleDegrees: 50, who: 'basketball', asks: ['how far away is the hoop'] }, hoopWords);
+  ok(hoop.library === 'from-a-height' && hoop.boxes.level === 0.95 && hoop.boxes.h === 2.1 && hoop.asks?.length === 1, 'a hoop 3.05 m high, thrown from 2.1 m: From a height with the hoop 0.95 m above the throw');
+  const HK = KITS[byId('from-a-height').kit], hv = HK.solve(HK.read({ ...hoop.boxes, place: 'tower', g: 9.81 }));
+  ok(hv.ok && Math.abs(hv.level.xDown - 5.492) < 1e-3 && /5\.492/.test(hv.derived.join(' ')), 'and it passes the hoop 5.49 m out, on its way down');
+  ok(one('from-a-height', 'how far away is the hoop')?.find === 'level.xDown', 'From a height answers how far away the hoop is');
+  ok(!one('up', 'how far away is the hoop')?.find, 'one of the twelve does not: where it lands is never the hoop');
+  const peb = toPlace({ understood: true, scenario: 'down', summary: 'x', h: 20, u: 4, below: 'river', asks: ['time to hit the water', 'speed when it hits the water'] }, 'a pebble is thrown straight down at 4 m/s from a bridge 20 m above a river');
+  ok(peb.library === 'from-a-height' && peb.asks?.length === 2, 'placed at a bridge, what the question asks goes with it');
+  ok(toPlace({ understood: true, scenario: 'dropped', summary: 'x', h: 12, who: 'water balloon' }, 'a water balloon is dropped from a window 12 m up').boxes?.place !== 'balloon', 'a water balloon is not a hot-air balloon');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

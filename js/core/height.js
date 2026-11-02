@@ -155,7 +155,9 @@ export function solveHeight(k0 = {}) {
     const atTop = f.uy > 1e-9 && Math.abs(L - f.apexHeight) <= 1e-6 * Math.max(1, Math.abs(L));
     let times = atTop ? [f.tApex] : a.crosses === 2 ? [a.t1, a.t2] : a.crosses === 1 ? [a.t2] : [];
     times = times.map(snap).filter((x) => x > 1e-9);
-    level = { rel: k.level, L, times, atTop };
+    // how far out it is then — a hoop or a target at that height is there; the last is on its way down
+    const xs = times.map((t) => snap(Math.abs(f.ux) * t));
+    level = { rel: k.level, L, times, atTop, xs, xDown: xs.length ? xs[xs.length - 1] : undefined };
     const at = Math.abs(k.level) < 1e-12 ? 'back at the height it was thrown from'
       : `${M`${d(Math.abs(k.level))} [m]`} ${k.level >= 0 ? 'above' : 'below'} ${Pl.from || 'where it was thrown from'}`;
     lines.push(atTop ? `It is ${at} once, at the top of its path, ${M`t = ${d(times[0])} [s]`}.`
@@ -172,7 +174,7 @@ export function solveHeight(k0 = {}) {
   const derived = [...found, ...r.derived.filter((x) => !/→/.test(x)).map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`,
     // how far out it lands, when it goes out at all: "how far does he land" is answered
     ...(Math.abs(out) > 1e-9 ? [`lands ${M`${d(Math.abs(out))} [m]`} out`] : []), `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
-  if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}`);
+  if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}${straight ? '' : `, ${M`x = ${level.xs.map((x) => d(x)).join(', ')} [m]`} out`}`);
   f.place = place; f.Pl = Pl; f.level = level; f.vertical = straight;
   // a balloon carries on at the speed it gave the stone (rising or falling at
   // u, unaccelerated): where the basket is at t, for the stage to draw

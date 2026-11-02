@@ -23,7 +23,7 @@ const PLACES = [
   [/\bcliff/i, 'cliff'], [/\b(tower|building|skyscraper|roof|block of flats)/i, 'tower'],
   // a well as a place ("down a 20 m well", "the well is 30 m deep"), never "as well as"
   [/\bbridge/i, 'bridge'], [/\b(a|the|down|into|of)\s+(\d+(\.\d+)?\s?m\s+)?(deep\s+)?well\b|\bwell\s+(is|\d)|\bmine ?shaft\b/i, 'well'],
-  [/\b(diving board|springboard|high board|(diving|high) platform)\b/i, 'board'], [/\b(hot.air )?balloon/i, 'balloon'],
+  [/\b(diving board|springboard|high board|(diving|high) platform)\b/i, 'board'], [/\b(?<!water )(?<!water-)(hot.air )?balloon/i, 'balloon'],
   // "off a 10 m board", "a diver": the diving board, said the short way
   [/\d\s*m(etres?)?\s+(high\s+)?board\b|\bdiv(er|ers|ing)\b/i, 'board'],
 ];
@@ -67,6 +67,9 @@ function fromRecipe(x, words) {
   const out = { understood: true, confidence: x.confidence || 'high', scenario: 'library', library: 'from-a-height',
     summary: `${x.summary || ''}${said}`.trim(), boxes };
   if (Array.isArray(x.parts)) out.parts = renamed(x.parts);
+  if (Array.isArray(x.asked)) out.asked = renamed(x.asked);
+  if (Array.isArray(x.asks)) out.asks = x.asks;
+  for (const k of ['who', 'below', 'assumed']) if (x[k] != null) out[k] = x[k];
   return out;
 }
 
@@ -225,7 +228,7 @@ function lanes(x) {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(cleared(lowered(reacts(timed(known(marked(x, words)), words), words), words), words), words), words), words), words)), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(hooped(cleared(lowered(reacts(timed(known(marked(x, words)), words), words), words), words), words), words), words), words), words)), words);
 }
 
 /**
@@ -330,6 +333,35 @@ function cleared(x, words) {
   // what it asks stays in words: "does it clear" is the engine's own line, not a height
   const asked = (x.asked || x.parts || []).filter((p) => p && typeof p === 'object').map((p) => ({ asks: p.asks }));
   if (asked.length) out.asked = asked;
+  else if (Array.isArray(x.asks)) out.asks = x.asks;
+  return out;
+}
+
+/**
+ * "Goes through a hoop 3.05 m high: how far away is the hoop" — a projectile
+ * and a height it passes, the distance to it asked: From a height on level
+ * ground, with that height above the throw as its `level`. The engine gives
+ * the times it is there and how far out, the last on its way down.
+ */
+const HOOP = /\b(hoop|basket|ring|target|bull'?s-?eye)\b/i;
+function hooped(x, words) {
+  if (!x?.understood || !HOOP.test(words) || !/\bhow far\b|\bdistance\b/i.test(words)) return x;
+  const H = new RegExp(`${NUM}\\s*m\\s*(?:high|above the (?:ground|floor))\\b`, 'i').exec(words);
+  if (!H) return x;
+  let h0, u, theta;
+  if (x.scenario === 'arc' || x.scenario in ANGLE) {
+    h0 = x.scenario === 'arc' ? 0 : x.h;
+    u = x.u;
+    theta = x.scenario === 'arc' ? x.angleDegrees : ANGLE[x.scenario](x);
+  } else if (x.scenario === 'compose' && x.recipe?.numbers && !(x.recipe.numbers.level != null)) {
+    ({ h: h0, u, theta } = x.recipe.numbers);
+  } else return x;
+  const level = Number(H[1]) - (Number(h0) || 0);
+  if (!(Number(u) > 0) || theta == null || Math.abs(level) < 1e-9 || Number(H[1]) === Number(h0)) return x;
+  const boxes = { place: 'ground', h: Number(h0) || 0, u: Number(u), theta: Number(theta), level: Math.round(level * 1e6) / 1e6 };
+  if (typeof x.g === 'number' && x.g > 0) boxes.g = x.g;
+  const out = { understood: true, confidence: x.confidence || 'high', scenario: 'library', library: 'from-a-height', summary: x.summary, boxes };
+  for (const k of ['who', 'asks', 'asked', 'parts']) if (x[k] != null) out[k] = x[k];
   return out;
 }
 
@@ -358,5 +390,8 @@ function placed(x, words) {
   if (x.below) out.below = x.below;
   if (x.angleDegrees != null) out.angleGiven = true;
   if (Array.isArray(x.parts)) out.parts = renamed(x.parts);
+  // what a question with no parts asks goes with it, for the reply to answer
+  if (Array.isArray(x.asked)) out.asked = renamed(x.asked);
+  if (Array.isArray(x.asks)) out.asks = x.asks;
   return out;
 }
