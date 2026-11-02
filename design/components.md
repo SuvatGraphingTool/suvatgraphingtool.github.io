@@ -291,6 +291,16 @@ spring, stretch out in the air and reach down to land; registry figures with
 as the frog, and the reply says so. `javelin(g, x, y, L, ang)`, thrown and
 pointed along its path.
 
+Strikers in `js/render/athletes.js`: `golfer` and `kicker`, `(g, X, Y, H, P,
+{ pose, ring })`, feet at (X, Y), the ball at `GOLF_BALL_AT` / `KICK_BALL_AT`
+of their height ahead of the feet; pose 0 the backswing or the leg drawn
+back, 0.5 the strike, 1 the follow-through. A golf ball is hit and a
+football kicked by them (registry figure `verb`), except from a hand's
+height. Places `pier` (a seaside pier on iron piles braced in X, railings
+and lamps open at its end, beach huts and a pavilion along the shore, gulls)
+and `site` (scaffolding up a concrete frame, safety netting, a tower crane
+with a load on its hook, mud with ruts, a skip and sand).
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

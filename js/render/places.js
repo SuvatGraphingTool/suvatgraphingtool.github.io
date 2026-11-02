@@ -663,5 +663,132 @@ function desert(g, c) {
   }
 }
 
+/** A seaside pier: a timber deck on iron piles braced in X, railings and
+    lamps along it, open at its end; the sea with its swell, the beach with
+    its huts and a pavilion along the shore behind, gulls overhead. */
+function pier(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(131), horizon = oy - clamp((oy - 40) * 0.25, 30, 130);
+  sky(g, w, horizon, x0, { far: 'none', seed: 51, clouds: 3 });
+  // the shore far behind: a strip of beach, huts in a row, a pavilion
+  const sy = horizon - 2;
+  g.fillStyle = n ? '#6f6253' : '#e2cfa4'; g.beginPath(); g.moveTo(0, sy + 6); g.lineTo(w * 0.55, sy + 2); g.lineTo(w * 0.55, sy + 6); g.lineTo(0, sy + 12); g.closePath(); g.fill();
+  const huts = ['#c94f4f', '#4f86c9', '#e8c547', '#5fae7a', '#f2f0ea', '#c97a4f'];
+  // small with distance, in a short row near the pier's root
+  for (let i = 0, x = 8; x < w * 0.3; i++, x += 9) { g.fillStyle = withAlpha(huts[i % huts.length], n ? 0.45 : 0.75); g.fillRect(x, sy - 4, 6, 5); g.fillStyle = withAlpha('#ffffff', 0.5); g.beginPath(); g.moveTo(x - 0.5, sy - 4); g.lineTo(x + 3, sy - 6.5); g.lineTo(x + 6.5, sy - 4); g.closePath(); g.fill(); }
+  const px = w * 0.5;
+  g.fillStyle = n ? '#8e8a90' : '#f4f1ea'; g.fillRect(px, sy - 16, 34, 16);
+  g.fillStyle = n ? '#5d6a7a' : '#7a96b0'; g.beginPath(); g.arc(px + 17, sy - 16, 9, Math.PI, 0); g.fill();
+  water(g, 0, w, horizon, h, { phase });
+  // gulls
+  g.strokeStyle = withAlpha(n ? '#d8d8dc' : '#4a4e56', 0.8); g.lineWidth = 1.3;
+  for (let i = 0; i < 4; i++) { const gx = x0 + (w - x0) * (0.2 + i * 0.2) + Math.sin(phase + i) * 6, gy = horizon * (0.25 + 0.12 * (i % 2)), gs = 5 + (i % 3) * 2; g.beginPath(); g.moveTo(gx - gs, gy); g.quadraticCurveTo(gx - gs / 2, gy - gs * 0.6, gx, gy); g.quadraticCurveTo(gx + gs / 2, gy - gs * 0.6, gx + gs, gy); g.stroke(); }
+  if (!(H0 > 0)) return;
+  const deck = clamp(0.35 * k, 5, 12), wood = n ? '#7a5e48' : '#9c7651', woodLo = n ? '#4b3a2e' : '#6a4f36', iron = n ? '#3e4247' : '#4c5359';
+  // the piles: iron columns down into the water, braced in X between them
+  const bay = clamp(3 * k, 34, 120), wl = oy;
+  const piles = []; for (let x = x0 - 6; x > -bay; x -= bay) piles.push(x);
+  g.strokeStyle = iron; g.lineWidth = Math.max(1.2, clamp(0.08 * k, 1, 3));
+  for (let i = 0; i < piles.length - 1; i++) { const a = piles[i], b2 = piles[i + 1], y1 = top + deck, y2 = lerp(top + deck, wl, 0.6); g.beginPath(); g.moveTo(a, y1); g.lineTo(b2, y2); g.moveTo(b2, y1); g.lineTo(a, y2); g.stroke(); g.beginPath(); g.moveTo(a, y2); g.lineTo(b2, y2); g.stroke(); }
+  for (const x of piles) {
+    const pw = clamp(0.35 * k, 4, 12);
+    const pg = g.createLinearGradient(x - pw / 2, 0, x + pw / 2, 0); pg.addColorStop(0, withAlpha('#ffffff', 0.25)); pg.addColorStop(0.3, iron); pg.addColorStop(1, '#202326');
+    g.fillStyle = iron; g.fillRect(x - pw / 2, top + deck, pw, wl - top - deck + 6); g.fillStyle = pg; g.fillRect(x - pw / 2, top + deck, pw, wl - top - deck + 6);
+    g.fillStyle = withAlpha(n ? '#2c3b2c' : '#3f5a3a', 0.85); g.fillRect(x - pw / 2 - 1, wl - clamp(0.6 * k, 6, 20), pw + 2, clamp(0.6 * k, 6, 20));
+    g.fillStyle = withAlpha('#ffffff', 0.35); g.fillRect(x - pw * 0.8, wl - 1 + Math.sin(phase * 2 + x) * 1.2, pw * 1.6, 2);
+  }
+  // the deck: planks seen edge on, a lit top, its shadow on the water
+  g.fillStyle = withAlpha('#000000', 0.18); g.fillRect(-4, wl + 2, x0 + 4, 4);
+  g.fillStyle = wood; g.fillRect(-4, top, x0 + 4, deck);
+  g.fillStyle = withAlpha('#ffffff', n ? 0.1 : 0.3); g.fillRect(-4, top, x0 + 4, 1.5);
+  g.fillStyle = woodLo; g.fillRect(-4, top + deck * 0.65, x0 + 4, deck * 0.35);
+  g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1; for (let x = x0 - 3; x > 0; x -= 9) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, top + deck * 0.65); g.stroke(); }
+  // railings and lamps, the last stretch at its end left open
+  const rh = clamp(1.1 * k, 12, 40), open = clamp(2 * k, 26, 80), post = clamp(1.6 * k, 16, 50);
+  g.strokeStyle = n ? '#c8c2b8' : '#eae5dc'; g.lineWidth = Math.max(1.4, clamp(0.06 * k, 1.2, 3));
+  g.beginPath(); g.moveTo(-4, top - rh); g.lineTo(x0 - open, top - rh); g.moveTo(-4, top - rh * 0.5); g.lineTo(x0 - open, top - rh * 0.5); g.stroke();
+  for (let x = x0 - open; x > -4; x -= post) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, top - rh); g.stroke(); }
+  const lh = clamp(4 * k, 40, 140);
+  for (let x = x0 - open - post * 0.5; x > 0; x -= post * 5) {
+    g.strokeStyle = n ? '#2c3a3a' : '#2f5d5a'; g.lineWidth = Math.max(2, clamp(0.1 * k, 2, 4)); g.beginPath(); g.moveTo(x, top); g.lineTo(x, top - lh); g.stroke();
+    g.fillStyle = n ? E.window : '#f4ecd2'; g.beginPath(); g.arc(x, top - lh - 4, clamp(0.2 * k, 3, 7), 0, TAU); g.fill();
+    if (n) { const lg = g.createRadialGradient(x, top - lh - 4, 0, x, top - lh - 4, 40); lg.addColorStop(0, withAlpha(E.window, 0.4)); lg.addColorStop(1, withAlpha(E.window, 0)); g.fillStyle = lg; g.fillRect(x - 40, top - lh - 44, 80, 80); }
+  }
+}
+
+/** A building site: a scaffold of tubes, ledgers and boards up the face of
+    a frame of concrete floors, a tower crane behind with its jib out over
+    the site, a load on its hook; the ground of mud and gravel with ruts, a
+    skip and a heap of sand. */
+function site(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(137);
+  skyscape(g, 0, 0, w, oy, { far: 'skyline', seed: 23, clouds: 3, farHeight: clamp((oy - 40) * 0.35, 30, 180), sun: false });
+  // the crane: a lattice mast, the jib out over the site, the counter-jib
+  // and its weights, the cab, a trolley and a load on its hook
+  const steel = n ? '#b49a3a' : '#e0b43c', steelLo = n ? '#7d6a28' : '#b08a2a';
+  const mx = clamp(x0 - clamp(0.35 * H0 * k, 60, 200) - 40, 30, w * 0.4), mw = clamp(1.6 * k, 10, 26);
+  const jy = clamp(Math.min(top, oy - 60) - clamp(0.4 * (oy - top), 40, 160), 30, oy - 60), jl = Math.min(w - mx - 10, clamp(30 * k, 200, w * 0.75)), cj = jl * 0.3;
+  g.strokeStyle = steel; g.lineWidth = Math.max(1.4, mw * 0.12);
+  g.beginPath(); g.moveTo(mx, oy); g.lineTo(mx, jy); g.moveTo(mx + mw, oy); g.lineTo(mx + mw, jy); g.stroke();
+  g.lineWidth = Math.max(0.8, mw * 0.06); g.beginPath();
+  for (let y = oy; y > jy + mw; y -= mw) { g.moveTo(mx, y); g.lineTo(mx + mw, y - mw); g.moveTo(mx, y - mw); g.lineTo(mx + mw, y - mw); }
+  g.stroke();
+  const jh = mw * 0.8;
+  g.lineWidth = Math.max(1.2, mw * 0.1); g.beginPath(); g.moveTo(mx - cj, jy); g.lineTo(mx + mw + jl, jy); g.moveTo(mx - cj, jy - jh); g.lineTo(mx + mw + jl, jy - jh * 0.3); g.stroke();
+  g.lineWidth = Math.max(0.7, mw * 0.05); g.beginPath();
+  for (let x = mx - cj; x < mx + mw + jl - jh; x += jh) { const t1 = (x - mx + cj) / (cj + mw + jl); g.moveTo(x, jy); g.lineTo(x + jh, jy - jh * lerp(1, 0.3, t1)); }
+  g.stroke();
+  g.strokeStyle = steelLo; g.lineWidth = 1; g.beginPath(); g.moveTo(mx + mw / 2, jy - mw * 2.5); g.lineTo(mx + mw + jl * 0.75, jy - jh * 0.4); g.moveTo(mx + mw / 2, jy - mw * 2.5); g.lineTo(mx - cj, jy - jh); g.stroke();
+  g.fillStyle = steel; g.fillRect(mx - mw * 0.1, jy - mw * 2.5, mw * 1.2, mw * 1.5);
+  g.fillStyle = n ? '#5b5f66' : '#7a8088'; g.fillRect(mx - cj, jy - jh * 0.2, cj * 0.35, jh * 1.6);
+  g.fillStyle = n ? '#3c4450' : '#d9e2ea'; g.fillRect(mx + mw, jy + 2, mw * 1.1, mw * 0.9); g.fillStyle = n ? withAlpha(E.window, 0.7) : '#6f8fac'; g.fillRect(mx + mw + mw * 0.15, jy + mw * 0.15, mw * 0.8, mw * 0.4);
+  const tx = mx + mw + jl * 0.62, ly = lerp(jy, Math.min(top, oy - 30), 0.45);
+  g.strokeStyle = withAlpha(n ? '#d8d8dc' : '#2a2a2e', 0.8); g.lineWidth = 1; g.beginPath(); g.moveTo(tx - 2, jy + 2); g.lineTo(tx - 2, ly); g.moveTo(tx + 2, jy + 2); g.lineTo(tx + 2, ly); g.stroke();
+  g.fillStyle = n ? '#8a7a40' : '#d9a62a'; g.fillRect(tx - 5, ly, 10, 7);
+  const lw = clamp(1.4 * k, 18, 46); g.strokeStyle = withAlpha('#2a2a2e', 0.7); g.beginPath(); g.moveTo(tx, ly + 7); g.lineTo(tx - lw / 2, ly + 18); g.moveTo(tx, ly + 7); g.lineTo(tx + lw / 2, ly + 18); g.stroke();
+  g.fillStyle = n ? '#7a4a3a' : '#b45a3c'; g.fillRect(tx - lw / 2, ly + 18, lw, lw * 0.45);
+  g.strokeStyle = withAlpha('#000000', 0.3); for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(tx - lw / 2, ly + 18 + lw * 0.15 * i); g.lineTo(tx + lw / 2, ly + 18 + lw * 0.15 * i); g.stroke(); }
+  // the ground: mud and gravel, ruts, a skip and a heap of sand
+  const gg = g.createLinearGradient(0, oy, 0, h); gg.addColorStop(0, n ? '#4a4038' : '#8b7458'); gg.addColorStop(1, n ? '#3a322c' : '#6e5a44');
+  g.fillStyle = gg; g.fillRect(0, oy, w, h - oy);
+  g.fillStyle = withAlpha(n ? '#2a241f' : '#5a4836', 0.6); for (let i = 0; i < (w * (h - oy)) / 70; i++) g.fillRect(r() * w, oy + r() * (h - oy), 2, 1.5);
+  g.strokeStyle = withAlpha(n ? '#2a241f' : '#5a4836', 0.7); g.lineWidth = 2;
+  for (const o of [8, 18]) { g.beginPath(); g.moveTo(0, oy + o); g.bezierCurveTo(w * 0.3, oy + o + 6, w * 0.6, oy + o - 2, w, oy + o + 10); g.stroke(); }
+  const skx = x0 + (w - x0) * 0.7;
+  if (clearOf(skx, c, 80) && skx < w - 30) {
+    const sw = clamp(3.5 * k, 40, 110), shh = sw * 0.4;
+    g.fillStyle = n ? '#7a6a30' : '#e0a72a'; g.beginPath(); g.moveTo(skx - sw / 2, oy - shh); g.lineTo(skx + sw / 2, oy - shh); g.lineTo(skx + sw * 0.38, oy); g.lineTo(skx - sw * 0.38, oy); g.closePath(); g.fill();
+    g.fillStyle = withAlpha('#000000', 0.25); g.fillRect(skx - sw / 2, oy - shh, sw, 3);
+    g.fillStyle = n ? '#5c5048' : '#8a7a6a'; for (let i = 0; i < 5; i++) g.fillRect(skx - sw * 0.4 + i * sw * 0.17, oy - shh - 3 - r() * 4, sw * 0.12, 4);
+  }
+  const hx = x0 + (w - x0) * 0.35;
+  if (clearOf(hx, c, 70)) { g.fillStyle = n ? '#8a7a5a' : '#d9bf86'; g.beginPath(); g.moveTo(hx - 30, oy + 1); g.quadraticCurveTo(hx, oy - clamp(1.2 * k, 10, 30), hx + 34, oy + 1); g.closePath(); g.fill(); }
+  if (!(H0 > 0)) return;
+  // the frame behind: concrete floors on columns, open between
+  const sw = clamp(0.35 * H0 * k, 60, 200), fx = x0 - sw, lift = clamp(2 * k, 16, 60), conc = n ? '#7a7672' : '#bdb6ad';
+  g.fillStyle = withAlpha(n ? '#2a2a30' : '#5d5e66', 0.85); g.fillRect(fx - 20, top - lift * 0.5, sw + 10, oy - top + lift * 0.5);
+  for (let y = oy - lift; y > top - lift * 0.5; y -= lift) { g.fillStyle = conc; g.fillRect(fx - 20, y, sw + 10, Math.max(3, lift * 0.12)); }
+  for (let x = fx - 16; x < x0 - 10; x += clamp(4 * k, 30, 100)) { g.fillStyle = conc; g.fillRect(x, top - lift * 0.5, Math.max(3, lift * 0.12), oy - top + lift * 0.5); }
+  // the scaffold in front of it: standards, ledgers at each lift, boards, braces
+  const tube = n ? '#a8adb3' : '#8d949b', board = n ? '#7a6248' : '#b08a5c';
+  g.strokeStyle = tube; g.lineWidth = Math.max(1.4, clamp(0.06 * k, 1.2, 3));
+  const stds = []; for (let x = x0 - 2; x > fx - 10; x -= clamp(2 * k, 20, 70)) stds.push(x);
+  g.beginPath(); for (const x of stds) { g.moveTo(x, oy); g.lineTo(x, top - clamp(1 * k, 10, 30)); } g.stroke();
+  for (let y = top; y < oy - 2; y += lift) {
+    g.strokeStyle = tube; g.beginPath(); g.moveTo(stds[stds.length - 1], y); g.lineTo(x0, y); g.stroke();
+    g.fillStyle = board; g.fillRect(stds[stds.length - 1], y - 4, x0 - stds[stds.length - 1], 4);
+    g.fillStyle = withAlpha('#000000', 0.2); g.fillRect(stds[stds.length - 1], y, x0 - stds[stds.length - 1], 1.5);
+  }
+  g.strokeStyle = tube; g.lineWidth = 1; g.beginPath();
+  for (let i = 0; i < stds.length - 1; i++) for (let y = top; y < oy - lift; y += lift * 2) { g.moveTo(stds[i], y); g.lineTo(stds[i + 1], y + lift); }
+  g.stroke();
+  // a guard rail along the top lift, open at its end where it is thrown from
+  g.strokeStyle = tube; g.lineWidth = Math.max(1.4, clamp(0.06 * k, 1.2, 3)); g.beginPath(); g.moveTo(stds[stds.length - 1], top - clamp(1 * k, 10, 30)); g.lineTo(x0 - clamp(1.6 * k, 20, 60), top - clamp(1 * k, 10, 30)); g.stroke();
+  // safety netting over the back of the scaffold
+  g.fillStyle = withAlpha(n ? '#2f4a3a' : '#4f8a5f', 0.35); g.fillRect(fx - 20, top + lift * 0.2, (x0 - fx) * 0.45, oy - top - lift * 0.2);
+  softShadow(g, (fx + x0) / 2, oy + 2, (x0 - fx) * 0.6, 5, 0.7);
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site };

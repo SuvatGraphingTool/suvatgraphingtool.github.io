@@ -2,7 +2,7 @@
 // reasons, and played by the engine's own kit. Run: node test/compose.test.mjs
 import fs from 'node:fs';
 import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, figureOf, whoIn, placeIn } from '../js/compose/registry.js';
-import { check, compose, scenesOf, fromReading } from '../js/compose/recipe.js';
+import { check, compose, scenesOf, fromReading, titleOf } from '../js/compose/recipe.js';
 import { steps } from '../js/compose/reveal.js';
 import { answersFor, fromReader } from '../js/parts/answers.js';
 import { answerOf } from '../js/parts/parts.js';
@@ -278,6 +278,9 @@ group('Places only the composer draws, and more of what students name', () => {
   for (const [w, f, ex] of [['cat', 'cat', true], ['puppy', 'dog', true], ['chimpanzee', 'monkey', true], ['toad', 'frog', true], ['javelin', 'javelin', true], ['squirrel', 'cat', false], ['flea', 'frog', false], ['kangaroo', 'frog', false]]) ok(figureOf(w).figure === f && figureOf(w).exact === ex, `“${w}” is drawn as ${f}${ex ? '' : ', and the reply says so'}`);
   ok(whoIn('a cat jumps from a wall 2 m high') === 'cat' && whoIn('an athlete throws a javelin at 25 m/s') === 'javelin', 'the animal or the javelin, never the person');
   ok(check({ backdrop: 'house', engine: 'projectile', objects: [{ figure: 'cat' }], numbers: { h: 3, u: 4, theta: 20 } }).ok, 'a cat leaps off a roof');
+  ok(placeIn('A stone is dropped from the end of the pier')?.backdrop === 'pier' && placeIn('a brick falls from scaffolding 15 m high')?.backdrop === 'site' && placeIn('thrown from the jetty')?.backdrop === 'harbour', 'a pier, a building site, and a jetty still the harbour');
+  ok(check({ backdrop: 'pier', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 8, u: 5, theta: 10 } }).recipe?.effects.join() === 'splash' && check({ backdrop: 'site', engine: 'projectile', objects: [{ figure: 'hammer' }], numbers: { h: 15, u: 0, theta: -90 } }).ok, 'off a pier into the sea; off the scaffolding');
+  ok(titleOf(check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'golfBall' }], numbers: { h: 0, u: 40, theta: 15 } }).recipe) === 'A golf ball hit from the ground' && titleOf(check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'football' }], numbers: { h: 0, u: 20, theta: 30 } }).recipe) === 'A football kicked from the ground', 'a golf ball is hit, a football kicked');
   for (const [w, f] of [['football', 'football'], ['tennis ball', 'tennisBall'], ['golf ball', 'golfBall'], ['basketball', 'basketball'], ['shot put', 'shot'], ['cannonball', 'shot'], ['snowball', 'snowball'], ['water balloon', 'waterBalloon'], ['mobile phone', 'phone'], ['textbook', 'book'], ['hammer', 'hammer'], ['cricket ball', 'ball']]) ok(figureOf(w).figure === f && figureOf(w).exact, `prop: “${w}” is drawn as ${f}`);
   ok(whoIn('a builder drops a hammer from scaffolding') === 'hammer' && whoIn('a girl throws a tennis ball up') === 'tennis ball', 'props: the thing named, never the person');
   ok(fromReading({ understood: true, scenario: 'dropped', h: 20, summary: 'A phone is dropped from a bridge 20 m up.', who: 'phone' })?.recipe.objects[0].figure === 'phone', 'a dropped phone is drawn as a phone');

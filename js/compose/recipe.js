@@ -197,7 +197,7 @@ export function titleOf(r) {
     const byHand = F.thrown && r.numbers.h > 0 && r.numbers.h <= 2.6;
     if (byHand && r.backdrop === 'ground') return `${what} thrown`;
     if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${B.high || 'a wall'}`;
-    const how = F.thrown ? 'thrown' : F.animal ? 'leaping' : 'launched';
+    const how = F.verb || (F.thrown ? 'thrown' : F.animal ? 'leaping' : 'launched');
     return r.backdrop === 'ground' ? `${what} ${how} from the ground` : `${what} ${how} ${where}`;
   }
   const by = B.edge ? `by ${B.at}` : where;

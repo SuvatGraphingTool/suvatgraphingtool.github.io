@@ -47,6 +47,8 @@ export const PLACES = {
   moon:    { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
   snow:    { word: 'start', top: 'where it starts', below: 'the snow', lands: 'lands in the snow', foot: 'where it started', level: true },
   desert:  { word: 'start', top: 'where it starts', below: 'the sand', lands: 'lands on the sand', foot: 'where it started', level: true },
+  pier:    { word: 'pier', top: 'the end of the pier', below: 'the sea', lands: 'hits the sea', foot: 'below the end of the pier' },
+  site:    { word: 'scaffold', top: 'the top of the scaffolding', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the scaffolding' },
   mars:    { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
   table:   { word: 'table', top: 'the table top', below: 'the floor', lands: 'hits the floor', foot: 'at the foot of the table', from: 'the table top' },
   air:     { word: 'point it was let go', top: 'the point it is let go from', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', from: 'where it was let go' },

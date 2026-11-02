@@ -35,6 +35,7 @@ import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
 import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack } from './impacts.js';
 import { ANIMALS, javelin } from './animals.js';
+import { golfer, kicker, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
 import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, skyscape, env, rng, softShadow } from './scenery.js';
@@ -295,7 +296,13 @@ function launch(canvas, o) {
   // the second of two stands behind the first, holding what it throws
   const sh = m.i ? behind(k) : 0;
   feet -= sh;
-  if (thrown) {
+  // a golf ball is struck by a golfer, a football kicked: the ball where
+  // the engine starts it, at the club's head or the boot
+  const striker = !byHand && (kind === 'golfBall' ? golfer : kind === 'football' ? kicker : null);
+  if (thrown && striker) {
+    const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.12 * f.tMax), 0, 1) : 0;
+    striker(g, x0 - th * (kind === 'golfBall' ? GOLF_BALL_AT : KICK_BALL_AT) - sh, stand, th, P, { pose, ring: m.ring });
+  } else if (thrown) {
     const pose = m.going ? clamp(0.55 + t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
     thrower(g, feet, stand, th, P, { dir: 1, pose, aim, ring: m.ring, suit: R.backdrop === 'moon' || R.backdrop === 'mars' });
   }
