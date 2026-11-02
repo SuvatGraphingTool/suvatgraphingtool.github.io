@@ -1706,7 +1706,7 @@ group('Edexcel M1 Jan 2003 Q7 and Jun 2012 Q5: into soft ground', () => {
   ok(near(b.depth, 0.316, 0.0005), 'J12 (c) it sinks 0.316 m against 5000 N');
   const f = s.f;
   ok(near(f.pos(f.tLand), -1.5, 1e-9) && near(f.vel(f.tLand), -s.vL, 1e-9) && near(f.pos(f.tMax), -1.525, 1e-9) && f.vel(f.tMax) === 0, 'the motion: at the ground at T, at rest 2.5 cm down');
-  ok(f.tMax > f.tRest && f.replay(f.tRest + 1e-6) < f.tLand && near(f.replay(f.tMax), f.tRest, 1e-9), 'the slow replay runs from just above the ground to rest, over the pause');
+  ok(f.tMax > f.tRest && f.replay(f.tRest + 1e-6) === null && f.replay(f.tRest + (f.tMax - f.tRest) * 0.2 + 1e-6) < f.tLand && near(f.replay(f.tMax), f.tRest, 1e-9), 'the slow replay waits a beat at rest, then runs from just above the ground to rest');
   ok(solveSink({ h: 1.5, H: 25.6, depth: 0.025 }).ok && solveSink({ h: 1.5, H: 25.6, depth: 0.025 }).R == null, 'with no mass, the depth gives the deceleration and no force');
   ok(!solveSink({ h: 2, u: 5, m: 1, R: 5, g: 9.8 }).ok, 'a resistance no bigger than the weight is refused: it would never stop');
   ok(!solveSink({ h: 17.5, vL: 10, m: 4, R: 5000 }).ok, 'landing slower than a drop from rest is refused');

@@ -41,16 +41,18 @@ export const sink = {
   working: (solved) => sinkWorking(solved),
   render: stage.render,
 
+  /* While the magnifier replays the sink, the readouts follow the replay, and say so. */
   hud(f, t) {
-    const y = f.pos(t) + f.h;
+    const r = f.replay(t), tt = r ?? t, tag = r != null ? ' (replay)' : '';
+    const y = f.pos(tt) + f.h;
     return {
       left: [
-        y >= -1e-9 ? { k: 'Above the ground', v: num(Math.max(0, y), 2), unit: 'm', hue: 'disp' }
-          : { k: 'Into the ground', v: num(-y, 3, { trim: true }), unit: 'm', hue: 'disp' },
-        { k: 'Velocity, up +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Acceleration, up +', v: num(Number(f.acc(t).toPrecision(4)), 4, { trim: true }), unit: 'm s⁻²', hue: 'acc' },
+        y >= -1e-9 ? { k: `Above the ground${tag}`, v: num(Math.max(0, y), r != null ? 4 : 2, { trim: r != null }), unit: 'm', hue: 'disp' }
+          : { k: `Into the ground${tag}`, v: num(-y, 4, { trim: true }), unit: 'm', hue: 'disp' },
+        { k: `Velocity, up +${tag}`, v: num(f.vel(tt), 2), unit: 'm s⁻¹', hue: 'vel' },
+        { k: `Acceleration, up +${tag}`, v: num(Number(f.acc(tt).toPrecision(4)), 4, { trim: true }), unit: 'm s⁻²', hue: 'acc' },
       ],
-      right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
+      right: [r != null ? { k: 'Time (replay)', v: num(tt, 4), unit: 's' } : { k: 'Time', v: num(t, 2), unit: 's' }],
     };
   },
 

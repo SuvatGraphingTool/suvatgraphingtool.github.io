@@ -114,9 +114,11 @@ export function solveSink(k = {}) {
   // the run: the flight, the sink, then a pause at rest in which the stage replays
   // the sink slowed down — too quick to see at the speed of the flight
   const tRest = snap(tLand + tSink), hold = snap(Math.max(0.8, tLand * 0.35)), tMax = snap(tRest + hold);
-  const pre = Math.min((1.6 * depth) / vL, tLand);
+  // the replay starts with the ball half its final depth above the ground, and waits a
+  // fifth of the pause at rest first, so the stop is seen before it is played again
+  const pre = Math.min((0.5 * depth) / vL, tLand), beat = hold * 0.2, play = hold - beat;
   // a sink slow enough to watch at the flight's own pace needs no replay
-  const slow = hold / (pre + tSink) >= 2 ? hold / (pre + tSink) : null;
+  const slow = play / (pre + tSink) >= 2 ? play / (pre + tSink) : null;
   const dec = -a;
   const pos = (t) => {
     const c = Math.min(Math.max(t, 0), tMax);
@@ -128,7 +130,7 @@ export function solveSink(k = {}) {
   const acc = (t) => (t < tLand ? -g : t < tRest ? dec : 0);
   // the slow replay: over the pause, the moment it reaches the ground and sinks, at the
   // real time each instant of the pause stands for
-  const replay = (t) => (slow == null || t <= tRest ? null : snap(tLand - pre + (Math.min(t, tMax) - tRest) * ((pre + tSink) / hold)));
+  const replay = (t) => (slow == null || t <= tRest + beat ? null : snap(tLand - pre + (Math.min(t, tMax) - tRest - beat) * ((pre + tSink) / play)));
 
   const notes = [
     `${u === 0 ? 'Released from rest at A, it' : `It leaves A at ${M`${d(u)} [m s^-1]`}, rises ${M`${d(H)} [m]`} above it, and`} reaches the ground ${M`${d(tLand)} [s]`} after it was ${u === 0 ? 'let go' : 'projected'}, moving at ${M`${d(vL)} [m s^-1]`}.`,
