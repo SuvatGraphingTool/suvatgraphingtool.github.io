@@ -139,7 +139,7 @@ function blocksFor(o, t, tMax, K, U, f) {
   ];
   if (fin(aa)) {
     rows.push({ name: 'Acceleration', value: aa, unit: U.a, formula: M`a`, sub: d(aa), hue: 'acc', part,
-      note: ended ? 'Its motion ends here: the engine follows it no further.'
+      note: ended ? (K?.resolveEndWords || 'Its motion ends here: the engine follows it no further.')
         : Math.abs(vv) < 1e-9 ? (Math.abs(aa) < 1e-9 ? 'At rest.' : t < 1e-9 ? 'Starting from rest.' : t >= tMax - 1e-9 ? 'Coming to rest.' : 'Momentarily at rest.')
         : Math.abs(aa) < 1e-9 ? 'Steady: no acceleration.' : aa * vv < 0 ? 'Against the motion: slowing down.' : 'With the motion: speeding up.' });
   }

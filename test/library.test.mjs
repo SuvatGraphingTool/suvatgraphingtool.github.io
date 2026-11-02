@@ -1757,11 +1757,16 @@ group('Edexcel M1 Nov 2004 Q7: pulled by a rope', () => {
   ok(!solveRope({ m: 30, mu: 0.2, theta: 80, T: 400, v: 12 }).ok, 'a pull that would lift it off the ground is refused');
   ok(!solveRope({ m: 30, mu: 0.2, T: 50, v: 12 }).ok, 'a pull too weak to beat friction is refused');
   ok(!solveRope({ m: 30, mu: 0, T: 150, v: 12 }).ok, 'let go on smooth level ground it never stops: refused');
-  ok(!solveRope({ m: 30, mu: 0.2, T: 150, a: 2, v: 12 }).ok && !solveRope({ m: 30, mu: 0.2, T: 150 }).ok, 'both T and a, or no release speed, refused');
+  ok(!solveRope({ m: 30, mu: 0.2, T: 150, a: 2, v: 12 }).ok, 'both T and a refused');
+  { const p = solveRope({ m: 30, mu: 0.2, T: 150, g: 9.8 }); ok(p.ok && !p.letGo && p.f.tMax === 3 && p.f.phase(p.f.tMax) === 'pull', 'no release speed: the pull alone, shown for the stage’s 3 s'); }
   ok(ropeWorking(s).length === 2, 'the working: pulled, then let go');
   { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
     ok(strip(s.pull[0].f) === 'R+Tsinθ=mg', 'level ground: R + T sin θ = m g, no cos α');
     ok(up.free.some((r) => /μR−mgsinα=ma/.test(strip(r.f))), 'sliding back: its acceleration is worked, not just stated');
+    ok(near(up.backDown, 1.508, 0.001) && /tanα=/.test(strip(up.pull[0].f)), 'tan α worked into sin and cos first; back down at 1.508 m s⁻², a size down the slope');
+    const smooth = solveRope({ m: 5, mu: 0, alpha: 30, T: 40, theta: 10, v: 3, g: 9.8 });
+    ok(!smooth.notes.some((x) => /friction/.test(x.replace(/<[^>]+>/g, '')) && !/μ=0/.test(x.replace(/<[^>]+>/g, ''))) && !smooth.free.some((r) => /0×/.test(strip(r.s))), 'μ = 0: no friction in the words, no μR term');
+    ok(up.derived.some((x) => /T=509\.4/.test(strip(x))), 'given a, the tension is what it shows as found');
     const back = solveRope({ m: 10, mu: 0, alpha: 30, T: 100, v: 2, g: 9.8 });
     ok(back.ok && back.f.pos(back.f.tMax) >= -1e-9, 'sliding back never passes where it started');
     ok(box.f.forces(box.f.tMax).F > 0 && box.f.forces(box.f.tMax).holding, 'at rest on a slope, friction holds it (up the slope), from the engine');

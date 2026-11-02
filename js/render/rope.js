@@ -56,7 +56,8 @@ export function render(canvas, cam, o) {
   const along = (s) => ({ x: X(s * ca), y: Y(s * sa) });
   const ext = (Ls * 0.6) / k;                       // the incline starts this far back, so the sledge sits on it at s = 0
   const o0 = along(-ext), end = along(far + (ropeLen + Lp) / k);
-  const nx = sa, ny = -ca;                          // the normal out of the surface, on screen (up)
+  // the normal out of the surface, on screen (up), square to the way it is pulled (ca, −sa)
+  const nx = -sa, ny = -ca;
   // where the hand is when the rope is let go (for keeping the far pines clear of it)
   const handAt0 = () => { const b = along(f.s1); return { x: b.x + ca * Ls * 0.5 + nx * attachH + Math.cos(al + th) * ropeLen, y: 0 }; };
   const uw = { x: ca, y: -sa };                     // the way it is pulled, on screen
@@ -69,7 +70,9 @@ export function render(canvas, cam, o) {
   const bandY = Math.min(surfY - 30, h * 0.75);
   g.fillStyle = E.night ? '#b7c3ce' : '#e6edf3'; g.fillRect(0, bandY, w, h - bandY);
   // the far pines, kept clear of where the person lets go and of the start (they would stand in a thicket)
-  { const r = rng(5), keep = [X(0), handAt0().x]; for (let i = 0; i < (phone ? 6 : 9); i++) { const x = r() * w, hp = Lp * (0.6 + r() * 0.5); const y0 = bandY + 6 + r() * 10; if (keep.some((kx) => Math.abs(x - kx) < Lp)) continue; pine(g, x, y0, hp); } }
+  { const r = rng(5), keep = [X(0), handAt0().x]; for (let i = 0; i < (phone ? 6 : 9); i++) { const x = r() * w, hp = Lp * (0.6 + r() * 0.5); const y0 = bandY + 6 + r() * 10; if (keep.some((kx) => Math.abs(x - kx) < Lp)) continue;
+    // on a slope, never where the slope rises in front of it (a tip would poke up at the track)
+    if (f.alpha > 0 && x > o0.x - Lp * 0.4 && x < end.x + Lp * 0.4) continue; pine(g, x, y0, hp); } }
   const sg = g.createLinearGradient(0, end.y, 0, o0.y + 60); sg.addColorStop(0, snow); sg.addColorStop(1, shade);
   g.fillStyle = sg; g.beginPath(); g.moveTo(-20, o0.y); g.lineTo(o0.x, o0.y); g.lineTo(end.x, end.y); g.lineTo(w + 20, end.y); g.lineTo(w + 20, h + 20); g.lineTo(-20, h + 20); g.closePath(); g.fill();
   g.strokeStyle = 'rgba(120,140,160,0.45)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-20, o0.y); g.lineTo(o0.x, o0.y); g.lineTo(end.x, end.y); g.lineTo(w + 20, end.y); g.stroke();
@@ -87,7 +90,8 @@ export function render(canvas, cam, o) {
     const R = clamp(k * far * 0.2, 40, 90);
     g.strokeStyle = P.ink; g.lineWidth = 1.5; g.beginPath(); g.moveTo(o0.x, o0.y); g.lineTo(o0.x + R * 1.25, o0.y); g.stroke();
     g.beginPath(); g.arc(o0.x, o0.y, R, -al, 0); g.stroke();
-    L.add(f.tanA != null ? T`tan alpha = ${fracOf(f.tanA)}` : `${num(f.alpha, 1, { trim: true })}°`, o0.x + Math.cos(-al / 2) * R * 1.25, o0.y + Math.sin(-al / 2) * R * 1.25 + 4, { color: P.ink, pri: 10, size: 14, weight: 700, maxPush: 12 });
+    // a fraction written out (5 ÷ 12), not as a font's tiny auto-fraction
+    L.add(f.tanA != null ? `${T`tan alpha`} = ${fracOf(f.tanA).replace('/', ' ÷ ')}` : `${num(f.alpha, 1, { trim: true })}°`, o0.x + Math.cos(-al / 2) * R * 1.25, o0.y + Math.sin(-al / 2) * R * 1.25 + 4, { color: P.ink, pri: 10, size: 14, weight: 700, maxPush: 12 });
   }
 
   // ── the sledge's track: two runner ruts, as far as it has got

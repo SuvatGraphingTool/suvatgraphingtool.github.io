@@ -24,7 +24,7 @@ export const rope = {
     fld('T', 'pull', 'The tension in the rope (N)', 'Or its acceleration below.', true),
     fld('a', 'pull', 'Or its acceleration while pulled (m s⁻²)', 'Then the tension is found.', true),
     fld('theta', 'pull', 'The rope’s angle above the surface (°)', 'Blank: along the surface.', true),
-    fld('v', 'pull', 'Its speed when the rope is let go (m s⁻¹)', ''),
+    fld('v', 'pull', 'Its speed when the rope is let go (m s⁻¹)', 'Blank: only the pull is shown.', true),
     fld('mu', 'ground', 'Coefficient of friction', ''),
     fld('alpha', 'ground', 'The slope’s angle (°)', 'Blank: level ground.', true),
     fld('tanA', 'ground', 'Or the slope’s tan α', 'As the papers often give it.', true),
@@ -37,7 +37,8 @@ export const rope = {
   resolveAxis: 'along',
   // on level ground the motion is across: dashed (rule 2); up a slope neither across nor up: solid
   resolvePart: (f) => (f.alpha === 0 ? 'x' : ''),
-  resolveEnds: true,   // a run that ends sliding back stops while it moves: the engine follows it no further
+  resolveEnds: true,   // a run that ends sliding back stops while it moves: the stage follows it no further
+  resolveEndWords: 'The stage follows it no further from here.',
   resolveFrom: 'where it started',
   resolveWords: { pos: 'going the way it is pulled', neg: 'sliding back', plus: 'The way it is pulled', line: 'along the surface' },
   read(v) { return { m: v.m, T: v.T, a: v.a, theta: v.theta, v: v.v, mu: v.mu, alpha: v.alpha, tanA: v.tanA, g: v.g }; },
@@ -77,8 +78,9 @@ export const rope = {
 
   ending(s) {
     return {
-      eyebrow: 'Let go, to rest',
-      title: `It slides ${num(Number(s.s2.toPrecision(3)), 6, { trim: true })} m after the rope is let go${s.stays ? '.' : ', then slides back down.'}`,
+      eyebrow: s.letGo ? 'Let go, to rest' : 'Pulled',
+      title: s.letGo ? `It slides ${num(Number(s.s2.toPrecision(3)), 6, { trim: true })} m after the rope is let go${s.stays ? '.' : ', then slides back down.'}`
+        : `Pulled at ${num(Number(s.a.toPrecision(3)), 6, { trim: true })} m s⁻² by a tension of ${num(Number(s.T.toPrecision(4)), 6, { trim: true })} N.`,
       body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}`,
       real: true,
     };

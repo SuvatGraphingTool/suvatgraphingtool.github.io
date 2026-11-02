@@ -172,7 +172,7 @@ export function render(canvas, cam, o) {
     for (const [p, a] of [[p0, a0], [p1, a1]]) stroke(g, [p, a], { color: P.disp, width: 1, alpha: 0.35 });
     L.add(label, (a0.x + a1.x) / 2 + out.x * 14, (a0.y + a1.y) / 2 + out.y * 14, { color: P.disp, pri: 9, size: 14, weight: 700, maxPush: 16 });
   };
-  if (f.L != null && !(f.stopsOnSlope && t >= f.tRest - 1e-9)) sRuler(0, Ldraw, T`${num(f.L, 6, { trim: true })} [m]`);
+  if (f.L != null && !(f.stopsOnSlope && t >= f.tRest - 1e-9) && !(!f.stopsOnSlope && t >= f.tB - 1e-9 && t < f.tB + Math.max(0.8, (f.tRest - f.tB) * 0.4))) sRuler(0, Ldraw, T`${num(f.L, 6, { trim: true })} [m]`);
 
   // ── what slides: tilted with the slope, levelling over its own length at the foot (a little chatter as it does)
   const s = f.pos(t), q = pathAt(s), onSlope = s < f.sSlope - 1e-9 || f.stopsOnSlope;
@@ -199,7 +199,7 @@ export function render(canvas, cam, o) {
       // the pole starts above the object, so it never spears it; the words to the right of the foot
       const fy = oy - Ls * 1.6; stroke(g, [{ x: foot.x, y: oy - Ls * 1.0 }, { x: foot.x, y: fy + 4 }], { color: P.vel, width: 1.4, alpha: 0.8 });
       L.add(T`${sf(f.vBot)} [m s^-1] "at the bottom"`, foot.x + 6, fy, { color: P.vel, pri: 10, size: 13, weight: 700, maxPush: 16, align: 'left' });
-    } else L.add(T`${sf(f.vBot)} [m s^-1] "at the bottom"`, foot.x + 4, oy + 96, { color: P.vel, pri: 8, size: 13, weight: 700, align: 'left', maxPush: 16 });
+    } else L.add(T`${sf(f.vBot)} [m s^-1] "at the bottom"`, foot.x + 4, oy + 120, { color: P.vel, pri: 8, size: 13, weight: 700, align: 'left', maxPush: 16 });
   }
   // ── at rest: the run-out along the level (dashed: across, rule 2), or how far down the slope (solid, along it)
   if (fired && t >= f.tRest - 1e-9) {
@@ -226,10 +226,12 @@ export function render(canvas, cam, o) {
 
   // ── the forces on it for this moment (from the engine): a card, or on a small stage a caption
   const FF = f.forces?.(t);
+  // no mass, no forces in newtons: say so where the card would be
+  if (!FF) { unview(g); g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle'; const txt = 'Give its mass for the forces in newtons'; const tw = g.measureText(txt).width + 14; paper(g, w - tw - 16, h - 38, tw, 24); g.fillStyle = P.muted; g.fillText(txt, w - tw - 9, h - 26); g.restore(); }
   if (FF) {
     unview(g);
     const where = FF.phase === 'rest' ? (FF.holding ? 'Held on the slope' : 'At rest') : FF.slope ? 'Down the slope' : 'On the level';
-    const items = [...(FF.slope ? [T`m g sin alpha = ${sf(FF.W)} [N]`] : []), T`R = ${sf(FF.R)} [N]`, Math.abs(FF.F) > 1e-9 ? T`F = ${sf(Math.abs(FF.F))} [N] ${FF.F < 0 ? '"against it"' : '"holding it"'}` : 'no friction'];
+    const items = [...(FF.slope ? [T`m g sin alpha = ${sf(FF.W)} [N]`] : []), T`R = ${sf(FF.R)} [N]`, Math.abs(FF.F) > 1e-9 ? T`F = ${sf(Math.abs(FF.F))} [N] ${FF.holding ? '"holding it"' : '"against it"'}` : 'no friction'];
     if (cardW) {
       const cx = w - cardW - 16, cy = h - cardH - 16, lab = (txt, x, y, col, al2 = 'left') => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = al2; g.textBaseline = 'middle'; g.fillText(txt, x, y); g.restore(); };
       paper(g, cx, cy, cardW, cardH);
@@ -240,7 +242,7 @@ export function render(canvas, cam, o) {
       g.strokeStyle = withAlpha(P.ink, 0.5); g.lineWidth = 1.2; g.beginPath(); g.moveTo(-46, 10); g.lineTo(46, 10); g.stroke();
       g.fillStyle = withAlpha(P.ink, 0.1); g.strokeStyle = P.ink; g.beginPath(); g.roundRect?.(-14, -10, 28, 20, 3); g.fill(); g.stroke();
       if (Lm(FF.R)) arrow(g, 0, -10, 0, -10 - Lm(FF.R), { color: P.ink, width: 2.2, head: 8 });
-      if (Lm(Math.abs(FF.F))) { const sgn = FF.F < 0 ? -1 : FF.slope ? -1 : 1; arrow(g, sgn * 14, 10, sgn * (14 + Lm(Math.abs(FF.F))), 10, { color: P.ink, width: 2.2, head: 7 }); }
+      if (Lm(Math.abs(FF.F))) { const sgn = Math.sign(FF.F); arrow(g, sgn * 14, 10, sgn * (14 + Lm(Math.abs(FF.F))), 10, { color: P.ink, width: 2.2, head: 7 }); }
       g.restore();
       arrow(g, bx, by + 10, bx, by + 10 + Lm(f.m * f.g), { color: P.ink, width: 2.2, head: 8 });
       items.forEach((it, i) => lab(it, cx + cardW - 10, cy + 40 + i * 20, P.ink, 'right'));

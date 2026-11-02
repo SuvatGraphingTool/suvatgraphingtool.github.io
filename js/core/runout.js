@@ -151,7 +151,8 @@ export function solveRunout(k = {}) {
   const forces = (t) => {
     if (m == null) return null;
     const p = phase(t), onSlope = p === 'slope' || (p === 'rest' && stopsOnSlope);
-    if (p === 'rest') return onSlope ? { phase: p, slope: true, W: Wd, R: Rs, F: Wd, holding: true } : { phase: p, slope: false, W: 0, R: Rg, F: 0 };
+    // holding it at rest on the slope, friction acts up it: negative, along the path +
+    if (p === 'rest') return onSlope ? { phase: p, slope: true, W: Wd, R: Rs, F: -Wd, holding: true } : { phase: p, slope: false, W: 0, R: Rg, F: 0 };
     return onSlope ? { phase: p, slope: true, W: Wd, R: Rs, F: -Fs } : { phase: p, slope: false, W: 0, R: Rg, F: -Fg };
   };
 
@@ -163,7 +164,7 @@ export function solveRunout(k = {}) {
     stopsOnSlope ? (have(k.L) ? (Math.abs(dStop - L) <= 1e-9 ? `It just reaches the foot of the slope and stops there.` : `It stops ${M`${d(dStop)} [m]`} down the slope, before the bottom, and stays there.`) : `It stops after ${M`${d(dStop)} [m]`}: for it to reach the bottom the slope can be at most ${M`${d(dStop)} [m]`} long.`)
       : `It reaches the bottom at ${M`${d(vBot)} [m s^-1]`} after ${M`${d(t1)} [s]`}, and slides ${M`${d(s2)} [m]`} along the ground before friction stops it.`,
   ];
-  const derived = [`${M`a = ${d(a1)} [m s^-2]`} on the slope`, ...(stopsOnSlope ? [`${M`${d(dStop)} [m]`} to rest`] : [`${M`v = ${d(vBot)} [m s^-1]`} at the bottom`, `${M`${d(s2)} [m]`} along the ground`])];
+  const derived = [`${M`a = ${d(a1)} [m s^-2]`} on the slope`, ...(have(k.vB) ? [`${M`mu = ${d(mu1)}`}`] : []), ...(stopsOnSlope ? [`${M`${d(dStop)} [m]`} to rest`] : [`${M`v = ${d(vBot)} [m s^-1]`} at the bottom`, `${M`${d(s2)} [m]`} along the ground`])];
 
   const f = { kind: 'runout', look, alpha, u, L: have(k.L) ? k.L : null, sSlope, a1, a2, vBot, s2, t1, t2, tB, tRest, tMax, tFlight: tMax, stopsOnSlope, dStop, mu1, smooth, g, m,
     Fslope: F1 != null ? F1 : m != null && mu1 != null ? snap(mu1 * m * g * cs) : null, Fground: Fg, W: m != null ? snap(m * g) : null,

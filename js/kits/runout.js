@@ -58,7 +58,7 @@ export const runout = {
     return {
       left: [
         { k: 'Along its path', v: num(f.pos(t), 2), unit: 'm', hue: 'disp' },
-        { k: 'Speed', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+        { k: 'Velocity', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
         { k: 'Acceleration', v: p2(f.acc(t)), unit: 'm s⁻²', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
@@ -70,8 +70,9 @@ export const runout = {
     const cut = [f.tB, f.tRest].filter((x) => x > 0 && x < f.tMax);
     // down the slope solid; along the level (and at rest there) across, so dashed (rule 2): one series each
     const two = (fn, label, tag, color) => f.stopsOnSlope ? [{ label, tag, fn, color, dash: null, breaks: cut }]
-      : [{ label, tag, fn: (tt) => (tt <= f.tB ? fn(tt) : NaN), color, dash: null },
-         { label: `${label}, on the level`, tag: null, fn: (tt) => (tt >= f.tB ? fn(tt) : NaN), color, dash: [6, 4], breaks: cut }];
+      // the letter on the series that is drawn at the end (the level one), so it sits at the line's end
+      : [{ label, tag: null, fn: (tt) => (tt <= f.tB ? fn(tt) : NaN), color, dash: null },
+         { label: `${label}, on the level`, tag, fn: (tt) => (tt >= f.tB ? fn(tt) : NaN), color, dash: [6, 4], breaks: cut }];
     const marks = f.stopsOnSlope ? [] : [{ t: f.tB, y: f.sSlope, color: P.mark, label: 'the bottom' }];
     return [
       { canvas: 'g-s', title: 'Distance along its path–time', unit: 'm', tMax: f.tMax, t, series: two(f.pos, 'along its path', T`s`, P.disp), points: marks },

@@ -650,8 +650,16 @@ export const LIBRARY = [
       { label: 'b', kind: 'acceleration', ask: 'Find the acceleration of the sledge, to 3 significant figures.', find: 'a', sym: 'a', unit: 'm s^-2', dp: 2, at: 'f.tMid', step: 'Pulled', paper: 3.08, tol: 0.005 },
       { label: 'c', kind: 'distance', ask: 'The rope is let go when the sledge is moving at 12 m s⁻¹. Find how far it slides to rest, to 3 significant figures.', find: 's2', sym: 's', unit: 'm', dp: 1, at: 'f.tRest', step: 'Let go', paper: 36.7, tol: 0.05 },
     ],
+    answers: [
+      { kind: 'force', say: 'the normal reaction of the plane on the box', find: 'R', sym: 'R', unit: 'N', dp: 1, at: 'f.tMid', step: 'Pulled', example: { m: 2, mu: 0.6, alpha: 20, T: 18, g: 9.8 } },
+      { kind: 'acceleration', say: 'the acceleration of the box up the plane', find: 'a', sym: 'a', unit: 'm s^-2', dp: 3, at: 'f.tMid', step: 'Pulled', example: { m: 2, mu: 0.6, alpha: 20, T: 18, g: 9.8 } },
+      { kind: 'force', say: 'the tension in the rope', find: 'T', sym: 'T', unit: 'N', dp: 1, at: 'f.tMid', step: 'Pulled', example: { m: 78, mu: 0.25, tanA: 5 / 12, a: 0.5, g: 9.8 } },
+      { kind: 'acceleration', say: 'its acceleration down the slope once it has stopped and slides back', find: 'backDown', sym: 'a', unit: 'm s^-2', dp: 2, at: 'end', step: 'If it comes to rest', example: { m: 78, mu: 0.25, tanA: 5 / 12, a: 0.5, g: 9.8 } },
+    ],
     sources: [
       { board: 'Edexcel', paper: '6677 M1', session: 'Nov 2004', q: '7', part: 'all' },
+      { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2005', q: '4', part: 'all' },
+      { board: 'Edexcel', paper: '6677 M1', session: 'Jan 2001', q: '7', part: 'all' },
     ],
     tags: ['sledge', 'rope', 'pulled', 'tension', 'angle to the horizontal', 'rough horizontal ground', 'coefficient of friction', 'normal reaction', 'friction',
            'released', 'let go', 'comes to rest', 'slides', 'mechanics', 'A level', 'Edexcel', 'M1'],
