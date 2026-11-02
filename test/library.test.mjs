@@ -34,6 +34,7 @@ import { solveCable, cableWorking } from '../js/core/cable.js';
 import { solveStages } from '../js/core/journey.js';
 import { solveRope, ropeWorking } from '../js/core/rope.js';
 import { solveRunout, runoutWorking } from '../js/core/runout.js';
+import { solveDrive, driveWorking } from '../js/core/drive.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1743,6 +1744,34 @@ group('CIE 9709/04 specimen Q2 and Edexcel M1 Nov 2002 Q5: down the slope and ac
     const ks = K.solve(K.read({ alpha: 30, L: 3, m: 0.5, F2: 1, g: 10 }));
     ok(/foot of the slope/.test(resolveKit(K, ks, ks.f, ks.f.tB + 0.5).blocks[0].rows[0].note), 'on the level, displacement measured from the foot');
     ok(near(c.dec, 3.6), 'the deceleration as a size'); }
+});
+
+group('CIE 9709/42 Jun 2019 Q4 and 9709/43 Jun 2015 Q4: up the hill and down it', () => {
+  const s = solveDrive({ m: 1250, D: 1200, R: 350, sinA: 0.05, s: 100, g: 10 });
+  ok(s.ok && near(s.aUp, 0.18) && near(s.vUp, 6) && near(s.aDown, 1.18) && near(s.vDown, Math.sqrt(236)), 'J19: a = 0.18 and 6 m s⁻¹ up the hill; a = 1.18 and √236 = 15.4 m s⁻¹ down it', s.reason);
+  ok(near(s.W, 625) && s.f.up.net === 225 && s.f.down.net === 1475, 'the weight’s component 625 N; resultants 225 N and 1475 N, from the engine');
+  const l = solveDrive({ way: 'up', m: 12000, R: 7500, h: 25, s: 500, u: 24, v: 16, g: 10 });
+  ok(l.ok && near(l.sinA, 0.05) && near(l.aUp, -0.32) && near(l.D, 9660) && near(l.tUp, 25), 'J15: sin α = 25 ÷ 500, a = −0.32, the driving force 9660 N, 25 s up the hill');
+  const r = solveDrive({ way: 'up', m: 12000, D: 9660, h: 25, s: 500, u: 24, v: 16, g: 10 });
+  ok(r.ok && near(r.R, 7500), 'the other way round: the driving force given, the resistance found');
+  const f = s.f;
+  ok(near(f.up.pos(f.up.t), 100) && near(f.down.pos(f.down.t), 100) && near(f.up.vel(f.tMax), 6) && near(f.down.pos(f.tMax), 100), 'each covers the 100 m, and is held where it ends');
+  const weak = solveDrive({ m: 1250, D: 500, R: 350, sinA: 0.05, s: 100, g: 10 });
+  ok(weak.ok && weak.f.ways.join() === 'down' && /cannot get going up the hill/.test(weak.notes[0]), 'too weak to climb from rest: only down the hill, and the reason said');
+  ok(!solveDrive({ way: 'up', m: 1250, D: 500, R: 350, sinA: 0.05, s: 100, g: 10 }).ok, 'and asked for up the hill alone, refused');
+  { const st = solveDrive({ way: 'up', m: 1000, D: 300, R: 200, alpha: 5, s: 200, u: 10, g: 9.8 }); ok(!st.ok && /slows to rest/.test(st.reason), 'slowing to rest short of the distance: refused, with where it stops'); }
+  ok(!solveDrive({ way: 'both', m: 1250, R: 350, sinA: 0.05, s: 100, v: 10 }).ok, 'a force found from the speed is one way: both ways refused');
+  ok(!solveDrive({ m: 1250, D: 1200, R: 350, sinA: 0.05, alpha: 3, s: 100 }).ok && !solveDrive({ m: 1250, D: 1200, sinA: 1.2, s: 100 }).ok, 'two angles, or a sine past 1, refused');
+  { const z = solveDrive({ way: 'up', m: 12000, h: 25, s: 500, u: 24, v: 16, g: 10 }); ok(z.ok && z.R === 0 && near(z.D, 2160), 'the speed at the end, both forces blank: no resistance, the driving force found'); }
+  { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
+    ok(driveWorking(s).length === 2 && driveWorking(l).length === 1, 'the working: each way driven');
+    ok(strip(l.rows[0].f) === 'sinα=hs' || /sinα=/.test(strip(l.rows[0].f)), 'a height risen worked into sin α first');
+    ok(/1200−350−1250×10×0\.05=1250a/.test(strip(s.rows[0].s)) && /1200−350\+1250×10×0\.05=1250a/.test(strip(driveWorking(s)[1].rows[0].s)), 'up the hill minus the component, down it plus');
+    const K = KITS.drive, kv = K.solve(K.read({ m: 1250, D: 1200, R: 350, sinA: 0.05, s: 100, g: 10 }));
+    ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', second: '#1', mark: '#0' }).every((gr) => gr.series.length === 2 && gr.series.every((x) => x.dash == null)), 'two lines on each graph, solid: along a slope (rule 2)');
+    const rk = resolveKit(K, kv, kv.f, 5);
+    ok(rk.blocks.length === 2 && rk.blocks.every((b) => b.rows.every((q) => q.part === '')), 'Resolve: both cars, never dashed');
+    ok(K.hud(kv.f, 5).left.length === 4 && K.ending(kv).title.includes('6 m s⁻¹'), 'the readouts for both, and the ending says the speeds'); }
 });
 
 group('Edexcel M1 Nov 2004 Q7: pulled by a rope', () => {

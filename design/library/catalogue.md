@@ -142,6 +142,8 @@ this library: *covered* names the one of the twelve that does it.
 | 106 | CIE | 9709/41 | May/Jun 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | 0.8 kg projected at 12 m/s up a rough 10° plane, μ = 0.4: the acceleration; the distance up the plane to rest | 10 | **built** → `up-a-rough-slope` |
 | 117 | CIE | 9709/04 | specimen for 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/Specimen%20QP%20-%20M1.pdf) | 0.5 kg from rest down a smooth 30° slope: time to 2.5 m/s; after 3 m onto rough level ground with 1 N friction: distance to rest | 10 | **built** → `down-and-across` |
 | 118 | Edexcel | 6677 M1 | Nov 2002 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 10 kg suitcase down a rough 20° ramp, 10 m/s at A, 8 m/s 5 m on: the deceleration, μ, the greatest length of the ramp | 9.8 | **built** → `down-and-across` |
+| 119 | CIE | 9709/42 | May/Jun 2019 | 4 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s19_qp_42.pdf) | A 1250 kg car, driving force 1200 N, resistance 350 N, on a road with sin α = 0.05: its speed after 100 m from rest driven up the hill, and driven down it | 10 | **built** → `up-and-down-the-hill` |
+| 120 | CIE | 9709/43 | May/Jun 2015 | 4 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s15_qp_43.pdf) | A 12 000 kg lorry up a 500 m hill rising 25 m, 24 then 16 m/s, resistance 7500 N: the driving force (by energy in the paper; by SUVAT and F = ma here) | 10 | **built** → `up-and-down-the-hill` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -473,6 +475,29 @@ rest), then on the level −F = ma and SUVAT to rest.
 in the snow; or a loading dock, a chequer-plate ramp and a warehouse floor with a suitcase.
 The angle at the foot, the slope's length beside it, its speed at the bottom, a dashed ruler
 of the run-out on the level.
+
+### `up-and-down-the-hill` — Up the hill and down it
+
+**Papers.** Cambridge 9709/42 May/Jun 2019 Q4 (a 1250 kg car, 1200 N of driving force against
+350 N, sin α = 0.05, g = 10: after 100 m from rest, 6 m s⁻¹ up the hill and 15.4 m s⁻¹ down it).
+Cambridge 9709/43 May/Jun 2015 Q4 (a 12 000 kg lorry slows from 24 to 16 m s⁻¹ up a 500 m hill
+whose top is 25 m higher, against 7500 N: the driving force, 9660 N).
+
+**Why the others cannot.** `freewheeling` has no driving force and goes one way, down;
+`down-a-rough-slope` and `down-and-across` slide under gravity alone. Nothing drives a vehicle
+against a resistance on a slope, or compares the two ways.
+
+**How it is solved.** js/core/drive.js: along the road, the way it drives positive,
+D − R ∓ m g sin α = ma (minus up the hill, plus down it), then v² = u² + 2as and v = u + at.
+Given the speed at the end too, v² = u² + 2as gives a first, and F = ma the force left out.
+sin α may be given, or α, or the height risen over the distance (sin α = h ÷ s).
+
+**The stage.** A country road climbing a hillside from a village at its foot, a stone wall
+and trees along it, a crash barrier and a hill sign; marker posts at the ends of the distance;
+one car driven up in the near lane and one down in the far lane, outlined as its graph line
+is. The angle at the foot (drawn at 7° when it is flatter, and said so), the distance as a
+ruler under the road, a height risen at the top; each one's speed where its distance ends;
+the forces along the road on each on a card.
 
 ### `pulled-by-a-rope` — Pulled by a rope
 

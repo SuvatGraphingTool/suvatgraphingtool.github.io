@@ -722,6 +722,26 @@ group('The Past-paper library: down the slope and across the flat, everything it
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
+group('The Past-paper library: up the hill and down it, everything it says', () => {
+  const K = KITS.drive, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  for (const k of [{ m: 1250, D: 1200, R: 350, sinA: 0.05, s: 100, g: 10 }, { way: 'up', look: 'lorry', m: 12000, R: 7500, h: 25, s: 500, u: 24, v: 16 }, { way: 'up', m: 12000, D: 9660, h: 25, s: 500, u: 24, v: 16 },
+    { way: 'down', m: 900, D: 400, alpha: 6, s: 80, u: 5 }, { m: 1250, D: 500, R: 350, sinA: 0.05, s: 100 }, { way: 'up', m: 1000, D: 300, R: 200, alpha: 5, s: 200, u: 10 },
+    { m: 1250, R: 350, sinA: 0.05, s: 100, v: 10 }, { m: 1250, D: 1200, sinA: 1.2, s: 100 }, { way: 'up', m: 100, R: 900, h: 5, s: 50, u: 2, v: 10 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMid, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('The Past-paper library: pulled by a rope, everything it says', () => {
   const K = KITS.rope, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
   const bag = [];
