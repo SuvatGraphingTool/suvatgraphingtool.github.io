@@ -3454,13 +3454,14 @@ function applyLibrary(x, { graph = true } = {}) {
   const body = solved?.ok
     ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
-  return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed, x.summary, x.example === true && !!s.example) + body };
+  return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example) + body };
 }
 /**
  * What Ask Suvat read into a library scenario's boxes, listed the way the
  * twelve's reply lists them: each value and where it came from — the
  * question, or an assumption (Earth's g; a jump's angle when none was given).
  */
+// gAssumed only where the engine uses g (its kit offers a g): a lift or a road has none to assume
 function libraryGiven(fields, gAssumed, summary = '', example = false) {
   const plain = (h) => String(h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
   const angleAssumed = /No angle was given/.test(summary || '');

@@ -450,5 +450,12 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(!/sqrt|\^|\*|<=/.test(said), 'set as maths');
 }
 
+// QA 2 Nov: "skater rolls off a 1.2m wall at 4 m/s, how far does he land" — the reply gave the time and the speed, never how far
+{
+  const d = solveHeight({ place: 'ground', h: 1.2, u: 4, theta: 0, g: 9.81 }).derived.join(' ').replace(/<[^>]+>/g, '');
+  ok(/1\.978\s*m out/.test(d), 'the reply says how far out it lands: 1.978 m');
+  ok(!/m out/.test(solveHeight({ place: 'tower', h: 20, u: 0, theta: 0, g: 9.81 }).derived.join(' ')), 'and says nothing of it for a drop, which lands at the foot');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

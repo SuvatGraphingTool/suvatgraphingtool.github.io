@@ -54,6 +54,10 @@ Gemma's allowance was already spent when the day began: my first call came back 
 | a train accelerates from rest to 20 m/s in 40 s, travels at 20 m/s for 2 min, then decelerates to rest in 30 s | Read the way a small reader writes it, with the held 20 in the hold stage's v2 and no v3. "Not enough to fix the journey yet." | The worker moves a held stage's speed to where the stage before it ends, and "to rest" ends the last stage at 0. Now 3100 m. Test. |
 | a coin is flicked off a 0.8 m table at 2 m/s | "The engine works out the rest: nothing else was needed." There was no answer at all. | The twelve's reply says what the engine found: in the air for 0.4 s, lands 0.81 m out at 4.44 m s⁻¹, and its greatest height when it rises. Test. |
 | a ball dropped from 5 m bounces keeping half its speed; two ships (example); a rocket straight up at 50 m/s | 9.90 m s⁻¹ and 1.25 m are right. The ships list the paper's values. The rocket is drawn as a particle, and the reply says so. | — |
+| skater rolls off a 1.2m wall at 4 m/s, how far does he land | Composed as a skateboarder off a wall, with the right time and speed (0.49 s, 6.29 m s⁻¹), but the distance he lands out, which is what was asked, was never said. | From a height says how far out it lands, here 1.978 m, and says nothing of it for a drop. Test. |
+| a lift: 1.5 m/s² for 2 s, steady 5 s, stops in 3 s; two cars at the lights, B 2 s later; braking from 30 m/s in 75 m | 22.5 m, 14.93 s and 6 m s⁻² are right. But the reply listed "g = 9.81, assumed · on Earth" for a lift and a road, where g plays no part. | g is said to be assumed only where the engine uses g (its kit offers one). Checked in the page. |
+| tennis serve flat at 25 m/s from 2.5 m, net 0.9 m high at 12 m | Clears by 0.47 m and lands 17.85 m out, both right. | — |
+| an apple falls from a branch 3.2 m up | Composed "off a wall": a branch is a tree. | Passed to helper one. |
 
 Passed to helper one: a composed reply lists none of the values it read, which library replies do; and the diver's reply says "it … where it was thrown from".
 
