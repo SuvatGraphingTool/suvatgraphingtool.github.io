@@ -587,7 +587,7 @@ export const LIBRARY = [
   { id: 'into-soft-ground', group: 'library', kit: 'sink',
     name: 'Into soft ground',
     sub: 'thrown straight up from 1.5 m, 25.6 m higher at the top — how long in the air, and how hard the soft ground pushes back to stop it in 2.5 cm',
-    note: 'A ball is projected straight up from a point A, 1.5 m above the ground, and rises 25.6 m above A, so it left at 22.4 metres a second. It comes down past A and reaches the ground 4.64 s after it was thrown, moving at 23.0 m s⁻¹. The ground is soft: the 0.6 kg ball sinks 2.5 cm into it and stops. To stop it that quickly, the deceleration is over ten thousand m s⁻², and the ground’s resistance, less the weight, is 0.6 times that: about 6380 N.',
+    note: 'A ball is projected straight up from a point A, 1.5 m above the ground, and rises 25.6 m above A, so it left at 22.4 metres a second. It comes down past A and reaches the ground 4.64 s after it was thrown, moving at 23.0 m s⁻¹. The ground is soft: the 0.6 kg ball sinks 2.5 cm into it and stops. To stop it that quickly, the deceleration is over ten thousand m s⁻², so the ground’s resistance is the weight plus 0.6 times that: about 6380 N.',
     params: { h: 1.5, H: 25.6, m: 0.6, depth: 0.025, g: 9.8 },
     place: 'A field cut away to its soil, side on, with a magnifier on the spot where it lands',
     example: { h: 1.5, H: 25.6, m: 0.6, depth: 0.025, g: 9.8 },

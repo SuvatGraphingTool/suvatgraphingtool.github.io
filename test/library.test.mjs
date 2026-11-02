@@ -1714,6 +1714,10 @@ group('Edexcel M1 Jan 2003 Q7 and Jun 2012 Q5: into soft ground', () => {
   ok(!solveSink({ h: 0, u: 0, m: 1, R: 100 }).ok, 'from the ground with no speed: refused');
   ok(solveSink({ h: 1.5, u: 5, y: 40, m: 1, R: 100 }).tAt.length === 0, 'a height it never reaches: no times');
   ok(sinkWorking(s).length === 2, 'the working: in the air, then in the ground');
+  ok(solveSink({ h: 2, u: 5, m: 1, R: 20, g: 9.8 }).f.slow === null && solveSink({ h: 2, u: 5, m: 1, R: 20, g: 9.8 }).f.replay(2.5) === null, 'a sink slow enough to watch is not replayed: no "slowed" claim');
+  ok(!solveSink({ h: 10, vL: -14, m: 1, R: 100 }).ok && solveSink({ h: 1, H: 0, m: 1, R: 100 }).u === 0, 'a negative speed is refused as a speed; a greatest height of 0 is a drop');
+  ok(solveSink({ h: 1, u: 5, y: 1.2755, m: 1, R: 100, g: 9.8 }).tAt.length === 1 && solveSink({ h: 1, u: 5, y: 0, m: 1, R: 100, g: 9.8 }).tAt.length === 1, 'roots that print alike are one; the launch is not a time it is back at A');
+  ok(!solveSink({ h: 1, u: 1, m: 1, R: 9.81, g: 9.8 }).ok, 'a resistance hardly above the weight, sinking a kilometre, is refused');
 });
 
 group('Resolve opens on every library stage, from its engine', () => {

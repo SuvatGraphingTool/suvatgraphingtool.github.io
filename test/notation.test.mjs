@@ -684,6 +684,26 @@ group('The Past-paper library: under the ceiling, everything it says', () => {
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
+group('The Past-paper library: into soft ground, everything it says', () => {
+  const K = KITS.sink, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ h: 1.5, H: 25.6, m: 0.6, depth: 0.025 }, { h: 17.5, vL: 28, y: 19, m: 4, R: 5000 }, { h: 0, u: 10, m: 1, R: 100 }, { h: 5, u: 0, y: -5, m: 1, R: 100 },
+    { h: 5, u: 10, y: 0, m: 1, R: 100 }, { h: 5, u: 10, y: -2, m: 1, R: 100 }, { h: 2, u: 5, y: 40, m: 1, R: 20 }, { h: 1, H: 0, depth: 0.1 }, { h: 10, vL: -14, m: 1, R: 100 },
+    { h: 1, u: 1, m: 1, R: 9.81 }, { h: 2, u: 5, m: 1, R: 5 }, { h: 1.5, u: 5, H: 2, m: 1, R: 100 }, {}]) {
+    const r = K.solve({ g: 9.8, ...k });
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tLand * 0.5, r.f.tLand + r.f.tSink * 0.5, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) { check('graph', `${gr.title} ${gr.unit}`, bag); if (gr.note) check('graph note', gr.note, bag); }
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('What Ask Suvat says it read, and what the engine made of it', () => {
   const READINGS = [
     { scenario: 'platform-angle', h: 25, s: 100, g: 9.8, angle: { degrees: 45 }, asks: ['speed of projection'] },

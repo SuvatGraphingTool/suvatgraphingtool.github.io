@@ -76,7 +76,7 @@ export function render(canvas, cam, o) {
 
   // ── to scale: the ground at 0, A at h, the greatest height at h + H; the soil cut away below
   const span = Math.max(f.h + f.H, 0.5);
-  const box = { xLo: -span * 0.32, xHi: span * 0.3, yLo: -span * 0.2, yHi: span * 1.1 };
+  const box = { xLo: -span * 0.32, xHi: span * 0.3, yLo: -Math.max(span * 0.2, f.depth * 1.15), yHi: span * 1.1 };
   const area = { left: phone ? 14 : HB[0].w + 16, right: lens.x - RI - (phone ? 10 : 24), top: HB[0].h * (phone ? 1.02 : 0.5), bottom: h - 8 };
   if (area.right - area.left < 120) area.right = w - 14;
   const { k, X, Y } = fitSide(box, area, { sky: 0.6 });
@@ -194,7 +194,8 @@ export function render(canvas, cam, o) {
   // the ball a little left of centre, the depth bracketed to its right
   const rb = R * 0.13, bxL = cx - R * 0.22, by = sy + depthNow * ki - rb;
   const showBall = t >= f.tLand - 1e-9 && by > cy - R - rb;
-  const inGround = showBall && tt >= f.tLand - 1e-9;
+  // sinking: from the moment it reaches the ground until it stops (at rest no force needs drawing)
+  const inGround = showBall && tt >= f.tLand - 1e-9 && tt < f.tRest - 1e-9;
   if (showBall) {
     // the hole it has pushed open behind it
     if (depthNow > 0) { g.fillStyle = withAlpha('#1c120c', 0.55); g.fillRect(bxL - rb * 0.9, sy, rb * 1.8, depthNow * ki); }
@@ -207,12 +208,12 @@ export function render(canvas, cam, o) {
     arrow(g, fx, by, fx, by - R * 0.4, { color: '#fbf6ee', width: 2.4, head: 9 });
     arrow(g, fx, by, fx, by + R * 0.16, { color: '#fbf6ee', width: 2, head: 7 });
   }
-  if (inGround && tt < f.tRest) {
+  if (inGround) {
     const sp = -f.vel(tt), len = clamp((sp / f.vL) * R * 0.5, 6, R * 0.5);
     if (sp > 1e-6) arrow(g, bxL + rb + 7, by - len / 2, bxL + rb + 7, by + len / 2, { color: P.vel, width: 2.4, head: 8 });
   }
   const bxR = cx + R * (phone ? 0.06 : 0.16), yEnd = sy + f.depth * ki;
-  g.strokeStyle = '#fbf6ee'; g.lineWidth = 1.6;
+  g.strokeStyle = P.disp; g.lineWidth = 2;
   g.beginPath(); g.moveTo(bxR, sy); g.lineTo(bxR, yEnd); g.moveTo(bxR - 5, sy); g.lineTo(bxR + 5, sy); g.moveTo(bxR - 5, yEnd); g.lineTo(bxR + 5, yEnd); g.stroke();
   g.restore();
   // the rim
@@ -227,11 +228,12 @@ export function render(canvas, cam, o) {
     g.lineWidth = 4; g.strokeStyle = withAlpha('#101418', 0.7); g.lineJoin = 'round'; g.textAlign = 'left';
     g.strokeText(txt, xs, y); g.fillStyle = col; g.fillText(txt, xs, y); g.restore();
   };
-  lab(T`${s3(f.depth)} [m]`, bxR + 8, (sy + yEnd) / 2, '#fbf6ee');
+  lab(T`${s3(f.depth)} [m]`, bxR + 8, (sy + yEnd) / 2, P.disp);
   if (inGround && f.R != null) { lab(T`R = ${s3(f.R)} [N]`, fx - 6, by - R * 0.3, '#fbf6ee', 'right'); lab(T`m g`, fx - 6, by + R * 0.12, '#fbf6ee', 'right'); }
-  const slowed = `slowed ${num(Math.round(f.slow), 0)} times`;
-  lab(slowing ? (phone ? `Slowed ${num(Math.round(f.slow), 0)} times` : `In the ground, ${slowed}`) : t >= f.tRest - 1e-9 ? 'At rest in the ground' : 'In the ground, enlarged', cx, cy - R - 12, '#fbf6ee', 'center');
-  // under the lens: the acceleration in the ground, up the page — it slows the sinking
-  lab(T`a = ${s3(-f.a)} [m s^-2] "up"`, cx, cy + R + 14, P.acc, 'center');
+  // the replay's pace is against the flight's: the engine's factor
+  const n = f.slow != null ? num(Math.round(f.slow), 0) : '';
+  lab(slowing ? (phone ? `Slowed ${n} times` : `In the ground, ${n} times slower than the flight`) : tt >= f.tRest - 1e-9 ? 'At rest in the ground' : 'In the ground, enlarged', cx, cy - R - 12, '#fbf6ee', 'center');
+  // under the lens, while it sinks: the acceleration there, upwards — it slows the sinking
+  if (inGround) lab(T`"in the ground:" a = ${s3(-f.a)} [m s^-2] "up"`, cx, cy + R + 14, P.acc, 'center');
   return null;
 }

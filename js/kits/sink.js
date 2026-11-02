@@ -48,24 +48,25 @@ export const sink = {
         y >= -1e-9 ? { k: 'Above the ground', v: num(Math.max(0, y), 2), unit: 'm', hue: 'disp' }
           : { k: 'Into the ground', v: num(-y, 3, { trim: true }), unit: 'm', hue: 'disp' },
         { k: 'Velocity, up +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Acceleration, up +', v: num(f.acc(t), 1, { trim: true }), unit: 'm s⁻²', hue: 'acc' },
+        { k: 'Acceleration, up +', v: num(Number(f.acc(t).toPrecision(4)), 4, { trim: true }), unit: 'm s⁻²', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };
   },
 
-  /* One vertical line, up from A. In the ground the acceleration is thousands of
-     m s⁻² for a few thousandths of a second: off any scale the flight can use,
-     so the a–t graph leaves it out and says so. */
+  /* One vertical line, up from A. In the ground the acceleration is often thousands
+     of m s⁻² for a few thousandths of a second: off any scale the flight can use, so
+     then the a–t graph leaves it out and says so. A gentler one is drawn. */
   graphs(f, t, P) {
     const cut = [f.tLand, f.tRest];
     const land = [{ t: f.tLand, y: -f.h, color: P.mark, label: 'lands' }];
-    const accAir = (tt) => (tt >= f.tLand && tt < f.tRest ? NaN : f.acc(tt));
-    const note = `${T`"in the ground" +${num(-f.a, 1, { trim: true })} [m s^-2]`} for ${T`${num(f.tSink, 4, { trim: true })} [s]`}, off the scale`;
+    const off = -f.a > 5 * f.g;
+    const accAir = (tt) => (off && tt >= f.tLand && tt < f.tRest ? NaN : f.acc(tt));
+    const note = off ? `${T`"in the ground" +${num(-f.a, 1, { trim: true })} [m s^-2]`} for ${T`${num(Number(f.tSink.toPrecision(3)), 6, { trim: true })} [s]`}, off the scale` : null;
     return [
       { canvas: 'g-s', title: 'Displacement–time', unit: 'm', tMax: f.tMax, t, series: [{ label: 'up from A', tag: T`s`, fn: f.pos, color: P.disp, dash: null, breaks: cut }], points: land },
       { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash: null, breaks: cut }], points: [{ t: f.tLand, y: -f.vL, color: P.mark }] },
-      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: accAir, color: P.acc, dash: null, breaks: cut }], note, notePri: 6 },
+      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: accAir, color: P.acc, dash: null, breaks: cut }], ...(note ? { note, notePri: 6 } : {}) },
     ];
   },
 
