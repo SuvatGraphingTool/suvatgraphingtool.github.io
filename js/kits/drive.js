@@ -9,7 +9,7 @@ import { T, num } from '../notation.js';
 
 const fld = (key, col, label, hint, optional = true) => ({ key, col, label, placeholder: '—', hint, optional });
 const WAY = { up: 'up the hill', down: 'down the hill' };
-const FROM = { up: 'the foot of the hill', down: 'the top of the stretch' };
+const FROM = { up: 'the lower marker post', down: 'the upper marker post' };
 
 export const drive = {
   id: 'drive',
@@ -45,7 +45,7 @@ export const drive = {
   // along the road up a slope: neither across nor up, so solid (rule 2)
   resolvePart: '',
   resolveObjects: (f) => f.ways.map((n) => ({ name: f.ways.length > 1 ? `Driven ${WAY[n]}` : '', pos: f[n].pos, vel: f[n].vel, acc: f[n].acc, from: FROM[n] })),
-  resolveWords: { pos: 'the way it drives', neg: 'backwards', plus: 'The way it drives', line: 'along the road' },
+  resolveWords: { pos: 'forwards', neg: 'backwards', plus: 'The way it drives', line: 'along the road' },
   resolveEnds: true,
   read(v) { return { way: v.way ?? 'both', look: v.look ?? 'car', m: v.m, D: v.D, R: v.R, u: v.u, v: v.v, s: v.s, sinA: v.sinA, alpha: v.alpha, h: v.h, g: v.g }; },
   solve: (k) => { const r = solveDrive(k); if (r.ok) r.f.look = k.look === 'lorry' ? 'lorry' : 'car'; return r; },
@@ -55,10 +55,11 @@ export const drive = {
   hud(f, t) {
     const two = f.ways.length > 1;
     const rows = f.ways.flatMap((n) => {
-      const w = f[n], who = two ? `${n === 'up' ? 'Up' : 'Down'}: ` : '';
+      // held where its distance ends: the readouts are its values there, and say so
+      const w = f[n], end = t >= w.t - 1e-9, who = two ? `${n === 'up' ? 'Up' : 'Down'}${end ? ', at the end' : ''}: ` : end ? 'At the end: ' : '';
       return [
-        { k: two ? `${who}along the road` : 'Along the road', v: num(w.pos(t), 2), unit: 'm', hue: 'disp' },
-        { k: two ? `${who}velocity` : 'Velocity', v: num(w.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+        { k: two ? `${who}along the road` : `${who}${who ? 'along' : 'Along'} the road`, v: num(w.pos(t), 2), unit: 'm', hue: 'disp' },
+        { k: two ? `${who}velocity` : `${who}${who ? 'velocity' : 'Velocity'}`, v: num(w.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
         ...(two ? [] : [{ k: 'Acceleration', v: num(w.a, 2), unit: 'm s⁻²', hue: 'acc' }]),
       ];
     });
@@ -93,7 +94,8 @@ export const drive = {
   },
 
   ending(s) {
-    const one = (n) => (s.find === 'D' ? `The driving force is ${num(s.D, 6, { trim: true })} N.` : s.find === 'R' ? `The resistance is ${num(s.R, 6, { trim: true })} N.`
+    const f4 = (x) => num(Number(x.toPrecision(4)), 6, { trim: true });
+    const one = (n) => (s.find === 'D' ? `The driving force is ${f4(s.D)} N.` : s.find === 'R' ? `The resistance is ${f4(s.R)} N.`
       : `${n === 'up' ? 'Up' : 'Down'} the hill: ${num(Number((n === 'up' ? s.vUp : s.vDown).toPrecision(3)), 6, { trim: true })} m s⁻¹.`);
     const ways = s.f.ways;
     return {

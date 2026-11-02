@@ -7,7 +7,7 @@
 // object's hue as its graph lines are. Each is held where its distance ends,
 // its speed there flagged.
 //
-// The road's angle is marked at the foot. Below the paper's 7° it is drawn at
+// The road's angle is marked at the foot. A road flatter than 7° is drawn at
 // 7° and says so: a true 3° hill is too flat to see. The distance is a ruler
 // under the road; a height it rises, when the paper gives one, a dimension at
 // the top. A card fixed to the screen shows the forces along the road on
@@ -135,7 +135,8 @@ export function render(canvas, cam, o) {
   { const R = clamp(k * S * 0.18, 44, 90);
     stroke(g, [foot, { x: foot.x + R * 1.25, y: foot.y }], { color: P.ink, width: 1.4, dash: [4, 4], alpha: 0.8 });
     g.strokeStyle = P.ink; g.lineWidth = 1.6; g.beginPath(); g.arc(foot.x, foot.y, R, -ad, 0); g.stroke();
-    const tag = f.h != null || f.sinA != null && Math.abs(Math.sin(f.alpha * D2R) - f.sinA) < 1e-12 && !Number.isInteger(f.alpha) ? T`sin alpha = ${s3(f.sinA)}` : `${num(f.alpha, 1, { trim: true })}°`;
+    // as the paper gave it: the angle, or its sine (from the height risen, too)
+    const tag = f.angleGiven === 'alpha' ? `${num(f.alpha, 1, { trim: true })}°` : T`sin alpha = ${s4(f.sinA)}`;
     // left of the foot, under the flat, clear of the climb's arrows; a road flatter than 7° is drawn at 7°, and the label says so
     L.add(steeper ? `${tag}, drawn steeper` : tag, foot.x - 6, foot.y + 30, { color: P.ink, pri: 11, size: 14, weight: 700, align: 'right', maxPush: 40, push: 'down' }); }
 
@@ -225,13 +226,17 @@ export function render(canvas, cam, o) {
         arrow(g, mid - it.sg * 9, y, mid + it.sg * 9, y, { color: P.ink, width: 1.8, head: 6 });
         lab(it.txt, x0 + colW - 10, y, P.ink, 'right');
       });
-      lab(T`m a = ${s4(W.net)} [N]`, x0 + colW - 10, y0 + 19 + 3 * 17, P.acc, 'right');
+      // a force, so in ink: the hues are for velocity, displacement and acceleration
+      lab(T`m a = ${s4(W.net)} [N]`, x0 + colW - 10, y0 + 19 + 3 * 17, P.ink, 'right');
     });
   } else {
     g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle';
-    const lines = f.ways.map((n) => `${two ? `${n === 'up' ? 'Up' : 'Down'}: ` : ''}${items(n).map((x) => x.txt).join(', ')}, ${T`m a = ${s4(f[n].net)} [N]`}`);
+    // each force with its way (forwards → or back ←), wrapped to the stage's width, never squeezed under 13px
+    const parts = f.ways.flatMap((n) => [`${two ? `${n === 'up' ? 'Up' : 'Down'}: ` : ''}${items(n).map((x) => `${x.sg > 0 ? '→' : '←'} ${x.txt}`).join(', ')}`, T`m a = ${s4(f[n].net)} [N]`]);
+    const lines = [];
+    for (const p of parts) { const last = lines.length ? lines[lines.length - 1] : null; if (last != null && g.measureText(`${last}, ${p}`).width + 14 <= w - 20 && !/^(Up|Down):/.test(p)) lines[lines.length - 1] = `${last}, ${p}`; else lines.push(p); }
     const tw = Math.min(w - 20, Math.max(...lines.map((x) => g.measureText(x).width)) + 14), bh = 8 + 18 * lines.length;
-    paper(g, 10, h - bh - 8, tw, bh); g.fillStyle = P.ink; lines.forEach((x, i) => g.fillText(x, 17, h - bh - 8 + 13 + i * 18, w - 34)); g.restore();
+    paper(g, 10, h - bh - 8, tw, bh); g.fillStyle = P.ink; lines.forEach((x, i) => g.fillText(x, 17, h - bh - 8 + 13 + i * 18)); g.restore();
   }
   return null;
 }

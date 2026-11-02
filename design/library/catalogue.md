@@ -144,6 +144,7 @@ this library: *covered* names the one of the twelve that does it.
 | 118 | Edexcel | 6677 M1 | Nov 2002 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 10 kg suitcase down a rough 20° ramp, 10 m/s at A, 8 m/s 5 m on: the deceleration, μ, the greatest length of the ramp | 9.8 | **built** → `down-and-across` |
 | 119 | CIE | 9709/42 | May/Jun 2019 | 4 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s19_qp_42.pdf) | A 1250 kg car, driving force 1200 N, resistance 350 N, on a road with sin α = 0.05: its speed after 100 m from rest driven up the hill, and driven down it | 10 | **built** → `up-and-down-the-hill` |
 | 120 | CIE | 9709/43 | May/Jun 2015 | 4 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s15_qp_43.pdf) | A 12 000 kg lorry up a 500 m hill rising 25 m, 24 then 16 m/s, resistance 7500 N: the driving force (by energy in the paper; by SUVAT and F = ma here) | 10 | **built** → `up-and-down-the-hill` |
+| 121 | CIE | 9709/41 | Oct/Nov 2014 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w14_qp_41.pdf) | 3 kg falls from rest 5 m to a liquid 4 m deep, accelerating at 5.5 m/s² in it: the resistance; the v–t graph to the bottom | 10 | **built** → `into-the-water` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -475,6 +476,25 @@ rest), then on the level −F = ma and SUVAT to rest.
 in the snow; or a loading dock, a chequer-plate ramp and a warehouse floor with a suitcase.
 The angle at the foot, the slope's length beside it, its speed at the bottom, a dashed ruler
 of the run-out on the level.
+
+### `into-the-water` — Into the water
+
+**Papers.** Cambridge 9709/41 Oct/Nov 2014 Q6 (3 kg falls from rest 5 m to the surface of a
+liquid 4 m deep, g = 10; in the liquid it accelerates at 5.5 m s⁻²: the resistance 13.5 N; the
+velocity–time graph, 10 m s⁻¹ at 1 s, 12 m s⁻¹ at the bottom at 1.36 s).
+
+**Why the others cannot.** `into-soft-ground` slows to rest in the ground and has no bottom to
+reach; nothing goes on through a medium of a given depth, still speeding up, to the bottom.
+
+**How it is solved.** js/core/tank.js: down positive. v² = u² + 2gh to the surface; in the
+liquid m g − R = m a (the resistance from the acceleration, or the other way); then
+v² = u² + 2aD to the bottom, or to rest short of it when it slows.
+
+**The stage.** An indoor pool cut away: a diving platform's tower and ladder, the deep end's
+tiles, a lane rope; a diving brick let go from the platform's edge, a splash, bubbles behind
+it. Or a laboratory: a clamp stand over a tall graduated cylinder of oil on a bench, a ball
+bearing. The height and the depth as dimension lines; the speeds at the surface and at the
+bottom on flags; the forces on a card.
 
 ### `up-and-down-the-hill` — Up the hill and down it
 

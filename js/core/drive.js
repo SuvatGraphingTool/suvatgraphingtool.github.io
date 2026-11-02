@@ -75,24 +75,28 @@ export function solveDrive(k = {}) {
       a = snap((v * v - u * u) / (2 * s));
       rows.push({ f: M`v^2 = u^2 + 2as`, s: M`${d(v)}^2 = ${d(u)}^2 + 2a * ${d(s)}`, r: M`a = ${d(a)} [m s^-2]` });
       if (find === 'D') {
-        D = snap(m * a + R - sgn * m * g * sn);
+        D = snap(m * a + R - sgn * W);
         rows.push({ f: law, s: M`D - ${d(R)} ${op} ${d(m)} * ${d(g)} * ${sinTxt} = ${d(m)} * ${sb(a)}`, r: M`D = ${d(D)} [N]` });
         if (D < -1e-9) return { name, ok: false, rows, why: `the speeds need a driving force of ${M`${d(D)} [N]`}: a push backwards, which a driving force is not` };
       } else {
-        R = snap(D - m * a + sgn * m * g * sn);
+        R = snap(D - m * a + sgn * W);
         rows.push({ f: law, s: M`${d(D)} - R ${op} ${d(m)} * ${d(g)} * ${sinTxt} = ${d(m)} * ${sb(a)}`, r: M`R = ${d(R)} [N]` });
         if (R < -1e-9) return { name, ok: false, rows, why: `the speeds need a resistance of ${M`${d(R)} [N]`}: a push forwards, which a resistance is not` };
       }
     } else {
-      a = snap((D - R + sgn * m * g * sn) / m);
+      // the snapped component, so forces that balance exactly give a = 0, not −1e−16
+      a = snap((D - R + sgn * W) / m);
+      if (Math.abs(a) < 1e-12) a = 0;
       rows.push({ f: law, s: M`${d(D)} - ${d(R)} ${op} ${d(m)} * ${d(g)} * ${sinTxt} = ${d(m)}a`, r: M`a = ${d(a)} [m s^-2]` });
       const v2 = u * u + 2 * a * s;
-      if (u === 0 && a <= 1e-12) return { name, ok: false, rows, a,
-        why: a < 0 ? 'from rest the driving force is less than the resistance and the weight’s component together: it cannot get going up the hill' : 'from rest the forces balance: it does not get going' };
+      if (u === 0 && a <= 0) return { name, ok: false, rows, a,
+        why: a === 0 ? 'from rest the forces balance: it does not get going'
+          : name === 'up' ? 'from rest the driving force is less than the resistance and the weight’s component together: it cannot get going up the hill'
+            : 'from rest the resistance is more than the driving force and the weight’s component together: it does not get going' };
       if (v2 < -1e-9) {
         const sStop = snap((u * u) / (-2 * a));
         rows.push({ f: M`0 = u^2 + 2as`, s: M`0 = ${d(u)}^2 + 2 * ${sb(a)}s`, r: M`s = ${d(sStop)} [m]` });
-        return { name, ok: false, rows, a, why: `it slows to rest after ${M`${d(sStop)} [m]`}, short of the ${M`${d(s)} [m]`}: from there the forces would carry it back down, which this scenario does not follow` };
+        return { name, ok: false, rows, a, why: `it slows to rest after ${M`${d(sStop)} [m]`}, short of the ${M`${d(s)} [m]`}; this scenario follows it no further` };
       }
       v = snap(Math.sqrt(Math.max(0, v2)));
       rows.push({ f: M`v^2 = u^2 + 2as`, s: M`v^2 = ${d(u)}^2 + 2 * ${sb(a)} * ${d(s)}`, r: M`v = ${d(v)} [m s^-1]` });
@@ -129,7 +133,7 @@ export function solveDrive(k = {}) {
   });
   const derived = done.map((w) => (find === 'D' ? M`D = ${d(w.D)} [N]` : find === 'R' ? M`R = ${d(w.R)} [N]` : `${w.name}: ${M`v = ${d(w.v)} [m s^-1]`}`));
 
-  const f = { kind: 'drive', way, ways: done.map((w) => w.name), find, m, g, u, s, sinA: sn, alpha, h: have(k.h) ? k.h : null, W,
+  const f = { kind: 'drive', way, ways: done.map((w) => w.name), find, m, g, u, s, sinA: sn, alpha: have(k.alpha) ? k.alpha : alpha, angleGiven: have(k.alpha) ? 'alpha' : have(k.h) ? 'h' : 'sinA', h: have(k.h) ? k.h : null, W,
     up: by.up?.ok ? by.up : null, down: by.down?.ok ? by.down : null, failed: all.filter((w) => !w.ok).map((w) => w.name),
     tUp: by.up?.ok ? by.up.t : null, tDown: by.down?.ok ? by.down.t : null, tMax, tFlight: tMax, tMid: snap(tEnd / 2), params: { u: 0, theta: 0, h: 0, g } };
   return { ok: true, mode: 'drive', way, find, W, sinA: sn,

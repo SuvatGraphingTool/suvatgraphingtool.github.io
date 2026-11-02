@@ -35,6 +35,7 @@ import { solveStages } from '../js/core/journey.js';
 import { solveRope, ropeWorking } from '../js/core/rope.js';
 import { solveRunout, runoutWorking } from '../js/core/runout.js';
 import { solveDrive, driveWorking } from '../js/core/drive.js';
+import { solveTank, tankWorking } from '../js/core/tank.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1746,6 +1747,25 @@ group('CIE 9709/04 specimen Q2 and Edexcel M1 Nov 2002 Q5: down the slope and ac
     ok(near(c.dec, 3.6), 'the deceleration as a size'); }
 });
 
+group('CIE 9709/41 Nov 2014 Q6: into the water', () => {
+  const s = solveTank({ h: 5, D: 4, m: 3, aL: 5.5, g: 10 });
+  ok(s.ok && near(s.R, 13.5) && near(s.v1, 10) && near(s.t1, 1) && near(s.v2, 12) && near(s.tB, 1 + 2 / 5.5), '(i) R = 13.5 N; (ii) 10 m s⁻¹ at 1 s, 12 m s⁻¹ at the bottom at 1.36 s', s.reason);
+  const r = solveTank({ h: 5, D: 4, m: 3, R: 13.5, g: 10 });
+  ok(r.ok && near(r.aL, 5.5) && near(r.v2, 12), 'the other way: the resistance gives a = 5.5');
+  const f = s.f;
+  ok(near(f.pos(f.t1), 5) && near(f.pos(f.tB), 9) && near(f.vel(f.t1), 10) && f.acc(0.5) === 10 && f.acc(1.2) === 5.5 && f.acc(f.tMax) === 0, 'the motion: 5 m to the surface, 9 m to the bottom; g then 5.5');
+  const slow = solveTank({ h: 2, D: 6, m: 0.5, R: 8, g: 9.8 });
+  ok(slow.ok && slow.stops && near(slow.sStop, 6.2612 ** 2 / 12.4, 0.01) && slow.f.vel(slow.f.tMax) === 0, 'a resistance more than the weight: it slows, and stops short of the bottom');
+  ok(solveTank({ h: 0, u: 3, D: 2, aL: -1 }).ok && solveTank({ h: 0, u: 3, D: 2, aL: -1 }).R == null, 'no mass: the motion still, no resistance claimed');
+  ok(!solveTank({ h: 5, D: 4, m: 3, R: 13.5, aL: 5.5 }).ok && !solveTank({ h: 5, D: 4, R: 13.5 }).ok && !solveTank({ h: 5, D: 4, m: 3, aL: 12, g: 10 }).ok && !solveTank({ h: 0, D: 4, m: 3, aL: 5 }).ok,
+    'both given, a resistance with no mass, faster than g, or let go at the surface from rest: refused');
+  ok(tankWorking(s).length === 2 && tankWorking(solveTank({ h: 0, u: 3, D: 2, aL: -1 })).length === 1, 'the working: the air, then the liquid (or the liquid alone)');
+  { const K = KITS.tank, kv = K.solve(K.read({ h: 5, D: 4, m: 3, aL: 5.5, g: 10 }));
+    ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)), 'vertical: the graphs are solid (rule 2)');
+    ok(resolveKit(K, kv, kv.f, 1.2).blocks[0].rows.every((q) => q.part !== 'x'), 'Resolve: not dashed');
+    ok(kv.f.net === 16.5 && kv.f.weight === 30, 'the card’s forces from the engine: 30 N weight, 16.5 N resultant'); }
+});
+
 group('CIE 9709/42 Jun 2019 Q4 and 9709/43 Jun 2015 Q4: up the hill and down it', () => {
   const s = solveDrive({ m: 1250, D: 1200, R: 350, sinA: 0.05, s: 100, g: 10 });
   ok(s.ok && near(s.aUp, 0.18) && near(s.vUp, 6) && near(s.aDown, 1.18) && near(s.vDown, Math.sqrt(236)), 'J19: a = 0.18 and 6 m s⁻¹ up the hill; a = 1.18 and √236 = 15.4 m s⁻¹ down it', s.reason);
@@ -1759,6 +1779,13 @@ group('CIE 9709/42 Jun 2019 Q4 and 9709/43 Jun 2015 Q4: up the hill and down it'
   const weak = solveDrive({ m: 1250, D: 500, R: 350, sinA: 0.05, s: 100, g: 10 });
   ok(weak.ok && weak.f.ways.join() === 'down' && /cannot get going up the hill/.test(weak.notes[0]), 'too weak to climb from rest: only down the hill, and the reason said');
   ok(!solveDrive({ way: 'up', m: 1250, D: 500, R: 350, sinA: 0.05, s: 100, g: 10 }).ok, 'and asked for up the hill alone, refused');
+  { const dn = solveDrive({ way: 'down', m: 1250, D: 100, R: 1000, sinA: 0.05, s: 100, g: 10 });
+    ok(!dn.ok && !/up the hill/.test(dn.reason) && /does not get going/.test(dn.reason), 'down the hill too weak from rest: no talk of going up the hill');
+    const bal = solveDrive({ way: 'up', m: 1000, D: 1350, R: 500, sinA: 0.085, s: 200, g: 10 });
+    ok(!bal.ok && /balance/.test(bal.reason), 'forces that balance exactly from rest: said to balance, not to be less');
+    const back = solveDrive({ way: 'up', m: 1000, D: 900, R: 500, alpha: 5, s: 200, u: 10, g: 9.8 });
+    ok(!back.ok && !/back down/.test(back.reason) && /no further/.test(back.reason), 'slowing to rest: no claim about what happens next');
+    ok(solveDrive({ m: 1000, D: 2000, R: 100, alpha: 30, s: 10, g: 9.8 }).f.angleGiven === 'alpha' && solveDrive({ m: 1000, D: 2000, R: 100, alpha: 30, s: 10, g: 9.8 }).f.alpha === 30, 'a given angle is kept exactly, to be shown as given'); }
   { const st = solveDrive({ way: 'up', m: 1000, D: 300, R: 200, alpha: 5, s: 200, u: 10, g: 9.8 }); ok(!st.ok && /slows to rest/.test(st.reason), 'slowing to rest short of the distance: refused, with where it stops'); }
   ok(!solveDrive({ way: 'both', m: 1250, R: 350, sinA: 0.05, s: 100, v: 10 }).ok, 'a force found from the speed is one way: both ways refused');
   ok(!solveDrive({ m: 1250, D: 1200, R: 350, sinA: 0.05, alpha: 3, s: 100 }).ok && !solveDrive({ m: 1250, D: 1200, sinA: 1.2, s: 100 }).ok, 'two angles, or a sine past 1, refused');
