@@ -10,7 +10,7 @@
 // draws the same every frame; held to low chroma and away from the physics
 // hues, as the rest of the scenery is. Nothing here is a quantity.
 
-import { env, rng, skyscape, grass, water, stone, tarmac, softShadow } from './scenery.js';
+import { env, rng, skyscape, grass, water, stone, tarmac, softShadow, floorboards } from './scenery.js';
 import { clamp, withAlpha } from './util.js';
 import { seaCliff } from './heights.js';
 import { scree } from './composed.js';
@@ -1455,5 +1455,144 @@ function playground(g, c) {
   softShadow(g, x0 - tw / 2, oy + 1, tw * 0.7, 4, 0.6);
 }
 
+/* ── a beach, a room, another world ────────────────────────────────────── */
+
+/** A beach: the sea to the horizon with a headland, waves breaking white
+    along the water's edge, the wet sand dark and shining, the dry sand with
+    parasols, towels and a windbreak (never where it lands); from a height,
+    the sea wall of the promenade with its railings. */
+function beach(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(191), horizon = oy - clamp((oy - 40) * 0.3, 40, 160);
+  sky(g, w, horizon, x0, { far: 'none', seed: 151, clouds: 3 });
+  g.fillStyle = n ? '#3b3239' : '#b9aaa4'; g.beginPath(); g.moveTo(w * 0.62, horizon); g.quadraticCurveTo(w * 0.8, horizon - 22, w + 10, horizon - 14); g.lineTo(w + 10, horizon); g.closePath(); g.fill();
+  const shore = lerp(horizon, oy, 0.55);
+  water(g, 0, w, horizon, shore + 6, { phase });
+  // breakers: white crests rolling in, the foam's lace at the edge
+  for (let i = 0; i < 3; i++) {
+    const y = lerp(horizon, shore, 0.45 + i * 0.22) + Math.sin(phase * 2 + i) * 1.5;
+    g.strokeStyle = withAlpha('#ffffff', 0.5 + i * 0.15); g.lineWidth = 1.5 + i;
+    g.beginPath(); for (let x = 0; x <= w; x += 10) g.lineTo(x, y + Math.sin(x / 40 + i * 2 + phase * 3) * 2); g.stroke();
+  }
+  // the wet sand, shining, then the dry
+  const wg = g.createLinearGradient(0, shore, 0, oy); wg.addColorStop(0, n ? '#4a4038' : '#b89a6e'); wg.addColorStop(1, n ? '#6a5a48' : '#dcc396');
+  g.fillStyle = wg; g.fillRect(0, shore + 4, w, oy - shore - 4);
+  g.fillStyle = withAlpha('#ffffff', n ? 0.08 : 0.3); g.beginPath(); for (let x = 0; x <= w; x += 8) g.lineTo(x, shore + 5 + Math.sin(x / 30 + phase * 3) * 2); g.lineTo(w, shore + 9); g.lineTo(0, shore + 9); g.closePath(); g.fill();
+  const dg = g.createLinearGradient(0, oy, 0, h); dg.addColorStop(0, n ? '#7c6a54' : '#ecd5a4'); dg.addColorStop(1, n ? '#5e4e3e' : '#d9bc84');
+  g.fillStyle = dg; g.fillRect(0, oy, w, h - oy);
+  g.fillStyle = withAlpha(n ? '#3e3028' : '#b8935a', 0.35); for (let i = 0; i < (w * (h - oy)) / 90; i++) g.fillRect(r() * w, oy + r() * (h - oy), 1.5, 1.5);
+  // parasols, a towel, a windbreak, stood well clear of the flight
+  const land = (c.clearX || [])[0] ?? w, free = (x, half) => (x + half < x0 - 30 || x - half > land + 40) && x - half > 10 && x + half < w - 10;
+  const stripes = [['#2f5fa8', '#f4f1ea'], ['#e8c547', '#f4f1ea'], ['#5fae7a', '#f4f1ea']];
+  let i = 0;
+  for (const x of [land + 90, w - 70, x0 - 90, land + 220]) {
+    const R = clamp(1.2 * k, 18, 40); if (!free(x, R) || i > 2) continue;
+    const [a, b] = stripes[i++ % 3], ph = clamp(2.2 * k, 30, 70), cy = oy - ph;
+    g.strokeStyle = n ? '#8a8e96' : '#d8d8dc'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, oy); g.lineTo(x + 3, cy); g.stroke();
+    for (let j = 0; j < 6; j++) { g.fillStyle = j % 2 ? b : a; g.beginPath(); g.moveTo(x + 3, cy - R * 0.35); g.lineTo(x + 3 - R + (j * 2 * R) / 6, cy + R * 0.1); g.lineTo(x + 3 - R + ((j + 1) * 2 * R) / 6, cy + R * 0.1); g.closePath(); g.fill(); }
+    g.fillStyle = withAlpha('#000000', 0.15); g.beginPath(); g.ellipse(x + 3, oy + 3, R * 0.9, R * 0.12, 0, 0, TAU); g.fill();
+    g.fillStyle = n ? '#4a5a7a' : '#4f86c9'; g.fillRect(x + R * 0.2, oy + 2, R * 1.1, R * 0.18);
+  }
+  if (H0 > 0) {
+    // the sea wall: dressed stone stepping out at its foot, the promenade's rail along the top, open where it leaves from
+    stone(g, -4, top, x0 + 4, oy - top + 4, { course: clamp(0.4 * k, 7, 14), seed: 43, color: n ? '#6a6268' : '#c4b8a8' });
+    g.fillStyle = n ? '#8a8288' : '#ddd2c4'; g.fillRect(-4, top - 4, x0 + 6, 5);
+    const rh = clamp(1 * k, 9, 26);
+    g.strokeStyle = n ? '#c8ccd2' : '#2f6a8a'; g.lineWidth = Math.max(1.5, clamp(0.06 * k, 1.2, 2.6));
+    g.beginPath(); g.moveTo(-4, top - 4 - rh); g.lineTo(x0 - clamp(1.6 * k, 16, 50), top - 4 - rh); g.stroke();
+    for (let x = x0 - clamp(1.6 * k, 16, 50); x > -4; x -= rh * 1.2) { g.beginPath(); g.moveTo(x, top - 4); g.lineTo(x, top - 4 - rh); g.stroke(); }
+    g.fillStyle = withAlpha(n ? '#2c3b2c' : '#3f5a3a', 0.6); g.fillRect(-4, oy - clamp(0.6 * k, 6, 18), x0 + 4, clamp(0.6 * k, 6, 18));
+  }
+}
+
+/** A room: papered walls, a window with its curtains and the light falling
+    from it, a picture, a bookcase and a sofa (never under the flight), a rug
+    on the floorboards; from a height, the landing at the top of the stairs
+    with its banister. */
+function room(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(193);
+  const wall = n ? '#3a3234' : '#efe4d4', wallLo = n ? '#2e2729' : '#e2d4c0';
+  const wg = g.createLinearGradient(0, 0, 0, oy); wg.addColorStop(0, wall); wg.addColorStop(1, wallLo); g.fillStyle = wg; g.fillRect(0, 0, w, oy);
+  // a faint paper pattern
+  g.fillStyle = withAlpha(n ? '#ffffff' : '#a08a6a', 0.06); for (let y = 12; y < oy; y += 24) for (let x = (y / 24) % 2 ? 12 : 0; x < w; x += 24) { g.beginPath(); g.arc(x, y, 2.5, 0, TAU); g.fill(); }
+  // skirting along the floor
+  g.fillStyle = n ? '#5a4a40' : '#f6f2ea'; g.fillRect(0, oy - clamp(0.3 * k, 5, 12), w, clamp(0.3 * k, 5, 12));
+  floorboards(g, 0, w, oy, h);
+  const land = (c.clearX || [])[0] ?? w, free = (x, half) => (x + half < x0 - 30 || x - half > land + 40) && x - half > 10 && x + half < w - 10;
+  // the window and its curtains, the light falling from it
+  const wx = clamp(x0 + (w - x0) * 0.45, w * 0.35, w - 160), wy = oy * 0.18, ww = clamp(3 * k, 80, 180), wh = clamp(2.6 * k, 70, 160);
+  const lg = g.createLinearGradient(0, wy, 0, h); lg.addColorStop(0, withAlpha(E.window, n ? 0.15 : 0.2)); lg.addColorStop(1, withAlpha(E.window, 0));
+  g.fillStyle = lg; g.beginPath(); g.moveTo(wx, wy + wh); g.lineTo(wx + ww, wy + wh); g.lineTo(wx + ww + 120, h); g.lineTo(wx + 40, h); g.closePath(); g.fill();
+  g.fillStyle = n ? '#1d2a3e' : '#cfe3f1'; g.fillRect(wx, wy, ww, wh);
+  if (!n) { g.fillStyle = withAlpha('#ffffff', 0.6); g.beginPath(); g.ellipse(wx + ww * 0.3, wy + wh * 0.3, ww * 0.15, wh * 0.06, 0, 0, TAU); g.fill(); }
+  g.strokeStyle = n ? '#8a8288' : '#ffffff'; g.lineWidth = 4; g.strokeRect(wx, wy, ww, wh); g.lineWidth = 2; g.beginPath(); g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh); g.moveTo(wx, wy + wh / 2); g.lineTo(wx + ww, wy + wh / 2); g.stroke();
+  const cur = n ? '#3a4a6a' : '#5f86b0';
+  for (const [cx, s] of [[wx - 6, -1], [wx + ww + 6, 1]]) { g.fillStyle = cur; g.beginPath(); g.moveTo(cx, wy - 8); g.lineTo(cx + s * ww * 0.18, wy - 8); g.quadraticCurveTo(cx + s * ww * 0.05, wy + wh * 0.6, cx + s * ww * 0.15, wy + wh + 16); g.lineTo(cx, wy + wh + 16); g.closePath(); g.fill(); g.strokeStyle = withAlpha('#000000', 0.15); g.lineWidth = 1; for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(cx + s * ww * 0.045 * i, wy - 6); g.lineTo(cx + s * ww * 0.035 * i, wy + wh + 14); g.stroke(); } }
+  g.fillStyle = n ? '#6a5a48' : '#a8865a'; g.fillRect(wx - 16, wy - 12, ww + 32, 4);
+  // a picture on the wall
+  const px = wx + ww + 70; if (px + 50 < w) { g.fillStyle = n ? '#4a3a2c' : '#8a6a44'; g.fillRect(px, wy + 10, 50, 38); g.fillStyle = n ? '#3a4a5a' : '#9cc0d8'; g.fillRect(px + 4, wy + 14, 42, 30); g.fillStyle = n ? '#2c3a28' : '#6f9c5a'; g.beginPath(); g.moveTo(px + 4, wy + 44); g.lineTo(px + 20, wy + 28); g.lineTo(px + 32, wy + 36); g.lineTo(px + 46, wy + 24); g.lineTo(px + 46, wy + 44); g.closePath(); g.fill(); }
+  // a sofa, a bookcase, a rug: clear of the flight
+  const sw = clamp(5 * k, 90, 200), sx = [land + 60 + sw / 2, w - sw / 2 - 20, x0 - 40 - sw / 2].find((x) => free(x, sw / 2));
+  if (sx != null) {
+    const sh = sw * 0.38, sofa = n ? '#4a4e66' : '#6a7d96', sofaLo = n ? '#363a4e' : '#546780';
+    g.fillStyle = sofaLo; g.beginPath(); g.roundRect(sx - sw / 2, oy - sh, sw, sh * 0.6, 8); g.fill();
+    g.fillStyle = sofa; g.beginPath(); g.roundRect(sx - sw / 2 + 6, oy - sh * 0.55, sw - 12, sh * 0.3, 6); g.fill();
+    for (const s of [-1, 1]) { g.fillStyle = sofaLo; g.beginPath(); g.roundRect(sx + s * (sw / 2 - 10) - 10, oy - sh * 0.75, 20, sh * 0.62, 8); g.fill(); }
+    g.fillStyle = '#e8c547'; g.beginPath(); g.roundRect(sx - sw * 0.3, oy - sh * 0.72, sw * 0.16, sh * 0.2, 4); g.fill();
+    g.fillStyle = '#3a2a22'; g.fillRect(sx - sw / 2 + 8, oy - 6, 6, 6); g.fillRect(sx + sw / 2 - 14, oy - 6, 6, 6);
+  }
+  const bw = clamp(2.2 * k, 44, 90), bh = clamp(4.5 * k, 90, 200), bx = [w - bw / 2 - 16, land + 60 + bw / 2].find((x) => free(x, bw / 2) && (sx == null || Math.abs(x - sx) > bw / 2 + 110));
+  if (bx != null) {
+    g.fillStyle = n ? '#4a3a2c' : '#8a6a44'; g.fillRect(bx - bw / 2, oy - bh, bw, bh);
+    const shelves = 5, books = n ? ['#5a4a6a', '#6a5a40', '#3a5a5a', '#6a3a3a'] : ['#2f5fa8', '#e8c547', '#5fae7a', '#a84a3a', '#f4f1ea', '#4a4e56'];
+    for (let i = 0; i < shelves; i++) { const y = oy - bh + 6 + i * (bh - 12) / shelves; g.fillStyle = n ? '#2a2018' : '#5a4228'; g.fillRect(bx - bw / 2 + 4, y, bw - 8, (bh - 12) / shelves - 4); for (let x = bx - bw / 2 + 6; x < bx + bw / 2 - 8; x += 4 + r() * 3) { const bk = (bh - 12) / shelves - 6 - r() * 6; g.fillStyle = books[Math.floor(r() * books.length)]; g.fillRect(x, y + ((bh - 12) / shelves - 4) - bk, 3 + r() * 2, bk); } }
+  }
+  const rx = (x0 + land) / 2; g.fillStyle = withAlpha(n ? '#4a3a4a' : '#b8a07a', 0.6); g.beginPath(); g.ellipse(rx, oy + clamp((h - oy) * 0.35, 8, 40), clamp((land - x0) * 0.6, 60, 260), clamp((h - oy) * 0.15, 4, 18), 0, 0, TAU); g.fill();
+  if (H0 > 0) {
+    // the stairs up to the landing, the landing's floor and its banister
+    const sd = Math.min(x0 - 10, (oy - top) * 1.2), steps = Math.max(4, Math.round((oy - top) / clamp(0.18 * k, 10, 22)));
+    g.fillStyle = n ? '#4a3a2c' : '#a8865a';
+    g.beginPath(); g.moveTo(x0 - sd, oy); for (let i = 0; i < steps; i++) { const x = x0 - sd + (i * sd * 0.6) / steps, y = oy - ((i + 1) * (oy - top)) / steps; g.lineTo(x, y + (oy - top) / steps); g.lineTo(x, y); g.lineTo(x + (sd * 0.6) / steps, y); } g.lineTo(x0, top); g.lineTo(x0, top + clamp(0.35 * k, 6, 14)); g.lineTo(x0 - sd * 0.38, top + clamp(0.35 * k, 6, 14)); g.lineTo(x0 - sd * 0.38, oy); g.closePath(); g.fill();
+    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.22); for (let i = 0; i < steps; i++) { const x = x0 - sd + (i * sd * 0.6) / steps, y = oy - ((i + 1) * (oy - top)) / steps; g.fillRect(x, y, (sd * 0.6) / steps, 1.5); }
+    g.fillStyle = n ? '#5a4a3a' : '#8a6a44'; g.fillRect(x0 - sd * 0.4, top, sd * 0.4, clamp(0.35 * k, 6, 14));
+    const bh2 = clamp(1 * k, 12, 30); g.strokeStyle = n ? '#8a7a5a' : '#6a4a2a'; g.lineWidth = 3; g.beginPath(); g.moveTo(x0 - sd * 0.4, top - bh2); g.lineTo(x0 - clamp(1.4 * k, 16, 40), top - bh2); g.stroke();
+    g.lineWidth = 1.5; for (let x = x0 - sd * 0.4; x < x0 - clamp(1.4 * k, 16, 40); x += 8) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, top - bh2); g.stroke(); }
+  }
+}
+
+/** Another world: a dark sky with a ringed giant planet and two small moons
+    over it, a rust-and-slate plain strewn with boulders and glassy crystal
+    outcrops; from a height, a rock ledge. g is what the question gives. */
+function planet(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const r = rng(197), horizon = oy - clamp((oy - 40) * 0.2, 24, 90);
+  const sg = g.createLinearGradient(0, 0, 0, horizon); sg.addColorStop(0, '#0a0e18'); sg.addColorStop(1, '#2a3a4a');
+  g.fillStyle = sg; g.fillRect(0, 0, w, horizon);
+  for (let i = 0; i < (w * horizon) / 1200; i++) { g.fillStyle = withAlpha('#ffffff', 0.3 + r() * 0.6); g.fillRect(r() * w, r() * horizon * 0.8, 1.2, 1.2); }
+  // the ringed giant: banded cream and tan, its rings tilted across it
+  const px = clamp(x0 + (w - x0) * 0.55, w * 0.45, w - 120), py = clamp(horizon * 0.35, 60, 220), pr = clamp(w * 0.08, 36, 110);
+  const ring = (front) => { g.strokeStyle = withAlpha('#d8c8a8', 0.75); g.lineWidth = pr * 0.08; g.beginPath(); g.ellipse(px, py, pr * 1.8, pr * 0.4, -0.25, front ? 0 : Math.PI, front ? Math.PI : TAU); g.stroke(); g.strokeStyle = withAlpha('#a89878', 0.6); g.lineWidth = pr * 0.05; g.beginPath(); g.ellipse(px, py, pr * 1.55, pr * 0.33, -0.25, front ? 0 : Math.PI, front ? Math.PI : TAU); g.stroke(); };
+  ring(false);
+  g.save(); g.beginPath(); g.arc(px, py, pr, 0, TAU); g.clip();
+  g.fillStyle = '#d8c49c'; g.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+  for (let i = -5; i <= 5; i++) { g.fillStyle = i % 2 ? withAlpha('#a8875a', 0.55) : withAlpha('#f0e2c4', 0.4); g.save(); g.translate(px, py); g.rotate(-0.25); g.fillRect(-pr, i * pr * 0.18, pr * 2, pr * 0.1); g.restore(); }
+  const sh = g.createLinearGradient(px - pr, 0, px + pr, 0); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(0.6, 'rgba(0,0,0,0.1)'); sh.addColorStop(1, 'rgba(0,0,0,0.65)'); g.fillStyle = sh; g.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+  g.restore();
+  ring(true);
+  for (const [mx, my, mr] of [[px - pr * 2.6, py + pr * 0.7, pr * 0.16], [px + pr * 2.3, py - pr * 0.6, pr * 0.1]]) { if (mx < 10 || mx > w - 10) continue; g.fillStyle = '#b8bcc4'; g.beginPath(); g.arc(mx, my, mr, 0, TAU); g.fill(); g.fillStyle = 'rgba(0,0,0,0.45)'; g.beginPath(); g.arc(mx + mr * 0.3, my, mr, -Math.PI / 2, Math.PI / 2); g.fill(); }
+  // the plain: slate and rust, a low range on the horizon
+  horizonLine(g, w, horizon, rng(19), { far: '#3e4650', near: '#5a5a5e', lit: '#8a8a90', rim: false });
+  regolith(g, w, h, horizon, oy, k, { base: '#6a5e58', dark: '#3e3632', light: '#9a8a7e', seed: 21 });
+  // crystal outcrops: glassy pale-blue spires lit on one face, clear of the landing
+  for (const cx of [x0 + (w - x0) * 0.82, x0 + (w - x0) * 0.33, w * 0.05]) {
+    if (cx < 10 || (H0 > 0 && cx < x0) || !clearOf(cx, c, 70)) continue;
+    const ch = clamp(2.5 * k, 20, 70);
+    for (let i = 0; i < 4; i++) { const sx = cx + (i - 1.5) * ch * 0.18, sh2 = ch * (0.5 + r() * 0.5), lean = (r() - 0.5) * 0.4; g.fillStyle = '#9fc6e8'; g.beginPath(); g.moveTo(sx - ch * 0.07, oy); g.lineTo(sx + lean * sh2, oy - sh2); g.lineTo(sx + ch * 0.07, oy); g.closePath(); g.fill(); g.fillStyle = withAlpha('#ffffff', 0.45); g.beginPath(); g.moveTo(sx - ch * 0.07, oy); g.lineTo(sx + lean * sh2, oy - sh2); g.lineTo(sx - ch * 0.01, oy); g.closePath(); g.fill(); }
+    const gl = g.createRadialGradient(cx, oy - ch * 0.3, 0, cx, oy - ch * 0.3, ch); gl.addColorStop(0, 'rgba(159,198,232,0.25)'); gl.addColorStop(1, 'rgba(159,198,232,0)'); g.fillStyle = gl; g.fillRect(cx - ch, oy - ch * 1.3, ch * 2, ch * 2);
+  }
+  if (H0 > 0) { seaCliff(g, -4, x0, top, oy, { foam: false, cap: false, tones: rockTones('#8a8288', '#5e5860', '#2e2a30') }); scree(g, x0, oy, k); }
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet };

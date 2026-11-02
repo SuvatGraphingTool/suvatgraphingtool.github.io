@@ -412,6 +412,19 @@ goes into water, bubbles wobbling up where it went in; by default for a
 stone, a shot, a coin, a phone, a vehicle… — never a ball or a boat). A
 vehicle down on dry ground settles level on its wheels.
 
+Batch 11. Places `beach` (the sea with breakers rolling in, the wet sand
+shining, the dry sand with striped parasols and towels clear of the flight;
+from a height, the promenade's sea wall with its rail; it lands in sand),
+`room` (papered walls, a curtained window with its light falling, a
+picture, a sofa and a bookcase clear of the flight, a rug on floorboards;
+from a height, the landing at the top of the stairs with its banister) and
+`planet` (another world for a question's own g: a ringed giant and two
+moons in a dark sky, a slate-and-rust plain with glassy crystal outcrops;
+from a height, a rock ledge; it lands in a crater). Effect `catch` in
+`impacts.js` as `diveCatch()`: a fielder diving from beyond the landing,
+stretched flat, takes it in both hands just above the ground (labels kept
+off them). Beach words never take a cliff, pier or harbour's question.
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

@@ -418,3 +418,29 @@ export function bubbles(g, x, y, age, life, o = {}) {
   }
   g.restore();
 }
+
+/** A diving catch: a fielder launches from beyond where it comes down,
+    body stretched out flat, arms reaching, and takes it in both hands just
+    above the ground; they land on their front and hold it up. H is the
+    fielder's drawn height. */
+export function diveCatch(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const E = env(), H = o.H ?? 60, shirt = o.shirt ?? (E.night ? '#6c7f9a' : '#f4f1ea'), skin = E.night ? '#b08a74' : '#d9a988';
+  // in the air for the first part, flat on the ground after
+  const fly = Math.min(1, u / 0.3), lift = Math.sin(Math.min(1, fly) * Math.PI) * H * 0.25, slide = (1 - ease(fly)) * H * 0.9;
+  const hands = { x: x + 2, y: y - 4 - lift * 0.3 }, ang = -0.15 * (1 - fly);
+  g.save(); g.translate(hands.x + slide, hands.y - lift); g.rotate(ang);
+  // body from the hands back: arms, head, torso, legs trailing
+  const L = H * 1.05;
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  g.strokeStyle = '#2f3340'; g.lineWidth = H * 0.085; g.beginPath(); g.moveTo(L * 0.62, -H * 0.05); g.lineTo(L * 0.85, -H * 0.02); g.lineTo(L * 1.02, -H * 0.06 - (1 - fly) * H * 0.1); g.stroke();
+  g.strokeStyle = shirt; g.lineWidth = H * 0.16; g.beginPath(); g.moveTo(L * 0.25, -H * 0.06); g.lineTo(L * 0.62, -H * 0.05); g.stroke();
+  g.strokeStyle = skin; g.lineWidth = H * 0.055; g.beginPath(); g.moveTo(L * 0.28, -H * 0.08); g.lineTo(0, 0); g.stroke();
+  g.fillStyle = skin; g.beginPath(); g.arc(L * 0.18, -H * 0.13, H * 0.075, 0, TAU); g.fill();
+  g.fillStyle = '#3a2c26'; g.beginPath(); g.arc(L * 0.2, -H * 0.15, H * 0.075, Math.PI * 1.1, Math.PI * 2.1); g.fill();
+  g.fillStyle = '#2b2628'; g.beginPath(); g.arc(L * 1.02, -H * 0.05 - (1 - fly) * H * 0.1, H * 0.04, 0, TAU); g.fill();
+  g.restore();
+  // the dust of the landing, once down
+  const p = phaseOf(age - life * 0.3, life * 0.5);
+  if (p != null) { g.fillStyle = `rgba(200,190,170,${0.5 * (1 - p)})`; g.beginPath(); g.ellipse(x + H * 0.5, y + 1, H * 0.6 * (0.6 + p), H * 0.08, 0, 0, TAU); g.fill(); }
+}

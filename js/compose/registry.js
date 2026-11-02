@@ -57,6 +57,9 @@ export const BACKDROPS = {
   ship:    { label: 'A ship', what: 'a ship at sea, side on: from its deck at the stern, the sea below', place: 'ship', below: 'sea', edge: true, at: 'the deck of a ship', art: true },
   dam:     { label: 'A dam', what: 'the crest of a dam, its reservoir behind among wooded hills, the spillway pouring beside it, the river below', place: 'dam', below: 'river', edge: true, at: 'a dam', art: true },
   playground: { label: 'A playground', what: 'a playground: swings, a see-saw, a soft surface, trees behind a fence; from a height, a play tower’s platform', place: 'playground', below: 'ground', art: true, on: 'in a playground', high: 'a play tower' },
+  beach:   { label: 'A beach', what: 'a sandy beach, waves breaking along the shore, parasols; from a height, the promenade’s sea wall', place: 'beach', below: 'beach', art: true, on: 'on a beach', high: 'a sea wall', lands: 'sand' },
+  room:    { label: 'A room', what: 'a room indoors: papered walls, a window with curtains, a sofa and a bookcase, floorboards; from a height, the landing at the top of the stairs', place: 'room', below: 'floor', art: true, on: 'in a room', high: 'the landing at the top of the stairs' },
+  planet:  { label: 'Another planet', what: 'another world: a ringed giant and two moons in a dark sky over a rocky plain with crystal outcrops; g is what the question gives', place: 'planet', below: 'surface', art: true, on: 'on another planet', high: 'a rock ledge', lands: 'crater' },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from what carries it: a hovering balloon, a helicopter, a plane, a drone or a bird ("carrier")', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
@@ -151,6 +154,7 @@ export const EFFECTS = {
   leaves: { label: 'leaves', what: 'where it lands on a forest floor' },
   sand:   { label: 'a spray of sand', what: 'where it lands in sand' },
   mud:    { label: 'mud', what: 'where it lands in mud, on a building site' },
+  catch:  { label: 'a diving catch', what: 'a fielder diving to catch it just as it comes down' },
   skid:   { label: 'skid marks and tyre smoke', what: 'a vehicle landing on dry ground and braking' },
   bubbles: { label: 'bubbles', what: 'something heavy sinking after it goes into water' },
   net:    { label: 'a goal net', what: 'a goal where it lands: its net bulges as the ball meets it' },
@@ -416,6 +420,10 @@ const ONLY_HERE = [
   [new RegExp(`${FROM}(?:(?:deck|stern|side) of (?:a|the)\\s+)?(ship|ferry|liner|cruise ship|tanker)\\b`), 'ship'],
   [new RegExp(`${FROM}(?:(?:top|crest|wall) of (?:a|the)\\s+)?(dam)\\b`), 'dam'],
   [/\b(playground|climbing frame|play tower|slide in a park|top of (?:a|the) slide)\b/, 'playground'],
+  // on a beach, but not a cliff, pier or harbour over one ("off the cliff onto the beach" is the cliff's)
+  [/^(?!.*\b(?:cliff|pier|harbour|quay|jetty|bridge|tower|lighthouse)\b).*(?:\b(?:on|across|along)\s+(?:a|the)\s+(?:beach|sands)\b|\b(?:sea wall|promenade|seafront)\b)/, 'beach', 'beach'],
+  [/\b(?:in|across)\s+(?:a|the|his|her|their)\s+(room|bedroom|living room|classroom|kitchen|lounge)\b|\b(top of the stairs|staircase|landing of the stairs)\b/, 'room'],
+  [/\b(?:on|from)\s+(?:a|an|the|another)\s+(planet|asteroid|alien world|exoplanet)\b|\b(planet x|planet [a-z]\b|another planet)\b/, 'planet'],
   [/\b(building site|construction site|scaffold(?:ing)?|tower crane|crane)\b/, 'site'],
   [/\b(golf course|fairway|golf green|putting green|tee(?:ing)? ground|tee box|raised tee|on(?:to)? (?:a|the) green|chip(?:s|ped)? (?:a|the) (?:golf )?ball|golfer)\b/, 'golf'],
   [/\b(athletics stadium|athletics track|running track|shot put|shot-put|putts? the shot|javelin throw|discus|hammer throw|throws the hammer|olympic stadium|in the stadium)\b/, 'stadium'],

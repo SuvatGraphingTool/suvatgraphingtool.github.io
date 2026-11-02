@@ -33,7 +33,7 @@ import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, t
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
-import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles } from './impacts.js';
+import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles, diveCatch } from './impacts.js';
 import { ANIMALS, FEET, javelin } from './animals.js';
 import { golfer, kicker, archer, archerHand, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
@@ -421,6 +421,8 @@ function launch(canvas, o) {
         sparks(g, lx, oy - 2, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 16, 0.7, 2) });
         g.restore();
       }
+      // a fielder dives and takes it just above the ground
+      else if (e === 'catch' && !wet) { later.push(() => diveCatch(g, lx, oy, age, life, { H: TH(k) })); L.reserve({ x: lx - 4, y: oy - TH(k) * 0.4, w: TH(k) * 1.2, h: TH(k) * 0.42 }); }
       else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
       else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: clamp(k / 14, 1, 3) }); g.restore(); }
       else if (e === 'crack') crack(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
