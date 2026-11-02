@@ -659,6 +659,15 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const peb = toPlace({ understood: true, scenario: 'down', summary: 'x', h: 20, u: 4, below: 'river', asks: ['time to hit the water', 'speed when it hits the water'] }, 'a pebble is thrown straight down at 4 m/s from a bridge 20 m above a river');
   ok(peb.library === 'from-a-height' && peb.asks?.length === 2, 'placed at a bridge, what the question asks goes with it');
   ok(toPlace({ understood: true, scenario: 'dropped', summary: 'x', h: 12, who: 'water balloon' }, 'a water balloon is dropped from a window 12 m up').boxes?.place !== 'balloon', 'a water balloon is not a hot-air balloon');
+  // the 30th call, 2 Nov: a past-paper projectile with tan α = 5/12 and a part at 5 m on the way down
+  const tanWords = 'A particle P is projected from O on horizontal ground at 26 m/s at α above the horizontal, where tan α = 5/12. (a) Find the time to reach its greatest height. (b) Find the horizontal distance from O when P is 5 m above the ground on its way down.';
+  const tanX = toPlace({ understood: true, scenario: 'arc', summary: 'x', h: 0, u: 26, ratioFn: 'tan', ratioNum: 5, ratioDen: 12, parts: [{ label: 'a', asks: 'time to reach greatest height', answer: 'tTop' }, { label: 'b', asks: 'horizontal distance when 5 m above ground on the way down', answer: 'range', scene: { level: 5 } }] }, tanWords);
+  ok(tanX.library === 'from-a-height' && tanX.boxes.level === 5 && Math.abs(tanX.boxes.theta - 22.619865) < 1e-6 && !tanX.parts[1].scene && !tanX.parts[1].answer && tanX.parts[0].twelve === 'tTop', 'a part with a set-up of only a level is the same flight at a height: From a height, θ from tan α = 5/12, the part to be answered from its words');
+  const tv = HK.solve(HK.read({ ...tanX.boxes, g: 9.81 }));
+  ok(tv.ok && Math.abs(tv.level.xDown - 27.837) < 1e-3, 'and it is 5 m up on its way down 27.84 m out');
+  const lvl = fromReader('from-a-height', [{ label: 'b', asks: 'horizontal distance when 5 m above ground on the way down' }])?.[0];
+  ok(lvl?.find === 'level.xDown', 'that part is From a height’s distance at the height asked');
+  ok(!fromReader('up', [{ label: 'b', asks: 'horizontal distance when 5 m above ground on the way down', answer: 'range' }])[0].find, 'and never the range, whatever key the reader named');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

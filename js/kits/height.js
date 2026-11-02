@@ -40,7 +40,7 @@ export const height = {
       { key: 'tTop', label: 'Time to the top (s)', aria: 'In place of the speed: the time to the top of its path (s)', placeholder: '—', hint: 'When it stops rising: that fixes the speed.' },
     ] },
     { title: 'What the paper asks', fields: [
-      { key: 'level', label: 'When is it this high above the throw? (m)', aria: 'When is it this height above where it was thrown from (m)', placeholder: '—', hint: 'Negative for below it.' },
+      { key: 'level', label: 'When is it this high above the throw? (m)', given: 'Height asked about, above the throw (m)', aria: 'When is it this height above where it was thrown from (m)', placeholder: '—', hint: 'Negative for below it.' },
     ] },
   ],
   g: [9.8, 9.81, 10],

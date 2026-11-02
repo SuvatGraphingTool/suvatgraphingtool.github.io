@@ -242,7 +242,7 @@ export const PROJECTILE_ANSWERS = [
   { kind: 'time', say: 'when it is first at the height a part asks about (numbers.level)', find: 'level.times.0', sym: 't', unit: 's', at: 'level.times.0', step: 'above the throw' },
   { kind: 'time', say: 'when it is there again, on the way down', find: 'level.times.1', sym: 't', unit: 's', at: 'level.times.1', step: 'above the throw' },
   // a hoop, a basket or a target at the height asked: where it passes it, on the way down
-  { key: 'distance2', kind: 'distance', say: 'how far out it is when it is at the height a part asks about (numbers.level), on its way down: the hoop, the basket or the target', find: 'level.xDown', sym: 'x', unit: 'm', trim: true, at: 'level.times.1', step: 'above the throw', when: '\\b(hoop|basket|ring|target|bull)' },
+  { key: 'distance2', kind: 'distance', say: 'how far out it is when it is at the height a part asks about (numbers.level), on its way down: the hoop, the basket or the target', find: 'level.xDown', sym: 'x', unit: 'm', trim: true, at: 'level.times.1', step: 'above the throw', when: '\\b(hoop|basket|ring|target|bull)|\\bway down\\b|\\d m (above|high|up)\\b' },
   { kind: 'graph', say: 'a sketch of the graphs: the stage draws them' },
 ];
 /** Two on one vertical line: the pair engine's answers (js/core/pair.js). */

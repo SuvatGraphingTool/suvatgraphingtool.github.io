@@ -228,7 +228,7 @@ function lanes(x) {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(hooped(cleared(lowered(reacts(timed(known(marked(x, words)), words), words), words), words), words), words), words), words), words)), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(timed(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words)), words);
 }
 
 /**
@@ -334,6 +334,46 @@ function cleared(x, words) {
   const asked = (x.asked || x.parts || []).filter((p) => p && typeof p === 'object').map((p) => ({ asks: p.asks }));
   if (asked.length) out.asked = asked;
   else if (Array.isArray(x.asks)) out.asks = x.asks;
+  return out;
+}
+
+/**
+ * "(b) the horizontal distance when it is 5 m above the ground on its way down"
+ * — a part a reader gave a set-up of its own with only a level in it is the
+ * same flight, asked about at a height: From a height on level ground, with
+ * that height above the throw as its `level`. A ratio angle is turned into degrees.
+ */
+const RATIO = { tan: Math.atan, sin: Math.asin, cos: Math.acos };
+function levelled(x, words) {
+  const parts = Array.isArray(x?.parts) ? x.parts : null;
+  if (!parts || !x.understood) return x;
+  const levelOf = (sc) => (sc && typeof sc === 'object' ? sc.level ?? sc.numbers?.level ?? sc.boxes?.level : undefined);
+  const only = (sc) => sc && typeof sc === 'object' && Object.keys(sc).every((k) => k === 'level' || ((k === 'numbers' || k === 'boxes') && Object.keys(sc[k] || {}).every((j) => j === 'level')));
+  const i = parts.findIndex((p) => p && only(p.scene) && Number(levelOf(p.scene)) > 0);
+  if (i < 0) return x;
+  let h0, u, theta;
+  if (x.scenario === 'arc' || x.scenario in ANGLE) {
+    h0 = x.scenario === 'arc' ? 0 : x.h;
+    u = x.u;
+    theta = x.ratioFn && RATIO[x.ratioFn] && x.ratioDen ? RATIO[x.ratioFn](x.ratioNum / x.ratioDen) * 180 / Math.PI
+      : x.scenario === 'arc' ? x.angleDegrees : ANGLE[x.scenario](x);
+  } else if (x.scenario === 'compose' && x.recipe?.numbers) ({ h: h0, u, theta } = x.recipe.numbers);
+  else return x;
+  if (!(Number(u) > 0) || theta == null || !isFinite(Number(theta))) return x;
+  const N = Number(levelOf(parts[i].scene)), ask = String(parts[i].asks || '');
+  // a height "above the ground" is above the throw only from the ground
+  const level = /above (the )?(ground|floor)/i.test(`${ask} ${words}`) ? N - (Number(h0) || 0) : N;
+  const boxes = { place: 'ground', h: Number(h0) || 0, u: Number(u), theta: Math.round(Number(theta) * 1e6) / 1e6, level };
+  if (typeof x.g === 'number' && x.g > 0) boxes.g = x.g;
+  const out = { understood: true, confidence: x.confidence || 'high', scenario: 'library', library: 'from-a-height', summary: x.summary, boxes };
+  if (x.who) out.who = x.who;
+  // the level part's answer is found from its words; the others keep theirs, as the twelve's
+  out.parts = parts.map((p, j) => {
+    if (!p || typeof p !== 'object') return p;
+    const { scene, answer, ...rest } = p;
+    if (j === i) return rest;
+    return answer != null ? { ...rest, twelve: answer } : rest;
+  });
   return out;
 }
 

@@ -3606,7 +3606,8 @@ function saidIn(words, n) {
 const QUANTITY = new Set(['h', 'u', 'v', 's', 't', 'a', 'g', 'theta']);
 /** One value read into a box, set as maths: "h = 20 m", "θ = 90°", "u_A = 6 m s⁻¹" — the unit is the box's own. */
 function quantityHTML(f, n) {
-  const plain = String(f.label ?? '').replace(/<[^>]+>/g, '');
+  // a box's `given` is its name in the reply's list, where its label is a question for the values screen
+  const plain = String(f.given ?? f.label ?? '').replace(/<[^>]+>/g, '');
   const unit = (/\(([^()]*)\)\s*$/.exec(plain)?.[1] || '').trim().replace(/⁻¹/g, '^-1').replace(/⁻²/g, '^-2');
   const val = num(n, 2, { trim: true });
   // "A.u" is u for A; "a1" is a for stage 1; "tTop" the time to the top

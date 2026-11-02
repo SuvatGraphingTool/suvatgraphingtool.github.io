@@ -137,6 +137,9 @@ export function fromReader(id, raw, boxes = []) {
       || named.map(asKind).find(Boolean)
       // "when does A catch B", with no other kind asked for
       || (meets && !named.some((k) => k !== 'time') && !/^(speed|height|distance|acceleration|angle)/.test(r.answer || '') ? only('meeting') : null);
+    // "when it is 5 m above the ground on its way down": a moment at a height, never the landing
+    const atHeight = /\b\d+(?:\.\d+)?\s*m\s*(above|high|up)\b/.test(words) && /\bwhen\b|\bway (up|down)\b|\bpasses\b/.test(words);
+    if (atHeight && hit && /\blands?\b|\blanding\b|in the air|time of flight/.test(String(hit.say || hit.part?.ask || '').toLowerCase())) hit = null;
     // a time or a speed "to the mid-point" is the moment's, whatever key was named
     if (/mid-?point|\bmark\b/.test(words) && (hit?.key === 't' || hit?.key === 'v')) hit = offer.find((a) => a.key === `${hit.key}Mid`) || hit;
     const base = hit ? (hit.part || hit) : null;
