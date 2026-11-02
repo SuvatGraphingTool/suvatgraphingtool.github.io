@@ -115,6 +115,8 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: bx, y: oy }, { x: bx, y: cy0 }], { color: P.disp, width: 2 });
   for (const yy of [oy, cy0]) stroke(g, [{ x: bx - 6, y: yy }, { x: bx + 6, y: yy }], { color: P.disp, width: 2 });
   L.reserve({ x: bx - 8, y: cy0, w: 16, h: oy - cy0 });
+  // the car itself is kept from the labels
+  L.reserve({ x: cx0 - 2, y: cy1 - 6, w: cx1 - cx0 + 4, h: cy0 - cy1 + 8 });
   L.add(T`s = ${num(s, 2, { trim: true })} [m]`, bx + 18, (oy + cy0) / 2, { color: P.disp, align: 'left', pri: 9, size: 14, weight: 700 });
   const ax = cx1 + 18, ymid = (cy0 + cy1) / 2;
   if (show.velocity !== false && Math.abs(v) > 1e-6) {
@@ -126,7 +128,7 @@ export function render(canvas, cam, o) {
   if (fired && Math.abs(a) > 1e-9 && t < f.tMax - 1e-9) {
     const len = clamp(Math.abs(a) * k * 4, 14, 60) * Math.sign(a), axx = cx0 - 18;
     arrow(g, axx, ymid, axx, ymid - len, { color: P.acc, width: 2.4, head: 9 });
-    L.add(T`${sig3(a)} [m s^-2]`, axx - 10, ymid - len * 0.6, { color: P.acc, align: 'right', pri: 7, size: 13, weight: 700 });
+    L.add(T`${sig3(a)} [m s^-2]`, axx - 10, ymid - len * 0.6, { color: P.acc, align: 'right', pri: 7, size: 13, weight: 700, maxPush: 24 });
   }
   if (t >= f.tMax - 1e-9) L.add(T`"at rest," ${num(f.range, 2, { trim: true })} [m] "up"`, (cx0 + cx1) / 2, cy1 - 18, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700 });
   // ── on a laptop, the car enlarged in the space beside the building: the
