@@ -51,14 +51,14 @@ const WET = new Set(['sea', 'river', 'pool', 'well']);
    is. The app keeps drawing while it plays (settling) and opens the ending
    card after it (SETTLE seconds). */
 export const SETTLE = 1.4;
-const clock = { at: null };
-export const settling = () => clock.at != null && performance.now() - clock.at < SETTLE * 1000;
+const clock = { at: null }, clocks = [{ at: null }, { at: null }];
+export const settling = () => [clock, ...clocks].some((c) => c.at != null && performance.now() - c.at < SETTLE * 1000);
 
 /* ── the stage ───────────────────────────────────────────────────────── */
 export function render(canvas, cam, o) {
   const { traj: f, recipe: R } = o;
   if (!f || !R) return null;
-  if (R.engine === 'projectile') return launch(canvas, o);
+  if (R.engine === 'projectile' || R.engine === 'twin') return launch(canvas, o);
   if (R.engine === 'pair' || R.engine === 'bounce') return column(canvas, o);
   return null;
 }
@@ -152,32 +152,39 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
   }
 }
 
-/** A launch from a place, side on: the projectile engine (js/core/height.js). */
+/** A launch from a place, side on: the projectile engine (js/core/height.js),
+    or two launched from it (the twin engine, js/core/twin.js) — each drawn as
+    what it is, on its own clock from when it sets off. */
 function launch(canvas, o) {
-  const { traj: f, t: tRaw, show = {}, fired = true, recipe: R } = o;
+  const { traj: F0, t: tRaw, show = {}, fired = true, recipe: R } = o;
   const { ctx: g, w, h } = fitCanvas(canvas);
   const P = palette(), L = labels();
-  const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  const B = placeOf(R), kind = R.objects[0].figure, piece = PIECES[kind];
-  const H0 = f.params.h, phone = w < 520, wet = WET.has(B.below);
-  // a person throws it, unless it falls from a tree; small things are drawn
-  // as themselves at the point, vehicles and people round it
-  // off a table, it leaves the table's edge: no one stands on the table
-  const thrown = (!!piece.thrown || kind === 'arrow') && R.backdrop !== 'orchard' && R.backdrop !== 'table';
-  const small = !!piece.thrown || !!piece.small || kind === 'arrow';
-  // thrown from low down with nothing to stand on: the thrower stands on the
-  // ground or the floor and lets go at hand height
-  const byHand = thrown && !B.edge && R.backdrop !== 'sea' && H0 > 0 && H0 <= 2.6;
-  const apex = f.uy > 0 ? f.apexHeight : H0;
-
-  // ── the whole path, sampled from the engine
-  const n = 160, pts = [];
-  for (let i = 0; i <= n; i++) { const tt = (i / n) * f.tMax; pts.push({ t: tt, ...f.pos(tt) }); }
-  const xMax = Math.max(0, ...pts.map((p) => p.x));
+  const B = placeOf(R);
+  const twin = F0.kind === 'twin';
+  const H0 = (twin ? F0.A.f : F0).params.h, phone = w < 520, wet = WET.has(B.below);
+  const movers = (twin ? [[F0.A, 0], [F0.B, 1]] : [[{ f: F0, t0: 0 }, 0]]).map(([m, i]) => {
+    const kind = R.objects[i].figure, piece = PIECES[kind], f = m.f;
+    // a person throws it, unless it falls from a tree; small things are drawn
+    // as themselves at the point, vehicles and people round it; off a table,
+    // it leaves the table's edge: no one stands on the table
+    const thrown = (!!piece.thrown || kind === 'arrow') && R.backdrop !== 'orchard' && R.backdrop !== 'table';
+    const small = !!piece.thrown || !!piece.small || kind === 'arrow';
+    // thrown from low down with nothing to stand on: the thrower stands on the
+    // ground or the floor and lets go at hand height
+    const byHand = thrown && !B.edge && R.backdrop !== 'sea' && H0 > 0 && H0 <= 2.6;
+    const n = 160, pts = [];
+    for (let j = 0; j <= n; j++) { const tt = (j / n) * f.tMax; pts.push({ t: tt, ...f.pos(tt) }); }
+    return { i, f, kind, piece, thrown, small, byHand, pts, t0: m.t0 || 0, tag: twin ? 'AB'[i] : null, ring: i ? P.second : null,
+      t: fired ? clamp(tRaw - (m.t0 || 0), 0, f.tMax) : 0, going: fired && tRaw > (m.t0 || 0) };
+  });
+  const thrownAny = movers.some((m) => m.thrown), byHand = movers.some((m) => m.byHand);
+  const apex = Math.max(...movers.map((m) => (m.f.uy > 0 ? m.f.apexHeight : H0)));
+  const xMax = Math.max(0, ...movers.flatMap((m) => m.pts.map((p) => p.x)));
   const yTop = Math.max(apex, H0);
+  const lead = movers[0], piece = lead.piece, kind = lead.kind, small = movers.every((m) => m.small), thrown = thrownAny;
 
   // ── how big the moving thing is drawn: to scale, but never too small to read
-  const size = (k) => {
+  const size = (k, piece = lead.piece) => {
     const s0 = Math.min(Math.max(piece.min, piece.m * k), Math.max(piece.min, w * 0.22));
     // never taller than a fifth of the place it starts from (a phone's small stage)
     return H0 > 0 && !piece.thrown ? Math.min(s0, Math.max(26, piece.m * k, 0.2 * H0 * k)) : s0;
@@ -188,7 +195,7 @@ function launch(canvas, o) {
 
   // ── the frame: the motion and the room its pieces need, at one scale
   const pads = (k) => {
-    const body = thrown ? TH(k) : size(k);
+    const body = Math.max(...movers.map((m) => (m.thrown ? TH(k) : size(k, m.piece))));
     const place = R.backdrop === 'house' ? houseW(k) + 30 : R.backdrop === 'orchard' ? 2.4 * k
       : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? Math.max(26, 0.75 * k) * 1.4
       : R.backdrop === 'table' ? tableW(k, w) + 20 : R.backdrop === 'well' ? 90 : 0;
@@ -200,7 +207,7 @@ function launch(canvas, o) {
     const winch = R.backdrop === 'well' ? 130 - (yTop - H0) * k : 0;
     // on a phone a table takes only its own room, so the motion has the rest
     if (phone && R.backdrop === 'table') return { l: tableW(k, w) + 12, r: 40, t: Math.max(36, head) };
-    return { l: Math.max(body * 0.9, place) + 80, r: 70 + (small ? 22 : size(k) * 0.55), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown, winch) };
+    return { l: Math.max(body * 0.9, place) + 80, r: 70 + Math.max(...movers.map((m) => (m.small ? 22 : size(k, m.piece) * 0.55))), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown, winch) };
   };
   // the readouts are cards over the stage: the path may pass behind them, but
   // the place's top and its height's label stay clear of them
@@ -218,11 +225,46 @@ function launch(canvas, o) {
     k = F.k;
   }
   const { k, X, Y } = F, oy = Y(0), x0 = X(0), top = Y(H0);
-  const phase = t * 1.3;
+  const phase = (fired ? tRaw : 0) * 1.3;
 
   // ── the backdrop, and the place it is launched from
   scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand });
 
+  // ── the height it starts at, as a dimension line beside the place
+  if (H0 > 0) {
+    // beside the place, never across it: outside the house's front, behind the thrower
+    const dx = R.backdrop === 'house' ? x0 - houseW(k) - 16 : R.backdrop === 'board' ? x0 - boardLen(k, oy - top) - 26
+      : R.backdrop === 'air' ? x0 - Math.max(26, 0.75 * k) * 1.25 - 20
+      : R.backdrop === 'table' ? x0 - tableW(k, w) - 16 : R.backdrop === 'well' ? x0 - 26 - 30
+      : (thrownAny ? x0 - TH(k) * 0.5 - (twin ? TH(k) * 0.6 : 0) : x0 - size(k) * 0.65) - 14;
+    stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.ink, width: 1.4, alpha: 0.9 });
+    for (const yy of [oy, top]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
+    L.add(T`${trimmed(sig3(H0))} [m]`, dx - 8, (oy + top) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700 });
+  }
+
+  {
+  // keep labels off the path and out from under the readouts
+  for (const m of movers) for (let i = 0; i < m.pts.length; i += 4) L.reserve({ x: X(m.pts[i].x) - 5, y: Y(m.pts[i].y) - 5, w: 10, h: 10 });
+  if (!phone) { L.reserve({ x: 0, y: 0, w: HUD, h: HUD_H - 40 }); L.reserve({ x: w - 130, y: 0, w: 130, h: 56 }); }
+
+  // ── a height a part asks about: a marker line across, ringed where crossed
+  const lv = lead.f.level, t = lead.t;
+  if (lv) {
+    const ly = Y(lv.L), xr = Math.min(w - 10, X(xMax) + 40);
+    stroke(g, [{ x: x0 - 10, y: ly }, { x: xr, y: ly }], { color: P.mark, width: 1.6, alpha: 0.9 });
+    L.add(Math.abs(lv.rel) < 1e-12 ? 'the height it started at' : T`${sig3(Math.abs(lv.rel))} [m] ${lv.rel >= 0 ? '"above"' : '"below"'} "the start"`, xr, ly - 14, { color: P.mark, align: 'right', pri: 6, size: 13, weight: 700 });
+    for (const tc of lv.times) {
+      if (t < tc - 1e-9) continue;
+      const q = lead.f.pos(tc);
+      dot(g, X(q.x), Y(q.y), 7, { stroke: P.mark, width: 2.4 });
+      L.add(T`t = ${sig3(tc)} [s]`, X(q.x) + 12, Y(q.y) - 16, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 });
+    }
+  }
+
+  }
+  for (const m of movers) {
+    const { f, t, kind, piece, thrown, small, pts, byHand } = m;
+    const clock = clocks[m.i];
   // ── who throws it: at the edge, wound up before the throw, through after it
   const v0 = f.vel(0), aim = (Math.atan2(v0.y, v0.x) * 180) / Math.PI;
   // at a well, the thrower stands at the well head, clear of the shaft
@@ -233,39 +275,11 @@ function launch(canvas, o) {
     th = clamp((oy - top) / (per.y / 100), THROWER_MIN * 0.8, 3 * k);
     feet = x0 - th * (per.x / 100); stand = oy;
   }
+  // the second of two stands a step behind the first
+  if (m.i) feet -= th * 0.6;
   if (thrown) {
-    const pose = fired ? clamp(0.55 + t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
-    thrower(g, feet, stand, th, P, { dir: 1, pose, aim });
-  }
-
-  // ── the height it starts at, as a dimension line beside the place
-  if (H0 > 0) {
-    // beside the place, never across it: outside the house's front, behind the thrower
-    const dx = R.backdrop === 'house' ? x0 - houseW(k) - 16 : R.backdrop === 'board' ? x0 - boardLen(k, oy - top) - 26
-      : R.backdrop === 'air' ? x0 - Math.max(26, 0.75 * k) * 1.25 - 20
-      : R.backdrop === 'table' ? x0 - tableW(k, w) - 16 : R.backdrop === 'well' ? x0 - 26 - 30
-      : (thrown ? feet - th * 0.3 : x0 - size(k) * 0.65) - 14;
-    stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.ink, width: 1.4, alpha: 0.9 });
-    for (const yy of [oy, top]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
-    L.add(T`${trimmed(sig3(H0))} [m]`, dx - 8, (oy + top) / 2, { color: P.ink, align: 'right', pri: 7, size: 15, weight: 700 });
-  }
-
-  // keep labels off the path and out from under the readouts
-  for (let i = 0; i < pts.length; i += 4) L.reserve({ x: X(pts[i].x) - 5, y: Y(pts[i].y) - 5, w: 10, h: 10 });
-  if (!phone) { L.reserve({ x: 0, y: 0, w: HUD, h: HUD_H - 40 }); L.reserve({ x: w - 130, y: 0, w: 130, h: 56 }); }
-
-  // ── a height a part asks about: a marker line across, ringed where crossed
-  const lv = f.level;
-  if (lv) {
-    const ly = Y(lv.L), xr = Math.min(w - 10, X(xMax) + 40);
-    stroke(g, [{ x: x0 - 10, y: ly }, { x: xr, y: ly }], { color: P.mark, width: 1.6, alpha: 0.9 });
-    L.add(Math.abs(lv.rel) < 1e-12 ? 'the height it started at' : T`${sig3(Math.abs(lv.rel))} [m] ${lv.rel >= 0 ? '"above"' : '"below"'} "the start"`, xr, ly - 14, { color: P.mark, align: 'right', pri: 6, size: 13, weight: 700 });
-    for (const tc of lv.times) {
-      if (t < tc - 1e-9) continue;
-      const q = f.pos(tc);
-      dot(g, X(q.x), Y(q.y), 7, { stroke: P.mark, width: 2.4 });
-      L.add(T`t = ${sig3(tc)} [s]`, X(q.x) + 12, Y(q.y) - 16, { color: P.mark, align: 'left', pri: 8, size: 14, weight: 700 });
-    }
+    const pose = m.going ? clamp(0.55 + t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
+    thrower(g, feet, stand, th, P, { dir: 1, pose, aim, ring: m.ring });
   }
 
   // ── the path: all of it faintly, the part flown strongly
@@ -298,7 +312,7 @@ function launch(canvas, o) {
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
     }
     if (!f.vertical) {
-      const ry = oy + 24;
+      const ry = oy + 24 + m.i * 24;
       stroke(g, [{ x: x0, y: ry }, { x: lx, y: ry }], { color: P.ink, width: 1.4, alpha: 0.9 });
       for (const xx of [x0, lx]) stroke(g, [{ x: xx, y: ry - 5 }, { x: xx, y: ry + 5 }], { color: P.ink, width: 1.4, alpha: 0.9 });
       L.add(T`${sig3(end.x)} [m]`, Math.min((x0 + lx) / 2, lx - 40), ry + 15, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700, maxPush: 20 });
@@ -308,7 +322,7 @@ function launch(canvas, o) {
   // ── the moving thing, at the engine's point
   const r = f.pos(t), v = f.vel(t), bx = X(r.x), by = Y(r.y);
   const Lp = small ? 0 : size(k);
-  const aloft = fired && t > 0 && !landed;
+  const aloft = m.going && t > 0 && !landed;
   if (small) {
     const R0 = clamp(k * piece.m * 0.5, 5.5, 9);
     const gone = landed && wet && age > life * 0.2;
@@ -320,9 +334,9 @@ function launch(canvas, o) {
       else if (kind === 'coin') coin(g, bx, by - (fired && t > 0 ? 0 : 3), 8, fired ? t * 9 : 0.25);
       else if (kind === 'marble') marble(g, bx, by - (fired && t > 0 ? 0 : 7), 7);
       else if (kind === 'arrow') arrowShaft(g, bx, by, Math.max(44, size(k)), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
-      else if (kind === 'ball') ballAt(g, bx, by, R0);
-      else if (kind === 'particle') particle(g, bx, by, R0 * 2, P);
-      else pebble(g, bx, by, R0);
+      else if (kind === 'ball') ballAt(g, bx, by, R0, m.ring);
+      else if (kind === 'particle') particle(g, bx, by, R0 * 2, P, { ring: m.ring });
+      else { pebble(g, bx, by, R0); if (m.ring) dot(g, bx, by, R0 + 3, { stroke: m.ring, width: 2.4 }); }
     }
   } else if (kind === 'rocket') {
     // pointed along its path all the way, as a real arrow or a coasting rocket flies
@@ -360,7 +374,7 @@ function launch(canvas, o) {
       const steep = !down && Math.atan2(v0.y, v0.x) > Math.PI / 4;
       const tuck = steep ? ease(0.15, 0.35, p) * (1 - ease(0.6, 0.8, p)) : 0;
       const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * 3 : ease(0.05, 1, p) * Math.PI * 0.85;
-      diver(g, cx, cy, Lp, P, { tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
+      diver(g, cx, cy, Lp, P, { ring: m.ring, tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
     } else if (kind === 'skateboarder') {
       // the wheels carry the engine's point all the way down, the deck's front
       // at the edge before the off, landing level on all four wheels
@@ -399,7 +413,7 @@ function launch(canvas, o) {
     // in the water, only what is above the surface shows
     if (landed && wet) { g.beginPath(); g.rect(0, 0, w, oy + 2); g.clip(); }
     g.translate(bx, by); g.rotate(ang);
-    drawFigure(g, kind, Lp / 2, mid, Lp, P, { dir: 1, phase: turns, brake: false, airborne: aloft || (landed && wet) });
+    drawFigure(g, kind, Lp / 2, mid, Lp, P, { dir: 1, phase: turns, brake: false, ring: m.ring, airborne: aloft || (landed && wet) });
     g.restore();
     if (landed && wet) water(g, lx - Lp * 0.7, lx + Lp * 0.7, oy, oy + 3, { phase });
   }
@@ -436,6 +450,8 @@ function launch(canvas, o) {
     L.add(T`${sig3(sp)} [m s^-1]`, near ? tx - 10 : tx + 12, near ? ty + sy * 20 : ty, { color: P.vel, align: near ? 'right' : 'left', pri: 7, size: 15, weight: 700 });
   }
   if (show.acceleration) arrow(g, bx, by, bx, by + 40, { color: P.acc, width: 2.4, head: 10 });
+    if (m.tag) L.add(m.tag, X(f.pos(t).x) + 12, Y(f.pos(t).y) - 18, { color: m.ring || P.ink, align: 'left', pri: 9, size: 14, weight: 800 });
+  }
 
   // ── what it lands on, named on it
   const name = { sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';

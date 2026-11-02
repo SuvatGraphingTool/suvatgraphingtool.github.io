@@ -62,7 +62,7 @@ export const height = {
       rows: sec.rows.map((r) => ({ ...r, f: say(r.f), s: say(r.s), r: say(r.r) })) }));
     // the height found from the time in the air is worked here, and the time
     // of flight is not then worked back from it
-    const kept = solved.foundH ? out.filter((x) => !/time of flight/i.test(String(x.title))) : out;
+    const kept = solved.foundH ? out.filter((x) => !/time of flight/i.test(String(x.title))) : out.slice();
     if (solved.foundH) kept.push({ title: `The height, from the time in the air`, rows: solved.hRows,
       note: `Measured from where it was thrown, up positive, it ends ${M`${tr(solved.h)} [m]`} below that point: so it started that high above ${(solved.Pl || PLACES[solved.place]).below}.` });
     out.length = 0; out.push(...kept);

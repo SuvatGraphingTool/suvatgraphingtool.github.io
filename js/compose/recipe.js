@@ -139,6 +139,11 @@ export function check(raw) {
     }
     if (isNum(numbers.theta) && Math.abs(numbers.theta) > 90) return no('The angle is between −90° (straight down) and 90° (straight up).');
   }
+  if (engine === 'twin') {
+    if (isNum(numbers.h) && numbers.h < 0) return no('The height they start at is above what they land on: give it as a positive number.');
+    for (const k of ['A.theta', 'B.theta']) if (isNum(numbers[k]) && Math.abs(numbers[k]) > 90) return no(`${Up(E.names[k])} is between −90° (straight down) and 90° (straight up).`);
+    for (const k of ['A.t0', 'B.t0']) if (isNum(numbers[k]) && numbers[k] < 0) return no(`${Up(E.names[k])} is a time from the start: give it as 0 or more.`);
+  }
   if (engine === 'pair' || engine === 'bounce') {
     for (const k of ['h', 'A.h', 'B.h']) if (isNum(numbers[k]) && numbers[k] < 0) return no(`${Up(E.names[k])} is measured up from the ground: give it as a positive number.`);
     for (const k of ['A.t0', 'B.t0']) if (isNum(numbers[k]) && numbers[k] < 0) return no(`${Up(E.names[k])} is a time from the start: give it as 0 or more.`);
@@ -178,6 +183,11 @@ export function titleOf(r) {
   }
   const by = B.edge ? `by ${B.at}` : where;
   if (r.engine === 'pair') return `Two on one line ${by}: when do they meet?`;
+  if (r.engine === 'twin') {
+    const two = r.objects.map((o) => FIGURES[o.figure].label);
+    const what2 = two[0] === two[1] ? `Two ${two[0].replace(/^an? /, '')}s` : `${Up(two[0])} and ${two[1]}`;
+    return B.edge ? `${what2} off ${B.at}` : `${what2} ${where}`;
+  }
   if (r.engine === 'bounce') return `${what} bouncing ${by}`;
   return `${what}: ${ENGINES[r.engine].label.toLowerCase()}`;
 }
@@ -203,7 +213,7 @@ export function compose(raw) {
   // on Earth unless the question says otherwise — the reader leaves g out
   // then — at the app's own Earth value, as the twelve are
   const boxes = { ...r.numbers, g: r.numbers.g ?? EARTH };
-  if (r.engine === 'projectile') boxes.place = B.place;
+  if (r.engine === 'projectile' || r.engine === 'twin') boxes.place = B.place;
 
   // the engine's kit, as it is, with the composed stage in place of its own;
   // the place is the backdrop's, so its choice is not offered
@@ -215,6 +225,8 @@ export function compose(raw) {
     read: (vals) => ({ ...base.read({ ...Object.fromEntries(Object.entries(vals).map(([k, v]) => [k, frac(v)])), place: boxes.place ?? vals.place }),
       // a thing that is not thrown started somewhere, it was not thrown from it
       ...(r.engine === 'projectile' && !FIGURES[r.objects[0].figure].thrown ? { from: ['diver', 'skateboarder'].includes(r.objects[0].figure) ? 'where they started' : 'where it started' } : {}),
+      // two from one place: each named as the question names it
+      ...(r.engine === 'twin' ? (({ A, B }) => ({ A: { ...A, name: r.objects[0].name }, B: { ...B, name: r.objects[1].name } }))(base.read(vals)) : {}),
       // the surface below in the engine's words: a cliff over the ground hits the ground
       ...(r.below ? { below: r.below } : {}) }),
     // the engine's sentences say what moves by its name: "The diver enters

@@ -268,6 +268,33 @@ group('Places only the composer draws, and more of what students name', () => {
   for (const [w, f] of [['rocket', 'rocket'], ['firework', 'rocket'], ['arrow', 'arrow'], ['sandbag', 'sandbag'], ['bag of flour', 'sandbag'], ['pail', 'bucket'], ['marble', 'marble'], ['penny', 'coin']]) ok(figureOf(w).figure === f && figureOf(w).exact, `“${w}” is drawn as ${f}`);
 });
 
+group('Two from one place', () => {
+  const c = compose({ backdrop: 'cliff', engine: 'twin', objects: [{ figure: 'car', name: 'the car' }, { figure: 'stone', name: 'the stone' }],
+    numbers: { h: 40, 'A.u': 15, 'A.theta': 0, 'B.u': 0, 'B.theta': -90, 'B.t0': 1, g: 9.8 } });
+  ok(c.ok && c.scenario.name === 'A car and a stone off a cliff', '“A car and a stone off a cliff”');
+  const s = c.kit.solve(c.kit.read(c.boxes));
+  // car: 40 = 4.9 t² → t = 20/7; stone, a second later, straight down from rest: the same fall
+  near(s.extras.find((e) => e.key === 'tA').value, 20 / 7, 1e-9, 'the car lands at 20/7 s');
+  near(s.extras.find((e) => e.key === 'tB').value, 1 + 20 / 7, 1e-9, 'the stone a second later');
+  near(s.extras.find((e) => e.key === 'gapX').value, 300 / 7, 1e-9, 'they land 15 × 20/7 m apart');
+  ok(s.first === 'the car' && s.f.B.name === 'the stone', 'the car first; each named as the question names it');
+  const w = c.kit.working(s, s.f.tMax);
+  ok(w.some((x) => /^The car: /.test(x.title)) && w.some((x) => /^The stone: /.test(x.title)) && w[w.length - 1].title === 'The two together', 'each launch worked in its own name, then the two together');
+  COMPOSED.push(c.scenario);
+  const parts = fromReader(c.scenario.id, [{ label: 'a', asks: 'how far apart', answer: 'distance3' }, { label: 'b', asks: 'which first, by how long', answer: 'time3' }], Object.keys(c.boxes));
+  near(answerOf(parts[1], s).values[0], 1, 1e-9, '(b) the time between landings is the engine’s');
+  COMPOSED.length = 0;
+  ok(!check({ backdrop: 'cliff', engine: 'twin', objects: [{ figure: 'ball' }], numbers: { h: 40 } }).ok, 'two from one place needs two');
+  ok(/between −90°/.test(check({ backdrop: 'cliff', engine: 'twin', objects: [{ figure: 'ball' }, { figure: 'ball' }], numbers: { h: 40, 'B.theta': 120 } }).reason), 'an angle past straight up is refused in words');
+});
+
+console.log('\nFrom a height shows its working when the height is given');
+{
+  const { solveHeight } = await import('../js/core/height.js');
+  const { height } = await import('../js/kits/height.js');
+  ok(height.working(solveHeight({ place: 'cliff', g: 9.8, h: 40, u: 15, theta: 0 }), 1).length >= 3, 'the working panel is never left empty');
+}
+
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);
   ok(s[0] === 'Placing a cliff' && s.includes('Laying out the sea') && s.includes('Bringing in a car') && s.includes('Adding a splash'), s.join(' / '));

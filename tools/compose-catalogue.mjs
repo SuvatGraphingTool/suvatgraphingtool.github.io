@@ -17,6 +17,7 @@ const sample = {
   projectile: { backdrop: 'cliff', objects: [{ figure: 'car' }] },
   pair: { backdrop: 'tower', objects: [{ figure: 'ball' }, { figure: 'ball' }] },
   bounce: { backdrop: 'hall', objects: [{ figure: 'ball' }] },
+  twin: { backdrop: 'cliff', objects: [{ figure: 'ball' }, { figure: 'stone' }] },
 };
 
 export function catalogue() {

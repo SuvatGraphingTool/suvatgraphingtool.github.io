@@ -1290,6 +1290,8 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
       { ...base, backdrop: 'road', objects: [{ figure: 'skateboarder' }], numbers: { h: 2, u: 4, theta: 0 } },
       { ...base, backdrop: 'ground', objects: [{ figure: 'rocket' }], numbers: { h: 0, u: 30, theta: 80 } },
       { engine: 'pair', backdrop: 'tower', objects: [{ figure: 'ball' }, { figure: 'stone' }], numbers: { 'A.h': 0, 'A.u': 20, 'B.h': 40, 'B.u': 0, 'B.t0': 1, g: 10 } },
+      { engine: 'twin', backdrop: 'cliff', objects: [{ figure: 'car' }, { figure: 'stone' }], numbers: { h: 40, 'A.u': 15, 'A.theta': 0, 'B.u': 0, 'B.theta': -90, 'B.t0': 1 } },
+      { engine: 'twin', backdrop: 'tower', objects: [{ figure: 'ball' }, { figure: 'ball' }], numbers: { h: 30, 'A.u': 20, 'A.theta': 30, 'B.u': 20, 'B.theta': 60 } },
       { engine: 'pair', backdrop: 'house', objects: [{ figure: 'ball' }, { figure: 'ball' }], numbers: { 'A.h': 8, 'A.u': -3, 'B.h': 0, 'B.u': 12 } },
       { engine: 'bounce', backdrop: 'house', objects: [{ figure: 'ball' }], numbers: { start: 'drop', h: 6, e: 0.7, n: 3 } },
       { engine: 'bounce', backdrop: 'hall', objects: [{ figure: 'ball' }], numbers: { start: 'up', h: 1.2, U: 5, e: '1/2', n: 2, y: 1 } },
