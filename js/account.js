@@ -1,7 +1,8 @@
 // account.js — signing in, and the chats kept in the account.
 //
 // The user, 2 Nov: chats kept after the site is closed, then accounts, signed
-// in with Google or with an emailed link. Every chat is kept in this browser
+// in with Google or with an emailed link. Every chat — and both whiteboards
+// (js/board/boards.js) — is kept in this browser
 // first (js/ai/chats.js); signed in, the same records are kept in the account
 // too (site/src/index.js), so they follow the student to any device. Signing
 // in for the first time takes the chats already on this device with it.
@@ -10,6 +11,7 @@
 // server, or before a key is set, there is no /api/me and the page is as it was.
 
 import { loadChats, putChats, clearChats, onChats } from './ai/chats.js';
+import { getBoards, putBoard, clearBoards, onBoards, SLOTS } from './board/boards.js';
 
 const $ = (id) => document.getElementById(id);
 const PENDING = 'suvat-chats-del-v1';   // deletions the account has not heard of yet
@@ -118,6 +120,7 @@ export function initAccount() {
   /** Signed out: the chats were the account's, so this browser forgets them. */
   function leave() {
     clearChats();
+    clearBoards();
     try { localStorage.removeItem(PENDING); } catch { /* storage shut */ }
     location.assign('/');
   }
@@ -136,6 +139,26 @@ export function initAccount() {
   });
   const send = (c) => api('PUT', `/api/chats/${encodeURIComponent(c.id)}`, c);
 
+  /* ── the two whiteboards, kept in the account too ─────────────────────── */
+  const boardDue = new Map();
+  onBoards((n) => {
+    if (!user) return;
+    clearTimeout(boardDue.get(n));
+    // a board changes with every pan and stroke: sent when it has been still a moment
+    boardDue.set(n, setTimeout(() => { boardDue.delete(n); sendBoard(n); }, 3000));
+  });
+  const sendBoard = (n) => api('PUT', `/api/boards/${n}`, getBoards()[n]);
+  async function syncBoards() {
+    const d = await api('GET', '/api/boards');
+    if (!d?.boards) return;
+    const here = getBoards();
+    for (const n of SLOTS) {
+      const there = d.boards.find((b) => b.slot === n);
+      if (there && there.updated > here[n].updated) putBoard(n, there);
+      else if (here[n].updated > (there?.updated || 0)) await sendBoard(n);
+    }
+  }
+
   async function sync() {
     for (const id of pending()) {
       const r = await api('DELETE', `/api/chats/${encodeURIComponent(id)}`);
@@ -148,6 +171,7 @@ export function initAccount() {
     putChats(list);
     document.dispatchEvent(new CustomEvent('suvat:chats'));
     for (const c of push) await send(c);
+    await syncBoards();
   }
   function pending(id, add) {
     let ids = [];

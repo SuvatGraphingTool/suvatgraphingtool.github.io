@@ -46,6 +46,7 @@
 <link rel="modulepreload" href="./js/core/question.js">
 <link rel="modulepreload" href="./js/ai/ask.js">
 <link rel="modulepreload" href="./js/board/board.js">
+<link rel="modulepreload" href="./js/board/boards.js">
 <link rel="modulepreload" href="./js/ai/readout.js">
 <link rel="modulepreload" href="./js/ai/gchoice.js">
 <link rel="modulepreload" href="./js/parts/parts.js">
@@ -798,6 +799,12 @@
       </div>
     </div>
     <div class="bd-tools" role="toolbar" aria-label="Board view">
+      <!-- The student's two boards, each kept whole (js/board/boards.js). -->
+      <div class="bd-boards" id="bd-boards" role="group" aria-label="Your boards: you can keep two">
+        <button type="button" class="bd-tool bd-word bd-slot" data-slot="1" aria-pressed="true">Board 1</button>
+        <button type="button" class="bd-tool bd-word bd-slot" data-slot="2" aria-pressed="false">Board 2</button>
+      </div>
+      <span class="bd-sep" aria-hidden="true"></span>
       <button type="button" class="bd-tool" id="bd-out" aria-label="Zoom out">−</button>
       <button type="button" class="bd-tool bd-zoom" id="bd-zoom" title="Back to 100%">100%</button>
       <button type="button" class="bd-tool" id="bd-in" aria-label="Zoom in">+</button>

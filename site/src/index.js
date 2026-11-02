@@ -14,6 +14,8 @@
 //   GET    /api/chats                    every chat kept, as js/ai/chats.js keeps them
 //   PUT    /api/chats/:id                one chat, if it is newer
 //   DELETE /api/chats/:id
+//   GET    /api/boards                   the two whiteboards
+//   PUT    /api/boards/:slot             one of them (1 or 2), if it is newer
 //
 // Kept: a name, an email and the chats — nothing else. No passwords. Sessions
 // and links are kept only as hashes. A change is accepted only from the site's
@@ -25,6 +27,7 @@ const DAY = 86_400;
 const SESSION_DAYS = 60;
 const LINK_MINUTES = 15;
 const CHAT_MAX_BYTES = 400_000;
+const BOARD_MAX_BYTES = 1_000_000;
 const CHATS_MAX = 300;          // (not exported: a Worker's module may export only handlers)
 const SENDS_PER_EMAIL = 3, SENDS_PER_IP = 10;   // an hour
 
@@ -55,6 +58,7 @@ async function api(req, env, url) {
     if (!user) return json({ error: 'signed-out' }, 401);
     await env.DB.batch([
       env.DB.prepare('DELETE FROM chats WHERE user_id = ?').bind(user.id),
+      env.DB.prepare('DELETE FROM boards WHERE user_id = ?').bind(user.id),
       env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(user.id),
       env.DB.prepare('DELETE FROM users WHERE id = ?').bind(user.id),
     ]);
@@ -70,6 +74,16 @@ async function api(req, env, url) {
   if (one && (m === 'PUT' || m === 'DELETE')) {
     if (!user) return json({ error: 'signed-out' }, 401);
     return m === 'PUT' ? putChat(req, env, user, one[1]) : dropChat(env, user, one[1]);
+  }
+  if (path === '/api/boards' && m === 'GET') {
+    if (!user) return json({ error: 'signed-out' }, 401);
+    const { results } = await env.DB.prepare('SELECT slot, updated, data FROM boards WHERE user_id = ? ORDER BY slot').bind(user.id).all();
+    return json({ boards: results.map((r) => ({ slot: r.slot, updated: r.updated, ...(r.data ? JSON.parse(r.data) : {}) })) });
+  }
+  const board = path.match(/^\/api\/boards\/([12])$/);
+  if (board && m === 'PUT') {
+    if (!user) return json({ error: 'signed-out' }, 401);
+    return putBoard(req, env, user, Number(board[1]));
   }
   return json({ error: 'not-found' }, 404);
 }
@@ -245,6 +259,19 @@ async function dropChat(env, user, id) {
   await trim(env, user);
   return json({ ok: true });
 }
+/* ── the two whiteboards ─────────────────────────────────────────────── */
+async function putBoard(req, env, user, slot) {
+  const text = await req.text();
+  if (text.length > BOARD_MAX_BYTES) return json({ error: 'too-big', message: 'That board is too big to keep. Clear some of it.' }, 413);
+  let b; try { b = JSON.parse(text); } catch { return json({ error: 'json' }, 400); }
+  if (!b || typeof b.updated !== 'number' || !isFinite(b.updated)) return json({ error: 'board' }, 400);
+  const data = JSON.stringify({ board: b.board ?? null, ink: b.ink ?? null });
+  await env.DB.prepare(`INSERT INTO boards (user_id, slot, updated, data) VALUES (?, ?, ?, ?)
+      ON CONFLICT (user_id, slot) DO UPDATE SET updated = excluded.updated, data = excluded.data
+      WHERE excluded.updated >= boards.updated`).bind(user.id, slot, b.updated, data).run();
+  return json({ ok: true });
+}
+
 /** At most CHATS_MAX rows an account; the oldest go. */
 async function trim(env, user) {
   await env.DB.prepare(`DELETE FROM chats WHERE user_id = ?1 AND id NOT IN

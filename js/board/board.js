@@ -69,12 +69,24 @@ const ROWS = [['scene', 'given', 'answers'], ['graph-s', 'graph-v', 'graph-a'], 
  * @param o.open(x)  put this reading on the main stage, as Ask Suvat's
  *                   "Show me the flight" does
  */
-export function createBoard({ open } = {}) {
+/** Where the board is kept: this browser, unless it is given a store of its own (js/board/boards.js). */
+const LOCAL = {
+  get() { try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch { return null; } },
+  set(v) { try { localStorage.setItem(STORE, JSON.stringify(v)); } catch { /* storage shut */ } },
+};
+
+/**
+ * @param o.open(x)    a frame's "Open on the stage"
+ * @param o.store      { board: {get,set}, ink: {get,set} } — where this board is kept
+ * @param o.changed()  told after every change is kept, so the account can hear
+ */
+export function createBoard({ open, store = null, changed = null } = {}) {
   const vp = $('bd-vp'), world = $('bd-world');
   const form = $('bd-form'), text = $('bd-text'), send = $('bd-send');
   const cam = { x: 0, y: 0, z: 1 };
+  const keep = store?.board || LOCAL;
   // the student's own drawing, on the same camera (js/board/ink.js)
-  const ink = createInk({ vp, cam });
+  const ink = createInk({ vp, cam, store: store?.ink, changed });
   let fly = null;                        // the camera's way to a cluster, while it goes
   const clusters = [];
   const history = [];
@@ -197,12 +209,16 @@ export function createBoard({ open } = {}) {
   for (const id of ['bd-in', 'bd-out', 'bd-zoom']) $(id).addEventListener('click', save);
   $('bd-clear').addEventListener('click', () => {
     if (!clusters.length) return;
+    empty();
+    save();
+  });
+  /** Nothing on the board, and the view back at the start. */
+  function empty() {
     for (const c of clusters) c.el.remove();
     clusters.length = 0; history.length = 0;
     $('bd-empty').hidden = false;
     Object.assign(cam, { x: 0, y: 0, z: 1 }); place();
-    save();
-  });
+  }
 
   let top = 10;
   const bringToFront = (el) => { el.style.zIndex = String(++top); };
@@ -611,23 +627,22 @@ export function createBoard({ open } = {}) {
   let saving = 0;
   function save() {
     clearTimeout(saving);
-    saving = setTimeout(() => {
-      const built = clusters.filter((c) => c.bp).slice(-KEEP);
-      const data = {
-        cam: { x: cam.x, y: cam.y, z: cam.z }, history,
-        clusters: built.map((c) => ({
-          x: c.x, y: c.y, w: c.w, h: c.h, bp: c.bp, edits: c.edits,
-          frames: c.frames.map((f) => ({ kind: f.kind, x: f.x, y: f.y, h: f.h || 0 })),
-        })),
-      };
-      try { localStorage.setItem(STORE, JSON.stringify(data)); } catch {}
-    }, 300);
+    saving = setTimeout(() => { keep.set(snapshot()); changed?.(); }, 300);
+  }
+  function snapshot() {
+    const built = clusters.filter((c) => c.bp).slice(-KEEP);
+    return {
+      cam: { x: cam.x, y: cam.y, z: cam.z }, history,
+      clusters: built.map((c) => ({
+        x: c.x, y: c.y, w: c.w, h: c.h, bp: c.bp, edits: c.edits,
+        frames: c.frames.map((f) => ({ kind: f.kind, x: f.x, y: f.y, h: f.h || 0 })),
+      })),
+    };
   }
   /** What was left on the board last time, solved again by the engine. */
   function restore() {
-    let data = null;
-    try { data = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
-    if (!data || !Array.isArray(data.clusters)) return;
+    const data = keep.get();
+    if (!data || !Array.isArray(data.clusters)) { $('bd-empty').hidden = clusters.length > 0; return; }
     sketch.quiet = true;
     for (const k of data.clusters) {
       // One saved cluster that no longer builds — an older shape, a hand
@@ -677,6 +692,19 @@ export function createBoard({ open } = {}) {
     /** Fly to the nth cluster. */
     focus(n) { const c = clusters.at(n); if (c) frameOn(c, { now: true }); },
     redraw() { for (const c of clusters) c.dirty = true; wake(); ink.render(); },
+    /** Keep what is on the board now, at once — before another board is put up. */
+    flush() { clearTimeout(saving); keep.set(snapshot()); ink.flush(); },
+    /** Put up the board the store now holds: another of the student's boards. */
+    load() {
+      clearTimeout(saving);
+      busy?.abort();
+      empty();
+      restore();
+      ink.load();
+      place();
+      for (const c of clusters) c.dirty = true;
+      wake();
+    },
   };
 }
 

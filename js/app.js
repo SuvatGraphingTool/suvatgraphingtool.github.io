@@ -36,6 +36,7 @@ import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
 import { createAsk } from './ai/ask.js';
 import { createBoard } from './board/board.js';
+import { boardStore, boardChanged, initBoards } from './board/boards.js';
 import { readoutHTML, solutionHTML, resultsHTML, esc } from './ai/readout.js';
 import { withChosenG, gStated, loadG, saveG } from './ai/gchoice.js';
 import { walk, stepOf, labelOf, ownScene, sceneOf } from './parts/parts.js';
@@ -3732,7 +3733,11 @@ board = createBoard({
     const r = applyReading(x, { graph: true });
     if (r.ok && traj) showFlight(); else go('values');
   },
+  // the student's two boards: the one on show is kept here, and told to the account
+  store: boardStore,
+  changed: boardChanged,
 });
+initBoards(board);
 $('board-top').addEventListener('click', () => go(state.step === 'board' ? 'scenario' : 'board'));
 $('ask-top').addEventListener('click', () => ask.open());
 

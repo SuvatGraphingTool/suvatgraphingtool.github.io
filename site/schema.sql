@@ -45,3 +45,13 @@ CREATE TABLE IF NOT EXISTS chats (
   data    TEXT,
   PRIMARY KEY (user_id, id)
 );
+
+-- The whiteboards: two an account, Board 1 and Board 2 (js/board/boards.js).
+-- data is the board's JSON: its frames, its view and its drawing.
+CREATE TABLE IF NOT EXISTS boards (
+  user_id TEXT NOT NULL,
+  slot    INTEGER NOT NULL CHECK (slot IN (1, 2)),
+  updated INTEGER NOT NULL,
+  data    TEXT,
+  PRIMARY KEY (user_id, slot)
+);

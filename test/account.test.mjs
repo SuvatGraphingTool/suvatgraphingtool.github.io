@@ -9,7 +9,7 @@
 //   - Google's answer is checked before anyone is signed in;
 //   - the same verified email is the same account, however one signs in;
 //   - a chat is kept in its own account only, the newer copy wins, and a
-//     deletion is heard by every device;
+//     deletion is heard by every device; two whiteboards an account, no more;
 //   - nothing changes from another site's page; signing out and deleting the
 //     account leave nothing behind.
 
@@ -203,6 +203,27 @@ await group('Chats are kept in their own account', async () => {
   await kim.call('PUT', '/api/chats/new', { body: chat('new', 99_999) });
   const kept = (await kim.call('GET', '/api/chats')).body.chats;
   ok(kept.length === CHATS_MAX && kept[0].id === 'new' && !kept.some((c) => c.id === 'a1'), `at most ${CHATS_MAX} an account; the oldest go`);
+});
+
+await group('Two whiteboards an account, and no more', async () => {
+  const sam = browser(), kim = browser();
+  await signInByEmail(sam, 'boards@school.example');
+  await signInByEmail(kim, 'other@school.example');
+  const b = (updated, label) => ({ updated, board: { clusters: [{ label }] }, ink: [{ t: 'pen', pts: [[0, 0]], w: 2 }] });
+  ok((await sam.call('PUT', '/api/boards/1', { body: b(100, 'cliff') })).status === 200, 'Board 1 is kept');
+  ok((await sam.call('PUT', '/api/boards/2', { body: b(100, 'car') })).status === 200, 'Board 2 is kept');
+  ok((await sam.call('PUT', '/api/boards/3', { body: b(100, 'more') })).status === 404, 'there is no Board 3');
+  const got = (await sam.call('GET', '/api/boards')).body.boards;
+  ok(got.length === 2 && got[0].board.clusters[0].label === 'cliff' && got[1].ink.length === 1, 'both read back whole: frames and drawing');
+  await sam.call('PUT', '/api/boards/1', { body: b(50, 'older') });
+  ok((await sam.call('GET', '/api/boards')).body.boards[0].board.clusters[0].label === 'cliff', 'an older copy does not undo a newer one');
+  await sam.call('PUT', '/api/boards/1', { body: b(200, 'newer') });
+  ok((await sam.call('GET', '/api/boards')).body.boards[0].board.clusters[0].label === 'newer', 'a newer one replaces it');
+  ok((await kim.call('GET', '/api/boards')).body.boards.length === 0, 'another account sees none of them');
+  ok((await sam.call('PUT', '/api/boards/2', { body: { updated: 1, board: { pad: 'x'.repeat(1_000_001) } } })).status === 413, 'one too big to keep is refused');
+  ok((await browser().call('GET', '/api/boards')).status === 401, 'signed out: none');
+  await sam.call('DELETE', '/api/account');
+  ok(db.prepare("SELECT COUNT(*) AS n FROM boards WHERE user_id NOT IN (SELECT id FROM users)").get().n === 0, 'deleting the account deletes its boards');
 });
 
 await group('Nothing changes from another site', async () => {

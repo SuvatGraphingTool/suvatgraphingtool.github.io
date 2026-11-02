@@ -38,7 +38,14 @@ const SIZES = { pen: [2, 4, 8], arrow: [2, 4, 7], hl: [14, 22, 34] };   // scree
 const TOOLS = ['hand', 'pen', 'hl', 'arrow', 'eraser'];
 const KEYS = { v: 'hand', p: 'pen', h: 'hl', a: 'arrow', e: 'eraser' };
 
-export function createInk({ vp, cam }) {
+/** Where the drawing is kept: this browser, unless the board is given a store of its own (js/board/boards.js). */
+const LOCAL = {
+  get() { try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch { return null; } },
+  set(v) { try { localStorage.setItem(STORE, JSON.stringify(v)); } catch { /* storage shut */ } },
+};
+const usable = (s) => s && TOOLS.includes(s.t) && Array.isArray(s.pts) && s.pts.length && Number.isFinite(s.w);
+
+export function createInk({ vp, cam, store = LOCAL, changed: told = null }) {
   const cv = document.createElement('canvas');
   cv.className = 'ink-cv';
   cv.setAttribute('aria-hidden', 'true');
@@ -228,12 +235,16 @@ export function createInk({ vp, cam }) {
     later(); syncBar();
     vp.dataset.inked = String(strokes.length > 0);
     clearTimeout(saving);
-    saving = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(strokes)); } catch {} }, 300);
+    saving = setTimeout(() => { store.set(strokes); told?.(); }, 300);
   }
-  try {
-    const kept = JSON.parse(localStorage.getItem(STORE) || '[]');
-    if (Array.isArray(kept)) strokes = kept.filter((s) => s && TOOLS.includes(s.t) && Array.isArray(s.pts) && s.pts.length && Number.isFinite(s.w));
-  } catch {}
+  /** The drawing as kept: on opening, and when the board on show is another (js/board/boards.js). */
+  function load() {
+    const kept = store.get();
+    strokes = Array.isArray(kept) ? kept.filter(usable) : [];
+    undo.length = 0; redo.length = 0;
+    vp.dataset.inked = String(strokes.length > 0);
+  }
+  load();
 
   /* ── the rail ───────────────────────────────────────────────────────── */
   const IC = {
@@ -324,6 +335,9 @@ export function createInk({ vp, cam }) {
     show() { active = true; requestAnimationFrame(() => { syncBar(); render(); }); },
     hide() { active = false; },
     clear,
+    load() { clearTimeout(saving); load(); if (active) { syncBar(); render(); } },
+    /** What is drawn now, to keep at once rather than in 300 ms. */
+    flush() { clearTimeout(saving); store.set(strokes); },
     get count() { return strokes.length; },
   };
 }
