@@ -139,6 +139,7 @@ this library: *covered* names the one of the twelve that does it.
 | 103 | CIE | 9709/41 | May/Jun 2017 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | Constant deceleration along ABCD, speeds 20, 12, 6 at A, B, C: ratio AB : BC; rests at D with AD = 80, find BC | – | **built** → `down-the-ice` |
 | 104 | Edexcel | 6677/01 M1 | Jan 2005 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202005%20QP.pdf) | A stone on ice along ABC against a 0.3 N resistance, 20 then 16 m/s over 24 m; speed at C 30 m on; show m = 0.1 kg; the wall's 2.4 N s impulse, time back to rest | – | **built** → `back-off-the-boards` |
 | 105 | AQA | MM1B | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202012%20QP%20-%20M1%20AQA.pdf) | A cyclist freewheels down a slope, 4 to 10 m/s over 50 m: a, time; 70 kg: resultant force; the slope's angle with no resistance, then against 30 N | 9.8 | **built** → `freewheeling` |
+| 106 | CIE | 9709/41 | May/Jun 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | 0.8 kg projected at 12 m/s up a rough 10° plane, μ = 0.4: the acceleration; the distance up the plane to rest | 10 | **built** → `up-a-rough-slope` |
 
 ## Built, and why it is built the way it is
 
@@ -440,6 +441,28 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `up-a-rough-slope` — Up a rough slope
+
+**Papers.** CIE 9709/41 May/Jun 2017 Q2 (0.8 kg at 12 m s⁻¹ up a rough plane at
+10°, μ = 0.4, g = 10: R = 7.88 N, F = 3.15 N, a = −5.68 m s⁻², 12.7 m to rest).
+
+**Why the twelve cannot.** None of them has friction: the normal reaction, F =
+μR, and a deceleration made of two forces along a slope — nor the turn at the
+top, where friction either holds it or reverses and acts up the slope.
+
+**How it is solved.** js/core/rough.js: R = m g cos α, F = μR, then
+−m g sin α − F = ma (the mass cancels, so it may be left out); v² = u² + 2as
+and v = u + at to rest; μ against tan α for whether it stays; if not,
+−m g sin α + μ m g cos α = ma back down, and the speed and time back to the
+start.
+
+**The stage.** A snowy hillside side on at its true angle, pines heavy with
+snow, snow falling; a wooden sledge on its runners sliding up, its track in
+the snow, a ring where it stops and "friction holds it" or "too steep"; the
+forces along the slope on a card, the friction turning round on the way down.
+
+**Parts.** (a) `a`, −5.68; (b) `sUp`, 12.7.
 
 ### `freewheeling` — Freewheeling downhill
 

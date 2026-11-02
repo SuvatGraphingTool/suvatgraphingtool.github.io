@@ -81,6 +81,7 @@ A kit is an object with:
 | `ice` — `js/kits/ice.js` | `down-the-ice` (engine js/core/ice.js; stage js/render/ice.js: a curling sheet from above, lines A, B, C, the house round D, the stone turning as it slides) |
 | `wall` — `js/kits/wall.js` | `back-off-the-boards` (engine js/core/wall.js, with js/core/impulse.js at the wall; stage js/render/wall.js on ice.js's exported `rink` and `stoneTop`) |
 | `hill` — `js/kits/hill.js` | `freewheeling` (engine js/core/hill.js on the twelve's suvat `solve`, then F = ma along the slope; stage js/render/hill.js: a lane down a hillside at its true angle, a cyclist leaning into it, the forces on a card) |
+| `rough` — `js/kits/rough.js` | `up-a-rough-slope` (engine js/core/rough.js: R, F = μR, F = ma, and back down if μ < tan α; stage js/render/rough.js: a snowy hillside, a wooden sledge, the forces on a card) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
 | `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
@@ -574,6 +575,13 @@ area from there sums to zero), a stop fixed by the total time `T`. Each
 segment's acceleration and displacement as working (`tripWorking`).
 
 Used by: `there-and-back`.
+
+### Up a rough slope — `js/core/rough.js`
+
+Projected up a rough slope. `solveRough({ u, alpha, mu, m, g })`: `a` up the
+slope from −g(sin α + μ cos α) (with m, R and F in newtons, through R = m g cos α
+and F = μR), `sUp` and `tUp` to rest, `stays` (μ ≥ tan α), and if not `aDown`,
+`vBack`, `tDown` back to the start. The motion turns at `f.tTop`.
 
 ### Freewheeling downhill — `js/core/hill.js`
 

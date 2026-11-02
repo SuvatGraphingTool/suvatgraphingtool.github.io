@@ -27,6 +27,7 @@ import { solveHeli } from '../js/core/heli.js';
 import { solveIce } from '../js/core/ice.js';
 import { solveWall } from '../js/core/wall.js';
 import { solveHill } from '../js/core/hill.js';
+import { solveRough } from '../js/core/rough.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1474,7 +1475,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
@@ -1683,6 +1684,16 @@ group('AQA MM1B Jan 2012 Q6: freewheeling down a slope', () => {
   { const x = solveHill({ u: 5, v: 5, s: 50, m: 70, R: 30, g: 9.8 });
     ok(x.ok && x.alpha0 == null && Math.abs(Math.sin(x.alphaR * Math.PI / 180) - 30 / 686) < 1e-9, 'a steady speed against 30 N: no slope without resistance, sin α = 30⁄686 with it'); }
   ok(!solveHill({ u: 4, s: 50, alpha: 5, R: 30 }).ok, 'a resistance with no mass is refused when the angle is given');
+});
+
+group('CIE 9709/41 May/Jun 2017 Q2: up a rough slope', () => {
+  const s = solveRough({ u: 12, alpha: 10, mu: 0.4, m: 0.8, g: 10 });
+  ok(s.ok && Math.abs(s.R - 7.878) < 0.001 && Math.abs(s.F - 3.151) < 0.001, 'R = 0.8g cos 10° = 7.88 N, F = 0.4R = 3.15 N');
+  ok(Math.abs(s.a + 5.68) < 0.005 && Math.abs(s.sUp - 12.7) < 0.05 && s.stays, 'a = −5.68, 12.7 m up, and friction holds it (0.4 ≥ tan 10°)');
+  const b = solveRough({ u: 6, alpha: 30, mu: 0.2, g: 9.8 });
+  ok(b.ok && !b.stays && b.vBack < 6 && Math.abs(b.f.pos(b.f.tMax)) < 1e-9 && b.f.vel(b.f.tMax) < 0, 'a steep slope: it slides back, and reaches the start slower than it left');
+  ok(solveRough({ u: 12, alpha: 10, mu: 0.4, g: 10 }).a === s.a, 'the mass cancels from the acceleration');
+  ok(!solveRough({ u: 12, alpha: 95, mu: 0.4 }).ok && !solveRough({ u: 12, alpha: 10, mu: -0.1 }).ok, 'a bad angle or μ is refused');
 });
 
 group('Resolve opens on every library stage, from its engine', () => {
