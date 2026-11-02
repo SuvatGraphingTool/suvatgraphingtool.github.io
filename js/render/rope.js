@@ -24,6 +24,8 @@ const D2R = Math.PI / 180, TAU = Math.PI * 2;
 // 2 dp, but under 0.1 to 3 s.f., never a false 0
 const s3 = (x) => (Math.abs(x) >= 0.1 || x === 0 ? num(x, 2) : num(Number(x.toPrecision(3)), 6, { trim: true }));
 const sf = (x) => num(Number(x.toPrecision(3)), 6, { trim: true });
+// tan α as the paper gives it: a simple fraction when it is one (5/12), else 3 s.f.
+const fracOf = (x) => { for (let q = 1; q <= 24; q++) { const p = Math.round(x * q); if (Math.abs(p / q - x) < 1e-9) return q === 1 ? `${p}` : `${p}/${q}`; } return num(Number(x.toPrecision(3)), 6, { trim: true }); };
 const ease = (u) => { const c = clamp(u, 0, 1); return c * c * (3 - 2 * c); };
 
 export function render(canvas, cam, o) {
@@ -55,15 +57,19 @@ export function render(canvas, cam, o) {
   const ext = (Ls * 0.6) / k;                       // the incline starts this far back, so the sledge sits on it at s = 0
   const o0 = along(-ext), end = along(far + (ropeLen + Lp) / k);
   const nx = sa, ny = -ca;                          // the normal out of the surface, on screen (up)
+  // where the hand is when the rope is let go (for keeping the far pines clear of it)
+  const handAt0 = () => { const b = along(f.s1); return { x: b.x + ca * Ls * 0.5 + nx * attachH + Math.cos(al + th) * ropeLen, y: 0 }; };
   const uw = { x: ca, y: -sa };                     // the way it is pulled, on screen
 
   // ── winter sky; the far snowfield with pines on it (behind the track, never on it); the snow surface
-  const surfY = Math.min(o0.y, end.y);
+  // the horizon sits on the level ground at the start, not the far end of a slope
+  const surfY = clamp(o0.y, h * 0.35, h * 0.8);
   skyscape(g, 0, 0, w, Math.min(surfY - 30, h * 0.75), { seed: 47, far: 'hills', sun: false });
   const snow = E.night ? '#c9d3dc' : '#f4f7fa', shade = E.night ? '#a9b6c2' : '#dbe4ec';
   const bandY = Math.min(surfY - 30, h * 0.75);
-  g.fillStyle = E.night ? '#b7c3ce' : '#e6edf3'; g.fillRect(0, bandY, w, surfY);
-  { const r = rng(5); for (let i = 0; i < 9; i++) { const x = r() * w, hp = Lp * (0.6 + r() * 0.5); pine(g, x, bandY + 6 + r() * 10, hp); } }
+  g.fillStyle = E.night ? '#b7c3ce' : '#e6edf3'; g.fillRect(0, bandY, w, h - bandY);
+  // the far pines, kept clear of where the person lets go and of the start (they would stand in a thicket)
+  { const r = rng(5), keep = [X(0), handAt0().x]; for (let i = 0; i < (phone ? 6 : 9); i++) { const x = r() * w, hp = Lp * (0.6 + r() * 0.5); const y0 = bandY + 6 + r() * 10; if (keep.some((kx) => Math.abs(x - kx) < Lp)) continue; pine(g, x, y0, hp); } }
   const sg = g.createLinearGradient(0, end.y, 0, o0.y + 60); sg.addColorStop(0, snow); sg.addColorStop(1, shade);
   g.fillStyle = sg; g.beginPath(); g.moveTo(-20, o0.y); g.lineTo(o0.x, o0.y); g.lineTo(end.x, end.y); g.lineTo(w + 20, end.y); g.lineTo(w + 20, h + 20); g.lineTo(-20, h + 20); g.closePath(); g.fill();
   g.strokeStyle = 'rgba(120,140,160,0.45)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-20, o0.y); g.lineTo(o0.x, o0.y); g.lineTo(end.x, end.y); g.lineTo(w + 20, end.y); g.stroke();
@@ -81,7 +87,7 @@ export function render(canvas, cam, o) {
     const R = clamp(k * far * 0.2, 40, 90);
     g.strokeStyle = P.ink; g.lineWidth = 1.5; g.beginPath(); g.moveTo(o0.x, o0.y); g.lineTo(o0.x + R * 1.25, o0.y); g.stroke();
     g.beginPath(); g.arc(o0.x, o0.y, R, -al, 0); g.stroke();
-    L.add(`${num(f.alpha, 2, { trim: true })}°`, o0.x + Math.cos(-al / 2) * R * 1.25, o0.y + Math.sin(-al / 2) * R * 1.25 + 4, { color: P.ink, pri: 10, size: 14, weight: 700, maxPush: 12 });
+    L.add(f.tanA != null ? T`tan alpha = ${fracOf(f.tanA)}` : `${num(f.alpha, 1, { trim: true })}°`, o0.x + Math.cos(-al / 2) * R * 1.25, o0.y + Math.sin(-al / 2) * R * 1.25 + 4, { color: P.ink, pri: 10, size: 14, weight: 700, maxPush: 12 });
   }
 
   // ── the sledge's track: two runner ruts, as far as it has got
@@ -92,15 +98,18 @@ export function render(canvas, cam, o) {
   // ── under the surface: the let-go tick, and the ruler of how far it slid after
   const rel = along(f.s1), stop = along(far), dn = (p, dd) => ({ x: p.x - nx * dd, y: p.y - ny * dd });
   if (t >= f.tRel - 1e-9) {
-    stroke(g, [dn(rel, 2), dn(rel, 34)], { color: P.mark, width: 1.6 });
-    const lp = dn(rel, 46);
-    L.add(T`"let go at" ${sf(f.v)} [m s^-1]`, lp.x, lp.y, { color: P.mark, pri: 10, size: 13, weight: 700, maxPush: 20 });
+    // its own band under the arrows' rows: the tick down to it, the words beside it, away from the motion
+    stroke(g, [dn(rel, 2), dn(rel, 60)], { color: P.mark, width: 1.6 });
+    const lp = dn(rel, 72);
+    L.add(T`"let go at" ${sf(f.v)} [m s^-1]`, lp.x - 6, lp.y, { color: P.mark, pri: 10, size: 13, weight: 700, align: 'right', maxPush: 20 });
   }
-  if (t >= f.tRest - 1e-9) {
-    const a1 = dn(rel, 70), b1 = dn(stop, 70);
+  // a ruler only for a slide long enough to show one; a short one's distance goes in the stop's words
+  const longSlide = Math.hypot(stop.x - rel.x, stop.y - rel.y) >= 40;
+  if (t >= f.tRest - 1e-9 && longSlide) {
+    const a1 = dn(rel, 92), b1 = dn(stop, 92);
     stroke(g, [a1, b1], { color: P.disp, width: 1.6 });
     for (const p of [a1, b1]) stroke(g, [{ x: p.x - nx * 6, y: p.y - ny * 6 }, { x: p.x + nx * 6, y: p.y + ny * 6 }], { color: P.disp, width: 1.6 });
-    const mp = dn({ x: (rel.x + stop.x) / 2, y: (rel.y + stop.y) / 2 }, 84);
+    const mp = dn({ x: (rel.x + stop.x) / 2, y: (rel.y + stop.y) / 2 }, 106);
     L.add(T`${sf(f.s2)} [m] "after it was let go"`, mp.x, mp.y, { color: P.disp, pri: 10, size: 13, weight: 700, maxPush: 20 });
   }
 
@@ -145,16 +154,17 @@ export function render(canvas, cam, o) {
     if (!(len >= 4)) return;
     const base = dn(q, dd), tail = { x: base.x - uw.x * (dir > 0 ? 10 : -10), y: base.y - uw.y * (dir > 0 ? 10 : -10) };
     arrow(g, tail.x, tail.y, tail.x + dir * uw.x * len, tail.y + dir * uw.y * len, { color: col, width: w0, head: Math.min(9, len * 0.6), dash: across });
-    L.add(T`${s3(Math.abs(val))} [${unit}]`, tail.x - dir * uw.x * 8, tail.y - dir * uw.y * 8 + 4, { color: col, pri: 8, size: 13, weight: 700, align: dir > 0 ? 'right' : 'left', maxPush: 14 });
+    L.add(T`${s3(Math.abs(val))} [${unit}]`, tail.x - dir * uw.x * 8, tail.y - dir * uw.y * 8 + 4, { color: col, pri: 8, size: 13, weight: 700, align: dir > 0 ? 'right' : 'left', maxPush: 24 });
   };
   if (show.velocity !== false && Math.abs(v) >= 0.05) row(20, v, Math.max(f.v, 1e-9), P.vel, 'v', 'm s^-1', 2.6);
-  if (Math.abs(A) > 1e-9) row(40, A, Math.max(Math.abs(f.a), Math.abs(f.a2), Math.abs(f.aBack || 0), 1e-9), P.acc, 'a', 'm s^-2', 2.2);
+  if (Math.abs(A) > 1e-9) row(42, A, Math.max(Math.abs(f.a), Math.abs(f.a2), Math.abs(f.aBack || 0), 1e-9), P.acc, 'a', 'm s^-2', 2.2);
 
   // at rest: a ring, and on a slope what happens there; sliding back, the ring is gone and the end is marked
   const ph0 = f.phase(t);
   if (fired && t >= f.tRest - 1e-9) {
     if (ph0 === 'rest') { const e = ageOf(t, f.tRest, f.tMax); pulse(g, stop.x, stop.y, e.age, e.life, P.mark, { radius: 26 }); }
-    if (f.alpha > 0) L.add(f.stays ? 'friction holds it' : 'too steep: it slides back', stop.x, stop.y - Ls * 0.9, { color: P.mark, pri: 10, size: 13, weight: 700, maxPush: 30 });
+    const what = f.alpha > 0 ? (f.stays ? '"friction holds it"' : '"too steep: it slides back"') : null;
+    if (what || !longSlide) L.add(longSlide ? T`${what}` : T`${sf(f.s2)} [m] "on"${what ? `, ${what}` : ''}`, clamp(stop.x, 110, w - 110), stop.y - Ls * 0.9, { color: P.mark, pri: 10, size: 13, weight: 700, maxPush: 30 });
     if (ph0 === 'back' && t >= f.tMax - 1e-9) { const e = ageOf(t, f.tMax, f.tMax); pulse(g, q.x, q.y, e.age, e.life, P.mark, { radius: 22 }); }
   }
   L.draw(g, w, h);
@@ -169,9 +179,10 @@ export function render(canvas, cam, o) {
   if (cardW) {
     const cx = w - cardW - 16, cy = h - cardH - 16;
     paper(g, cx, cy, cardW, cardH);
-    lab(`${word}: the forces on it`, cx + 12, cy + 16, P.muted);
+    { g.save(); g.font = '700 13px system-ui, sans-serif'; const full = `${word}: the forces on it`, fits = g.measureText(full).width <= cardW - 24; g.restore();
+      lab(fits ? full : word, cx + 12, cy + 16, P.muted); }
     // every arrow to one scale (a short one drawn at least 18 px, its value in the legend), labelled at its tip
-    const bx = cx + 76, by = cy + 78, big = Math.max(f.W, f.T, 1e-9), sc = 40 / big, Lm = (x) => Math.max(18, x * sc);
+    const bx = cx + 76, by = cy + 96, big = Math.max(f.W, f.T, 1e-9), sc = 34 / big, Lm = (x) => Math.max(18, x * sc);
     g.save(); g.translate(bx, by); g.rotate(-al);
     g.strokeStyle = withAlpha(P.ink, 0.5); g.lineWidth = 1.2; g.beginPath(); g.moveTo(-56, 12); g.lineTo(56, 12); g.stroke();
     g.fillStyle = withAlpha(P.ink, 0.1); g.strokeStyle = P.ink; g.beginPath(); g.roundRect?.(-16, -12, 32, 24, 3); g.fill(); g.stroke();

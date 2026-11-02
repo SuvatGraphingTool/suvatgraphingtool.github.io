@@ -130,7 +130,7 @@ export function solveRope(k = {}) {
   if (!lvl) notes.push(stays ? `At rest, ${M`mu = ${d(mu)}`} is at least ${M`tan ${d(alpha)}° = ${d(snap(sa / ca))}`}: friction holds it there.` : `At rest, ${M`mu = ${d(mu)}`} is less than ${M`tan ${d(alpha)}° = ${d(snap(sa / ca))}`}: it slides back down, at ${M`${d(-aBack)} [m s^-2]`}.`);
   const derived = [`${M`R = ${d(R)} [N]`}`, `${M`a = ${d(a)} [m s^-2]`}`, `${M`${d(s2)} [m]`} after it is let go`];
 
-  const f = { kind: 'rope', look: lvl ? 'level' : 'slope', m, mu, alpha, theta, g, T, a, R, F, a2, R2, v, s1, s2, t1, t2, tRel, tRest, tMax, tFlight: tMax, stays, aBack, W, Wd, Wn,
+  const f = { kind: 'rope', look: lvl ? 'level' : 'slope', m, mu, alpha, tanA: have(k.tanA) ? k.tanA : null, theta, g, T, a, R, F, a2, R2, v, s1, s2, t1, t2, tRel, tRest, tMax, tFlight: tMax, stays, aBack, W, Wd, Wn,
     pos, vel, acc, phase, forces, tMid: snap(tRel / 2), tSlide: snap((tRel + tRest) / 2), params: { u: 0, theta: 0, h: 0, g } };
   return { ok: true, mode: 'rope', T, a, R, F, a2, s2, t2, aBack, stays, pull, free, rows: [...pull, ...free], notes, derived, f };
 }
