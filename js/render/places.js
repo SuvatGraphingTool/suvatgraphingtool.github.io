@@ -1088,7 +1088,7 @@ function mownTurf(g, w, y0, y1, n, { lo = '#5f9a48', hi = '#6fae55', line = true
     (`top` up), cantilevered over a lower tier set back beneath it, a
     spectator seated on every step, a roof on its column over the back.
     What leaves from the front edge falls clear of both tiers. */
-function grandstand(g, x0, top, oy, k, r, n) {
+function grandstand(g, x0, top, oy, k, r, n, { roof = true } = {}) {
   const H = oy - top, depth = clamp(H * 1.1, 70, 300), rise = H * 0.4;
   const conc = n ? '#5e6066' : '#b4b8be', concLo = n ? '#45474c' : '#8e9298', shade = n ? '#2c2e33' : '#6a6e76';
   const shirts = n ? ['#5a5560', '#6a5a50', '#4a5a6a', '#7a6a5a'] : ['#2f5fa8', '#e8c547', '#f2f0ea', '#5fae7a', '#2f3340', '#8a5bb0'];
@@ -1122,10 +1122,12 @@ function grandstand(g, x0, top, oy, k, r, n) {
   // the front parapet it leaves from
   g.fillStyle = n ? '#7a7c82' : '#d8dce0'; g.fillRect(x0 - clamp(0.4 * k, 4, 10), top - clamp(0.9 * k, 7, 22), clamp(0.4 * k, 4, 10), clamp(0.9 * k, 7, 22));
   // the roof: a column at the back, the cantilever out over the upper tier, its tie
-  const roofY = back.by - clamp(H * 0.3, 20, 90), colX = back.bx + 4, tip = x0 - depth * 0.15;
-  g.fillStyle = shade; g.fillRect(colX - 3, roofY, 6, back.by - roofY);
-  g.beginPath(); g.moveTo(colX - 10, roofY); g.lineTo(tip, roofY + 4); g.lineTo(tip, roofY + 9); g.lineTo(colX - 10, roofY + 10); g.closePath(); g.fill();
-  g.strokeStyle = shade; g.lineWidth = 1.2; g.beginPath(); g.moveTo(colX, roofY - clamp(H * 0.12, 8, 30)); g.lineTo(tip, roofY + 4); g.moveTo(colX, roofY - clamp(H * 0.12, 8, 30)); g.lineTo(colX, roofY); g.stroke();
+  if (roof) {
+    const roofY = back.by - clamp(H * 0.3, 20, 90), colX = back.bx + 4, tip = x0 - depth * 0.15;
+    g.fillStyle = shade; g.fillRect(colX - 3, roofY, 6, back.by - roofY);
+    g.beginPath(); g.moveTo(colX - 10, roofY); g.lineTo(tip, roofY + 4); g.lineTo(tip, roofY + 9); g.lineTo(colX - 10, roofY + 10); g.closePath(); g.fill();
+    g.strokeStyle = shade; g.lineWidth = 1.2; g.beginPath(); g.moveTo(colX, roofY - clamp(H * 0.12, 8, 30)); g.lineTo(tip, roofY + 4); g.moveTo(colX, roofY - clamp(H * 0.12, 8, 30)); g.lineTo(colX, roofY); g.stroke();
+  }
   softShadow(g, x0 - depth * 0.4, oy + 2, depth * 0.6, 5, 0.6);
 }
 
@@ -1930,8 +1932,8 @@ function arena(g, c) {
     across(g, base, yF + (oy - yF) * 0.15, yN, oy, s);
     g.beginPath(); g.ellipse(hx, oy, 6.75 * k, (yN - yF) * 0.42, 0, Math.PI * 0.5, Math.PI * 1.5); g.stroke();
   }
-  // from a height: the front of the bleachers' upper tier
-  if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
+  // from a height: the front of the bleachers' upper tier, under the arena's own roof
+  if (H0 > 0) grandstand(g, x0, top, oy, k, r, n, { roof: false });
   if (!hoop) return;
   // ── the hoop: the ring through which the engine's path passes, on the way down
   // (the ring and the board drawn at least big enough to read, as the ball is)

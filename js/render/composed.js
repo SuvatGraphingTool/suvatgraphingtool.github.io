@@ -226,7 +226,7 @@ function launch(canvas, o) {
     // never taller than a fifth of the place it starts from (a phone's small stage)
     return H0 > 0 && !piece.thrown ? Math.min(s0, Math.max(26, piece.m * k, 0.2 * H0 * k)) : s0;
   };
-  const TH = (k) => Math.max(phone ? THROWER_MIN * 0.8 : THROWER_MIN, Math.min(96, 1.75 * k));
+  const TH = (k) => Math.max(phone ? THROWER_MIN * 0.8 : THROWER_MIN, Math.min(phone ? 96 : 150, 1.75 * k));
   // a house to scale: three-metre storeys, a frontage a little wider than it is tall
   const houseW = (k) => clamp(Math.max(8, H0 * 1.1) * k, 90, Math.max(90, w * 0.34));
   // the second of two waits behind the first, clear of it: a thrower an arm
@@ -773,7 +773,7 @@ function column(canvas, o) {
   const yTop = Math.max(H0, ...ys);
   const GAP = 1.2;                                  // the line, this far out from the edge (m)
   const byHand = !B.edge && H0 > 0 && H0 <= 2.6;
-  const TH = (k) => Math.max(phone ? THROWER_MIN * 0.8 : THROWER_MIN, Math.min(96, 1.75 * k));
+  const TH = (k) => Math.max(phone ? THROWER_MIN * 0.8 : THROWER_MIN, Math.min(phone ? 96 : 150, 1.75 * k));
   const houseW = (k) => clamp(Math.max(8, H0 * 1.1) * k, 90, Math.max(90, w * 0.34));
 
   // ── the frame: the place, the line and room for its labels, at one scale
