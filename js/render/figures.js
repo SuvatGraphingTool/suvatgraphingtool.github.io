@@ -503,7 +503,7 @@ export function motorcycle(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, bra
     the ground goes by (FIGURES.runner.cycle is matched to the sweep), so she
     neither skates nor moonwalks. `still` stands her upright, for a runner at
     rest. */
-export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still = false, reach = null, airborne = false } = {}) {
+export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still = false, reach = null, airborne = false, lean: leanTo = null } = {}) {
   const ink = ring || P.strong;
   const thigh = L * 0.25, shin = L * 0.26, upper = L * 0.16, fore = L * 0.15;
   const hx = -L * 0.2;
@@ -533,7 +533,8 @@ export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still =
   const low = still ? Math.max(pose(a, probe)[2].y, pose(a + Math.PI, probe)[2].y)
     : pose(inStance ? a : a + Math.PI, probe)[2].y;
   const HIP = { x: hx, y: -low };
-  const lean = still ? 0 : 0.14;
+  // `lean` (radians forward) for someone hauling: a pull leans further into it than a run
+  const lean = leanTo ?? (still ? 0 : 0.14);
   const SH = { x: hx + Math.sin(lean) * L * 0.3, y: HIP.y - Math.cos(lean) * L * 0.3 };
   // arms swing against the leg on their own side, elbows bent
   const arm = (p, side) => {
