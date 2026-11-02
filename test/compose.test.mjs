@@ -200,6 +200,11 @@ console.log('\nThe Worker reads a jump with no angle as straight up, and says so
   ok(at.angleDegrees === 30 && !at.assumed, 'an angle the question gives is kept');
   const sk = toFigure({ understood: true, scenario: 'platform', h: 2, u: 4, who: 'skateboarder' }, 'a skateboarder rolls off a 2 m wall at 4 m/s');
   ok(sk.scenario === 'platform' && !sk.assumed, 'rolling off is not a jump: across, as read');
+  const aw = 'a stone is flicked off a 1.2 m wall at 2 m/s. Find the time, as well as the distance';
+  ok(toPlace(toFigure({ understood: true, scenario: 'platform', h: 1.2, u: 2, summary: 'A stone is flicked off a wall.', who: 'stone' }, aw), aw).scenario === 'platform', '“as well as” is no well');
+  const dw = 'a stone is thrown at 5 m/s at 30° below the horizontal down a 20 m well';
+  const kept = toPlace(toFigure({ understood: true, scenario: 'platform-down', h: 20, u: 5, angleDegrees: 30, belowHorizontal: true, summary: 'A stone is thrown down a 20 m well at 30° below the horizontal.', who: 'stone' }, dw), dw);
+  ok(kept.boxes.theta === -30, 'an angle the question gives down a well is kept, for the engine to answer in words');
   const chain = (x, words) => fromReading(toPlace(toFigure(x, words), words));
   const girl = toFigure({ understood: true, scenario: 'platform', h: 20, u: 8, summary: 'A girl throws a ball from a 20 m tower.' }, 'a girl throws a ball horizontally from a 20 m tower at 8 m/s');
   ok(girl.who === 'ball', 'a girl throws a ball: the ball is what moves, not the girl');
@@ -249,8 +254,16 @@ group('Places only the composer draws, and more of what students name', () => {
   ok(well.recipe.backdrop === 'well' && well.recipe.objects[0].figure === 'bucket' && compose(well.recipe).scenario.name === 'A bucket down a well', 'a bucket down a well: drawn as a bucket, down the well');
   const ws = compose(well.recipe), wv = ws.kit.solve(ws.kit.read(ws.boxes));
   near(wv.T, Math.sqrt(2 * 20 / 9.81), 1e-9, 'and it falls for √(2h/g)');
-  ok(!check({ backdrop: 'well', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 20, u: 5, theta: 30 } }).ok === false, 'a well recipe at an angle is checked by the engine, not the registry');
-  for (const [w, f] of [['rocket', 'rocket'], ['firework', 'rocket'], ['javelin', 'arrow'], ['sandbag', 'sandbag'], ['bag of flour', 'sandbag'], ['pail', 'bucket'], ['marble', 'marble'], ['penny', 'coin']]) ok(figureOf(w).figure === f && figureOf(w).exact, `“${w}” is drawn as ${f}`);
+  const slant = compose({ backdrop: 'well', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 20, u: 5, theta: 30 } });
+  const sr = slant.kit.solve(slant.kit.read(slant.boxes));
+  ok(!sr.ok && /straight up or down/.test(sr.reason), 'down a well at an angle: the engine says, in words, it moves straight up or down');
+  ok(fromReading({ understood: true, scenario: 'up', h: 0, u: 4, summary: 'A coin is tossed up at 4 m/s.', who: 'coin' }).recipe.objects[0].figure === 'coin', 'a coin tossed up is drawn as a coin, wherever it is');
+  const shelf = fromReading({ understood: true, scenario: 'platform', h: 2, u: 1, summary: 'A book slides off a shelf 2 m high at 1 m/s.', who: 'book' });
+  ok(shelf.recipe.backdrop === 'table' && compose(shelf.recipe).scenario.name === 'A particle off a shelf' && /shelf is drawn as a table/.test(shelf.notes.join(' ')), 'a shelf: drawn as a table, named a shelf, and said');
+  ok(compose(fromReading({ understood: true, scenario: 'platform', h: 6, u: 4, summary: 'A ball is thrown from a balcony 6 m up.', who: 'ball' }).recipe).scenario.name === 'A ball off a balcony', '“A ball off a balcony”');
+  ok(fromReading({ understood: true, scenario: 'arc', h: 0, u: 20, angleDegrees: 30, summary: 'Using the table of g values, a ball is kicked at 20 m/s at 30°.', who: 'ball' }) === null, 'a table of values is no table');
+  ok(/above the floor/.test(check({ backdrop: 'table', engine: 'projectile', objects: [{ figure: 'coin' }], numbers: { h: 0 } }).reason), 'a table with no height: it starts above the floor');
+  for (const [w, f] of [['rocket', 'rocket'], ['firework', 'rocket'], ['arrow', 'arrow'], ['sandbag', 'sandbag'], ['bag of flour', 'sandbag'], ['pail', 'bucket'], ['marble', 'marble'], ['penny', 'coin']]) ok(figureOf(w).figure === f && figureOf(w).exact, `“${w}” is drawn as ${f}`);
 });
 
 group('The veil names only the recipe’s own pieces', () => {

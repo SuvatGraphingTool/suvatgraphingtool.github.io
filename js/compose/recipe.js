@@ -132,7 +132,7 @@ export function check(raw) {
   // what each engine cannot do without, said in its own words
   if (engine === 'projectile') {
     if (isNum(numbers.h) && numbers.h < 0) return no('The height it starts at is above what it lands on: give it as a positive number.');
-    if (B.edge && isNum(numbers.h) && numbers.h === 0) return no(`Launched from ${B.at.replace(/^an? /, 'the ')}, it starts above the ground: the height cannot be 0.`);
+    if (B.edge && isNum(numbers.h) && numbers.h === 0) return no(`Launched from ${B.at.replace(/^an? /, 'the ')}, it starts above ${({ floor: 'the floor', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water' })[B.below] || 'the ground'}: the height cannot be 0.`);
     // from the ground itself it has to leave it: upwards, and moving
     if (!B.edge && numbers.h === 0 && ((isNum(numbers.theta) && numbers.theta <= 0) || numbers.u === 0)) {
       return no('From the ground it must be launched upwards: give a speed, and an angle above 0°.');
@@ -343,10 +343,13 @@ export function fromReading(x) {
   // composed, whatever moves — a ball thrown by its thrower included
   const fromHeight = x.scenario === 'library' && x.library === 'from-a-height' && x.boxes && typeof x.boxes === 'object';
   const under = fromHeight && HEIGHT_PLACES[x.boxes.place] ? belowOf(HEIGHT_PLACES[x.boxes.place], x.below) : null;
-  const small = !m.figure || (m.exact && ['ball', 'stone', 'particle', 'coin', 'marble'].includes(m.figure));
-  // a place only the composer draws (a table, a balcony) is drawn, even for a coin
+  // a ball, a stone or a particle is the twelve's own, unless a place only
+  // the composer draws (a table, a balcony) or a surface the place does not
+  // have says otherwise; a coin or a marble is always drawn as itself
+  const small = !m.figure || (m.exact && ['ball', 'stone', 'particle'].includes(m.figure));
   const words = `${x.summary || ''} ${x.words || ''}`;
-  const own = !fromHeight && LAUNCHES.includes(x.scenario) ? placeIn(words) : null;
+  const where = !fromHeight && LAUNCHES.includes(x.scenario) ? placeIn(words) : null;
+  const own = where?.backdrop ?? null;
   if (small && !under && !own) return null;
   const figure = m.figure || 'ball';
   let backdrop, numbers, keys;
@@ -372,6 +375,9 @@ export function fromReading(x) {
   } else return null;
   const notes = [];
   if (m.figure && !m.exact) notes.push(nearest(m));
+  // the question's own word for the place, in the title and said if it is drawn as another
+  const at = own && where.word && !['table', 'house'].includes(where.word) ? where.word : null;
+  if (at && own === 'table') notes.push(`The ${at} is drawn as a table: only its height matters to the motion.`);
   const carrier = `${x.summary || ''} ${x.words || ''}`.match(CARRIER);
   if (backdrop === 'air' && carrier) notes.push(`Drawn let go from a balloon: there is no ${carrier[1].toLowerCase()} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);
   if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
@@ -386,6 +392,6 @@ export function fromReading(x) {
   }) : undefined;
   return {
     understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes,
-    recipe: { backdrop, ...(under ? { below: under } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
+    recipe: { backdrop, ...(under ? { below: under } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} off ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
   };
 }

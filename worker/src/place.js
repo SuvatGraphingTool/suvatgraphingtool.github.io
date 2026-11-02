@@ -19,7 +19,8 @@ const HEIGHT_ONLY = { board: 'board', 'diving board': 'board', springboard: 'boa
 
 const PLACES = [
   [/\bcliff/i, 'cliff'], [/\b(tower|building|skyscraper|roof|block of flats)/i, 'tower'],
-  [/\bbridge/i, 'bridge'], [/\b(well|mine ?shaft|shaft)\b/i, 'well'],
+  // a well as a place ("down a 20 m well", "the well is 30 m deep"), never "as well as"
+  [/\bbridge/i, 'bridge'], [/\b(a|the|down|into|of)\s+(\d+(\.\d+)?\s?m\s+)?(deep\s+)?well\b|\bwell\s+(is|\d)|\bmine ?shaft\b/i, 'well'],
   [/\b(diving board|springboard|high board|(diving|high) platform)\b/i, 'board'], [/\b(hot.air )?balloon/i, 'balloon'],
   // "off a 10 m board", "a diver": the diving board, said the short way
   [/\d\s*m(etres?)?\s+(high\s+)?board\b|\bdiv(er|ers|ing)\b/i, 'board'],
@@ -100,7 +101,9 @@ function settle(x, words) {
   if (x?.library !== 'from-a-height' || !b) return x;
   const text = `${words} ${x.summary || ''}`;
   const out = { ...x, boxes: { ...b } };
-  if ((b.place === 'well' || b.place === 'balloon') && b.u > 0 && b.theta !== 90 && b.theta !== -90) {
+  // an angle the question gave is kept: the engine then says, in words, that
+  // from a well or a balloon it moves only straight up or down
+  if ((b.place === 'well' || b.place === 'balloon') && b.u > 0 && b.theta !== 90 && b.theta !== -90 && !x.angleGiven) {
     const up = /\b(up|upwards?|ris(e|es|ing)|ascend(s|ing)?|climb(s|ing)?)\b/i.test(text);
     const down = /\b(down|downwards?|descend(s|ing)?|sink(s|ing)?|fall(s|ing)?)\b/i.test(text);
     out.boxes.theta = b.place === 'balloon' ? (down && !up ? -90 : 90) : (up && !/\bdown\b/i.test(text) ? 90 : -90);
@@ -178,6 +181,7 @@ function placed(x, words) {
   if (x.who) out.who = x.who;
   if (x.assumed) out.assumed = x.assumed;
   if (x.below) out.below = x.below;
+  if (x.angleDegrees != null) out.angleGiven = true;
   if (Array.isArray(x.parts)) out.parts = renamed(x.parts);
   return out;
 }

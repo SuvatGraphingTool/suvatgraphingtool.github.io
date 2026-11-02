@@ -225,7 +225,7 @@ const WORDS = [
   [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
   [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
   [/\b(sandbag|sand ?bag|sack|bag of (sand|flour)|ballast)\b/, 'sandbag'], [/\b(bucket|pail)\b/, 'bucket'],
-  [/\b(rocket|firework|model rocket)\b/, 'rocket'], [/\b(arrow|dart|javelin|bolt)\b/, 'arrow'],
+  [/\b(rocket|firework|model rocket)\b/, 'rocket'], [/\b(arrow)\b/, 'arrow'],
   [/\b(car|van|vehicle|taxi|jeep)\b/, 'car'], [/\b(lorry|truck|bus)\b/, 'lorry'], [/\b(train|tram|locomotive)\b/, 'train'],
   [/\b(cyclist|bike|bicycle|cycle)\b/, 'cyclist'], [/\b(motorcycl(e|ist)|motorbike|scooter|moped)\b/, 'motorcycle'],
   [/\b(runner|sprinter|jogger)\b/, 'runner'],
@@ -236,6 +236,7 @@ const WORDS = [
 ];
 /** The figures a thing with none of its own is drawn as, and how to say so. */
 const NEAREST = [
+  [/\b(dart|javelin|crossbow bolt|spear)\b/, 'arrow'],
   [/\b(ski(er)?|snowboard(er)?|surfer|horse|rider|bmx)\b/, 'diver'],
   [/\b(missile|projectile|shell|bullet|discus|hammer|stick|bottle|can|phone|book|bag|helmet|bomb|drop of water|raindrop|hailstone)\b/, 'particle'],
   [/\b(dog|cat|bird|animal|squirrel|monkey|frog)\b/, 'particle'],
@@ -274,13 +275,21 @@ export function figureOf(who) {
    well and balloon. A question about a coin off a table or a ball from a
    balcony names a place neither has: whatever moves, small or not, it is
    composed there (js/compose/recipe.js fromReading). */
+// a place only as somewhere it leaves from: "off a table", "from the 6 m
+// balcony" — never "a table of results", "a park bench", "table tennis",
+// "a window of time", "the house rules"
+const FROM = '\\b(?:off|from|on|over the edge of|out of)\\s+(?:a|the|an)\\s+(?:\\d+(?:\\.\\d+)?\\s*m(?:etres?)?\\s+(?:high\\s+|tall\\s+)?)?';
 const ONLY_HERE = [
-  [/\b(table|desk|bench|worktop|counter|shelf)\b/, 'table'],
-  [/\b(balcony|window|house|bungalow)\b/, 'house'],
-  [/\b(sports hall|gym(nasium)?)\b/, 'hall'],
+  [new RegExp(`${FROM}(table|desk|bench|worktop|counter|shelf|workbench)\\b(?!\\s+(?:of|tennis))`), 'table'],
+  [new RegExp(`${FROM}(balcony|window|house|bungalow|roof)\\b(?!\\s+of)`), 'house'],
+  [/\b(?:in|inside)\s+(?:a|the)\s+(sports hall|gym(?:nasium)?)\b/, 'hall'],
 ];
-/** The composer's own place a question names, or null. */
+/**
+ * The composer's own place a question names as where it leaves from, with
+ * the question's own word for it, or null: { backdrop: 'table', word: 'shelf' }.
+ */
 export function placeIn(text) {
   const t = String(text ?? '').toLowerCase();
-  return ONLY_HERE.find(([re]) => re.test(t))?.[1] ?? null;
+  for (const [re, backdrop] of ONLY_HERE) { const m = t.match(re); if (m) return { backdrop, word: m[1] }; }
+  return null;
 }
