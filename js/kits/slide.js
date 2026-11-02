@@ -8,6 +8,8 @@ import { solveSlide, slideWorking } from '../core/slide.js';
 import * as stage from '../render/slide.js';
 import { T, num } from '../notation.js';
 
+// as the stage prints them: 2 dp, but an acceleration under 0.1 to 3 s.f., never a false 0
+const p2 = (x) => (Math.abs(x) >= 0.1 || x === 0 ? num(x, 2) : num(Number(x.toPrecision(3)), 6, { trim: true }));
 const fld = (key, col, label, hint) => ({ key, col, label, placeholder: '—', hint, optional: true });
 
 export const slide = {
@@ -50,7 +52,7 @@ export const slide = {
       left: [
         { k: 'Down the slope', v: num(f.pos(t), 2), unit: 'm', hue: 'disp' },
         { k: 'Speed', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Acceleration', v: num(f.acc(t), 3, { trim: true }), unit: 'm s⁻²', hue: 'acc' },
+        { k: 'Acceleration', v: p2(f.acc(t)), unit: 'm s⁻²', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };
