@@ -120,7 +120,7 @@ export const FIGURES = {
   football: { label: 'a football', m: 0.22, min: 12, views: ['side'], thrown: true, prop: true, verb: 'kicked' },
   tennisBall: { label: 'a tennis ball', m: 0.067, min: 10, views: ['side'], thrown: true, prop: true, verb: 'served' },
   golfBall: { label: 'a golf ball', m: 0.043, min: 10, views: ['side'], thrown: true, prop: true, verb: 'hit' },
-  basketball: { label: 'a basketball', m: 0.24, min: 12, views: ['side'], thrown: true, prop: true },
+  basketball: { label: 'a basketball', m: 0.24, min: 12, views: ['side'], thrown: true, prop: true, verb: 'shot' },
   rugbyBall: { label: 'a rugby ball', m: 0.29, min: 12, views: ['side'], thrown: true, prop: true, verb: 'kicked' },
   cricketBall: { label: 'a cricket ball', m: 0.072, min: 10, views: ['side'], thrown: true, prop: true, verb: 'hit' },
   baseball: { label: 'a baseball', m: 0.074, min: 10, views: ['side'], thrown: true, prop: true, verb: 'hit' },

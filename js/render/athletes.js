@@ -229,3 +229,39 @@ export function batter(g, X, Y, H, P, { pose = 0, ring = null, bat = 'baseball' 
   if (bat === 'cricket') { g.strokeStyle = '#8a9098'; g.lineWidth = 1; for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(sh.x + H * 0.08, sh.y - H * 0.13 + i * H * 0.03); g.lineTo(sh.x + H * 0.14, sh.y - H * 0.12 + i * H * 0.03); g.stroke(); } }
 }
 const head_ = head;
+/** A basketball player taking a set shot, side on: knees bent and the ball
+    at the forehead as it starts (pose 0), legs and arms extending until the
+    shooting hand is up and forward at the release, the ball leaving it at
+    SHOOT_AT (0.5), and the wrist flicked through, arm held up (1). The guide
+    hand comes off the ball at the release. In a vest and shorts. */
+export const SHOOT_AT = { x: 0.16, y: 1.2 };
+export function shooter(g, X, Y, H, P, { pose = 0, ring = null } = {}) {
+  const C = colours(ring), E = env(), u = Math.max(0, Math.min(1, pose)), vest = ring || (E.night ? '#3a4a7a' : '#2f5fa8');
+  const ext = Math.min(1, u / 0.5);
+  softShadow(g, X, Y + 1, H * 0.28, H * 0.05, 0.8);
+  // the legs: knees bent at the start, straightening to the release
+  const sink = lerp(0.1, 0, ext) * H;
+  const hip = { x: X - H * 0.02, y: Y - H * 0.5 + sink }, back = { x: X - H * 0.08, y: Y }, front = { x: X + H * 0.07, y: Y };
+  const thigh = H * 0.25, shin = H * 0.26;
+  limb(g, [hip, knee(hip, back, thigh, shin, 1), back], C.skinFar, H * 0.065);
+  limb(g, [hip, knee(hip, front, thigh, shin, 1), front], C.skin, H * 0.07);
+  for (const F of [back, front]) { g.fillStyle = '#f2f2f0'; g.beginPath(); g.ellipse(F.x + H * 0.03, F.y - H * 0.015, H * 0.065, H * 0.028, 0, 0, TAU); g.fill(); g.strokeStyle = '#2b2628'; g.lineWidth = 1; g.stroke(); }
+  // the shorts and the vest, its number panel plain
+  g.fillStyle = vest; g.beginPath(); g.moveTo(hip.x - H * 0.1, hip.y - H * 0.02); g.lineTo(hip.x + H * 0.1, hip.y - H * 0.02); g.lineTo(hip.x + H * 0.12, hip.y + H * 0.16); g.lineTo(hip.x - H * 0.12, hip.y + H * 0.16); g.closePath(); g.fill();
+  const sh = { x: hip.x + H * 0.03, y: hip.y - H * 0.3 };
+  limb(g, [hip, sh], vest, H * 0.17);
+  g.fillStyle = withAlpha('#ffffff', 0.85); g.fillRect(sh.x - H * 0.04, sh.y + H * 0.08, H * 0.08, H * 0.05);
+  // the shooting hand: from the forehead up and forward to the release point, then the wrist flicks over
+  const rel = { x: X + SHOOT_AT.x * H, y: Y - SHOOT_AT.y * H };
+  const start = { x: sh.x + H * 0.1, y: sh.y - H * 0.14 + sink * 0.2 };
+  const hand = u <= 0.5 ? { x: lerp(start.x, rel.x, ext), y: lerp(start.y, rel.y, ext) } : rel;
+  const elbow = { x: lerp(sh.x + H * 0.14, (sh.x + hand.x) / 2 + H * 0.02, ext), y: lerp(sh.y - H * 0.02, (sh.y + hand.y) / 2, ext) };
+  // the guide hand at the ball's side, coming away at the release
+  const guide = u < 0.5 ? { x: hand.x - H * 0.05, y: hand.y + H * 0.02 } : { x: sh.x + H * 0.08, y: sh.y - H * 0.22 };
+  limb(g, [sh, { x: (sh.x + guide.x) / 2 - H * 0.03, y: (sh.y + guide.y) / 2 }, guide], C.skinFar, H * 0.05);
+  limb(g, [sh, elbow, hand], C.skin, H * 0.055);
+  // the wrist flicked through after the release: the fingers pointing down
+  if (u > 0.5) { const f = (u - 0.5) / 0.5; g.strokeStyle = C.skin; g.lineWidth = H * 0.04; g.lineCap = 'round'; g.beginPath(); g.moveTo(hand.x, hand.y); g.lineTo(hand.x + H * 0.05, hand.y + H * 0.04 * f); g.stroke(); }
+  head_(g, sh.x + H * 0.03, sh.y - H * 0.1, H * 0.075, C, E.night ? '#3a3036' : '#2b2628');
+}
+
