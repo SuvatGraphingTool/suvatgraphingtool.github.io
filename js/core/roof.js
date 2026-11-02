@@ -56,7 +56,19 @@ export function solveRoof(k = {}) {
   }
   const B = k.B || {};
   if (have(B.u) && !(B.u >= 0)) return fail('The second particle is thrown up from the roof: give its speed as 0 or more.');
-  if (!have(B.u)) return fail(`The building is ${M`${d3(h)} [m]`} high, and the first is above its roof for ${M`${d3(above)} [s]`}. Still needed to go on: the second particle’s speed up from the roof.`);
+  if (!have(B.u)) {
+    // the first particle on its own: up from the ground and back, past the roof's level twice. The
+    // pair's machinery draws it; the second is a placeholder on the roof the stage leaves out (f.single)
+    const lone = solvePair({ A: { h: 0, u, t0: 0 }, B: { h, u: 0, t0: 0 }, g, pass: true, until: snap(2 * tTop) });
+    if (!lone.ok) return fail(lone.reason);
+    const t1 = snap(tTop - above / 2), t2 = snap(tTop + above / 2);
+    lone.f.single = true; lone.f.meet = null; lone.f.roof = { h, t1, t2, above };
+    const notes = [have(k.above) ? `Above the roof for ${M`${d3(above)} [s]`}, it passes the roof’s level ${M`${d3(snap(above / 2))} [s]`} either side of its top, so the building is ${M`${d3(h)} [m]`} high.`
+      : `It is above the ${M`${d3(h)} [m]`} roof for ${M`${d3(above)} [s]`}.`,
+      `It rises ${M`${d3(H)} [m]`} in ${M`${d3(tTop)} [s]`}, passes the roof’s level going up at ${M`${d3(t1)} [s]`} and coming down at ${M`${d3(t2)} [s]`}, and is back on the ground at ${M`${d3(snap(2 * tTop))} [s]`}.`];
+    return { ok: true, mode: 'roof', single: true, f: lone.f, A: lone.A, h, above, tTop, t1, t2, H, roofRows, notes, given: have(k.above) ? 'above' : 'h',
+      meet: null, rows: roofRows, derived: [`${M`h = ${d3(h)} [m]`}`, `above the roof for ${M`${d3(above)} [s]`}`] };
+  }
   // side by side, not in one line: they pass each other, and the run goes on until just after the first is back down past the roof
   const pair = solvePair({ A: { h: 0, u, t0: 0 }, B: { h, u: B.u, t0: have(B.t0) ? B.t0 : 0 }, g, pass: true, until: snap(tTop + above / 2 + (tTop - above / 2) / 4) });
   if (!pair.ok) return fail(pair.reason);
@@ -78,6 +90,6 @@ export function roofWorking(s) {
   return [
     { title: s.given === 'above' ? 'The roof, from the time above it' : 'The time above the roof', rows: s.roofRows,
       note: `Up positive, ${M`a = -g`}. The motion is the same going up as coming down, so the roof’s level is passed at equal times either side of the top: ${M`T`} is the time above the roof, ${M`t_1`} when it first reaches the roof’s level.` },
-    ...pairWorking(s),
+    ...(s.single ? [] : pairWorking(s)),
   ];
 }

@@ -22,6 +22,10 @@ import { M, num } from '../notation.js';
 
 const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x) => num(x, x !== 0 && Math.abs(x) < 1 ? 4 : 3, { trim: true });
+// a force, to 4 significant figures (the papers give 3)
+const dN = (x) => num(Number(x.toPrecision(4)), 6, { trim: true });
+// an acceleration carried into a later step, to 4 significant figures
+const d4 = (x) => num(Number(x.toPrecision(4)), 8, { trim: true });
 // a value the student typed, as typed: never rounded into something it is not
 const typed = (x) => num(x, 8, { trim: true });
 const D2R = Math.PI / 180;
@@ -62,8 +66,8 @@ export function solveSlide(k = {}) {
     a = snap(g * (sn - mu * cs));
     if (m != null) {
       const R = snap(m * g * cs), F = snap(mu * R);
-      forces.push({ f: M`R = m g cos alpha`, s: M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(R)} [N]` });
-      if (mu > 0) forces.push({ f: M`F = mu R`, s: M`F = ${typed(mu)} * ${d(R)}`, r: M`F = ${d(F)} [N]` });
+      forces.push({ f: M`R = m g cos alpha`, s: M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${dN(R)} [N]` });
+      if (mu > 0) forces.push({ f: M`F = mu R`, s: M`F = ${typed(mu)} * ${dN(R)}`, r: M`F = ${dN(F)} [N]` });
       forces.push(mu > 0 ? { f: M`m g sin alpha - F = ma`, s: M`${d(m)} * ${d(g)} sin ${d(alpha)}° - ${d(F)} = ${d(m)}a`, r: M`a = ${d(a)} [m s^-2]` }
         : { f: M`m g sin alpha = ma`, s: M`a = ${d(g)} sin ${d(alpha)}°`, r: M`a = ${d(a)} [m s^-2]` });
     } else {
@@ -73,7 +77,11 @@ export function solveSlide(k = {}) {
   } else {
     // ── μ to be found: two of the run give the acceleration, F = ma gives μ
     if (run.length < 2) return fail(`Still needed: the coefficient of friction — or ${run.length ? 'one more' : 'two'} of how far it slides, for how long, and how fast it is at the end, and the engine finds it.`);
-    if (run.length > 2) return fail('Give two of the distance, the time and the speed at the end: from rest, any two fix the third.');
+    // all three given: from rest they must agree (s = ½vt), to rounding — then the first two do the work
+    if (run.length > 2) {
+      if (Math.abs(k.s - 0.5 * k.v * k.t) > 0.005 * k.s) return fail(`From rest the distance is half the end speed times the time, ${M`s = ½vt = ${d(snap(0.5 * k.v * k.t))} [m]`}: those three do not agree. Give two of them.`);
+      run.splice(2);
+    }
   }
 
   // ── the run, from rest
@@ -94,6 +102,7 @@ export function solveSlide(k = {}) {
     motion.push(...r.steps.map((st) => ({ f: st.formula, s: st.substitution, r: M`${st.target} = ${d(snap(st.value))} [${UNIT[st.target]}]` })));
   }
   if (!(s > 0 && t > 0)) return fail('No slide from rest fits those numbers. Check them.');
+  if (s > 5000) return fail(`That would be a run of ${M`${d(snap(s))} [m]`}: a slope more than 5 km long is not one surface with one coefficient of friction. Check the numbers.`);
   if (v > 200) return fail(`That would have it sliding at ${M`${d(v)} [m s^-1]`} by the end: faster than anything slides down a real slope. Check the numbers.`);
 
   if (mu == null) {
@@ -104,9 +113,9 @@ export function solveSlide(k = {}) {
     mu = a >= top * 0.999 ? 0 : snap((top - a) / (g * cs));
     if (m != null) {
       const R = snap(m * g * cs), F = snap(m * (top - a));
-      forces.push({ f: M`R = m g cos alpha`, s: M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(R)} [N]` });
-      forces.push({ f: M`m g sin alpha - F = ma`, s: M`F = ${d(m)} * ${d(g)} sin ${d(alpha)}° - ${d(m)} * ${d(a)}`, r: M`F = ${d(mu === 0 ? 0 : F)} [N]` });
-      forces.push({ f: M`F = mu R`, s: M`mu = ${d(mu === 0 ? 0 : F)}/${d(R)}`, r: M`mu = ${d(mu)}` });
+      forces.push({ f: M`R = m g cos alpha`, s: M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${dN(R)} [N]` });
+      forces.push({ f: M`m g sin alpha - F = ma`, s: M`F = ${d(m)} * ${d(g)} sin ${d(alpha)}° - ${d(m)} * ${d4(a)}`, r: M`F = ${dN(mu === 0 ? 0 : F)} [N]` });
+      forces.push({ f: M`F = mu R`, s: M`mu = ${dN(mu === 0 ? 0 : F)}/${dN(R)}`, r: M`mu = ${d(mu)}` });
     } else {
       forces.push({ f: M`m g sin alpha - mu m g cos alpha = ma`, s: M`mu = (${d(g)} sin ${d(alpha)}° - ${d(a)})/(${d(g)} cos ${d(alpha)}°)`, r: M`mu = ${d(mu)}` });
     }
@@ -115,19 +124,20 @@ export function solveSlide(k = {}) {
   const N = m != null ? snap(m * g * cs) : null, Fr = m != null ? snap(mu * m * g * cs) : null, W = m != null ? snap(m * g * sn) : null;
   const T = snap(t), S = snap(s), V = snap(v);
   const notes = [
-    mu === 0 ? `With no friction only the weight's component acts along the slope: it speeds up at ${M`g sin alpha = ${d(a)} [m s^-2]`}.`
+    mu === 0 ? (have(k.mu) ? `With no friction only the weight's component acts along the slope: it speeds up at ${M`g sin alpha = ${d(a)} [m s^-2]`}.`
+      : `It speeds up at ${M`${d(a)} [m s^-2]`}, within rounding of a smooth slope's ${M`g sin alpha = ${d(snap(g * sn))} [m s^-2]`}: no friction to speak of.`)
       : `Down the slope the weight's component pulls it on and friction, ${M`mu R`}, holds it back: it speeds up at ${M`${d(a)} [m s^-2]`}, less than the ${M`${d(snap(g * sn))} [m s^-2]`} of a smooth slope.`,
     `From rest it slides ${M`${d(S)} [m]`} in ${M`${d(T)} [s]`}, reaching ${M`${d(V)} [m s^-1]`}.`,
     have(k.mu) ? 'The mass cancels: a particle twice as heavy slides with the same acceleration.' : `So the coefficient of friction is ${M`mu = ${d(mu)}`}.`,
   ];
-  if (m != null) notes.push(`On ${M`${d(m)} [kg]`}: the weight's component down the slope is ${M`${d(W)} [N]`}, the normal reaction ${M`${d(N)} [N]`}${mu > 0 ? `, and the friction up the slope ${M`${d(Fr)} [N]`}` : ''}.`);
+  if (m != null) notes.push(`On ${M`${d(m)} [kg]`}: the weight's component down the slope is ${M`${dN(W)} [N]`}, the normal reaction ${M`${dN(N)} [N]`}${mu > 0 ? `, and the friction up the slope ${M`${dN(Fr)} [N]`}` : ''}.`);
   const derived = [`${M`a = ${d(a)} [m s^-2]`}`, `${M`${d(S)} [m]`} in ${M`${d(T)} [s]`}`, `${M`v = ${d(V)} [m s^-1]`}`, `${M`mu = ${d(mu)}`}`];
 
   const pos = (tt) => { const c = Math.min(Math.max(tt, 0), T); return 0.5 * a * c * c; };
   const vel = (tt) => a * Math.min(Math.max(tt, 0), T);
   const acc = () => a;
   const f = { kind: 'slide', look, alpha, mu, m, g, a, s: S, t: T, v: V, N, Fr, W, tMax: T, tFlight: T, tMid: snap(T / 2), pos, vel, acc,
-    muGiven: have(k.mu), params: { u: 0, theta: 0, h: 0, g } };
+    muGiven: have(k.mu), sGiven: have(k.s), params: { u: 0, theta: 0, h: 0, g } };
   return { ok: true, mode: 'slide', a, mu, s: S, t: T, v: V, R: N, F: Fr, W, forces, motion, rows: [...forces, ...motion], notes, derived, f };
 }
 

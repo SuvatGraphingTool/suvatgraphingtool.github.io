@@ -124,11 +124,11 @@ export function render(canvas, cam, o) {
     arrow(g, ax, ymid, ax, ymid - len, { color: P.vel, width: 2.6, head: 10 });
     L.add(T`${sig3(v)} [m s^-1]`, ax + 10, ymid - len * 0.6, { color: P.vel, align: 'left', pri: 8, size: 13, weight: 700 });
   }
-  // not before it sets off: standing at the bottom nothing accelerates it yet
-  if (fired && Math.abs(a) > 1e-9 && t < f.tMax - 1e-9) {
+  // shown from the start, as the readouts and Resolve show it: the acceleration it sets off with
+  if (Math.abs(a) > 1e-9 && t < f.tMax - 1e-9) {
     const len = clamp(Math.abs(a) * k * 4, 14, 60) * Math.sign(a), axx = cx0 - 18;
     arrow(g, axx, ymid, axx, ymid - len, { color: P.acc, width: 2.4, head: 9 });
-    L.add(T`${sig3(a)} [m s^-2]`, axx - 10, ymid - len * 0.6, { color: P.acc, align: 'right', pri: 7, size: 13, weight: 700, maxPush: 24 });
+    L.add(T`${sig3(a)} [m s^-2]`, axx - 10, ymid - len * 0.6, { color: P.acc, align: 'right', pri: 7, size: 13, weight: 700 });
   }
   if (t >= f.tMax - 1e-9) L.add(T`"at rest," ${num(f.range, 2, { trim: true })} [m] "up"`, (cx0 + cx1) / 2, cy1 - 18, { color: P.mark, align: 'center', pri: 9, size: 14, weight: 700 });
   // ── on a laptop, the car enlarged in the space beside the building: the
@@ -169,6 +169,6 @@ export function render(canvas, cam, o) {
   }
   L.draw(g, w, h);
   // where the car is, for a stage drawn over this one to point at it
-  if (o.out) o.out.car = { x: (cx0 + cx1) / 2, y: (cy0 + cy1) / 2, x0: cx0, x1: cx1 };
+  if (o.out) { o.out.car = { x: (cx0 + cx1) / 2, y: (cy0 + cy1) / 2, x0: cx0, x1: cx1 }; o.out.wallL = wx0; o.out.wallR = wx1; }
   return null;
 }

@@ -31,6 +31,7 @@ import { solveRough } from '../js/core/rough.js';
 import { solveSink, sinkWorking } from '../js/core/sink.js';
 import { solveSlide, slideWorking } from '../js/core/slide.js';
 import { solveCable, cableWorking } from '../js/core/cable.js';
+import { solveStages } from '../js/core/journey.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -232,8 +233,12 @@ group('A journey in stages: the two that are not rest to rest, against their mar
   const viaKit = K.solve(K.read(vals));
   ok(viaKit.ok && near(viaKit.J.T, 155) && viaKit.f.who === 'car', 'through the kit\u2019s boxes, the car gives 155 s');
   const rows = K.rows({ ...vals });
-  ok(rows.filter((r) => /^Stage \d$/.test(r.title)).length === 4 && rows[2].fields.length === 4 && rows[1].fields.length === 2,
-     'four stage rows: a changing stage has its speed, rate and time; a steady one its time');
+  ok(rows.filter((r) => /^Stage \d$/.test(r.title)).length === 4 && rows[2].fields.length === 5 && rows[1].fields.length === 3,
+     'four stage rows: a changing stage has its speed, rate, time and distance; a steady one its time and distance');
+  { const by = solveStages({ u: 0, stages: [{ kind: 'up', s: 15, v: 6 }, { kind: 'hold', t: 10 }, { kind: 'down', v: 0, a: 2 }] });
+    ok(by.ok && near(by.J.t[1], 5) && near(by.J.D, 84), 'a stage given by its distance: over the first 15 m to 6 m s⁻¹ takes 5 s; 84 m in all');
+    ok(solveStages({ u: 0, stages: [{ kind: 'up', s: 15, a: 1.2 }, { kind: 'hold', s: 60 }, { kind: 'down', v: 0, t: 4 }] }).ok, 'distance with a rate, and a steady stage by its distance');
+    ok(!solveStages({ u: 0, stages: [{ kind: 'up', s: 15, v: 6, t: 2 }, { kind: 'hold', t: 1 }, { kind: 'down', v: 0, a: 2 }] }).ok, 'a distance that does not fit the stage is refused'); }
   ok(K.rows({ n: '3' }).filter((r) => /^Stage/.test(r.title)).every((r) => r.fields.length === 1 && r.fields[0].rebuild),
      'a stage says nothing but its choice until the student says what it does, and that choice redraws the screen');
   const noKind = K.solve(K.read({ n: '2', u: 0, k1: 'up' }));
@@ -1702,6 +1707,14 @@ group('CIE 9709/41 May/Jun 2017 Q2: up a rough slope', () => {
   ok(/A slope’s angle is between/.test(solveRough({ u: 12, alpha: 95, mu: 0.4 }).reason), 'an angle out of range is said as out of range, not as missing');
 });
 
+group('Above the roof, with the first particle on its own (QA: how tall is the building?)', () => {
+  const K = KITS.roof, s = K.solve(K.read({ u: 25, above: 3, g: 9.8 }));
+  ok(s.ok && s.single && near(s.h, 25 * (25 / 9.8 - 1.5) - 4.9 * (25 / 9.8 - 1.5) ** 2, 1e-6), 'thrown up at 25 m s⁻¹, above the roof for 3 s: the building’s height, with no second particle needed', s.reason);
+  ok(K.hud(s.f, 1).left.length === 2 && K.graphs(s.f, 1, { disp: '#0', vel: '#0', acc: '#0', second: '#0', mark: '#0' }).every((gr) => gr.series.length === 1), 'one particle: no B in the readouts or the graphs');
+  ok(resolveKit(K, s, s.f, 1).blocks.length === 1 && K.working(s).length === 1, 'Resolve and the working: the one particle');
+  ok(K.solve(K.read({ u: 25, above: 3, g: 9.8, 'B.u': 10 })).single !== true, 'with the second particle given, the pair as before');
+});
+
 group('Edexcel M1 Jun 2002 Q6: the lift, its cable and its floor', () => {
   const s = solveCable({ a1: 2, V: 3, t3: 2.5, D: 27, M: 120, m: 80, g: 9.8 });
   ok(s.ok && s.J.t2 === 7 && s.T1 === 2360 && s.R3 === 688, '(b) T = 7 s; (d) tension 2360 N speeding up; (e) floor on the man 688 N slowing', s.reason);
@@ -1719,6 +1732,13 @@ group('Edexcel M1 Jun 2002 Q6: the lift, its cable and its floor', () => {
     ok(!cableWorking(s).flatMap((st) => st.rows).some((r) => /^T=11/.test(strip(r.r))) && s.derived.some((x) => /ttot=11/.test(strip(x))), 'the whole time is t_tot, so T is only the tension');
     ok(cableWorking(s).at(-1).rows.every((r) => !/m-var">speeding|m-var">slowing/.test(r.r)), 'the stage words are prose, not set as variables'); }
   ok(s.f.weight === 1960 && s.f.weightPassenger === 784, 'the weights for the card come from the engine');
+  { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
+    const direct = solveCable({ a1: 1, t1: 2, t2: 1, a3: 9.7, M: 500, m: 70, g: 9.8 }), W = cableWorking(direct);
+    ok(W.at(-1).rows.length === 6 && !W.slice(0, -1).flatMap((x) => x.rows).some((r) => /ttot−/.test(strip(r.f))), 'times given directly: the force rows once, in their own step, never renamed t_tot');
+    const noP = solveCable({ a1: 2, V: 3, t3: 2.5, D: 27, M: 120, g: 9.8 });
+    ok(noP.ok && /^T−Mg=Ma$/.test(strip(cableWorking(noP).at(-1).rows[0].f)), 'no passenger: T − Mg = Ma');
+    const onlyP = solveCable({ a1: 2, V: 3, t3: 2.5, D: 27, m: 80, g: 9.8 });
+    ok(onlyP.ok && onlyP.R3 === 688 && onlyP.T1 == null, 'only the passenger’s mass: the floor’s push, no tension'); }
 });
 
 group('Edexcel M1 Jan 2013 Q4, Jan 2004 Q3, Jan 2010 Q5: down a rough slope', () => {
@@ -1735,6 +1755,8 @@ group('Edexcel M1 Jan 2013 Q4, Jan 2004 Q3, Jan 2010 Q5: down a rough slope', ()
   ok(!solveSlide({ alpha: 30, mu: 0.2, s: 3, t: 2 }).ok && !solveSlide({ alpha: 30, s: 3 }).ok, 'too much or too little of the run is refused');
   ok(solveSlide({ alpha: 30, s: 9.8, t: 2, g: 9.8 }).mu === 0, 'a run as fast as a smooth slope gives μ = 0');
   ok(slideWorking(boat)[0].title.startsWith('From rest') && slideWorking(tile)[0].title.startsWith('Down the slope'), 'the working goes the way the paper goes');
+  ok(!solveSlide({ alpha: 10, mu: 0.17, v: 60, g: 9.8 }).ok, 'a computed run of kilometres is refused, as a typed one is');
+  ok(solveSlide({ alpha: 30, s: 2.7, t: 3, v: 1.8, g: 9.8 }).ok && !solveSlide({ alpha: 30, s: 2.7, t: 3, v: 2.5, g: 9.8 }).ok, 'three of the run: accepted when they agree, refused when not');
   { const strip = (x) => String(x).replace(/<[^>]+>/g, '');
     ok(/s=ut\+½at2/.test(strip(pt.motion[0].f)) && pt.forces.some((r) => /^F=/.test(strip(r.r))) && pt.forces.some((r) => /^R=/.test(strip(r.r))), 'J10: s = ut + ½at² in one step; then R, F and μ = F/R, as the mark scheme');
     ok(solveSlide({ alpha: 30, s: 10, v: 9.9, g: 9.8 }).mu === 0, 'a run within a rounding of a smooth slope is a smooth slope, not refused');

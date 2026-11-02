@@ -278,7 +278,7 @@ export function render(canvas, cam, o) {
     g.strokeStyle = P.ink; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x, p.y - hP); g.stroke();
     g.fillStyle = P.mark; g.beginPath(); g.moveTo(p.x, p.y - hP); g.lineTo(p.x + 13, p.y - hP + 5); g.lineTo(p.x, p.y - hP + 10); g.closePath(); g.fill();
     L.reserve({ x: p.x - 3, y: p.y - hP, w: 17, h: hP });
-    L.add('let go from rest', p.x - 6, p.y - hP - 4, { color: P.ink, pri: 10, size: 13, weight: 700, align: 'right', maxPush: 30 }); }
+    L.add('let go from rest', p.x - 6, p.y - hP - 4, { color: P.ink, pri: 10, size: 13, weight: 700, align: 'right' }); }
 
   // ── the angle at the foot, with its arc, its label inside it on the bisector
   { const R = Math.max(clamp(k * S * 0.28, 40, 110), Lb * 1.15);
@@ -297,7 +297,7 @@ export function render(canvas, cam, o) {
     for (let i = 0; i <= 4; i++) { const x = a0.x + (a1.x - a0.x) * i / 4, y = a0.y + (a1.y - a0.y) * i / 4; L.reserve({ x: x - 6, y: y - 6, w: 12, h: 12 }); }
     for (const p of [a0, a1]) stroke(g, [{ x: p.x - nx * 6, y: p.y - ny * 6 }, { x: p.x + nx * 6, y: p.y + ny * 6 }], { color: P.disp, width: 1.6 });
     const out = Math.sign(off) * 14;
-    L.add(T`${num(f.s, 6, { trim: true })} [m]`, (a0.x + a1.x) / 2 + nx * out, (a0.y + a1.y) / 2 + ny * out, { color: P.disp, pri: 8, size: 14, weight: 700 }); }
+    L.add(T`${f.sGiven ? num(f.s, 6, { trim: true }) : num(Number(f.s.toPrecision(3)), 6, { trim: true })} [m]`, (a0.x + a1.x) / 2 + nx * out, (a0.y + a1.y) / 2 + ny * out, { color: P.disp, pri: 8, size: 14, weight: 700 }); }
 
   // ── what slides, on its surface; at the end of the roof the tile tips over the gutter
   const dd = f.pos(t), q = along(dd), e = done ? ageOf(t, f.tMax, f.tMax) : null;

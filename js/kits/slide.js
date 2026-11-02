@@ -80,7 +80,7 @@ export const slide = {
   ending(s) {
     return {
       eyebrow: 'Down the slope',
-      title: s.f.muGiven ? `${num(s.v, 3, { trim: true })} m s⁻¹ after ${num(s.s, 3, { trim: true })} m.` : `${T`mu = ${num(s.mu, 3)}`}: the coefficient of friction.`,
+      title: s.f.muGiven ? `${num(s.v, 3, { trim: true })} m s⁻¹ after ${num(s.s, 3, { trim: true })} m.` : (s.mu === 0 ? 'A smooth slope: no friction.' : `${T`mu = ${num(s.mu, 3)}`}: the coefficient of friction.`),
       body: `${s.notes.map((x) => `<p>${x}</p>`).join('')}`,
       real: true,
     };

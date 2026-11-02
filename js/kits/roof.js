@@ -38,7 +38,13 @@ export const roof = {
   graphs: pair.graphs,
   thumb: pair.thumb,
 
+  // one particle on its own: Resolve reads A alone
+  resolveObjects: (f) => (f.single ? [{ name: '', pos: (u) => f.at(u).A.x, vel: (u) => f.at(u).A.v, acc: () => -f.A.g }]
+    : ['A', 'B'].map((w) => ({ name: w, pos: (u) => f.at(u)[w].x, vel: (u) => f.at(u)[w].v, acc: f[w].acc ? (u) => f[w].acc(u) : null }))),
+  resolveAxis: 'vertical',
+
   ending(s) {
+    if (s.single) return { eyebrow: `A ${tr(s.h)} m building`, title: `It is above the roof for ${tr(s.above)} s.`, body: s.notes.map((x) => `<p>${x}</p>`).join(''), real: true };
     const e = pair.ending(s);
     return { ...e, eyebrow: `A ${tr(s.h)} m building`, body: `${s.notes.slice(0, 1).map((x) => `<p>${x}</p>`).join('')}${e.body}` };
   },

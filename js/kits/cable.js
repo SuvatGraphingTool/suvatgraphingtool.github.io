@@ -25,7 +25,7 @@ export const cable = {
     { key: 'D', col: 'steady', label: 'Rising (m) in all', placeholder: '—', hint: 'The area under the v–t graph.' },
     { key: 't3', col: 'down', label: 'Then slows to rest in (s)', placeholder: '—', hint: 'Uniformly.' },
     { key: 'a3', col: 'down', label: 'Or slows at (m s⁻²)', placeholder: '—', hint: 'In place of the time.' },
-    { key: 'M', col: 'mass', label: 'The lift’s mass (kg)', placeholder: '—', hint: '' },
+    { key: 'M', col: 'mass', label: 'The lift’s mass (kg)', placeholder: '—', hint: 'For the cable’s tension.', optional: true },
     { key: 'm', col: 'mass', label: 'The passenger’s mass (kg)', placeholder: '—', hint: 'For the floor’s push.', optional: true },
   ],
   cols: { up: 'Speeding up', steady: 'Steady', down: 'Slowing down', mass: 'The masses' },
@@ -48,7 +48,9 @@ export const cable = {
     const e = lift.ending(s), n = (x) => num(x, 3, { trim: true });
     // the forces stage by stage, a line each
     const NAME = { up: 'Speeding up', hold: 'At a steady speed', down: 'Slowing down' };
-    const table = s.f.cable.map((st) => `<p>${NAME[st.kind]}: ${M`a = ${n(st.a)} [m s^-2]`}, ${M`T = ${n(st.T)} [N]`}${s.f.m ? `, ${M`R = ${n(st.R)} [N]`}` : ''}.</p>`).join('');
-    return { ...e, title: `Tension ${n(s.T1)} N speeding up${s.R3 != null ? `; the floor pushes ${n(s.R3)} N slowing down` : `, ${n(s.T3)} N slowing down`}.`, body: `${table}${e.body || ''}` };
+    const table = s.f.cable.map((st) => `<p>${NAME[st.kind]}: ${M`a = ${n(st.a)} [m s^-2]`}${st.T != null ? `, ${M`T = ${n(st.T)} [N]`}` : ''}${s.f.m ? `, ${M`R = ${n(st.R)} [N]`}` : ''}.</p>`).join('');
+    const title = s.T1 == null ? `The floor pushes ${n(s.R1)} N speeding up, ${n(s.R3)} N slowing down.`
+      : `Tension ${n(s.T1)} N speeding up${s.R3 != null ? `; the floor pushes ${n(s.R3)} N slowing down` : `, ${n(s.T3)} N slowing down`}.`;
+    return { ...e, title, body: `${table}${e.body || ''}` };
   },
 };

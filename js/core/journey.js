@@ -146,7 +146,7 @@ function nameOf(key) {
   if (key === 'T') return 'whole time';
   if (key === 'D') return 'whole distance';
   const i = key.slice(1);
-  return { v: `speed at the end of stage ${i}`, t: `time of stage ${i}`, a: `rate of stage ${i}` }[key[0]];
+  return { v: `speed at the end of stage ${i}`, t: `time of stage ${i}`, a: `rate of stage ${i}`, s: `distance of stage ${i}` }[key[0]];
 }
 
 /* ── the three-stage journey, as the papers ask it ─────────────────────── */
@@ -156,7 +156,7 @@ const LEGACY_REL = { 't3=k*t1': { kind: 't', x: 3, y: 1 }, 'a3=k*a1': { kind: 'a
 export function threeStages(k = {}) {
   const r = k.rel;
   const rel = r && (r.kind || have(r.k)) ? { ...(LEGACY_REL[r.kind] || { kind: r.kind }), k: r.k } : null;
-  return { u: 0, stages: [{ kind: 'up', v: k.V, t: k.t1, a: k.a1 }, { kind: 'hold', t: k.t2 }, { kind: 'down', v: 0, t: k.t3, a: k.a3 }],
+  return { u: 0, stages: [{ kind: 'up', v: k.V, t: k.t1, a: k.a1, s: k.s1 }, { kind: 'hold', t: k.t2, s: k.s2 }, { kind: 'down', v: 0, t: k.t3, a: k.a3, s: k.s3 }],
            T: k.T, D: k.D, rel, at: k.at };
 }
 
@@ -190,7 +190,7 @@ export function solveStages(spec) {
   const put = (key, v) => { if (have(v)) given[key] = v; };
   put('u', spec.u);
   for (const i of idx) {
-    put(`t${i}`, S[i - 1].t);
+    put(`t${i}`, S[i - 1].t); put(`s${i}`, S[i - 1].s);
     if (kindOf(i) !== 'hold') { put(`v${i}`, S[i - 1].v); put(`a${i}`, S[i - 1].a); }
   }
   put('T', spec.T); put('D', spec.D);
@@ -235,10 +235,41 @@ export function solveStages(spec) {
   const u_ = (f, U) => (isConst(f) ? ` ${U}` : '');
   const gain = (i) => (w[i - 1] && w[i] ? mul(sub(w[i], w[i - 1]), sg(i)) : null);
 
+  // A stage given by its distance ("speeds up over the first 15 m"): with two more of its
+  // own numbers known it gives the rest — s = ½(u + v)t, v² = u² ± 2as, or s = vt when steady.
+  const ds = Array(n + 1).fill(null);
+  for (const i of idx) if (have(S[i - 1].s)) ds[i] = S[i - 1].s;
+  const C = (f) => f && isConst(f);
+  const byDistance = (i) => {
+    const D0 = ds[i], w0 = w[i - 1], w1 = w[i], ti = t[i];
+    const half = M`s = ½(u + v)t`;
+    if (kindOf(i) === 'hold') {
+      if (C(w0) && !ti) { t[i] = F(D0 / w0.c0); rows.push({ f: M`s = vt`, s: M`${d(D0)} = ${fb(w0)} * ${tS(i)}`, r: M`${tS(i)} = ${fs(t[i])} [s]` }); return true; }
+      if (C(ti) && !w0) { w[i - 1] = w[i] = F(D0 / ti.c0); rows.push({ f: M`s = vt`, s: M`${d(D0)} = ${vS(i - 1)} * ${fb(ti)}`, r: M`${vS(i - 1)} = ${fs(w[i - 1])} [m s^-1]` }); return true; }
+      return false;
+    }
+    if (C(w0) && C(w1) && !ti) { t[i] = F((2 * D0) / (w0.c0 + w1.c0)); rows.push({ f: half, s: M`${d(D0)} = ½(${fb(w0)} + ${fb(w1)})${tS(i)}`, r: M`${tS(i)} = ${fs(t[i])} [s]` }); return true; }
+    if (C(w0) && C(ti) && !w1) { w[i] = F((2 * D0) / ti.c0 - w0.c0); rows.push({ f: half, s: M`${d(D0)} = ½(${fb(w0)} + ${vS(i)}) * ${fb(ti)}`, r: M`${vS(i)} = ${fs(w[i])} [m s^-1]` }); return true; }
+    if (C(w1) && C(ti) && !w0) { w[i - 1] = F((2 * D0) / ti.c0 - w1.c0); rows.push({ f: half, s: M`${d(D0)} = ½(${vS(i - 1)} + ${fb(w1)}) * ${fb(ti)}`, r: M`${vS(i - 1)} = ${fs(w[i - 1])} [m s^-1]` }); return true; }
+    if (a[i] != null && (C(w0) !== C(w1))) {
+      const g = sg(i), op = g > 0 ? '+' : '-';
+      if (C(w0) && !w1) {
+        const sq = w0.c0 ** 2 + 2 * g * a[i] * D0; if (sq < -1e-9) return false;
+        w[i] = F(Math.sqrt(Math.max(0, sq))); rows.push({ f: M`v^2 = u^2 ${op} 2as`, s: M`${vS(i)}^2 = ${fb(w0)}^2 ${op} 2 * ${ex(a[i])} * ${d(D0)}`, r: M`${vS(i)} = ${fs(w[i])} [m s^-1]` }); return true;
+      }
+      if (C(w1) && !w0) {
+        const sq = w1.c0 ** 2 - 2 * g * a[i] * D0; if (sq < -1e-9) return false;
+        w[i - 1] = F(Math.sqrt(Math.max(0, sq))); rows.push({ f: M`v^2 = u^2 ${op} 2as`, s: M`${fb(w1)}^2 = ${vS(i - 1)}^2 ${op} 2 * ${ex(a[i])} * ${d(D0)}`, r: M`${vS(i - 1)} = ${fs(w[i - 1])} [m s^-1]` }); return true;
+      }
+    }
+    return false;
+  };
+
   // Fill in everything the givens fix, in terms of the unknown once there is one.
   const propagate = () => {
     for (let changed = true; changed;) {
       changed = false;
+      for (const i of idx) if (ds[i] != null && !used.has(`s${i}`) && byDistance(i)) { used.add(`s${i}`); how.add('distance'); changed = true; }
       for (const i of idx) {
         if (kindOf(i) === 'hold') {
           // a steady stage ends at the speed it started at
@@ -462,7 +493,10 @@ export function solveStages(spec) {
     const rj = roots.filter((xx) => verdict(xx)).map((xx) => ({ x: xx, why: verdict(xx), sym: c.sym }));
     if (!good.length) {
       return fail(roots.length
-        ? `No journey fits those numbers: ${rj.map((z) => `${M`${c.sym} = ${d(z.x)}`} ${z.why}`).join('; ')}.`
+        // when the unknown is itself the stage that comes out negative, say so once, not "t₂ = … makes t₂ = …"
+        ? `No journey fits those numbers: ${rj.map((z) => (z.why.includes(M`${c.sym} = ${d(z.x)} [s]`)
+          ? `${M`${c.sym} = ${d(z.x)}`}${c.sym === 't_2' ? ', a negative time — the distance is shorter than speeding up and slowing down need on their own' : ', and no stage takes negative time'}`
+          : `${M`${c.sym} = ${d(z.x)}`} ${z.why}`)).join('; ')}.`
         : 'No journey fits those numbers: the equation for the unknown has no real solution — the distance is too long for that time at those rates.');
     }
     const x = good[0];
@@ -497,6 +531,10 @@ export function solveStages(spec) {
   }
   J.T = snap(idx.reduce((s, i) => s + J.t[i], 0));
   J.D = snap(idx.reduce((s, i) => s + J.s[i], 0));
+  // a stage given by its distance must come out at that distance
+  for (const i of idx) if (ds[i] != null && Math.abs(J.s[i] - ds[i]) > 1e-6 * Math.max(1, ds[i])) {
+    return fail(`No journey fits those numbers: stage ${i} would cover ${M`${d(J.s[i])} [m]`}, not the ${M`${d(ds[i])} [m]`} given. Check them.`);
+  }
   J.u = J.w[0];
   for (const i of idx) Object.assign(J, { [`v${i}`]: J.w[i], [`t${i}`]: J.t[i], [`a${i}`]: J.a[i], [`s${i}`]: J.s[i] });
   const vStep = steps.find((s) => s.unknown.key === 'V');

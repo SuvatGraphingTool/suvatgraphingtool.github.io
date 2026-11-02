@@ -59,8 +59,9 @@ export const pair = {
       left: [
         { k: 'Height of A', v: fmt(s.A.x, 2), unit: 'm', hue: 'disp' },
         { k: 'Velocity of A', v: fmt(s.A.v, 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Height of B', v: fmt(s.B.x, 2), unit: 'm', hue: 'disp' },
-        { k: 'Velocity of B', v: fmt(s.B.v, 2), unit: 'm s⁻¹', hue: 'vel' },
+        // one particle on its own (f.single) has no B to read
+        ...(f.single ? [] : [{ k: 'Height of B', v: fmt(s.B.x, 2), unit: 'm', hue: 'disp' },
+          { k: 'Velocity of B', v: fmt(s.B.v, 2), unit: 'm s⁻¹', hue: 'vel' }]),
       ],
       right: [{ k: 'Time', v: fmt(t, 2), unit: 's' }],
     };
@@ -78,8 +79,8 @@ export const pair = {
     // and the acceleration jump there, and a jump is not a vertical line
     const cuts = (p) => [p.t0, p.tLand].filter(isFinite);
     const both = (fnA, fnB, cA) => [
-      { label: 'B', tag: 'B', fn: fnB, color: P.second, dash: null, breaks: cuts(B) },
-      { label: 'A', tag: 'A', fn: fnA, color: cA, dash: null, breaks: cuts(A) },
+      ...(f.single ? [] : [{ label: 'B', tag: 'B', fn: fnB, color: P.second, dash: null, breaks: cuts(B) }]),
+      { label: 'A', tag: f.single ? null : 'A', fn: fnA, color: cA, dash: null, breaks: cuts(A) },
     ];
     return [
       { canvas: 'g-s', title: 'Height–time', unit: 'm', tMax, t,
@@ -90,7 +91,7 @@ export const pair = {
         points: meet ? [{ t: meet.t, y: meet.vA, color: P.mark }, { t: meet.t, y: meet.vB, color: P.mark }] : [] },
       { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,
         series: both((tt) => A.acc(tt), (tt) => B.acc(tt), P.acc),
-        note: Math.abs(A.g) > 1e-9 ? 'both −g once moving' : '' },
+        note: Math.abs(A.g) > 1e-9 ? (f.single ? '−g throughout' : 'both −g once moving') : '' },
     ];
   },
 

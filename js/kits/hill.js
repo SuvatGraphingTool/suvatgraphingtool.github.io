@@ -33,6 +33,8 @@ export const hill = {
 
   resolveAxis: 'along',
   resolvePart: '',     // along a slope: neither across (dashed) nor up (rule 2)
+  resolveWords: { pos: 'going down the slope', neg: 'going up the slope', plus: 'Down the slope', line: 'along the slope' },
+  resolveEnds: true,   // the run is the paper's stretch of road: the engine follows it no further
   resolveFrom: 'the top',
   read(v) { return { u: v.u, v: v.v, s: v.s, t: v.t, a: v.a, m: v.m, R: v.R, alpha: v.alpha, g: v.g }; },
   solve: solveHill,

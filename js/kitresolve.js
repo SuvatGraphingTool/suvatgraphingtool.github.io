@@ -25,10 +25,15 @@
 // chosen convention); `from` names where a displacement is measured from.
 // `kit.resolveUnits(f)` gives [s, v, a, t] units for a question in letters or
 // in kilometres and hours; `kit.resolveNames` the two objects' names.
+// On one line a kit may also give `resolveWords` { pos, neg, plus, line } — its
+// own words for the two ways (up and down a slope); `resolvePart: ''` for a line
+// that is neither across nor up (a slope), so its rows are not dashed (rule 2);
+// and `resolveEnds: true` when its run simply stops at tMax (into the sea, at the
+// end of the paper's stretch), so the last moment says the engine goes no further.
 //
 // THE CARD'S SHAPE: { t, tUnit?, blocks: [{ name, hue, rows: [{ name, value,
 // unit, formula, sub, note, hue, part }] }], note } — what js/app.js
-// renderResolve prints. `hue` is the quantity, `part` 'x' (dashed) or 'y'.
+// renderResolve prints. `hue` is the quantity, `part` 'x' (dashed), 'y' or '' (solid, neither).
 
 import { M, num } from './notation.js';
 

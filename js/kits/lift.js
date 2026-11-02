@@ -55,10 +55,13 @@ export const lift = {
     return [
       { canvas: 'g-s', title: 'Height risen–time', unit: 'm', tMax: f.tMax, t, points: stops.map((tt) => ({ t: tt, y: f.pos(tt).x, color: P.mark })),
         series: [{ label: 'height risen', tag: T`s`, fn: (tt) => f.pos(tt).x, color: P.disp, dash: null }] },
+      // the area under the velocity line is the height risen: shaded, as the journey's is
       { canvas: 'g-v', title: 'Velocity–time, up +', unit: 'm s⁻¹', tMax: f.tMax, t, points: stops.map((tt) => ({ t: tt, y: f.vel(tt).x, color: P.mark })),
-        series: [{ label: 'velocity', tag: T`v`, fn: (tt) => f.vel(tt).x, color: P.vel, dash: null }] },
-      { canvas: 'g-a', title: 'Acceleration–time, up positive', unit: 'm s⁻²', tMax: f.tMax, t,
-        series: [{ label: 'acceleration', tag: T`a`, fn: at0(f.accel), color: P.acc, dash: null }] },
+        series: [{ label: 'velocity', tag: T`v`, fn: (tt) => f.vel(tt).x, color: P.vel, dash: null }],
+        shade: { index: 0, label: 'area = height risen', color: P.disp } },
+      // a step graph: the levels with no lines joining them
+      { canvas: 'g-a', title: 'Acceleration–time, up +', unit: 'm s⁻²', tMax: f.tMax, t,
+        series: [{ label: 'acceleration', tag: T`a`, fn: at0(f.accel), color: P.acc, dash: null, breaks: f.stages.slice(0, -1).map((st) => st.t1) }] },
     ];
   },
 

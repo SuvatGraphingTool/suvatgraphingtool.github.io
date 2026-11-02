@@ -307,12 +307,13 @@ export function render(canvas, cam, o) {
     }
   };
   marks(A, -1, P.vel);
-  marks(B, 1, P.second);
+  if (!f.single) marks(B, 1, P.second);
 
   // ── the gap between them, while both are in the air
   const now = f.at(t);
   const yA = Y(now.A.x), yB = Y(now.B.x);
-  if ((!met || f.pass) && Math.abs(yA - yB) > 14) {
+  // (a single particle — the roof's first on its own — has no gap)
+  if (!f.single && (!met || f.pass) && Math.abs(yA - yB) > 14) {
     const apart = `apart ${T`${sig3(Math.abs(f.gap(t)))} [m]`}`;
     if (phone) {
       // between the line and whatever stands on its right, and said under the ground
@@ -336,7 +337,7 @@ export function render(canvas, cam, o) {
   }
 
   // ── the two particles, their velocities, and their accelerations
-  const vMax = Math.max(1e-6, ...[A, B].map((p) => Math.max(Math.abs(p.u), isFinite(p.vLand) ? Math.abs(p.vLand) : 0)));
+  const vMax = Math.max(1e-6, ...(f.single ? [A] : [A, B]).map((p) => Math.max(Math.abs(p.u), isFinite(p.vLand) ? Math.abs(p.vLand) : 0)));
   const vLen = clamp(h * 0.16, 44, 120) / vMax;
   const draw = (p, s, side, ring, name) => {
     const y = Y(s.x);
@@ -370,7 +371,7 @@ export function render(canvas, cam, o) {
     }
   };
   draw(A, now.A, -1, null, 'A');
-  draw(B, now.B, 1, P.second, 'B');
+  if (!f.single) draw(B, now.B, 1, P.second, 'B');
   // above the roof: its level, and the first particle crossing it on the way up and down
   if (f.roof) {
     const ry = Y(f.roof.h);

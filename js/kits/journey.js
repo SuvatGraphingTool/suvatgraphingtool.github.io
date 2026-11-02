@@ -26,12 +26,14 @@ function stageFields(i, kind) {
   const pick = { key: `k${i}`, type: 'choice', rebuild: true, full: true, label: 'It', options: KIND_CHIPS };
   if (!kind) return [pick];
   if (kind === 'hold') {
-    return [pick, { key: `t${i}`, label: `Time ${M`t_${i}`} (s)`, hint: 'How long it holds its speed — the speed it had at the start of this stage.' }];
+    return [pick, { key: `t${i}`, label: `Time ${M`t_${i}`} (s)`, hint: 'How long it holds its speed — the speed it had at the start of this stage.' },
+      { key: `s${i}`, label: `Distance ${M`s_${i}`} (m)`, hint: 'How far it goes at that speed. Blank if not given.' }];
   }
   return [pick,
     { key: `v${i}`, label: `End speed ${M`v_${i}`} (m s⁻¹)`, hint: kind === 'down' ? '0 if it stops. Blank if this is the V to find.' : 'Blank if this is the V to find.' },
     { key: `a${i}`, label: `Rate ${M`a_${i}`} (m s⁻²)`, hint: `Its size: 0.4, not −0.4. Blank if not given.` },
-    { key: `t${i}`, label: `Time ${M`t_${i}`} (s)`, hint: 'How long it takes. Blank if not given.' }];
+    { key: `t${i}`, label: `Time ${M`t_${i}`} (s)`, hint: 'How long it takes. Blank if not given.' },
+    { key: `s${i}`, label: `Distance ${M`s_${i}`} (m)`, hint: '“Over the first 15 m” is 15. Blank if not given.' }];
 }
 
 export const journey = {
@@ -90,7 +92,7 @@ export const journey = {
     const n = Math.min(MAX_STAGES, Math.max(1, +vals.n || 3));
     const stages = Array.from({ length: n }, (_, j) => {
       const i = j + 1, kind = vals[`k${i}`];
-      return kind === 'hold' ? { kind, t: vals[`t${i}`] } : { kind, v: vals[`v${i}`], a: vals[`a${i}`], t: vals[`t${i}`] };
+      return kind === 'hold' ? { kind, t: vals[`t${i}`], s: vals[`s${i}`] } : { kind, v: vals[`v${i}`], a: vals[`a${i}`], t: vals[`t${i}`], s: vals[`s${i}`] };
     });
     const rel = ['rel.kind', 'rel.x', 'rel.k', 'rel.y'].some((q) => vals[q] != null)
       ? { kind: vals['rel.kind'], x: vals['rel.x'], y: vals['rel.y'], k: vals['rel.k'] } : null;

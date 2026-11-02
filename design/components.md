@@ -127,6 +127,7 @@ parts: [
 | `at` | the part's moment on the stage: a path like `find`, a number of seconds, or `'end'`. Left out: the moment of `find` if it is a time, else the end |
 | `span` | `[from, to]` instead of `at`, for an interval (a time above a line): both ends ringed, the band marked on the clock |
 | `graph` | for a `graph` part: which graph it asks for (`'g-s'`, `'g-v'`, `'g-a'`); the velocity–time one when left out |
+| (stage) | a kit's stage gets the part on show as `o.askPart` (the part object, or null), so it can mark what the part asks for |
 | `step` | which working step answers it: text matched against the step titles (case and tags ignored), or an index into `kit.working()` |
 | `given` | `{ box: value }` — boxes this part adds or changes, from this part on, keyed as `example` is. Leave it out when the example already holds everything |
 | `carry` | `{ box: 'a' }` — from this part on, the box takes part (a)'s answer: the ENGINE's value, never a typed one. The part says so: "using t = 3.5 s from (a)" |
@@ -773,11 +774,13 @@ and F = μR), `sUp` and `tUp` to rest, `stays` (μ ≥ tan α), and if not `aDow
 A lift raised by a light cable, a passenger on its floor. `solveCable({ a1, V,
 t1, t2, t3, a3, D, M, m, g })`: the journey's `solveJourney` for the motion,
 then in each stage the tension `T` = (M + m)(g + a) and the floor's push `R` =
-m(g + a) — `T1`…`T3`, `R1`…`R3`, and `f.tension(t)`, `f.floor(t)`. Refuses a
-deceleration greater than g (the cable would go slack).
+m(g + a) — `T1`…`T3`, `R1`…`R3`, and `f.tension(t)`, `f.floor(t)`, `f.weight`, `f.weightPassenger`. The lift's
+mass may be left out (only the floor's push) or the passenger's (only the cable, T − Mg = Ma). Refuses a
+deceleration of g or more (the cable would go slack).
 
 **Stage pieces** (`js/render/cable.js`): the lift's own stage (`js/render/lift.js`,
-which now takes `o.keepRight` / `o.keepBottom` to leave room for a card), and a
+which now takes `o.keepRight` / `o.keepBottom` / `o.keepRect` to leave room for a card, keeping its labels out
+of it, and `o.out` to hand back the car's place and the building's walls), and a
 card of free-body diagrams — lift and passenger with T and their weight, the
 passenger with R and theirs — redrawn for the stage it is in, at one scale.
 

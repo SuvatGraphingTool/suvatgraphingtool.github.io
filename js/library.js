@@ -476,7 +476,7 @@ export const LIBRARY = [
     place: 'A building, cut away to show its lift shaft',
     example: { a1: 0.9, t1: 3, t2: 6, t3: 4 },
     parts: [
-      { label: 'i', kind: 'other', ask: 'Sketch a velocity–time graph for the motion.', say: 'The velocity–time graph below the stage: a trapezium — speeding up, steady, then slowing to rest.', at: 'end' },
+      { label: 'i', kind: 'graph', ask: 'Sketch a velocity–time graph for the motion.', say: 'The velocity–time graph: a trapezium — speeding up, steady, then slowing to rest.', at: 'end' },
       { label: 'ii', kind: 'distance', ask: 'Find the total distance travelled by the lift.', find: 'f.range', sym: 's', unit: 'm', dp: 2, at: 'end', paper: 25.65, tol: 0.005 },
     ],
     sources: [
@@ -614,9 +614,9 @@ export const LIBRARY = [
     place: 'A building cut away to show the lift shaft, with the forces on a card',
     example: { a1: 2, V: 3, t3: 2.5, D: 27, M: 120, m: 80, g: 9.8 },
     parts: [
-      { label: 'a', kind: 'graph', ask: 'Sketch a speed–time graph for the lift’s motion.', say: 'The velocity–time graph beside the stage: a trapezium.', at: 'end' },
+      { label: 'a', kind: 'graph', ask: 'Sketch a speed–time graph for the lift’s motion.', say: 'The velocity–time graph: a trapezium.', at: 'end' },
       { label: 'b', kind: 'time', ask: 'Find how long it moves at its steady speed (the paper’s T).', find: 'J.t2', sym: 't_2', unit: 's', trim: true, at: 'f.tSteady', step: 'area under', paper: 7 },
-      { label: 'c', kind: 'graph', graph: 'g-a', ask: 'Sketch an acceleration–time graph for the lift’s motion.', say: 'The acceleration–time graph beside the stage: three steps.', at: 'end' },
+      { label: 'c', kind: 'graph', graph: 'g-a', ask: 'Sketch an acceleration–time graph for the lift’s motion.', say: 'The acceleration–time graph: three steps.', at: 'end' },
       { label: 'd', kind: 'force', ask: 'The lift has a mass of 120 kg and the man 80 kg. Find the tension in the cable while the lift speeds up.', find: 'T1', sym: 'T', unit: 'N', trim: true, at: 'f.tUp', step: 'forces', paper: 2360 },
       { label: 'e', kind: 'force', ask: 'Find the size of the force the lift’s floor exerts on the man while it slows down.', find: 'R3', sym: 'R', unit: 'N', trim: true, at: 'f.tDown', step: 'forces', paper: 688 },
     ],
