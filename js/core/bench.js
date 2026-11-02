@@ -43,6 +43,7 @@ export function solveBench(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   const look = LOOKS[k.look] ? k.look : 'foil', Lk = LOOKS[look];
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
+  if (!(k.g > 0)) return fail('g is the size of the acceleration due to gravity: a positive number.');
   const g = k.g;
   for (const [key, what] of [['d', 'The distance between the strips'], ['tGap', 'The time between the strips'], ['H', 'The height of the edge'], ['R', 'How far out it lands'], ['u', 'The speed']]) {
     if (have(k[key]) && !(k[key] > 0)) return fail(`${what} is a positive number.`);

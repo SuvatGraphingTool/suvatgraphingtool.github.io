@@ -35,7 +35,9 @@ export function answerHTML(run) {
   if (p.ratio) {
     // a ratio, in its lowest terms as the engine gave it: AB : BC = 64 : 27
     const [x, y] = a.values, o = { trim: true };
-    return `${p.ratio.map((s) => M`${s}`).join(' : ')} = ${M`${num(x, p.dp ?? 3, o)}`} : ${M`${num(y, p.dp ?? 3, o)}`}`;
+    // whole numbers, as the engine found them, print in full
+    const n = (z) => (Number.isInteger(z) ? String(z) : num(z, p.dp ?? 3, o));
+    return `${p.ratio.map((s) => M`${s}`).join(' : ')} = ${M`${n(x)}`} : ${M`${n(y)}`}`;
   }
   if (p.vec) {
     // a vector, in i and j: the sign between them is the j part's own

@@ -46,7 +46,7 @@ export function solveFlightTime(k = {}) {
   if (!(g > 0)) return fail('It comes back down because of gravity: give g as a size, such as 9.8.');
   if (!have(k.T)) return fail('Still needed: how long it is in the air.');
   if (!(k.T > 0)) return fail('The time in the air is a positive number of seconds.');
-  if (!have(k.kx)) return fail(`Still needed: its horizontal velocity, as a multiple of ${M`d`} (type 5/3 for ${M`(5/3)d`}).`);
+  if (!have(k.kx)) return fail(`Still needed: its horizontal velocity, as a multiple of ${M`d`} (type it as a fraction for ${M`(5/3)d`}, say).`);
   if (!(k.kx > 0)) return fail(`The horizontal velocity is a positive multiple of ${M`d`}.`);
   const m = have(k.m) ? k.m : 1;
   if (!(m > 0)) return fail(`The wall is a positive multiple of ${M`d`} from O.`);

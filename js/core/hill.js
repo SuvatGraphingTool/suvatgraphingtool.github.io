@@ -59,10 +59,16 @@ export function solveHill(k = {}) {
 
   const n = Object.keys(known).length;
   if (n < 3) return fail(`Still needed: ${3 - n} more of its speed at the top, its speed at the bottom, the distance, the time${have(k.alpha) ? '' : ' and the acceleration'}.`);
-  if (n > 3) return fail('Give three of the five for the run down the slope: any three fix the other two.');
+  if (n > 3) return fail(have(k.alpha) ? 'With the angle given, give two of the speeds, the distance and the time: the angle fixes the acceleration.' : 'Give three of the five for the run down the slope: any three fix the other two.');
   if (have(known.u) && known.u < 0) return fail('It freewheels down the slope: its starting speed is 0 or more.');
   const r = solve(known);
-  if (!r.ok) return fail('No run down the slope fits those numbers: forwards, for a positive time. Check them.');
+  if (!r.ok) {
+    // slowing down on a gentle slope against a resistance, it can stop short of the end
+    if (have(known.u) && known.a < 0 && have(known.s) && known.u * known.u + 2 * known.a * known.s < 0) {
+      return fail(`It slows down at ${M`${d(-known.a)} [m s^-2]`} and comes to rest ${M`${d(snap(known.u * known.u / (-2 * known.a)))} [m]`} down the slope, before the ${M`${d(known.s)} [m]`}.`);
+    }
+    return fail('No run down the slope fits those numbers: forwards, for a positive time. Check them.');
+  }
   const { u, v, a, t, s } = r.values;
   if (!(t > 0) || !(s > 0)) return fail('The run goes down the slope and takes time: check the numbers.');
   if (!(v >= 0)) return fail('It comes to rest before the end of the run: freewheeling, it does not roll back up.');
@@ -99,12 +105,14 @@ export function solveHill(k = {}) {
   if (have(k.alpha)) alpha = k.alpha;
   // the slope the stage draws, and the forces on it: the paper's angle, or the
   // one the engine found for the resistance given — or none, when it found none
-  const shown = alpha ?? (R > 0 ? alphaR : alpha0) ?? null;
-  const Rs = shown == null ? null : R;
+  if (R > 0 && !have(k.m) && !have(k.alpha)) sayNo.push(`Against a resistance of ${M`${d(R)} [N]`} the angle needs the mass too: the resistance's share of the acceleration is ${M`R`} over ${M`m`}.`);
+  const shown = alpha ?? alphaR ?? alpha0 ?? null;
+  // the resistance belongs to the slope drawn only if that slope was found (or given) with it
+  const Rs = shown == null ? null : (have(k.alpha) || (alphaR != null && shown === alphaR)) ? R : 0;
   const W = shown != null && have(k.m) ? snap(k.m * g * Math.sin(shown * D2R)) : null;
 
   const notes = [`From ${M`${d(u)} [m s^-1]`} to ${M`${d(snap(v))} [m s^-1]`} over ${M`${d(snap(s))} [m]`}: an acceleration of ${M`${d(snap(a))} [m s^-2]`}, for ${M`${d(snap(t))} [s]`}.`];
-  if (F != null) notes.push(`The resultant force on cyclist and bike is ${M`${d(F)} [N]`} down the slope.`);
+  if (F != null) notes.push(`The resultant force on cyclist and bike is ${M`${d(Math.abs(F))} [N]`} ${F >= 0 ? 'down' : 'up'} the slope.`);
   notes.push(...sayNo);
   if (alpha0 != null) notes.push(`With no resistance, the weight's component down the slope is the whole of it: the slope is at ${num(alpha0, 2)}° to the horizontal.`);
   if (alphaR != null) notes.push(`Against a resistance of ${M`${d(R)} [N]`}, the weight's component must be bigger by that much: the slope is at ${num(alphaR, 2)}°.`);

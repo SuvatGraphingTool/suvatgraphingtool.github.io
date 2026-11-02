@@ -95,15 +95,18 @@ export function render(canvas, cam, o) {
   // ── the forces along the slope, on a card fixed to the screen
   if (!compact && f.m != null && f.W != null) {
     unview(g);
-    const cw = cardW, chh = 150, cx = w - cw - 16, cy = h - chh - 16;
+    const cw = cardW, chh = 160, cx = w - cw - 16, cy = h - chh - 16;
     paper(g, cx, cy, cw, chh);
     const W = f.W ?? 0, lab = (txt, x, y, col, al2 = 'left') => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = al2; g.textBaseline = 'middle'; g.fillText(txt, x, y); g.restore(); };
     lab('Along the slope, down it +', cx + 12, cy + 18, P.muted);
-    const sc = (cw - 90) / Math.max(W, f.R, Math.abs(f.F ?? 0), 1e-9), y0 = cy + 50, x0 = cx + 30;
+    // every arrow from one origin, down the slope to the right; when something points up
+    // the slope the origin moves in so that arrow stays on the card too. Labels under each.
+    const lo = Math.min(0, W - (f.R || 0), f.F ?? 0), hi = Math.max(W, f.F ?? 0, 1e-9);
+    const sc = (cw - 40) / (hi - lo), x0 = cx + 20 - lo * sc, y0 = cy + 46;
     arrow(g, x0, y0, x0 + W * sc, y0, { color: P.ink, width: 2.4, head: 9 });
-    lab(T`m g sin alpha = ${s3(W)} [N]`, x0, y0 + 16, P.ink);
-    if (f.R > 0) { arrow(g, x0 + W * sc, y0 + 40, x0 + W * sc - f.R * sc, y0 + 40, { color: P.ink, width: 2.4, head: 9 }); lab(T`R = ${s3(f.R)} [N]`, x0 + W * sc, y0 + 56, P.ink, 'right'); }
-    if (f.F != null) { const yF = cy + chh - 20; arrow(g, x0, yF - 10, x0 + f.F * sc, yF - 10, { color: P.acc, width: 3, head: 10 }); lab(T`F = ma = ${s3(f.F)} [N]`, x0 + f.F * sc + 8, yF - 10, P.acc); }
+    lab(T`m g sin alpha = ${s3(W)} [N]`, cx + 12, y0 + 16, P.ink);
+    if (f.R > 0) { arrow(g, x0 + W * sc, y0 + 36, x0 + (W - f.R) * sc, y0 + 36, { color: P.ink, width: 2.4, head: 9 }); lab(T`R = ${s3(f.R)} [N] "up the slope"`, cx + 12, y0 + 52, P.ink); }
+    if (f.F != null) { const yF = cy + chh - 30; arrow(g, x0, yF, x0 + f.F * sc, yF, { color: P.acc, width: 3, head: 10 }); lab(T`F = ma = ${s3(f.F)} [N]`, cx + 12, yF + 16, P.acc); }
   }
   // on a phone or a short stage, the forces in one line along the foot of the stage
   if (compact && f.W != null) {

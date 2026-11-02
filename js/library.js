@@ -621,7 +621,7 @@ export const LIBRARY = [
     place: 'An ice rink from above, the boards at C',
     example: { uA: 20, uB: 16, AB: 24, AC: 30, R: 0.3, I: 2.4 },
     parts: [
-      { label: 'a', kind: 'acceleration', ask: 'Find the deceleration of the stone.', find: 'a', sym: 'a', unit: 'm s^-2', trim: true, at: 'f.tB', step: 'To the wall', paper: 3 },
+      { label: 'a', kind: 'acceleration', ask: 'Find the deceleration of the stone.', find: 'a', sym: '"deceleration"', unit: 'm s^-2', trim: true, at: 'f.tB', step: 'To the wall', paper: 3 },
       { label: 'b', kind: 'speed', ask: 'Find its speed when it reaches C.', find: 'vC', sym: 'v', unit: 'm s^-1', dp: 1, at: 'f.tC', step: 'To the wall', paper: 14.8, tol: 0.05 },
       { label: 'c', kind: 'show', ask: 'Show that the mass of the stone is 0.1 kg.', find: 'm', sym: 'm', unit: 'kg', trim: true, at: 'f.tC', step: 'To the wall', paper: 0.1 },
       { label: 'd', kind: 'time', ask: 'The wall gives it an impulse of size 2.4 N s. How long after it rebounds does it come to rest?', find: 'tBack', sym: 't', unit: 's', dp: 2, at: 'end', step: 'impulse', paper: 3.06, tol: 0.005 },

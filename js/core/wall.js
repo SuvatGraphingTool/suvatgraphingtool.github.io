@@ -72,7 +72,7 @@ export function solveWall(k = {}) {
 
   const notes = [
     `Its deceleration is ${M`${d(a)} [m s^-2]`}, from its speeds at A and B; it reaches the wall at ${M`${d(vC)} [m s^-1]`}${have(k.R) ? `, and with a resistance of ${M`${d(R)} [N]`} its mass is ${M`${d(m)} [kg]`}` : `; on ${M`${d(m)} [kg]`} that is a resistance of ${M`${d(R)} [N]`}`}.`,
-    `The wall's impulse of ${M`${d(I)} [N s]`} turns it round: it leaves the wall at ${M`${d(w)} [m s^-1]`}, and comes to rest ${M`${d(tBack)} [s]`} later, ${M`${d(back)} [m]`} from the wall — ${stopAt >= 0 ? `${M`${d(stopAt)} [m]`} past A, ${stopAt > AB ? 'between B and C' : stopAt > 1e-9 ? 'between A and B' : 'at A'}` : `${M`${d(-stopAt)} [m]`} behind A`}.`,
+    `The wall's impulse of ${M`${d(I)} [N s]`} turns it round: it leaves the wall at ${M`${d(w)} [m s^-1]`}, and comes to rest ${M`${d(tBack)} [s]`} later, ${M`${d(back)} [m]`} from the wall — ${stopAt >= 0 ? `${M`${d(stopAt)} [m]`} past A, ${Math.abs(stopAt - AB) < 1e-9 ? 'at B' : stopAt > AB ? 'between B and C' : stopAt > 1e-9 ? 'between A and B' : 'at A'}` : `${M`${d(-stopAt)} [m]`} behind A`}.`,
   ];
   const derived = [`${M`a = ${d(a)} [m s^-2]`}`, `${M`v_C = ${d(vC)} [m s^-1]`}`, have(k.R) ? `${M`m = ${d(m)} [kg]`}` : `${M`F = ${d(R)} [N]`}`, `rebounds at ${M`${d(w)} [m s^-1]`}`, `at rest after ${M`${d(tBack)} [s]`}`];
 

@@ -52,6 +52,7 @@ export function kaLine(c) {
 export function solveClears(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
   if (!have(k.g)) return fail('Choose the value of g the paper uses.');
+  if (!(k.g > 0)) return fail('g is the size of the acceleration due to gravity: a positive number.');
   for (const [key, what] of [['P', 'How far the wall is from O'], ['Q', 'The wall’s height'], ['beyond', 'How far beyond the wall it lands']]) {
     if (!have(k[key])) return fail(`Still needed: ${what.toLowerCase()}, as a multiple of a.`);
     if (!(k[key] > 0)) return fail(`${what}: give it as a positive multiple of a.`);
