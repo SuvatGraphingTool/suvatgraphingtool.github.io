@@ -283,6 +283,7 @@ const ONLY_HERE = [
   [new RegExp(`${FROM}(table|desk|bench|worktop|counter|shelf|workbench)\\b(?!\\s+(?:of|tennis))`), 'table'],
   [new RegExp(`${FROM}(balcony|window|house|bungalow|roof)\\b(?!\\s+of)`), 'house'],
   [/\b(?:in|inside)\s+(?:a|the)\s+(sports hall|gym(?:nasium)?)\b/, 'hall'],
+  [new RegExp(`${FROM}(tree|branch|apple tree|bough)\\b`), 'orchard'],
 ];
 /**
  * The composer's own place a question names as where it leaves from, with

@@ -3552,7 +3552,7 @@ function applyComposed(x, { graph = true } = {}) {
     ? (state.runs ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${solved.derived?.join(' · ') || ''}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
   // the values it read, each from the question or assumed, as a library reply lists them
-  const given = libraryGiven(boxesOf(c.kit, c.boxes), x.recipe?.numbers?.g == null && !s.recipe.numbers.g,
+  const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g,
     `${x.summary || ''} ${said.join(' ')}`);
   return { ok: true, runnable: !!traj, composed: !!traj, html: head + given + body + more };
 }

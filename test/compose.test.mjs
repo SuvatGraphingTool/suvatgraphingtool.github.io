@@ -262,6 +262,8 @@ group('Places only the composer draws, and more of what students name', () => {
   ok(shelf.recipe.backdrop === 'table' && compose(shelf.recipe).scenario.name === 'A particle off a shelf' && /shelf is drawn as a table/.test(shelf.notes.join(' ')), 'a shelf: drawn as a table, named a shelf, and said');
   ok(compose(fromReading({ understood: true, scenario: 'platform', h: 6, u: 4, summary: 'A ball is thrown from a balcony 6 m up.', who: 'ball' }).recipe).scenario.name === 'A ball off a balcony', '“A ball off a balcony”');
   ok(fromReading({ understood: true, scenario: 'arc', h: 0, u: 20, angleDegrees: 30, summary: 'Using the table of g values, a ball is kicked at 20 m/s at 30°.', who: 'ball' }) === null, 'a table of values is no table');
+  const ap = fromReading({ understood: true, scenario: 'dropped', h: 3.2, summary: 'An apple falls from a branch 3.2 m up.', who: 'apple' });
+  ok(ap.recipe.backdrop === 'orchard' && ap.recipe.objects[0].figure === 'apple' && !ap.notes.some((n) => /no place/.test(n)), 'an apple from a branch: the orchard’s tree, never a wall');
   ok(/above the floor/.test(check({ backdrop: 'table', engine: 'projectile', objects: [{ figure: 'coin' }], numbers: { h: 0 } }).reason), 'a table with no height: it starts above the floor');
   for (const [w, f] of [['rocket', 'rocket'], ['firework', 'rocket'], ['arrow', 'arrow'], ['sandbag', 'sandbag'], ['bag of flour', 'sandbag'], ['pail', 'bucket'], ['marble', 'marble'], ['penny', 'coin']]) ok(figureOf(w).figure === f && figureOf(w).exact, `“${w}” is drawn as ${f}`);
 });
