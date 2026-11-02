@@ -332,7 +332,8 @@ function launch(canvas, o) {
   const lgy = grounded && R.launcher !== 'cannon' ? oy : top + ls * (R.launcher === 'ramp' ? 0.3 : 0.1);
   const swing = m.going ? clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1) : 0;
   // a tennis ball is served, a baseball or a cricket ball batted: where the racquet or the bat meets it
-  const hits = thrown && (kind === 'tennisBall' ? SERVE_AT : kind === 'baseball' || kind === 'cricketBall' ? BAT_AT : null);
+  // (at hand height only: from a stand or a wall it is thrown, never batted)
+  const hits = thrown && (byHand || !(H0 > 0)) && (kind === 'tennisBall' ? SERVE_AT : kind === 'baseball' || kind === 'cricketBall' ? BAT_AT : null);
   // at a well, the thrower stands at the well head, clear of the shaft
   let th = TH(k), feet = R.backdrop === 'well' ? x0 - 26 - 13 - 10 - th * 0.18 : x0 - th * (f.vertical ? 0.5 : 0.2), stand = top;
   if (byHand) {

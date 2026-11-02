@@ -2156,6 +2156,14 @@ function runway(g, c) {
     `half` keeps it clear of where it is thrown from and where it lands. */
 const spot = (xs, half, x0, land, w) => xs.find((x) => x != null && x - half > 8 && x + half < w - 8 && (x + half < x0 - 30 || x - half > x0 + 20) && Math.abs(x - land) > half + 50);
 
+/** Whether the engine's path stays well clear above a prop spanning xa..xb
+    whose top is at yTop (px): never under the arc's top and its labels. */
+const underSky = (c, xa, xb, yTop, gap = 60) => {
+  if (!c.over || !c.X || !c.Y) return true;
+  for (let x = xa; x <= xb; x += Math.max(4, (xb - xa) / 10)) { const y = c.over((x - c.X(0)) / c.k); if (y != null && c.Y(y) > yTop - gap) return false; }
+  return true;
+};
+
 /** A round-crowned tree on the horizon, darker below. */
 function crown(g, x, y, R, n) {
   g.fillStyle = n ? '#1c2a1c' : '#3f6a3a'; g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill();
@@ -2186,7 +2194,7 @@ function garden(g, c) {
   }
   const land = (c.clearX || [])[0] ?? w;
   // the greenhouse: an aluminium frame and glass, staging inside
-  const gw = clamp(3 * k, 50, 150), gh = gw * 0.6, gx = spot([land + 90 + gw / 2, w - gw / 2 - 20, x0 + (w - x0) * 0.3], gw / 2, x0, land, w);
+  const gw = clamp(3 * k, 50, 150), gh = gw * 0.6, gyT = lerp(horizon, oy, 0.35) - gw * 0.6, gx = [land + 90 + gw / 2, w - gw / 2 - 20, x0 - gw / 2 - 60, x0 + (w - x0) * 0.3].find((x) => spot([x], gw / 2, x0, land, w) != null && underSky(c, x - gw / 2, x + gw / 2, gyT));
   if (gx != null) {
     const gy = lerp(horizon, oy, 0.35), l = gx - gw / 2;
     g.fillStyle = withAlpha(n ? '#5a6a7a' : '#dfeaf2', n ? 0.5 : 0.55); g.beginPath(); g.moveTo(l, gy); g.lineTo(l, gy - gh * 0.65); g.lineTo(gx, gy - gh); g.lineTo(l + gw, gy - gh * 0.65); g.lineTo(l + gw, gy); g.closePath(); g.fill();
@@ -2198,7 +2206,7 @@ function garden(g, c) {
     c.reserve?.({ x: l - 4, y: gy - gh - 4, w: gw + 8, h: gh + 8 });
   }
   // the washing line between two posts, its clothes stirring
-  const lw = clamp(5 * k, 90, 260), lx = spot([x0 + (w - x0) * 0.55, land - lw * 0.7, w * 0.8], lw / 2, x0, land, w);
+  const lw = clamp(5 * k, 90, 260), lyT = lerp(horizon, oy, 0.2) - clamp(1.9 * k, 26, 70), lx = [x0 + (w - x0) * 0.55, land - lw * 0.7, w * 0.8, land + lw * 0.6 + 60].find((x) => spot([x], lw / 2, x0, land, w) != null && underSky(c, x - lw / 2, x + lw / 2, lyT));
   if (lx != null && (gx == null || Math.abs(lx - gx) > lw / 2 + gw / 2 + 10)) {
     const ly = lerp(horizon, oy, 0.2), ph = clamp(1.9 * k, 26, 70), a = lx - lw / 2, b = lx + lw / 2;
     g.strokeStyle = n ? '#8a8e96' : '#7a828e'; g.lineWidth = 2; for (const x of [a, b]) { g.beginPath(); g.moveTo(x, ly); g.lineTo(x, ly - ph); g.stroke(); }
@@ -2224,17 +2232,24 @@ function garden(g, c) {
     g.fillStyle = n ? '#1e2024' : '#2e3036'; g.beginPath(); g.moveTo(l - 6, oy - wall + 2); g.lineTo(l + sw * 0.15, top - 2); g.lineTo(x0 + 3, top - 2); g.lineTo(x0 + 3, top + 4); g.lineTo(l - 6, oy - wall + 8); g.closePath(); g.fill();
     softShadow(g, l + sw / 2, oy + 2, sw * 0.6, 4, 0.6);
   } else {
-    // the back of the house: brick, the kitchen door below, the upstairs window it leaves from
-    const hw = clamp(H * 0.9, 70, x0 + 4), l = x0 - hw;
-    g.fillStyle = n ? '#5a4a44' : '#a8705a'; g.fillRect(l, top - H * 0.45, hw, oy - top + H * 0.45);
-    g.strokeStyle = withAlpha('#000000', 0.12); g.lineWidth = 1; for (let y = top - H * 0.45 + 4; y < oy; y += 5) { g.beginPath(); g.moveTo(l, y); g.lineTo(x0, y); g.stroke(); }
-    g.fillStyle = n ? '#2e3036' : '#3e4048'; g.beginPath(); g.moveTo(l - 8, top - H * 0.45); g.lineTo(x0 + 8, top - H * 0.45); g.lineTo(x0 - hw * 0.2, top - H * 0.75); g.lineTo(l + hw * 0.1, top - H * 0.75); g.closePath(); g.fill();
-    // the window it leaves from: open, its sill at the launch height
-    const ww = clamp(1.2 * k, 18, 60), wh = clamp(1.3 * k, 20, 66);
-    g.fillStyle = n ? withAlpha(E.window, 0.75) : '#3a4656'; g.fillRect(x0 - ww - 4, top - wh, ww, wh);
-    g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(x0 - ww - 8, top, ww + 12, 4); g.strokeStyle = n ? '#8a8e96' : '#f4f2ee'; g.lineWidth = 2.5; g.strokeRect(x0 - ww - 4, top - wh, ww, wh);
-    g.fillStyle = n ? '#4a4e56' : '#6a4a3a'; g.fillRect(x0 - hw * 0.5, oy - clamp(2 * k, 26, 80), clamp(0.9 * k, 14, 40), clamp(2 * k, 26, 80));
-    g.fillStyle = n ? withAlpha(E.window, 0.7) : '#a9c4dc'; g.fillRect(x0 - hw * 0.85, oy - clamp(1.8 * k, 24, 70), clamp(1.2 * k, 18, 54), clamp(1 * k, 14, 40));
+    // the back of the house (or a block of flats, higher up): yellow stock brick, a balcony
+    // at the launch height and one every storey below, each with its railing behind the person
+    const st = 3 * k, hw = clamp(Math.max(H * 0.5, 6 * k), 80, x0 + 4), l = x0 - hw, roofY = top - clamp(st * 0.9, 24, 120);
+    g.fillStyle = n ? '#6a6250' : '#c8b48a'; g.fillRect(l, roofY, hw - clamp(0.9 * k, 8, 30), oy - roofY);
+    g.strokeStyle = withAlpha('#000000', 0.1); g.lineWidth = 1; for (let y = roofY + 4; y < oy; y += 5) { g.beginPath(); g.moveTo(l, y); g.lineTo(x0 - clamp(0.9 * k, 8, 30), y); g.stroke(); }
+    g.fillStyle = n ? '#2e3036' : '#4a4e56'; g.fillRect(l - 6, roofY - 6, hw - clamp(0.9 * k, 8, 30) + 12, 7);
+    const fw = x0 - clamp(0.9 * k, 8, 30);
+    for (let y = top, i = 0; y < oy - st * 0.6; y += st, i++) {
+      // the window or the balcony door behind each balcony
+      const dw = clamp(1 * k, 14, 50), dh = clamp(2.1 * k, 24, 100);
+      g.fillStyle = n ? withAlpha(E.window, 0.6) : '#3a4656'; g.fillRect(fw - dw - clamp(0.5 * k, 4, 20), y - dh, dw, dh);
+      g.strokeStyle = n ? '#8a8e96' : '#f4f2ee'; g.lineWidth = 2; g.strokeRect(fw - dw - clamp(0.5 * k, 4, 20), y - dh, dw, dh);
+      // the slab out to the edge, its railing (posts and top rail) along the far side
+      g.fillStyle = n ? '#8a8e96' : '#d8dce0'; g.fillRect(fw - 2, y, x0 - fw + 2, clamp(0.2 * k, 3, 10));
+      const rh = clamp(1 * k, 10, 46); g.strokeStyle = n ? '#5a5e66' : '#3a3e48'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(fw, y - rh); g.lineTo(x0, y - rh); for (let x = fw; x <= x0; x += Math.max(4, (x0 - fw) / 4)) { g.moveTo(x, y); g.lineTo(x, y - rh); } g.stroke();
+    }
+    g.fillStyle = n ? '#4a4e56' : '#5a4a3a'; g.fillRect(l + hw * 0.2, oy - clamp(2 * k, 26, 80), clamp(0.9 * k, 14, 40), clamp(2 * k, 26, 80));
     softShadow(g, x0 + 6, oy + 2, 24, 4, 0.5);
   }
 }
@@ -2255,43 +2270,70 @@ function farm(g, c) {
   }
   for (let x = r() * 60; x < w; x += 70 + r() * 90) crown(g, x, horizon - 30 + Math.sin(x * 0.008) * 8 - 6, 7 + r() * 6, n);
   grass(g, 0, w, horizon, h);
+  g.fillStyle = withAlpha(n ? '#2a4a26' : '#6aa04a', 0.35); g.fillRect(0, horizon, w, h - horizon);
   const land = (c.clearX || [])[0] ?? w;
   // sheep grazing on the far side of the field
   for (let i = 0; i < 6; i++) {
     const sx = r() * w, sy = lerp(horizon, oy, 0.2 + r() * 0.25), ss = clamp(0.5 * k, 5, 14) * (0.8 + (sy - horizon) / Math.max(1, oy - horizon) * 0.4);
-    if (Math.abs(sx - land) < 50 || Math.abs(sx - x0) < 40) continue;
+    if (Math.abs(sx - land) < 50 || Math.abs(sx - x0) < 40 || !underSky(c, sx - ss * 2, sx + ss * 2, sy - ss, ss)) continue;
     g.fillStyle = n ? '#9a9a96' : '#f2efe6'; g.beginPath(); g.ellipse(sx, sy - ss * 0.6, ss, ss * 0.6, 0, 0, TAU); g.fill();
     g.fillStyle = '#2b2628'; g.beginPath(); g.ellipse(sx + ss * 0.95, sy - ss * 0.7, ss * 0.32, ss * 0.25, 0.3, 0, TAU); g.fill();
     g.fillRect(sx - ss * 0.5, sy - ss * 0.15, 1.5, ss * 0.3); g.fillRect(sx + ss * 0.5, sy - ss * 0.15, 1.5, ss * 0.3);
   }
-  // round bales of hay, wrapped in their twine, clear of the flight
-  const bR = clamp(0.75 * k, 10, 40);
-  for (const bx of [land + 80, land + 80 + bR * 2.3, w - bR * 3]) {
-    if (spot([bx], bR, x0, land, w) == null) continue;
-    const by = lerp(horizon, oy, 0.75);
-    g.fillStyle = n ? '#6a5a3a' : '#d8b860'; g.beginPath(); g.arc(bx, by - bR, bR, 0, TAU); g.fill();
-    g.strokeStyle = withAlpha(n ? '#3a3020' : '#a88a3a', 0.8); g.lineWidth = 1; for (let i = 1; i < 4; i++) { g.beginPath(); g.arc(bx, by - bR, bR * i / 4, 0, TAU); g.stroke(); }
-    softShadow(g, bx, by + 1, bR, 3, 0.6);
-    c.reserve?.({ x: bx - bR - 4, y: by - bR * 2 - 4, w: bR * 2 + 8, h: bR * 2 + 8 });
+  // round bales of hay in a cluster, and a five-bar gate, clear of the flight
+  const bR = clamp(0.75 * k, 10, 40), by = lerp(horizon, oy, 0.75);
+  const bx = [land + 80 + bR, x0 - 90 - bR * 2, w - bR * 4, x0 + (land - x0) * 0.5].find((x) => spot([x], bR * 2.2, x0, land, w) != null && underSky(c, x - bR * 2.2, x + bR * 2.2, by - bR * 2, 30));
+  if (bx != null) for (const [dx, dy, s2] of [[-bR * 1.1, 0, 1], [bR * 1.1, 0, 1], [0, -bR * 1.7, 0.95]]) {
+    const R = bR * s2, cx = bx + dx, cy = by + dy;
+    g.fillStyle = n ? '#6a5a3a' : '#d8b860'; g.beginPath(); g.arc(cx, cy - R, R, 0, TAU); g.fill();
+    g.strokeStyle = withAlpha(n ? '#3a3020' : '#a88a3a', 0.8); g.lineWidth = 1; for (let i = 1; i < 4; i++) { g.beginPath(); g.arc(cx, cy - R, R * i / 4, 0, TAU); g.stroke(); }
+    if (!dy) softShadow(g, cx, by + 1, R, 3, 0.6);
+  }
+  if (bx != null) c.reserve?.({ x: bx - bR * 2.3, y: by - bR * 3.8, w: bR * 4.6, h: bR * 3.8 + 4 });
+  // with no room near, bales stacked far off across the field, small with the distance
+  else for (let i = 0; i < 5; i++) { const R = bR * 0.4, fx = w * 0.62 + i * R * 2.1, fy = lerp(horizon, oy, 0.12); g.fillStyle = n ? '#6a5a3a' : '#d8b860'; g.beginPath(); g.arc(fx, fy - R, R, 0, TAU); g.fill(); g.strokeStyle = withAlpha(n ? '#3a3020' : '#a88a3a', 0.8); g.lineWidth = 1; g.beginPath(); g.arc(fx, fy - R, R * 0.5, 0, TAU); g.stroke(); }
+  const gw2 = clamp(3.6 * k, 40, 140), gh2 = clamp(1.2 * k, 14, 46), gy2 = lerp(horizon, oy, 0.45);
+  const gxx = [w - gw2 / 2 - 16, land + 120 + gw2 / 2, x0 - 80 - gw2 / 2].find((x) => spot([x], gw2 / 2, x0, land, w) != null && (bx == null || Math.abs(x - bx) > gw2 / 2 + bR * 2.5) && underSky(c, x - gw2 / 2, x + gw2 / 2, gy2 - gh2, 30));
+  if (gxx != null) {
+    const l2 = gxx - gw2 / 2, wood = n ? '#8a8476' : '#c8c0a8';
+    g.fillStyle = n ? '#3a3026' : '#5a4632'; for (const px of [l2 - 4, l2 + gw2]) g.fillRect(px, gy2 - gh2 - 4, 5, gh2 + 4);
+    g.strokeStyle = wood; g.lineWidth = Math.max(2, gh2 * 0.08); g.beginPath();
+    for (let i = 0; i < 5; i++) { const y = gy2 - gh2 + (gh2 * i) / 4.5; g.moveTo(l2, y); g.lineTo(l2 + gw2, y); }
+    g.moveTo(l2, gy2); g.lineTo(l2 + gw2 * 0.5, gy2 - gh2); g.moveTo(l2 + gw2 * 0.85, gy2 - gh2); g.lineTo(l2 + gw2 * 0.85, gy2); g.stroke();
   }
   if (!(H0 > 0)) return;
-  // the barn: its gable end to us, the hayloft door open at the launch height, the hoist beam over it
-  const H = oy - top, bw = clamp(H * 1.4, 70, x0 + 6), l = x0 - bw, ridge = top - clamp(H * 0.6, 20, 140);
-  g.fillStyle = n ? '#2e2620' : '#4a3a2c'; g.beginPath(); g.moveTo(l, oy); g.lineTo(l, top + H * 0.05); g.lineTo(l + bw * 0.5, ridge); g.lineTo(x0, top + H * 0.05); g.lineTo(x0, oy); g.closePath(); g.fill();
-  g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; for (let x = l + 6; x < x0; x += 7) { g.beginPath(); g.moveTo(x, oy); g.lineTo(x, Math.max(ridge, top + H * 0.05 - (bw * 0.5 - Math.abs(x - l - bw * 0.5)) * ((top + H * 0.05 - ridge) / (bw * 0.5)))); g.stroke(); }
-  // the roof's verge, corrugated grey, along both slopes
-  g.strokeStyle = n ? '#5a5e66' : '#8a9098'; g.lineWidth = clamp(0.3 * k, 4, 10); g.lineCap = 'round'; g.beginPath(); g.moveTo(l - 6, top + H * 0.05 + 4); g.lineTo(l + bw * 0.5, ridge - 2); g.lineTo(x0 + 6, top + H * 0.05 + 4); g.stroke();
-  // the big doors below, the hayloft door above, open at the edge it leaves from
-  const dw = bw * 0.42, dh = H * 0.55;
-  g.fillStyle = n ? '#3a2e24' : '#5e4a36'; g.fillRect(l + bw * 0.5 - dw / 2, oy - dh, dw, dh);
-  g.strokeStyle = n ? '#5a4a3a' : '#c8b896'; g.lineWidth = 2; g.strokeRect(l + bw * 0.5 - dw / 2, oy - dh, dw, dh); g.beginPath(); g.moveTo(l + bw * 0.5 - dw / 2, oy - dh); g.lineTo(l + bw * 0.5, oy); g.lineTo(l + bw * 0.5 + dw / 2, oy - dh); g.moveTo(l + bw * 0.5, oy - dh); g.lineTo(l + bw * 0.5, oy); g.stroke();
-  const hw = clamp(1.2 * k, 16, 60), hh = clamp(1.5 * k, 20, 80);
+  const H = oy - top;
+  if (H0 > 8) {
+    // a grain silo: galvanised and ribbed, its cone roof, the caged ladder, the top platform it leaves from
+    const sw = clamp(5 * k, 40, 200), l = x0 - sw, cone = sw * 0.3;
+    const sg = g.createLinearGradient(l, 0, x0, 0); sg.addColorStop(0, n ? '#5a5e66' : '#d8dce0'); sg.addColorStop(0.5, n ? '#7a7e86' : '#f0f2f4'); sg.addColorStop(1, n ? '#3a3e46' : '#9aa0a8');
+    g.fillStyle = sg; g.fillRect(l, top, sw, H);
+    g.strokeStyle = withAlpha('#000000', 0.12); g.lineWidth = 1; for (let y = top + 6; y < oy; y += 6) { g.beginPath(); g.moveTo(l, y); g.lineTo(x0, y); g.stroke(); }
+    g.fillStyle = n ? '#4a4e56' : '#b8bcc2'; g.beginPath(); g.moveTo(l - 3, top); g.lineTo(l + sw * 0.5, top - cone); g.lineTo(x0 + 3, top); g.closePath(); g.fill();
+    g.strokeStyle = n ? '#8a8e96' : '#5a6070'; g.lineWidth = 1.5;
+    const lx2 = x0 - sw * 0.12; g.beginPath(); g.moveTo(lx2, oy); g.lineTo(lx2, top); g.moveTo(lx2 + 8, oy); g.lineTo(lx2 + 8, top); for (let y = oy - 6; y > top; y -= 7) { g.moveTo(lx2, y); g.lineTo(lx2 + 8, y); } g.stroke();
+    g.fillStyle = n ? '#6a6e76' : '#7a828e'; g.fillRect(x0 - sw * 0.3, top - 3, sw * 0.3 + 4, 4);
+    softShadow(g, l + sw / 2, oy + 2, sw * 0.6, 5, 0.6);
+    return;
+  }
+  // the barn: dark timber, its gable end to us, the hayloft door open at the launch height
+  // in the gable's wall, the eaves above the door, the hoist beam over it
+  const hw = clamp(1.2 * k, 16, 60), hh = clamp(2.1 * k, 24, 110);
+  const bw = clamp(Math.max(H * 1.4, 9 * k), 70, x0 + 6), l = x0 - bw, eave = top - hh - 8, ridge = eave - clamp(bw * 0.3, 20, 160);
+  g.fillStyle = n ? '#4a3e34' : '#4a3a2c'; g.beginPath(); g.moveTo(l, oy); g.lineTo(l, eave); g.lineTo(l + bw * 0.5, ridge); g.lineTo(x0, eave); g.lineTo(x0, oy); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; for (let x = l + 6; x < x0; x += 7) { g.beginPath(); g.moveTo(x, oy); g.lineTo(x, eave - (bw * 0.5 - Math.abs(x - l - bw * 0.5)) * ((eave - ridge) / (bw * 0.5))); g.stroke(); }
+  g.strokeStyle = n ? '#7a7e86' : '#8a9098'; g.lineWidth = clamp(0.3 * k, 4, 10); g.lineCap = 'round'; g.beginPath(); g.moveTo(l - 6, eave + 4); g.lineTo(l + bw * 0.5, ridge - 2); g.lineTo(x0 + 6, eave + 4); g.stroke();
+  // the big doors below, in metres
+  const dw = Math.min(bw * 0.42, 4 * k), dh = Math.min(H * 0.55, 4 * k), dx = l + bw * 0.4;
+  g.fillStyle = n ? '#3a2e24' : '#5e4a36'; g.fillRect(dx - dw / 2, oy - dh, dw, dh);
+  g.strokeStyle = n ? '#7a6a5a' : '#c8b896'; g.lineWidth = 2; g.strokeRect(dx - dw / 2, oy - dh, dw, dh); g.beginPath(); g.moveTo(dx - dw / 2, oy - dh); g.lineTo(dx, oy); g.lineTo(dx + dw / 2, oy - dh); g.moveTo(dx, oy - dh); g.lineTo(dx, oy); g.stroke();
+  // the hayloft door at the edge, hay on its sill
   g.fillStyle = '#14120f'; g.fillRect(x0 - hw - 2, top - hh, hw, hh);
   g.fillStyle = n ? '#6a5a3a' : '#c8a850'; for (let i = 0; i < 5; i++) g.fillRect(x0 - hw - 2 + r() * hw * 0.8, top - 4 - r() * 4, 4, 3);
-  g.strokeStyle = n ? '#5a4a3a' : '#c8b896'; g.lineWidth = 2; g.strokeRect(x0 - hw - 2, top - hh, hw, hh);
-  g.fillStyle = n ? '#3a2e24' : '#6a4e34'; g.fillRect(x0 - hw * 0.6, top - hh - clamp(0.4 * k, 5, 14), hw * 0.6 + clamp(1 * k, 12, 40), clamp(0.25 * k, 4, 10));
-  g.strokeStyle = n ? '#8a8e96' : '#5a5a60'; g.lineWidth = 1.2; const hx = x0 + clamp(1 * k, 12, 40) - 6; g.beginPath(); g.moveTo(hx, top - hh - 4); g.lineTo(hx, top - hh * 0.4); g.stroke();
-  g.beginPath(); g.arc(hx, top - hh * 0.4 + 3, 3, 0, Math.PI); g.stroke();
+  g.strokeStyle = n ? '#7a6a5a' : '#c8b896'; g.lineWidth = 2; g.strokeRect(x0 - hw - 2, top - hh, hw, hh);
+  g.fillStyle = n ? '#3a2e24' : '#6a4e34'; g.fillRect(x0 - hw * 0.6, eave - 2, hw * 0.6 + clamp(1 * k, 12, 40), clamp(0.25 * k, 4, 10));
+  g.strokeStyle = n ? '#8a8e96' : '#5a5a60'; g.lineWidth = 1.2; const hx = x0 + clamp(1 * k, 12, 40) - 6; g.beginPath(); g.moveTo(hx, eave); g.lineTo(hx, eave + hh * 0.5); g.stroke();
+  g.beginPath(); g.arc(hx, eave + hh * 0.5 + 3, 3, 0, Math.PI); g.stroke();
   softShadow(g, x0 - bw / 2, oy + 2, bw * 0.6, 5, 0.6);
 }
 
@@ -2306,7 +2348,10 @@ function cricket(g, c) {
   sky(g, w, horizon - 20, x0, { far: 'none', seed: 173, clouds: 3 });
   for (let x = -10 + r() * 20; x < w + 20; x += 18 + r() * 24) crown(g, x, horizon - 14 - r() * 6, 12 + r() * 12, n);
   // the pavilion across the ground: white, a pitched roof with a clock turret, its balcony and seats
-  const pw = clamp(w * 0.22, 120, 300), px = clamp(x0 + (w - x0) * 0.5, pw / 2 + 10, w - pw / 2 - 10) - pw / 2, ph = clamp((oy - horizon) * 0.45, 20, 60);
+  const pw = clamp(w * 0.22, 120, 300), ph = clamp((oy - horizon) * 0.45, 20, 60), land = (c.clearX || [])[0] ?? w;
+  const pc = [land + 40 + pw / 2, x0 - 60 - pw / 2, w - pw / 2 - 10, x0 + (w - x0) * 0.5].map((x) => clamp(x, pw / 2 + 10, w - pw / 2 - 10)).find((x) => underSky(c, x - pw / 2, x + pw / 2, horizon - ph * 1.8, 50));
+  const px = pc == null ? null : pc - pw / 2;
+  if (px != null) {
   g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(px, horizon - ph, pw, ph);
   g.fillStyle = n ? '#3a3036' : '#5a4a44'; g.beginPath(); g.moveTo(px - 6, horizon - ph); g.lineTo(px + pw * 0.5, horizon - ph * 1.55); g.lineTo(px + pw + 6, horizon - ph); g.closePath(); g.fill();
   g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(px + pw * 0.46, horizon - ph * 1.75, pw * 0.08, ph * 0.3);
@@ -2314,23 +2359,24 @@ function cricket(g, c) {
   g.fillStyle = n ? withAlpha(E.window, 0.7) : '#4a5a6a'; for (let i = 0; i < 7; i++) g.fillRect(px + pw * (0.06 + i * 0.13), horizon - ph * 0.85, pw * 0.07, ph * 0.3);
   g.fillStyle = n ? '#5a5e66' : '#2f5a3a'; g.fillRect(px, horizon - ph * 0.45, pw, ph * 0.08);
   crowd(g, px + 4, px + pw - 4, [{ y: horizon - ph * 0.05, s: clamp(ph * 0.14, 3, 7) }], r, n);
-  // the sight screen, white, on its wheels, clear of the pavilion
-  const ssx = px > w * 0.5 ? px - 70 : px + pw + 40;
-  if (ssx > 10 && ssx < w - 50) { g.fillStyle = n ? '#aaaeb6' : '#fbfbf8'; g.fillRect(ssx, horizon - ph * 0.9, 44, ph * 0.85); g.strokeStyle = withAlpha('#000000', 0.2); g.strokeRect(ssx, horizon - ph * 0.9, 44, ph * 0.85); }
+  c.reserve?.({ x: px - 6, y: horizon - ph * 1.8, w: pw + 12, h: ph * 1.8 });
+  }
   // the outfield, mown in bands, and the boundary rope along its far edge
   mownTurf(g, w, horizon, h, n, { lo: '#5f9a48', hi: '#6aa851', line: false });
   g.strokeStyle = withAlpha('#ffffff', n ? 0.5 : 0.9); g.lineWidth = 2; g.beginPath(); g.moveTo(0, horizon + 4); g.lineTo(w, horizon + 4); g.stroke();
+  // from a stand, the pitch is far out in the middle, not at its foot: only the outfield
+  if (H0 > 0) { grandstand(g, x0, top, oy, k, r, n); return; }
   // the pitch: a pale strip out from the batter's crease along the flight's own line
-  const yF = oy - clamp((oy - horizon) * 0.12, 4, 14), yN = oy + clamp((h - oy) * 0.2, 4, 18), p0 = X(-1.5), p1 = X(20.12 + 1.5);
+  const yF = oy - clamp((oy - horizon) * 0.12, 4, 14), yN = oy + clamp((h - oy) * 0.2, 4, 18), p0 = X(-2.5), p1 = X(20.12);
   g.fillStyle = n ? '#6a6250' : '#cbb88a'; g.beginPath(); g.moveTo(p0 + 4, yF); g.lineTo(p1 + 4, yF); g.lineTo(p1 - 4, yN); g.lineTo(p0 - 4, yN); g.closePath(); g.fill();
   g.fillStyle = withAlpha('#000000', 0.06); for (let i = 0; i < 20; i++) g.fillRect(lerp(p0, p1, r()), lerp(yF, yN, r()), 6, 1);
-  g.strokeStyle = withAlpha('#ffffff', 0.9); g.lineWidth = 1.5; for (const d of [-1.22, 1.22 - 1.22, 20.12 - 1.22 + 1.22, 20.12 + 1.22]) { g.beginPath(); g.moveTo(X(d) + 3, yF); g.lineTo(X(d) - 3, yN); g.stroke(); }
-  // the stumps: three in a row with the bails, 0.71 m tall
-  const stumps = (sx) => { const sh = Math.max(10, 0.71 * k); g.strokeStyle = n ? '#c8c0a8' : '#f2ead2'; g.lineWidth = Math.max(1.5, 0.04 * k); for (const d of [-1.5, 0, 1.5]) { g.beginPath(); g.moveTo(sx + d, oy + d * 0.6); g.lineTo(sx + d, oy - sh + d * 0.6); g.stroke(); } g.strokeStyle = n ? '#a89a7a' : '#d8c8a0'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx - 3, oy - sh - 1); g.lineTo(sx + 3, oy - sh + 1); g.stroke(); };
-  stumps(X(0) - Math.max(16, 0.9 * k));
-  const land = (c.clearX || [])[0] ?? w, at = c.over?.(20.12);
-  if (X(20.12) < w - 6 && (land < X(20.12) - 6 || at == null || at > 0.85)) stumps(X(20.12));
-  if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
+  // the popping creases, 1.22 m in front of each set of stumps
+  g.strokeStyle = withAlpha('#ffffff', 0.9); g.lineWidth = 1.5; for (const d of [0, 20.12 - 2.44]) { g.beginPath(); g.moveTo(X(d) + 3, yF); g.lineTo(X(d) - 3, yN); g.stroke(); }
+  // the stumps: three in a row with the bails, 0.71 m tall, 20.12 m apart
+  const stumps = (sx) => { const sh = Math.max(10, 0.71 * k); g.strokeStyle = n ? '#c8c0a8' : '#f2ead2'; g.lineWidth = Math.max(1.5, 0.04 * k); for (const d of [-1.5, 0, 1.5]) { g.beginPath(); g.moveTo(sx + d, oy + d * 0.6); g.lineTo(sx + d, oy - sh + d * 0.6); g.stroke(); } g.strokeStyle = n ? '#a89a7a' : '#d8c8a0'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx - 3, oy - sh - 1); g.lineTo(sx + 3, oy - sh + 1); g.stroke(); c.reserve?.({ x: sx - 6, y: oy - sh - 4, w: 12, h: sh + 6 }); };
+  stumps(X(-1.22));
+  const at = c.over?.(20.12 - 1.22);
+  if (X(20.12 - 1.22) < w - 6 && (land < X(20.12 - 1.22) - 6 || at == null || at > 0.85)) stumps(X(20.12 - 1.22));
 }
 
 /** The places this file draws, by the registry's names. */
