@@ -639,6 +639,15 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(jv.ok && Math.abs(jv.J.D - 53.533) < 1e-3, 'and it needs 53.53 m: it does not stop before the light');
   const { solveRoad } = await import('../js/core/road.js');
   ok(/stops before it has gone/.test(solveRoad({ u: 22, a: -6, s: 50 }).reason) && /40\.33/.test(solveRoad({ u: 22, a: -6, s: 50 }).reason), 'braking that stops short of the distance says where it stops, not that the three do not fix it');
+  ok(one('road', 'how long does it take')?.find === 'five.t.value' && one('road', 'how long to the mid-point')?.find === 'moment.t', 'a road\'s "how long" is its whole time, unless a mid-point is asked about');
+  ok(one('up', 'when it hits the floor')?.find === 'f.tFlight', '"when it hits the floor" is the time it lands');
+  const free = toPlace({ understood: true, scenario: 'freewheeling', summary: 'x', u: 4, v: 14, s: 90 }, 'a cyclist free-wheels down a hill from 4 m/s to 14 m/s over 90 m. how long');
+  ok(free.scenario === 'road', 'a library id written as the scenario, with three of the five: the road');
+  ok(toPlace({ understood: true, scenario: 'freewheeling', summary: 'x', u: 4 }, 'x').library === 'freewheeling', 'and with less: that library scenario');
+  const bus = toPlace({ understood: true, scenario: 'library', library: 'journey-stages', summary: 'x', boxes: { n: 2, u: 5, k1: 'up', t1: 10, k2: 'down', v2: 0, a2: 2 } }, 'a bus accelerates from 5 m/s at 0.8 m/s² for 10 s then brakes to rest at 2 m/s². find the total distance');
+  ok(bus.boxes.a1 === 0.8, 'the one rate in the words no stage has goes to the one stage missing its rate');
+  const BV = JK.solve(JK.read(bus.boxes));
+  ok(BV.ok && Math.abs(BV.J.D - 132.25) < 1e-6, 'and the bus goes 132.25 m');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

@@ -101,11 +101,12 @@ export function fromReader(id, raw, boxes = []) {
     // kept as `either`: the reply may say it when every one of them comes to the same
     let tie = null;
     const only = (k) => {
-      const m = offer.filter((a) => a.kind === k);
+      // the road's mid-point answers only where a mid-point or a mark is asked about
+      const m = offer.filter((a) => a.kind === k && (!/Mid$/.test(a.key || '') || /mid-?point|\bmark\b|halfway/.test(words)));
       if (m.length < 2) return m[0] || null;
       // "how high does it go", "the highest point", "max height": the greatest height
       // and a "total" time or distance is the whole one
-      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}`;
+      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}${/\b(hits?|reach(es)?|lands? on) the (floor|ground|water|sea|road|river)\b/.test(words) ? ' lands' : ''}`;
       const mine = new Set(cue.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)));
       const score = m.map((a) => String(a.say || '').toLowerCase().split(/[^a-z]+/).filter((w) => mine.has(w)).length);
       const best = Math.max(...score);
@@ -119,7 +120,8 @@ export function fromReader(id, raw, boxes = []) {
     // "the deceleration" or "the retardation" asks for the acceleration (deceleration does not contain the word)
     const named = ['speed', 'time', 'height', 'distance', 'acceleration', 'angle', 'impulse'].filter((k) => words.includes(k) || (k === 'acceleration' && /decelerat|retard/.test(words)));
     // a student's "how high", "how far", "how fast", "how long until": the kind, in their words
-    const how = HOW.find(([re]) => re.test(words))?.[1];
+    // "when it hits the floor": a time, where there is no meeting to time
+    const how = HOW.find(([re]) => re.test(words))?.[1] || (/^\s*when\b/.test(words) && !offer.some((a) => a.kind === 'meeting') ? 'time' : undefined);
     if (how && !named.includes(how)) named.push(how);
     const asKind = (k) => only(k) || (k === 'time' && meets ? only('meeting') : null);
     let hit = offer.find((a) => a.key === r.answer)

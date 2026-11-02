@@ -10,6 +10,8 @@
 // (a ratio angle, a time above a line) is left exactly as it was read.
 
 import { COMPOSE_GUIDE } from './compose.js';
+import { LIBRARY_IDS } from './library.js';
+import { SCENARIO_IDS } from './schema.js';
 
 // the composer's own backdrops, read from its generated guide ("  cliff — …")
 const BACKDROPS = new Set([...COMPOSE_GUIDE.split('figures')[0].matchAll(/^ {2}([a-z-]+) —/gm)].map((m) => m[1]));
@@ -161,6 +163,12 @@ function stages(x, words) {
   if (x?.library !== 'journey-stages' || !b) return x;
   const out = { ...x, boxes: { ...b } }, o = out.boxes;
   const n = Number(o.n) || 0;
+  // a rate the reader left out: the one acceleration in the words no stage has, given
+  // to the one stage that changes speed with neither its rate nor its end speed
+  const rates = [...new Set([...String(words || '').matchAll(/(\d+(?:\.\d+)?)\s*m\s*\/?\s*s\s*(?:\^?\s*-?\s*2|²|⁻²)/gi)].map((m) => Number(m[1])))];
+  const spare = rates.filter((r) => !Array.from({ length: 6 }, (_, j) => o[`a${j + 1}`]).includes(r));
+  const open = Array.from({ length: Math.max(n, 1) }, (_, j) => j + 1).filter((i) => ['up', 'down'].includes(o[`k${i}`]) && o[`a${i}`] == null && o[`v${i}`] == null);
+  if (spare.length === 1 && open.length === 1) o[`a${open[0]}`] = spare[0];
   for (let i = 1; i <= Math.max(n, 6); i++) {
     // a stage that lasts 0 s is a time the reader did not know ("then runs at that speed"): left to the engine
     if (o[`t${i}`] === 0) delete o[`t${i}`];
@@ -217,7 +225,25 @@ function lanes(x) {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(cleared(lowered(reacts(timed(marked(x, words), words), words), words), words), words), words), words), words)), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(cleared(lowered(reacts(timed(known(marked(x, words)), words), words), words), words), words), words), words), words)), words);
+}
+
+/**
+ * A scenario that is none of the reader's own — a small reader may write a
+ * library id there ("freewheeling"). Three of the five along a line are the
+ * road, which works them; a library id with nothing it can use is that
+ * library scenario, its numbers as boxes, for the values screen to ask the rest.
+ */
+const FIVE_KEYS = ['u', 'v', 'a', 's', 't'];
+function known(x) {
+  if (!x?.understood || !x.scenario || SCENARIO_IDS.includes(x.scenario)) return x;
+  const nums = Object.fromEntries(FIVE_KEYS.filter((k) => typeof x[k] === 'number' && isFinite(x[k])).map((k) => [k, x[k]]));
+  if (Object.keys(nums).length >= 3) {
+    const { library, boxes, ...rest } = x;
+    return { ...rest, scenario: 'road' };
+  }
+  if (LIBRARY_IDS.includes(x.scenario)) return { ...x, scenario: 'library', library: x.scenario, boxes: { ...nums, ...(x.boxes || {}) } };
+  return x;
 }
 
 /**
