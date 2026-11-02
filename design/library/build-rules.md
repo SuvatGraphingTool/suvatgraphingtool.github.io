@@ -18,9 +18,17 @@ session holds every session to it.
 - A question counts as covered (ticked) only if the app does it end to end
   AND shows everything in it. If it needs a new backdrop, object or figure,
   build that.
-- Out of scope: anything that needs another topic (impulse and momentum,
-  forces and F = ma, friction, connected particles, calculus, energy). Mark
-  that part out of scope; the rest of the question still counts.
+- SCOPE (the user, 2 Nov: "believe it or not this is considered suvat"): a
+  question is in if it is mostly SUVAT, INCLUDING the one-step links from other
+  topics that exam SUVAT questions lean on. The engine (js/core) does each link,
+  and the working shows it with the numbers substituted:
+  - impulse at a bounce, kick or catch: I = m(v − u) gives a speed before or after;
+  - F = ma: a stated force, or a weight component on a smooth slope, gives a;
+  - friction or a stated resistance gives a deceleration (μR with R = mg on the level).
+  Still out: a whole question about another topic (conservation of momentum in
+  collisions, connected particles and pulleys, work and energy, calculus with a
+  variable a). Mark only such a part out of scope; the rest still counts.
+  Edexcel M1/M2/IAL mechanics papers use g = 9.8.
 
 ## How
 
