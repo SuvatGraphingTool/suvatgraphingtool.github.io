@@ -90,3 +90,10 @@ The QA loop is paused because the user has gone home. Every fix above is on `red
   - a question marked (a)/(b) whose part (b) needs a set-up of its own: does Gemma return `scene`?
 - Then a coin off a table and a helicopter drop, after helper one's places land.
 - Check the worker is deployed with the parts guard (`marked` in `worker/src/place.js`).
+
+## Where it stopped (2 Nov)
+
+The user stopped the loops. Everything above is live on `redesign`, the last being the in-reply "Which g?" (Ask Suvat asks for g beside Show me the flight).
+No reader is running and no wakeup is scheduled. The local reader on port 8820 is off.
+- To resume: rebase onto `origin/redesign`, keep to the reader budget above, and start a round from the checks at the top.
+- Open: the twelve's values screen offers Earth/Moon/None, so a chosen 9.8 or 10 shows as a number there with no chip pressed.
