@@ -39,6 +39,8 @@ const clip = (x, n) => String(x ?? '').replace(/[<>&"`]/g, '').replace(/\s+/g, '
 const listOf = (o) => Object.keys(o).join(', ');
 /** A sentence's first letter up. */
 const Up = (s) => s.replace(/^./, (c) => c.toUpperCase());
+/** What it is let go from, in the question's own word: "a seagull", "a helicopter". */
+const carrierName = (r) => (r.carrierWord ? `${/^[aeiou]/.test(r.carrierWord) ? 'an' : 'a'} ${r.carrierWord}` : CARRIERS[r.carrier || 'balloon'].label);
 
 /** The biggest number any box takes: past this a value is a misreading. */
 const HUGE = 1e5;
@@ -170,22 +172,28 @@ export function check(raw) {
   // what its moments make, unless the recipe says: a meeting flashes, a
   // bounce rings, a landing splashes or kicks up dust
   // (a place's own: a crater on the Moon); a rocket trails smoke as it flies
-  // (or what it is: a water balloon bursts, a dropped phone cracks — on dry ground)
+  // (or what it is: a water balloon bursts, a dropped phone cracks — on dry ground;
+  // leaves on a forest floor, sand in a desert, mud on a building site)
   const dry = !['sea', 'river', 'pool', 'well'].includes(B.below), own = dry && objects.map((o) => FIGURES[o.figure].lands).find(Boolean);
   const lands = MOMENTS[engine] || own || B.lands || LANDS_WITH[B.below];
   if (!effects.length && lands) effects.push(lands);
-  if (objects.some((o) => o.figure === 'rocket') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
+  if (objects.some((o) => o.figure === 'rocket' || o.figure === 'firework') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
+  // a firework bursts at the top of its flight, when it goes up at all
+  if (objects.some((o) => o.figure === 'firework') && !effects.includes('burst') && !(raw.effects || []).length) effects.push('burst');
   // a place with its own gravity says so
   if (B.g && !isNum(numbers.g)) notes.push(`${Up(B.on || B.label)} g is ${M`${num(B.g, 2, { trim: true })} [m s^-2]`}, not Earth’s ${M`9.81 [m s^-2]`}: the engine uses it.`);
 
   // let go high in the air: from what the recipe says, or a balloon
-  let carrier;
+  let carrier, carrierWord;
   if (backdrop === 'air') {
     const said = typeof raw.carrier === 'string' ? raw.carrier.toLowerCase().trim() : '';
     carrier = CARRIERS[said] ? said : carrierIn(said)?.carrier || 'balloon';
+    // the question's own word for it, when it is not the key: a seagull, a chopper
+    const cw = !CARRIERS[said] && carrierIn(said)?.word;
+    if (cw && cw !== carrier) carrierWord = cw;
     if (said && carrier === 'balloon' && !CARRIERS.balloon.words.test(said)) notes.push(`Drawn let go from a balloon: there is no ${clip(said, 20)} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);
   }
-  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), engine, objects, numbers, effects, notes } };
+  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), engine, objects, numbers, effects, notes } };
 }
 
 /** "A car off a cliff" — a title for a recipe that brought none. */
@@ -195,7 +203,7 @@ export function titleOf(r) {
   const what = Up(F.label);
   const where = B.on || `${{ hall: 'in', sea: 'over', forest: 'in' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
   if (r.engine === 'projectile') {
-    if (r.backdrop === 'air') return `${what} let go from ${r.carrier && r.carrier !== 'balloon' ? CARRIERS[r.carrier].label : 'the air'}`;
+    if (r.backdrop === 'air') return `${what} let go from ${r.carrier && r.carrier !== 'balloon' ? carrierName(r) : 'the air'}`;
     if (r.backdrop === 'well') return `${what} down a well`;
     if (B.edge) return `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
@@ -238,6 +246,7 @@ export function compose(raw) {
   const r = c.recipe, E = ENGINES[r.engine], B = placeOf(r), base = KITS[E.kit];
   const id = idOf(r), name = titleOf(r);
   const who = r.objects.map((o) => FIGURES[o.figure].label).join(' and ');
+  const what = r.backdrop === 'air' ? `open sky high above fields, ${carrierName(r)} letting it go` : B.what;
   // on Earth unless the question says otherwise — the reader leaves g out
   // then — at the app's own Earth value, as the twelve are
   // on the Moon or Mars, its own g unless the question gives one
@@ -278,7 +287,7 @@ export function compose(raw) {
     // from level ground or a ledge there is no edge to be out from
     hud: (f, t, o) => {
       const out = base.hud(f, t, o);
-      const from = !B.edge ? 'Across from the start' : ['house', 'tree'].includes(B.place) ? `Out from the ${B.at.replace(/^an? /, '')}` : null;
+      const from = !B.edge ? 'Across from the start' : r.backdrop === 'air' ? 'Across from where it was let go' : ['house', 'tree'].includes(B.place) ? `Out from the ${B.at.replace(/^an? /, '')}` : null;
       if (from) for (const row of out.left) if (/edge/.test(row.k)) row.k = from;
       // on a phone the readouts cover the stage's top: the height and the speed
       if (typeof matchMedia === 'function' && matchMedia('(max-width: 560px)').matches && out.left.length > 2) {
@@ -298,8 +307,8 @@ export function compose(raw) {
     id, group: 'composed', kit: id, composed: true, recipe: r,
     name,
     sub: `${B.label} · ${who}`,
-    note: `Composed by Ask Suvat: ${B.what}, ${who}, ${E.what}.`,
-    place: `Side on: ${B.what}, and ${who}`,
+    note: `Composed by Ask Suvat: ${what}, ${who}, ${E.what}.`,
+    place: `Side on: ${what}, and ${who}`,
     params: boxes, example: boxes,
     parts: [],
     answers: ANSWERS[r.engine] || [],
@@ -395,7 +404,9 @@ export function fromReading(x) {
   const words = `${x.summary || ''} ${x.words || ''}`;
   const where = fromHeight || LAUNCHES.includes(x.scenario) ? placeIn(words) : null;
   const own = where?.backdrop ?? null;
-  if (small && !under && !own) return null;
+  // let go from a helicopter, a plane, a drone or a bird: drawn as that, so composed
+  const lifted = !own && !under && LAUNCHES.includes(x.scenario) && !['balloon', undefined].includes(carrierIn(words)?.carrier);
+  if (small && !under && !own && !lifted) return null;
   const figure = m.figure || 'ball';
   let backdrop, numbers, keys;
   if (fromHeight) {
@@ -426,7 +437,7 @@ export function fromReading(x) {
   const at = own && BACKDROPS[own].edge && where.word && !['table', 'house'].includes(where.word) ? where.word : null;
   if (at && own === 'table') notes.push(`The ${at} is drawn as a table: only its height matters to the motion.`);
   // what it is let go from, drawn as itself
-  const carrier = backdrop === 'air' ? carrierIn(words)?.carrier : null;
+  const carrier = backdrop === 'air' ? carrierIn(words)?.word : null;
   // a release height a hand can reach is the thrower's hand above the
   // ground, not a wall: a hammer, a shot, a basketball from 2 m
   const fromHand = FIGURES[figure].thrown && numbers.h > 0 && numbers.h <= 2.6;

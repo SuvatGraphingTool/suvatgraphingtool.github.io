@@ -801,5 +801,223 @@ function site(g, c) {
   softShadow(g, (fx + x0) / 2, oy + 2, (x0 - fx) * 0.6, 5, 0.7);
 }
 
+/** Banded rock: horizontal strata between y0 and y1 across [xa, xb], each
+    band its own tone with a wavering edge, so a wall of it reads as rock
+    laid down in layers. */
+function strata(g, xa, xb, y0, y1, tones, r, wobble = 3) {
+  const n = tones.length, H = y1 - y0;
+  let y = y0;
+  for (let i = 0; y < y1; i++) {
+    const th = H * (0.06 + r() * 0.1), c = tones[i % n], ph = r() * 9;
+    g.fillStyle = c; g.beginPath(); g.moveTo(xa, y1 + 2);
+    for (let x = xa; x <= xb + 8; x += 8) g.lineTo(x, y + Math.sin(x / 37 + ph) * wobble);
+    g.lineTo(xb + 8, y1 + 2); g.closePath(); g.fill();
+    y += th;
+  }
+}
+
+/** A canyon: a sky over far mesas, the canyon's far wall across the river
+    in banded red rock, buttresses and gullies in shadow down it, a talus
+    slope at its foot; the river in the gorge, green with silt; the near rim
+    it leaves from, sandstone, with a juniper clinging to it; a raven. */
+function canyon(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(139);
+  // the far rim lower than the near one, so sky shows over it
+  const rim = H0 > 0 ? lerp(top, oy, 0.32) : oy - clamp((oy - 40) * 0.45, 60, 260), horizon = rim - clamp((oy - rim) * 0.12, 10, 40);
+  sky(g, w, horizon, x0, { far: 'none', seed: 61, clouds: 2 });
+  // far mesas and buttes on the skyline, standing on the far rim: stepped
+  // sides of talus and cliff, flat caprock lit along its top, hazed with distance
+  const far = n ? '#5a4048' : '#d49274', farLo = n ? '#46323a' : '#bf7c62';
+  for (let x = -40 + r() * 60; x < w + 40; x += 150 + r() * 170) {
+    const mw = 50 + r() * 130, mh = clamp((rim - horizon) * (0.9 + r() * 1.2) + 10, 14, 70), base = rim + 4, topY = base - mh;
+    const step = mh * (0.35 + r() * 0.2);
+    g.fillStyle = far; g.beginPath(); g.moveTo(x - mw * 0.35, base);
+    g.lineTo(x - mw * 0.12, base - step); g.lineTo(x - mw * 0.05, topY + 2); g.lineTo(x, topY);
+    g.lineTo(x + mw, topY); g.lineTo(x + mw + mw * 0.04, topY + 3); g.lineTo(x + mw + mw * 0.1, base - step); g.lineTo(x + mw + mw * 0.32, base);
+    g.closePath(); g.fill();
+    // its shaded side and the talus apron, its lit caprock
+    g.fillStyle = farLo; g.beginPath(); g.moveTo(x + mw * 0.7, topY + 3); g.lineTo(x + mw + mw * 0.04, topY + 3); g.lineTo(x + mw + mw * 0.1, base - step); g.lineTo(x + mw + mw * 0.32, base); g.lineTo(x + mw * 0.6, base); g.closePath(); g.fill();
+    g.fillStyle = withAlpha('#ffffff', n ? 0.08 : 0.3); g.fillRect(x, topY, mw, 2);
+    g.strokeStyle = withAlpha('#5a2a1a', 0.18); g.lineWidth = 1; for (let yy = topY + 6; yy < base - step; yy += 5) { g.beginPath(); g.moveTo(x - mw * 0.05, yy); g.lineTo(x + mw, yy); g.stroke(); }
+  }
+  // haze over them, the sky's own tone
+  g.fillStyle = withAlpha(n ? '#2a2c3a' : '#e9dcd4', 0.35); g.fillRect(0, horizon - 80, w, rim - horizon + 84);
+  // the far wall: layers of red and cream rock from its rim down to the river
+  const wallTones = n ? ['#6a4038', '#7a4a3e', '#5e3a34', '#806052', '#6e4438'] : ['#c06a48', '#d4825a', '#b55e40', '#e2b48c', '#c87652', '#a9553c'];
+  g.save(); g.beginPath(); g.moveTo(0, oy + 2);
+  const edge = (x) => rim + Math.sin(x / 90) * 6 + Math.sin(x / 23) * 2;
+  for (let x = 0; x <= w + 10; x += 10) g.lineTo(x, edge(x));
+  g.lineTo(w + 10, oy + 2); g.closePath(); g.clip();
+  strata(g, 0, w, rim - 8, oy, wallTones, r, 3);
+  // buttresses standing out of the wall: each a lit face and a shadowed
+  // side, wandering down from a notch in the rim and widening at the foot
+  for (let x = r() * 80; x < w; x += 110 + r() * 140) {
+    const bw = 30 + r() * 50, H = oy - rim, pts = [];
+    for (let i = 0; i <= 6; i++) pts.push({ x: x + (r() - 0.5) * 10 + (i / 6) * bw * 0.3, y: rim + (H * i) / 6 });
+    g.fillStyle = withAlpha('#2a1410', n ? 0.42 : 0.3); g.beginPath(); g.moveTo(pts[0].x, rim - 4);
+    for (const q of pts) g.lineTo(q.x, q.y);
+    g.lineTo(pts[6].x + bw * 0.5, oy); g.quadraticCurveTo(pts[3].x + bw * 0.2, rim + H * 0.4, pts[0].x + bw * 0.12, rim - 4); g.closePath(); g.fill();
+    g.strokeStyle = withAlpha('#ffffff', n ? 0.05 : 0.16); g.lineWidth = 1.2; g.beginPath(); for (const q of pts) g.lineTo(q.x - 1, q.y); g.stroke();
+  }
+  // ledges along the bands, each a lit lip over a line of shadow, broken here and there
+  for (let y = rim + 6; y < oy - 8; y += 9 + r() * 16) {
+    for (let x = r() * 40; x < w; x += 40 + r() * 90) {
+      const L = 20 + r() * 70;
+      g.fillStyle = withAlpha('#2a1410', n ? 0.3 : 0.22); g.fillRect(x, y + 1.5, L, 2);
+      g.fillStyle = withAlpha('#ffffff', n ? 0.04 : 0.16); g.fillRect(x, y, L * 0.9, 1);
+    }
+  }
+  // it is far: hazed toward the sky's tone, the gorge's depths in shadow
+  g.fillStyle = withAlpha(n ? '#2a2a3a' : '#e8d2c4', n ? 0.25 : 0.3); g.fillRect(0, rim - 10, w, oy - rim + 12);
+  const dz = g.createLinearGradient(0, rim, 0, oy); dz.addColorStop(0, withAlpha(n ? '#1d1a26' : '#f3d9c4', 0)); dz.addColorStop(1, withAlpha(n ? '#1d1a26' : '#6a3a2e', 0.4));
+  g.fillStyle = dz; g.fillRect(0, rim - 10, w, oy - rim + 12);
+  g.restore();
+  // its rim, catching the light
+  g.strokeStyle = withAlpha(n ? '#b08a78' : '#f6dcc0', 0.7); g.lineWidth = 1.4; g.beginPath(); for (let x = 0; x <= w + 10; x += 10) g.lineTo(x, edge(x)); g.stroke();
+  // the talus at its foot: fans of fallen rock down to the water
+  const tal = clamp((oy - rim) * 0.12, 8, 50);
+  g.fillStyle = n ? '#4a3430' : '#9c6a52';
+  g.beginPath(); g.moveTo(0, oy); for (let x = 0; x <= w + 10; x += 14) g.lineTo(x, oy - tal * (0.4 + 0.6 * Math.abs(Math.sin(x / 80 + 1)))); g.lineTo(w + 10, oy); g.closePath(); g.fill();
+  g.fillStyle = withAlpha(n ? '#2a1e1c' : '#6a4434', 0.6); for (let i = 0; i < w / 9; i++) { const x = r() * w; g.fillRect(x, oy - r() * tal * 0.6 - 2, 2 + r() * 3, 2); }
+  // the river: green with silt, a pale line where it meets the rock
+  water(g, 0, w, oy, h, { phase });
+  g.fillStyle = withAlpha(n ? '#1f4038' : '#4f8a74', 0.38); g.fillRect(0, oy, w, h - oy);
+  g.fillStyle = withAlpha('#ffffff', 0.35); g.fillRect(0, oy, w, 1.5);
+  // a raven, wheeling over the gorge
+  if (!n) { const bx = x0 + (w - x0) * 0.55 + Math.sin(phase * 0.7) * 20, by = lerp(rim, oy, 0.25), bs = 7; g.strokeStyle = withAlpha('#2a2426', 0.85); g.lineWidth = 1.6; g.beginPath(); g.moveTo(bx - bs, by - 2); g.quadraticCurveTo(bx - bs / 2, by - bs * 0.6, bx, by); g.quadraticCurveTo(bx + bs / 2, by - bs * 0.6, bx + bs, by - 2); g.stroke(); }
+  if (!(H0 > 0)) return;
+  // the near rim it leaves from: sandstone, banded, its foot in the river
+  seaCliff(g, -4, x0, top, oy, { cap: false, tones: rockTones(n ? '#9a6a58' : '#e3a07a', n ? '#7a4e40' : '#c4784f', n ? '#42281f' : '#7a3f28') });
+  g.save(); g.globalAlpha = 0.35; const H = oy - top;
+  for (const f of [0.18, 0.4, 0.58, 0.8]) { g.fillStyle = f === 0.4 || f === 0.8 ? '#f2d2b0' : '#5a2a1a'; g.fillRect(-4, top + H * f, x0 - 6 - H * 0.05 * f, Math.max(2, H * 0.03)); }
+  g.restore();
+  // a slab cap, a little proud of the face
+  g.fillStyle = n ? '#a8806a' : '#efc29a'; g.beginPath(); g.moveTo(-4, top - 3); g.lineTo(x0 + 3, top - 3); g.lineTo(x0 + 1, top + 4); g.lineTo(-4, top + 5); g.closePath(); g.fill();
+  // a juniper clinging to the rim, back from the edge
+  const jx = x0 - clamp(4 * k, 40, 110), js = clamp(2.2 * k, 16, 46);
+  if (jx > 12) {
+    g.strokeStyle = n ? '#4a3a30' : '#6e5440'; g.lineWidth = Math.max(1.5, js * 0.08); g.beginPath(); g.moveTo(jx, top); g.quadraticCurveTo(jx - js * 0.2, top - js * 0.4, jx + js * 0.1, top - js * 0.7); g.stroke();
+    for (const [dx, dy, rr] of [[-0.25, -0.65, 0.3], [0.15, -0.8, 0.32], [0.05, -0.55, 0.26], [-0.05, -0.95, 0.22]]) { g.fillStyle = n ? '#2c3a2c' : '#5d7a50'; g.beginPath(); g.ellipse(jx + dx * js, top + dy * js, rr * js, rr * js * 0.7, 0, 0, TAU); g.fill(); g.fillStyle = withAlpha('#ffffff', n ? 0.04 : 0.14); g.beginPath(); g.ellipse(jx + dx * js - rr * js * 0.3, top + dy * js - rr * js * 0.2, rr * js * 0.45, rr * js * 0.3, 0, 0, TAU); g.fill(); }
+  }
+}
+
+/** A waterfall: a wooded gorge, the river coming over the lip of a mossy
+    rock step and pouring down its face in a white curtain into a plunge
+    pool, spray rising from it; it leaves from the dry rock at the lip,
+    beside the fall, and lands in the pool. */
+function waterfall(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(149);
+  const horizon = oy - clamp((oy - 40) * 0.45, 60, 280);
+  sky(g, w, horizon, x0, { far: 'none', seed: 71, clouds: 3 });
+  // the wooded sides of the gorge: banks of trees, far ones pale with mist
+  for (const [f, tone, mist] of [[0, n ? '#26302a' : '#7d9a82', 0.45], [0.35, n ? '#1f2a22' : '#4f6e4f', 0.2], [0.7, n ? '#1a241c' : '#3c5a3c', 0]]) {
+    const base = lerp(horizon, oy, f) + 6;
+    g.fillStyle = tone; g.beginPath(); g.moveTo(-10, oy + 2);
+    for (let x = -10; x <= w + 12; x += 12) g.lineTo(x, base - 14 - Math.abs(Math.sin(x / 19 + f * 7)) * 12 - Math.sin(x / 70 + f) * 8);
+    g.lineTo(w + 12, oy + 2); g.closePath(); g.fill();
+    for (let x = r() * 30; x < w; x += 18 + r() * 26) pine(g, x, base - 8 - Math.sin(x / 70 + f) * 8, 14 + f * 20 + r() * 10, tone, withAlpha('#ffffff', n ? 0.05 : 0.12));
+    if (mist) { g.fillStyle = withAlpha(n ? '#3a4450' : '#e6eef0', mist); g.fillRect(0, base - 40, w, oy - base + 40); }
+  }
+  // wet rock on the far bank, and the pool and the river running on
+  g.fillStyle = n ? '#2c3230' : '#5d6660'; g.beginPath(); g.moveTo(0, oy); for (let x = 0; x <= w + 10; x += 16) g.lineTo(x, oy - 4 - Math.abs(Math.sin(x / 31)) * 6); g.lineTo(w + 10, oy); g.closePath(); g.fill();
+  water(g, 0, w, oy, h, { phase });
+  g.fillStyle = withAlpha(n ? '#1e3a3a' : '#3f7a74', 0.3); g.fillRect(0, oy, w, h - oy);
+  // the fall: in the face itself, its foot churning the pool white
+  const fw = H0 > 0 ? clamp(0.4 * (oy - top), 24, 140) : 0, fx1 = x0 - clamp(1.2 * k, 12, 40), fx0 = fx1 - fw;
+  if (H0 > 0) {
+    seaCliff(g, -4, x0, top, oy, { foam: false, tones: rockTones(n ? '#5a605a' : '#8c938a', n ? '#454a46' : '#6c736c', n ? '#262a28' : '#3e4440') });
+    // moss on the ledges of the step
+    g.fillStyle = withAlpha(n ? '#2e4a2a' : '#5f8a3c', 0.55);
+    for (let y = top + 6; y < oy - 8; y += 10 + r() * 18) g.fillRect(-4, y, x0 - 8 - r() * 20, 2 + r() * 3);
+    // the river above, running to the lip behind the dry rock it leaves from
+    g.fillStyle = n ? '#3a5a64' : '#8fb8c4'; g.fillRect(-4, top - 3, fx1 + 4, 4);
+    g.fillStyle = withAlpha('#ffffff', 0.6); for (let x = -4 + ((phase * 30) % 16); x < fx1; x += 16) g.fillRect(x, top - 2, 6, 1);
+    // the curtain: streaks of white falling down the face, faster lower down
+    const fg = g.createLinearGradient(fx0, 0, fx1, 0);
+    fg.addColorStop(0, withAlpha(n ? '#9ab0b8' : '#dfeef2', 0.8)); fg.addColorStop(0.5, withAlpha(n ? '#c8d4d8' : '#ffffff', 0.92)); fg.addColorStop(1, withAlpha(n ? '#7f98a0' : '#c4dde4', 0.85));
+    g.fillStyle = fg; g.beginPath(); g.moveTo(fx0, top - 2); g.quadraticCurveTo(fx0 - 4, lerp(top, oy, 0.5), fx0 - 8, oy); g.lineTo(fx1 + 4, oy); g.quadraticCurveTo(fx1 + 2, lerp(top, oy, 0.4), fx1, top - 2); g.closePath(); g.fill();
+    g.strokeStyle = withAlpha(n ? '#6a8088' : '#9cc2cc', 0.7); g.lineWidth = 1;
+    for (let x = fx0 + 3; x < fx1; x += 5) {
+      const off = ((phase * 120 + x * 7) % 40);
+      for (let y = top + off; y < oy; y += 40) { g.beginPath(); g.moveTo(x - (y - top) * 0.01, y); g.lineTo(x - (y + 16 - top) * 0.01, Math.min(oy, y + 16)); g.stroke(); }
+    }
+    // its lip: the water bulging over the edge, lit
+    g.strokeStyle = withAlpha('#ffffff', 0.9); g.lineWidth = 2; g.beginPath(); g.moveTo(fx0, top - 1); g.quadraticCurveTo((fx0 + fx1) / 2, top - 4, fx1, top - 1); g.stroke();
+    // the dry rock at the lip it leaves from, a step proud of the water
+    g.fillStyle = n ? '#5a605a' : '#8c938a'; g.fillRect(fx1, top - 4, x0 - fx1 + 2, 5);
+    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.25); g.fillRect(fx1, top - 4, x0 - fx1 + 2, 1.2);
+  }
+  // the plunge pool: foam rings round where the fall strikes, spray rising
+  const px = H0 > 0 ? (fx0 + fx1) / 2 : x0 * 0.5;
+  g.save(); g.beginPath(); g.rect(-4, 0, H0 > 0 ? x0 + clamp(3 * k, 30, 90) : w, h); g.clip();
+  for (let i = 0; i < 3; i++) { const q = ((phase * 0.6 + i / 3) % 1); g.strokeStyle = withAlpha('#ffffff', 0.6 * (1 - q)); g.lineWidth = 1.4; g.beginPath(); g.ellipse(px, oy + 2, (fw * 0.6 + 10) * (0.6 + q), 4 * (0.6 + q), 0, 0, TAU); g.stroke(); }
+  for (let i = 0; i < 6; i++) { const sx = px + (r() - 0.5) * (fw + 20), Rr = 12 + r() * 18, sy = oy - 6 - r() * 26 - ((phase * 10 + i * 5) % 12); const sg = g.createRadialGradient(sx, sy, 0, sx, sy, Rr); sg.addColorStop(0, withAlpha('#ffffff', n ? 0.25 : 0.55)); sg.addColorStop(1, withAlpha('#ffffff', 0)); g.fillStyle = sg; g.beginPath(); g.arc(sx, sy, Rr, 0, TAU); g.fill(); }
+  g.restore();
+}
+
+/** A lighthouse on its rock: the open sea to a misted headland, the tower
+    in white and red bands tapering up to its gallery, the lantern above in
+    its glazing and cupola; it leaves from the gallery's rail. At night its
+    beam sweeps the sky. */
+function lighthouse(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(151);
+  const horizon = oy - clamp((oy - 40) * 0.22, 30, 120);
+  sky(g, w, horizon, x0, { far: 'none', seed: 81, clouds: 3 });
+  // a headland far off on the right, misted
+  const hx = w * 0.62, hh = clamp(horizon * 0.08, 10, 34);
+  g.fillStyle = n ? '#3b3239' : '#b2a7a8'; g.beginPath(); g.moveTo(hx, horizon); g.quadraticCurveTo(hx + hh * 3, horizon - hh * 1.3, hx + hh * 7, horizon - hh); g.lineTo(w, horizon - hh * 0.9); g.lineTo(w, horizon); g.closePath(); g.fill();
+  water(g, 0, w, horizon, h, { phase });
+  // a sail far out
+  const bx = x0 + (w - x0) * 0.72; if (clearOf(bx, c, 50)) { g.fillStyle = n ? '#8a8e96' : '#f6f4ee'; g.beginPath(); g.moveTo(bx, horizon + 3); g.lineTo(bx + 4, horizon - 12); g.lineTo(bx + 9, horizon + 3); g.closePath(); g.fill(); g.fillStyle = n ? '#4a4e56' : '#5a6470'; g.fillRect(bx - 2, horizon + 3, 13, 2.5); }
+  if (!(H0 > 0)) return;
+  // the tower: tapering, its foot on a rock, the gallery out at x0
+  const gal = clamp(0.8 * k, 8, 26), Wt = clamp(0.16 * (oy - top), 26, 110), Wb = Wt * 1.45;
+  const cx = x0 - gal - Wt / 2, foot = oy - clamp(1.5 * k, 10, 40);
+  // the rock it stands on, washed at its foot
+  g.fillStyle = n ? '#3a3a3e' : '#6e6a66'; g.beginPath(); g.moveTo(cx - Wb * 1.3, oy + 4); g.quadraticCurveTo(cx - Wb, foot - 6, cx - Wb * 0.3, foot); g.lineTo(cx + Wb * 0.6, foot); g.quadraticCurveTo(cx + Wb * 1.1, foot + 2, cx + Wb * 1.05, oy + 4); g.closePath(); g.fill();
+  g.fillStyle = withAlpha('#ffffff', n ? 0.05 : 0.18); g.beginPath(); g.moveTo(cx - Wb * 0.3, foot); g.lineTo(cx + Wb * 0.6, foot); g.lineTo(cx + Wb * 0.55, foot + 3); g.lineTo(cx - Wb * 0.4, foot + 3); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha('#ffffff', 0.7); g.lineWidth = 1.5; g.beginPath(); g.moveTo(cx - Wb * 1.3, oy + 1 + Math.sin(phase * 2) * 1.2); g.quadraticCurveTo(cx, oy - 2, cx + Wb * 1.05, oy + 1 + Math.cos(phase * 2) * 1.2); g.stroke();
+  const tower = () => { g.beginPath(); g.moveTo(cx - Wb / 2, foot); g.lineTo(cx - Wt / 2, top); g.lineTo(cx + Wt / 2, top); g.lineTo(cx + Wb / 2, foot); g.closePath(); };
+  g.save(); tower(); g.clip();
+  const white = n ? '#c8c2bc' : '#f6f2ea', red = n ? '#7a3434' : '#c8383a', bands = 5, bh = (foot - top) / bands;
+  for (let i = 0; i < bands; i++) { g.fillStyle = i % 2 ? red : white; g.fillRect(cx - Wb, top + i * bh, Wb * 2, bh + 1); }
+  // round: lit on the left, shaded to the right
+  const sg = g.createLinearGradient(cx - Wb / 2, 0, cx + Wb / 2, 0);
+  sg.addColorStop(0, withAlpha('#ffffff', 0.25)); sg.addColorStop(0.35, withAlpha('#ffffff', 0)); sg.addColorStop(1, withAlpha('#000000', 0.35));
+  g.fillStyle = sg; g.fillRect(cx - Wb, top, Wb * 2, foot - top);
+  // its windows up the stair, in a line
+  g.fillStyle = n ? withAlpha(E.window, 0.85) : '#2e3440';
+  for (let i = 1; i < bands * 2; i += 2) { const y = top + (i * bh) / 2, ww = Math.max(2.5, Wt * 0.09); g.fillRect(cx - ww / 2 - Wt * 0.08, y - ww, ww, ww * 1.8); }
+  g.restore();
+  // a door at its foot
+  g.fillStyle = n ? '#3a2e2a' : '#4a3a30'; g.beginPath(); g.roundRect(cx - Wb * 0.12, foot - Wb * 0.38, Wb * 0.24, Wb * 0.38, [Wb * 0.12, Wb * 0.12, 0, 0]); g.fill();
+  // the gallery: a deck round the top, on brackets, with its rail
+  const deck = Math.max(3, gal * 0.3), rail = clamp(1 * k, 9, 30);
+  g.fillStyle = n ? '#2c2e33' : '#2f3540'; g.fillRect(cx - Wt / 2 - gal, top, Wt + gal * 2, deck);
+  g.strokeStyle = n ? '#2c2e33' : '#2f3540'; g.lineWidth = 1.4;
+  for (const s of [-1, 1]) { g.beginPath(); g.moveTo(cx + s * (Wt / 2 + gal), top + deck); g.lineTo(cx + s * Wt / 2, top + deck + gal * 1.2); g.stroke(); }
+  g.beginPath(); g.moveTo(cx - Wt / 2 - gal, top - rail); g.lineTo(x0, top - rail); g.moveTo(cx - Wt / 2 - gal, top - rail * 0.5); g.lineTo(x0, top - rail * 0.5); g.stroke();
+  for (let x = cx - Wt / 2 - gal; x <= x0 + 0.5; x += Math.max(4, (Wt + gal * 2) / 8)) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, top - rail); g.stroke(); }
+  // the lantern: glazing in its frame, the light inside, a cupola and its vane
+  const lw = Wt * 0.78, lh = clamp(2.4 * k, 18, 70), ly = top - lh;
+  g.fillStyle = n ? withAlpha(E.window, 0.9) : withAlpha('#dff0f4', 0.95); g.fillRect(cx - lw / 2, ly, lw, lh);
+  g.strokeStyle = n ? '#2c2e33' : '#2f3540'; g.lineWidth = 1.2; g.strokeRect(cx - lw / 2, ly, lw, lh);
+  for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(cx - lw / 2 + (lw * i) / 3, ly); g.lineTo(cx - lw / 2 + (lw * i) / 3, top); g.stroke(); }
+  g.fillStyle = n ? '#fff3c4' : '#f2d36b'; g.beginPath(); g.arc(cx, ly + lh * 0.5, Math.max(2.5, lw * 0.14), 0, TAU); g.fill();
+  g.fillStyle = red; g.beginPath(); g.moveTo(cx - lw / 2 - 2, ly); g.quadraticCurveTo(cx, ly - lw * 0.75, cx + lw / 2 + 2, ly); g.closePath(); g.fill();
+  g.strokeStyle = n ? '#2c2e33' : '#2f3540'; g.beginPath(); g.moveTo(cx, ly - lw * 0.37); g.lineTo(cx, ly - lw * 0.37 - lh * 0.4); g.stroke();
+  // at night, its beam turning: a wedge of light swinging out and back, away from the stage
+  if (n) {
+    const a = Math.PI + Math.sin(phase * 0.8) * 0.5, L = w * 0.6, sp = 0.09, lx = cx, lyy = ly + lh * 0.5;
+    const bg = g.createLinearGradient(lx, lyy, lx + Math.cos(a) * L, lyy + Math.sin(a) * L * 0.2);
+    bg.addColorStop(0, withAlpha(E.window, 0.45)); bg.addColorStop(1, withAlpha(E.window, 0));
+    g.fillStyle = bg; g.beginPath(); g.moveTo(lx, lyy); g.lineTo(lx + Math.cos(a - sp) * L, lyy + Math.sin(a - sp) * L * 0.2); g.lineTo(lx + Math.cos(a + sp) * L, lyy + Math.sin(a + sp) * L * 0.2); g.closePath(); g.fill();
+  }
+  softShadow(g, cx, foot + 1, Wb * 0.7, 3, 0.6);
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse };

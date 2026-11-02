@@ -269,7 +269,12 @@ group('Places only the composer draws, and more of what students name', () => {
   const eff = (r) => check(r).recipe?.effects.join();
   ok(eff({ backdrop: 'moon', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 5, theta: 45 } }) === 'crater', 'a landing on the Moon leaves a crater');
   ok(eff({ backdrop: 'snow', engine: 'projectile', objects: [{ figure: 'snowball' }], numbers: { h: 0, u: 5, theta: 45 } }) === 'snow', 'a landing in snow throws up snow');
-  ok(eff({ backdrop: 'desert', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 0, u: 5, theta: 45 } }) === 'dust', 'a landing on sand kicks up dust');
+  ok(eff({ backdrop: 'desert', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 0, u: 5, theta: 45 } }) === 'sand', 'a landing on sand sprays sand');
+  ok(eff({ backdrop: 'forest', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 0, u: 5, theta: 45 } }) === 'leaves' && eff({ backdrop: 'site', engine: 'projectile', objects: [{ figure: 'hammer' }], numbers: { h: 15, u: 0, theta: -90 } }) === 'mud', 'leaves on a forest floor, mud on a building site');
+  ok(eff({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'firework' }], numbers: { h: 0, u: 30, theta: 80 } }) === 'dust,smoke,burst', 'a firework trails smoke and bursts at the top');
+  for (const [q, b] of [['A stone is thrown from the top of a lighthouse 30 m high', 'lighthouse'], ['a pebble is kicked over the edge of a canyon', 'canyon'], ['a rock is thrown into the gorge', 'canyon'], ['a ball is thrown from the top of the waterfall', 'waterfall']]) ok(placeIn(q)?.backdrop === b, `“${q}”: ${b}`);
+  ok(placeIn('A ship sails 5 km due east of a lighthouse') == null, 'a lighthouse a ship sails past is not where anything is thrown from');
+  for (const b of ['canyon', 'waterfall', 'lighthouse']) ok(check({ backdrop: b, engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 40, u: 8, theta: 15 } }).recipe?.effects.join() === 'splash', `off ${BACKDROPS[b].at}, into the water`);
   ok(eff({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'rocket' }], numbers: { h: 0, u: 30, theta: 80 } }) === 'dust,smoke', 'a rocket trails smoke');
   ok(eff({ backdrop: 'road', engine: 'projectile', objects: [{ figure: 'hammer' }], numbers: { h: 10, u: 0, theta: -90 }, effects: ['sparks', 'confetti', 'divot'] }) === 'sparks,confetti,divot', 'sparks, confetti and a divot when the recipe asks');
   ok(eff({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'waterBalloon' }], numbers: { h: 6, u: 0, theta: -90 } }) === 'splat' && eff({ backdrop: 'bridge', engine: 'projectile', objects: [{ figure: 'waterBalloon' }], numbers: { h: 6, u: 0, theta: -90 } }) === 'splash', 'a water balloon bursts on the ground, splashes in a river');
@@ -282,8 +287,12 @@ group('Places only the composer draws, and more of what students name', () => {
   ok(check({ backdrop: 'pier', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 8, u: 5, theta: 10 } }).recipe?.effects.join() === 'splash' && check({ backdrop: 'site', engine: 'projectile', objects: [{ figure: 'hammer' }], numbers: { h: 15, u: 0, theta: -90 } }).ok, 'off a pier into the sea; off the scaffolding');
   ok(titleOf(check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'golfBall' }], numbers: { h: 0, u: 40, theta: 15 } }).recipe) === 'A golf ball hit from the ground' && titleOf(check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'football' }], numbers: { h: 0, u: 20, theta: 30 } }).recipe) === 'A football kicked from the ground', 'a golf ball is hit, a football kicked');
   ok(whoIn('A bird drops a fish from 12 m') === 'fish' && whoIn('a package is released from a plane flying at 50 m/s') === 'package', 'what a carrier lets go is what moves');
-  const air = (w2) => fromReading({ understood: true, scenario: 'dropped', h: 80, summary: w2, who: whoIn(w2) })?.recipe;
+  const air = (w2) => { const x = fromReading({ understood: true, scenario: 'dropped', h: 80, summary: w2, who: whoIn(w2) })?.recipe; return x && check(x).recipe; };
   ok(air('A helicopter hovering 80 m up drops a parcel.')?.carrier === 'helicopter' && air('A plane flying at 80 m drops a package.')?.carrier === 'plane' && air('A seagull drops a shell from 80 m.')?.carrier === 'bird', 'let go from a helicopter, a plane, a bird: drawn as each');
+  const gull = air('A seagull drops a stone from 80 m.');
+  ok(gull?.carrier === 'bird' && titleOf(gull) === 'A stone let go from a seagull' && air('A drone drops a ball from 80 m.')?.carrier === 'drone', 'a stone or a ball let go from a seagull or a drone is still drawn with what lets it go, in the question’s word');
+  ok(air('A stone is dropped from a hot-air balloon 80 m up.') == null, 'from a balloon, the twelve’s own balloon draws it');
+  ok(!/carrier|a drone or a bird/.test(compose(gull).scenario.place), 'the caption names its own carrier, not the list of them: ' + compose(gull).scenario.place);
   ok(check({ backdrop: 'air', carrier: 'zeppelin', engine: 'projectile', objects: [{ figure: 'parcel' }], numbers: { h: 50, u: 0, theta: -90 } }).recipe.carrier === 'balloon' && check({ backdrop: 'air', engine: 'projectile', objects: [{ figure: 'parcel' }], numbers: { h: 50, u: 0, theta: -90 } }).recipe.carrier === 'balloon', 'an unknown carrier, or none, is a balloon');
   ok(!fromReading({ understood: true, scenario: 'arc', h: 0, u: 10, angleDegrees: 40, summary: 'A water balloon is thrown at 10 m/s at 40°.', who: 'water balloon' })?.recipe?.carrier, 'a water balloon is never a carrier');
   const hm = fromReading({ understood: true, scenario: 'arc', h: 1.8, u: 25, angleDegrees: 42, summary: 'A hammer thrower releases the hammer at 25 m/s at 42° from 1.8 m.', who: 'hammer' });
@@ -296,7 +305,7 @@ group('Places only the composer draws, and more of what students name', () => {
   ok(fromReading({ understood: true, scenario: 'arc', h: 0, u: 20, angleDegrees: 30, summary: 'A football is kicked at 20 m/s at 30°.', who: 'football' }) === null, 'a football kicked on a pitch stays on the twelve’s pitch');
   ok(check({ backdrop: 'house', engine: 'twin', objects: [{ figure: 'tennisBall' }, { figure: 'golfBall' }], numbers: { h: 6, 'A.u': 8, 'A.theta': 40, 'B.u': 5, 'B.theta': 10 } }).recipe?.objects.map((o) => o.figure).join() === 'tennisBall,golfBall', 'a recipe naming tennisBall and golfBall gets them, not particles');
   ok(check({ backdrop: 'hall', engine: 'bounce', objects: [{ figure: 'tennisBall' }], numbers: { start: 'drop', h: 2, e: 0.5 } }).ok, 'a tennis ball bounces as itself');
-  for (const [w, f] of [['rocket', 'rocket'], ['firework', 'rocket'], ['arrow', 'arrow'], ['sandbag', 'sandbag'], ['bag of flour', 'sandbag'], ['pail', 'bucket'], ['marble', 'marble'], ['penny', 'coin']]) ok(figureOf(w).figure === f && figureOf(w).exact, `“${w}” is drawn as ${f}`);
+  for (const [w, f] of [['rocket', 'rocket'], ['firework', 'firework'], ['fireworks', 'firework'], ['model rocket', 'rocket'], ['arrow', 'arrow'], ['sandbag', 'sandbag'], ['bag of flour', 'sandbag'], ['pail', 'bucket'], ['marble', 'marble'], ['penny', 'coin']]) ok(figureOf(w).figure === f && figureOf(w).exact, `“${w}” is drawn as ${f}`);
 });
 
 group('Two from one place', () => {

@@ -33,7 +33,7 @@ import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, t
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
-import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack } from './impacts.js';
+import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst } from './impacts.js';
 import { ANIMALS, FEET, javelin } from './animals.js';
 import { golfer, kicker, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
@@ -59,7 +59,9 @@ const WET = new Set(['sea', 'river', 'pool', 'well']);
    card after it (SETTLE seconds). */
 export const SETTLE = 1.4;
 const clock = { at: null }, clocks = [{ at: null }, { at: null }];
-export const settling = () => [clock, ...clocks].some((c) => c.at != null && performance.now() - c.at < SETTLE * 1000);
+// a firework's burst, from when the stage first draws it at the top
+const bursts = [{ at: null }, { at: null }], BURST = 2.4;
+export const settling = () => [clock, ...clocks].some((c) => c.at != null && performance.now() - c.at < SETTLE * 1000) || bursts.some((c) => c.at != null && performance.now() - c.at < BURST * 1000);
 
 /* ── the stage ───────────────────────────────────────────────────────── */
 export function render(canvas, cam, o) {
@@ -173,12 +175,15 @@ function launch(canvas, o) {
   const B = placeOf(R);
   const twin = F0.kind === 'twin';
   const H0 = (twin ? F0.A.f : F0).params.h, phone = w < 520, wet = WET.has(B.below);
+  // let go from a helicopter, a plane, a drone or a bird, not a balloon: no
+  // one stands up there to throw it
+  const carried = R.backdrop === 'air' && !!CARRIER_ART[R.carrier];
   const movers = (twin ? [[F0.A, 0], [F0.B, 1]] : [[{ f: F0, t0: 0 }, 0]]).map(([m, i]) => {
     const kind = R.objects[i].figure, piece = PIECES[kind], f = m.f;
     // a person throws it, unless it falls from a tree; small things are drawn
     // as themselves at the point, vehicles and people round it; off a table,
     // it leaves the table's edge: no one stands on the table
-    const thrown = (!!piece.thrown || kind === 'arrow') && R.backdrop !== 'orchard' && R.backdrop !== 'table';
+    const thrown = (!!piece.thrown || kind === 'arrow') && R.backdrop !== 'orchard' && R.backdrop !== 'table' && !carried;
     const small = !!piece.thrown || !!piece.small || kind === 'arrow';
     // thrown from low down with nothing to stand on: the thrower stands on the
     // ground or the floor and lets go at hand height
@@ -208,8 +213,6 @@ function launch(canvas, o) {
   const behind = (k) => (!twin ? 0 : (movers[0].thrown ? TH(k) : size(k, movers[0].piece))
     + (movers[1].thrown ? TH(k) * 0.4 : size(k, movers[1].piece) * 0.6));
 
-  // let go from a helicopter, a plane, a drone or a bird, not a balloon
-  const carried = R.backdrop === 'air' && !!CARRIER_ART[R.carrier];
 
   // ── the frame: the motion and the room its pieces need, at one scale
   const pads = (k) => {
@@ -319,7 +322,7 @@ function launch(canvas, o) {
   // ── the path: all of it faintly, the part flown strongly
   const at = (p) => ({ x: X(p.x), y: Y(p.y) });
   stroke(g, pts.map(at), { color: P.vel, width: 1.8, alpha: 0.35 });
-  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'arrow', 'javelin'].includes(kind) || !!piece.animal;
+  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'firework', 'arrow', 'javelin'].includes(kind) || !!piece.animal;
   stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
   // a rocket's smoke, left along the way it has come, under the marks
@@ -332,8 +335,18 @@ function launch(canvas, o) {
     L.add(`${m.tag ? `${m.tag}: ` : ''}${T`H_max = ${sig3(f.apexHeight)} [m]`}`, q.x + 12, q.y - 14 - m.i * 20, { color: P.disp, align: 'left', pri: 6, size: 14, weight: 700 });
   }
 
+  // a firework bursts at the top of its flight: the engine says when (its
+  // tApex, rule 4); the burst plays on the wall clock from then
+  if (R.effects.includes('burst') && kind === 'firework') {
+    const bc = bursts[m.i], up = f.uy > 0 && f.tApex < f.tMax;
+    if (!up || t < f.tApex) bc.at = null; else if (bc.at == null) bc.at = performance.now();
+    if (bc.at != null) { const q = at(f.pos(f.tApex)); burst(g, q.x, q.y, (performance.now() - bc.at) / 1000, BURST, { size: clamp(k / 9, phone ? 0.6 : 0.8, phone ? 1 : 1.5), seed: 5 + m.i }); }
+  }
+
   // ── where it lands, once it has: the recipe's effect, at the engine's time
   const later = [];
+  // thrown out on the open side only, never across the face it fell beside
+  const openSide = (draw) => { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } draw(); g.restore(); };
   const landed = t >= f.tMax - 1e-9;
   const end = f.pos(f.tMax), lx = X(end.x);
   if (!landed) clock.at = null;
@@ -352,10 +365,11 @@ function launch(canvas, o) {
       else if (wet) continue;
       // what a landing does to dry ground, sized to what lands and drawn over
       // it, so it is seen: it sits in its crater, half in the snow
-      else if (['crater', 'snow', 'divot'].includes(e)) {
+      else if (['crater', 'snow', 'divot', 'leaves', 'sand', 'mud'].includes(e)) {
         const sz = clamp((small ? 10 : size(k, piece) * 0.5) / 12, 1.4, 3.2);
         later.push(() => (e === 'crater' ? crater(g, lx, oy, age, life, { size: sz, ...(R.backdrop === 'mars' ? { dark: '#5e2e1d', light: '#e2a77a', blanket: true } : {}) })
-          : e === 'snow' ? snowPuff(g, lx, oy, age, life, { size: sz }) : divot(g, lx, oy, age, life, { size: sz })));
+          : e === 'snow' ? snowPuff(g, lx, oy, age, life, { size: sz }) : e === 'leaves' ? leaves(g, lx, oy, age, life, { size: sz })
+            : e === 'sand' ? sandSpray(g, lx, oy, age, life, { size: sz }) : e === 'mud' ? openSide(() => mud(g, lx, oy, age, life, { size: sz })) : divot(g, lx, oy, age, life, { size: sz })));
       }
       else if (e === 'sparks') {
         // on the open side, never across the face it fell beside
@@ -379,10 +393,13 @@ function launch(canvas, o) {
   // (a plane keeps over what it drops: across at the engine's speed), and
   // fading once it has landed
   if (carried && m.i === 0) {
-    const C = carrierSize(R.carrier, k, w), above = small ? 10 : size(k, piece) * 0.85;
-    const cx = Math.abs(v0.x) > 1e-9 ? X(f.pos(t).x) : X(0);
+    const C = carrierSize(R.carrier, k, w), above = small ? 7 : size(k, piece) * 0.85;
+    // once it has landed, a moving one flies on at the speed it let go at, off the frame
+    const cx = Math.abs(v0.x) > 1e-9 ? X(f.pos(t).x + (landed ? v0.x * age : 0)) : X(0);
     g.save(); g.globalAlpha = landed ? clamp(1 - age / life, 0, 1) : 1;
     CARRIER_ART[R.carrier](g, cx, top - above, C.s, P, { phase: tRaw * 1.3, groundY: oy });
+    // no label over it: the speed it lets go at sits clear of its nose
+    if (!landed) L.reserve({ x: cx - C.s * 0.55, y: top - above - C.up, w: C.s * 1.1, h: C.up + 2 });
     g.restore();
   }
 
@@ -426,7 +443,7 @@ function launch(canvas, o) {
       else if (kind === 'particle') particle(g, bx, by, R0 * 2, P, { ring: m.ring });
       else { pebble(g, bx, by, R0); if (m.ring) dot(g, bx, by, R0 + 3, { stroke: m.ring, width: 2.4 }); }
     }
-  } else if (kind === 'rocket') {
+  } else if (kind === 'rocket' || kind === 'firework') {
     // pointed along its path all the way, as a real arrow or a coasting rocket flies
     const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x);
     g.save();
@@ -440,7 +457,8 @@ function launch(canvas, o) {
       g.fillStyle = withAlpha(P.ink, 0.55); g.fillRect(lx0 - 9, ly0 - 1, 18, 4);
     }
     const lift = (1 - p0) * Lp * 0.5;
-    rocket(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, !fired || t < f.tMax * 0.04);
+    if (kind === 'firework') firework(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, { burning: fired && t < f.tMax * 0.04, spent: R.effects.includes('burst') && f.uy > 0 && t >= f.tApex, spin: t * 9 });
+    else rocket(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, !fired || t < f.tMax * 0.04);
     g.restore();
   } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel' || kind === 'sandbag' || kind === 'bucket' || piece.animal) {
     const p = fired ? t / f.tMax : 0, ease = (a0, b0, x) => { const u = clamp((x - a0) / (b0 - a0), 0, 1); return u * u * (3 - 2 * u); };
@@ -568,7 +586,7 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const name = R.backdrop === 'waterfall' ? 'the plunge pool' : { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);
@@ -778,6 +796,32 @@ export function rocket(g, x, y, L, ang, burning = false) {
   g.beginPath(); g.moveTo(L * 0.28, -r); g.quadraticCurveTo(L * 0.46, -r * 0.6, L * 0.5, 0); g.quadraticCurveTo(L * 0.46, r * 0.6, L * 0.28, r); g.closePath(); g.fill();
   g.fillStyle = E.night ? '#5d7f97' : '#7fb0d4'; g.beginPath(); g.arc(L * 0.12, 0, r * 0.55, 0, Math.PI * 2); g.fill();
   g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.strokeRect(-L * 0.5, -r, L * 0.78, r * 2);
+  g.restore();
+}
+
+/** A firework rocket `L` px long round its middle, nose along `ang`: a paper
+    tube in red with a gold band, a pointed cap, its long guide stick behind;
+    sparks from the tail at the launch (`burning`). Once it has burst
+    (`spent`) only the charred tube and its stick fall, tumbling. */
+export function firework(g, x, y, L, ang, { burning = false, spent = false, spin = 0 } = {}) {
+  const E = env(), r = Math.max(2.2, L * 0.07);
+  g.save(); g.translate(x, y); g.rotate(spent ? ang + Math.sin(spin) * 0.6 : ang);
+  g.strokeStyle = E.night ? '#b89a6a' : '#8a6a40'; g.lineWidth = Math.max(1.4, L * 0.03); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(-L * 0.05, r * 0.6); g.lineTo(-L * 0.55, r * 0.6); g.stroke();
+  if (spent) {
+    g.fillStyle = E.night ? '#3a3230' : '#4a3e38'; g.fillRect(-L * 0.08, -r, L * 0.32, r * 2);
+    g.fillStyle = withAlpha('#ffb060', 0.5); g.fillRect(L * 0.2, -r * 0.6, L * 0.04, r * 1.2);
+    g.restore(); return;
+  }
+  if (burning) {
+    const rr = rng(13);
+    for (let i = 0; i < 14; i++) { const d = rr() * L * 0.35, s = (rr() - 0.5) * r * 2 * (1 + d / (L * 0.2)); g.fillStyle = `rgba(255,${190 + Math.floor(rr() * 60)},${90 + Math.floor(rr() * 80)},${0.95 - d / (L * 0.4)})`; g.beginPath(); g.arc(-L * 0.1 - d, s, 1 + rr() * 1.4, 0, Math.PI * 2); g.fill(); }
+  }
+  const bg = g.createLinearGradient(0, -r, 0, r); bg.addColorStop(0, '#f26d5b'); bg.addColorStop(0.5, '#c8323a'); bg.addColorStop(1, '#7d1a22');
+  g.fillStyle = bg; g.fillRect(-L * 0.1, -r, L * 0.4, r * 2);
+  g.fillStyle = '#f2d06b'; g.fillRect(L * 0.06, -r, L * 0.05, r * 2);
+  g.fillStyle = E.night ? '#cfc8bc' : '#ece6da'; g.beginPath(); g.moveTo(L * 0.3, -r * 1.1); g.lineTo(L * 0.46, 0); g.lineTo(L * 0.3, r * 1.1); g.closePath(); g.fill();
+  g.fillStyle = '#3a2a24'; g.fillRect(-L * 0.12, -r * 0.7, L * 0.025, r * 1.4);
   g.restore();
 }
 

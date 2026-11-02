@@ -305,12 +305,41 @@ with a load on its hook, mud with ruts, a skip and sand).
 Carriers in `js/render/carriers.js` (`helicopter`, `plane`, `drone`, `bird`;
 registry `CARRIERS`, `carrierIn(text)`; a recipe's `carrier`, backdrop `air`
 only, a balloon if left out or unknown): drawn at the point it lets go from,
-holding the thing before; a plane flies on above what it drops at the
-engine's speed across, and each fades once it has landed. What a carrier
-lets go is what moves (`whoIn`). Thrown from a hand's height, a thing
+holding the thing before; a moving one (a plane, a drone flying across)
+keeps over what it drops at the engine's speed across and flies on off the
+frame after it lands, fading; a hovering one fades where it is. The
+helicopter is rescue yellow and the plane a light cargo plane, high wing
+and propeller, its belly door at the point, aft of the wing; the drone has
+four rotor discs and landing legs; the gull is outlined and its wings are
+never flat. No thrower is drawn under a carrier (`thrown` excludes it), and
+labels keep off it (`L.reserve`). A recipe keeps the question's own word
+(`carrierWord`: "a seagull") for its title and caption, and the reader
+composes a stone or a ball let go from a helicopter, a plane, a drone or a
+bird rather than leaving it to the twelve. What a carrier lets go is what
+moves (`whoIn`). Off a carrier, "Out from the edge" reads "Across from
+where it was let go". Thrown from a hand's height, a thing
 starts in the hand of the thrower (drawn larger than the scale so it reads)
 and eases onto the engine's path; struck balls are to scale with a small
 floor, resting one radius up off the ground.
+
+Batch 7. Places `canyon` (banded red rock walls with buttresses and ledges,
+mesas on the far rim in haze, a silt-green river in the gorge; from the near
+rim, a juniper on it), `waterfall` (a wooded gorge, the river pouring over a
+mossy rock step into a plunge pool with foam rings and spray; it leaves from
+the dry rock beside the lip) and `lighthouse` (on its rock in the sea, white
+and red bands, from the gallery round its lantern; its beam turns at night);
+`strata()` lays banded rock for any of them. Effects in `impacts.js`:
+`leaves` (a forest's own landing: autumn leaves flung up and fluttering
+down, a scatter left), `sandSpray` (registry `sand`, a desert's: grains in a
+low fan, a cloud, a dent with heaps), `mud` (a building site's: a crown of
+wet mud, clots, a puddled dent with spatters; on the open side only) and
+`burst` (a firework's at the top of its flight, on its own wall clock from
+the engine's `tApex`: a flash, shells of stars drooping and twinkling out;
+deeper tones ringed dark by day). Figure `firework` (composed.js
+`firework()`: a red paper tube with a gold band, its cap and guide stick,
+sparks at the launch; after its burst, only the charred tube and stick fall,
+tumbling); it trails smoke and bursts by default. A backdrop's `lands`
+(forest leaves, desert sand, site mud) is its landing's effect.
 
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn

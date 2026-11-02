@@ -39,15 +39,18 @@ export const BACKDROPS = {
   table:   { label: 'A table', what: 'a wooden table in a room', place: 'table', below: 'floor', edge: true, at: 'a table' },
   well:    { label: 'A well', what: 'a stone well, its shaft cut away down to the water: it moves straight up or down', place: 'well', below: 'well', edge: true, at: 'a well' },
   mountain: { label: 'Mountains', what: 'a rock ledge high above a valley, snow-capped peaks beyond', place: 'ledge', below: 'ground', edge: true, at: 'a ledge' },
-  forest:  { label: 'A forest', what: 'woodland: trees thinning into mist over a forest floor; from a height, a platform among the trunks', place: 'ground', below: 'ground', art: true, high: 'a platform in a forest' },
+  forest:  { label: 'A forest', what: 'woodland: trees thinning into mist over a forest floor; from a height, a platform among the trunks', place: 'ground', below: 'ground', art: true, high: 'a platform in a forest', lands: 'leaves' },
   harbour: { label: 'A harbour', what: 'a stone quay over the harbour water, boats at their moorings, a lighthouse across the bay', place: 'quay', below: 'sea', edge: true, at: 'a quay' },
   city:    { label: 'A city', what: 'the roof of an office block among the city’s towers, the street below', place: 'building', below: 'road', edge: true, at: 'a building' },
   moon:    { label: 'The Moon', what: 'the Moon’s grey cratered plain under a black sky, the Earth overhead; g is 1.62 there', place: 'moon', below: 'surface', art: true, g: 1.62, on: 'on the Moon', lands: 'crater', high: 'a ledge on the Moon' },
   snow:    { label: 'Snow', what: 'a snowfield under snowy peaks and pines; from a height, a snow-capped rock ledge', place: 'snow', below: 'snow', art: true, on: 'in the snow', lands: 'snow', high: 'a snowy ledge' },
-  desert:  { label: 'A desert', what: 'sand dunes under a hot hazy sky; from a height, a sandstone outcrop', place: 'desert', below: 'sand', art: true, on: 'in the desert', high: 'a sandstone outcrop' },
+  desert:  { label: 'A desert', what: 'sand dunes under a hot hazy sky; from a height, a sandstone outcrop', place: 'desert', below: 'sand', art: true, on: 'in the desert', lands: 'sand', high: 'a sandstone outcrop' },
   pier:    { label: 'A pier', what: 'a seaside pier on iron piles over the sea, railings and lamps, the beach and its huts behind', place: 'pier', below: 'sea', edge: true, at: 'a pier', art: true },
-  site:    { label: 'A building site', what: 'scaffolding up a concrete frame, a tower crane with a load on its hook, mud, a skip and sand', place: 'site', below: 'ground', edge: true, at: 'scaffolding', art: true },
+  site:    { label: 'A building site', what: 'scaffolding up a concrete frame, a tower crane with a load on its hook, mud, a skip and sand', place: 'site', below: 'ground', edge: true, at: 'scaffolding', art: true, lands: 'mud' },
   mars:    { label: 'Mars', what: 'Mars’s red dust and rock under a butterscotch sky; g is 3.71 there', place: 'mars', below: 'surface', art: true, g: 3.71, on: 'on Mars', lands: 'crater', high: 'a ledge on Mars' },
+  canyon:  { label: 'A canyon', what: 'the rim of a canyon: banded red rock walls, a river far below in the gorge', place: 'canyon', below: 'river', edge: true, at: 'the rim of a canyon', art: true },
+  waterfall: { label: 'A waterfall', what: 'the top of a waterfall in a wooded gorge: the river pours down the rock face into a plunge pool', place: 'waterfall', below: 'river', edge: true, at: 'the top of a waterfall', art: true },
+  lighthouse: { label: 'A lighthouse', what: 'a lighthouse on a rock in the sea, white and red; from the gallery round its lantern', place: 'lighthouse', below: 'sea', edge: true, at: 'a lighthouse', art: true },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from what carries it: a hovering balloon, a helicopter, a plane, a drone or a bird ("carrier")', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
@@ -76,6 +79,7 @@ export const FIGURES = {
   sandbag:  { label: 'a sandbag', m: 0.5, min: 20, views: ['side'] },
   bucket:   { label: 'a bucket', m: 0.35, min: 20, views: ['side'] },
   rocket:   { label: 'a rocket', m: 1, min: 34, views: ['side'] },
+  firework: { label: 'a firework', m: 0.8, min: 34, views: ['side'] },
   arrow:    { label: 'an arrow', m: 0.75, min: 34, views: ['side'] },
   ship:     { label: 'a ship', m: 60, min: 40, views: ['plan'] },
   robot:    { label: 'a robot', m: 0.6, min: 30, views: ['plan'] },
@@ -130,6 +134,10 @@ export const EFFECTS = {
   smoke:  { label: 'a smoke trail', what: 'behind a rocket or a firework as it flies' },
   splat:  { label: 'a splat', what: 'a water balloon bursting on dry ground' },
   crack:  { label: 'a crack', what: 'where something hard and heavy strikes a hard surface' },
+  leaves: { label: 'leaves', what: 'where it lands on a forest floor' },
+  sand:   { label: 'a spray of sand', what: 'where it lands in sand' },
+  mud:    { label: 'mud', what: 'where it lands in mud, on a building site' },
+  burst:  { label: 'a firework burst', what: 'at the top of a firework’s flight' },
 };
 
 /** How it moves. `kit` is the library kit whose engine, boxes, working,
@@ -269,7 +277,7 @@ export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bou
 export const MOMENTS = { pair: 'flash', bounce: 'ring' };
 
 /** The effect a landing makes on what is below, when the recipe names none. */
-export const LANDS_WITH = { surface: 'dust', sea: 'splash', river: 'splash', pool: 'splash', well: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring', snow: 'snow', sand: 'dust' };
+export const LANDS_WITH = { surface: 'dust', sea: 'splash', river: 'splash', pool: 'splash', well: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring', snow: 'snow', sand: 'sand' };
 
 /** What it lands on, in a question's words, as a backdrop's `below`. */
 const UNDER = [
@@ -302,7 +310,7 @@ const WORDS = [
   [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
   [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
   [/\b(sandbag|sand ?bag|sack|bag of (sand|flour)|ballast)\b/, 'sandbag'], [/\b(bucket|pail)\b/, 'bucket'],
-  [/\b(rocket|firework|model rocket)\b/, 'rocket'], [/\b(arrow)\b/, 'arrow'],
+  [/\b(fireworks?|firework rocket|rocket firework)\b/, 'firework'], [/\b(rocket|model rocket)\b/, 'rocket'], [/\b(arrow)\b/, 'arrow'],
   [/\b(car|van|vehicle|taxi|jeep)\b/, 'car'], [/\b(lorry|truck|bus)\b/, 'lorry'], [/\b(train|tram|locomotive)\b/, 'train'],
   [/\b(cyclist|bike|bicycle|cycle)\b/, 'cyclist'], [/\b(motorcycl(e|ist)|motorbike|scooter|moped)\b/, 'motorcycle'],
   [/\b(runner|sprinter|jogger)\b/, 'runner'],
@@ -379,6 +387,9 @@ const ONLY_HERE = [
   [/\b(?:in|through|across|into)\s+(?:a|the)\s+(forest|wood|woods|woodland)\b/, 'forest'],
   [/\b(skyscraper|office block|tower block|high-rise|rooftop)\b/, 'city'],
   [new RegExp(`${FROM}(?:end of (?:a|the)\\s+)?(pier|seaside pier|boardwalk)\\b`), 'pier'],
+  [new RegExp(`${FROM}(?:(?:top|gallery|balcony) of (?:a|the)\\s+)?(lighthouse)\\b`), 'lighthouse'],
+  [new RegExp(`(?:${FROM}(?:(?:edge|rim|side|top|lip) of (?:a|the)\\s+)?|\\b(?:into|across|over)\\s+(?:a|the)\\s+)(canyon|gorge|ravine)\\b`), 'canyon'],
+  [new RegExp(`${FROM}(?:(?:top|edge|lip) of (?:a|the)\\s+)?(waterfall)\\b`), 'waterfall'],
   [/\b(building site|construction site|scaffold(?:ing)?|tower crane|crane)\b/, 'site'],
   [new RegExp(`${FROM}(quay|quayside|harbour wall|jetty|dock|harbour)\\b`), 'harbour'],
   [new RegExp(`${FROM}(ledge|mountain|mountainside|peak|crag|mountain ledge)\\b`), 'mountain'],

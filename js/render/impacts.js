@@ -201,3 +201,132 @@ export function crack(g, x, y, age, life, o = {}) {
   if (p != null) { g.fillStyle = `rgba(255,255,255,${0.45 * (1 - p)})`; g.beginPath(); g.ellipse(x, y, 10 * size * (1 + p), 3 * size * (1 + p), 0, 0, TAU); g.fill(); }
   g.restore();
 }
+
+/** Leaves thrown up where it lands on a forest floor: a flurry of autumn
+    leaves and bits of twig kicked up, each tumbling and fluttering down,
+    swaying as it falls; a scatter of them stays round where it lies. */
+export function leaves(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const E = env(), size = Math.max(1.2, o.size ?? 1), r = rng(o.seed ?? 101);
+  const cols = E.night ? ['#7a5a2e', '#6e3e26', '#5c6230', '#80662e'] : ['#d79a2b', '#b4532a', '#8a8f3a', '#e0b13c', '#9c4a22'];
+  const leaf = (px, py, a, s, c, alpha) => {
+    g.save(); g.translate(px, py); g.rotate(a); g.scale(1, 0.35 + 0.65 * Math.abs(Math.cos(a * 1.7)));
+    g.fillStyle = withAlpha(c, alpha); g.beginPath(); g.moveTo(-s, 0); g.quadraticCurveTo(0, -s * 0.75, s, 0); g.quadraticCurveTo(0, s * 0.75, -s, 0); g.fill();
+    g.strokeStyle = withAlpha('#3a2614', alpha * 0.5); g.lineWidth = 0.7; g.beginPath(); g.moveTo(-s, 0); g.lineTo(s * 0.9, 0); g.stroke();
+    g.restore();
+  };
+  g.save();
+  // what stays: leaves lying flat in a loose ring, pushed out from where it struck
+  for (let i = 0; i < 9; i++) { const d = (8 + r() * 16) * size * ease(Math.min(1, u * 4)), s = (r() < 0.5 ? -1 : 1); leaf(x + s * d, y + 1 + r() * 2, r() * 0.6 - 0.3, 3.2 * size, cols[i % cols.length], 0.9); }
+  const p = phaseOf(age, life);
+  if (p != null) {
+    for (let i = 0; i < 18; i++) {
+      const a = Math.PI * (0.2 + r() * 0.6), sp = (26 + r() * 40) * size, side = r() < 0.5 ? -1 : 1;
+      // up quickly, then drifting down slowly, side to side, as a leaf does
+      const rise = Math.min(1, p / 0.3), fall = Math.max(0, p - 0.3);
+      const px = x + side * Math.cos(a) * sp * ease(rise) + Math.sin(p * 9 + i) * 7 * size * fall;
+      const py = y - Math.sin(a) * sp * 1.3 * ease(rise) + fall * fall * 70 * size;
+      if (py > y) continue;
+      leaf(px, py, p * 6 * (i % 2 ? 1 : -1) + i, (3.6 + r() * 2) * size, cols[i % cols.length], 1 - Math.max(0, p - 0.75) / 0.25);
+    }
+    g.strokeStyle = withAlpha(E.night ? '#4a3a2a' : '#6a4a2c', 1 - p); g.lineWidth = 1.2;
+    thrown(x, y, ease(p), 6, size, r, (px, py, i) => { g.beginPath(); g.moveTo(px - 3 * size, py); g.lineTo(px + 3 * size, py - (i % 2 ? 2 : -2)); g.stroke(); });
+  }
+  g.restore();
+}
+
+/** Sand sprayed up where it lands in a desert: a fan of grains thrown out
+    low, a golden cloud billowing and settling; a dent stays, its rim lit
+    on the far side and its hollow in shadow. */
+export function sandSpray(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const E = env(), size = Math.max(1.3, o.size ?? 1), r = rng(o.seed ?? 103);
+  const grain = E.night ? '#a08868' : '#c99a5c', deep = E.night ? '#5e4a3a' : '#8f6434', cloud = E.night ? '#8a7860' : '#b8946a';
+  g.save();
+  const R = 15 * size * ease(Math.min(1, u * 5));
+  g.fillStyle = withAlpha(deep, 0.75); g.beginPath(); g.ellipse(x, y + 1.5, R, R * 0.24, 0, 0, TAU); g.fill();
+  g.strokeStyle = withAlpha(E.night ? '#c8b08a' : '#fff0c8', 0.9); g.lineWidth = Math.max(1.4, R * 0.1); g.beginPath(); g.ellipse(x, y, R * 1.1, R * 0.28, 0, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
+  // little heaps thrown up either side of the dent
+  g.fillStyle = withAlpha(deep, 0.6);
+  for (const s of [-1, 1]) { g.beginPath(); g.moveTo(x + s * R * 0.9, y + 1); g.quadraticCurveTo(x + s * R * 1.4, y - R * 0.3, x + s * R * 2, y + 1); g.closePath(); g.fill(); }
+  const p = phaseOf(age, life);
+  if (p != null) {
+    // the cloud: billows that swell, rise a little and thin, drifting downwind
+    for (let i = 0; i < 7; i++) {
+      const dx = (r() - 0.3) * 40 * size * ease(p), dy = -(4 + r() * 16) * size * ease(p), Rb = (7 + r() * 9) * size * (0.5 + p * 1.2);
+      const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, Rb);
+      gr.addColorStop(0, withAlpha(cloud, 0.75 * (1 - p))); gr.addColorStop(0.6, withAlpha(cloud, 0.4 * (1 - p))); gr.addColorStop(1, withAlpha(cloud, 0));
+      g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, Rb, 0, TAU); g.fill();
+    }
+    // grains in a low fan, falling back in streaks
+    g.lineCap = 'round';
+    thrown(x, y, ease(p), 40, size, r, (px, py, i) => {
+      g.strokeStyle = withAlpha(i % 3 ? deep : grain, 0.95 * (1 - p)); g.lineWidth = 2;
+      g.beginPath(); g.moveTo(px, py); g.lineTo(px + (px - x) * 0.04, py + 2.5 * size); g.stroke();
+    }, { up: 0.75, out: 1.4 });
+  }
+  g.restore();
+}
+
+/** Mud where it lands on a building site: thick brown clots thrown out and
+    slapping down, a crown of wet mud round the hole; a puddled dent stays,
+    a sheen of water on it. */
+export function mud(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const E = env(), size = Math.max(1.3, o.size ?? 1), r = rng(o.seed ?? 107);
+  const wet = E.night ? '#2e241c' : '#4a3626', clot = E.night ? '#3e3024' : '#644830';
+  g.save();
+  const R = 14 * size * ease(Math.min(1, u * 5));
+  g.fillStyle = withAlpha(wet, 0.95); g.beginPath(); g.ellipse(x, y + 1.5, R, R * 0.26, 0, 0, TAU); g.fill();
+  g.fillStyle = withAlpha(E.night ? '#8fa0b0' : '#c9d6de', 0.45); g.beginPath(); g.ellipse(x - R * 0.25, y + 1, R * 0.45, R * 0.06, 0, 0, TAU); g.fill();
+  // spatters left on the ground round it
+  g.fillStyle = withAlpha(clot, 0.9);
+  for (let i = 0; i < 7; i++) { const d = (R + 4 + r() * 18 * size) * (r() < 0.5 ? -1 : 1); g.beginPath(); g.ellipse(x + d * ease(Math.min(1, u * 3)), y + 1, (1.5 + r() * 2.5) * size, 1 * size, 0, 0, TAU); g.fill(); }
+  const p = phaseOf(age, life);
+  if (p != null) {
+    // the crown: a ring of wet mud flung up round the hole, falling back
+    const c = Math.sin(Math.min(1, p * 1.6) * Math.PI);
+    g.fillStyle = withAlpha(clot, 0.95 * (1 - p));
+    for (let i = 0; i < 9; i++) {
+      const s = (i / 8 - 0.5) * 2, hgt = (8 + r() * 8) * size * c, bx = x + s * R * 1.05;
+      g.beginPath(); g.moveTo(bx - 2.2 * size, y); g.quadraticCurveTo(bx + s * 3 * size, y - hgt * 0.6, bx + s * 4 * size, y - hgt); g.lineTo(bx + 2.2 * size, y); g.closePath(); g.fill();
+      g.beginPath(); g.arc(bx + s * 4 * size, y - hgt, 1.8 * size, 0, TAU); g.fill();
+    }
+    // clots arcing out, heavy and dark
+    thrown(x, y, ease(p), 16, size, r, (px, py, i) => {
+      g.fillStyle = withAlpha(i % 2 ? clot : wet, 1 - p * 0.5);
+      g.beginPath(); g.ellipse(px, py, (2.4 + (i % 3)) * size, (1.8 + (i % 2)) * size, i, 0, TAU); g.fill();
+    }, { up: 0.9 });
+  }
+  g.restore();
+}
+
+/** A firework's burst at the top of its flight: a white flash, then shells
+    of stars flung out in rings, each with its streak, drooping as they
+    fall and fading; a few crackle on after. Gold, rose, sky and green:
+    clear of the three quantity hues. */
+export function burst(g, x, y, age, life, o = {}) {
+  const u = phaseOf(age, life); if (u == null) return;
+  const size = o.size ?? 1, rb = rng(o.seed ?? 5), R = 110 * size * (1 - (1 - u) ** 2.4), night = env().night;
+  // by day, deeper tones that hold against a pale sky
+  const cols = night ? ['#ffd84d', '#ff7aa2', '#7cc8ff', '#8ff0a0', '#ffffff'] : ['#f2b705', '#e0457b', '#2f8fd6', '#2fae5b', '#f2b705'];
+  g.save();
+  if (u < 0.3) {
+    const a = 1 - u / 0.3, gr = g.createRadialGradient(x, y, 0, x, y, 46 * size);
+    gr.addColorStop(0, `rgba(255,252,240,${0.95 * a})`); gr.addColorStop(0.4, `rgba(255,236,190,${0.45 * a})`); gr.addColorStop(1, 'rgba(255,236,190,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, 46 * size, 0, TAU); g.fill();
+  }
+  g.lineCap = 'round';
+  for (const [shell, n, sz] of [[1, 48, 2.8], [0.64, 30, 2.4], [0.34, 16, 2]]) for (let i = 0; i < n; i++) {
+    const an = (i / n) * TAU + rb() * 0.1, rr = R * shell * (0.85 + rb() * 0.25), sag = u * u * 46 * size * shell;
+    const sx = x + Math.cos(an) * rr, sy = y + Math.sin(an) * rr + sag, c = cols[(i + Math.round(shell * 10)) % cols.length];
+    g.strokeStyle = withAlpha(c, 0.55 * (1 - u)); g.lineWidth = sz * 0.6;
+    g.beginPath(); g.moveTo(x + Math.cos(an) * rr * 0.72, y + Math.sin(an) * rr * 0.72 + sag * 0.6); g.lineTo(sx, sy); g.stroke();
+    // late in its life a star twinkles before it goes
+    const tw = u > 0.6 ? 0.5 + 0.5 * Math.sin(u * 60 + i * 2.3) : 1;
+    g.fillStyle = withAlpha(c, (1 - u) * tw); g.beginPath(); g.arc(sx, sy, sz * size ** 0.5, 0, TAU); g.fill();
+    // by day each star is ringed dark, so it shows on a pale sky
+    if (!night) { g.strokeStyle = withAlpha('#3a2a3a', 0.45 * (1 - u) * tw); g.lineWidth = 0.8; g.stroke(); }
+  }
+  g.restore();
+}
