@@ -200,7 +200,8 @@ function launch(canvas, o) {
     // as themselves at the point, vehicles and people round it; off a table,
     // it leaves the table's edge: no one stands on the table
     // (a cannon, a ramp or a catapult sends it off: no one throws it)
-    const thrown = (!!piece.thrown || kind === 'arrow') && R.backdrop !== 'orchard' && R.backdrop !== 'table' && !carried && !LAUNCHER_ART[R.launcher];
+    // (a volcano throws its own rocks: no one stands in the crater)
+    const thrown = (!!piece.thrown || kind === 'arrow') && !['orchard', 'table', 'volcano'].includes(R.backdrop) && !carried && !LAUNCHER_ART[R.launcher];
     const small = !!piece.thrown || !!piece.small || kind === 'arrow';
     // thrown from low down with nothing to stand on: the thrower stands on the
     // ground or the floor and lets go at hand height
@@ -491,6 +492,8 @@ function launch(canvas, o) {
   }
   const Lp = small ? 0 : size(k, piece);
   const aloft = m.going && t > 0 && !landed;
+  // thrown from a volcano, a rock flies red-hot, glowing as it goes
+  if (R.backdrop === 'volcano' && small && !(landed && age > life * 0.6)) { const gR = 16, hg = g.createRadialGradient(bx, by, 0, bx, by, gR); hg.addColorStop(0, 'rgba(255,236,160,0.75)'); hg.addColorStop(0.5, 'rgba(200,40,60,0.35)'); hg.addColorStop(1, 'rgba(200,40,60,0)'); g.fillStyle = hg; g.beginPath(); g.arc(bx, by, gR, 0, Math.PI * 2); g.fill(); }
   if (small) {
     const R0 = clamp(k * piece.m * 0.5, 5.5, 9);
     // gone under water, or burst: a water balloon is not there once it lands

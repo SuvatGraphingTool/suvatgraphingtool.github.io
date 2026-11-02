@@ -60,6 +60,9 @@ export const BACKDROPS = {
   beach:   { label: 'A beach', what: 'a sandy beach, waves breaking along the shore, parasols; from a height, the promenade’s sea wall', place: 'beach', below: 'beach', art: true, on: 'on a beach', high: 'a sea wall', lands: 'sand' },
   room:    { label: 'A room', what: 'a room indoors: papered walls, a window with curtains, a sofa and a bookcase, floorboards; from a height, the landing at the top of the stairs', place: 'room', below: 'floor', art: true, on: 'in a room', high: 'the landing at the top of the stairs' },
   planet:  { label: 'Another planet', what: 'another world: a ringed giant and two moons in a dark sky over a rocky plain with crystal outcrops; g is what the question gives', place: 'planet', below: 'surface', art: true, on: 'on another planet', high: 'a rock ledge', lands: 'crater' },
+  carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
+  volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
+  quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from what carries it: a hovering balloon, a helicopter, a plane, a drone or a bird ("carrier")', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
@@ -442,6 +445,9 @@ const ONLY_HERE = [
   [new RegExp(`${FROM}(?:(?:deck|stern|side) of (?:a|the)\\s+)?(ship|ferry|liner|cruise ship|tanker)\\b`), 'ship'],
   [new RegExp(`${FROM}(?:(?:top|crest|wall) of (?:a|the)\\s+)?(dam)\\b`), 'dam'],
   [/\b(playground|climbing frame|play tower|slide in a park|top of (?:a|the) slide)\b/, 'playground'],
+  [/\b(multi-?storey car park|car park|parking garage|parking deck)\b/, 'carpark'],
+  [/\b(volcano|volcanic|erupt(?:s|ion|ing)?|lava bomb)\b/, 'volcano'],
+  [/\b(quarry|quarry face|rock face of (?:a|the) quarry)\b/, 'quarry'],
   // on a beach, but not a cliff, pier or harbour over one ("off the cliff onto the beach" is the cliff's)
   [/^(?!.*\b(?:cliff|pier|harbour|quay|jetty|bridge|tower|lighthouse)\b).*(?:\b(?:on|across|along)\s+(?:a|the)\s+(?:beach|sands)\b|\b(?:sea wall|promenade|seafront)\b)/, 'beach', 'beach'],
   [/\b(?:in|across)\s+(?:a|the|his|her|their)\s+(room|bedroom|living room|classroom|kitchen|lounge)\b|\b(top of the stairs|staircase|landing of the stairs)\b/, 'room'],

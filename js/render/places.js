@@ -1594,5 +1594,136 @@ function planet(g, c) {
   if (H0 > 0) { seaCliff(g, -4, x0, top, oy, { foam: false, cap: false, tones: rockTones('#8a8288', '#5e5860', '#2e2a30') }); scree(g, x0, oy, k); }
 }
 
+/* ── a car park, a volcano, a quarry ───────────────────────────────────── */
+
+/** A multi-storey car park: concrete decks on columns, open between, cars
+    parked on them, the barrier along each deck's edge, a ramp's slope
+    showing, the stair tower with its lit sign; it leaves from the top
+    deck's edge, a gap in its barrier there, and lands in the street. */
+function carpark(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(199);
+  skyscape(g, 0, 0, w, oy, { far: 'skyline', seed: 31, clouds: 3, farHeight: clamp((oy - 40) * 0.35, 30, 180), sun: false });
+  // the street: tarmac, a kerb and a pavement in front
+  tarmac(g, 0, w, oy, { depth: clamp(0.6 * k, 12, 24), verge: h - oy });
+  if (!(H0 > 0)) return;
+  const conc = n ? '#6a6a70' : '#bdbab4', concLo = n ? '#4a4a50' : '#8e8b86', deck = clamp(0.35 * k, 6, 14);
+  const lift = clamp(2.8 * k, 26, 90), floors = Math.max(1, Math.round((oy - top) / lift)), L = (oy - top) / floors, W = clamp(0.45 * (oy - top) + 120, 160, Math.max(160, x0 - 10));
+  const bx = x0 - W;
+  // the stair tower at the back, its lit sign
+  g.fillStyle = concLo; g.fillRect(bx - 30, top - L * 0.8, 40, oy - top + L * 0.8);
+  g.fillStyle = n ? withAlpha(E.window, 0.8) : '#2f5fa8'; g.fillRect(bx - 24, top - L * 0.6, 28, L * 0.3);
+  g.fillStyle = '#ffffff'; g.font = '700 13px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('P', bx - 10, top - L * 0.45);
+  // each level: the dark interior, a car or two parked, the deck slab and its edge barrier
+  for (let i = 0; i < floors; i++) {
+    const yT = top + i * L, yB = yT + L;
+    g.fillStyle = n ? '#1e2026' : '#4a4c52'; g.fillRect(bx, yT + deck, W, L - deck);
+    g.fillStyle = withAlpha(n ? E.window : '#fff4c8', n ? 0.25 : 0.15); for (let x = bx + 20; x < x0 - 20; x += 60) g.fillRect(x, yT + deck + 2, 26, 2);
+    for (let x = bx + 14 + r() * 30; x < x0 - L * 1.3; x += L * 1.5 + r() * L) {
+      if (r() < 0.25) continue;
+      const cw = Math.min(L * 1.2, 70), ch = cw * 0.32, cy = yB - 2;
+      g.fillStyle = ['#4f86c9', '#e8c547', '#f4f1ea', '#5a5e66', '#5fae7a'][Math.floor(r() * 5)]; g.beginPath(); g.roundRect(x, cy - ch, cw, ch * 0.7, ch * 0.2); g.fill();
+      g.beginPath(); g.roundRect(x + cw * 0.2, cy - ch * 1.25, cw * 0.55, ch * 0.6, ch * 0.2); g.fill();
+      g.fillStyle = withAlpha('#a9c4dc', 0.8); g.fillRect(x + cw * 0.27, cy - ch * 1.15, cw * 0.4, ch * 0.4);
+      g.fillStyle = '#1d1e22'; for (const wx of [x + cw * 0.2, x + cw * 0.8]) { g.beginPath(); g.arc(wx, cy - ch * 0.25, ch * 0.28, 0, TAU); g.fill(); }
+    }
+    g.fillStyle = conc; g.fillRect(bx, yT, W + 2, deck);
+    g.fillStyle = withAlpha('#000000', 0.25); g.fillRect(bx, yT + deck, W, 2);
+    // the barrier: a concrete upstand along the deck's edge (open on the top deck at x0)
+    const bh = clamp(0.9 * k, 8, 24);
+    g.fillStyle = concLo; g.fillRect(bx, yT - bh, i === 0 ? W - clamp(3 * k, 30, 80) : W, bh);
+    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.2); g.fillRect(bx, yT - bh, i === 0 ? W - clamp(3 * k, 30, 80) : W, 1.5);
+    // a stripe of yellow and black hazard paint along each deck's edge
+    for (let x = bx; x < bx + W; x += 12) { g.fillStyle = (Math.floor((x - bx) / 12) % 2) ? '#2b2628' : '#e8c547'; g.fillRect(x, yT + deck - 3, 12, 3); }
+  }
+  // the columns, the ground floor's slab, the open front
+  for (let x = bx + 4; x < x0 - 4; x += clamp(6 * k, 60, 160)) { g.fillStyle = conc; g.fillRect(x, top + deck, Math.max(4, clamp(0.4 * k, 4, 10)), oy - top - deck); }
+  g.fillStyle = conc; g.fillRect(x0 - Math.max(4, clamp(0.4 * k, 4, 10)), top + deck, Math.max(4, clamp(0.4 * k, 4, 10)), oy - top - deck);
+  softShadow(g, (bx + x0) / 2, oy + 2, W * 0.6, 5, 0.6);
+}
+
+/** A volcano: its cone rising to the crater it is thrown from, lava glowing
+    in the crater and running in a channel down its flank, an ash plume
+    leaning downwind, old flows dark on the plain it lands on. */
+function volcano(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(211), horizon = oy - clamp((oy - 40) * 0.2, 24, 100);
+  // an ash-hazed sky, darker toward the plume
+  const sg = g.createLinearGradient(0, 0, 0, horizon); sg.addColorStop(0, n ? '#14121a' : '#8a8c96'); sg.addColorStop(1, n ? '#2a1e1c' : '#d8c8b4');
+  g.fillStyle = sg; g.fillRect(0, 0, w, horizon);
+  // distant ridges
+  g.fillStyle = n ? '#241c1c' : '#7a7068'; g.beginPath(); g.moveTo(0, horizon); for (let x = 0; x <= w; x += 30) g.lineTo(x, horizon - 10 - Math.abs(Math.sin(x / 90)) * 22); g.lineTo(w, horizon); g.closePath(); g.fill();
+  // the plain: dark basalt with old flows and their cracks
+  const pg = g.createLinearGradient(0, horizon, 0, h); pg.addColorStop(0, n ? '#2a2422' : '#5a524c'); pg.addColorStop(1, n ? '#1a1614' : '#3e3834'); g.fillStyle = pg; g.fillRect(0, horizon, w, h - horizon);
+  g.strokeStyle = withAlpha(n ? '#000000' : '#2a2420', 0.5); g.lineWidth = 1; for (let i = 0; i < w / 14; i++) { const x = r() * w, y = oy + r() * (h - oy); g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - 0.5) * 20, y + r() * 6); g.stroke(); }
+  if (!(H0 > 0)) return;
+  // the cone, its crater at x0, its slope falling away behind and before it
+  const H = oy - top, cw = clamp(H * 0.9, 80, w * 0.7);
+  const cone = () => { g.beginPath(); g.moveTo(x0 - cw * 1.6, oy + 2); g.quadraticCurveTo(x0 - cw * 0.6, oy - H * 0.3, x0 - cw * 0.25, top + 4); g.lineTo(x0 - cw * 0.18, top - 2); g.lineTo(x0 - cw * 0.04, top + 6); g.lineTo(x0, top); g.quadraticCurveTo(x0 + cw * 0.08, oy - H * 0.55, x0 + cw * 0.12, oy - H * 0.2); g.lineTo(x0 + cw * 0.12, oy + 2); g.closePath(); };
+  const cg = g.createLinearGradient(x0 - cw, 0, x0 + cw * 0.2, 0); cg.addColorStop(0, n ? '#3a2e2a' : '#6e625a'); cg.addColorStop(0.7, n ? '#2a2220' : '#4e4640'); cg.addColorStop(1, n ? '#1a1412' : '#3a322e');
+  cone(); g.fillStyle = cg; g.fill();
+  // gullies and banded ash down its flanks
+  g.save(); cone(); g.clip();
+  g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1.5; for (let i = 0; i < 9; i++) { const sx = x0 - cw * (0.05 + i * 0.12); g.beginPath(); g.moveTo(sx + cw * 0.02, top + H * (0.05 + i * 0.02)); g.quadraticCurveTo(sx - cw * 0.05, top + H * 0.5, sx - cw * 0.2, oy); g.stroke(); }
+  // the lava channel: glowing, white-hot near the crater, crimson below (never the velocity's orange), flickering
+  const flick = 0.85 + 0.15 * Math.sin(phase * 5);
+  const lg = g.createLinearGradient(0, top, 0, oy); lg.addColorStop(0, `rgba(255,236,160,${0.95 * flick})`); lg.addColorStop(0.35, `rgba(200,40,60,${0.85 * flick})`); lg.addColorStop(1, 'rgba(110,20,40,0.6)');
+  g.strokeStyle = lg; g.lineWidth = clamp(0.5 * k, 3, 10); g.lineCap = 'round'; g.beginPath(); g.moveTo(x0 - cw * 0.12, top + 6); g.bezierCurveTo(x0 - cw * 0.3, top + H * 0.3, x0 - cw * 0.2, top + H * 0.6, x0 - cw * 0.55, oy); g.stroke();
+  g.restore();
+  // the crater's glow, and the plume leaning back over the cone (away from the flight)
+  const gx = x0 - cw * 0.12, glow = g.createRadialGradient(gx, top, 0, gx, top, cw * 0.4); glow.addColorStop(0, `rgba(255,190,90,${0.7 * flick})`); glow.addColorStop(1, 'rgba(255,120,40,0)');
+  g.fillStyle = glow; g.fillRect(gx - cw * 0.4, top - cw * 0.4, cw * 0.8, cw * 0.8);
+  for (let i = 0; i < 9; i++) {
+    const t2 = i / 8, px = gx - t2 * cw * 0.9 + Math.sin(phase + i) * 4, py = top - t2 * Math.min(top - 10, cw * 0.9), R = cw * (0.06 + t2 * 0.16);
+    const pg2 = g.createRadialGradient(px, py, 0, px, py, R); pg2.addColorStop(0, withAlpha(n ? '#4a4040' : '#6a6460', 0.75 - t2 * 0.4)); pg2.addColorStop(1, withAlpha(n ? '#4a4040' : '#6a6460', 0));
+    g.fillStyle = pg2; g.beginPath(); g.arc(px, py, R, 0, TAU); g.fill();
+  }
+  scree(g, x0 + cw * 0.12, oy, k);
+}
+
+/** A quarry: tiered benches cut in pale limestone, drill lines down each
+    face, a rock pool on the floor, a dump truck; it leaves from the top
+    bench's lip and lands on the quarry floor. */
+function quarry(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(223), horizon = oy - clamp((oy - 40) * 0.5, 60, 320);
+  sky(g, w, horizon, x0, { far: 'none', seed: 161, clouds: 3 });
+  const lime = n ? '#7a7670' : '#d8d0c0', limeLo = n ? '#5a5650' : '#b4aa98', limeDk = n ? '#3e3a36' : '#8a806e';
+  // the far wall of the pit: benches stepping down to the floor, across
+  const steps = 4, sH = (oy - horizon) / steps;
+  for (let i = 0; i < steps; i++) {
+    const y = horizon + i * sH;
+    g.fillStyle = i % 2 ? limeLo : lime; g.fillRect(0, y, w, sH);
+    g.fillStyle = withAlpha('#000000', 0.15); g.fillRect(0, y + sH * 0.82, w, sH * 0.18);
+    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.3); g.fillRect(0, y, w, 1.5);
+    g.strokeStyle = withAlpha('#000000', 0.12); g.lineWidth = 1; for (let x = r() * 12; x < w; x += 9 + r() * 6) { g.beginPath(); g.moveTo(x, y + 3); g.lineTo(x + 1, y + sH * 0.8); g.stroke(); }
+  }
+  // the floor: crushed stone, a rock pool, a heap of broken rock
+  const fg = g.createLinearGradient(0, oy, 0, h); fg.addColorStop(0, n ? '#5a5650' : '#c4baa8'); fg.addColorStop(1, n ? '#3e3a36' : '#a49a88'); g.fillStyle = fg; g.fillRect(0, oy, w, h - oy);
+  g.fillStyle = withAlpha(limeDk, 0.6); for (let i = 0; i < (w * (h - oy)) / 60; i++) g.fillRect(r() * w, oy + r() * (h - oy), 2, 1.5);
+  const pool = x0 + (w - x0) * 0.75; if (clearOf(pool, c, 80) && pool < w - 40) { g.fillStyle = n ? '#2a4a50' : '#6fb0b8'; g.beginPath(); g.ellipse(pool, oy + 8, clamp(3 * k, 30, 80), 5, 0, 0, TAU); g.fill(); g.fillStyle = withAlpha('#ffffff', 0.4); g.fillRect(pool - 15, oy + 6, 20, 1.2); }
+  // a dump truck on the floor, clear of the flight
+  const tx = x0 + (w - x0) * 0.45;
+  if (clearOf(tx, c, 90) && tx < w - 60) {
+    const tl = clamp(5 * k, 50, 120), th2 = tl * 0.45;
+    g.fillStyle = '#e8c547'; g.beginPath(); g.moveTo(tx - tl / 2, oy - th2 * 0.45); g.lineTo(tx + tl * 0.15, oy - th2 * 0.45); g.lineTo(tx + tl * 0.2, oy - th2); g.lineTo(tx - tl / 2 - 6, oy - th2); g.closePath(); g.fill();
+    g.fillStyle = '#c8a82a'; g.fillRect(tx + tl * 0.18, oy - th2 * 0.85, tl * 0.3, th2 * 0.45);
+    g.fillStyle = withAlpha('#a9c4dc', 0.85); g.fillRect(tx + tl * 0.26, oy - th2 * 0.8, tl * 0.16, th2 * 0.2);
+    g.fillStyle = '#1d1e22'; for (const wx of [tx - tl * 0.3, tx + tl * 0.32]) { g.beginPath(); g.arc(wx, oy - th2 * 0.2, th2 * 0.24, 0, TAU); g.fill(); g.fillStyle = '#8a9098'; g.beginPath(); g.arc(wx, oy - th2 * 0.2, th2 * 0.1, 0, TAU); g.fill(); g.fillStyle = '#1d1e22'; }
+  }
+  if (!(H0 > 0)) return;
+  // the near face it leaves from: benches stepping back from the lip, drilled, a safety bund along the top
+  const H = oy - top, nb = Math.max(2, Math.round(H / clamp(5 * k, 40, 120))), bH = H / nb;
+  for (let i = 0; i < nb; i++) {
+    const yT = top + i * bH, xr = x0 - i * clamp(0.6 * k, 4, 14);
+    g.fillStyle = i % 2 ? limeLo : lime; g.fillRect(-4, yT, xr + 4, bH + 1);
+    g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.35); g.fillRect(-4, yT, xr + 4, 1.5);
+    g.strokeStyle = withAlpha('#000000', 0.15); g.lineWidth = 1; for (let x = xr - 6; x > 0; x -= 8 + r() * 6) { g.beginPath(); g.moveTo(x, yT + 3); g.lineTo(x - 1, yT + bH - 2); g.stroke(); }
+    g.fillStyle = withAlpha('#000000', 0.2); g.fillRect(xr - 3, yT, 3, bH);
+  }
+  g.fillStyle = n ? '#4a4640' : '#9a9080'; g.beginPath(); g.moveTo(-4, top); g.quadraticCurveTo(x0 * 0.5, top - clamp(0.8 * k, 6, 20), x0 - clamp(2 * k, 20, 60), top); g.closePath(); g.fill();
+  scree(g, x0, oy, k);
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry };

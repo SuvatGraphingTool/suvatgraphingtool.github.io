@@ -189,6 +189,8 @@ export function check(raw) {
     if (dry && objects.some((o) => WHEELS.includes(o.figure)) && !effects.includes('skid')) effects.push('skid');
     if (!dry && objects.some((o) => SINKS.includes(o.figure)) && !effects.includes('bubbles')) effects.push('bubbles');
   }
+  // a volcanic bomb trails smoke as it flies
+  if (backdrop === 'volcano' && !(raw.effects || []).length && !effects.includes('smoke')) effects.push('smoke');
   // a firework bursts at the top of its flight, when it goes up at all
   if (objects.some((o) => o.figure === 'firework') && !effects.includes('burst') && !(raw.effects || []).length) effects.push('burst');
   // a place with its own gravity says so
@@ -224,6 +226,7 @@ export function titleOf(r) {
     if (r.backdrop === 'air') return `${what} let go from ${r.carrier && r.carrier !== 'balloon' ? carrierName(r) : 'the air'}`;
     if (r.backdrop === 'well') return `${what} down a well`;
     if (r.launcher) return `${what} ${LAUNCHERS[r.launcher].verb} ${LAUNCHERS[r.launcher].label}`;
+    if (r.backdrop === 'volcano') return `${what} thrown out of a volcano’s crater`;
     if (B.edge) return `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
     // (a place that draws a ledge of its own says so)

@@ -458,6 +458,16 @@ or a river) each waits as a dark shape below the surface, bursts out in a
 splash, and goes back in with another; no jetty is drawn under them. Their
 titles say "leaping from the open sea".
 
+Batch 15. Places `carpark` (a multi-storey car park: concrete decks on
+columns, cars parked on each, a barrier with hazard paint along each edge,
+open on the top deck where it leaves from, the stair tower with its lit P
+sign, the street below), `volcano` (an ash-hazed sky, its cone with lava
+white-hot in the crater and crimson down a channel — never the velocity's
+orange — an ash plume leaning back over the cone, a plain of old flows; a
+rock thrown out of its crater flies red-hot trailing smoke, no one throwing
+it, and lands in a crater) and `quarry` (drilled limestone benches stepping
+down, a safety bund on top, a rock pool and a dump truck on the floor).
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,
