@@ -1247,7 +1247,7 @@ function stadium(g, c) {
     const quad = (a, b, col) => { g.fillStyle = col; g.beginPath(); g.moveTo(a + (oy - yF) * s2, yF); g.lineTo(b + (oy - yF) * s2, yF); g.lineTo(b - (yN - oy) * s2, yN); g.lineTo(a - (yN - oy) * s2, yN); g.closePath(); g.fill(); };
     quad(-20, x0, red);
     quad(x0 - clamp(0.2 * k, 4, 10), x0, n ? '#c8c8c8' : '#ffffff');
-    const p0 = X(1), p1 = Math.max(land + clamp(2 * k, 20, 80), X(1) + 40);
+    const p0 = Math.min(X(1), land - 20), p1 = Math.max(land + clamp(2 * k, 20, 80), X(1) + 40);
     quad(p0 - 4, p1 + 4, n ? '#4a4a46' : '#a8a8a2');
     quad(p0, p1, n ? '#8a7a5a' : '#e2cc96');
     g.strokeStyle = withAlpha(n ? '#5a4a30' : '#b89a5a', 0.7); g.lineWidth = 1; for (let x = p0 + 6; x < p1; x += 9) { g.beginPath(); g.moveTo(x + (oy - yF) * s2, yF + 2); g.lineTo(x - (yN - oy) * s2, yN - 2); g.stroke(); }
@@ -2645,16 +2645,28 @@ function circus(g, c) {
   g.fillStyle = withAlpha('#6a5030', 0.4); for (let i = 0; i < (w * (h - horizon)) / 70; i++) g.fillRect(r() * w, horizon + r() * (h - horizon), 2, 1);
   const ny = oy + clamp((h - oy) * 0.55, 14, 60);
   if (ny < h) { g.fillStyle = '#2f5fa8'; g.fillRect(0, ny, w, Math.min(curb * 1.4, h - ny)); g.fillStyle = '#e8c547'; for (let x = 20; x < w; x += 40) g.fillRect(x, ny + curb * 0.4, 20, curb * 0.4); }
-  if (!(H0 > 0)) return;
-  // the trapeze platform on its rigging pole, the rope ladder hanging from it, the bar beside it
+  // a person coming down from the trapeze or out of the cannon lands in the safety net: its mesh
+  // stretched at the floor's level under where they come down, on its low frame and guy ropes
+  const land = (c.clearX || [])[0] ?? w;
+  if (c.who === 'diver' && (H0 > 0 || c.launcher === 'cannon')) {
+    const nw = clamp(6 * k, 70, 260), na = land - nw * 0.55, nb = land + nw * 0.45, fh = clamp(0.4 * k, 5, 14);
+    g.strokeStyle = '#8a9098'; g.lineWidth = 2; for (const x of [na, nb]) { g.beginPath(); g.moveTo(x, oy); g.lineTo(x, oy + fh); g.stroke(); g.beginPath(); g.moveTo(x, oy); g.lineTo(x + (x === na ? -fh * 2 : fh * 2), oy + fh); g.stroke(); }
+    g.strokeStyle = withAlpha('#f4f2ee', 0.85); g.lineWidth = 1;
+    for (let x = na; x <= nb; x += 6) { g.beginPath(); g.moveTo(x, oy); g.lineTo(x + 6, oy + 4); g.stroke(); g.beginPath(); g.moveTo(x + 6, oy); g.lineTo(x, oy + 4); g.stroke(); }
+    g.strokeStyle = '#f4f2ee'; g.lineWidth = 2; g.beginPath(); g.moveTo(na, oy); g.lineTo(nb, oy); g.stroke();
+  }
+  if (!(H0 > 0) || c.launcher) return;
+  // the trapeze platform on its rigging pole, the rope ladder hanging on the pole's far side, the bar beside it
   const H = oy - top, pw = clamp(1.4 * k, 18, 56), pole = x0 - pw - 4;
   g.fillStyle = '#c8ccd2'; g.fillRect(pole - 3, top - clamp(2.5 * k, 26, 90), 6, oy - top + clamp(2.5 * k, 26, 90));
   g.fillStyle = '#8a9098'; g.fillRect(pole - pw * 0.2, top, x0 - pole + pw * 0.2, clamp(0.25 * k, 4, 9));
-  g.strokeStyle = '#e8c547'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(pole, top - clamp(1.1 * k, 12, 40)); g.lineTo(x0 - 2, top - clamp(1.1 * k, 12, 40)); g.moveTo(x0 - 2, top); g.lineTo(x0 - 2, top - clamp(1.1 * k, 12, 40)); g.stroke();
-  g.strokeStyle = '#d8c8a0'; g.lineWidth = 1.5; const lx = pole - pw * 0.5;
+  const rh = clamp(1.1 * k, 12, 40); g.strokeStyle = '#e8c547'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(pole, top - rh); g.lineTo(x0 - pw * 0.55, top - rh); g.moveTo(x0 - pw * 0.55, top); g.lineTo(x0 - pw * 0.55, top - rh); g.moveTo(pole + 3, top); g.lineTo(pole + 3, top - rh); g.stroke();
+  g.strokeStyle = '#d8c8a0'; g.lineWidth = 1.5; const lx = pole - pw * 0.5 - 18;
   g.beginPath(); g.moveTo(lx, top); g.lineTo(lx, oy); g.moveTo(lx + 8, top); g.lineTo(lx + 8, oy); for (let y = top + 8; y < oy; y += 9) { g.moveTo(lx, y); g.lineTo(lx + 8, y); } g.stroke();
+  g.beginPath(); g.moveTo(lx + 8, top); g.lineTo(pole - 3, top); g.stroke();
   // the trapeze hanging on its ropes behind the platform, waiting
-  const ty = top - clamp(0.5 * k, 6, 18), tx = pole - clamp(2.5 * k, 26, 90);
+  const ty = top - clamp(0.5 * k, 6, 18), tx = lx - clamp(2 * k, 22, 80);
   if (tx > 10) { g.strokeStyle = '#d8c8a0'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(tx - 10, 0); g.lineTo(tx - 10, ty); g.moveTo(tx + 10, 0); g.lineTo(tx + 10, ty); g.stroke(); g.strokeStyle = '#c8ccd2'; g.lineWidth = 3; g.beginPath(); g.moveTo(tx - 12, ty); g.lineTo(tx + 12, ty); g.stroke(); }
 }
 

@@ -21,11 +21,13 @@ const ease = (u) => 1 - (1 - u) ** 3;
     gun on its carriage, two spoked wheels and its trail, sits in a pit dug
     behind them. When it fires, it recoils, a flash at the muzzle and smoke
     rolling out and up. */
-export function cannon(g, x, y, s, P, { aim = 30, t = -1, phase = 0 } = {}) {
+export function cannon(g, x, y, s, P, { aim = 30, t = -1, phase = 0, circus = false, gy: ground = y } = {}) {
   const E = env(), a = (Math.max(-30, Math.min(85, aim)) * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
   const L = s, rB = s * 0.11, recoil = t >= 0 ? Math.sin(Math.min(1, t / 0.25) * Math.PI) * s * 0.08 : 0;
   const bx = x - ca * (L + recoil), by = y + sa * (L + recoil);
   const wR = s * 0.26, wx = bx + ca * L * 0.25, wy = by - sa * L * 0.25 + wR * 0.2, gy = wy + wR;
+  // in a circus: a painted barrel on a wagon on the sawdust (no pit, no sandbags)
+  if (circus) return circusCannon(g, x, y, s, { a, ca, sa, L, rB, recoil, t, E, ground });
   // the pit: earth cut away behind the sandbags, darker toward its floor
   const pg = g.createLinearGradient(0, y, 0, gy); pg.addColorStop(0, E.night ? '#2a221c' : '#6a5038'); pg.addColorStop(1, E.night ? '#1a1410' : '#3e2e20');
   g.fillStyle = pg; g.beginPath(); g.moveTo(x - s * 1.6, y); g.lineTo(x - s * 0.02, y); g.lineTo(x - s * 0.1, gy + 2); g.lineTo(x - s * 1.45, gy + 2); g.closePath(); g.fill();
@@ -219,6 +221,41 @@ export function hose(g, x, y, s, P, { aim = 30, t = -1, gy = y } = {}) {
   if (t >= 0 && t < 0.4) {
     const q = t / 0.4;
     for (let i = 0; i < 7; i++) { const sp = (i - 3) * 0.12, d = s * (0.1 + q * 0.3) * (0.6 + (i % 3) * 0.2); g.fillStyle = `rgba(190,225,250,${0.8 * (1 - q)})`; g.beginPath(); g.arc(x + Math.cos(a + sp) * d, y - Math.sin(a + sp) * d, Math.max(1.2, s * 0.02), 0, TAU); g.fill(); }
+  }
+}
+
+
+/** The circus's cannon: a long barrel painted blue with yellow bands and
+    stars, its breech on a red-and-gold wagon with spoked wheels standing on
+    the ring's sawdust, its muzzle at the launch point. Smoke and a flash as
+    it fires, as the field gun's. */
+function circusCannon(g, x, y, s, { a, ca, sa, L, rB, recoil, t, E, ground }) {
+  const Lb = L * 1.5, bx = x - ca * (Lb + recoil), by = y + sa * (Lb + recoil), wR = s * 0.22;
+  // the wagon stands on the sawdust; a gold pedestal rises from it to the barrel's trunnion
+  const wx = bx + ca * Lb * 0.3, wy = Math.max(ground - s * 0.12 - wR * 0.7, by - sa * Lb * 0.3 + rB * 2);
+  const tx = bx + ca * Lb * 0.3, ty = by - sa * Lb * 0.3;
+  if (wy - ty > rB * 2) { g.fillStyle = '#c8a040'; g.beginPath(); g.moveTo(tx - s * 0.1, ty + rB); g.lineTo(tx + s * 0.1, ty + rB); g.lineTo(wx + s * 0.16, wy - s * 0.12); g.lineTo(wx - s * 0.16, wy - s * 0.12); g.closePath(); g.fill(); g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1; g.stroke(); }
+  // the wagon: a box under the breech, its wheels
+  g.fillStyle = '#2a3a6a'; g.beginPath(); g.roundRect(wx - s * 0.55, wy - s * 0.12, s * 0.9, s * 0.24, 4); g.fill();
+  g.fillStyle = '#e8c547'; g.fillRect(wx - s * 0.5, wy - s * 0.02, s * 0.8, s * 0.04);
+  for (const dx of [-s * 0.35, s * 0.2]) {
+    g.strokeStyle = '#e8c547'; g.lineWidth = Math.max(2, s * 0.035); g.beginPath(); g.arc(wx + dx, wy + s * 0.12, wR * 0.7, 0, TAU); g.stroke();
+    g.lineWidth = 1.2; for (let i = 0; i < 6; i++) { const q = (i / 6) * TAU; g.beginPath(); g.moveTo(wx + dx, wy + s * 0.12); g.lineTo(wx + dx + Math.cos(q) * wR * 0.7, wy + s * 0.12 + Math.sin(q) * wR * 0.7); g.stroke(); }
+  }
+  softShadow(g, wx, wy + s * 0.12 + wR * 0.7 + 1, s * 0.6, s * 0.05, 0.8);
+  // the barrel: wide, blue, banded gold, a star or two, a dark mouth
+  g.save(); g.translate(bx, by); g.rotate(-a);
+  const gr = g.createLinearGradient(0, -rB * 1.6, 0, rB * 1.6); gr.addColorStop(0, '#5a7ad0'); gr.addColorStop(0.4, '#2f4fa0'); gr.addColorStop(1, '#16224a');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(0, -rB * 1.6); g.lineTo(Lb, -rB * 1.35); g.lineTo(Lb, rB * 1.35); g.lineTo(0, rB * 1.6); g.arc(0, 0, rB * 1.6, Math.PI / 2, Math.PI * 1.5); g.closePath(); g.fill();
+  g.fillStyle = '#e8c547'; for (const f of [0.15, 0.5, 0.97]) g.fillRect(Lb * f - 2, -rB * 1.55 + f * rB * 0.2, 4, rB * 3.1 - f * rB * 0.4);
+  g.fillStyle = '#f2d27a'; for (const f of [0.3, 0.72]) { g.beginPath(); for (let i = 0; i < 10; i++) { const q = (i / 10) * TAU - Math.PI / 2, R2 = i % 2 ? rB * 0.25 : rB * 0.6; g.lineTo(Lb * f + Math.cos(q) * R2, Math.sin(q) * R2); } g.closePath(); g.fill(); }
+  g.fillStyle = '#0a0a0c'; g.beginPath(); g.ellipse(Lb, 0, rB * 0.4, rB * 1.2, 0, 0, TAU); g.fill();
+  g.restore();
+  if (t >= 0) {
+    const f = Math.max(0, 1 - t / 0.18);
+    if (f > 0) { const R = s * 0.35 * (0.6 + f), gl = g.createRadialGradient(x, y, 0, x, y, R); gl.addColorStop(0, `rgba(255,252,220,${f})`); gl.addColorStop(1, 'rgba(255,220,120,0)'); g.fillStyle = gl; g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill(); }
+    const q = Math.min(1, t / 1.6);
+    if (q < 1) for (let i = 0; i < 6; i++) { const d = s * (0.1 + i * 0.1) * ease(q), R = s * (0.08 + i * 0.03) * (0.6 + q); g.fillStyle = withAlpha(E.night ? '#9a9aa0' : '#e8e8ec', 0.65 * (1 - q)); g.beginPath(); g.arc(x + ca * d * 0.6, y - sa * d * 0.6 - s * 0.15 * q * i * 0.3, R, 0, TAU); g.fill(); }
   }
 }
 

@@ -87,10 +87,10 @@ const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 /** The backdrop and the place things start from, for either stage: the
     library's own scenery for the recipe's backdrop, its top at `top` (H0 m),
     its edge at x0, the ground or the water at oy. */
-function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false, over, hoop, held = false, who }) {
+function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false, over, hoop, held = false, who, launcher }) {
   const P = palette();
   // the places in js/render/places.js draw themselves and what they launch from
-  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, hoop, held, who }); return; }
+  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, hoop, held, who, launcher }); return; }
   const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
   // the place it is launched from, where the backdrop has no edge of its own:
   // a stone wall to stand on, a jetty over the sea, or the ground itself
@@ -281,13 +281,13 @@ function launch(canvas, o) {
   // a ramp always, a cannon or a catapult up to its own height; no wall is drawn
   const ls = LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k, H0) : 0;
   // (a cannon is dug in where it fires from: on the ground, or on the wall it fires from)
-  const grounded = !!ls && !B.edge && H0 > 0 && R.launcher !== 'cannon' && (R.launcher === 'ramp' || H0 * k <= ls * 2.4);
+  const grounded = !!ls && !B.edge && H0 > 0 && ((R.launcher !== 'cannon' && (R.launcher === 'ramp' || H0 * k <= ls * 2.4)) || (R.launcher === 'cannon' && R.backdrop === 'circus'));
   // how high the lead's path is where it crosses x (a net across a court), or null
   const over = (x) => { const p = lead.pts; for (let j = 1; j < p.length; j++) if ((p[j - 1].x - x) * (p[j].x - x) <= 0 && p[j].x !== p[j - 1].x) return p[j - 1].y + (p[j].y - p[j - 1].y) * (x - p[j - 1].x) / (p[j].x - p[j - 1].x); return null; };
   // a hoop at the height a part asks about, where the engine passes it on the way down (rule 4)
   const lvl = lead.f.level, tDown = lvl?.times?.length ? lvl.times[lvl.times.length - 1] : null;
   const hoop = R.backdrop === 'arena' && lvl && lvl.xDown != null && tDown != null && !lvl.atTop ? { x: X(lvl.xDown), y: Y(lvl.L), age: lead.t >= tDown ? lead.t - tDown : -1, at: (cx) => { const y = over((cx - X(0)) / k); return y == null ? null : Y(y); } } : null;
-  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, hoop, held: lead.thrown, who: R.objects[0].figure });
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, hoop, held: lead.thrown, who: R.objects[0].figure, launcher: R.launcher });
 
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {
@@ -297,6 +297,7 @@ function launch(canvas, o) {
       : R.backdrop === 'table' ? x0 - tableW(k, w) - 16 : R.backdrop === 'well' ? x0 - 26 - 30
       // beside the block, not across its windows, where the frame has room
       : R.backdrop === 'city' && x0 - cityWidth(H0, k, w) - 16 > 60 ? x0 - cityWidth(H0, k, w) - 16
+      : LAUNCHER_ART[R.launcher] && R.launcher !== 'ramp' ? x0 - launcherSize(R.launcher, k, H0) * 1.6 - 14
       : (thrownAny ? x0 - TH(k) * 0.5 : x0 - size(k) * 0.65) - behind(k) - 14;
     stroke(g, [{ x: dx, y: oy }, { x: dx, y: top }], { color: P.ink, width: 1.4, alpha: 0.9 });
     for (const yy of [oy, top]) stroke(g, [{ x: dx - 5, y: yy }, { x: dx + 5, y: yy }], { color: P.ink, width: 1.4, alpha: 0.9 });
@@ -329,7 +330,7 @@ function launch(canvas, o) {
   // ── who throws it: at the edge, wound up before the throw, through after it
   const v0 = f.vel(0), aim = (Math.atan2(v0.y, v0.x) * 180) / Math.PI;
   // a launcher's ground, and a catapult's swing: up over the first moments of the flight
-  const lgy = grounded && R.launcher !== 'cannon' ? oy : top + ls * (R.launcher === 'ramp' ? 0.3 : 0.1);
+  const lgy = grounded && (R.launcher !== 'cannon' || R.backdrop === 'circus') ? oy : top + ls * (R.launcher === 'ramp' ? 0.3 : 0.1);
   const swing = m.going ? clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1) : 0;
   // a tennis ball is served, a baseball or a cricket ball batted: where the racquet or the bat meets it
   // (at hand height only: from a stand or a wall it is thrown, never batted)
@@ -366,7 +367,7 @@ function launch(canvas, o) {
     // a cannon, a ramp or a catapult at the launch point, aimed as the engine
     // launches it; it fires (or lets go) as the engine's clock starts
     L.reserve({ x: x0 - ls * 1.5, y: top - ls * 0.7, w: ls * 1.55, h: Math.max(ls * 1.1, (grounded ? oy : top) - top + ls * 0.7) });
-    LAUNCHER_ART[R.launcher](g, x0, top, ls, P, { aim, t: m.going ? t : -1, gy: lgy, swing, phase: tRaw });
+    LAUNCHER_ART[R.launcher](g, x0, top, ls, P, { aim, t: m.going ? t : -1, gy: lgy, swing, phase: tRaw, circus: R.backdrop === 'circus' });
   } else if (thrown) {
     // a javelin is held along the throw, its grip in the hand, until it goes
     // (and so is anything thrown from the hand's own height: it leaves the hand)
@@ -376,7 +377,7 @@ function launch(canvas, o) {
 
   // ── the path: all of it faintly, the part flown strongly
   const at = (p) => ({ x: X(p.x), y: Y(p.y) });
-  stroke(g, pts.map(at), { color: P.vel, width: 1.8, alpha: 0.35 });
+  stroke(g, pts.map(at), { color: P.vel, width: 1.8, alpha: R.backdrop === 'circus' ? 0.6 : 0.35 });
   const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'firework', 'arrow', 'javelin', 'bird', 'dolphin', 'fish'].includes(kind) || !!piece.animal;
   stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
@@ -652,8 +653,23 @@ function launch(canvas, o) {
       // a full turn (or a lean and back) so it lands upright
       const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * (wet ? 3 : 2) : wet ? ease(0.05, 1, p) * Math.PI * 0.85 : Math.sin(ease(0.05, 0.95, p) * Math.PI) * 0.6;
       m.body = { x: cx, y: cy - (fired ? 0 : Lp * 0.25) };
+      const longJump = R.backdrop === 'stadium' && !(H0 > 0), shot = !!LAUNCHER_ART[R.launcher];
+      if (longJump) {
+        // a long jumper: the feet carry the engine's point from the board to the sand, never below it;
+        // knees up and arms forward in the air, sitting into the pit with the legs out in front
+        const tj = ease(0.1, 0.35, p) * 0.35 * (1 - ease(0.6, 0.75, p)) + ease(0.75, 1, p) * 0.55;
+        cx = bx; cy = by - DIVER_FEET * Lp * (1 - 0.5 * tj);
+        m.body = { x: cx, y: cy };
+        diver(g, cx, cy, Lp, P, { ring: m.ring, tuck: tj, arms: !fired ? 0.15 : 0.55 + 0.25 * ease(0.1, 0.4, p), spin: fired ? -0.15 * ease(0.1, 0.4, p) + 0.25 * ease(0.75, 1, p) : 0, stand: !fired });
+      } else if (shot) {
+        // a human cannonball: inside the barrel until clear of the muzzle, then head first along the path
+        const q = f.pos(t), out = fired && Math.hypot(X(q.x) - X(0), Y(q.y) - Y(H0)) > Lp * 0.6;
+        const a = Math.atan2(-v.y, v.x);
+        cx = bx; cy = by; m.body = out ? { x: bx, y: by } : null;
+        if (out) diver(g, cx, cy, Lp, P, { ring: m.ring || '#e8c547', tuck: 0, arms: 1, spin: a + Math.PI / 2 });
+      }
       // on the Moon or Mars, in a white spacesuit
-      diver(g, cx, cy, Lp, P, { ring: m.ring || (R.backdrop === 'moon' || R.backdrop === 'mars' ? '#e4e6ea' : null), space: R.backdrop === 'moon' || R.backdrop === 'mars', tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
+      else diver(g, cx, cy, Lp, P, { ring: m.ring || (R.backdrop === 'moon' || R.backdrop === 'mars' ? '#e4e6ea' : null), space: R.backdrop === 'moon' || R.backdrop === 'mars', tuck, arms: !fired ? 0.15 : p < 0.04 ? ease(0, 0.04, p) : 1 - tuck, spin, stand: !fired });
     } else if (piece.animal) {
       // crouched on the edge, its feet at the engine's point; it springs,
       // stretches out in the air, and reaches down to land
@@ -767,7 +783,8 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', lake: 'the lake', island: 'the sand', skatepark: 'the concrete', circus: 'the ring', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const netted = R.backdrop === 'circus' && R.objects[0].figure === 'diver' && (H0 > 0 || R.launcher === 'cannon');
+  const name = netted ? 'the safety net' : R.backdrop === 'stadium' && R.objects[0].figure === 'diver' && !(H0 > 0) ? 'the sand pit' : { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', lake: 'the lake', island: 'the sand', skatepark: 'the concrete', circus: 'the ring', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   // (at a lake thrown by hand, the place drew the shore: the name goes over the water)
   const under = wet && H0 > 0 && !(R.backdrop === 'lake' && byHand);
   L.add(name, under ? x0 - 12 : w - 14, under ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
