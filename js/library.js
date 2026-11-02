@@ -585,7 +585,7 @@ export const LIBRARY = [
     example: { 'r0.x': 500, 'r0.y': 200, 'u.x': -17.5, 'u.y': -27, 'a.x': 0.5, 'a.y': 0.6, 'P.x': 200, 'P.y': -400 },
     parts: [
       { label: 'a', kind: 'time', ask: 'Show that the helicopter passes directly over the rock, and find how long it takes to get there from the lighthouse.', find: 'answers.P.t', sym: 't', unit: 's', trim: true, at: 'answers.P.t', step: 'side by side', paper: 40 },
-      { label: 'b', kind: 'speed', ask: 'Find its average velocity from the lighthouse to the rock, and its size.', find: 'answers.P.avs', sym: 'abs(vec v)', unit: 'm s^-1', at: 'answers.P.t', step: 'side by side', paper: 16.77, tol: 0.01 },
+      { label: 'b', kind: 'speed', ask: 'Find the size of its average velocity from the lighthouse to the rock.', find: 'answers.P.avs', sym: 'abs(vec v)', unit: 'm s^-1', at: 'answers.P.t', step: 'side by side', paper: 16.77, tol: 0.01 },
       { label: 'c', kind: 'speed', ask: 'Find its average speed from the lighthouse to the rock. Is it the size of its average velocity?', find: 'answers.P.sp', sym: 'v', unit: 'm s^-1', at: 'answers.P.t', step: 'side by side' },
       { label: 'd', kind: 'speed', ask: 'Another sets off from hovering over a lighthouse, accelerating at 0.5 m s⁻² east and 0.375 m s⁻² north. Its speed 20 s later?', given: H11, find: 'answers.T.speed', sym: 'v', unit: 'm s^-1', at: 'answers.T.t', step: 'side by side', paper: 12.5 },
       { label: 'e', kind: 'angle', ask: 'On what bearing is it travelling then, to the nearest degree?', given: H11, find: 'answers.T.bearing', sym: 'theta', suffix: '°', dp: 0, at: 'answers.T.t', step: 'side by side', paper: 53, tol: 0.5 },

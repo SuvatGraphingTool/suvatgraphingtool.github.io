@@ -97,7 +97,8 @@ function blocksFor(o, t, tMax, K, U) {
       ...(flat && acc && Math.hypot(acc.x, acc.y) > 1e-9 ? [{ name: `${who}acceleration`, hue: 'acc', rows: [
         { name: nx, value: acc.x, unit: U.a, formula: M`a_x`, sub: d(acc.x), note: '', hue: 'acc', part: 'x' },
         { name: ny, value: acc.y, unit: U.a, formula: M`a_y`, sub: d(acc.y), note: '', hue: 'acc', part: 'y' },
-        { name: 'Size', value: Math.hypot(acc.x, acc.y), unit: U.a, formula: M`sqrt(a_x^2 + a_y^2)`, sub: d(Math.hypot(acc.x, acc.y)), note: '', hue: 'acc', part: 'r' },
+        { name: 'Size', value: Math.hypot(acc.x, acc.y), unit: U.a, formula: M`sqrt(a_x^2 + a_y^2)`, sub: d(Math.hypot(acc.x, acc.y)), hue: 'acc', part: 'r',
+          note: `Constant: ${map || (ij && K?.resolveBearing) ? `on a bearing of ${three((Math.atan2(acc.x, acc.y) * 180 / Math.PI + 360) % 360)}°` : ij ? `at ${d((Math.atan2(acc.y, acc.x) * 180 / Math.PI + 360) % 360, 1)}° to ${M`vec i`}, measured anticlockwise` : 'the same at every instant'}.` },
       ] }] : []),
     ];
   }

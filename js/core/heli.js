@@ -77,8 +77,8 @@ export function solveHeli(k = {}) {
   if (rest && A < EPS) return fail('Hovering with no acceleration, it never moves.');
   const F = planeMotion({ r0, u, a }, Infinity);
   const rows = [], notes = [], derived = [], answers = {};
-  rows.push({ f: M`vec v = vec u + vec(a)t`, s: '', r: M`vec v = ${vecSum([u.x, a.x], [u.y, a.y])}` });
-  rows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: '', r: M`vec r = ${vecSum([r0.x, u.x, a.x / 2], [r0.y, u.y, a.y / 2])}` });
+  rows.push({ f: M`vec v = vec u + vec(a)t`, s: '', r: M`vec v = ${vecSum([u.x, a.x], [u.y, a.y], 4)}` });
+  rows.push({ f: M`vec r = vec r_0 + vec(u)t + ½vec(a)t^2`, s: '', r: M`vec r = ${vecSum([r0.x, u.x, a.x / 2], [r0.y, u.y, a.y / 2], 4)}` });
 
   // ── at a time: speed and bearing
   if (have(k.T)) {
@@ -133,10 +133,13 @@ export function solveHeli(k = {}) {
     const word = c === 'x' ? 'east–west' : 'north–south';
     rows.push({ f: M`${c} = ${c}_0 + u_${c} t + ½a_${c} t^2`, s: M`${d(P[c])} = ${poly([r0[c], u[c], a[c] / 2])}`, r: M`${poly([r0[c] - P[c], u[c], a[c] / 2], 3, { desc: true })} = 0` });
     rows.push({ f: '', s: '', r: ts.length ? ts.map((t) => M`t = ${d(t)} [s]`).join(' or ') : 'no time after it sets off' });
-    for (const t of ts) rows.push({ f: M`${o} = ${o}_0 + u_${o} t + ½a_${o} t^2`, s: M`${d(r0[o])} + ${sb(u[o])} * ${d(t)} + ${d(a[o] / 2)} * ${d(t)}^2`, r: M`${o} = ${d(snap(at(t)))}${agree(t) ? '' : ` != ${d(P[o])}`}` });
+    for (const t of ts) rows.push({ f: M`${o} = ${o}_0 + u_${o} t + ½a_${o} t^2`, s: M`${d(r0[o])} + ${sb(u[o])} * ${d(t)} + ${sb(a[o] / 2)} * ${d(t)}^2`, r: M`${o} = ${d(snap(at(t)))}${agree(t) ? '' : ` != ${d(P[o])}`}` });
     if (hit == null) {
       answers.P = { P, over: false, times: ts };
-      notes.push(ts.length ? `It is level with the rock ${word} at ${ts.map((t) => M`t = ${d(t)} [s]`).join(' and ')}, but each time it is somewhere else the other way: it never passes directly over it.` : `It is never level with the rock ${word}, so it never passes over it.`);
+      const atStart = Math.hypot(r0.x - P.x, r0.y - P.y) < 1e-9;
+      notes.push(atStart && !ts.length ? 'It is over the rock only at the start, at the moment it sets off, and never comes back over it.'
+        : ts.length ? `It is level with the rock ${word} at ${ts.map((t) => M`t = ${d(t)} [s]`).join(' and ')}, but ${ts.length > 1 ? 'each time' : 'then'} it is somewhere else the other way: it never passes directly over it.`
+        : `It is never level with the rock ${word}, so it never passes over it.`);
       derived.push('never directly over the rock');
     } else {
       const T = hit, disp = { x: snap(P.x - r0.x), y: snap(P.y - r0.y) }, av = { x: snap(disp.x / T), y: snap(disp.y / T) };

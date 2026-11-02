@@ -21,7 +21,7 @@ import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAl
 import { placer, s3 } from './twoplane.js';
 import { T, num } from '../notation.js';
 
-const ROWS = 5;
+const ROWS = 4;   // js/kits/heli.js hud(...).left
 const TAU = Math.PI * 2;
 const three = (b) => String(Math.round(((b % 360) + 360) % 360) % 360).padStart(3, '0');
 
@@ -108,7 +108,7 @@ export function render(canvas, cam, o) {
   const hudBoxes = hudOf(w, phone ? 3 : ROWS);   // as js/kits/heli.js shows them
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 20), cY = h - cR - (phone ? 14 : 22);
   const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
-  const F = fitPlanAround(box, all, { left: pad, right: w - pad, top: pad, bottom: h - pad }, { avoid: [...hudBoxes.map((b) => ({ ...b, h: b.h + 40 })), compassBox], margin: pad * 0.7 });   // the lighthouse stands 40 px above its point
+  const F = fitPlanAround(box, all, { left: pad, right: w - pad, top: pad, bottom: h - pad }, { avoid: [...hudBoxes.map((b) => ({ ...b, h: b.h + 40 })), compassBox, ...(phone ? [{ x: 0, y: h - 40, w, h: 40 }] : [])], margin: pad * 0.7 });   // and, on a phone, the caption's band   // the lighthouse stands 40 px above its point
   const { X, Y } = F, px = (p) => ({ x: X(p.x), y: Y(p.y) });
 
   // ── the sea, the lighthouse's rock and the rock as islands in it
@@ -123,7 +123,7 @@ export function render(canvas, cam, o) {
   Q.line(pts.map(px));
 
   // ── the grid and the axes through O
-  const step = niceStep(sp, phone ? 5 : 8);
+  const step = niceStep(sp, phone ? 3 : 5);   // a regular ladder the labels can all keep
   const Ls = labels(); for (const b of [...hudBoxes, compassBox]) Ls.reserve(b);
   const gridWords = planGrid(g, Ls, F, w, h, P, { step, fmt: (x) => num(x, step < 1 ? 1 : 0), nameI: T`vec(i) [m]`, nameJ: T`vec(j) [m]`, clear: Q.clear,
     jTop: X(0) < hudBoxes[0].x + hudBoxes[0].w + 10 ? hudBoxes[0].h + 14 : 16 });
@@ -153,6 +153,7 @@ export function render(canvas, cam, o) {
   // ── each asked moment, once the clock reaches it: drawn over the helicopter,
   //    which is over the rock at the very moment the paper asks about
   const at = (ta) => t >= ta - 1e-9 ? ageOf(t, ta, f.tMax) : null;
+  const said = [];   // the moments' words: on a phone, a caption too
   if (A.D) {
     const e = at(A.D.t);
     if (e) {
@@ -162,7 +163,8 @@ export function render(canvas, cam, o) {
       g.beginPath(); g.arc(L0.x, L0.y, R, -Math.PI / 2, -Math.PI / 2 + TAU * grow); g.stroke(); g.restore();
       const q = px(A.D.r); pulse(g, q.x, q.y, e.age, e.life, P.mark, { radius: 40 });
       stroke(g, [L0, q], { color: P.mark, width: 1.6, dash: [3, 4] });
-      Q.add(T`${s3(A.D.D)} [m] "from the start," t = ${s3(A.D.t)} [s]`, (L0.x + q.x) / 2, (L0.y + q.y) / 2, { color: P.mark, pri: 8, size: 14, weight: 700 });
+      const say = T`${s3(A.D.D)} [m] "from the start," t = ${s3(A.D.t)} [s]`;
+      if (!phone) Q.add(say, (L0.x + q.x) / 2, (L0.y + q.y) / 2, { color: P.mark, pri: 8, size: 14, weight: 700 }); said.push(say);
     }
   }
   if (A.P) {
@@ -174,7 +176,8 @@ export function render(canvas, cam, o) {
       stroke(g, [{ x: R0.x, y: Math.min(R0.y, q.y) - 30 }, { x: R0.x, y: Math.max(R0.y, q.y) + 30 }], { color: P.mark, width: 1.6, dash: [6, 5], alpha: 0.85 });
       pulse(g, q.x, q.y, e.age, e.life, P.mark, { radius: 34 });
       dot(g, q.x, q.y, 5, { fill: P.mark, stroke: cssVar('--surface', '#131210'), width: 2 });
-      Q.add(T`t = ${s3(ta)} [s] ": level, not over"`, q.x, q.y, { color: P.mark, pri: 8, size: 13, weight: 700 });
+      const gap = f.pos(ta).y - f.rock.y, say = T`t = ${s3(ta)} [s], ${s3(Math.abs(gap))} [m] ${gap > 0 ? '"north"' : '"south"'} "of the rock"`;
+      if (!phone) Q.add(say, q.x, q.y, { color: P.mark, pri: 8, size: 13, weight: 700 }); said.push(say);
     }
     if (A.P.over) {
       const e = at(A.P.t);
@@ -184,10 +187,12 @@ export function render(canvas, cam, o) {
         // the average velocity: the straight line from the lighthouse to the rock
         const u = phaseOf(e.age, e.life * 0.6), grow = u == null ? 1 : 1 - (1 - u) ** 3;
         const end = { x: L0.x + (R0.x - L0.x) * grow, y: L0.y + (R0.y - L0.y) * grow };
-        arrow(g, L0.x, L0.y, end.x, end.y, { color: P.mark, width: 2.4, head: 11, dash: [9, 5] });   // dashed: not the path it flew
+        arrow(g, L0.x, L0.y, end.x, end.y, { color: P.vel, width: 2.4, head: 11 });   // a velocity: its hue
         Q.line([L0, R0], 8);
-        Q.add(T`"over the rock," t = ${s3(A.P.t)} [s]`, R0.x, R0.y, { color: P.mark, pri: 9, size: 14, weight: 700 });
-        Q.add(T`"average velocity" ${s3(A.P.avs)} [m s^-1]`, (L0.x + R0.x) / 2, (L0.y + R0.y) / 2, { color: P.mark, pri: 10, size: 13, weight: 700 });
+        const over = T`"over the rock," t = ${s3(A.P.t)} [s]`, avg = T`"average velocity" ${s3(A.P.avs)} [m s^-1]`;
+        if (!phone) Q.add(over, R0.x, R0.y, { color: P.mark, pri: 9, size: 14, weight: 700 });
+        if (!phone) Q.add(avg, (L0.x + R0.x) / 2, (L0.y + R0.y) / 2, { color: P.vel, pri: 10, size: 13, weight: 700 });
+        said.push(avg, over);   // the caption keeps the last: over the rock
       }
     }
   }
@@ -196,7 +201,8 @@ export function render(canvas, cam, o) {
     const e = at(A.T.t);
     if (e) {
       const q = px(f.pos(A.T.t)); pulse(g, q.x, q.y, e.age, e.life, P.mark, { radius: 40 }); dot(g, q.x, q.y, 5, { fill: P.mark, stroke: cssVar('--surface', '#131210'), width: 2 });
-      Q.add(T`t = ${s3(A.T.t)} [s], ${s3(A.T.speed)} [m s^-1] "on" ${three(A.T.bearing)}°`, q.x, q.y, { color: P.mark, pri: 8, size: 13, weight: 700 });
+      const say = T`t = ${s3(A.T.t)} [s], ${s3(A.T.speed)} [m s^-1] "on" ${three(A.T.bearing)}°`;
+      if (!phone) Q.add(say, q.x, q.y, { color: P.mark, pri: 8, size: 13, weight: 700 }); said.push(say);
     }
   }
   if (show.velocity !== false && spd > 1e-9) {
@@ -221,5 +227,17 @@ export function render(canvas, cam, o) {
   L.draw(g, w, h);
   unview(g);
   compassRose(g, cX, cY, cR, P);
+  // on a phone the moments' words do not find room on the water: they are
+  // said in a caption along the foot of the stage instead, clear of the compass
+  if (phone && said.length) {
+    const fs = 13, lh = fs + 7, bw = w - cR * 2 - 48;
+    g.save(); g.font = `700 ${fs}px ${cssVar('--font', 'system-ui, sans-serif')}`; g.textBaseline = 'middle';
+    said.slice(-1).forEach((txt, i, arr) => {   // the latest moment the clock has reached
+      const y = h - 12 - (arr.length - i) * lh + lh / 2, tw = Math.min(bw, g.measureText(txt).width + 14);
+      g.fillStyle = withAlpha(cssVar('--surface', '#131210'), 0.82); g.beginPath(); g.roundRect?.(10, y - lh / 2 + 1, tw, lh - 2, 6); g.fill();
+      g.fillStyle = P.mark; g.fillText(txt, 17, y, bw - 14);
+    });
+    g.restore();
+  }
   return null;
 }

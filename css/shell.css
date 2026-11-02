@@ -986,3 +986,9 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
   .pin:has(.pchips > :nth-child(5)) .pnow { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr) auto; }
   .pin:has(.pchips > :nth-child(5)) .pgo { grid-column: 2; grid-row: 1; }
 }
+/* … and in a phone's strip, five chips or more get the whole row, the next
+   button under the part */
+@container pstrip (max-width: 620px) {
+  .pin:has(.pchips > :nth-child(5)) .pchips { grid-column: 1 / -1; }
+  .pin:has(.pchips > :nth-child(5)) .pgo { grid-column: 1 / -1; grid-row: 3; }
+}
