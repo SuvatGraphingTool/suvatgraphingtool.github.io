@@ -1544,6 +1544,22 @@ function K_never() {
   return e.real === false && /never met/.test(e.title) && !/collision ends/.test(e.body);
 }
 
+/* ── the impulse at a bounce: Edexcel M1 June 2018 Q4 ────────────────── */
+group('A ball that bounces: the impulse from the ground (Edexcel M1 June 2018 Q4)', async () => {
+  const { solveBounce, bounceWorking } = await import('../js/core/bounce.js');
+  const r = solveBounce({ start: 'down', h: 2.5, w: 10, m: 0.2, I: 7, y: 1, stop: 'y', g: 9.8, axis: 'down' });
+  ok(r.ok && near(r.params.V, 25) && near(r.params.U, 24), 'I = m(v_after + v_before): 7 = 0.2(10 + V), so V = 25, and U = 24 (the paper)');
+  ok(Math.abs(r.yAfter.since - 0.10545) < 1e-4 && near(r.f.tMax, r.yAfter.t), 'B, 1 m up, first passed 0.11 s after the bounce (the paper), where the run stops');
+  const W = bounceWorking(r);
+  ok(/impulse/i.test(W[0].title) && /7=0\.2\(10\+speed before\)/.test(strip(W[0].rows[0].s)), 'the working opens with the impulse, its numbers substituted');
+  const back = solveBounce({ start: 'down', h: 2.5, U: 24, m: 0.2, I: 7, g: 9.8 });
+  ok(back.ok && near(back.params.w, 10), 'the other way: the impact speed and the impulse give the rebound, 10 m s⁻¹');
+  const found = solveBounce({ start: 'down', h: 2.5, U: 24, w: 10, m: 0.2, g: 9.8 });
+  ok(found.ok && near(found.params.I, 7) && !found.params.Igiven, 'the mass alone: the impulse is found, 7 N s');
+  ok(!solveBounce({ start: 'down', h: 2.5, w: 10, I: 7, g: 9.8 }).ok, 'an impulse with no mass is refused, in words');
+  ok(!solveBounce({ start: 'down', h: 2.5, w: 10, m: 0.2, I: 1, g: 9.8 }).ok, 'an impulse too small for the rebound is refused');
+});
+
 /* ── a question in parts ────────────────────────────────────────────── */
 group('A question in parts: every part of every library scenario reproduces its paper', async () => {});
 {

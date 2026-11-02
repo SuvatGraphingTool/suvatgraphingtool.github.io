@@ -104,8 +104,8 @@ export function fromReader(id, raw, boxes = []) {
       ? { ...base, label, ask: clip(r.asks, 160) || (hit.say && !/\d/.test(hit.say) ? hit.say : `The ${base.kind}`), prose: true }
       : { label, kind: 'other', ask: clip(r.asks, 160) || 'This part', prose: true };
     // a sketch read from another paper says only where it is drawn
-    if (base?.kind === 'graph') p.say = 'It is drawn on the stage: the graphs are the motion the engine found.';
-    delete p.key; delete p.part; delete p.paper; delete p.tol; delete p.given; delete p.carry;
+    if (base?.kind === 'graph') p.say = 'The stage’s own graphs are the sketch: choosing this part opens them.';
+    delete p.key; delete p.part; delete p.paper; delete p.tol; delete p.given; delete p.carry; delete p.example;
     if (!base) p.say = 'Not one this app works out for you — it may need another topic. The stage, the working and the graphs show the motion it is about.';
     // every part's own answer is the engine's; a reader part's `uses` only says so
     p.uses = Array.isArray(r.uses) ? r.uses.map((x) => clip(x, 5).toLowerCase()).filter((x) => out.some((q) => q.label === x)) : [];

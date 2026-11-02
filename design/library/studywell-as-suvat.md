@@ -13,7 +13,7 @@ Paraphrases are ours; no question text is stored here.
 
 | # | paper | what happens (our words) | answers (from the PDF) | status | owner |
 |---|---|---|---|---|---|
-| 1 | M1 Jun 2018 Q4 | ball thrown down from 2.5 m, rebounds up at 10 m/s, passes a point 1 m up; v–t across the bounce | U = 24 (needs impulse, out of scope; give the speed at impact instead), t = 0.11 s | **ticked**: `bounce` (impulse part (a) out; give U or the impact speed) | bounce session |
+| 1 | M1 Jun 2018 Q4 | ball thrown down from 2.5 m, rebounds up at 10 m/s, passes a point 1 m up; v–t across the bounce | U = 24 (from the impulse, 7 N s on 0.2 kg), t = 0.11 s | **ticked, fully** (2 Nov): `bounce` takes the mass and the impulse — (a) U = 24, (b) 0.11 s, (c) the v–t graph to B; Ask Suvat reads the photo, Edexcel's g = 9.8 | bounce session; Ask Suvat QA |
 | 2 | M1 Jun 2017 Q6 | cyclist A→B in 5 s, 10 m/s at B, AB = 40 m; time to the midpoint | a = 0.8, t = 2.81 s | **ticked** (fixed: the road now draws a cyclist): a 0.8, mid-point 2.81 s, cyclist on the road, A, B and M marked, graphs | figures + checks session |
 | 3 | M1 Jun 2016 Q4 | two trains on parallel tracks: M overtakes N at X, each holds speed then brakes to rest at Y, same time | T = 8.75 | **ticked**: `two-on-a-road` on the tracks (trains, posts X and Y, T = 8.75) | two-body session |
 | 4 | M1 Jun 2015 Q2 | stone straight up at 19.6 m/s; greatest height; time above 14.7 m | 19.6 m, 2 s | **ticked**: Time above a line, Straight up, u 19.6, a 9.8 → greatest height 19.60 m, above 14.7 m for 2.00 s | figures + checks session |

@@ -157,8 +157,35 @@ function stages(x, words) {
   return out;
 }
 
+// an Edexcel mechanics paper — M1, M2, the IAL units — whose rubric takes g as 9.8
+const EDEXCEL = /\bedexcel\b|\bpearson\b|\bIAL\b|\bWME0\d\b|\b66(77|78)\b|\bM[1-3]\b|\bmechanics [1-3]\b/i;
+
+/**
+ * g on an Edexcel mechanics paper: the paper's rubric says g = 9.8, not on the
+ * question itself, so a reader never sees it there. Known from the paper the
+ * reader names, or the student's words; marked so the reply says where it came from.
+ */
+function edexcel(x, words) {
+  if (!x || !x.understood || !EDEXCEL.test(`${words} ${x.paper || ''}`)) return x;
+  if (x.scenario === 'library' && x.boxes && typeof x.boxes === 'object') {
+    return x.boxes.g == null ? { ...x, boxes: { ...x.boxes, g: 9.8 }, gFrom: 'Edexcel' } : x;
+  }
+  if (x.scenario === 'compose' && x.recipe?.numbers) {
+    return x.recipe.numbers.g == null ? { ...x, recipe: { ...x.recipe, numbers: { ...x.recipe.numbers, g: 9.8 } }, gFrom: 'Edexcel' } : x;
+  }
+  return x.g == null ? { ...x, g: 9.8, gFrom: 'Edexcel' } : x;
+}
+
+/** A bounce asked about up to a height — "first passes B", "from A to B" — runs to there, not to the next impact. */
+function bounceTo(x, words) {
+  const b = x?.boxes;
+  if (x?.library !== 'bounce' || !b || b.y == null || b.stop != null) return x;
+  const asked = `${words} ${(x.parts || []).map((p) => p?.asks || '').join(' ')}`;
+  return /\bfirst pass|\bto B\b|\breaches B\b|\bpasses B\b|\bat B\b/i.test(asked) ? { ...x, boxes: { ...b, stop: 'y' } } : x;
+}
+
 export function toPlace(x, words = '') {
-  return stages(settle(placed(marked(x, words), words), words), words);
+  return edexcel(bounceTo(stages(settle(placed(marked(x, words), words), words), words), words), words);
 }
 
 function placed(x, words) {

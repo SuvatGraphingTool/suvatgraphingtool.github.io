@@ -97,16 +97,35 @@ export function solveBounce(k = {}) {
   if (missing.length) return fail(`Still needed: ${missing.join(', ')}.`);
   if (!(g > EPS)) return fail('A bounce needs gravity to bring the ball back down: give g as a size, such as 9.8.');
   for (const [key, what] of [['h', 'The height it starts from'], ['U', 'The speed it is thrown with'], ['V', 'The speed it hits the ground with'],
-    ['w', 'The speed it rebounds with'], ['H', 'The height it rises to'], ['e', 'The fraction of its speed it keeps'], ['T', 'The time after the bounce']]) {
+    ['w', 'The speed it rebounds with'], ['H', 'The height it rises to'], ['e', 'The fraction of its speed it keeps'], ['T', 'The time after the bounce'],
+    ['m', 'The mass of the ball'], ['I', 'The impulse from the ground']]) {
     if (have(k[key]) && k[key] < 0) {
       return fail(`${what} is a size, so it cannot be negative.${/U|V|w/.test(key) ? ' The direction is set by how it sets off, and by the convention you choose.' : ''}`);
     }
   }
   const notes = [];
 
+  /* ── the impulse at the bounce: I = m(v_after + v_before) ────────────────
+     The one momentum step this engine takes, for a vertical bounce only: the
+     ball arrives going down and leaves going up, so the change in its
+     momentum is the mass times the two SPEEDS added. With the mass, the
+     impulse fixes their sum — so the rebound gives the impact speed, or the
+     impact speed gives the rebound. With the mass alone, the impulse is
+     found. Nothing else here is momentum (design/components.md). */
+  const mass = have(k.m) ? k.m : null, I = have(k.I) ? k.I : null;
+  if (I != null && mass == null) return fail('An impulse changes the momentum, so it needs the mass of the ball too: give the mass.');
+  if (mass != null && !(mass > EPS)) return fail('The mass of the ball must be more than 0.');
+  const sum = I != null ? I / mass : null;                 // v_after + v_before, as speeds
+
   /* ── the throw: any two of h, U, V (released: U is 0) ────────────────── */
   let h = k.h, U = k.U, V = k.V;
   const found = {};
+  // the rebound and the impulse give the impact speed
+  if (sum != null && have(k.w) && !have(V)) {
+    V = sum - k.w;
+    if (!(V > EPS)) return fail(`An impulse of ${M`${d(I)} [N s]`} on ${M`${d(mass)} [kg]`} is only enough to send it back up at ${M`${sf(sum)} [m s^-1]`} from rest: with a rebound of ${M`${d(k.w)} [m s^-1]`} it would have to arrive with no speed at all. Check the impulse, the mass and the rebound speed.`);
+    found.Vimp = true;
+  }
   if (start === 'drop') {
     if (have(U) && U > EPS) return fail(`Released from rest means it starts with no speed, so the speed it is thrown with is 0. Clear that box, or choose thrown down or thrown up.`);
     U = 0;
@@ -156,6 +175,10 @@ export function solveBounce(k = {}) {
     if (!have(k.y)) return fail('A time after the bounce needs the height it is at then: give the height to ask about (the height it started from, if it passes its start).');
     if (!(k.T > EPS)) return fail('The time after the bounce is after it, so it must be more than 0.');
     asked.push({ key: 'T', w: (k.y + 0.5 * g * k.T * k.T) / k.T, say: `being ${M`${d(k.y)} [m]`} up ${M`${d(k.T)} [s]`} after the bounce` });
+  }
+  if (sum != null && !found.Vimp) asked.push({ key: 'I', w: sum - V, say: `takes an impulse of ${M`${d(I)} [N s]`}` });
+  if (asked.length && asked[0].key === 'I' && !(asked[0].w > EPS)) {
+    return fail(`An impulse of ${M`${d(I)} [N s]`} on ${M`${d(mass)} [kg]`} only stops a ball arriving at ${M`${sf(V)} [m s^-1]`}${asked[0].w < -EPS ? ', and not even that' : ''}: it would not bounce. Check the impulse and the mass.`);
   }
   if (!asked.length) return fail('Still needed: how it bounces — the speed it rebounds with, the greatest height it rises to after the bounce, the fraction of its speed it keeps, or when it is at a height after it.');
   for (const q of asked.slice(1)) {
@@ -211,6 +234,8 @@ export function solveBounce(k = {}) {
     tMax = stopAt.t;
   }
   const crossings = allY.filter((c) => c.t <= tMax + 1e-9);
+  // the first time it is at the height asked about after the bounce — "B", in a paper — whether or not the run stops there
+  const yAfter = allY.find((c) => c.after >= 1 && c.t > impacts[0].t + 1e-9) || null;
   const shown = impacts.filter((x) => x.t <= tMax + 1e-9);
   const last = shown[shown.length - 1];
   // The top of the first flight, when it is thrown up and so rises first.
@@ -237,11 +262,12 @@ export function solveBounce(k = {}) {
     : { t: last.t, text: `It hits the ground the ${ordinal(last.k)} time at ${M`t = ${sf(last.t)} [s]`}.` };
 
   const derived = [
-    `hits at ${M`${sf(V)} [m s^-1]`}`,
+    `hits at ${M`${sf(V)} [m s^-1]`}${found.Vimp ? ', from the impulse' : ''}`,
     `leaves at ${M`${sf(w)} [m s^-1]`}`,
     ...(stopAt ? [`${M`${sf(stopAt.since)} [s]`} from the bounce to ${M`${d(y)} [m]`} up`]
       : [`${ordinal(n)} impact at ${M`t = ${sf(last.t)} [s]`}`]),
   ];
+  if (mass != null && I == null) derived.push(`an impulse of ${M`${sf(mass * (w + V))} [N s]`} from the ground`);
   if (found.h) derived.unshift(`starts ${M`${sf(h)} [m]`} up`);
   if (found.U && U > 1e-6) derived.unshift(`thrown at ${M`${sf(U)} [m s^-1]`}`);
 
@@ -266,8 +292,9 @@ export function solveBounce(k = {}) {
   const f = motion(m, { h, u, g, e, w, V, sg, impacts: shown, crossings, y, top0, tMax, stopAt });
   return {
     ok: true, mode: 'bounce', axis, sign: sg,
-    params: { g, h, u, U, V, w, e, H1, n, y, start, by, stopAtY, found, T: have(k.T) ? k.T : null, fromT: have(k.T) },
-    f, m, impacts: shown, crossings, top0, stopAt, moment, derived, notes, extras, convention, watched,
+    params: { g, h, u, U, V, w, e, H1, n, y, start, by, stopAtY, found, T: have(k.T) ? k.T : null, fromT: have(k.T),
+              mass, I: mass != null ? (I != null ? I : snap(mass * (w + V))) : null, Igiven: I != null },
+    f, m, impacts: shown, crossings, yAfter, top0, stopAt, moment, derived, notes, extras, convention, watched,
     say: moment.text,
   };
 }
@@ -333,6 +360,16 @@ export function bounceWorking(solved) {
   const out = [];
   const pos = s > 0 ? 'positive upwards' : 'positive downwards';
 
+  // 0 — the impulse, when it is what gives the impact speed
+  if (found.Vimp) {
+    out.push({
+      title: 'The impulse at the bounce',
+      rows: [{ f: M`I = m("speed after" + "speed before")`, s: M`${d(P.I)} = ${d(P.mass)}(${nm(w)} + "speed before")`, r: M`"speed before" = ${nm(V)} [m s^-1]` }],
+      note: `Impulse is the change in momentum. The ball arrives going down and leaves going up, so its velocity changes by the two speeds added: ${M`I = m("speed after" + "speed before")`}. `
+        + `The rebound is given, so this gives the speed it hits the ground with, ${M`${sf(V)} [m s^-1]`} — and from that, the throw.`,
+    });
+  }
+
   // 1 — the first flight
   const u1 = s * u, v1 = -s * V, s1 = -s * h;
   const rows = [];
@@ -365,12 +402,14 @@ export function bounceWorking(solved) {
   const brow = by === 'w' ? { f: M`u = ${nm(u2)} [m s^-1]`, s: '', r: '' }
     : by === 'H' ? { f: M`v^2 = u^2 + 2as`, s: M`0 = u^2 + 2 * ${sbs(a)} * ${sbs(s * P.H1)}`, r: M`u = ${nm(u2)} [m s^-1]` }
     : by === 'same' ? { f: M`"speed after" = "speed before"`, s: M`${nm(V)}`, r: M`u = ${nm(u2)} [m s^-1]` }
+    : by === 'I' ? { f: M`I = m("speed after" + "speed before")`, s: M`${d(P.I)} = ${d(P.mass)}("speed after" + ${nm(V)})`, r: M`u = ${nm(u2)} [m s^-1]` }
     : by === 'T' ? { f: M`s = ut + ½at^2`, s: M`${sbs(s * y)} = ${d(P.T)}u + ½ * ${sbs(a)} * ${d(P.T)}^2`, r: M`u = ${sf(u2)} [m s^-1]` }
     : { f: M`"speed after" = e * "speed before"`, s: M`${d(e, 3)} * ${nm(V)} = ${nm(w)}`, r: M`u = ${nm(u2)} [m s^-1]` };
   out.push({
     title: 'The bounce',
     rows: [brow],
     note: (by === 'w' ? 'The paper gives the speed it leaves the ground with. '
+      : by === 'I' ? `The impulse from the ground is the change in momentum: arriving down and leaving up, the two speeds add, so ${M`${d(P.I)} [N s]`} on ${M`${d(P.mass)} [kg]`} leaves ${M`${sf(w)} [m s^-1]`} for the rebound. `
       : by === 'T' ? `From the impact, the paper says where it is a time later: ${M`${d(y)} [m]`} up after ${M`${d(P.T)} [s]`}, with ${M`a = ${nm(a)}`} the whole way. That one equation has the rebound speed as its only unknown. `
       : by === 'H' ? `At its greatest height, ${M`${nm(P.H1)} [m]`} up, it is momentarily at rest, so ${M`v = 0`} there. `
       : by === 'same' ? 'The rebound given is a rounding faster than the impact, so it is taken as losing no speed. '

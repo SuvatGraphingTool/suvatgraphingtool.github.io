@@ -130,7 +130,8 @@ parts: [
 | `out` | instead of everything else: the part is out of scope, and why. It shows as a dimmed chip |
 
 A scenario may also list `answers`: more outputs in the same shape (with `say`
-instead of `label` and `ask`), for what its OTHER papers ask — the whole
+instead of `label` and `ask`, and `example`, that paper's own boxes, when the
+scenario's example cannot answer it), for what its OTHER papers ask — the whole
 distance, the top speed. Ask Suvat's reader picks a part's answer from a
 scenario's parts and answers by key (`speed1`, `speed2`, `graph`, `time`: the
 kind, numbered when it comes twice), see `js/parts/answers.js`; the list it is
@@ -419,7 +420,7 @@ Used by: `over-the-wall`.
 
 ### A ball that bounces — `js/core/bounce.js`
 
-`solveBounce({ start, h, U, V, w, H, e, n, y, stop, axis, g })` — `start` is
+`solveBounce({ start, h, U, V, w, H, e, m, I, n, y, stop, axis, g })` — `start` is
 `'drop'`, `'down'` or `'up'`; any two of the height h, the throw speed U and
 the impact speed V fix the throw (one when released); any one of the rebound
 speed w, the rebound height H or the fraction kept e fixes the bounce (more
@@ -434,6 +435,17 @@ impact times. `bounceWorking(solved)` — the fall (v² = u² + 2as, then
 v = u + at), the bounce, each flight between impacts, the total, and the
 height asked about, all in the student's convention. `bounceMotion({ h, u, g,
 e, impacts })` — the bare staged motion, up positive.
+
+**The impulse — the one momentum step, for this vertical bounce only.** With
+the mass m and the impulse I from the ground, the speeds before and after add
+to I/m (arriving down, leaving up: I = m(v_after + v_before)). With the
+rebound given it finds the impact speed — and the throw from it (Edexcel M1
+June 2018 Q4: 7 N s on 0.2 kg rebounding at 10 m s⁻¹ hit at 25, so U = 24);
+with the impact speed known it finds the rebound; with the mass alone the
+impulse is found (`params.I`). Its working is its own first step. Nothing
+else in the engines is momentum: a collision, a recoil or a force over a
+time is another chapter. `yAfter` is the first time it is at y after the
+bounce, whether or not the run stops there.
 
 Used by: `bounce`.
 

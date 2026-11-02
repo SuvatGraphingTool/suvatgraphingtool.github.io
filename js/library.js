@@ -226,10 +226,14 @@ export const LIBRARY = [
     ],
     answers: [
       { kind: 'height', say: 'the greatest height after the first bounce', find: 'extras.H1', sym: 'H', unit: 'm', trim: true, at: 'extras.t1' },
+      // Edexcel M1 June 2018 Q4: down from 2.5 m, rebounds at 10 m/s, an impulse of 7 N s on 0.2 kg
+      { kind: 'speed', say: 'the speed it is thrown with, U (found from the impulse)', find: 'params.U', sym: 'U', unit: 'm s^-1', trim: true, at: 0, step: 'impulse', paper: 24, example: { start: 'down', h: 2.5, w: 10, m: 0.2, I: 7, y: 1, g: 9.8, axis: 'down' } },
+      { kind: 'time', say: 'the time from hitting the ground to first passing the height asked about', find: 'yAfter.since', sym: 't', unit: 's', dp: 2, at: 'yAfter.t', step: 'when it is', paper: 0.11, example: { start: 'down', h: 2.5, w: 10, m: 0.2, I: 7, y: 1, g: 9.8, axis: 'down' } },
+      { kind: 'impulse', say: 'the impulse from the ground', find: 'params.I', sym: 'I', unit: 'N s', trim: true, at: 'extras.t1', step: 'bounce', paper: 7, example: { start: 'down', h: 2.5, w: 10, m: 0.2, I: 7, y: 1, g: 9.8, axis: 'down' } },
     ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2014', q: '3', part: 'all but the impulse' },
-      { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2018', q: '4', part: '(b) and (c); the impact speed given instead of found from the impulse' },
+      { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2018', q: '4' },
     ],
     tags: ['bounce', 'bounces', 'bouncing', 'rebound', 'rebounds', 'impact', 'hits the ground', 'strikes the ground', 'ball',
            'dropped', 'released from rest', 'projected vertically downwards', 'thrown down', 'thrown up', 'vertically', 'greatest height',
@@ -244,7 +248,7 @@ export const LIBRARY = [
         ['A particle, and no air', 'the ball has no size, does not spin, and falls with g alone. A real ball meets the ground a radius before its centre would, and air slows it a little on the way up and down.'],
         ['One bounce stands for all of them', 'a paper gives one rebound, and any later one here keeps the same fraction of its speed. Real balls keep a slightly different fraction at different speeds, and eventually stop bouncing and roll.'],
       ],
-      caveat: 'What the engine did compute is above: each flight from what you gave, the speeds either side of every impact, the times between them, and every moment it is at the height asked about. The bounce itself was given, not worked out: finding it from an impulse is momentum, another chapter.',
+      caveat: 'What the engine did compute is above: each flight from what you gave, the speeds either side of every impact, the times between them, and every moment it is at the height asked about. The bounce itself was given, or found from an impulse with the mass — the one momentum step here: arriving down and leaving up, the two speeds add to the impulse over the mass.',
     } },
   { id: 'back-past-the-start', group: 'library', kit: 'bounce',
     name: 'Back past the start',

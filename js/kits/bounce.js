@@ -20,6 +20,8 @@ const FIELDS = [
   { key: 'w', col: 'bounce', label: 'Speed it rebounds with (m s⁻¹)', hint: 'Just after the first impact.' },
   { key: 'H', col: 'bounce', label: 'Greatest height after the bounce (m)', hint: 'How high it rises again, from the ground.' },
   { key: 'e', col: 'bounce', label: 'Fraction of its speed it keeps', hint: 'Rebound speed ÷ impact speed: “half its speed” is 0.5; a third, type with a slash.' },
+  { key: 'm', col: 'bounce', label: 'Mass of the ball (kg)', hint: 'Only with an impulse: the momentum step at the bounce.' },
+  { key: 'I', col: 'bounce', label: 'Or: impulse from the ground (N s)', hint: 'With the mass: the speeds before and after add to I ÷ m. With the rebound speed too, it finds the impact speed.' },
   { key: 'T', col: 'bounce', label: 'Or: time after the bounce it is at the height asked about (s)', hint: 'With the height to ask about below — “passes its starting point 0.87 s after rebounding”. Give one of these four.' },
 ];
 
@@ -57,7 +59,7 @@ export const bounce = {
   resolveObjects: (f) => [{ name: '', pos: (t) => f.at(t).y, vel: (t) => f.at(t).v, acc: (t) => f.at(t).a, axis: 'vertical', sign: f.sign }],
   read(vals) {
     const k = {};
-    for (const key of ['start', 'h', 'U', 'V', 'w', 'H', 'e', 'T', 'n', 'y', 'stop', 'axis']) k[key] = vals[key];
+    for (const key of ['start', 'h', 'U', 'V', 'w', 'H', 'e', 'm', 'I', 'T', 'n', 'y', 'stop', 'axis']) k[key] = vals[key];
     k.g = vals.g;
     return k;
   },

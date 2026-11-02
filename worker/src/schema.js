@@ -46,6 +46,7 @@ export const EXTRACTION_SCHEMA = {
     belowHorizontal: { type: 'boolean', description: 'true if projected BELOW the horizontal' },
     h: { type: 'number', description: 'Launch height above the ground in metres. 0 if launched from the ground.' },
     g: { type: 'number', description: 'Only if the question states it — many say 10 rather than 9.8. Omit otherwise.' },
+    paper: { type: 'string', description: 'The exam board and paper, when the question or the photo shows them: "Edexcel M1", "OCR A", "AQA". Omit otherwise.' },
     // road only — a vehicle along a straight road, with its own acceleration
     a: { type: 'number', description: 'road only: the acceleration in m/s². NEGATIVE when it is slowing down (braking, decelerating, retarding). Only if given.' },
     atMidpoint: { type: 'boolean', description: 'road only: true if a part asks about the mid-point between the two points.' },
@@ -185,6 +186,8 @@ RULES
   five sentences. Explain in words — write no equations and no symbols such as ^ or sqrt,
   because the app sets the maths itself.
 - Set confidence to low if values are unclear, handwritten, or partly cut off.
+- If the question or the photo shows its exam board or paper ("Edexcel", "Pearson", "M1", "OCR",
+  "AQA"), set paper to it, as "Edexcel M1". The app takes g from the paper's rules.
 
 THE PAST-PAPER LIBRARY
 Exam situations the twelve above cannot set up: two objects, a bounce, stages, i and j

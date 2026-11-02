@@ -1025,6 +1025,11 @@ function showPart(k, { play = false } = {}) {
   syncRate(); renderParts(); dirty = true;
   // the working panel, if it is open, scrolls its lit step into view
   requestAnimationFrame(() => document.querySelector('#working .step[data-part="on"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  // a sketch is answered by the stage's own graphs: open them, the velocity–time one in view
+  if (run.part.kind === 'graph') {
+    openGraphs();
+    requestAnimationFrame(() => $('g-v')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  }
 }
 $('parts').addEventListener('click', (e) => {
   const s = e.target.closest('button[data-scene]');
@@ -3324,8 +3329,11 @@ for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) 
    Nothing on this route calculates a flight that the engine did not. */
 /** The words the student typed for the reading on show — '' for a photo, or none known. */
 let heard = '';
+/** Whose g the reading took, when a paper's rubric gave it: 'Edexcel' (9.8), or ''. */
+let gFrom = '';
 function applyReading(x, opts) {
   if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? opts.words : '';
+  if (!opts?.part) gFrom = typeof x?.gFrom === 'string' ? x.gFrom.slice(0, 20) : '';
   stayPut = true;
   try { return readInto(x, opts); } finally { stayPut = false; }
 }
@@ -3473,7 +3481,7 @@ function applyLibrary(x, { graph = true } = {}) {
   const body = solved?.ok
     ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
-  return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example) + body };
+  return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example, !!KITS[s.kit].g) + body };
 }
 /**
  * What Ask Suvat read into a library scenario's boxes, listed the way the
@@ -3481,7 +3489,7 @@ function applyLibrary(x, { graph = true } = {}) {
  * question, or an assumption (Earth's g; a jump's angle when none was given).
  */
 // gAssumed only where the engine uses g (its kit offers a g): a lift or a road has none to assume
-function libraryGiven(fields, gAssumed, summary = '', example = false) {
+function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = true) {
   const plain = (h) => String(h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
   const angleAssumed = /No angle was given/.test(summary || '');
   const atRest = /No speed was given/.test(summary || '');
@@ -3489,6 +3497,8 @@ function libraryGiven(fields, gAssumed, summary = '', example = false) {
   for (const f of fields) {
     const v = state.kit[f.key];
     if (v == null || v === '') continue;
+    // how the stage shows it — a sign convention, where to stop, what to draw — is not a value the question gave
+    if (SHOWING.test(f.key)) continue;
     let shown, fromWords = false;
     if (f.type === 'choice') {
       // a choice stays in words: "A diving board"
@@ -3504,7 +3514,8 @@ function libraryGiven(fields, gAssumed, summary = '', example = false) {
         fromWords = !!heard && !saidIn(heard, n);
       }
     }
-    const how = f.key === 'g' && gAssumed ? 'assumed · on Earth'
+    const how = f.key === 'g' && gFrom ? `${esc(gFrom)}’s value for the paper`
+      : f.key === 'g' && gAssumed ? 'assumed · on Earth'
       : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given'
       : f.key === 'u' && atRest ? 'assumed · no speed was given'
       // "surprise me": the numbers are the paper's, not anything the student said
@@ -3513,8 +3524,11 @@ function libraryGiven(fields, gAssumed, summary = '', example = false) {
     rows.push(`<li class="ro-row" data-how="${how.startsWith('assumed') ? 'assumed' : 'given'}">
       <span class="ro-val">${shown}</span><span class="ro-how">${how}</span></li>`);
   }
-  if (!fields.some((f) => f.key === 'g') && gAssumed) {
-    rows.push(`<li class="ro-row" data-how="assumed"><span class="ro-val">${M`g = 9.81 [m s^-2]`}</span><span class="ro-how">assumed · on Earth</span></li>`);
+  // g, which no kit lists among its boxes: Earth's, assumed; a paper's rubric's; or read
+  const g = state.kit.g;
+  if (usesG && !fields.some((f) => f.key === 'g') && (gAssumed || (typeof g === 'number' && g > 0))) {
+    const how = gFrom ? `${esc(gFrom)}’s value for the paper` : gAssumed ? 'assumed · on Earth' : example ? 'from the paper' : 'in the question';
+    rows.push(`<li class="ro-row" data-how="${gAssumed && !gFrom ? 'assumed' : 'given'}"><span class="ro-val">${M`g = ${num(gAssumed ? 9.81 : g, 2, { trim: true })} [m s^-2]`}</span><span class="ro-how">${how}</span></li>`);
   }
   return rows.length ? `<ul class="ro-list">${rows.join('')}</ul>` : '';
 }
@@ -3535,13 +3549,17 @@ function askedHTML(id, x, solvedLike) {
   }).filter(Boolean);
   return rows.length ? `<ul class="ro-res ro-asked" aria-label="What the question asks">${rows.join('')}</ul>` : '';
 }
+// the boxes that say how the stage shows the motion, not what the question gave
+const SHOWING = /^(axis|stop|n|where|who|pick|flag|find|units)$|\.fig$/;
 /** Whether a number is among the ones typed: 20 in "a 20 m cliff", not in "dropped". */
 function saidIn(words, n) {
   const want = String(+Math.abs(n).toFixed(6));
   return (String(words).replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?|\.\d+/g) || []).some((x) => String(+x) === want);
 }
-// the quantities a box can be, set as maths; any other box is said in its own words
-const QUANTITY = new Set(['h', 'u', 'v', 's', 't', 'a', 'g', 'H', 'T', 'D', 'd', 'V', 'U', 'w', 'e', 'x', 'y', 'theta', 'tTop']);
+// the quantities every paper writes the same way, set as maths; any other box —
+// a rebound speed w, a height to ask about y, a whole time T — is said in its own
+// words, never as a bare letter the student was not given
+const QUANTITY = new Set(['h', 'u', 'v', 's', 't', 'a', 'g', 'theta']);
 /** One value read into a box, set as maths: "h = 20 m", "θ = 90°", "u_A = 6 m s⁻¹" — the unit is the box's own. */
 function quantityHTML(f, n) {
   const plain = String(f.label ?? '').replace(/<[^>]+>/g, '');
@@ -3552,9 +3570,9 @@ function quantityHTML(f, n) {
   const m = /^(?:([A-Z])\.)?([A-Za-z]+?)([1-9]?)$/.exec(f.key);
   const base = m && (QUANTITY.has(m[2]) ? m[2] : null);
   const who = /^([A-Z])\./.exec(f.key)?.[1];
-  if (!base) return `${who ? `${who} · ` : ''}${esc(plain.replace(/\s*\([^()]*\)\s*$/, ''))}: ${unit === '°' ? M`${val}°` : unit ? M`${val} [${unit}]` : M`${val}`}`;
+  if (!base) return `${who ? `${who} · ` : ''}${esc(plain.replace(/\s*\([^()]*\)\s*$/, '').replace(/^Or:\s*/i, '').replace(/^./, (c) => c.toUpperCase()))}: ${unit === '°' ? M`${val}°` : unit ? M`${val} [${unit}]` : M`${val}`}`;
   const sub = [m[1], m[3]].filter(Boolean).join(',');
-  const sym = base === 'tTop' ? 't_top' : sub ? `${base}_${sub}` : base;
+  const sym = sub ? `${base}_${sub}` : base;
   return unit === '°' ? M`${sym} = ${val}°` : unit ? M`${sym} = ${val} [${unit}]` : M`${sym} = ${val}`;
 }
 /**
@@ -3603,7 +3621,7 @@ function applyComposed(x, { graph = true } = {}) {
     : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
   // the values it read, each from the question or assumed, as a library reply lists them
   const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g,
-    `${x.summary || ''} ${said.join(' ')}`);
+    `${x.summary || ''} ${said.join(' ')}`, false, !!c.kit.g);
   return { ok: true, runnable: !!traj, composed: !!traj, html: head + given + body + more };
 }
 /** A composed scene, kept with the boxes and parts it was read with. */
@@ -3627,14 +3645,18 @@ function showScene(id) {
   if (traj) showFlight(); else go('values');
 }
 /** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
-function showFlight() {
-  if (!traj) return;
-  // Graph was on: the stage opens with its graphs showing, as the reply did.
+/** The graphs against time, shown, and the panel they live in open. */
+function openGraphs() {
   state.extras.graphs = true;
   const box = $('extras').querySelector('input[data-k="graphs"]');
   if (box) box.checked = true;
   $('graphs-wrap').hidden = false;
   if (!state.options && !windowed()) $('options-btn').click();   // where the graphs live
+}
+function showFlight() {
+  if (!traj) return;
+  // Graph was on: the stage opens with its graphs showing, as the reply did.
+  openGraphs();
   if (scenario.exhibit) runFlight();
   // a scene just composed arrives behind its veil, which names its pieces and
   // lifts onto the motion (js/compose/reveal.js); once seen, it launches as

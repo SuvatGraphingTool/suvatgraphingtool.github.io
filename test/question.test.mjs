@@ -291,7 +291,8 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
       const r = K.solve(K.read(s.example));
       for (const a of answersFor(s).filter((x) => x.part.find && !s.parts.includes(x.part))) {
         const [p] = fromReader(s.id, [{ label: 'a', asks: a.say, answer: a.key }]);
-        const run = walk(() => r, {}, [p])[0];
+        // an answer from another paper is solved with that paper's own boxes
+        const run = walk(() => (a.part.example ? K.solve(K.read(a.part.example)) : r), {}, [p])[0];
         ok(run.answer.ok, `${s.id}: its extra answer “${a.say}” is there in the engine’s solution`);
       }
     }
@@ -480,6 +481,29 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const p = fromReader('bounce', [{ label: 'a', ...one.asked[0] }])[0];
   const K = KITS[byId('bounce').kit], sv = K.solve(K.read({ start: 'drop', h: 2, e: 0.5, g: 9.81 }));
   ok(p.find === 'extras.H1' && Math.abs(answerOf(p, sv).values[0] - 0.5) < 1e-9, 'and the engine answers it: 0.5 m after the bounce');
+}
+
+// THE USER, 2 Nov: Edexcel M1 June 2018 Q4 from a photo — "Not enough to run it yet", and w = 10, y = 1 in the values.
+// The bounce scenario's own paper: 0.2 kg projected down at U from A, 2.5 m up; rebounds at 10 m/s; impulse 7 N s;
+// (a) U = 24 (b) from the bounce to first passing B, 1 m up: 0.11 s (c) the v–t graph from A to B
+{
+  const read = { understood: true, confidence: 'high', scenario: 'library', library: 'bounce', paper: 'Edexcel M1',
+    summary: 'A 0.2 kg ball is projected vertically downwards at U m/s from A, 2.5 m above the ground, and rebounds at 10 m/s; the impulse from the ground is 7 N s.',
+    boxes: { start: 'down', h: 2.5, w: 10, m: 0.2, I: 7, y: 1, axis: 'down' },
+    parts: [{ label: 'a', asks: 'find U', answer: 'speed3' }, { label: 'b', asks: 'time from hitting the ground to first passing B', answer: 'time2' },
+      { label: 'c', asks: 'sketch the velocity-time graph from A to B', answer: 'graph' }] };
+  const x = toPlace(read, '');                          // a photo: no words typed
+  ok(x.boxes.g === 9.8 && x.gFrom === 'Edexcel', 'an Edexcel M1 paper takes its rubric\'s g = 9.8, and says whose it is');
+  ok(x.boxes.stop === 'y' && x.parts?.length === 3, 'a sketch "from A to B" runs to B, and a photo keeps its three parts');
+  ok(toPlace({ ...read, paper: undefined }, '').boxes.g === undefined, 'no paper named: g is left to the app, Earth\'s, assumed');
+  const { fromReader } = await import('../js/parts/answers.js');
+  const { walk } = await import('../js/parts/parts.js');
+  const { byId } = await import('../js/scenarios.js'), { KITS } = await import('../js/kits/index.js');
+  const K = KITS[byId('bounce').kit], sv = K.solve(K.read(x.boxes));
+  const runs = walk(() => sv, {}, fromReader('bounce', x.parts, Object.keys(x.boxes)));
+  ok(sv.ok && runs[0].answer.values[0] === 24, '(a) U = 24 m s⁻¹, from the impulse');
+  ok(Math.abs(runs[1].answer.values[0] - 0.105448) < 1e-5, '(b) 0.11 s from the bounce to first passing B');
+  ok(runs[2].part.kind === 'graph' && Math.abs(runs[2].moment.t - sv.f.tMax) < 1e-9 && Math.abs(sv.f.tMax - sv.yAfter.t) < 1e-9, '(c) the graph, the run ending at B');
 }
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
