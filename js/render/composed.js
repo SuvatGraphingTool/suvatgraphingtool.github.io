@@ -122,8 +122,20 @@ function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, by
       break;
     }
     case 'orchard': {
-      fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
-      for (const [dx, s] of [[-2.6 * k - 40, 0.8], [xMax * k + 90, 0.9]]) if (x0 + dx > 0 && x0 + dx < w) tree(g, x0 + dx, oy, clamp(H0 * k * 0.9, 40, 140) * s);
+      if (R.below === 'river') {
+        // a tree on the river bank, its branch out over the water
+        riverScene(g, w, h, horizon(0.16), phase);
+        // the bank it stands on: turf over an earth face sloping into the water
+        // (its edge behind the branch's end, so what drops from it falls into the water)
+        const E = env(), bh = clamp(0.5 * k, 6, 16), be = x0 - clamp(0.3 * k, 4, 12) - bh * 1.6;
+        g.fillStyle = E.night ? '#3a3026' : '#7a5a3a'; g.beginPath(); g.moveTo(-4, oy - bh); g.lineTo(be, oy - bh); g.quadraticCurveTo(be + bh, oy - bh * 0.3, be + bh * 1.6, oy + 3); g.lineTo(be + bh * 1.6, h); g.lineTo(-4, h); g.closePath(); g.fill();
+        g.fillStyle = withAlpha('#0e1612', 0.35); g.fillRect(-4, oy + 3, be + bh * 1.6 + 4, h - oy);
+        grass(g, -4, be, oy - bh, oy - bh + 5);
+        if (H0 > 0) tree(g, Math.max(20, x0 - 2.6 * k - 40), oy - bh, clamp(H0 * k * 0.9, 40, 140) * 0.8);
+      } else {
+        fields(g, w, horizon(0.25), oy); grass(g, 0, w, oy, h);
+        for (const [dx, s] of [[-2.6 * k - 40, 0.8], [xMax * k + 90, 0.9]]) if (x0 + dx > 0 && x0 + dx < w) tree(g, x0 + dx, oy, clamp(H0 * k * 0.9, 40, 140) * s);
+      }
       // the tree it falls from, its crown round the branch it hangs from
       if (H0 > 0) appleTree(g, (x) => X(x - 1.2), Y, k, [1.2, 1.2], [H0, H0], 11);
       break;
@@ -187,7 +199,8 @@ function launch(canvas, o) {
     const small = !!piece.thrown || !!piece.small || kind === 'arrow';
     // thrown from low down with nothing to stand on: the thrower stands on the
     // ground or the floor and lets go at hand height
-    const byHand = thrown && !B.edge && R.backdrop !== 'sea' && H0 > 0 && H0 <= 2.6;
+    // (a golf ball is struck, never held: from a height it is a raised tee)
+    const byHand = thrown && kind !== 'golfBall' && !B.edge && R.backdrop !== 'sea' && H0 > 0 && H0 <= 2.6;
     const n = 160, pts = [];
     for (let j = 0; j <= n; j++) { const tt = (j / n) * f.tMax; pts.push({ t: tt, ...f.pos(tt) }); }
     return { i, f, kind, piece, thrown, small, byHand, pts, t0: m.t0 || 0, tag: twin ? 'AB'[i] : null, ring: i ? P.second : null,
@@ -328,7 +341,7 @@ function launch(canvas, o) {
   // ── the path: all of it faintly, the part flown strongly
   const at = (p) => ({ x: X(p.x), y: Y(p.y) });
   stroke(g, pts.map(at), { color: P.vel, width: 1.8, alpha: 0.35 });
-  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'firework', 'arrow', 'javelin'].includes(kind) || !!piece.animal;
+  const body = ['diver', 'skateboarder', 'parcel', 'sandbag', 'bucket', 'rocket', 'firework', 'arrow', 'javelin', 'bird'].includes(kind) || !!piece.animal;
   stroke(g, pts.filter((p) => p.t <= t).map(at), { color: P.vel, width: body ? 2.4 : 3, alpha: body ? 0.5 : 1 });
 
   // a rocket's smoke, left along the way it has come, under the marks
@@ -493,6 +506,18 @@ function launch(canvas, o) {
     if (kind === 'firework') firework(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, { burning: fired && t < f.tMax * 0.04, spent: R.effects.includes('burst') && f.uy > 0 && t >= f.tApex, spin: t * 9 });
     else rocket(g, bx + Math.cos(ang) * lift, by + Math.sin(ang) * lift, Lp, ang, !fired || t < f.tMax * 0.04);
     g.restore();
+  } else if (kind === 'bird') {
+    // a bird flying its own path: head along the way it goes, wings beating
+    // on the way up and across, swept back as it dives; under water it is gone
+    const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), dive = clamp((Math.sin(ang) - 0.3) / 0.6, 0, 1);
+    if (!(landed && wet && age > life * 0.25)) {
+      if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
+      g.save(); g.translate(bx, by); g.rotate(ang);
+      CARRIER_ART.bird(g, 0, Lp * 0.15, Lp, P, { phase: tRaw * 1.3, fold: fired && aloft ? dive : 0.2 });
+      g.restore();
+      if (m.ring) dot(g, bx, by, Lp * 0.45, { stroke: m.ring, width: 2.2 });
+    }
+    m.body = { x: bx, y: by };
   } else if (kind === 'diver' || kind === 'skateboarder' || kind === 'parcel' || kind === 'sandbag' || kind === 'bucket' || piece.animal) {
     const p = fired ? t / f.tMax : 0, ease = (a0, b0, x) => { const u = clamp((x - a0) / (b0 - a0), 0, 1); return u * u * (3 - 2 * u); };
     const after = landed ? clamp(age / life, 0, 1) : 0;

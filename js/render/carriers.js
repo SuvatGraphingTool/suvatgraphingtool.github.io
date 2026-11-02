@@ -132,11 +132,12 @@ export function drone(g, x, y, s, P, { phase = 0 } = {}) {
 /** A gull in flight, side on: a white body and head outlined so it shows on
     a pale sky, a grey back and wings with black tips, the wings beating with
     `phase` (never flat: raised at rest), its feet down at the point. */
-export function bird(g, x, y, s, P, { phase = 0 } = {}) {
+export function bird(g, x, y, s, P, { phase = 0, fold = null } = {}) {
   const E = env(), white = E.night ? '#d6d8dc' : '#fbfbfc', grey = E.night ? '#7d848c' : '#7f8a96', line = E.night ? '#1b1d21' : '#3a3f46';
   g.save(); g.translate(x, y);
   g.lineJoin = 'round';
-  const by = -s * 0.2, beat = 0.35 + 0.65 * Math.sin(phase * 9);
+  // `fold` (0–1) sweeps the wings back along the body, as a bird diving
+  const by = -s * 0.2, beat = fold == null ? 0.35 + 0.65 * Math.sin(phase * 9) : 0.6 * (1 - fold) + 0.05;
   const wing = (dx, reach, c) => {
     const tx = -s * reach, ty = by - s * 0.55 * beat;
     g.fillStyle = c; g.strokeStyle = line; g.lineWidth = 1;

@@ -33,7 +33,7 @@ export const BACKDROPS = {
   sea:     { label: 'The open sea', what: 'open water to the horizon', place: 'water', below: 'sea' },
   road:    { label: 'A road', what: 'a straight tarmac road with verges', place: 'road', below: 'road' },
   rails:   { label: 'A railway', what: 'a railway line on ballast and sleepers', place: 'track', below: 'rails' },
-  orchard: { label: 'An orchard', what: 'apple trees in grass', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['apple', 'ball', 'stone', 'particle'] },
+  orchard: { label: 'An orchard', what: 'apple trees in grass (or on a river bank, over the water)', place: 'tree', below: 'ground', edge: true, at: 'a tree', only: ['apple', 'ball', 'stone', 'particle', 'bird'], belows: ['ground', 'river'] },
   hall:    { label: 'A sports hall', what: 'an indoor hall with a wooden floor and high windows', place: 'floor', below: 'floor' },
   board:   { label: 'A diving board', what: 'a diving platform on its tower over an outdoor pool', place: 'board', below: 'pool', edge: true, at: 'a diving board' },
   table:   { label: 'A table', what: 'a wooden table in a room', place: 'table', below: 'floor', edge: true, at: 'a table' },
@@ -106,6 +106,7 @@ export const FIGURES = {
   dog:      { label: 'a dog', m: 0.8, min: 34, views: ['side'], animal: true },
   monkey:   { label: 'a monkey', m: 0.6, min: 30, views: ['side'], animal: true },
   frog:     { label: 'a frog', m: 0.12, min: 24, views: ['side'], animal: true },
+  bird:     { label: 'a bird', m: 0.4, min: 46, views: ['side'], flier: true },
 };
 
 /** What it is let go from, high in the air (backdrop `air` only): drawn at
@@ -330,6 +331,7 @@ const WORDS = [
   [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
   [/\b(javelin)\b/, 'javelin'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
   [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],
+  [/\b(bird|kingfisher|gannet|seagull|gull|eagle|hawk|falcon|osprey|pelican|heron|tern|cormorant|puffin|swallow|pigeon|owl|crow|duck)\b/, 'bird'],
   [/\b(stone|pebble|rock|brick|key|object|mass)\b/, 'stone'],
   [/\b(ball|cricket ball|rugby ball|dart)\b/, 'ball'],
   [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit|coconut)\b/, 'apple'],
@@ -340,7 +342,7 @@ const NEAREST = [
   [/\b(ski(er)?|snowboard(er)?|surfer|horse|rider|bmx)\b/, 'diver'],
   [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone|fish|nut|clam|mussel|prey|mouse)\b/, 'particle'],
   [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|kangaroo|locust)\b/, 'frog'],
-  [/\b(bird|animal)\b/, 'particle'],
+  [/\b(animal|bat|insect|bee)\b/, 'particle'],
 ];
 /**
  * What moves, found in a question's own words when the reader left it out:
@@ -401,13 +403,13 @@ const ONLY_HERE = [
   [new RegExp(`${FROM}(?:(?:top|crest|wall) of (?:a|the)\\s+)?(dam)\\b`), 'dam'],
   [/\b(playground|climbing frame|play tower|slide in a park|top of (?:a|the) slide)\b/, 'playground'],
   [/\b(building site|construction site|scaffold(?:ing)?|tower crane|crane)\b/, 'site'],
-  [/\b(golf course|fairway|golf green|tee(?:ing)? ground|tee box|raised tee|on the green)\b/, 'golf'],
+  [/\b(golf course|fairway|golf green|putting green|tee(?:ing)? ground|tee box|raised tee|on(?:to)? (?:a|the) green|chip(?:s|ped)? (?:a|the) (?:golf )?ball|golfer)\b/, 'golf'],
   [/\b(athletics stadium|athletics track|running track|shot put|shot-put|putts? the shot|javelin throw|discus|hammer throw|throws the hammer|olympic stadium|in the stadium)\b/, 'stadium'],
   [new RegExp(`${FROM}(quay|quayside|harbour wall|jetty|dock|harbour)\\b`), 'harbour'],
   [new RegExp(`${FROM}(ledge|mountain|mountainside|peak|crag|mountain ledge)\\b`), 'mountain'],
   [new RegExp(`${FROM}(table|desk|bench|worktop|counter|shelf|workbench)\\b(?!\\s+(?:of|tennis))`), 'table'],
   [new RegExp(`${FROM}(balcony|window|house|bungalow|roof)\\b(?!\\s+of)`), 'house'],
-  [/\b(?:in|inside)\s+(?:a|the)\s+(sports hall|gym(?:nasium)?)\b/, 'hall'],
+  [/\b(?:in|inside)\s+(?:a|the)\s+(sports hall|gym(?:nasium)?)\b|\b(basketball court|netball court|badminton court|indoor court)\b/, 'hall'],
   [new RegExp(`${FROM}(tree|branch|apple tree|bough)\\b`), 'orchard'],
 ];
 /**

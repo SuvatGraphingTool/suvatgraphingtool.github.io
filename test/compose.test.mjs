@@ -82,7 +82,7 @@ group('Refused, with a reason a student can read', () => {
   no({ ...CAR, engine: 'plane', objects: [{ figure: 'ship' }] }, /does not draw it yet/, 'an engine the stage does not draw yet');
   no(null, /empty/, 'no recipe at all');
   no({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 10, theta: 0 } }, /launched upwards/, 'along the ground, it never leaves it');
-  no({ backdrop: 'orchard', engine: 'projectile', objects: [{ figure: 'car' }], numbers: { h: 3 } }, /only an apple, a ball, a stone or a particle can fall: not a car/, 'a car falling from a tree');
+  no({ backdrop: 'orchard', engine: 'projectile', objects: [{ figure: 'car' }], numbers: { h: 3 } }, /only an apple, a ball, a stone, a particle or a bird can fall: not a car/, 'a car falling from a tree');
   no({ ...CAR, numbers: { h: -150000 } }, /−1.500 × 10⁵ for the height/, 'a huge number said as a number, with a real minus sign');
   ok(check({ ...CAR, title: 'A <img src=x onerror=alert(1)>', objects: [{ figure: 'car', name: '<b>x</b>' }] }).recipe.title.indexOf('<') < 0, 'markup from the reader never gets through');
 });
@@ -279,6 +279,14 @@ group('Places only the composer draws, and more of what students name', () => {
   for (const [q, b] of [['A golf ball is struck from the tee box', 'golf'], ['a ball lands on the fairway', 'golf'], ['An athlete putts the shot from 2.1 m', 'stadium'], ['in a shot put competition', 'stadium']]) ok(placeIn(q)?.backdrop === b, `“${q}”: ${b}`);
   for (const [q, b] of [['A stone is thrown from the deck of a ship', 'ship'], ['a ball is dropped from the crest of the dam', 'dam'], ['a child jumps from the top of a slide', 'playground'], ['a ball thrown from the ferry', 'ship']]) ok(placeIn(q)?.backdrop === b, `“${q}”: ${b}`);
   ok(titleOf(check({ backdrop: 'ship', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 12, u: 6, theta: 10 } }).recipe) === 'A stone off the deck of a ship' && check({ backdrop: 'dam', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 50, u: 0, theta: -90 } }).recipe?.effects.join() === 'splash' && titleOf(check({ backdrop: 'playground', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 3, u: 4, theta: 20 } }).recipe) === 'A ball off a play tower', 'off a ship’s deck, a dam into the river, off a play tower');
+  // From a height's readings of places it does not draw itself are composed there
+  const fh = (place, h, u, theta, summary, who, below) => { const x = fromReading({ understood: true, scenario: 'library', library: 'from-a-height', boxes: { place, h, u, theta }, ...(below ? { below } : {}), summary, who }); return x && check(x.recipe).recipe; };
+  const chip = fh('ground', 2, 15, 55, 'A golf ball is chipped at 15 m/s at 55° onto a green 2 m lower', 'golf ball');
+  ok(chip?.backdrop === 'golf' && titleOf(chip) === 'A golf ball off a raised tee', 'a chip onto a green 2 m lower: off a raised tee on a golf course, never a cliff over the sea');
+  ok(fh('snow', 6, 12, 30, 'a snowball is thrown at 12 m/s at 30° from the top of a 6 m snow bank', 'snowball')?.backdrop === 'snow', 'off a 6 m snow bank: the snow, not a cliff');
+  const king = fh('branch', 4, 2, -90, 'a kingfisher dives from a branch 4 m above a river', 'kingfisher', 'river');
+  ok(king?.backdrop === 'orchard' && king.below === 'river' && king.objects[0].figure === 'bird' && king.effects.join() === 'splash', 'a kingfisher off a branch over a river: a bird, into the water');
+  ok(fh('ground', 3, 10, 20, 'a ball is thrown from 3 m above level ground', 'ball')?.backdrop === 'ground', 'level ground from a height: the ground, not the sea');
   ok(placeIn('A footballer takes a free kick') == null, 'a football question keeps the app’s own pitch');
   ok(placeIn('A ship sails 5 km due east of a lighthouse') == null, 'a lighthouse a ship sails past is not where anything is thrown from');
   for (const b of ['canyon', 'waterfall', 'lighthouse']) ok(check({ backdrop: b, engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 40, u: 8, theta: 15 } }).recipe?.effects.join() === 'splash', `off ${BACKDROPS[b].at}, into the water`);
