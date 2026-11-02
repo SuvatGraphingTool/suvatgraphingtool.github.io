@@ -251,7 +251,7 @@ function attach(win, p, hooks) {
     if (e && canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     // a press that did not move is a click on the motion: Resolve, at the instant shown
     // held a moment: a second press is a double-click, which re-frames
-    if (clicked && down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) later = setTimeout(() => hooks.click?.(), 280);
+    if (clicked && down && e.detail < 2 && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) later = setTimeout(() => hooks.click?.(), 280);
     down = null;
   };
   canvas.addEventListener('pointerup', (e) => end(e, true));
@@ -264,6 +264,7 @@ function attach(win, p, hooks) {
     hooks.change?.();
   }, { passive: false });
   canvas.addEventListener('dblclick', () => {
+    clearTimeout(later);
     const view = v(); view.fit = true; view.touched = false;
     hooks.change?.();
   });

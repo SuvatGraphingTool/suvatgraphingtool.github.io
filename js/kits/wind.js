@@ -27,6 +27,7 @@ export const wind = {
   hides: { shows: ['apex', 'ruler', 'range', 'grid', 'components'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'map',
+  resolveFrom: 'the start',
   read(v) { return { V: v.V, heading: v.heading, track: v.track, W: v.W, wind: v.wind }; },
   solve: solveWind,
   working: (solved) => windWorking(solved),

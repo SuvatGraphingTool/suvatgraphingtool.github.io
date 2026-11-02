@@ -30,6 +30,7 @@ export const lift = {
 
   /** Resolve reads the journey's distance as the height risen. */
   resolveAxis: 'vertical',
+  resolveFrom: 'where it started',
   read(v) { return { a1: v.a1, t1: v.t1, t2: v.t2, t3: v.t3, a3: v.a3 }; },
   solve: solveJourney,
   working: (solved) => journeyWorking(solved),

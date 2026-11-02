@@ -1101,7 +1101,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     // A library stage picks nothing (its view maps layout only), so a click
     // anywhere on it is a click on the motion: Resolve at the instant shown.
     // Held a moment: a second press is a double-click, which re-frames.
-    else if (clicked && was && !cam._map?.sx && e
+    else if (clicked && was && !cam._map?.sx && e && e.detail < 2
         && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) later = setTimeout(() => onResolve.click?.(null), 280);
   };
   canvas.addEventListener('pointerup', (e) => end(e, true));
@@ -1124,6 +1124,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
       : { scale, cx: cam.cx, cy: cam.cy };
     onChange();
   }, { passive: false });
+  canvas.addEventListener('dblclick', () => clearTimeout(later));
   canvas.addEventListener('dblclick', () => { fitView(cam); onChange(); });
   canvas.style.cursor = 'grab';
 }

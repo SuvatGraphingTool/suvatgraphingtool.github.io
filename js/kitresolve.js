@@ -38,6 +38,13 @@ const UNITS = { s: 'm', v: 'm s⁻¹', a: 'm s⁻²' };
 const vec = (q) => (typeof q === 'number' ? { x: 0, y: q } : q || { x: 0, y: 0 });
 const three = (b) => String(Math.round(((b % 360) + 360) % 360) % 360).padStart(3, '0');
 
+/** Side on, as the twelve's card says it: an angle above or below the horizontal, and which way. */
+function side(v) {
+  const up = Math.atan2(Math.abs(v.y), Math.abs(v.x)) * 180 / Math.PI;
+  const way = v.x < -1e-9 ? ', moving back towards the start' : '';
+  return Math.abs(v.y) < 1e-9 ? `Horizontal${way}.` : Math.abs(v.x) < 1e-9 ? `Straight ${v.y > 0 ? 'up' : 'down'}.` : `${d(up, 1)}° ${v.y > 0 ? 'above' : 'below'} the horizontal${way}.`;
+}
+
 /** Does this motion ever move along x, along y? Sampled over the run. */
 function axesOf(pos, tMax) {
   let mx = 0, my = 0;
@@ -65,9 +72,9 @@ function blocksFor(o, t, tMax, K, U) {
       : ['Horizontal component', 'Vertical component', 'Dashed on the stage: across.', 'Solid on the stage: up and down. Up is positive.'];
     const how = sp < 1e-9 ? 'At rest.'
       : map || (ij && K?.resolveBearing) ? `On a bearing of ${three(bearing)}°.`
-      : ij ? `At ${d(angle, 1)}° to ${M`vec i`}.`
+      : ij ? `At ${d((angle + 360) % 360, 1)}° to ${M`vec i`}, turning towards ${M`vec j`}.`
       : bank ? (Math.abs(v.x) < 1e-9 ? 'Straight across.' : `At ${d(Math.abs(Math.atan2(v.y, Math.abs(v.x)) * 180 / Math.PI), 1)}° to the bank, carried ${v.x > 0 ? 'downstream' : 'upstream'}.`)
-      : `At ${d(angle, 1)}° to the horizontal.`;
+      : side(v);
     // from above, the position vector r from the origin the question names;
     // side on, the displacement from where it started, as the twelve's card
     const r = flat ? p : { x: p.x - p0.x, y: p.y - p0.y }, dist = Math.hypot(r.x, r.y);
@@ -90,25 +97,29 @@ function blocksFor(o, t, tMax, K, U) {
   const line = axis || (k === 'y' ? 'vertical' : 'along');
   const a = o.acc ? o.acc(t) : null;
   const s = p[k], vv = v[k];
-  let aa = fin(a) ? a : a && typeof a === 'object' ? a[k] : null;
+  const aa = fin(a) ? a : a && typeof a === 'object' ? a[k] : null;
   const down = line === 'down' || (line === 'vertical' && o.sign < 0);
   const from = o.from ?? K?.resolveFrom;
-  const [sN, sNote] = line === 'vertical' ? ['Height', 'Up from where heights are measured.']
+  const [sN, sNote] = line === 'vertical' ? ['Height', from ? `Up from ${from}.` : 'Up from where heights are measured.']
     : line === 'down' ? ['Distance down', 'Down from where it started.']
     : [from ? `Displacement from ${from}` : 'Displacement', from ? `Along the line, from ${from}.` : 'Along the line, from the start.'];
   const [pos1, neg1, plus] = down ? ['going down', 'going up', 'Down'] : line === 'along' ? ['going forwards', 'going backwards', 'Forwards'] : ['going up', 'going down', 'Up'];
   const dir = vv > 1e-9 ? pos1 : vv < -1e-9 ? neg1 : 'at rest';
   const part = line === 'along' ? 'x' : 'y';
-  // the run over and the motion stopped: nothing is accelerating it any more
-  const over = t >= tMax - 1e-9 && Math.abs(vv) < 1e-9 && fin(aa);
-  if (over) aa = 0;
+  // the engine follows it no further from here: an impact, or the end of its run
+  const before = (u) => { const b = o.acc?.(u); return fin(b) ? b : b && typeof b === 'object' ? b[k] : 0; };
+  const ended = Math.abs(vv) > 1e-9 && (t < tMax - 1e-9
+    ? Math.abs(vec(o.pos(Math.min(tMax, t + tMax * 1e-3)))[k] - s) < 1e-12
+    : Math.abs(vec(o.pos(t - tMax * 1e-3))[k] - s) < 1e-12 || (fin(aa) && Math.abs(aa) < 1e-9 && Math.abs(before(t - tMax * 1e-3)) > 1e-9));
   const rows = [
     { name: sN, value: s, unit: U.s, formula: M`s`, sub: d(s), note: sNote, hue: 'disp', part },
     { name: 'Velocity', value: vv, unit: U.v, formula: M`v`, sub: d(vv), note: `${dir[0].toUpperCase()}${dir.slice(1)}. ${plus} is positive.`, hue: 'vel', part },
   ];
   if (fin(aa)) {
     rows.push({ name: 'Acceleration', value: aa, unit: U.a, formula: M`a`, sub: d(aa), hue: 'acc', part,
-      note: over ? 'At rest: the motion is over.' : Math.abs(aa) < 1e-9 ? 'Steady: no acceleration.' : Math.abs(vv) < 1e-9 ? 'Momentarily at rest.' : aa * vv < 0 ? 'Against the motion: slowing down.' : 'With the motion: speeding up.' });
+      note: ended ? 'Its motion ends here: the engine follows it no further.'
+        : Math.abs(vv) < 1e-9 ? (Math.abs(aa) < 1e-9 ? 'At rest.' : t < 1e-9 ? 'Starting from rest.' : t >= tMax - 1e-9 ? 'Coming to rest.' : 'Momentarily at rest.')
+        : Math.abs(aa) < 1e-9 ? 'Steady: no acceleration.' : aa * vv < 0 ? 'Against the motion: slowing down.' : 'With the motion: speeding up.' });
   }
   return [{ name: `${who}${line === 'along' ? 'along the line' : 'up and down'}`, hue: '', rows }];
 }
@@ -122,7 +133,11 @@ function objectsOf(K, f) {
   if (typeof f.at === 'function' && f.A && f.B) {
     return ['A', 'B'].map((w, i) => ({ name: [nA, nB][i], pos: (u) => f.at(u)[w].x, vel: (u) => f.at(u)[w].v, acc: f[w].acc ? (u) => f[w].acc(u) : null }));
   }
-  if (f.yP && f.yQ) return [{ name: 'P', pos: f.yP, vel: f.vP }, { name: 'Q', pos: f.yQ, vel: f.vQ }];
+  if (f.yP && f.yQ) {
+    // each falls freely once it is moving; Q waits on the ground until it is launched
+    const g = fin(f.g) ? f.g : null;
+    return [{ name: 'P', pos: f.yP, vel: f.vP, acc: g == null ? null : () => -g }, { name: 'Q', pos: f.yQ, vel: f.vQ, acc: g == null ? null : (t) => (t < (f.t0 ?? 0) ? 0 : -g) }];
+  }
   if (f.pos && f.vel) return [{ name: '', pos: f.pos, vel: f.vel, acc: f.accel || f.acc || (K?.resolveG ? () => ({ x: 0, y: -f.params.g }) : null) }];
   return null;
 }
@@ -139,6 +154,7 @@ export function resolveKit(K, solved, f, t) {
   const tMax = fin(f.tMax) ? f.tMax : fin(f.tFlight) ? f.tFlight : 1;
   const tt = Math.min(Math.max(t, 0), tMax);
   if (K?.resolve) { const R = K.resolve(solved, tt, f); if (R) return { t: tt, ...R }; }
+  K = K || { resolveAxis: 'along', resolveFrom: 'A' };   // the road: along A to B
   const objs = objectsOf(K, f);
   if (!objs?.length) return null;
   // in letters, or in km and hours: the numbers are in the question's own units

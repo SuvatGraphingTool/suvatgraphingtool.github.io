@@ -38,6 +38,7 @@ export const twotrains = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'along',
+  resolveFrom: 'station 1',
   read(v) {
     // every row as typed, blanks included: the engine refuses a gap rather than shifting stages up
     const spec = (n) => {
