@@ -140,7 +140,9 @@ export function check(raw) {
   // what each engine cannot do without, said in its own words
   if (engine === 'projectile') {
     if (isNum(numbers.h) && numbers.h < 0) return no('The height it starts at is above what it lands on: give it as a positive number.');
-    if (B.edge && isNum(numbers.h) && numbers.h === 0) return no(`Launched from ${B.at.replace(/^an? /, 'the ')}, it starts above ${({ floor: 'the floor', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water' })[B.below] || 'the ground'}: the height cannot be 0.`);
+    // (a dolphin or a fish leaps from the water below: from there, h is 0)
+    const leaps = objects.every((o) => FIGURES[o.figure]?.swims) && ['sea', 'river', 'pool'].includes(B.below);
+    if (B.edge && isNum(numbers.h) && numbers.h === 0 && !leaps) return no(`Launched from ${B.at.replace(/^an? /, 'the ')}, it starts above ${({ floor: 'the floor', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water' })[B.below] || 'the ground'}: the height cannot be 0.`);
     // from the ground itself it has to leave it: upwards, and moving
     if (!B.edge && numbers.h === 0 && ((isNum(numbers.theta) && numbers.theta <= 0) || numbers.u === 0)) {
       return no('From the ground it must be launched upwards: give a speed, and an angle above 0°.');
@@ -227,6 +229,7 @@ export function titleOf(r) {
     if (r.backdrop === 'well') return `${what} down a well`;
     if (r.launcher) return `${what} ${LAUNCHERS[r.launcher].verb} ${LAUNCHERS[r.launcher].label}`;
     if (r.backdrop === 'volcano') return `${what} thrown out of a volcano’s crater`;
+    if (B.edge && r.numbers.h === 0 && F.swims) return `${what} leaping from the water below ${B.at.replace(/^the (?:top|rim|edge|end|deck|crest|gallery) of /, '')}`;
     if (B.edge) return `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
     // (a place that draws a ledge of its own says so)
@@ -277,6 +280,8 @@ export function compose(raw) {
   // on the Moon or Mars, its own g unless the question gives one
   const boxes = { ...r.numbers, g: r.numbers.g ?? B.g ?? EARTH };
   if (r.engine === 'projectile' || r.engine === 'twin') boxes.place = B.place;
+  // leaping from the water at the foot of a place with an edge (a salmon at a waterfall): level, from the water
+  if (r.engine === 'projectile' && B.edge && r.numbers.h === 0 && r.objects.every((o) => FIGURES[o.figure]?.swims)) boxes.place = 'pool';
 
   // the engine's kit, as it is, with the composed stage in place of its own;
   // the place is the backdrop's, so its choice is not offered

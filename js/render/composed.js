@@ -38,7 +38,7 @@ import { ANIMALS, FEET, SWIMMERS, javelin } from './animals.js';
 import { golfer, kicker, archer, archerHand, server, batter, SERVE_AT, BAT_AT, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
 import { VEHICLES } from './vehicles.js';
-import { LAUNCHER_ART, launcherSize } from './launchers.js';
+import { LAUNCHER_ART, launcherSize, catapultArm } from './launchers.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
 import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, skyscape, env, rng, softShadow } from './scenery.js';
@@ -84,10 +84,10 @@ const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 /** The backdrop and the place things start from, for either stage: the
     library's own scenery for the recipe's backdrop, its top at `top` (H0 m),
     its edge at x0, the ground or the water at oy. */
-function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [] }) {
+function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false }) {
   const P = palette();
   // the places in js/render/places.js draw themselves and what they launch from
-  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX }); return; }
+  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap }); return; }
   const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
   // the place it is launched from, where the backdrop has no edge of its own:
   // a stone wall to stand on, a jetty over the sea, or the ground itself
@@ -278,8 +278,8 @@ function launch(canvas, o) {
   // a ramp always, a cannon or a catapult up to its own height; no wall is drawn
   const ls = LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k) : 0;
   // (a cannon is dug in where it fires from: on the ground, or on the wall it fires from)
-  const grounded = !!ls && !B.edge && H0 > 0 && R.launcher !== 'cannon' && (R.launcher === 'ramp' || H0 * k <= ls * 0.9);
-  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX });
+  const grounded = !!ls && !B.edge && H0 > 0 && R.launcher !== 'cannon' && (R.launcher === 'ramp' || H0 * k <= ls * 2.4);
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims });
 
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {
@@ -320,6 +320,9 @@ function launch(canvas, o) {
     const clock = clocks[m.i];
   // ── who throws it: at the edge, wound up before the throw, through after it
   const v0 = f.vel(0), aim = (Math.atan2(v0.y, v0.x) * 180) / Math.PI;
+  // a launcher's ground, and a catapult's swing: up over the first moments of the flight
+  const lgy = grounded && R.launcher !== 'cannon' ? oy : top + ls * (R.launcher === 'ramp' ? 0.3 : 0.1);
+  const swing = m.going ? clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1) : 0;
   // a tennis ball is served, a baseball or a cricket ball batted: where the racquet or the bat meets it
   const hits = thrown && (kind === 'tennisBall' ? SERVE_AT : kind === 'baseball' || kind === 'cricketBall' ? BAT_AT : null);
   // at a well, the thrower stands at the well head, clear of the shaft
@@ -327,7 +330,7 @@ function launch(canvas, o) {
   if (byHand) {
     // sized so the hand is at the launch point, feet on the floor
     const per = kind === 'arrow' ? archerHand(100, aim) : hits ? { x: 100 * hits.x, y: 100 * hits.y } : throwerHand(100, aim);
-    th = clamp((oy - top) / (per.y / 100), THROWER_MIN * 0.8, 3 * k);
+    th = Math.max(THROWER_MIN * 0.8, Math.min((oy - top) / (per.y / 100), 3 * k));
     feet = x0 - th * (per.x / 100); stand = oy;
   }
   // the second of two stands behind the first, holding what it throws
@@ -353,7 +356,8 @@ function launch(canvas, o) {
   } else if (LAUNCHER_ART[R.launcher] && m.i === 0) {
     // a cannon, a ramp or a catapult at the launch point, aimed as the engine
     // launches it; it fires (or lets go) as the engine's clock starts
-    LAUNCHER_ART[R.launcher](g, x0, top, ls, P, { aim, t: m.going ? t : -1, gy: grounded && R.launcher !== 'cannon' ? oy : top + ls * (R.launcher === 'ramp' ? 0.3 : 0.1), phase: tRaw });
+    L.reserve({ x: x0 - ls * 1.5, y: top - ls * 0.7, w: ls * 1.55, h: Math.max(ls * 1.1, (grounded ? oy : top) - top + ls * 0.7) });
+    LAUNCHER_ART[R.launcher](g, x0, top, ls, P, { aim, t: m.going ? t : -1, gy: lgy, swing, phase: tRaw });
   } else if (thrown) {
     // a javelin is held along the throw, its grip in the hand, until it goes
     // (and so is anything thrown from the hand's own height: it leaves the hand)
@@ -445,7 +449,7 @@ function launch(canvas, o) {
         g.restore();
       }
       // a fielder dives and takes it just above the ground
-      else if (e === 'catch' && !wet) { later.push(() => diveCatch(g, lx, oy, age, life, { H: TH(k) })); L.reserve({ x: lx - 4, y: oy - TH(k) * 0.4, w: TH(k) * 1.2, h: TH(k) * 0.42 }); }
+      else if (e === 'catch') continue;
       else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
       else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: clamp(k / 14, 1, 3) }); g.restore(); }
       else if (e === 'crack') crack(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
@@ -472,6 +476,13 @@ function launch(canvas, o) {
     g.restore();
   }
 
+  // a fielder diving in to catch it, arriving with it (over the last part of its flight)
+  if (R.effects.includes('catch') && !wet && m.i === 0) {
+    const cu = m.going ? clamp((t - 0.7 * f.tMax) / (0.3 * f.tMax), 0, 1) : 0;
+    diveCatch(g, lx, oy, cu, { H: TH(k), R: small ? clamp(k * piece.m * 0.5, BALLS.has(kind) ? 4 : 7, 10) : 6, age: landed ? age : null });
+    L.reserve({ x: lx - 4, y: oy - TH(k) * 0.4, w: TH(k) * 1.2, h: TH(k) * 0.42 });
+  }
+
   // ── the moving thing, at the engine's point
   const r = f.pos(t), v = f.vel(t);
   const held = sh ? 1 - clamp(t / Math.max(1e-6, 0.1 * f.tMax), 0, 1) : 0;
@@ -480,7 +491,11 @@ function launch(canvas, o) {
   // seen) holds it in its hand, and it eases onto the engine's path as it goes
   // an archer's arrow is to the archer: about the length of its draw
   const arrowLen = shoots ? clamp(th * 0.62, 30, 64) : Math.max(44, size(k, piece));
-  if (shoots && byHand) {
+  if (R.launcher === 'catapult' && small && m.i === 0) {
+    // in the cup as the arm swings up, then on the engine's path as it lets go
+    const cup = catapultArm(x0, top, ls, lgy, swing).cup, e = swing * swing * (3 - 2 * swing);
+    bx = cup.x + (bx - cup.x) * e; by = cup.y - 2 + (by - cup.y + 2) * e;
+  } else if (shoots && byHand) {
     // nocked on the string, its point just past the bow, until it is loosed
     // (only when the bow hand is where the engine starts it: rule 4)
     const hp = archerHand(th, aim), q = 1 - clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1), e = q * q * (3 - 2 * q);

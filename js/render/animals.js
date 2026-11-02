@@ -174,10 +174,12 @@ export function kangaroo(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = n
   g.lineWidth = L * 0.05; g.beginPath(); g.moveTo(-L * 0.5, L * lerp(0.26, 0.14, ext)); g.lineTo(-L * 0.68, L * lerp(0.36, 0.1, ext)); g.stroke();
   // the hind leg: haunch, the long foot under it, or out behind in the air
   const hip = { x: -L * 0.12, y: L * 0.1 }, kn = { x: hip.x + L * lerp(0.16, 0.02, ext), y: hip.y + L * lerp(0.1, 0.14, ext) }, an = { x: kn.x + L * lerp(-0.18, -0.26, ext), y: kn.y + L * lerp(0.14, 0.08, ext) + L * d * 0.06 }, ft = { x: an.x + L * lerp(0.36, 0.34, ext) + L * d * 0.12, y: an.y + L * 0.02 };
-  torso(g, -L * 0.04, L * 0.08, L * 0.15, L * 0.12, 0.2, fur, furLo);
+  // (its body filled, not outlined: a ring round it read as a stray stroke)
+  const body = (x1, y1, rx, ry, rot) => { g.save(); g.translate(x1, y1); g.rotate(rot); const gr = g.createRadialGradient(-rx * 0.3, -ry * 0.5, ry * 0.2, 0, 0, rx); gr.addColorStop(0, fur); gr.addColorStop(1, furLo); g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, TAU); g.fill(); g.restore(); };
+  body(-L * 0.04, L * 0.08, L * 0.15, L * 0.12, 0.2);
   leg(g, [hip, kn, an, ft], L * 0.08, furLo);
   // the body, upright-ish, the belly paler
-  torso(g, L * 0.04, -L * 0.08, L * 0.12, L * 0.2, -0.35, fur, furLo);
+  body(L * 0.04, -L * 0.08, L * 0.12, L * 0.2, -0.35 + 0.35 * ext);
   g.fillStyle = belly; g.beginPath(); g.ellipse(L * 0.1, -L * 0.05, L * 0.06, L * 0.15, -0.35, 0, TAU); g.fill();
   // the small forearms, tucked
   leg(g, [{ x: L * 0.12, y: -L * 0.12 }, { x: L * 0.2, y: -L * 0.04 }, { x: L * 0.22, y: L * 0.0 }], L * 0.035, furLo);

@@ -926,8 +926,11 @@ function waterfall(g, c) {
   water(g, 0, w, oy, h, { phase });
   g.fillStyle = withAlpha(n ? '#1e3a3a' : '#3f7a74', 0.3); g.fillRect(0, oy, w, h - oy);
   // the fall: in the face itself, its foot churning the pool white
-  const fw = H0 > 0 ? clamp(0.4 * (oy - top), 24, 140) : 0, fx1 = x0 - clamp(1.2 * k, 12, 40), fx0 = fx1 - fw;
-  if (H0 > 0) {
+  // (a fish leaping it from the pool below brings the fall it leaps at: behind it, a few metres high)
+  const fallTop = H0 > 0 ? top : c.leap ? oy - clamp(3 * k, 50, 180) : null, fH = fallTop == null ? 0 : oy - fallTop;
+  const ex = H0 > 0 ? x0 : x0 - clamp(1.5 * k, 20, 60);
+  const fw = fallTop != null ? clamp(0.4 * fH, 24, 140) : 0, fx1 = ex - clamp(1.2 * k, 12, 40), fx0 = fx1 - fw;
+  if (fallTop != null) { const top = fallTop, x0 = ex;
     seaCliff(g, -4, x0, top, oy, { foam: false, tones: rockTones(n ? '#5a605a' : '#8c938a', n ? '#454a46' : '#6c736c', n ? '#262a28' : '#3e4440') });
     // moss on the ledges of the step
     g.fillStyle = withAlpha(n ? '#2e4a2a' : '#5f8a3c', 0.55);
@@ -959,8 +962,8 @@ function waterfall(g, c) {
     g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.25); g.fillRect(fx1, top - 4, x0 - fx1 + 2, 1.2);
   }
   // the plunge pool: foam rings round where the fall strikes, spray rising
-  const px = H0 > 0 ? (fx0 + fx1) / 2 : x0 * 0.5;
-  g.save(); g.beginPath(); g.rect(-4, 0, H0 > 0 ? x0 + clamp(3 * k, 30, 90) : w, h); g.clip();
+  const px = fallTop != null ? (fx0 + fx1) / 2 : x0 * 0.5;
+  g.save(); g.beginPath(); g.rect(-4, 0, fallTop != null ? ex + clamp(3 * k, 30, 90) : w, h); g.clip();
   for (let i = 0; i < 3; i++) { const q = ((phase * 0.6 + i / 3) % 1); g.strokeStyle = withAlpha('#ffffff', 0.6 * (1 - q)); g.lineWidth = 1.4; g.beginPath(); g.ellipse(px, oy + 2, (fw * 0.6 + 10) * (0.6 + q), 4 * (0.6 + q), 0, 0, TAU); g.stroke(); }
   for (let i = 0; i < 6; i++) { const sx = px + (r() - 0.5) * (fw + 20), Rr = 12 + r() * 18, sy = oy - 6 - r() * 26 - ((phase * 10 + i * 5) % 12); const sg = g.createRadialGradient(sx, sy, 0, sx, sy, Rr); sg.addColorStop(0, withAlpha('#ffffff', n ? 0.25 : 0.55)); sg.addColorStop(1, withAlpha('#ffffff', 0)); g.fillStyle = sg; g.beginPath(); g.arc(sx, sy, Rr, 0, TAU); g.fill(); }
   g.restore();
@@ -1492,6 +1495,7 @@ function beach(g, c) {
     for (let j = 0; j < 6; j++) { g.fillStyle = j % 2 ? b : a; g.beginPath(); g.moveTo(x + 3, cy - R * 0.35); g.lineTo(x + 3 - R + (j * 2 * R) / 6, cy + R * 0.1); g.lineTo(x + 3 - R + ((j + 1) * 2 * R) / 6, cy + R * 0.1); g.closePath(); g.fill(); }
     g.fillStyle = withAlpha('#000000', 0.15); g.beginPath(); g.ellipse(x + 3, oy + 3, R * 0.9, R * 0.12, 0, 0, TAU); g.fill();
     g.fillStyle = n ? '#4a5a7a' : '#4f86c9'; g.fillRect(x + R * 0.2, oy + 2, R * 1.1, R * 0.18);
+    c.reserve?.({ x: x - R, y: cy - R * 0.4, w: R * 2.4, h: oy - cy + R * 0.5 });
   }
   if (H0 > 0) {
     // the sea wall: dressed stone stepping out at its foot, the promenade's rail along the top, open where it leaves from
@@ -1533,7 +1537,7 @@ function room(g, c) {
   // a picture on the wall
   const px = wx + ww + 70; if (px + 50 < w) { g.fillStyle = n ? '#4a3a2c' : '#8a6a44'; g.fillRect(px, wy + 10, 50, 38); g.fillStyle = n ? '#3a4a5a' : '#9cc0d8'; g.fillRect(px + 4, wy + 14, 42, 30); g.fillStyle = n ? '#2c3a28' : '#6f9c5a'; g.beginPath(); g.moveTo(px + 4, wy + 44); g.lineTo(px + 20, wy + 28); g.lineTo(px + 32, wy + 36); g.lineTo(px + 46, wy + 24); g.lineTo(px + 46, wy + 44); g.closePath(); g.fill(); }
   // a sofa, a bookcase, a rug: clear of the flight
-  const sw = clamp(5 * k, 90, 200), sx = [land + 60 + sw / 2, w - sw / 2 - 20, x0 - 40 - sw / 2].find((x) => free(x, sw / 2));
+  const sw = clamp(5 * k, 90, 200), sx = [land + 60 + sw / 2, w - sw / 2 - 20, ...(H0 > 0 ? [] : [x0 - 40 - sw / 2])].find((x) => free(x, sw / 2));
   if (sx != null) {
     const sh = sw * 0.38, sofa = n ? '#4a4e66' : '#6a7d96', sofaLo = n ? '#363a4e' : '#546780';
     g.fillStyle = sofaLo; g.beginPath(); g.roundRect(sx - sw / 2, oy - sh, sw, sh * 0.6, 8); g.fill();
@@ -1541,11 +1545,13 @@ function room(g, c) {
     for (const s of [-1, 1]) { g.fillStyle = sofaLo; g.beginPath(); g.roundRect(sx + s * (sw / 2 - 10) - 10, oy - sh * 0.75, 20, sh * 0.62, 8); g.fill(); }
     g.fillStyle = '#e8c547'; g.beginPath(); g.roundRect(sx - sw * 0.3, oy - sh * 0.72, sw * 0.16, sh * 0.2, 4); g.fill();
     g.fillStyle = '#3a2a22'; g.fillRect(sx - sw / 2 + 8, oy - 6, 6, 6); g.fillRect(sx + sw / 2 - 14, oy - 6, 6, 6);
+    c.reserve?.({ x: sx - sw / 2, y: oy - sh, w: sw, h: sh + 4 });
   }
   const bw = clamp(2.2 * k, 44, 90), bh = clamp(4.5 * k, 90, 200), bx = [w - bw / 2 - 16, land + 60 + bw / 2].find((x) => free(x, bw / 2) && (sx == null || Math.abs(x - sx) > bw / 2 + 110));
   if (bx != null) {
     g.fillStyle = n ? '#4a3a2c' : '#8a6a44'; g.fillRect(bx - bw / 2, oy - bh, bw, bh);
     const shelves = 5, books = n ? ['#5a4a6a', '#6a5a40', '#3a5a5a', '#6a3a3a'] : ['#2f5fa8', '#e8c547', '#5fae7a', '#a84a3a', '#f4f1ea', '#4a4e56'];
+    c.reserve?.({ x: bx - bw / 2 - 4, y: oy - bh, w: bw + 8, h: bh + 4 });
     for (let i = 0; i < shelves; i++) { const y = oy - bh + 6 + i * (bh - 12) / shelves; g.fillStyle = n ? '#2a2018' : '#5a4228'; g.fillRect(bx - bw / 2 + 4, y, bw - 8, (bh - 12) / shelves - 4); for (let x = bx - bw / 2 + 6; x < bx + bw / 2 - 8; x += 4 + r() * 3) { const bk = (bh - 12) / shelves - 6 - r() * 6; g.fillStyle = books[Math.floor(r() * books.length)]; g.fillRect(x, y + ((bh - 12) / shelves - 4) - bk, 3 + r() * 2, bk); } }
   }
   const rx = (x0 + land) / 2; g.fillStyle = withAlpha(n ? '#4a3a4a' : '#b8a07a', 0.6); g.beginPath(); g.ellipse(rx, oy + clamp((h - oy) * 0.35, 8, 40), clamp((land - x0) * 0.6, 60, 260), clamp((h - oy) * 0.15, 4, 18), 0, 0, TAU); g.fill();
@@ -1556,6 +1562,15 @@ function room(g, c) {
     g.beginPath(); g.moveTo(x0 - sd, oy); for (let i = 0; i < steps; i++) { const x = x0 - sd + (i * sd * 0.6) / steps, y = oy - ((i + 1) * (oy - top)) / steps; g.lineTo(x, y + (oy - top) / steps); g.lineTo(x, y); g.lineTo(x + (sd * 0.6) / steps, y); } g.lineTo(x0, top); g.lineTo(x0, top + clamp(0.35 * k, 6, 14)); g.lineTo(x0 - sd * 0.38, top + clamp(0.35 * k, 6, 14)); g.lineTo(x0 - sd * 0.38, oy); g.closePath(); g.fill();
     g.fillStyle = withAlpha('#ffffff', n ? 0.06 : 0.22); for (let i = 0; i < steps; i++) { const x = x0 - sd + (i * sd * 0.6) / steps, y = oy - ((i + 1) * (oy - top)) / steps; g.fillRect(x, y, (sd * 0.6) / steps, 1.5); }
     g.fillStyle = n ? '#5a4a3a' : '#8a6a44'; g.fillRect(x0 - sd * 0.4, top, sd * 0.4, clamp(0.35 * k, 6, 14));
+    // under the landing, a panelled wall with the cupboard door under the stairs
+    const ul = x0 - sd * 0.38, ut = top + clamp(0.35 * k, 6, 14);
+    g.fillStyle = n ? '#4a3e3a' : '#e8dccb'; g.fillRect(ul, ut, x0 - ul, oy - ut);
+    g.strokeStyle = withAlpha('#000000', 0.15); g.lineWidth = 1; g.strokeRect(ul + 4, ut + 4, x0 - ul - 8, oy - ut - 8);
+    g.fillStyle = n ? '#3a2e28' : '#a8865a'; g.fillRect(ul + (x0 - ul) * 0.3, oy - Math.min(oy - ut - 6, clamp(2 * k, 30, 70)), (x0 - ul) * 0.4, Math.min(oy - ut - 6, clamp(2 * k, 30, 70)));
+    // the handrail up the stairs, on its balusters
+    g.strokeStyle = n ? '#8a7a5a' : '#6a4a2a'; g.lineWidth = 2.5; const hr = clamp(0.9 * k, 10, 26);
+    g.beginPath(); g.moveTo(x0 - sd, oy - hr); g.lineTo(x0 - sd * 0.4, top - hr); g.stroke();
+    g.lineWidth = 1.2; for (let i = 1; i < steps; i += 1) { const x = x0 - sd + (i * sd * 0.6) / steps, y = oy - (i * (oy - top)) / steps; g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - hr); g.stroke(); }
     const bh2 = clamp(1 * k, 12, 30); g.strokeStyle = n ? '#8a7a5a' : '#6a4a2a'; g.lineWidth = 3; g.beginPath(); g.moveTo(x0 - sd * 0.4, top - bh2); g.lineTo(x0 - clamp(1.4 * k, 16, 40), top - bh2); g.stroke();
     g.lineWidth = 1.5; for (let x = x0 - sd * 0.4; x < x0 - clamp(1.4 * k, 16, 40); x += 8) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, top - bh2); g.stroke(); }
   }

@@ -466,7 +466,18 @@ white-hot in the crater and crimson down a channel — never the velocity's
 orange — an ash plume leaning back over the cone, a plain of old flows; a
 rock thrown out of its crater flies red-hot trailing smoke, no one throwing
 it, and lands in a crater) and `quarry` (drilled limestone benches stepping
-down, a safety bund on top, a rock pool and a dump truck on the floor).
+down, a safety bund on top, a rock pool and a dump truck on the floor). After batches
+11–14's critic: the catapult is cocked back and throws over the top
+(`catapultArm()`: the stone rides in its cup as the arm swings up over the
+first moments, then is on the engine's path); the cannon's barrel rests over
+its sandbag parapet; a launcher keeps labels off it; the diving catch
+arrives with the ball, over the end of its flight, its hands at it; a thrower
+sized to a hand's height never shrinks below its floor; the room's stairs
+have a handrail and a cupboard wall under the landing, no sofa behind them;
+places can keep labels off their props (`c.reserve`); a salmon or a dolphin
+may leap from the water at the foot of a place with an edge (h 0, the
+engine's level place `pool`; at a waterfall it brings its fall); the
+kangaroo is filled, not outlined.
 
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
