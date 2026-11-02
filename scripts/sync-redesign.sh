@@ -32,10 +32,15 @@ else
   GH_TOKEN=$(gh auth token -u SuvatGraphingTool) git push -q origin HEAD:redesign
 fi
 
+# Deployed exactly as scripts/deploy-redesign.sh does: the pages AND the
+# accounts API (site/). Deploying the pages alone would take the API down.
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
-git archive HEAD | tar -x -C "$out"
-rm -rf "$out/worker" "$out/test" "$out/docs" "$out/design" "$out/.github" "$out/scripts" "$out/tools" "$out/.claude"
+mkdir "$out/public"
+git archive HEAD | tar -x -C "$out/public"
+cp -R "$out/public/site/." "$out/"
+rm -rf "$out/public/worker" "$out/public/test" "$out/public/docs" "$out/public/design" "$out/public/.github" \
+       "$out/public/scripts" "$out/public/tools" "$out/public/.claude" "$out/public/site"
 msg=$(git log -1 --format='%h %s' | cut -c1-100)
 cd "$out"
-"$wrangler" deploy --name suvat-redesign --assets . --compatibility-date 2026-09-01 --message "$msg"
+"$wrangler" deploy --message "$msg"

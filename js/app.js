@@ -43,6 +43,7 @@ import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML, askHTML, 
 import { answerOf } from './parts/parts.js';
 import { fromReader, boxesOf } from './parts/answers.js';
 import { initShell } from './shell.js';
+import { initAccount } from './account.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -3750,3 +3751,5 @@ window.SUVAT = { state, get traj() { return traj; }, get solved() { return solve
 // shortcuts, the toasts. It reads state and presses the app's own buttons;
 // it calculates nothing (rule 4).
 initShell(window.SUVAT, { scenarios: SCENARIOS, library: LIBRARY, byId });
+// Signing in, and the chats kept in the account — only once the site has it on.
+initAccount();

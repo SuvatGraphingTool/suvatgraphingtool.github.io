@@ -7,7 +7,8 @@
 // full the pictures go first, then the oldest chats; when it is shut nothing
 // throws and nothing is claimed kept.
 
-import { loadChats, getChat, saveChat, deleteChat, clearChats, newChatRecord, titleOf, whenOf, CHATS_MAX } from '../js/ai/chats.js';
+import { loadChats, getChat, saveChat, deleteChat, clearChats, putChats, onChats, newChatRecord, titleOf, whenOf, CHATS_MAX } from '../js/ai/chats.js';
+import { mergeChats } from '../js/account.js';
 
 let pass = 0, fail = 0;
 function ok(cond, label) {
@@ -96,6 +97,34 @@ group('…and says when it was last had', () => {
   ok(whenOf(new Date(2026, 9, 30, 9, 0).getTime(), now) === 'Friday', 'this week: the day');
   ok(whenOf(new Date(2026, 8, 3).getTime(), now) === '3 Sept', 'earlier this year: the date');
   ok(whenOf(new Date(2025, 8, 3).getTime(), now) === '3 Sept 2025', 'another year: with the year');
+});
+
+const withId = (id, t) => ({ ...chat(id, t), id });
+
+group('Signed in, the account hears of every change', () => {
+  const s = memory(), told = [];
+  const off = onChats((what, x) => told.push(`${what} ${what === 'delete' ? x : x.id}`));
+  saveChat(withId('a', 1), s); deleteChat('a', s);
+  putChats([withId('b', 2), withId('c', 3)], s);
+  off();
+  saveChat(withId('d', 4), s);
+  ok(told.join() === 'save a,delete a', 'a chat kept or deleted is told; the account’s own list written back is not');
+  ok(loadChats(s).map((c) => c.id).join() === 'd,c,b', 'that list is kept, newest first');
+});
+
+group('This browser and the account, as one list', () => {
+  const L = (id, t) => withId(id, t), S = (id, t, gone = false) => ({ id, updated: t, deleted: gone, data: gone ? null : withId(id, t) });
+  const { list, push } = mergeChats(
+    [L('here-only', 5), L('both-same', 10), L('newer-here', 30), L('older-here', 10), L('gone-there', 10), L('carried-on', 50)],
+    [S('there-only', 7), S('both-same', 10), S('newer-here', 20), S('older-here', 40), S('gone-there', 20, true), S('carried-on', 40, true), S('gone-both', 3, true)]);
+  const ids = new Set(list.map((c) => c.id));
+  ok(ids.has('here-only') && push.some((c) => c.id === 'here-only'), 'a chat had before signing in goes up to the account');
+  ok(ids.has('there-only') && !push.some((c) => c.id === 'there-only'), 'a chat from another device comes down');
+  ok(list.find((c) => c.id === 'newer-here').updated === 30 && push.some((c) => c.id === 'newer-here'), 'carried on here: this copy wins, and goes up');
+  ok(list.find((c) => c.id === 'older-here').updated === 40 && !push.some((c) => c.id === 'older-here'), 'carried on elsewhere: that copy wins');
+  ok(!ids.has('gone-there'), 'deleted on another device: gone here too');
+  ok(ids.has('carried-on'), 'unless it was carried on here since');
+  ok(!ids.has('gone-both') && !push.some((c) => c.id === 'both-same'), 'nothing sent that the account has already');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

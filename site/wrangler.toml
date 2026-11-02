@@ -1,0 +1,27 @@
+# The site itself: its pages, and the small API beside them that keeps
+# accounts (site/src/index.js). Deployed by scripts/deploy-redesign.sh, which
+# puts the pages in ./public next to this file. Only /api/* reaches the code;
+# every other address is a file, served as before.
+name = "suvat-redesign"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+# Accounts, sessions and the chats kept in them. Tables: site/schema.sql.
+[[d1_databases]]
+binding = "DB"
+database_name = "suvat-accounts"
+database_id = "8634cd8a-b2ba-4e5c-819d-954165fd2dd4"
+
+[vars]
+# Google sign-in: the Client ID from Google Cloud Console (not a secret).
+# The secret is set by the owner, never written here:
+#   npx wrangler secret put GOOGLE_CLIENT_SECRET --name suvat-redesign
+GOOGLE_CLIENT_ID = ""
+# Email sign-in links: who they come from, on a domain verified with Resend.
+# Its key is a secret too:  npx wrangler secret put RESEND_API_KEY --name suvat-redesign
+MAIL_FROM = ""

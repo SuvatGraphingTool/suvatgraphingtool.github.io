@@ -17,6 +17,10 @@
 // js/notation.js); nothing here makes or changes it. Nothing here calculates.
 
 const KEY = 'suvat-chats-v1';
+/* Told of every chat kept or deleted here — the account's sync (js/account.js). */
+const heard = new Set();
+export function onChats(fn) { heard.add(fn); return () => heard.delete(fn); }
+const tell = (what, x) => { for (const fn of heard) { try { fn(what, x); } catch { /* a listener's fault is its own */ } } };
 /** The most kept; the oldest go first. */
 export const CHATS_MAX = 60;
 const TITLE_MAX = 64;
@@ -43,20 +47,33 @@ export function getChat(id, store) {
 export function saveChat(chat, store = globalThis.localStorage) {
   if (!ok(chat)) return false;
   const all = [chat, ...loadChats(store).filter((c) => c.id !== chat.id)].slice(0, CHATS_MAX);
+  const kept = fit(all, store);
+  if (kept) tell('save', chat);
+  return kept;
+}
+/** Write the list, letting pictures and then the oldest go until it fits: whether the first is kept. */
+function fit(all, store) {
   if (write(all, store)) return true;
   const bare = all.map(withoutThumbs);
   while (bare.length) {
-    if (write(bare, store)) return bare[0].id === chat.id;
+    if (write(bare, store)) return bare[0].id === all[0].id;
     bare.pop();
   }
   return false;
+}
+/** Every chat at once, newest first, as the account has them — telling no one. */
+export function putChats(list, store = globalThis.localStorage) {
+  const all = list.filter(ok).sort((a, b) => b.updated - a.updated).slice(0, CHATS_MAX);
+  if (!all.length) { clearChats(store); return true; }
+  return fit(all, store);
 }
 
 /** Forget one chat. */
 export function deleteChat(id, store = globalThis.localStorage) {
   write(loadChats(store).filter((c) => c.id !== id), store);
+  tell('delete', id);
 }
-/** Forget every chat. */
+/** Forget every chat (on signing out: they are the account's, not this browser's). */
 export function clearChats(store = globalThis.localStorage) {
   try { store?.removeItem(KEY); } catch { /* storage shut: nothing was kept */ }
 }

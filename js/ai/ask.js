@@ -550,6 +550,8 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   });
   sync();
   dock();
+  // the account brought chats from another device: "Your chats" may be offered now
+  document.addEventListener('suvat:chats', dock);
 
   return {
     /** The top bar's "Ask Suvat": the chat if there is one, else the box. */

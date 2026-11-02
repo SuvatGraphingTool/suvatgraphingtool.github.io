@@ -17,11 +17,15 @@ wrangler=$(git rev-parse --path-format=absolute --git-common-dir)/../worker/node
 [ "$(git rev-parse --abbrev-ref HEAD)" = redesign ] || { echo "Check out the redesign branch first." >&2; exit 1; }
 for t in test/*.test.mjs; do node "$t" >/dev/null || { echo "FAILED: $t — not deploying." >&2; exit 1; }; done
 
+# The site is its pages (./public) and the small API beside them that keeps
+# accounts (site/: wrangler.toml, src/). Both go up together, as one Worker.
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
-git archive redesign | tar -x -C "$out"
-rm -rf "$out/worker" "$out/test" "$out/docs" "$out/design" "$out/.github" "$out/scripts" "$out/tools" "$out/.claude"
+mkdir "$out/public"
+git archive redesign | tar -x -C "$out/public"
+cp -R "$out/public/site/." "$out/"
+rm -rf "$out/public/worker" "$out/public/test" "$out/public/docs" "$out/public/design" "$out/public/.github" \
+       "$out/public/scripts" "$out/public/tools" "$out/public/.claude" "$out/public/site"
 
 cd "$out"
-"$wrangler" deploy --name suvat-redesign --assets . \
-  --compatibility-date 2026-09-01 --message "$(git -C "$root" log -1 --format='%h %s' redesign | cut -c1-100)"
+"$wrangler" deploy --message "$(git -C "$root" log -1 --format='%h %s' redesign | cut -c1-100)"
