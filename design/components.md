@@ -301,6 +301,16 @@ and lamps open at its end, beach huts and a pavilion along the shore, gulls)
 and `site` (scaffolding up a concrete frame, safety netting, a tower crane
 with a load on its hook, mud with ruts, a skip and sand).
 
+Carriers in `js/render/carriers.js` (`helicopter`, `plane`, `drone`, `bird`;
+registry `CARRIERS`, `carrierIn(text)`; a recipe's `carrier`, backdrop `air`
+only, a balloon if left out or unknown): drawn at the point it lets go from,
+holding the thing before; a plane flies on above what it drops at the
+engine's speed across, and each fades once it has landed. What a carrier
+lets go is what moves (`whoIn`). Thrown from a hand's height, a thing
+starts in the hand of the thrower (drawn larger than the scale so it reads)
+and eases onto the engine's path; struck balls are to scale with a small
+floor, resting one radius up off the ground.
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

@@ -76,7 +76,7 @@ function waterBalloon(g, x, y, R, spin) {
   g.restore();
 }
 /** A phone: a dark slab with its screen catching the light, turning. */
-function phone(g, x, y, R, spin) {
+function phone(g, x, y, R, spin, { cracked = false } = {}) {
   const E = env(), w = R * 1.1, h = R * 2;
   g.save(); g.translate(x, y); g.rotate(spin);
   g.fillStyle = '#1b1c20'; g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, R * 0.22); g.fill();
@@ -84,6 +84,12 @@ function phone(g, x, y, R, spin) {
   sg.addColorStop(0, E.night ? '#3d5a78' : '#6f9ccc'); sg.addColorStop(1, '#1f2e44');
   g.fillStyle = sg; g.beginPath(); g.roundRect(-w / 2 + 2, -h / 2 + 3, w - 4, h - 6, R * 0.15); g.fill();
   g.fillStyle = 'rgba(255,255,255,0.25)'; g.beginPath(); g.moveTo(-w / 2 + 2, -h / 2 + 3); g.lineTo(w * 0.1, -h / 2 + 3); g.lineTo(-w / 2 + 2, h * 0.1); g.closePath(); g.fill();
+  if (cracked) {
+    // the screen starred from where it struck
+    g.strokeStyle = 'rgba(255,255,255,0.9)'; g.lineWidth = 0.9;
+    const cx = w * 0.1, cy = h * 0.2;
+    for (let i = 0; i < 7; i++) { const a = i * 0.9 + 0.3, L = R * (0.6 + (i % 3) * 0.35); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * L * 0.5 + 1, cy + Math.sin(a) * L * 0.5); g.lineTo(cx + Math.cos(a + 0.2) * L, cy + Math.sin(a + 0.2) * L); g.stroke(); }
+  }
   g.restore();
 }
 /** A book: a hardback, its cover and the pages' edge showing, turning. */
@@ -113,10 +119,10 @@ function hammer(g, x, y, R, spin) {
 export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer };
 
 /** Draw a prop by name at (x, y), R px, turned by spin, ringed for B. */
-export function drawProp(g, kind, x, y, R, spin = 0, ring = null) {
+export function drawProp(g, kind, x, y, R, spin = 0, ring = null, o = {}) {
   const f = PROPS[kind];
   if (!f) return false;
-  f(g, x, y, R, spin);
+  f(g, x, y, R, spin, o);
   ringed(g, x, y, R * (kind === 'phone' || kind === 'book' || kind === 'hammer' ? 1.2 : 1), ring);
   return true;
 }

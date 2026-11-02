@@ -36,7 +36,8 @@ const ringed = (g, x, y, L, ring) => { if (!ring) return; g.strokeStyle = ring; 
     down; its tail out behind, its head up and forward. */
 function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears, tail, snout }) {
   const s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land));
-  g.save(); g.translate(x, y); g.rotate(spin);
+  // gathered on its haunches before the spring: tail end low, head up
+  g.save(); g.translate(x, y); g.rotate(spin - (1 - s) * (1 - d) * 0.22);
   const len = L * lerp(0.62, 0.78, s), hb = L * 0.17;                 // body half-length grows as it stretches
   const back = { x: -len / 2, y: lerp(L * 0.02, 0, s) }, front = { x: len / 2, y: lerp(-L * 0.04, 0, s) };
   // legs: tucked under in the crouch, flung fore and aft in the air, the
@@ -57,8 +58,10 @@ function quadruped(g, x, y, L, { leap = 0, land = 0, spin = 0, fur, furLo, ears,
   g.stroke();
   torso(g, 0, (back.y + front.y) / 2, len / 2 + hb * 0.4, hb, 0, fur, furLo);
   leg(g, hind, bw, fur); leg(g, fore, fw, fur);
-  // the head, up and forward, with its ears, snout and eye
+  // the head, up and forward on its neck, with its ears, snout and eye
   const hx = front.x + L * 0.12, hy = front.y - hb * 1.1, hr = L * 0.12;
+  g.strokeStyle = fur; g.lineCap = 'round'; g.lineWidth = hr * 1.1;
+  g.beginPath(); g.moveTo(front.x - hb * 0.2, front.y - hb * 0.2); g.lineTo(hx - hr * 0.3, hy + hr * 0.4); g.stroke();
   torso(g, hx, hy, hr, hr * 0.9, 0, fur, furLo);
   g.fillStyle = fur; g.beginPath(); g.ellipse(hx + hr * 0.9, hy + hr * 0.25, hr * snout, hr * 0.45, 0.1, 0, TAU); g.fill();
   g.fillStyle = '#1b1a1c'; g.beginPath(); g.arc(hx + hr * (0.9 + snout), hy + hr * 0.15, Math.max(1, hr * 0.14), 0, TAU); g.fill();
@@ -101,6 +104,7 @@ export function monkey(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = nul
   torso(g, (hip.x + sh.x) / 2, (hip.y + sh.y) / 2, L * 0.13, L * 0.2, 0.15, fur, furLo);
   leg(g, [hip, { x: knee.x + L * 0.04, y: knee.y }, { x: foot.x + L * 0.05, y: foot.y }], L * 0.075, fur);
   leg(g, [sh, el, hand], L * 0.06, fur);
+  g.fillStyle = face; g.beginPath(); g.arc(hand.x, hand.y, L * 0.035, 0, TAU); g.fill();
   // the head: a round head, a pale face, ears out at the sides
   const hx = sh.x + L * 0.06, hy = sh.y - L * 0.14, hr = L * 0.11;
   g.fillStyle = furLo; g.beginPath(); g.arc(hx - hr * 0.9, hy, hr * 0.32, 0, TAU); g.fill();
@@ -116,13 +120,14 @@ export function monkey(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = nul
 export function frog(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null } = {}) {
   const E = env(), s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land));
   const skin = E.night ? '#5f8a52' : '#79b05a', skinLo = E.night ? '#365030' : '#4a7337', belly = E.night ? '#b7b48a' : '#e3dfa6';
-  g.save(); g.translate(x, y); g.rotate(spin + lerp(-0.15, -0.35, s) * (1 - d));
+  g.save(); g.translate(x, y); g.rotate(spin + lerp(-0.15, -0.1, s) * (1 - d));
   const hip = { x: -L * 0.22, y: L * 0.05 };
   // the hind leg: folded in a Z under the body, or straight out behind
   const ext = Math.max(s, 0) * (1 - d * 0.6);
-  const kn = { x: hip.x + L * lerp(0.18, -0.25, ext), y: hip.y + L * lerp(0.08, 0.1, ext) };
-  const an = { x: hip.x + L * lerp(-0.12, -0.55, ext), y: hip.y + L * lerp(0.15, 0.18, ext) };
-  const ft = { x: an.x + L * lerp(0.2, -0.15, ext), y: an.y + L * lerp(0.03, 0.05, ext) };
+  // (straight out behind it in the air, not hanging down)
+  const kn = { x: hip.x + L * lerp(0.18, -0.25, ext), y: hip.y + L * lerp(0.08, 0.01, ext) };
+  const an = { x: hip.x + L * lerp(-0.12, -0.55, ext), y: hip.y + L * lerp(0.15, 0.02, ext) };
+  const ft = { x: an.x + L * lerp(0.2, -0.15, ext), y: an.y + L * lerp(0.03, 0, ext) };
   leg(g, [hip, kn, an, ft], L * 0.09, skinLo);
   // the foreleg: propping it up, or reaching to land
   const fs = { x: L * 0.18, y: L * 0.08 }, ff = { x: fs.x + L * lerp(0.05, 0.2 + d * 0.05, s), y: fs.y + L * lerp(0.15, 0.12 + d * 0.08, s) };
@@ -158,3 +163,6 @@ export function javelin(g, x, y, L, ang) {
 
 /** Every animal, by the registry's figure name. */
 export const ANIMALS = { cat, dog, monkey, frog };
+/** How far below its middle each one's feet reach, as a fraction of L: the
+    stage stands it on the edge and the ground with this. */
+export const FEET = { cat: 0.38, dog: 0.38, monkey: 0.44, frog: 0.24 };

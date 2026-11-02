@@ -90,7 +90,9 @@ export function kicker(g, X, Y, H, P, { pose = 0, ring = null } = {}) {
   const bend = lerp(1.4, 0, Math.min(1, u / 0.5)) + Math.max(0, u - 0.7) * 0.6;
   const foot = { x: kn.x + Math.sin(a - bend) * shin, y: kn.y + Math.cos(a - bend) * shin };
   // arms out: the far one forward, the near one back, swapping as it kicks
-  const armF = { x: sh.x + H * lerp(0.2, -0.15, u), y: sh.y + H * 0.12 }, armN = { x: sh.x + H * lerp(-0.2, 0.22, u), y: sh.y + H * 0.08 };
+  // flung out wide as it strikes, for balance
+  const wide = Math.sin(Math.PI * u);
+  const armF = { x: sh.x + H * (lerp(0.2, -0.15, u) + 0.12 * wide), y: sh.y + H * (0.12 - 0.14 * wide) }, armN = { x: sh.x + H * (lerp(-0.2, 0.22, u) - 0.14 * wide), y: sh.y + H * (0.08 - 0.12 * wide) };
   limb(g, [sh, { x: (sh.x + armF.x) / 2, y: sh.y + H * 0.1 }, armF], C.skinFar, H * 0.05);
   limb(g, [hip, knee(hip, plant, thigh, shin, 1), plant], C.skinFar, H * 0.065);
   limb(g, [hip, knee(hip, plant, thigh, shin, 1)], '#2f3340', H * 0.09);

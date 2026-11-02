@@ -195,7 +195,7 @@ export function titleOf(r) {
   const what = Up(F.label);
   const where = B.on || `${{ hall: 'in', sea: 'over', forest: 'in' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
   if (r.engine === 'projectile') {
-    if (r.backdrop === 'air') return `${what} let go from the air`;
+    if (r.backdrop === 'air') return `${what} let go from ${r.carrier && r.carrier !== 'balloon' ? CARRIERS[r.carrier].label : 'the air'}`;
     if (r.backdrop === 'well') return `${what} down a well`;
     if (B.edge) return `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn

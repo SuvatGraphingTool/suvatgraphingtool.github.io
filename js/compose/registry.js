@@ -48,7 +48,7 @@ export const BACKDROPS = {
   pier:    { label: 'A pier', what: 'a seaside pier on iron piles over the sea, railings and lamps, the beach and its huts behind', place: 'pier', below: 'sea', edge: true, at: 'a pier', art: true },
   site:    { label: 'A building site', what: 'scaffolding up a concrete frame, a tower crane with a load on its hook, mud, a skip and sand', place: 'site', below: 'ground', edge: true, at: 'scaffolding', art: true },
   mars:    { label: 'Mars', what: 'Mars’s red dust and rock under a butterscotch sky; g is 3.71 there', place: 'mars', below: 'surface', art: true, g: 3.71, on: 'on Mars', lands: 'crater', high: 'a ledge on Mars' },
-  air:     { label: 'In the air', what: 'open sky high above fields: let go from a hovering balloon (or a helicopter or a plane)', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
+  air:     { label: 'In the air', what: 'open sky high above fields: let go from what carries it: a hovering balloon, a helicopter, a plane, a drone or a bird ("carrier")', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
 /** What moves. `m` is its real length in metres (a ball's diameter, a

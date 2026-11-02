@@ -675,8 +675,15 @@ function pier(g, c) {
   g.fillStyle = n ? '#6f6253' : '#e2cfa4'; g.beginPath(); g.moveTo(0, sy + 6); g.lineTo(w * 0.55, sy + 2); g.lineTo(w * 0.55, sy + 6); g.lineTo(0, sy + 12); g.closePath(); g.fill();
   const huts = ['#c94f4f', '#4f86c9', '#e8c547', '#5fae7a', '#f2f0ea', '#c97a4f'];
   // small with distance, in a short row near the pier's root
-  for (let i = 0, x = 8; x < w * 0.3; i++, x += 9) { g.fillStyle = withAlpha(huts[i % huts.length], n ? 0.45 : 0.75); g.fillRect(x, sy - 4, 6, 5); g.fillStyle = withAlpha('#ffffff', 0.5); g.beginPath(); g.moveTo(x - 0.5, sy - 4); g.lineTo(x + 3, sy - 6.5); g.lineTo(x + 6.5, sy - 4); g.closePath(); g.fill(); }
-  const px = w * 0.5;
+  // a few huts, each with its pitched roof and a door
+  for (let i = 0, x = x0 * 0.55 + 40; i < 7 && x < w * 0.5; i++, x += 17) {
+    if (!clearOf(x, c, 40)) continue;
+    g.fillStyle = withAlpha(huts[i % huts.length], n ? 0.5 : 0.85); g.fillRect(x, sy - 8, 11, 9);
+    g.fillStyle = withAlpha(n ? '#9a9da3' : '#ffffff', 0.85); g.beginPath(); g.moveTo(x - 1.5, sy - 8); g.lineTo(x + 5.5, sy - 13); g.lineTo(x + 12.5, sy - 8); g.closePath(); g.fill();
+    g.fillStyle = withAlpha('#2a2a2e', 0.6); g.fillRect(x + 3.5, sy - 5, 4, 6);
+  }
+  // the pavilion along the shore behind the pier's root, clear of the flight
+  const px = H0 > 0 ? clamp(x0 * 0.35, 10, Math.max(10, x0 - 50)) : Math.max(10, x0 - 120);
   g.fillStyle = n ? '#8e8a90' : '#f4f1ea'; g.fillRect(px, sy - 16, 34, 16);
   g.fillStyle = n ? '#5d6a7a' : '#7a96b0'; g.beginPath(); g.arc(px + 17, sy - 16, 9, Math.PI, 0); g.fill();
   water(g, 0, w, horizon, h, { phase });
@@ -743,10 +750,14 @@ function site(g, c) {
   g.fillStyle = steel; g.fillRect(mx - mw * 0.1, jy - mw * 2.5, mw * 1.2, mw * 1.5);
   g.fillStyle = n ? '#5b5f66' : '#7a8088'; g.fillRect(mx - cj, jy - jh * 0.2, cj * 0.35, jh * 1.6);
   g.fillStyle = n ? '#3c4450' : '#d9e2ea'; g.fillRect(mx + mw, jy + 2, mw * 1.1, mw * 0.9); g.fillStyle = n ? withAlpha(E.window, 0.7) : '#6f8fac'; g.fillRect(mx + mw + mw * 0.15, jy + mw * 0.15, mw * 0.8, mw * 0.4);
-  const tx = mx + mw + jl * 0.62, ly = lerp(jy, Math.min(top, oy - 30), 0.45);
+  // the load hangs over the building, behind where it is launched from,
+  // never in the flight's way
+  const lw = clamp(1.4 * k, 18, 46);
+  const tx = H0 > 0 ? x0 - clamp(0.35 * H0 * k, 60, 200) * 0.5 : Math.max(20, mx + mw + 12);
+  const ly = H0 > 0 ? Math.max(jy + 14, lerp(jy, top - lw * 0.45 - 30, 0.5)) : lerp(jy, oy, 0.3);
   g.strokeStyle = withAlpha(n ? '#d8d8dc' : '#2a2a2e', 0.8); g.lineWidth = 1; g.beginPath(); g.moveTo(tx - 2, jy + 2); g.lineTo(tx - 2, ly); g.moveTo(tx + 2, jy + 2); g.lineTo(tx + 2, ly); g.stroke();
   g.fillStyle = n ? '#8a7a40' : '#d9a62a'; g.fillRect(tx - 5, ly, 10, 7);
-  const lw = clamp(1.4 * k, 18, 46); g.strokeStyle = withAlpha('#2a2a2e', 0.7); g.beginPath(); g.moveTo(tx, ly + 7); g.lineTo(tx - lw / 2, ly + 18); g.moveTo(tx, ly + 7); g.lineTo(tx + lw / 2, ly + 18); g.stroke();
+  g.strokeStyle = withAlpha('#2a2a2e', 0.7); g.beginPath(); g.moveTo(tx, ly + 7); g.lineTo(tx - lw / 2, ly + 18); g.moveTo(tx, ly + 7); g.lineTo(tx + lw / 2, ly + 18); g.stroke();
   g.fillStyle = n ? '#7a4a3a' : '#b45a3c'; g.fillRect(tx - lw / 2, ly + 18, lw, lw * 0.45);
   g.strokeStyle = withAlpha('#000000', 0.3); for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(tx - lw / 2, ly + 18 + lw * 0.15 * i); g.lineTo(tx + lw / 2, ly + 18 + lw * 0.15 * i); g.stroke(); }
   // the ground: mud and gravel, ruts, a skip and a heap of sand

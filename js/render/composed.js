@@ -34,7 +34,7 @@ import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
 import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack } from './impacts.js';
-import { ANIMALS, javelin } from './animals.js';
+import { ANIMALS, FEET, javelin } from './animals.js';
 import { golfer, kicker, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
 import { house } from './target.js';
@@ -46,6 +46,7 @@ const HUD = 250, HUD_H = 290;
 const trimmed = (s) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s);
 /** Half a figure's drawn height, as a fraction of its drawn length L — so it
     is drawn round the engine's point, not standing on it. */
+const BALLS = new Set(['football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball']);
 const MIDDLE = { car: 0.16, lorry: 0.2, train: 0.11, cyclist: 0.45, motorcycle: 0.3, runner: 0.5 };
 const WET = new Set(['sea', 'river', 'pool', 'well']);
 
@@ -309,7 +310,9 @@ function launch(canvas, o) {
     const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.12 * f.tMax), 0, 1) : 0;
     striker(g, x0 - th * (kind === 'golfBall' ? GOLF_BALL_AT : KICK_BALL_AT) - sh, stand, th, P, { pose, ring: m.ring });
   } else if (thrown) {
-    const pose = m.going ? clamp(0.55 + t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
+    // a javelin is held along the throw, its grip in the hand, until it goes
+    // (and so is anything thrown from the hand's own height: it leaves the hand)
+    const pose = kind === 'javelin' || byHand ? 1 : m.going ? clamp(0.55 + t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
     thrower(g, feet, stand, th, P, { dir: 1, pose, aim, ring: m.ring, suit: R.backdrop === 'moon' || R.backdrop === 'mars' });
   }
 
@@ -361,7 +364,7 @@ function launch(canvas, o) {
         g.restore();
       }
       else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
-      else if (e === 'splat') splat(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
+      else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: clamp(k / 14, 1, 3) }); g.restore(); }
       else if (e === 'crack') crack(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
     }
     if (!f.vertical) {
@@ -384,9 +387,15 @@ function launch(canvas, o) {
   }
 
   // ── the moving thing, at the engine's point
-  const r = f.pos(t), v = f.vel(t), by = Y(r.y);
+  const r = f.pos(t), v = f.vel(t);
   const held = sh ? 1 - clamp(t / Math.max(1e-6, 0.1 * f.tMax), 0, 1) : 0;
-  const bx = X(r.x) - sh * held * held * (3 - 2 * held);
+  let bx = X(r.x) - sh * held * held * (3 - 2 * held), by = Y(r.y);
+  // thrown from the hand: a thrower drawn larger than the scale (so it can be
+  // seen) holds it in its hand, and it eases onto the engine's path as it goes
+  if (byHand && thrown && small) {
+    const hp = throwerHand(th, aim), q = 1 - clamp(t / Math.max(1e-6, 0.08 * f.tMax), 0, 1), e = q * q * (3 - 2 * q);
+    bx += (feet + hp.x - X(0)) * e; by += (stand - hp.y - Y(H0)) * e;
+  }
   const Lp = small ? 0 : size(k, piece);
   const aloft = m.going && t > 0 && !landed;
   if (small) {
@@ -400,9 +409,19 @@ function launch(canvas, o) {
       // while it sits there, easing to the engine's point as it goes
       else if (kind === 'coin') coin(g, bx, by - (fired && t > 0 ? 0 : 3), 8, fired ? t * 9 : 0.25);
       else if (kind === 'marble') marble(g, bx, by - (fired && t > 0 ? 0 : 7), 7);
-      else if (kind === 'javelin') javelin(g, bx, by, size(k, piece), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
+      else if (kind === 'javelin') {
+        // stuck in point first where it lands, most of it standing clear
+        const L = size(k, piece), ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), back = landed ? L * 0.35 : 0;
+        javelin(g, bx - Math.cos(ang) * back, by - Math.sin(ang) * back, L, ang);
+      }
       else if (kind === 'arrow') arrowShaft(g, bx, by, Math.max(44, size(k, piece)), fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x));
-      else if (piece.prop) drawProp(g, kind, bx, by, clamp(k * piece.m * 0.5, 7, 10), fired ? t * 7 : 0.3, m.ring);
+      else if (piece.prop) {
+        // a ball to scale, never smaller than reads; resting on the turf or the
+        // tee one radius up before it is struck and once it has landed
+        const ball = BALLS.has(kind), Rp = clamp(k * piece.m * 0.5, ball ? (kind === 'golfBall' ? 3.5 : 4) : 7, 10);
+        const lift = ball && !aloft && !(landed && wet) ? Rp : 0;
+        drawProp(g, kind, bx, by - lift, Rp, fired ? t * 7 : 0.3, m.ring, { cracked: landed && R.effects.includes('crack') });
+      }
       else if (kind === 'ball') ballAt(g, bx, by, R0, m.ring);
       else if (kind === 'particle') particle(g, bx, by, R0 * 2, P, { ring: m.ring });
       else { pebble(g, bx, by, R0); if (m.ring) dot(g, bx, by, R0 + 3, { stroke: m.ring, width: 2.4 }); }
@@ -453,7 +472,7 @@ function launch(canvas, o) {
       // crouched on the edge, its feet at the engine's point; it springs,
       // stretches out in the air, and reaches down to land
       // its body on the path in the air, its feet on the edge and the ground
-      cx = bx - Lp * 0.3 * (1 - ease(0, 0.1, p)); cy = by - Lp * 0.3 * (1 - ease(0, 0.12, p) + (landed && wet ? 0 : ease(0.85, 1, p)));
+      cx = bx - Lp * 0.3 * (1 - ease(0, 0.1, p)); cy = by - Lp * FEET[kind] * (1 - ease(0, 0.12, p) + (landed && wet ? 0 : ease(0.85, 1, p)));
       if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.4, Math.max(2, Lp * 0.05), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
       const pitch = aloft ? 0.35 * Math.atan2(-v.y, v.x) : 0;
       m.body = { x: cx, y: cy };
@@ -507,6 +526,8 @@ function launch(canvas, o) {
   }
 
   for (const draw of later) draw();
+  // labels keep off the figure itself
+  if (!small) { const cb = m.body ?? { x: bx, y: by - Lp * 0.3 }; L.reserve({ x: cb.x - Lp * 0.55, y: cb.y - Lp * 0.6, w: Lp * 1.1, h: Lp * 1.1 }); }
 
   // ── its velocity and its acceleration, on it
   const pv = pts.map((p) => f.vel(p.t));
@@ -525,7 +546,7 @@ function launch(canvas, o) {
     // a small thing has it from its edge, so the thing itself shows
     const lead = small ? 11 : Lp * 0.5;
     // a person or a parcel: from just in front of its body, so it reads as its own
-    const ox = person ? (m.body?.x ?? bx) + Lp * 0.22 : bx + (v.x / sp) * lead, oyv = person ? (m.body?.y ?? by) : by - (v.y / sp) * lead;
+    const ox = person ? (m.body?.x ?? bx) + Lp * (piece.animal ? 0.55 : 0.22) : bx + (v.x / sp) * lead, oyv = person ? (m.body?.y ?? by) : by - (v.y / sp) * lead;
     const len = Math.max(30, sp * vl), ux = v.x / sp, uy = -v.y / sp;
     let tx = ox + ux * len, ty = oyv + uy * len;
     tx = clamp(tx, 10, w - 10); ty = clamp(ty, 10, h - 8);
