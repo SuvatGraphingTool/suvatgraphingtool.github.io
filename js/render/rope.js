@@ -107,7 +107,8 @@ export function render(canvas, cam, o) {
   const longSlide = Math.hypot(stop.x - rel.x, stop.y - rel.y) >= 40;
   if (t >= f.tRest - 1e-9 && longSlide) {
     const a1 = dn(rel, 92), b1 = dn(stop, 92);
-    stroke(g, [a1, b1], { color: P.disp, width: 1.6 });
+    // a dimension along level ground is across: dashed (rule 2); along a slope, solid
+    stroke(g, [a1, b1], { color: P.disp, width: 1.6, dash: f.alpha === 0 ? [6, 4] : null });
     for (const p of [a1, b1]) stroke(g, [{ x: p.x - nx * 6, y: p.y - ny * 6 }, { x: p.x + nx * 6, y: p.y + ny * 6 }], { color: P.disp, width: 1.6 });
     const mp = dn({ x: (rel.x + stop.x) / 2, y: (rel.y + stop.y) / 2 }, 106);
     L.add(T`${sf(f.s2)} [m] "after it was let go"`, mp.x, mp.y, { color: P.disp, pri: 10, size: 13, weight: 700, maxPush: 20 });
