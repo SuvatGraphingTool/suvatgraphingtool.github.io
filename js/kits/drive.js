@@ -58,7 +58,7 @@ export const drive = {
     const narrow = typeof window !== 'undefined' && window.innerWidth < 520;
     const rows = f.ways.flatMap((n) => {
       // held where its distance ends: the readouts are its values there, and say so
-      const w = f[n], end = t >= w.t - 1e-9, who = two ? `${n === 'up' ? 'Up' : 'Down'}${end ? ', at the end' : ''}: ` : end ? 'At the end: ' : '';
+      const w = f[n], end = t >= w.t - 1e-9, who = two ? `${n === 'up' ? 'Up' : 'Down'}${end ? (narrow ? ' (end)' : ', at the end') : ''}: ` : end ? 'At the end: ' : '';
       if (two && narrow) return [{ k: `${who}velocity`, v: num(w.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' }];
       return [
         { k: two ? `${who}along the road` : `${who}${who ? 'along' : 'Along'} the road`, v: num(w.pos(t), 2), unit: 'm', hue: 'disp' },

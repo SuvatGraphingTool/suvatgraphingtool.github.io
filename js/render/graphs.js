@@ -158,14 +158,16 @@ export function drawGraph(canvas, spec) {
     const xe = PAD.l + gw;
     for (const tg of endTags(series, tMax, Y, PAD.t + 6, PAD.t + gh)) {
       // a line that stopped well before the end (its motion is over) carries its tag at its own end,
-      // just above it, rather than out in the margin by another line's end
+      // rather than out in the margin by another line's end
       const xs = X(tg.tEnd), early = xs < xe - 30;
       if (tg.leader && !early) stroke(ctx, [{ x: xe + 2, y: tg.y0 }, { x: xe + 9, y: tg.y }], { color: tg.color, width: 1.2 });
       ctx.save();
       ctx.font = `800 15px ${cssVar('--font', 'system-ui, sans-serif')}`;
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.strokeStyle = P.card; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-      const tx = early ? xs + 6 : xe + 11, ty = early ? tg.y0 - 14 : tg.y;
+      // beside its end ring, to the right where its line no longer runs; never up in the title's band
+      const tx = early ? xs + 11 : xe + 11, ty = early ? Math.max(tg.y0, PAD.t + 34) : tg.y;
+      if (early) { const tw = ctx.measureText(tg.tag).width; L.reserve({ x: tx - 3, y: ty - 10, w: tw + 6, h: 20 }); }
       ctx.strokeText(tg.tag, tx, ty);
       ctx.fillStyle = tg.color; ctx.fillText(tg.tag, tx, ty);
       ctx.restore();

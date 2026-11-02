@@ -93,7 +93,7 @@ export function render(canvas, cam, o) {
   // on a small stage the forces are a caption instead: its lines built here, so the road can keep clear of it
   const capLines = [];
   if (!cardW) for (const n of f.ways) {
-    const parts = [`${two ? `${n === 'up' ? 'Up' : 'Down'}: ` : ''}${items(n).map((x) => `${x.sg > 0 ? '→' : '←'} ${x.txt}`).join(', ')}`, T`m a = ${s4(f[n].net)} [N]`];
+    const parts = [`${pair ? `${n === 'up' ? 'Up' : 'Down'}: ` : ''}${items(n).map((x) => `${x.sg > 0 ? '→' : '←'} ${x.txt}`).join(', ')}`, T`m a = ${s4(f[n].net)} [N]`];
     let line = '';
     for (const part of parts.join(', ').split(', ')) { const next = line ? `${line}, ${part}` : part; if (line && g.measureText(next).width + 14 > w - 20) { capLines.push(line); line = part; } else line = next; }
     if (line) capLines.push(line);
@@ -187,7 +187,8 @@ export function render(canvas, cam, o) {
     // as the paper gave it: the angle, or its sine (from the height risen, too)
     const tag = f.angleGiven === 'alpha' ? T`alpha = ${num(f.alpha, 1, { trim: true })}°` : T`sin alpha = ${s4(f.sinA)}`;
     // left of the foot under the flat road, where no car's arrows go; a road flatter than 7° is drawn at 7°, and says so
-    plate(g, L, P, steeper ? `${tag}, drawn steeper` : tag, foot.x - 34, foot.y + 44, ink, { align: 'right', size: 14 }); }
+    // (on a phone the climbing car's values fill the grass there: above the flat road instead)
+    plate(g, L, P, steeper ? `${tag}, drawn steeper` : tag, foot.x - 34, phone ? foot.y - Lc * 0.45 - 26 : foot.y + 44, ink, { align: 'right', size: 14 }); }
 
   // ── the distance: a ruler under the road (solid: along the slope), and the height it rises at the top when given
   { const d = laneW + Lc * 0.42 + (two ? 104 : 40), a0 = off(at(e), d), a1 = off(at(e + f.s), d);
