@@ -44,7 +44,7 @@ export const ice = {
       left: [
         { k: 'From A', v: num(f.pos(t), 2), unit: u[0], hue: 'disp' },
         { k: 'Velocity', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Deceleration', v: f.scaled ? num(t < f.tMax - 1e-9 ? f.a : 0, 3) : (t < f.tMax - 1e-9 ? 'a' : '0'), unit: f.scaled ? 'm s⁻²' : '', hue: 'acc' },
+        { k: 'Deceleration', v: f.scaled ? num(t < f.tMax - 1e-9 ? f.a : 0, 3, { trim: true }) : (t < f.tMax - 1e-9 ? 'a' : '0'), unit: f.scaled ? 'm s⁻²' : '', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: u[1] }],
     };

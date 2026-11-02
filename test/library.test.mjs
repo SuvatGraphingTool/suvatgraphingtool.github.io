@@ -1476,8 +1476,12 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
       const a = K.solve(K.read({ ...e.example, ...(p.given || {}) }));
-      const v = String(p.find).split('.').reduce((o, k) => o?.[k], a);
-      ok(near(v, p.paper, p.tol ?? 0.005), `${id} part (${p.label}): the engine's ${p.find} is the paper's ${p.paper}`, v);
+      // a part with two answers (a vector, a ratio) has two papers' numbers
+      const finds = [].concat(p.find), papers = [].concat(p.paper);
+      finds.forEach((fp, i) => {
+        const v = String(fp).split('.').reduce((o, k) => o?.[k], a);
+        ok(near(v, papers[i], p.tol ?? 0.005), `${id} part (${p.label}): the engine's ${fp} is the paper's ${papers[i]}`, v);
+      });
     }
   }
   ok(!solveBridge({ V: 4, T: 1, drop: -20, g: 9.8 }).ok, 'caught above the throw is refused: the runner is below the bridge');

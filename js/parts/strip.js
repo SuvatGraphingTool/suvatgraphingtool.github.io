@@ -32,6 +32,11 @@ export function answerHTML(run) {
     const rel = ['<', '>', '<=', '>='].includes(p.rel) ? p.rel : '=';
     return p.unit ? M`${p.sym} ${rel} ${n} [${p.unit}]` : M`${p.sym} ${rel} ${n}`;
   };
+  if (p.ratio) {
+    // a ratio, in its lowest terms as the engine gave it: AB : BC = 64 : 27
+    const [x, y] = a.values, o = { trim: true };
+    return `${p.ratio.map((s) => M`${s}`).join(' : ')} = ${M`${num(x, p.dp ?? 3, o)}`} : ${M`${num(y, p.dp ?? 3, o)}`}`;
+  }
   if (p.vec) {
     // a vector, in i and j: the sign between them is the j part's own
     const [x, y] = a.values, d = p.dp ?? 2, o = { trim: p.trim ?? true };

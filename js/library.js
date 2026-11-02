@@ -584,9 +584,9 @@ export const LIBRARY = [
     place: 'A curling sheet, from above',
     example: { uA: 20, uB: 12, uC: 6, AD: 80 },
     parts: [
-      { label: 'a', kind: 'distance', ask: 'From the speeds alone, how many times BC is AB?', find: 'ratio', sym: 'AB/BC', dp: 3, at: 'tC', step: 'over a', paper: 2.370, tol: 0.001 },
-      { label: 'b', kind: 'acceleration', ask: 'It comes to rest at D, 80 m past A. What is its deceleration?', find: 'a', sym: 'a', unit: 'm s^-2', trim: true, at: 'end', step: 'over a', paper: 2.5 },
-      { label: 'c', kind: 'distance', ask: 'Find the distance BC.', find: 'BC', sym: 'BC', unit: 'm', trim: true, at: 'tC', step: 'over a', paper: 21.6 },
+      { label: 'a', kind: 'distance', ask: 'From the speeds alone, find the ratio of the distances AB : BC.', find: ['ratioP', 'ratioQ'], ratio: ['AB', 'BC'], at: 'f.tC', step: 'over a', paper: [64, 27] },
+      { label: 'b', kind: 'acceleration', ask: 'It comes to rest at D, 80 m past A. What is its deceleration?', given: { AD: 80 }, find: 'a', sym: 'a', unit: 'm s^-2', trim: true, at: 'end', step: 'over a', paper: 2.5 },
+      { label: 'c', kind: 'distance', ask: 'Find the distance BC.', given: { AD: 80 }, find: 'BC', sym: 'BC', unit: 'm', trim: true, at: 'f.tC', step: 'over a', paper: 21.6 },
     ],
     sources: [
       { board: 'CIE', paper: '9709/41', session: 'May/Jun 2017', q: '5', part: 'all' },

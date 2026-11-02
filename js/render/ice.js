@@ -17,6 +17,8 @@ import { pulse, ageOf, flash } from './effects.js';
 import { T, num } from '../notation.js';
 
 const TAU = Math.PI * 2;
+/** Room past D for the house's outer ring on a narrow stage. */
+const houseRoom = (h) => clamp(h * 0.26 * 0.42, 34, 60) + 14;
 const s3 = (x) => num(x, x !== 0 && Math.abs(x) < 10 ? 2 : 1, { trim: true });
 
 /** A curling stone from above at (x, y), radius r, its handle turned to `rot`. */
@@ -49,9 +51,13 @@ export function render(canvas, cam, o) {
   const over = (x) => (f.scaled ? T`${s3(x)} [m]` : T`${s3(x)}/a`);
 
   // ── the frame: A just right of the readouts, the house round D with room past it
-  const left = HB[0].w + (phone ? 18 : 40), right = w - (phone ? 30 : 60);
-  const span = f.AD, k = (right - left) / (span * 1.08 + 1e-9), X = (x) => left + x * k;
-  const sheetH = clamp(h * 0.34, 96, 170), cy = clamp(h * 0.58, HB[0].h * 0.35 + sheetH / 2, h - sheetH / 2 - 54);
+  // beside the readouts where there is room for the sheet; on a narrow stage
+  // the whole width, below them
+  const narrow = w - HB[0].w < w * 0.62;
+  const left = narrow ? 26 : HB[0].w + 40, right = w - (narrow ? houseRoom(h) : 60);
+  const span = f.AD, k = (right - left) / (span + 1e-9), X = (x) => left + x * k;
+  const sheetH = clamp(h * (narrow ? 0.26 : 0.34), 90, 170);
+  const cy = narrow ? clamp(HB[0].h + 56 + sheetH / 2, 0, h - sheetH / 2 - 54) : clamp(h * 0.58, HB[0].h * 0.35 + sheetH / 2, h - sheetH / 2 - 54);
   const top = cy - sheetH / 2, bot = cy + sheetH / 2;
   const houseR = clamp(sheetH * 0.42, 34, 70);
 
@@ -74,8 +80,6 @@ export function render(canvas, cam, o) {
       g.fillRect(x0 - 5 + R() * 4, y + 4, 10, 8);
     } }
   for (let i = 0; i < 5; i++) { const lx = (i + 0.5) * (w / 5); const lg = g.createRadialGradient(lx, cy, 0, lx, cy, sheetH * 0.7); lg.addColorStop(0, 'rgba(255,255,255,0.35)'); lg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = lg; g.fillRect(lx - sheetH, top, sheetH * 2, sheetH); }
-  // the hack, the foot-block the stone is thrown from, before A
-  { const hx = Math.max(12, X(0) - Math.min(70, (X(0) - 10) * 0.6)); g.fillStyle = '#1f2328'; g.fillRect(hx - 5, cy - 9, 10, 7); g.fillRect(hx - 5, cy + 2, 10, 7); }
   // the centre line, faint
   g.strokeStyle = 'rgba(60,80,100,0.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(-10, cy); g.lineTo(w + 10, cy); g.stroke();
 
@@ -88,15 +92,15 @@ export function render(canvas, cam, o) {
   const ink = cssVar('--ink', '#e8eaee');
   for (const m of f.marks) {
     const x = X(m.x), crossed = t >= m.t - 1e-9;
-    g.strokeStyle = m.id === 'D' ? 'rgba(0,0,0,0)' : crossed ? withAlpha(P.mark, 0.95) : 'rgba(40,60,80,0.55)';
+    g.strokeStyle = m.v === 0 ? 'rgba(0,0,0,0)' : crossed ? withAlpha(P.mark, 0.95) : 'rgba(40,60,80,0.55)';
     g.lineWidth = crossed ? 3 : 2;
-    if (m.id !== 'D') { g.beginPath(); g.moveTo(x, top); g.lineTo(x, bot); g.stroke(); }
+    if (m.v !== 0) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, bot); g.stroke(); }
     L.add(m.id, x, top - 24, { color: crossed ? P.mark : ink, pri: 9, size: 16, weight: 800 });
     if (crossed && fired) {
       const { age, life } = ageOf(t, m.t, f.tMax);
       pulse(g, x, cy, age, life, P.mark, { radius: 36 });
-      if (m.id === 'D') flash(g, x, cy, age, life, { color: P.mark });
-      L.add(m.id === 'D' ? 'at rest' : T`${s3(m.v)} [m s^-1]`, x, top - 44, { color: m.id === 'D' ? P.mark : P.vel, pri: 8, size: 13, weight: 700 });
+      if (m.v === 0) flash(g, x, cy, age, life, { color: P.mark });
+      L.add(m.v === 0 ? 'at rest' : T`${s3(m.v)} [m s^-1]`, x, top - 44, { color: m.v === 0 ? P.mark : P.vel, pri: 8, size: 13, weight: 700 });
     }
   }
 
@@ -121,11 +125,11 @@ export function render(canvas, cam, o) {
     arrow(g, x + r + 2, cy - r - 10, x + r + 2 + len, cy - r - 10, { color: P.vel, width: 2.6, head: 10, dash: [6, 4] });
     L.add(T`${s3(v)} [m s^-1]`, x + r + 8 + len, cy - r - 10, { color: P.vel, pri: 8, size: 14, weight: 700, align: 'left' });
   }
-  if (show.acceleration !== false && t < f.tMax - 1e-9) {
+  if (t < f.tMax - 1e-9) {   // the deceleration is what the scene is about: always shown
     arrow(g, x - r - 2, cy + r + 10, x - r - 2 - 46, cy + r + 10, { color: P.acc, width: 2.2, head: 9, dash: [6, 4] });
     L.add(f.scaled ? T`${s3(f.a)} [m s^-2]` : T`a`, x - r - 54, cy + r + 10, { color: P.acc, pri: 6, size: 13, weight: 700, align: 'right' });
   }
-  if (!f.scaled) L.add('not to scale: each distance is over a', w / 2, h - 14, { color: P.muted, pri: 5, size: 13 });
+  if (!f.scaled) L.add('in proportion: each distance is a number over a', w / 2, h - 14, { color: P.muted, pri: 5, size: 13 });
 
   L.draw(g, w, h);
   return null;
