@@ -39,6 +39,9 @@ const clip = (x, n) => String(x ?? '').replace(/[<>&"`]/g, '').replace(/\s+/g, '
 const listOf = (o) => Object.keys(o).join(', ');
 /** A sentence's first letter up. */
 const Up = (s) => s.replace(/^./, (c) => c.toUpperCase());
+// what skids on landing, and what sinks
+const WHEELS = ['car', 'lorry', 'motorcycle', 'bus', 'tractor'];
+const SINKS = ['stone', 'shot', 'hammer', 'coin', 'marble', 'particle', 'phone', 'book', 'sandbag', 'bucket', 'parcel', 'car', 'lorry', 'motorcycle', 'bus', 'tractor', 'cyclist'];
 /** What it is let go from, in the question's own word: "a seagull", "a helicopter". */
 const carrierName = (r) => (r.carrierWord ? `${/^[aeiou]/.test(r.carrierWord) ? 'an' : 'a'} ${r.carrierWord}` : CARRIERS[r.carrier || 'balloon'].label);
 
@@ -180,6 +183,12 @@ export function check(raw) {
   const lands = MOMENTS[engine] || own || goalward || B.lands || LANDS_WITH[B.below];
   if (!effects.length && lands) effects.push(lands);
   if (objects.some((o) => o.figure === 'rocket' || o.figure === 'firework') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
+  // with nothing asked: a vehicle down on dry ground skids and smokes as it
+  // brakes; something heavy that goes into water sinks, bubbles coming up
+  if (!(raw.effects || []).length && MOMENTS[engine] == null) {
+    if (dry && objects.some((o) => WHEELS.includes(o.figure)) && !effects.includes('skid')) effects.push('skid');
+    if (!dry && objects.some((o) => SINKS.includes(o.figure)) && !effects.includes('bubbles')) effects.push('bubbles');
+  }
   // a firework bursts at the top of its flight, when it goes up at all
   if (objects.some((o) => o.figure === 'firework') && !effects.includes('burst') && !(raw.effects || []).length) effects.push('burst');
   // a place with its own gravity says so

@@ -395,6 +395,23 @@ a place the composer draws (ground, snow, a ledge, a green, a branch) is
 composed there; a branch over a river is the orchard's tree on a bank; a
 diving bird is figure `bird`.
 
+Batch 10. Figures in `js/render/vehicles.js` (`VEHICLES`: each `draw` and
+its `mid`, the engine's point above what it runs on): `bus` (blue, a white
+roof band, its windows lit at night, a door, two axles), `tractor` (green,
+a big rear wheel with tread and a small front one, yellow hubs, a glazed
+cab with its driver, an exhaust stack), `speedboat` (a white hull with its
+stripe, windscreen, driver, outboard, spray at the bow; its waterline at
+Y), `jetski` (and its rider in a life jacket), `skier` (in the tuck, skis
+tipping up in the air), `snowboarder` (arms out, grabbing the board in the
+air) and `horse` (and its rider: legs walking on the ground, folded as it
+jumps, the rider forward over its neck). Effects `skid` (tyre marks laid
+behind where a vehicle comes down, which stay, and smoke billowing from its
+wheels as it brakes; a car, lorry, motorcycle, bus or tractor landing on dry
+ground, by default) and `bubbles` (something heavy sinking away after it
+goes into water, bubbles wobbling up where it went in; by default for a
+stone, a shot, a coin, a phone, a vehicle… — never a ball or a boat). A
+vehicle down on dry ground settles level on its wheels.
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

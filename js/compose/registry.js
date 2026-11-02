@@ -73,6 +73,13 @@ export const FIGURES = {
   cyclist:  { label: 'a cyclist', m: 1.8, min: 46, views: ['side'] },
   runner:   { label: 'a runner', m: 1.75, min: 46, views: ['side'] },
   motorcycle: { label: 'a motorcycle', m: 2.1, min: 48, views: ['side'] },
+  bus:      { label: 'a bus', m: 11, min: 84, views: ['side'] },
+  tractor:  { label: 'a tractor', m: 4, min: 58, views: ['side'] },
+  speedboat: { label: 'a speedboat', m: 6, min: 62, views: ['side'] },
+  jetski:   { label: 'a jet ski', m: 3, min: 50, views: ['side'] },
+  skier:    { label: 'a skier', m: 1.8, min: 52, views: ['side'] },
+  snowboarder: { label: 'a snowboarder', m: 1.6, min: 48, views: ['side'] },
+  horse:    { label: 'a horse and rider', m: 2.4, min: 64, views: ['side'] },
   ball:     { label: 'a ball', m: 0.22, min: 12, views: ['side'], thrown: true },
   stone:    { label: 'a stone', m: 0.08, min: 11, views: ['side'], thrown: true },
   particle: { label: 'a particle', m: 0.1, min: 10, views: ['side', 'plan'], thrown: true },
@@ -144,6 +151,8 @@ export const EFFECTS = {
   leaves: { label: 'leaves', what: 'where it lands on a forest floor' },
   sand:   { label: 'a spray of sand', what: 'where it lands in sand' },
   mud:    { label: 'mud', what: 'where it lands in mud, on a building site' },
+  skid:   { label: 'skid marks and tyre smoke', what: 'a vehicle landing on dry ground and braking' },
+  bubbles: { label: 'bubbles', what: 'something heavy sinking after it goes into water' },
   net:    { label: 'a goal net', what: 'a goal where it lands: its net bulges as the ball meets it' },
   burst:  { label: 'a firework burst', what: 'at the top of a firework’s flight' },
 };
@@ -316,7 +325,7 @@ export const placeOf = (r) => ({ ...BACKDROPS[r.backdrop], below: r.below || BAC
    becomes a figure — exactly, or the closest one there is, saying so — so
    what moves is what is drawn, everywhere; never a silent ball. */
 const WORDS = [
-  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager)\b/, 'diver'],
+  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager)\b/, 'diver'],
   [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
   [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
   [/\b(sandbag|sand ?bag|sack|bag of (sand|flour)|ballast)\b/, 'sandbag'], [/\b(bucket|pail)\b/, 'bucket'],
@@ -333,6 +342,9 @@ const WORDS = [
   [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
   [/\b(javelin)\b/, 'javelin'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
   [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],
+  [/\b(bus|coach|minibus)\b/, 'bus'], [/\b(tractor|quad bike)\b/, 'tractor'], [/\b(speedboat|speed boat|motorboat|motor boat|powerboat)\b/, 'speedboat'],
+  [/\b(jet ?ski|water scooter)\b/, 'jetski'], [/\b(ski jumper|skier|ski)\b/, 'skier'], [/\b(snowboard(?:er)?)\b/, 'snowboarder'],
+  [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
   [/\b(bird|kingfisher|gannet|seagull|gull|eagle|hawk|falcon|osprey|pelican|heron|tern|cormorant|puffin|swallow|pigeon|owl|crow|duck)\b/, 'bird'],
   [/\b(stone|pebble|rock|brick|key|object|mass)\b/, 'stone'],
   [/\b(ball|cricket ball|rugby ball|dart)\b/, 'ball'],
@@ -341,7 +353,7 @@ const WORDS = [
 /** The figures a thing with none of its own is drawn as, and how to say so. */
 const NEAREST = [
   [/\b(dart|crossbow bolt|spear)\b/, 'arrow'],
-  [/\b(ski(er)?|snowboard(er)?|surfer|horse|rider|bmx)\b/, 'diver'],
+  [/\b(surfer|bmx)\b/, 'diver'],
   [/\b(missile|projectile|shell|bullet|discus|stick|bottle|can|bag|helmet|bomb|drop of water|raindrop|hailstone|fish|nut|clam|mussel|prey|mouse)\b/, 'particle'],
   [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|kangaroo|locust)\b/, 'frog'],
   [/\b(animal|bat|insect|bee)\b/, 'particle'],

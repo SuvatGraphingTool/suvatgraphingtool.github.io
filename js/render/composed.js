@@ -33,10 +33,11 @@ import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, t
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
-import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal } from './impacts.js';
+import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles } from './impacts.js';
 import { ANIMALS, FEET, javelin } from './animals.js';
 import { golfer, kicker, archer, archerHand, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
+import { VEHICLES } from './vehicles.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
 import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, skyscape, env, rng, softShadow } from './scenery.js';
@@ -401,6 +402,10 @@ function launch(canvas, o) {
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
       else if (e === 'net') continue;
+      // gone under: it sinks away and bubbles come up where it went in
+      else if (e === 'bubbles' && wet) bubbles(g, lx, oy, age, life, { size: phone ? 0.8 : 1.1, depth: clamp((h - oy) * 0.7, 30, 160) });
+      // a vehicle down hard on dry ground: tyre marks and smoke as it brakes
+      else if (e === 'skid' && !wet) later.push(() => skid(g, lx, oy, age, life, { L: small ? 40 : size(k, piece) }));
       else if (wet) continue;
       // what a landing does to dry ground, sized to what lands and drawn over
       // it, so it is seen: it sits in its crater, half in the snow
@@ -586,10 +591,11 @@ function launch(canvas, o) {
     }
     g.restore();
   } else {
-    const mid = (MIDDLE[kind] ?? 0.2) * Lp;
+    const V = VEHICLES[kind], mid = (V?.mid ?? MIDDLE[kind] ?? 0.2) * Lp;
     // pitched with the path, but only part of the way: a car off a cliff
     // noses down, it does not dive; on the ground before the launch
-    const ang = 0.6 * Math.atan2(-v.y, v.x) * (r.y > 1e-6 || t > 0 ? 1 : 0);
+    // (down on dry ground, it settles level on its wheels as it brakes)
+    const ang = 0.6 * Math.atan2(-v.y, v.x) * (r.y > 1e-6 || t > 0 ? 1 : 0) * (landed && !wet ? 1 - clamp(age / (0.25 * life), 0, 1) : 1);
     const turns = phaseFor(kind, Lp, Math.abs(bx - x0) + (fired ? t * 40 : 0));
     // in the air its shadow falls on what is below, fainter the higher it is
     if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.45, Math.max(2, Lp * 0.05), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
@@ -597,7 +603,8 @@ function launch(canvas, o) {
     // in the water, only what is above the surface shows
     if (landed && wet) { g.beginPath(); g.rect(0, 0, w, oy + 2); g.clip(); }
     g.translate(bx, by); g.rotate(ang);
-    drawFigure(g, kind, Lp / 2, mid, Lp, P, { dir: 1, phase: turns, brake: false, ring: m.ring, airborne: aloft || (landed && wet) });
+    const fo = { dir: 1, phase: turns, brake: false, ring: m.ring, airborne: aloft || (landed && wet) };
+    if (V) V.draw(g, Lp / 2, mid, Lp, P, fo); else drawFigure(g, kind, Lp / 2, mid, Lp, P, fo);
     g.restore();
     if (landed && wet) water(g, lx - Lp * 0.7, lx + Lp * 0.7, oy, oy + 3, { phase });
   }

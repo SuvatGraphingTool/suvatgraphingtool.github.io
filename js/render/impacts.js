@@ -371,3 +371,50 @@ export function goal(g, G, age = -1, life = 1, o = {}) {
   softShadow(g, (x + back) / 2, y + 1, (back - x) * 0.6, 3, 0.5);
   g.restore();
 }
+
+/** A vehicle landing hard on dry ground and braking: two black tyre marks
+    laid on the ground behind where it comes down, which stay, and tyre
+    smoke billowing from the wheels, drifting back and thinning. `L` is the
+    vehicle's drawn length; it lands centred on x. */
+export function skid(g, x, y, age, life, o = {}) {
+  const u = held(age, life); if (u == null) return;
+  const E = env(), L = o.L ?? 60, r = rng(o.seed ?? 109);
+  g.save();
+  // the marks: rubber laid from where the wheels touched, darker where they bit
+  const len = L * 0.9 * ease(Math.min(1, u * 3));
+  for (const [dy, a] of [[1.5, 0.75], [4, 0.45]]) {
+    const gr = g.createLinearGradient(x - L * 0.5 - len, 0, x + L * 0.4, 0);
+    gr.addColorStop(0, withAlpha('#151515', 0)); gr.addColorStop(0.3, withAlpha('#151515', a * 0.6)); gr.addColorStop(1, withAlpha('#151515', a));
+    g.fillStyle = gr; g.fillRect(x - L * 0.5 - len, y + dy - 1, len + L * 0.9, 2.2);
+  }
+  const p = phaseOf(age, life);
+  if (p != null) {
+    // the smoke: puffs from each wheel, swelling, rising a little, drifting back
+    const c = E.night ? '200,200,206' : '225,225,228', edge = E.night ? '120,120,128' : '150,150,156';
+    for (const wx of [x - L * 0.32, x + L * 0.3]) for (let i = 0; i < 6; i++) {
+      const R = (L * 0.08 + r() * L * 0.08) * (0.6 + p * 1.6), dx = -p * L * (0.5 + r() * 0.6), dy = -p * L * (0.1 + r() * 0.2) - R * 0.3;
+      const gr = g.createRadialGradient(wx + dx - R * 0.3, y + dy - R * 0.3, 0, wx + dx, y + dy, R);
+      gr.addColorStop(0, `rgba(${c},${0.85 * (1 - p)})`); gr.addColorStop(0.7, `rgba(${c},${0.55 * (1 - p)})`); gr.addColorStop(1, `rgba(${edge},0)`);
+      g.fillStyle = gr; g.beginPath(); g.arc(wx + dx, y + dy, R, 0, TAU); g.fill();
+    }
+  }
+  g.restore();
+}
+
+/** Something heavy gone under the water: it sinks away from the surface,
+    fading, and a stream of bubbles rises where it went in, each wobbling
+    and swelling a little as it comes up, bursting at the surface. */
+export function bubbles(g, x, y, age, life, o = {}) {
+  const p = phaseOf(age, life); if (p == null) return;
+  const size = o.size ?? 1, depth = o.depth ?? 60, r = rng(o.seed ?? 113);
+  g.save();
+  // what sank: a dim shape going down
+  g.fillStyle = `rgba(30,40,48,${0.5 * (1 - p)})`; g.beginPath(); g.ellipse(x + Math.sin(p * 6) * 3, y + 6 + depth * ease(p), 5 * size, 4 * size, 0, 0, TAU); g.fill();
+  for (let i = 0; i < 14; i++) {
+    const t0 = r() * 0.6, q = (p - t0) / 0.4; if (q < 0 || q > 1) { r(); r(); continue; }
+    const R = (1.5 + r() * 2.2) * size * (0.7 + q * 0.5), bx = x + (r() - 0.5) * 10 * size + Math.sin(q * 9 + i) * 2.5, by = y + 4 + depth * (1 - q) * 0.8;
+    g.strokeStyle = `rgba(235,245,250,${0.9 * (1 - q * 0.4)})`; g.lineWidth = 1.1; g.beginPath(); g.arc(bx, by, R, 0, TAU); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.7)'; g.beginPath(); g.arc(bx - R * 0.35, by - R * 0.35, R * 0.3, 0, TAU); g.fill();
+  }
+  g.restore();
+}
