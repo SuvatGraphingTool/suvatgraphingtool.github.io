@@ -3401,7 +3401,7 @@ function readOne(x, { graph = true, solve = false } = {}) {
   // here the same way it does under the line's own box (showAbove).
   const above = traj && scenario.dragLine && state.markers?.heightLine != null
     ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
-  let html = readoutHTML(r, { name: scenario.name, solved, above });
+  let html = readoutHTML(r, { name: scenario.name, solved, above, flight: !scenario.road && !scenario.descent ? traj : null });
   if (state.runs) html += replyHTML(state.runs);
   // SOLVE: the engine's own working, the same steps the working panel shows.
   if (solve && traj && solved?.ok) {

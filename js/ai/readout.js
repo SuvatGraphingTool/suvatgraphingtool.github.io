@@ -60,8 +60,9 @@ function fromHTML(it) {
  * @param o.name   the scenario's name, from js/scenarios.js
  * @param o.solved the engine's answer for those values, or null
  * @param o.above  the engine's timeAbove() for a line, with `line`, or null
+ * @param o.flight the engine's flight (js/core/projectile.js), for a launch: what it found is said
  */
-export function readoutHTML(reading, { name, solved, above } = {}) {
+export function readoutHTML(reading, { name, solved, above, flight } = {}) {
   const rows = reading.items.map((it) => {
     const from = fromHTML(it);
     return `<li class="ro-row" data-how="${it.how}">
@@ -77,8 +78,10 @@ export function readoutHTML(reading, { name, solved, above } = {}) {
 
   let engine = '';
   if (solved?.ok) {
+    const said = flightHTML(flight);
     const rest = Array.isArray(solved.derived) && solved.derived.length
-      ? solved.derived.join('  ·  ') : 'nothing else was needed.';
+      ? solved.derived.join('  ·  ') + (said ? `<br><b>So</b> ${said}` : '')
+      : said || 'nothing else was needed.';
     let line = '';
     if (above) {
       const L = M`${num(above.line, 2, { trim: true })} [m]`;
@@ -99,6 +102,17 @@ export function readoutHTML(reading, { name, solved, above } = {}) {
     ${reading.summary ? `<p class="ro-sum">${esc(reading.summary)}</p>` : ''}
     <ul class="ro-list">${rows}</ul>
     ${asks}${unsure}${notes}${engine}`;
+}
+
+/** The flight, as the engine found it: in the air for how long, where and how fast it lands,
+    how high it gets. Every number is the engine's (rule 4); none is said that it did not find. */
+function flightHTML(f) {
+  if (!f || !(f.tFlight > 0) || !isFinite(f.tFlight)) return '';
+  const n = (x) => num(x, 2, { trim: true });
+  const out = Math.abs(f.range) > 1e-9 ? ` and lands ${M`${n(f.range)} [m]`} out` : '';
+  const at = isFinite(f.vLanding) ? `${out ? ',' : ' and lands'} at ${M`${n(f.vLanding)} [m s^-1]`}` : '';
+  const top = f.apexRise > 1e-9 && isFinite(f.apexHeight) ? ` At its highest it is ${M`${n(f.apexHeight)} [m]`} above the ground.` : '';
+  return `it is in the air for ${M`t = ${n(f.tFlight)} [s]`}${out}${at}.${top}`;
 }
 
 /* ── Solve: the engine's own working, as a numbered solution ─────────────

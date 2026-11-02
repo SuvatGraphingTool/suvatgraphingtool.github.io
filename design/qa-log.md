@@ -43,6 +43,20 @@ Passed to helper one (figures, composer):
 - a rocket on "up" is a ball;
 - a helicopter and a table have no place.
 
+## 2 November 2026
+
+Gemma's allowance was already spent when the day began: my first call came back `quota_exhausted`, and I made no more. Every reading below is hand-written as Gemma returns it, run through the worker's own pipeline in node (`toComposed(toPlace(toFigure(x)))`), then replayed in the page.
+
+| Question | What happened | Fix |
+|---|---|---|
+| the user's own failures: a 60 m cliff; a 10 m diving board with no angle; a cliff with the ground below; "can you do vectors?"; (a)/(b) with two set-ups | Right place and object. The board has no parts and its angle is assumed straight up (15.66 m s⁻¹, 2.31 s). The cliff lands on the ground. "Next: part (b)" appears. Every reading shows its view button, with Graph on and off, and it opens the stage. | — |
+| ball pushed off a 60 m cliff | The reply repeated itself with mismatched rounding: "t = (v − u)/a → t = 3.5 · t = 3.497 s in the air". | From a height drops the twelve's rearrangement rows and says each result once, with its unit (`js/core/height.js`). Test. |
+| a train accelerates from rest to 20 m/s in 40 s, travels at 20 m/s for 2 min, then decelerates to rest in 30 s | Read the way a small reader writes it, with the held 20 in the hold stage's v2 and no v3. "Not enough to fix the journey yet." | The worker moves a held stage's speed to where the stage before it ends, and "to rest" ends the last stage at 0. Now 3100 m. Test. |
+| a coin is flicked off a 0.8 m table at 2 m/s | "The engine works out the rest: nothing else was needed." There was no answer at all. | The twelve's reply says what the engine found: in the air for 0.4 s, lands 0.81 m out at 4.44 m s⁻¹, and its greatest height when it rises. Test. |
+| a ball dropped from 5 m bounces keeping half its speed; two ships (example); a rocket straight up at 50 m/s | 9.90 m s⁻¹ and 1.25 m are right. The ships list the paper's values. The rocket is drawn as a particle, and the reply says so. | — |
+
+Passed to helper one: a composed reply lists none of the values it read, which library replies do; and the diver's reply says "it … where it was thrown from".
+
 ## Where it stopped (1 Nov, end of day)
 
 The QA loop is paused because the user has gone home. Every fix above is on `redesign` and live; the last commit is def5123.

@@ -146,7 +146,9 @@ export function solveHeight(k0 = {}) {
   if (have(k0.tTop)) lines.unshift(`Stopping rising after ${M`${d(k0.tTop)} [s]`}, it was thrown at ${M`${d(snap(f.params.u))} [m s^-1]`}.`);
   notes.push(...lines);
   const found = [...(have(k0.tTop) ? [M`u = ${d(snap(f.params.u))} [m s^-1]`] : []), ...(!have(k0.h) ? [M`h = ${d(k.h)} [m]`] : [])];
-  const derived = [...found, ...r.derived.map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
+  // the twelve's rearrangements ("t = (v − u)/a → t = 3.5") are said again just
+  // below, to the paper's places and with units: the reply says each once
+  const derived = [...found, ...r.derived.filter((x) => !/→/.test(x)).map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`, `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
   if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}`);
   f.place = place; f.Pl = Pl; f.level = level; f.vertical = straight;
   // a balloon carries on at the speed it gave the stone (rising or falling at

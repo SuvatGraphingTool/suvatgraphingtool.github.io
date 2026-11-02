@@ -128,8 +128,31 @@ function marked(x, words) {
   return rest;
 }
 
+/**
+ * A journey in stages, as a small reader writes it. A stage that holds its
+ * speed has no end speed of its own: "accelerates to 20 m/s, then travels at
+ * 20 m/s" put 20 in the held stage's v, where it is the speed the stage
+ * before it ENDS at. And "decelerates to rest" ends at 0.
+ */
+function stages(x, words) {
+  const b = x?.boxes;
+  if (x?.library !== 'journey-stages' || !b) return x;
+  const out = { ...x, boxes: { ...b } }, o = out.boxes;
+  const n = Number(o.n) || 0;
+  for (let i = 1; i <= Math.max(n, 6); i++) {
+    if (o[`k${i}`] !== 'hold' || o[`v${i}`] == null) continue;
+    const before = o[`k${i - 1}`];
+    if ((before === 'up' || before === 'down') && o[`v${i - 1}`] == null) o[`v${i - 1}`] = o[`v${i}`];
+    else if (i === 1 && o.u == null) o.u = o[`v${i}`];
+    delete o[`v${i}`];
+  }
+  const last = n || [1, 2, 3, 4, 5, 6].filter((i) => o[`k${i}`]).pop();
+  if (last && o[`k${last}`] === 'down' && o[`v${last}`] == null && /\b(to rest|comes? to rest|stops|halt)\b/i.test(`${words} ${x.summary || ''}`)) o[`v${last}`] = 0;
+  return out;
+}
+
 export function toPlace(x, words = '') {
-  return settle(placed(marked(x, words), words), words);
+  return stages(settle(placed(marked(x, words), words), words), words);
 }
 
 function placed(x, words) {

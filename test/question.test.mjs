@@ -420,5 +420,35 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(other.scenario === 'up' && other.u === 12 && !other.boxes, 'a whole reading of its own is another situation, not the question\'s');
 }
 
+// QA 2 Nov: "pushed off a 60 m cliff" replied "t = (v − u)/a → t = 3.5 · t = 3.497 s in the air": each result said once
+{
+  const d = solveHeight({ place: 'cliff', h: 60, u: 0, theta: 0, g: 9.81 }).derived.join(' ').replace(/<[^>]+>/g, '');
+  ok(!/→/.test(d) && (d.match(/t=/g) || []).length === 1 && /3\.497/.test(d), 'From a height says its time once, to the paper\'s places, with its unit');
+}
+
+// QA 2 Nov: "a train accelerates from rest to 20 m/s in 40 s, travels at 20 m/s for 2 min, then decelerates to rest in 30 s"
+// read with the held speed in the hold stage's v2 and no v3: "Not enough to fix the journey yet"
+{
+  const w = 'a train accelerates from rest to 20 m/s in 40 s, travels at 20 m/s for 2 min, then decelerates to rest in 30 s. (a) total distance';
+  const j = toPlace({ understood: true, scenario: 'library', library: 'journey-stages', summary: 'A train.', boxes: { n: 3, u: 0, k1: 'up', t1: 40, v2: 20, k2: 'hold', t2: 120, k3: 'down', t3: 30 } }, w);
+  ok(j.boxes.v1 === 20 && j.boxes.v2 === undefined && j.boxes.v3 === 0, 'the held speed is the speed stage 1 ends at, and "to rest" ends stage 3 at 0');
+  const { byId } = await import('../js/scenarios.js'), { KITS } = await import('../js/kits/index.js');
+  const K = KITS[byId('journey-stages').kit], sv = K.solve(K.read({ ...j.boxes, g: 9.81 }));
+  ok(sv.ok && Math.abs(sv.J.D - 3100) < 1e-6, 'and the engine finds the whole distance, 400 + 2400 + 300 = 3100 m');
+  const kept = toPlace({ understood: true, scenario: 'library', library: 'journey-stages', summary: 'x', boxes: { n: 3, u: 0, k1: 'up', v1: 20, t1: 40, k2: 'hold', t2: 120, k3: 'down', v3: 0, t3: 30 } }, w);
+  ok(kept.boxes.v1 === 20 && kept.boxes.v3 === 0 && kept.boxes.v2 === undefined, 'a reading already right is left as it was');
+}
+
+// QA 2 Nov: "a coin is flicked off a 0.8 m table at 2 m/s" replied "The engine works out the rest: nothing else was needed." — and no answer
+{
+  const { readoutHTML } = await import('../js/ai/readout.js');
+  const r = toApp({ understood: true, confidence: 'high', scenario: 'platform', summary: 'A coin is flicked off a 0.8 m table at 2 m/s.', h: 0.8, u: 2 });
+  const sv = solveLaunch({ u: 2, theta: 0, h: 0.8, g: 9.81 });
+  const html = readoutHTML(r, { name: 'Off a platform', solved: sv, flight: sv.f });
+  const said = html.replace(/<[^>]+>/g, '');
+  ok(/in the air for t=0\.4/.test(said) && /0\.81\s*m out/.test(said) && /4\.44\s*m s/.test(said), 'the reply says what the engine found: 0.40 s, 0.81 m out, 4.44 m s⁻¹');
+  ok(!/sqrt|\^|\*|<=/.test(said), 'set as maths');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
