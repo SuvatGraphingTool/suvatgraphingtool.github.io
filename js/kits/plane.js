@@ -60,7 +60,8 @@ export const plane = {
   hides: { shows: ['apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
   lapse: (f) => timeLapse(f.tMax),
 
-  resolveAxis: 'map',
+  resolveAxis: 'ij',
+  resolveBearing: true,   // i east, j north
   read(vals) {
     const v = (n) => ({ x: vals[`${n}.x`], y: vals[`${n}.y`] });
     return { r0: v('r0'), u: v('u'), a: v('a'), vT: v('vT'), T: vals.T,

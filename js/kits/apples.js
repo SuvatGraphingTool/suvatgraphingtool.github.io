@@ -28,6 +28,7 @@ export const apples = {
   g: [9.8, 9.81, 10],
   hides: { shows: ['apex', 'ruler', 'range', 'grid', 'components'], extras: ['energy'], bounce: true },
 
+  resolveNames: ['First apple', 'Second apple'],
   read(v) {
     return { A: { t: v['A.t'], h: v['A.h'] }, B: { t: v['B.t'], h: v['B.h'] }, later: v.later, g: v.g };
   },

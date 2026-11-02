@@ -947,3 +947,13 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
 /* Resolve in the window too: the button stays when the readouts stand down */
 .canvas-wrap[data-panes='on'] .hud-r { display: flex; z-index: 3; top: auto; bottom: var(--sp-3); }
 .canvas-wrap[data-panes='on'] #hud-right { display: none; }
+
+/* Resolve on a library stage: each row in its own quantity's hue — a line's
+   s, v and a share one block — dashed where it is across (rule 2) */
+.rblock .rrow[data-hue='disp'] { border-left-color: var(--disp); }
+.rblock .rrow[data-hue='vel'] { border-left-color: var(--vel); }
+.rblock .rrow[data-hue='acc'] { border-left-color: var(--acc); }
+.rblock .rrow[data-hue='disp'] .rrow-v { color: var(--disp); }
+.rblock .rrow[data-hue='vel'] .rrow-v { color: var(--vel); }
+.rblock .rrow[data-hue='acc'] .rrow-v { color: var(--acc); }
+.canvas-wrap[data-panes='on'][data-resolve='on'] .hud-r { display: none; }

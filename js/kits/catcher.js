@@ -39,6 +39,8 @@ export const catcher = {
   g: [9.8, 9.81, 10],
   hides: { shows: ['ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
+  /** Resolve: the ball, and the dog running along the ground. */
+  resolveObjects: (f) => [{ name: 'Ball', pos: f.pos, vel: f.vel }, { name: 'Dog', pos: f.dog.pos, vel: f.dog.vel, acc: f.dog.acc, axis: 'along' }],
   read(vals) {
     const find = vals.find ? vals.find.slice(2) : null;
     const c = { t0: vals['c.t0'], u: vals['c.u'], a: vals['c.a'] };

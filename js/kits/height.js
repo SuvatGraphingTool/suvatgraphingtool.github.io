@@ -46,6 +46,8 @@ export const height = {
   g: [9.8, 9.81, 10],
   hides: { shows: ['ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
+  /** Resolve: a throw straight up or down is one line, its a the engine's g. */
+  resolveG: true,
   read(vals) {
     return { place: vals.place, h: vals.h, theta: vals.theta, u: vals.u, v: vals.v, s: vals.s, t: vals.t, tTop: vals.tTop, level: vals.level, g: vals.g };
   },

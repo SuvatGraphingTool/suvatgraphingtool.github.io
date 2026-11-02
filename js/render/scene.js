@@ -1052,6 +1052,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   };
 
   const isResolve = (k) => k === 'ball' || k === 'path';
+  let later = 0;   // a click on a library stage, waiting to see it is not a double-click
 
   // The cursor used to say `grab` for the sky, the height line and the target
   // alike, so a draggable handle felt exactly like empty canvas. Now each
@@ -1071,6 +1072,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
 
   canvas.addEventListener('pointerdown', (e) => {
     const got = pick(e);
+    clearTimeout(later);
     down = { x: e.clientX, y: e.clientY, pick: got };
     dragging = got && !isResolve(got.kind) ? got.kind : null;
     if (dragging) { canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; return; }
@@ -1098,8 +1100,9 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
         && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) onResolve.click?.(was.pick.t);
     // A library stage picks nothing (its view maps layout only), so a click
     // anywhere on it is a click on the motion: Resolve at the instant shown.
+    // Held a moment: a second press is a double-click, which re-frames.
     else if (clicked && was && !cam._map?.sx && e
-        && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) onResolve.click?.(null);
+        && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) later = setTimeout(() => onResolve.click?.(null), 280);
   };
   canvas.addEventListener('pointerup', (e) => end(e, true));
   canvas.addEventListener('pointercancel', (e) => end(e, false));

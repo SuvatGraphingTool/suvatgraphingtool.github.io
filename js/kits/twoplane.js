@@ -59,7 +59,10 @@ export const twoplane = {
   ],
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration', 'ticks'], extras: ['energy'], bounce: true },
 
-  resolveAxis: 'map',
+  resolveAxis: 'ij',
+  resolveBearing: true,   // i east, j north
+  /** Resolve in the question's units: km and hours, or metres and seconds. */
+  resolveUnits: (f) => [f.U.len, f.U.speedText, '', f.U.time],
   read(vals) {
     const v2 = (p) => ({ x: vals[`${p}.x`], y: vals[`${p}.y`] });
     return { units: vals.units || 'km', look: vals.look || 'ships', find: vals.find || null,

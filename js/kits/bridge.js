@@ -26,6 +26,8 @@ export const bridge = {
   g: [9.8, 9.81, 10],
   hides: { shows: ['apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
+  /** Resolve: the ball, and the runner below at a steady V. */
+  resolveObjects: (f) => [{ name: 'Ball', pos: f.pos, vel: f.vel }, { name: 'Runner', pos: (t) => ({ x: f.runner(t), y: 0 }), vel: () => ({ x: f.V, y: 0 }), acc: () => 0, axis: 'along' }],
   read(v) { return { V: v.V, T: v.T, drop: v.drop, g: v.g }; },
   solve: solveBridge,
   working: (solved) => bridgeWorking(solved),

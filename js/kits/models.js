@@ -35,6 +35,8 @@ export const models = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'acceleration', 'ticks'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'along',
+  /** Resolve: each model, along the road. */
+  resolveObjects: (f) => f.models.map((m, i) => ({ name: `Model ${i + 1}`, pos: m.pos, vel: m.vel, acc: m.acc, axis: 'along' })),
   read(vals) { return { u: vals.u, D: vals.D, a: vals.a, limit: vals.limit, react: vals.react }; },
   solve(k) {
     const r = solveModels(k);

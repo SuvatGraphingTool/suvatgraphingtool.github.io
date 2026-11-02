@@ -53,6 +53,8 @@ export const bounce = {
   g: [9.8, 9.81, 10],
   hides: { shows: ['components', 'range', 'ruler'], extras: ['energy'], bounce: true },
 
+  /** Resolve in the convention chosen: the engine's v and a are already in it. */
+  resolveObjects: (f) => [{ name: '', pos: (t) => f.at(t).y, vel: (t) => f.at(t).v, acc: (t) => f.at(t).a, axis: 'vertical', sign: f.sign }],
   read(vals) {
     const k = {};
     for (const key of ['start', 'h', 'U', 'V', 'w', 'H', 'e', 'T', 'n', 'y', 'stop', 'axis']) k[key] = vals[key];

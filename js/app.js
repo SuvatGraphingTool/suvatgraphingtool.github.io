@@ -2316,7 +2316,7 @@ function renderResolve(R) {
   $('res-title').innerHTML = R.tUnit ? `At ${M`t = ${fmt(R.t, 2)}`} ${R.tUnit}` : `At ${M`t = ${fmt(R.t, 2)} [s]`}`;
 
   const row = (q, part) => `
-    <div class="rrow" data-part="${part}">
+    <div class="rrow" data-part="${part}"${q.hue ? ` data-hue="${q.hue}"` : ''}>
       <div class="rrow-top"><span class="rrow-n">${q.name}</span>
         <b class="rrow-v">${fmt(q.value, 2)}<small>${q.unit}</small></b></div>
       <div class="rrow-f">${q.formula}${q.sub ? ` = ${q.sub}` : ''}</div>
@@ -2330,8 +2330,8 @@ function renderResolve(R) {
     </div>`;
   $('res-blocks').innerHTML = R.blocks
     // a kit's card (js/kitresolve.js): its blocks, each with its own rows
-    ? R.blocks.map((b, i) => `<div class="rblock" data-hue="${b.hue}">
-        <div class="rb-h">${b.name}</div>${b.rows.map((q, j) => row(q, `${i}-${j}`)).join('')}</div>`).join('')
+    ? R.blocks.map((b) => `<div class="rblock" data-hue="${b.hue}">
+        <div class="rb-h">${b.name}</div>${b.rows.map((q) => row(q, q.part || '')).join('')}</div>`).join('')
     : block(R.velocity) + block(R.displacement);
 
   $('res-note').textContent = R.blocks ? R.note : R.phase
@@ -2382,6 +2382,8 @@ function openAskAt() {
   // something — and the student can see which instant they are editing.
   state.askT = clamp(state.t, 0, traj.tMax);
   $('at-t').value = fmt(state.askT, 2);
+  // the time in the question's own unit: × U⁄g in letters, h in hours
+  document.querySelector('label[for="at-t"] span').innerHTML = kit()?.resolveUnits?.(traj)?.[3] || 's';
   $('at-v').value = '';
   $('at-picks').innerHTML = '';
   say($('at-t-hint'), false, atTimeSay(state.askT));
@@ -2449,8 +2451,9 @@ function wireAskAt() {
       // Say what was done rather than rewriting the box under the cursor.
       const held = clamp(v, 0, traj.tMax);
       state.askT = held;
-      say(hint, true, `The flight runs from ${M`t = 0`} to ${M`t = ${fmt(traj.tMax, 2)}`} s, `
-        + `so ${M`${fmt(held, 2)}`} s is what gets used.`);
+      const tu = kit()?.resolveUnits?.(traj)?.[3] || 's';
+      say(hint, true, `The flight runs from ${M`t = 0`} to ${M`t = ${fmt(traj.tMax, 2)}`} ${tu}, `
+        + `so ${M`${fmt(held, 2)}`} ${tu} is what gets used.`);
       return;
     }
     state.askT = v;
@@ -2948,7 +2951,9 @@ function draw() {
     $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
   } else if (kit()) { kitView($('scene'), cam); kit().render($('scene'), cam, opts); kitViewDone($('scene')); }
   else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
-  else if (scenario?.stage === 'road') roadStage.render($('scene'), cam, opts);
+  // the road maps nothing to the pointer: no map left from the last stage,
+  // so a click on it is a click on the motion (js/render/scene.js)
+  else if (scenario?.stage === 'road') { cam._map = null; roadStage.render($('scene'), cam, opts); }
   else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
   else scene.render($('scene'), cam, opts);
 

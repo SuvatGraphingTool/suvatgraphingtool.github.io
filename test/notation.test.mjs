@@ -39,6 +39,7 @@ import { solveTrip } from '../js/core/trip.js';
 import { solveTwoPlane } from '../js/core/twoplane.js';
 import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { KITS } from '../js/kits/index.js';
+import { resolveKit } from '../js/kitresolve.js';
 import { LIBRARY } from '../js/library.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
 
@@ -1321,6 +1322,21 @@ group('The whiteboard: every frame it builds, for every kind of board', () => {
     ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
   });
 }
+
+group('Resolve on a library stage: every card it can show', () => {
+  const bag = []; let said = 0;
+  for (const e of LIBRARY) {
+    const K = KITS[e.kit], r = K.solve(K.read(e.example || {}));
+    if (!r.ok) continue;
+    for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+      const R = resolveKit(K, r, r.f, t);
+      check('resolve', `${R.note} ${R.tUnit || ''}`, bag);
+      for (const b of R.blocks) for (const q of b.rows) { said++; check('resolve', `${b.name} ${q.name} ${q.unit} ${q.formula} = ${q.sub} ${q.note}`, bag); }
+    }
+  }
+  ok(said > 300, `the sweep reaches every row (${said})`);
+  ok(bag.length === 0, 'nothing on the card is written as code', bag.join('\n         '));
+});
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

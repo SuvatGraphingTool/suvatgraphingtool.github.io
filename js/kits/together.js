@@ -26,6 +26,7 @@ export const together = {
   g: [9.8, 9.81, 10],
   hides: { shows: ['apex', 'ruler', 'range', 'grid', 'components'], extras: ['energy'], bounce: true },
 
+  resolveNames: ['First stone', 'Second stone'],
   read(v) { return { d: v.d, U: v.U, h: v.h, g: v.g }; },
   solve: solveTogether,
   working: (solved) => togetherWorking(solved),
