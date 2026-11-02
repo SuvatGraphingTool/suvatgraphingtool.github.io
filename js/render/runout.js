@@ -43,12 +43,15 @@ function rider(g, L, P) {
   const E = env(), skin = E.night ? '#b08a74' : '#d9a988', coat = E.night ? '#b0413a' : '#d24a3c', trousers = '#2f3340';
   g.save(); g.translate(0, -L * 0.22);
   g.lineCap = 'round';
-  // legs out in front along the deck, boots at the curl
-  g.strokeStyle = trousers; g.lineWidth = L * 0.09; g.beginPath(); g.moveTo(-L * 0.12, -L * 0.04); g.lineTo(L * 0.28, -L * 0.04); g.stroke();
-  g.fillStyle = '#1c1d21'; g.beginPath(); g.ellipse(L * 0.32, -L * 0.06, L * 0.05, L * 0.035, 0, 0, TAU); g.fill();
-  // body leaning back, arms forward to the rope
+  // legs bent forward along the deck, knees up, boots at the curl
+  g.strokeStyle = trousers; g.lineWidth = L * 0.09; g.lineJoin = 'round'; g.beginPath(); g.moveTo(-L * 0.12, -L * 0.04); g.lineTo(L * 0.1, -L * 0.16); g.lineTo(L * 0.28, -L * 0.04); g.stroke();
+  g.fillStyle = '#1c1d21'; g.beginPath(); g.ellipse(L * 0.32, -L * 0.05, L * 0.055, L * 0.035, 0, 0, TAU); g.fill();
+  // body leaning back, arms forward to the rope, mitts on it
   g.strokeStyle = coat; g.lineWidth = L * 0.13; g.beginPath(); g.moveTo(-L * 0.12, -L * 0.06); g.lineTo(-L * 0.2, -L * 0.36); g.stroke();
-  g.strokeStyle = coat; g.lineWidth = L * 0.06; g.beginPath(); g.moveTo(-L * 0.18, -L * 0.3); g.lineTo(L * 0.05, -L * 0.18); g.stroke();
+  g.strokeStyle = coat; g.lineWidth = L * 0.06; g.beginPath(); g.moveTo(-L * 0.18, -L * 0.3); g.lineTo(L * 0.05, -L * 0.2); g.stroke();
+  g.fillStyle = '#2e6fb4'; g.beginPath(); g.arc(L * 0.07, -L * 0.2, L * 0.035, 0, TAU); g.fill();
+  // a scarf, its end streaming back
+  g.strokeStyle = '#f2c94c'; g.lineWidth = L * 0.04; g.beginPath(); g.moveTo(-L * 0.24, -L * 0.37); g.lineTo(-L * 0.15, -L * 0.37); g.moveTo(-L * 0.22, -L * 0.37); g.lineTo(-L * 0.34, -L * 0.33); g.stroke();
   // head with a bobble hat
   g.fillStyle = skin; g.beginPath(); g.arc(-L * 0.22, -L * 0.45, L * 0.075, 0, TAU); g.fill();
   g.fillStyle = '#2e6fb4'; g.beginPath(); g.arc(-L * 0.22, -L * 0.48, L * 0.078, Math.PI, 0); g.fill();
@@ -75,7 +78,7 @@ export function render(canvas, cam, o) {
   const sky = phone ? 0.35 : 0.5;
   let fit = fitSide({ xLo: -Ldraw * ca, xHi: Math.max(run, Ldraw * 0.2), yLo: 0, yHi: Ldraw * sa }, area, { sky });
   for (let pass = 0; pass < 2; pass++) {
-    const k0 = fit.k, padL = (Ls * 1.8) / k0, padR = (phone ? Ls * 0.7 : Ls + 60) / k0;
+    const k0 = fit.k, padL = (Ls * 1.8) / k0, padR = (phone ? Ls * 1.0 : Ls + 60) / k0;
     fit = fitSide({ xLo: -Ldraw * ca - padL, xHi: Math.max(run, Ldraw * 0.2) + padR, yLo: -100 / k0, yHi: Ldraw * sa + (Ls * 1.6) / k0 }, area, { sky });
   }
   const { k, X, Y } = fit;
@@ -96,10 +99,11 @@ export function render(canvas, cam, o) {
     const brow = { x: top.x - 14, y: top.y - 3 }, rise = { x: -20, y: top.y - Math.max(10, (top.x + 20) * 0.08) };
     g.fillStyle = face; g.beginPath(); g.moveTo(rise.x, rise.y); g.quadraticCurveTo(top.x - 30, top.y - 2, brow.x, brow.y);
     g.quadraticCurveTo(top.x, top.y, top.x + ca * 10, top.y + sa * 10); g.lineTo(foot.x - ca * 14, oy - sa * 14);
-    g.quadraticCurveTo(foot.x, oy, foot.x + 18, oy); g.lineTo(foot.x + 18, h + 20); g.lineTo(-20, h + 20); g.closePath(); g.fill();
+    g.quadraticCurveTo(foot.x, oy, foot.x + 18, oy); g.lineTo(-20, oy); g.closePath(); g.fill();
     g.strokeStyle = 'rgba(120,140,160,0.45)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(rise.x, rise.y); g.quadraticCurveTo(top.x - 30, top.y - 2, brow.x, brow.y);
     g.quadraticCurveTo(top.x, top.y, top.x + ca * 10, top.y + sa * 10); g.lineTo(foot.x - ca * 14, oy - sa * 14); g.quadraticCurveTo(foot.x, oy, foot.x + 18, oy); g.lineTo(w + 20, oy); g.stroke();
-    g.fillStyle = withAlpha('#ffffff', 0.7); g.beginPath(); g.ellipse(brow.x + 4, brow.y - 1, 16, 3, -al * 0.5, 0, TAU); g.fill();   // a snow lip at the brow
+    // a snow crest along the brow's own curve
+    g.strokeStyle = withAlpha('#ffffff', 0.85); g.lineWidth = 3; g.lineCap = 'round'; g.beginPath(); g.moveTo(top.x - 30, top.y - 2); g.quadraticCurveTo(top.x - 10, top.y - 3, top.x + ca * 8, top.y + sa * 8); g.stroke();
     { const r = rng(9);
       for (let i = 0; i < 14; i++) { const x = r() * w, y = oy + 16 + r() * (h - oy); g.fillStyle = withAlpha(shade, 0.7); g.beginPath(); g.ellipse(x, y, 30 + r() * 50, 4 + r() * 4, 0, 0, TAU); g.fill(); }
       g.strokeStyle = withAlpha(E.night ? '#8796a5' : '#c3cfdb', 0.7); g.lineWidth = 1.2;
@@ -156,13 +160,16 @@ export function render(canvas, cam, o) {
   { const R = clamp(k * Ldraw * 0.22, 48, 96), ink = look === 'snow' ? (E.night ? '#e8eef4' : '#33404c') : P.ink;
     g.strokeStyle = ink; g.lineWidth = 1.6; g.beginPath(); g.moveTo(foot.x, oy); g.lineTo(foot.x - R * 1.25, oy); g.stroke();
     g.beginPath(); g.arc(foot.x, oy, R, Math.PI, Math.PI + al, false); g.stroke();
-    L.add(`${num(f.alpha, 1, { trim: true })}°`, foot.x - Math.cos(al / 2) * R * 0.62, oy - Math.sin(al / 2) * R * 0.62 + 4, { color: ink, pri: 11, size: 14, weight: 700, maxPush: 10 }); }
+    // at the left end of its baseline, where nothing that slides ever reaches
+    L.add(`${num(f.alpha, 1, { trim: true })}°`, foot.x - R * 1.35, oy - 9, { color: ink, pri: 11, size: 14, weight: 700, maxPush: 10, align: 'right' }); }
   // the slope's length, above the surface clear of what slides; or, stopping on the slope, how far down it went
-  const rulerOff = Ls * 0.95 + 16;
+  const rulerOff = look === 'snow' ? Ls * 0.95 + 14 : Ls * 0.45 + 14;
   const sRuler = (s0, s1, label, solid) => {
     const p0 = at(s0), p1 = at(s1), a0 = { x: p0.x + out.x * rulerOff, y: p0.y + out.y * rulerOff }, a1 = { x: p1.x + out.x * rulerOff, y: p1.y + out.y * rulerOff };
     stroke(g, [a0, a1], { color: P.disp, width: 1.6 });
     for (const p of [a0, a1]) stroke(g, [{ x: p.x - out.x * 6, y: p.y - out.y * 6 }, { x: p.x + out.x * 6, y: p.y + out.y * 6 }], { color: P.disp, width: 1.6 });
+    // faint extension lines from the path's ends to the ruler's ticks
+    for (const [p, a] of [[p0, a0], [p1, a1]]) stroke(g, [p, a], { color: P.disp, width: 1, alpha: 0.35 });
     L.add(label, (a0.x + a1.x) / 2 + out.x * 14, (a0.y + a1.y) / 2 + out.y * 14, { color: P.disp, pri: 9, size: 14, weight: 700, maxPush: 16 });
   };
   if (f.L != null && !(f.stopsOnSlope && t >= f.tRest - 1e-9)) sRuler(0, Ldraw, T`${num(f.L, 6, { trim: true })} [m]`);
@@ -189,9 +196,10 @@ export function render(canvas, cam, o) {
     else flash(g, foot.x + 4, oy - 2, e.age, e.life * 0.6, { radius: 14 });
     // the speed it reaches the bottom with, on a flag above the foot, while it is near
     if (t < f.tB + Math.max(0.8, (f.tRest - f.tB) * 0.4)) {
-      const fy = oy - Ls * 1.3; stroke(g, [{ x: foot.x, y: oy - 2 }, { x: foot.x, y: fy + 8 }], { color: P.vel, width: 1.4, alpha: 0.8 });
-      L.add(T`${sf(f.vBot)} [m s^-1] "at the bottom"`, foot.x, fy, { color: P.vel, pri: 10, size: 13, weight: 700, maxPush: 16 });
-    }
+      // the pole starts above the object, so it never spears it; the words to the right of the foot
+      const fy = oy - Ls * 1.6; stroke(g, [{ x: foot.x, y: oy - Ls * 1.0 }, { x: foot.x, y: fy + 4 }], { color: P.vel, width: 1.4, alpha: 0.8 });
+      L.add(T`${sf(f.vBot)} [m s^-1] "at the bottom"`, foot.x + 6, fy, { color: P.vel, pri: 10, size: 13, weight: 700, maxPush: 16, align: 'left' });
+    } else L.add(T`${sf(f.vBot)} [m s^-1] "at the bottom"`, foot.x + 4, oy + 96, { color: P.vel, pri: 8, size: 13, weight: 700, align: 'left', maxPush: 16 });
   }
   // ── at rest: the run-out along the level (dashed: across, rule 2), or how far down the slope (solid, along it)
   if (fired && t >= f.tRest - 1e-9) {
@@ -220,7 +228,7 @@ export function render(canvas, cam, o) {
   const FF = f.forces?.(t);
   if (FF) {
     unview(g);
-    const where = FF.phase === 'rest' ? (FF.holding ? 'At rest on the slope, held' : 'At rest') : FF.slope ? 'Down the slope' : 'On the level';
+    const where = FF.phase === 'rest' ? (FF.holding ? 'Held on the slope' : 'At rest') : FF.slope ? 'Down the slope' : 'On the level';
     const items = [...(FF.slope ? [T`m g sin alpha = ${sf(FF.W)} [N]`] : []), T`R = ${sf(FF.R)} [N]`, Math.abs(FF.F) > 1e-9 ? T`F = ${sf(Math.abs(FF.F))} [N] ${FF.F < 0 ? '"against it"' : '"holding it"'}` : 'no friction'];
     if (cardW) {
       const cx = w - cardW - 16, cy = h - cardH - 16, lab = (txt, x, y, col, al2 = 'left') => { g.save(); g.font = '700 13px system-ui, sans-serif'; g.fillStyle = col; g.textAlign = al2; g.textBaseline = 'middle'; g.fillText(txt, x, y); g.restore(); };
