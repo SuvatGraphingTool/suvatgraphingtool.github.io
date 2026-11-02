@@ -267,6 +267,20 @@ pitch (fromReading's BALLISH); a phone, a book, a hammer or a water balloon
 is composed and drawn as itself. Two on one vertical line can be any prop;
 a bounce, a ball of a sport.
 
+Effects in `js/render/impacts.js`, each at the engine's moment (age, life),
+leaving what it makes once its life is over: `crater` (a bowl with a lit rim,
+ejecta in rays; the Moon's and Mars's own landing, registry `lands`),
+`snowPuff` (registry `snow`: puffs and clods, a dent left), `divot` (turf
+clods, a scar), `sparks` (streaks and a hot glow), `confetti` (paper bursting
+up and fluttering down) and `smokeTrail` (registry `smoke`: puffs along the
+path behind it, swelling and thinning; a rocket's by default). Wet landings
+keep their splash. Places `snow` (peaks, snow-laden pines, drifts, ski
+tracks; a rock ledge under a snow cap with a cornice) and `desert` (a hazy
+sky, buttes in heat shimmer, dunes with windward slopes and shaded slip
+faces, rippled sand, cacti; a sandstone outcrop), both level places in
+js/core/height.js. A place that draws its own ledge names it in the title
+(registry `high`: "a snowy ledge", "a ledge on the Moon").
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,

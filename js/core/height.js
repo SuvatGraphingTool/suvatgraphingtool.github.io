@@ -45,6 +45,8 @@ export const PLACES = {
   quay:    { word: 'quay', top: 'the quayside', below: 'the water', lands: 'hits the water', foot: 'at the foot of the quay' },
   building: { word: 'building', top: 'the roof', below: 'the street', lands: 'hits the street', foot: 'at the foot of the building' },
   moon:    { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
+  snow:    { word: 'start', top: 'where it starts', below: 'the snow', lands: 'lands in the snow', foot: 'where it started', level: true },
+  desert:  { word: 'start', top: 'where it starts', below: 'the sand', lands: 'lands on the sand', foot: 'where it started', level: true },
   mars:    { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
   table:   { word: 'table', top: 'the table top', below: 'the floor', lands: 'hits the floor', foot: 'at the foot of the table', from: 'the table top' },
   air:     { word: 'point it was let go', top: 'the point it is let go from', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', from: 'where it was let go' },

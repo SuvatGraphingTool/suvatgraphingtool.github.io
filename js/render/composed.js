@@ -33,6 +33,7 @@ import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, t
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth } from './places.js';
 import { drawProp } from './props.js';
+import { crater, snowPuff, divot, sparks, confetti, smokeTrail } from './impacts.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
 import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, skyscape, env, rng, softShadow } from './scenery.js';
@@ -325,6 +326,13 @@ function launch(canvas, o) {
       else if (e === 'dust' && !wet) dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k, piece) / 30), n: 22 });
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
+      else if (wet) continue;
+      // what a landing does to dry ground, sized to what lands
+      else if (e === 'crater') crater(g, lx, oy, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 14, 0.8, 3), ...(R.backdrop === 'mars' ? { dark: '#5e2e1d', light: '#d89a6c' } : {}) });
+      else if (e === 'snow') snowPuff(g, lx, oy, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 14, 0.8, 3) });
+      else if (e === 'divot') divot(g, lx, oy, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 14, 0.8, 2.5) });
+      else if (e === 'sparks') sparks(g, lx, oy - 2, age, life, { size: clamp((small ? 10 : size(k, piece) * 0.5) / 16, 0.7, 2) });
+      else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
     }
     if (!f.vertical) {
       const ry = oy + 24 + m.i * 24;
@@ -333,6 +341,9 @@ function launch(canvas, o) {
       L.add(T`${sig3(end.x)} [m]`, Math.min((x0 + lx) / 2, lx - 40), ry + 15, { color: P.ink, align: 'center', pri: 7, size: 14, weight: 700, maxPush: 20 });
     }
   }
+
+  // a rocket's smoke, left along the way it has come
+  if (R.effects.includes('smoke') && m.going && !(landed && wet)) smokeTrail(g, (tt) => at(f.pos(tt)), t, { dt: f.tMax / 70, size: clamp(k / 12, 0.8, 2) });
 
   // ── the moving thing, at the engine's point
   const r = f.pos(t), v = f.vel(t), by = Y(r.y);
@@ -482,7 +493,7 @@ function launch(canvas, o) {
   }
 
   // ── what it lands on, named on it
-  const name = { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor' }[B.below] || 'the ground';
+  const name = { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   L.add(name, wet && H0 > 0 ? x0 - 12 : w - 14, wet && H0 > 0 ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
 
   L.draw(g, w, h);

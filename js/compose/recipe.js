@@ -169,7 +169,10 @@ export function check(raw) {
   }
   // what its moments make, unless the recipe says: a meeting flashes, a
   // bounce rings, a landing splashes or kicks up dust
-  if (!effects.length && (MOMENTS[engine] || LANDS_WITH[B.below])) effects.push(MOMENTS[engine] || LANDS_WITH[B.below]);
+  // (a place's own: a crater on the Moon); a rocket trails smoke as it flies
+  const lands = MOMENTS[engine] || B.lands || LANDS_WITH[B.below];
+  if (!effects.length && lands) effects.push(lands);
+  if (objects.some((o) => o.figure === 'rocket') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
   // a place with its own gravity says so
   if (B.g && !isNum(numbers.g)) notes.push(`${Up(B.on || B.label)} g is ${M`${num(B.g, 2, { trim: true })} [m s^-2]`}, not Earth’s ${M`9.81 [m s^-2]`}: the engine uses it.`);
 
@@ -187,7 +190,8 @@ export function titleOf(r) {
     if (r.backdrop === 'well') return `${what} down a well`;
     if (B.edge) return `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
-    if (r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off a wall`;
+    // (a place that draws a ledge of its own says so)
+    if (r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${B.high || 'a wall'}`;
     return r.backdrop === 'ground' ? `${what} ${F.thrown ? 'thrown' : 'launched'} from the ground` : `${what} ${F.thrown ? 'thrown' : 'launched'} ${where}`;
   }
   const by = B.edge ? `by ${B.at}` : where;

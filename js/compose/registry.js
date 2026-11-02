@@ -39,11 +39,13 @@ export const BACKDROPS = {
   table:   { label: 'A table', what: 'a wooden table in a room', place: 'table', below: 'floor', edge: true, at: 'a table' },
   well:    { label: 'A well', what: 'a stone well, its shaft cut away down to the water: it moves straight up or down', place: 'well', below: 'well', edge: true, at: 'a well' },
   mountain: { label: 'Mountains', what: 'a rock ledge high above a valley, snow-capped peaks beyond', place: 'ledge', below: 'ground', edge: true, at: 'a ledge' },
-  forest:  { label: 'A forest', what: 'woodland: trees thinning into mist over a forest floor; from a height, a platform among the trunks', place: 'ground', below: 'ground', art: true },
+  forest:  { label: 'A forest', what: 'woodland: trees thinning into mist over a forest floor; from a height, a platform among the trunks', place: 'ground', below: 'ground', art: true, high: 'a platform in a forest' },
   harbour: { label: 'A harbour', what: 'a stone quay over the harbour water, boats at their moorings, a lighthouse across the bay', place: 'quay', below: 'sea', edge: true, at: 'a quay' },
   city:    { label: 'A city', what: 'the roof of an office block among the city’s towers, the street below', place: 'building', below: 'road', edge: true, at: 'a building' },
-  moon:    { label: 'The Moon', what: 'the Moon’s grey cratered plain under a black sky, the Earth overhead; g is 1.62 there', place: 'moon', below: 'surface', art: true, g: 1.62, on: 'on the Moon' },
-  mars:    { label: 'Mars', what: 'Mars’s red dust and rock under a butterscotch sky; g is 3.71 there', place: 'mars', below: 'surface', art: true, g: 3.71, on: 'on Mars' },
+  moon:    { label: 'The Moon', what: 'the Moon’s grey cratered plain under a black sky, the Earth overhead; g is 1.62 there', place: 'moon', below: 'surface', art: true, g: 1.62, on: 'on the Moon', lands: 'crater', high: 'a ledge on the Moon' },
+  snow:    { label: 'Snow', what: 'a snowfield under snowy peaks and pines; from a height, a snow-capped rock ledge', place: 'snow', below: 'snow', art: true, on: 'in the snow', lands: 'snow', high: 'a snowy ledge' },
+  desert:  { label: 'A desert', what: 'sand dunes under a hot hazy sky; from a height, a sandstone outcrop', place: 'desert', below: 'sand', art: true, on: 'in the desert', high: 'a sandstone outcrop' },
+  mars:    { label: 'Mars', what: 'Mars’s red dust and rock under a butterscotch sky; g is 3.71 there', place: 'mars', below: 'surface', art: true, g: 3.71, on: 'on Mars', lands: 'crater', high: 'a ledge on Mars' },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from a hovering balloon (or a helicopter or a plane)', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
 
@@ -94,6 +96,12 @@ export const EFFECTS = {
   dust:   { label: 'dust', what: 'where it lands on the ground' },
   ring:   { label: 'a bounce ring', what: 'where it bounces, or two meet' },
   flash:  { label: 'a collision flash', what: 'where two collide' },
+  crater: { label: 'a crater', what: 'where it lands in dust, on the Moon or Mars' },
+  snow:   { label: 'snow puffs', what: 'where it lands in snow' },
+  divot:  { label: 'a divot', what: 'where it digs into turf' },
+  sparks: { label: 'sparks', what: 'where metal or stone strikes a hard surface' },
+  confetti: { label: 'confetti', what: 'a hit: on target, a goal, a win' },
+  smoke:  { label: 'a smoke trail', what: 'behind a rocket or a firework as it flies' },
 };
 
 /** How it moves. `kit` is the library kit whose engine, boxes, working,
@@ -233,7 +241,7 @@ export const ANSWERS = { projectile: PROJECTILE_ANSWERS, pair: PAIR_ANSWERS, bou
 export const MOMENTS = { pair: 'flash', bounce: 'ring' };
 
 /** The effect a landing makes on what is below, when the recipe names none. */
-export const LANDS_WITH = { surface: 'dust', sea: 'splash', river: 'splash', pool: 'splash', well: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring' };
+export const LANDS_WITH = { surface: 'dust', sea: 'splash', river: 'splash', pool: 'splash', well: 'splash', ground: 'dust', road: 'dust', rails: 'dust', beach: 'dust', floor: 'ring', snow: 'snow', sand: 'dust' };
 
 /** What it lands on, in a question's words, as a backdrop's `below`. */
 const UNDER = [
@@ -326,6 +334,9 @@ export function figureOf(who) {
 const FROM = '\\b(?:off|from|on|over the edge of|out of)\\s+(?:a|the|an)\\s+(?:\\d+(?:\\.\\d+)?\\s*m(?:etres?)?\\s+(?:high\\s+|tall\\s+)?)?';
 const ONLY_HERE = [
   [/\bon (?:the )?moon\b|\blunar\b|\bmoon'?s (?:surface|gravity)\b/, 'moon', 'moon'],
+  // unambiguous wherever they are said
+  [/\b(?:ski slope|snowfield|ski jump|ski run|piste|snowy slope)\b|\bin(?:to)? the snow\b/, 'snow', 'snow'],
+  [/\b(?:in|across|over|into)\s+(?:a|the)\s+(?:desert|sand dunes?|dunes|sahara)\b/, 'desert', 'desert'],
   [/\bon mars\b|\bmartian\b|\bmars'?s (?:surface|gravity)\b/, 'mars', 'mars'],
   [/\b(?:in|through|across|into)\s+(?:a|the)\s+(forest|wood|woods|woodland)\b/, 'forest'],
   [/\b(skyscraper|office block|tower block|high-rise|rooftop)\b/, 'city'],
