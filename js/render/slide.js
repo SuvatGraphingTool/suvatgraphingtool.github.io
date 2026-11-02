@@ -21,6 +21,14 @@ const D2R = Math.PI / 180, TAU = Math.PI * 2;
 // as the HUD prints them, to 2 dp — but a value under 0.1 to 3 s.f., never a false 0
 const s3 = (x) => (Math.abs(x) >= 0.1 || x === 0 ? num(x, Math.abs(x) >= 1000 ? 0 : 2) : num(Number(x.toPrecision(3)), 6, { trim: true }));
 
+/** A lifeboat's hull, side on, keel along y = 0, L px long, bow towards +x. */
+export function lifeboatHull(L) {
+  const hull = new Path2D();
+  hull.moveTo(-L * 0.5, -L * 0.2); hull.lineTo(L * 0.42, -L * 0.2); hull.quadraticCurveTo(L * 0.56, -L * 0.2, L * 0.5, -L * 0.04);
+  hull.quadraticCurveTo(L * 0.38, 0, L * 0.1, 0); hull.lineTo(-L * 0.42, 0); hull.quadraticCurveTo(-L * 0.5, 0, -L * 0.5, -L * 0.1); hull.closePath();
+  return hull;
+}
+
 /** A lifeboat side on, keel along y = 0, L px long, bow towards +x: a dark
     hull below the rubbing strake, a bright upper hull, a white wheelhouse
     with windows and a mast. */
@@ -28,9 +36,7 @@ export function lifeboat(g, L) {
   const E = env();
   g.save();
   // the hull: a deep curve, the bow raked up, the stern square
-  const hull = new Path2D();
-  hull.moveTo(-L * 0.5, -L * 0.2); hull.lineTo(L * 0.42, -L * 0.2); hull.quadraticCurveTo(L * 0.56, -L * 0.2, L * 0.5, -L * 0.04);
-  hull.quadraticCurveTo(L * 0.38, 0, L * 0.1, 0); hull.lineTo(-L * 0.42, 0); hull.quadraticCurveTo(-L * 0.5, 0, -L * 0.5, -L * 0.1); hull.closePath();
+  const hull = lifeboatHull(L);
   g.fillStyle = E.night ? '#1d2a44' : '#22355e'; g.fill(hull);
   g.save(); g.clip(hull);
   g.fillStyle = E.night ? '#b8561f' : '#e8732a'; g.fillRect(-L, -L * 0.2, L * 2, L * 0.09);
@@ -119,16 +125,17 @@ export function render(canvas, cam, o) {
   const al = f.alpha * D2R, S = f.s, D = S * Math.cos(al), H = S * Math.sin(al), ca = Math.cos(al), sa = Math.sin(al);
   const cardW = compact || f.W == null ? 0 : 262, cardH = 150;
   // the object's size on screen, for each place
-  const size = (k) => (look === 'slipway' ? clamp(S * k * 0.27, 70, 170) : look === 'roof' ? clamp(S * k * 0.24, 50, 80) : clamp(S * k * 0.15, 34, 58));
+  const size = (k) => (look === 'slipway' ? clamp(S * k * 0.27, phone ? 40 : 70, 170) : look === 'roof' ? clamp(S * k * 0.24, phone ? 26 : 50, 80) : clamp(S * k * 0.15, phone ? 22 : 34, 58));
   // room round the run for the place, and past each end for the object, its arrow and its label (in px, so two passes)
   const base = look === 'slipway' ? { xLo: -S * 0.3, xHi: D + S * 0.12, yLo: -S * 0.06, yHi: H + S * 0.24 }
-    : look === 'roof' ? { xLo: -S * 0.5, xHi: D + S * 0.12, yLo: -Math.max(S * 0.9, 2.6), yHi: H + S * 0.5 }
+    // the roof's far slope mirrors the near one about the ridge: the whole house in frame
+    : look === 'roof' ? { xLo: -(D + S * 0.44 * ca) - S * 0.06, xHi: D + S * 0.12, yLo: -Math.max(S * 0.9, 2.6), yHi: H + S * 0.5 }
       : { xLo: -S * 0.12, xHi: D + S * 0.12, yLo: -S * 0.4, yHi: H + S * 0.3 };
   const area = { left: phone ? 14 : HB[0].w + 20, right: w - (cardW ? cardW + 30 : 14), top: HB[0].h * (phone ? 1 : 0.55), bottom: h - (compact && f.W != null ? 50 : 26) };
   const sky = look === 'slipway' ? 0.35 : 0.6;
   let fit = fitSide(base, area, { sky });
   for (let pass = 0; pass < 2; pass++) {
-    const Lp = size(fit.k), box = { ...base, xLo: base.xLo - (Lp * 0.6) / fit.k, xHi: base.xHi + (Lp * 0.6 + 170) / fit.k };
+    const Lp = size(fit.k), box = { ...base, xLo: base.xLo - (Lp * 0.6) / fit.k, xHi: base.xHi + (Lp * 0.6 + (phone ? 90 : 170)) / fit.k };
     fit = fitSide(box, area, { sky });
   }
   const { k, X, Y } = fit, Lb = size(k);
@@ -151,14 +158,19 @@ export function render(canvas, cam, o) {
     const edgeX = top.x + (foot.x - top.x) * 0.22;
     const face = []; for (let y = top.y - 6, i = 0; y < h + 20; y += 9, i++) face.push({ x: edgeX + (r() - 0.5) * 10 + (y - top.y) * 0.08, y });
     const rockG = g.createLinearGradient(0, top.y, 0, h); rockG.addColorStop(0, E.night ? '#6a5e55' : '#a8998a'); rockG.addColorStop(1, E.night ? '#3a3134' : '#6a5e55');
-    g.fillStyle = rockG; g.beginPath(); g.moveTo(-20, h + 20); g.lineTo(-20, top.y - 6); for (const p of face) g.lineTo(p.x, p.y); g.closePath(); g.fill();
+    const above = face.filter((p) => p.y <= seaY + 4), cliffX = above.length ? above[above.length - 1].x : edgeX;
+    // under the water: the rock goes on, dimmed, under a translucent sea
+    const drowned = new Path2D(); drowned.moveTo(-20, seaY); drowned.lineTo(cliffX, seaY); for (const p of face) if (p.y > seaY) drowned.lineTo(p.x, p.y); drowned.lineTo(-20, h + 20); drowned.closePath();
+    g.fillStyle = withAlpha(E.night ? '#2a2427' : '#5a5048', 0.9); g.fill(drowned);
+    g.fillStyle = withAlpha(E.night ? '#16324a' : '#3f7ea6', 0.6); g.fill(drowned);
+    g.fillStyle = rockG; g.beginPath(); g.moveTo(-20, seaY + 4); g.lineTo(-20, top.y - 6); for (const p of above) g.lineTo(p.x, p.y); g.lineTo(cliffX, seaY + 4); g.closePath(); g.fill();
     g.strokeStyle = withAlpha('#000000', 0.22); g.lineWidth = 1.2;
     for (let i = 1; i < 5; i++) { const yy = top.y + (seaY - top.y) * (i / 5) + 6; g.beginPath(); g.moveTo(-20, yy + (r() - 0.5) * 6); g.lineTo(edgeX + (yy - top.y) * 0.08, yy); g.stroke(); }
-    g.strokeStyle = withAlpha('#ffffff', 0.12); g.beginPath(); for (const p of face) g.lineTo(p.x - 2, p.y); g.stroke();
-    // wet at the waterline, and foam lapping the foot of the cliff
-    g.fillStyle = withAlpha(E.night ? '#1a1d22' : '#3a3f3a', 0.55); g.fillRect(-20, seaY - 8, edgeX + (seaY - top.y) * 0.08 + 22, 10);
-    g.strokeStyle = withAlpha('#ffffff', 0.7); g.lineWidth = 2; g.beginPath();
-    for (let x = -20; x < edgeX + (seaY - top.y) * 0.08 + 10; x += 6) g.lineTo(x, seaY + 1 + Math.sin(x * 0.2 + t * 4) * 1.5); g.stroke();
+    g.strokeStyle = withAlpha('#ffffff', 0.12); g.beginPath(); for (const p of above) g.lineTo(p.x - 2, p.y); g.stroke();
+    // wet on the cliff face just above the water, and foam lapping its foot
+    g.fillStyle = withAlpha(E.night ? '#1a1d22' : '#3a3f3a', 0.5); g.fillRect(cliffX - 14, seaY - 10, 16, 12);
+    g.strokeStyle = withAlpha('#ffffff', 0.75); g.lineWidth = 2; g.beginPath();
+    for (let x = cliffX - 30; x < cliffX + 12; x += 4) g.lineTo(x, seaY + 1 + Math.sin(x * 0.3 + t * 4) * 1.5); g.stroke();
     // turf along the top, tufted
     grass(g, -20, edgeX + 4, top.y - 8, top.y - 2, { seed: 4 });
     // the slipway: piles with cross-bracing, weed below the tide line, a deck with two keelway rails
@@ -177,6 +189,7 @@ export function render(canvas, cam, o) {
     // the boathouse: its doors where the boat starts, so it rolls out of the house
     const bH = clamp(Lb * 0.9, 50, 130), dx = top.x - Lb * 0.5;
     boathouse(g, dx + bH * 0.35, top.y - 2, bH);
+    L.reserve({ x: dx + bH * 0.35 - bH * 1.5 - 8, y: top.y - 2 - bH * 1.8, w: bH * 1.5 + 16, h: bH * 1.8 });
     doorFrame = { x: dx + bH * 0.35 - bH * 0.7, y: top.y - 2 - bH * 0.78, w: bH * 0.62, h: bH * 0.78 };
   } else if (look === 'roof') {
     const ground = Y(-Math.max(S * 0.75, 2.4));
@@ -204,13 +217,14 @@ export function render(canvas, cam, o) {
       const u = i / courses, a = { x: ridge.x - (ridge.x - back.x) * u, y: ridge.y + (back.y - ridge.y) * u }, b = { x: ridge.x + (foot.x - ridge.x) * u, y: ridge.y + (foot.y - ridge.y) * u };
       g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
     }
-    // the joints between tiles in each course, staggered course to course (on the near slope)
+    // the joints between tiles: short uprights across each course, every 14 px, staggered course to course
     for (let i = 1; i <= courses; i++) {
-      const u0 = (i - 1) / courses, u1 = i / courses;
-      for (let v = (i % 2) * 0.5; v < 1; v += 1 / 6) {
-        const xa = ridge.x + (foot.x - ridge.x) * u0, ya = ridge.y + (foot.y - ridge.y) * u0, xb = ridge.x + (foot.x - ridge.x) * u1, yb = ridge.y + (foot.y - ridge.y) * u1;
-        // a short line across the course, square to the slope
-        const mx = xa + (xb - xa) * v, my = ya + (yb - ya) * v; g.beginPath(); g.moveTo(mx, my); g.lineTo(mx + nx * -6, my + ny * -6); g.stroke();
+      const u0 = (i - 1) / courses, u1 = i / courses, y0 = ridge.y + (foot.y - ridge.y) * u0, y1 = ridge.y + (foot.y - ridge.y) * u1;
+      const xl = ridge.x - (ridge.x - back.x) * u1, xr = ridge.x + (foot.x - ridge.x) * u1;
+      for (let x = xl + 4 + (i % 2) * 7; x < xr - 4; x += 14) {
+        // only inside the roof's triangle at this course's top edge
+        const half = (ridge.x - back.x) * u0; if (Math.abs(x - ridge.x) > half) continue;
+        g.beginPath(); g.moveTo(x, y0 + 1); g.lineTo(x, y1 - 1); g.stroke();
       }
     }
     g.fillStyle = E.night ? '#4a2318' : '#7a3220'; g.beginPath(); g.ellipse(ridge.x, ridge.y - 2, 9, 4, 0, 0, TAU); g.fill();
@@ -259,9 +273,12 @@ export function render(canvas, cam, o) {
   }
 
   // ── where it was let go: a small post on the surface, its words above and behind it
-  { const p = top; g.strokeStyle = P.ink; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - nx * Lb * 0.75, p.y - ny * Lb * 0.75); g.stroke();
-    g.fillStyle = P.mark; g.beginPath(); g.moveTo(p.x - nx * Lb * 0.75, p.y - ny * Lb * 0.75); g.lineTo(p.x - nx * Lb * 0.75 - 12, p.y - ny * Lb * 0.75 + 4); g.lineTo(p.x - nx * Lb * 0.62, p.y - ny * Lb * 0.62); g.closePath(); g.fill();
-    L.add('let go from rest', p.x - nx * Lb * 0.75 - 16, p.y - ny * Lb * 0.75 - 6, { color: P.ink, pri: 9, size: 13, weight: 700, align: 'right', maxPush: 16 }); }
+  // upright, planted just behind where the object starts, not across its run
+  { const p = along(-(Lb * 0.6) / k), hP = Lb * 0.8;
+    g.strokeStyle = P.ink; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x, p.y - hP); g.stroke();
+    g.fillStyle = P.mark; g.beginPath(); g.moveTo(p.x, p.y - hP); g.lineTo(p.x + 13, p.y - hP + 5); g.lineTo(p.x, p.y - hP + 10); g.closePath(); g.fill();
+    L.reserve({ x: p.x - 3, y: p.y - hP, w: 17, h: hP });
+    L.add('let go from rest', p.x - 6, p.y - hP - 4, { color: P.ink, pri: 10, size: 13, weight: 700, align: 'right', maxPush: 30 }); }
 
   // ── the angle at the foot, with its arc, its label inside it on the bisector
   { const R = Math.max(clamp(k * S * 0.28, 40, 110), Lb * 1.15);
@@ -269,13 +286,14 @@ export function render(canvas, cam, o) {
     g.beginPath(); g.moveTo(foot.x, foot.y); g.lineTo(foot.x - R * 1.2, foot.y); g.stroke();
     g.beginPath(); g.arc(foot.x, foot.y, R, Math.PI, Math.PI + al); g.stroke();
     const bis = Math.PI + al / 2;
-    L.add(`${num(f.alpha, 2, { trim: true })}°`, foot.x + Math.cos(bis) * R * 0.72, foot.y + Math.sin(bis) * R * 0.72, { color: P.ink, pri: 9, size: 14, weight: 700, maxPush: 10 }); }
+    L.add(`${num(f.alpha, 2, { trim: true })}°`, foot.x + Math.cos(bis) * R * 0.72, foot.y + Math.sin(bis) * R * 0.72, { color: P.ink, pri: 10, size: 14, weight: 700, maxPush: 10 }); }
 
   // ── the run, marked under the slope, further out than the acceleration arrow
-  { const off = 58, a0 = { x: top.x + nx * off, y: top.y + ny * off }, a1 = { x: foot.x + nx * off, y: foot.y + ny * off };
+  { const off = look === 'slipway' ? 58 : -(Lb * 0.75 + 18), a0 = { x: top.x + nx * off, y: top.y + ny * off }, a1 = { x: foot.x + nx * off, y: foot.y + ny * off };
     stroke(g, [a0, a1], { color: P.disp, width: 1.6, alpha: 0.9 });
     for (const p of [a0, a1]) stroke(g, [{ x: p.x - nx * 6, y: p.y - ny * 6 }, { x: p.x + nx * 6, y: p.y + ny * 6 }], { color: P.disp, width: 1.6 });
-    L.add(T`${s3(f.s)} [m]`, (a0.x + a1.x) / 2 + nx * 14, (a0.y + a1.y) / 2 + ny * 14, { color: P.disp, pri: 8, size: 14, weight: 700 }); }
+    const out = Math.sign(off) * 14;
+    L.add(T`${num(f.s, 6, { trim: true })} [m]`, (a0.x + a1.x) / 2 + nx * out, (a0.y + a1.y) / 2 + ny * out, { color: P.disp, pri: 8, size: 14, weight: 700 }); }
 
   // ── what slides, on its surface; at the end of the roof the tile tips over the gutter
   const dd = f.pos(t), q = along(dd), e = done ? ageOf(t, f.tMax, f.tMax) : null;
@@ -295,8 +313,11 @@ export function render(canvas, cam, o) {
     const front = dd + (Lb * 0.5) / k, wl = S * 0.82 * 0.96;
     if (front > wl) {
       // only over the boat: the water closes over its hull, nothing else is repainted
-      g.save(); g.beginPath(); g.rect(q.x - Lb * 0.7, seaY, Lb * 1.4, Lb * 0.6); g.clip();
-      g.fillStyle = withAlpha(E.night ? '#16324a' : '#3f7ea6', 0.6); g.fillRect(q.x - Lb * 0.7, seaY, Lb * 1.4, Lb * 0.6); g.restore();
+      g.save(); g.beginPath(); g.rect(-50, seaY, w + 100, h); g.clip();
+      g.translate(q.x, q.y - 6); g.rotate(al); g.clip(lifeboatHull(Lb));
+      g.fillStyle = withAlpha(E.night ? '#16324a' : '#3f7ea6', 0.45); g.fillRect(-Lb, -Lb, Lb * 2, Lb * 2); g.restore();
+      const xs = q.x - Lb * 0.5 * ca, xe = q.x + Lb * 0.5 * ca;
+      g.strokeStyle = withAlpha('#ffffff', 0.7); g.lineWidth = 2.5; g.beginPath(); g.moveTo(Math.max(xs, along(S * 0.82).x - 4), seaY); g.lineTo(xe, seaY); g.stroke();
       const u = clamp((front - wl) / (S * 0.18 + (Lb * 0.5) / k), 0, 1), bx = along(Math.min(dd + (Lb * 0.45) / k, S * 1.1)).x;
       g.fillStyle = withAlpha('#ffffff', 0.75);
       for (let i = 0; i < 9; i++) { const aa = Math.PI * (1.1 + i * 0.09); const rr = 6 + u * 22; g.beginPath(); g.arc(bx + Math.cos(aa) * rr, seaY + Math.sin(aa) * rr * 0.8, 1.6 + u * 2, 0, TAU); g.fill(); }
@@ -307,7 +328,7 @@ export function render(canvas, cam, o) {
 
   // ── the velocity along the slope, from its front; the acceleration under the slope
   const v = f.vel(t);
-  if (show.velocity !== false && v >= 0.05 && (v / f.v) * 100 >= 4 && !tip) {
+  if (show.velocity !== false && v >= 0.05 && (v / f.v) * 100 >= 4 && !done) {
     const ax = q.x + ca * Lb * 0.55 + sa * Lb * 0.35, ay = q.y + sa * Lb * 0.55 - ca * Lb * 0.35, len = Math.min((v / f.v) * 100, done ? 60 : 100);
     arrow(g, ax, ay, ax + ca * len, ay + sa * len, { color: P.vel, width: 2.6, head: Math.min(10, len * 0.6) });
     if (!done) L.add(T`${s3(v)} [m s^-1]`, ax + ca * len + 8, ay + sa * len - 8, { color: P.vel, pri: 8, size: 14, weight: 700, align: 'left' });
@@ -315,7 +336,7 @@ export function render(canvas, cam, o) {
   if (!done) {
     const bx = q.x + nx * 26, by = q.y + ny * 26;
     arrow(g, bx, by, bx + ca * 48, by + sa * 48, { color: P.acc, width: 2.2, head: 9 });
-    L.add(T`${s3(f.a)} [m s^-2]`, bx + ca * 24 + nx * 14, by + sa * 24 + ny * 14, { color: P.acc, pri: 7, size: 13, weight: 700 });
+    L.add(T`${s3(f.a)} [m s^-2]`, bx + ca * 58, by + sa * 58 + 4, { color: P.acc, pri: 7, size: 13, weight: 700, align: 'left' });
   }
 
   // ── at the end of the run: into the sea, off the gutter, or against the stop
@@ -323,15 +344,17 @@ export function render(canvas, cam, o) {
     if (look === 'slipway') bigSplash(g, foot.x + Lb * 0.45, seaY + 2, e.age, e.life, clamp(Lb / 70, 0.8, 1.8));
     else if (look === 'plane') flash(g, stopAt.x, stopAt.y - 6, e.age, e.life * 0.6, { radius: 18 });
     else pulse(g, foot.x, foot.y, e.age, e.life, P.mark, { radius: 22 });
-    L.add(T`${s3(f.v)} [m s^-1] "after" ${s3(f.t)} [s]`, foot.x, foot.y - Lb * 0.9 - 14, { color: P.mark, pri: 9, size: 13, weight: 700, maxPush: 60 });
-    if (look === 'roof') L.add('over the edge of the roof', foot.x, foot.y - Lb * 0.9 - 34, { color: P.mark, pri: 7, size: 13, weight: 700, maxPush: 40 });
+    L.add(T`${s3(f.v)} [m s^-1] "after" ${s3(f.t)} [s]`, foot.x, foot.y - Lb * 1.1 - 18, { color: P.mark, pri: 9, size: 13, weight: 700, maxPush: 60 });
+    if (look === 'roof') L.add('over the edge of the roof', foot.x, foot.y - Lb * 1.1 - 38, { color: P.mark, pri: 7, size: 13, weight: 700, maxPush: 40 });
   }
   L.draw(g, w, h);
 
   // ── the forces along the slope: a card, or on a small stage a caption
   if (f.W != null) {
     unview(g);
-    const fWord = f.mu === 0 ? 'no friction: a smooth slope' : T`F = mu R = ${s3(f.Fr)} [N] "up the slope"`;
+    // forces to 3 s.f., as the papers give them
+    const sf = (x) => num(Number(x.toPrecision(3)), 6, { trim: true });
+    const fWord = f.mu === 0 ? 'no friction: a smooth slope' : T`F = mu R = ${sf(f.Fr)} [N] "up the slope"`;
     if (cardW) {
       const cw = cardW, chh = cardH, cx = w - cw - 16, cy = h - chh - 16;
       paper(g, cx, cy, cw, chh);
@@ -339,12 +362,12 @@ export function render(canvas, cam, o) {
       lab('Down the slope +', cx + 12, cy + 18, P.muted);
       const big = Math.max(f.W, f.Fr, 1e-9), sc = (cw - 60) / 2 / big, x0 = cx + cw / 2;
       arrow(g, x0, cy + 46, x0 + f.W * sc, cy + 46, { color: P.ink, width: 2.4, head: 9 });
-      lab(T`m g sin alpha = ${s3(f.W)} [N] "down the slope"`, cx + 12, cy + 62, P.ink);
+      lab(T`m g sin alpha = ${sf(f.W)} [N] "down the slope"`, cx + 12, cy + 62, P.ink);
       if (f.Fr > 0) arrow(g, x0, cy + 92, x0 - f.Fr * sc, cy + 92, { color: P.ink, width: 2.4, head: 9 });
       lab(fWord, cx + 12, cy + 108, P.ink);
-      lab(T`R = m g cos alpha = ${s3(f.N)} [N]`, cx + 12, cy + 134, P.muted);
+      lab(T`R = m g cos alpha = ${sf(f.N)} [N]`, cx + 12, cy + 134, P.muted);
     } else {
-      const parts = [T`m g sin alpha = ${s3(f.W)} [N] "down"`, f.mu === 0 ? 'no friction' : T`F = ${s3(f.Fr)} [N] "up"`, T`R = ${s3(f.N)} [N]`];
+      const parts = [T`m g sin alpha = ${sf(f.W)} [N] "down"`, f.mu === 0 ? 'no friction' : T`F = ${sf(f.Fr)} [N] "up"`, T`R = ${sf(f.N)} [N]`];
       g.save(); g.font = '700 13px system-ui, sans-serif'; g.textBaseline = 'middle';
       // one line if it fits, else two: never squeezed below 13 px
       const one = parts.join(', '), lines = g.measureText(one).width + 14 <= w - 20 ? [one] : [parts.slice(0, 2).join(', '), parts[2]];
