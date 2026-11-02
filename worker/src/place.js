@@ -304,13 +304,16 @@ function timed(x, words) {
  */
 const OBSTACLE = /\b(net|wall|fence|hedge|tree)\b/i;
 const NUM = '(\\d+(?:\\.\\d+)?)';
+const HITS = /\b(hits?|strikes?|reach(es)?)\b[^.?!]*\b(wall|fence)\b/i;
 function cleared(x, words) {
-  if (!x?.understood || x.library === 'over-the-wall' || !/\b(clears?|over|passes)\b/i.test(words)) return x;
+  // "a wall 20 m away … the height at which it hits the wall": a wall it hits, with no height of its own
+  const hits = HITS.test(words);
+  if (!x?.understood || x.library === 'over-the-wall' || !(/\b(clears?|over|passes)\b/i.test(words) || hits)) return x;
   const clause = String(words).split(/[.;?!](?!\d)/).find((c) => OBSTACLE.test(c));
   if (!clause) return x;
   const H = new RegExp(`${NUM}\\s*m\\s*(?:high|tall)\\b|${NUM}\\s*m(?:-|\\s+)(?:high\\s+)?(?:net|wall|fence|hedge|tree)\\b`, 'i').exec(clause);
   const d = new RegExp(`${NUM}\\s*m\\s*(?:away|from|in front|horizontally|beyond)\\b|distance of\\s*${NUM}\\s*m\\b`, 'i').exec(clause);
-  if (!H || !d) return x;
+  if (!d || (!H && !hits)) return x;
   // the launch, as the reader had it
   let h0, u, theta;
   if (x.scenario === 'compose' && (!x.recipe?.engine || x.recipe.engine === 'projectile')) {
@@ -324,15 +327,18 @@ function cleared(x, words) {
     theta = x.scenario === 'arc' ? x.angleDegrees : ANGLE[x.scenario](x);
   } else return x;
   if (!(Number(u) > 0) || theta == null || !isFinite(Number(theta))) return x;
-  const kind = OBSTACLE.exec(clause)[1].toLowerCase().replace('hedge', 'fence');
-  const boxes = { u: Number(u), theta: Number(theta), d: Number(d[1] ?? d[2]), H: Number(H[1] ?? H[2]), kind };
+  const kind = H ? OBSTACLE.exec(clause)[1].toLowerCase().replace('hedge', 'fence') : 'face';
+  const boxes = { u: Number(u), theta: Number(theta), d: Number(d[1] ?? d[2]), kind };
+  if (H) boxes.H = Number(H[1] ?? H[2]);
   if (Number(h0) > 0) boxes.h0 = Number(h0);
   if (typeof x.g === 'number' && x.g > 0) boxes.g = x.g;
   const out = { understood: true, confidence: x.confidence || 'high', scenario: 'library', library: 'over-the-wall', summary: x.summary, boxes };
   if (x.who) out.who = x.who;
-  // what it asks stays in words: "does it clear" is the engine's own line, not a height
-  const asked = (x.asked || x.parts || []).filter((p) => p && typeof p === 'object').map((p) => ({ asks: p.asks }));
-  if (asked.length) out.asked = asked;
+  // what it asks stays in words, its key dropped — the twelve's "top" is not the height at the wall,
+  // and "does it clear" is the engine's own line; a question marked in parts keeps them
+  const plain = (list) => list.filter((p) => p && typeof p === 'object').map(({ answer, twelve, scene, ...rest }) => rest);
+  if (Array.isArray(x.parts)) out.parts = plain(x.parts);
+  else if (Array.isArray(x.asked)) out.asked = plain(x.asked);
   else if (Array.isArray(x.asks)) out.asks = x.asks;
   return out;
 }

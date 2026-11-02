@@ -191,6 +191,13 @@ export const LIBRARY = [
       { label: 'b', kind: 'angle', ask: 'Find the two angles of projection that pass through the point.', find: ['found.values.0', 'found.values.1'], sym: 'alpha', suffix: '°', at: 'shown.at.t', step: 'angle', paper: [71.57, 45] },
       { label: 'c', kind: 'height', ask: 'What is the greatest height the ball can reach on its way to the point?', find: 'flights.0.topBefore', sym: 'H', unit: 'm', trim: true, at: 'flights.0.apex.t', step: 'top of its path', uses: ['b'], paper: 36 },
     ],
+    answers: [
+      // the moment it reaches the wall, the net or the point: "how long to reach the wall", "at what height does it hit it"
+      { kind: 'time', say: 'the time it takes to reach the wall, the net or the point', find: 'shown.at.t', sym: 't', unit: 's', trim: true, at: 'shown.at.t', step: 'at the point', example: { u: 18, theta: 40, d: 20, kind: 'face', g: 9.81 } },
+      { kind: 'height', say: 'the height at which it hits the wall, or passes the net or the point', find: 'shown.at.y', sym: 'y', unit: 'm', trim: true, at: 'shown.at.t', step: 'at the point', example: { u: 18, theta: 40, d: 20, kind: 'face', g: 9.81 } },
+      { kind: 'speed', say: 'its speed as it reaches the wall, the net or the point', find: 'shown.at.speed', sym: 'v', unit: 'm s^-1', trim: true, at: 'shown.at.t', example: { u: 18, theta: 40, d: 20, kind: 'face', g: 9.81 } },
+      { kind: 'distance', say: 'by how much it clears the wall, the net, the fence or the tree', find: 'shown.at.clear', sym: 'd', unit: 'm', trim: true, at: 'shown.at.t', example: { u: 30, theta: 0, h0: 2.8, d: 12, H: 0.9, kind: 'net', g: 9.81 } },
+    ],
     sources: [
       { board: 'Edexcel', paper: '9MA0/32', session: 'Jun 2023', q: '5' },
       { board: 'WJEC', paper: '1300U40-1 Unit 4', session: 'Jun 2022', q: '10' },

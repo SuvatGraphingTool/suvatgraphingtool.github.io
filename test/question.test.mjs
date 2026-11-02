@@ -678,6 +678,15 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const { readoutHTML } = await import('../js/ai/readout.js');
   const gRow = readoutHTML({ items: [{ k: 'g', value: 9.81, how: 'assumed' }], asks: [] }, {});
   ok(/m-var">g</.test(gRow) && !/m-var">a</.test(gRow), 'the twelve list g as g, not a');
+  // round 7 (hand-written): a wall it hits
+  const wallWords = 'A ball is kicked from the ground at 18 m/s at 40° to the horizontal towards a vertical wall 20 m away. (a) Find the time it takes to reach the wall. (b) Find the height at which it hits the wall.';
+  const wall = toPlace({ understood: true, scenario: 'arc', summary: 'x', u: 18, angleDegrees: 40, parts: [{ label: 'a', asks: 'time to reach the wall', answer: 'flight' }, { label: 'b', asks: 'height at which it hits the wall', answer: 'top' }] }, wallWords);
+  ok(wall.library === 'over-the-wall' && wall.boxes.kind === 'face' && wall.boxes.d === 20 && wall.boxes.H == null, 'a wall 20 m away that it hits: Over the wall, a wall it hits');
+  ok(wall.parts?.length === 2 && wall.parts.every((p) => !p.answer), 'its parts stay parts, the twelve’s keys (time of flight, greatest height) dropped');
+  const wp = fromReader('over-the-wall', wall.parts);
+  const TK = KITS[byId('over-the-wall').kit], wv = TK.solve(TK.read({ ...wall.boxes, g: 9.81 }));
+  ok(wp[0].find === 'shown.at.t' && wp[1].find === 'shown.at.y', 'the time to reach the wall and the height it hits it at');
+  ok(Math.abs(wv.shown.at.t - 1.4505) < 1e-4 && Math.abs(wv.shown.at.y - 6.4628) < 1e-4, '1.45 s and 6.46 m');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }
