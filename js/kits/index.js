@@ -42,6 +42,7 @@ import { ice } from './ice.js';
 import { wall } from './wall.js';
 import { hill } from './hill.js';
 import { rough } from './rough.js';
+import { sink } from './sink.js';
 import { twin } from './twin.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket, runway, river, wind, heli, ice, twin, wall, hill, rough };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket, runway, river, wind, heli, ice, twin, wall, hill, rough, sink };

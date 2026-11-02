@@ -28,6 +28,7 @@ import { solveIce } from '../js/core/ice.js';
 import { solveWall } from '../js/core/wall.js';
 import { solveHill } from '../js/core/hill.js';
 import { solveRough } from '../js/core/rough.js';
+import { solveSink, sinkWorking } from '../js/core/sink.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1475,7 +1476,7 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope']) {
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock', 'down-the-ice', 'back-off-the-boards', 'freewheeling', 'up-a-rough-slope', 'into-soft-ground']) {
     const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
       // a part that gives more is solved with what it gives
@@ -1694,6 +1695,25 @@ group('CIE 9709/41 May/Jun 2017 Q2: up a rough slope', () => {
   ok(b.ok && !b.stays && b.vBack < 6 && Math.abs(b.f.pos(b.f.tMax)) < 1e-9 && b.f.vel(b.f.tMax) < 0, 'a steep slope: it slides back, and reaches the start slower than it left');
   ok(solveRough({ u: 12, alpha: 10, mu: 0.4, g: 10 }).a === s.a, 'the mass cancels from the acceleration');
   ok(!solveRough({ u: 12, alpha: 95, mu: 0.4 }).ok && !solveRough({ u: 12, alpha: 10, mu: -0.1 }).ok, 'a bad angle or μ is refused');
+});
+
+group('Edexcel M1 Jan 2003 Q7 and Jun 2012 Q5: into soft ground', () => {
+  const s = solveSink({ h: 1.5, H: 25.6, m: 0.6, depth: 0.025, g: 9.8 });
+  ok(s.ok && near(s.u, 22.4, 1e-9) && near(s.T, 4.64, 0.005), '(a) u = 22.4 from 25.6 m above A; (b) T = 4.64 s', s.reason);
+  ok(near(s.R, 6380, 0.5) && near(s.a, -10623.2, 1e-6), '(c) a = −10 623.2 in the ground, R = 6380 N to 3 s.f.');
+  const b = solveSink({ h: 17.5, vL: 28, y: 19, m: 4, R: 5000, g: 9.8 });
+  ok(b.ok && near(b.u, 21, 1e-9) && near(b.tAt[0], 1.30, 0.005) && near(b.tAt[1], 2.99, 0.005), 'J12 (a) u = 21 from the landing speed; (b) 19 m above A at 1.30 s and 2.99 s', b.reason);
+  ok(near(b.depth, 0.316, 0.0005), 'J12 (c) it sinks 0.316 m against 5000 N');
+  const f = s.f;
+  ok(near(f.pos(f.tLand), -1.5, 1e-9) && near(f.vel(f.tLand), -s.vL, 1e-9) && near(f.pos(f.tMax), -1.525, 1e-9) && f.vel(f.tMax) === 0, 'the motion: at the ground at T, at rest 2.5 cm down');
+  ok(f.tMax > f.tRest && f.replay(f.tRest + 1e-6) < f.tLand && near(f.replay(f.tMax), f.tRest, 1e-9), 'the slow replay runs from just above the ground to rest, over the pause');
+  ok(solveSink({ h: 1.5, H: 25.6, depth: 0.025 }).ok && solveSink({ h: 1.5, H: 25.6, depth: 0.025 }).R == null, 'with no mass, the depth gives the deceleration and no force');
+  ok(!solveSink({ h: 2, u: 5, m: 1, R: 5, g: 9.8 }).ok, 'a resistance no bigger than the weight is refused: it would never stop');
+  ok(!solveSink({ h: 17.5, vL: 10, m: 4, R: 5000 }).ok, 'landing slower than a drop from rest is refused');
+  ok(!solveSink({ h: 1.5, u: 5, H: 3, m: 1, R: 100 }).ok && !solveSink({ h: 1.5, u: 5, m: 1, R: 100, depth: 0.1 }).ok, 'two of the launch, or both the force and the depth, are refused');
+  ok(!solveSink({ h: 0, u: 0, m: 1, R: 100 }).ok, 'from the ground with no speed: refused');
+  ok(solveSink({ h: 1.5, u: 5, y: 40, m: 1, R: 100 }).tAt.length === 0, 'a height it never reaches: no times');
+  ok(sinkWorking(s).length === 2, 'the working: in the air, then in the ground');
 });
 
 group('Resolve opens on every library stage, from its engine', () => {

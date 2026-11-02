@@ -82,6 +82,7 @@ A kit is an object with:
 | `wall` — `js/kits/wall.js` | `back-off-the-boards` (engine js/core/wall.js, with js/core/impulse.js at the wall; stage js/render/wall.js on ice.js's exported `rink` and `stoneTop`) |
 | `hill` — `js/kits/hill.js` | `freewheeling` (engine js/core/hill.js on the twelve's suvat `solve`, then F = ma along the slope; stage js/render/hill.js: a lane down a hillside at its true angle, a cyclist leaning into it, the forces on a card) |
 | `rough` — `js/kits/rough.js` | `up-a-rough-slope` (engine js/core/rough.js: R, F = μR, F = ma, and back down if μ < tan α; stage js/render/rough.js: a snowy hillside, a wooden sledge, the forces on a card) |
+| `sink` — `js/kits/sink.js` | `into-soft-ground` (engine js/core/sink.js: up from A to the ground, then m g − R = ma and SUVAT to rest in it; stage js/render/sink.js: a field cut away to its soil, the thrower on the ground or a tower, a magnifier that replays the sink slowed down) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
 | `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
@@ -663,6 +664,23 @@ Projected up a rough slope. `solveRough({ u, alpha, mu, m, g })`: `a` up the
 slope from −g(sin α + μ cos α) (with m, R and F in newtons, through R = m g cos α
 and F = μR), `sUp` and `tUp` to rest, `stays` (μ ≥ tan α), and if not `aDown`,
 `vBack`, `tDown` back to the start. The motion turns at `f.tTop`.
+
+### Into soft ground — `js/core/sink.js`
+
+Projected straight up from A, h above soft ground, then sinking into it against a
+constant resistance. `solveSink({ h, u | H | vL, y, m, R | depth, g })`: `u`
+from whichever launch figure is given, `T` to the ground and `vL` there, the
+times `tAt` at a height y above A; in the ground (down positive) `a` from
+m g − R = ma, or from v² = u² + 2as with the depth, then `depth` or `R`, and
+`tSink`. The motion (`f.pos`, `f.vel`, `f.acc`, up from A) holds at rest for
+a pause after `f.tRest`, in which `f.replay(t)` gives the real instant a slowed
+replay of the landing shows, `f.slow` times slower — for a stage whose event
+is too small and quick to see at the motion's own scale.
+
+**Stage pieces** (`js/render/sink.js`): `soil()` — a cut-away face of ground
+under the turf (topsoil, clay, stones, roots, a soft wet patch); a round
+magnifier fixed to the screen, joined to the spot it enlarges, that shows the
+replay with the forces in the ground and the depth bracketed.
 
 ### Freewheeling downhill — `js/core/hill.js`
 

@@ -140,6 +140,8 @@ this library: *covered* names the one of the twelve that does it.
 | 104 | Edexcel | 6677/01 M1 | Jan 2005 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/January%202005%20QP.pdf) | A stone on ice along ABC against a 0.3 N resistance, 20 then 16 m/s over 24 m; speed at C 30 m on; show m = 0.1 kg; the wall's 2.4 N s impulse, time back to rest | – | **built** → `back-off-the-boards` |
 | 105 | AQA | MM1B | Jan 2012 | 6 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202012%20QP%20-%20M1%20AQA.pdf) | A cyclist freewheels down a slope, 4 to 10 m/s over 50 m: a, time; 70 kg: resultant force; the slope's angle with no resistance, then against 30 N | 9.8 | **built** → `freewheeling` |
 | 106 | CIE | 9709/41 | May/Jun 2017 | 2 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/Papers/CIE/Paper-M1/QP/June%202017%20(v1)%20QP%20-%20M1.pdf) | 0.8 kg projected at 12 m/s up a rough 10° plane, μ = 0.4: the acceleration; the distance up the plane to rest | 10 | **built** → `up-a-rough-slope` |
+| 107 | Edexcel | 6677 M1 | Jan 2003 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | Ball projected up from 1.5 m above the ground, rising 25.6 m above its start: show u = 22.4; time to the ground; 0.6 kg sinks 2.5 cm into soft ground: the constant resistance | 9.8 | **built** → `into-soft-ground` |
+| 108 | Edexcel | 6677/01 M1 | Jun 2012 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | (c) only: 4 kg particle reaching soft ground at 28 m/s against a 5000 N resistance: how far it sinks ((a), (b) were already covered by `from-a-height`) | 9.8 | **built** → `into-soft-ground` |
 
 ## Built, and why it is built the way it is
 
@@ -441,6 +443,31 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `into-soft-ground` — Into soft ground
+
+**Papers.** Edexcel 6677 M1 Jan 2003 Q7 (projected up from 1.5 m above the
+ground, greatest height 25.6 m above the start: u = 22.4, 4.64 s to the ground;
+0.6 kg sinking 2.5 cm: R = 6380 N). Edexcel 6677/01 M1 Jun 2012 Q5 (from 17.5 m,
+landing at 28 m s⁻¹: u = 21; 19 m above the start at 1.30 s and 2.99 s; 4 kg
+against 5000 N sinks 0.316 m).
+
+**Why the twelve cannot.** The flight is theirs, but none of them goes on into
+the ground: a second stage whose acceleration comes from forces, the weight
+less a resistance, and lasts a few thousandths of a second.
+
+**How it is solved.** js/core/sink.js: up positive in the air, the launch speed
+from v² = u² + 2as; −h = ut − ½gt² for the time; v² = u² + 2as for the landing
+speed. In the ground, down positive: m g − R = ma gives a from R, then
+0 = v² + 2as the depth; or the depth gives a, and then R.
+
+**The stage.** A field, cut away at the front to show its soil, with a soft wet
+patch where the ball comes down; the thrower on the ground, the hand at A (or
+on a tower for a higher A); the greatest height and any asked-about height
+marked across, ringed when passed. Mud thrown up where it lands. A magnifier
+at the corner enlarges the soil there and, once the ball has stopped, replays
+the sink slowed down, with R up, the weight down, and the depth it reaches. The
+a–t graph leaves out the huge, brief deceleration in the ground and says so.
 
 ### `up-a-rough-slope` — Up a rough slope
 
