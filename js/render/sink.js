@@ -135,7 +135,7 @@ export function render(canvas, cam, o) {
   }
   const patch = { x: lx, w: clamp(TH * 0.55, 22, 46), d: clamp(TH * 0.3, 12, 26) };
   soil(g, -20, w + 20, oy, h + 20, { soft: patch });
-  L.add('soft ground', lx + patch.w + 8, oy + 16, { color: P.ink, pri: 8, size: 13, weight: 700, align: 'left' });
+  L.add('soft ground', lx + patch.w + 8, oy + 16, { color: P.ink, maxPush: 20, pri: 6, size: 13, weight: 700, align: 'left' });
 
   const tw = clamp(f.h * k * 0.28, 40, 90);
   if (hi) tower(g, feet + TH * 0.18, standY, oy, tw);
@@ -157,8 +157,8 @@ export function render(canvas, cam, o) {
   const askY = f.yAsk != null ? scr(f.yAsk) : null, near = askY != null && Math.abs(askY - yTop) < 25;
   if (f.H > 1e-6) {
     stroke(g, [{ x: bx - 34, y: yTop }, { x: lx + 34, y: yTop }], { color: P.mark, width: 1.4, alpha: 0.8 });
-    if (near) L.add(T`${s3(f.H)} [m] "above A"`, bx - 40, yTop, { color: P.mark, pri: 8, size: 13, weight: 700, align: 'right' });
-    else L.add(T`${s3(f.H)} [m] "above A"`, lx + 40, yTop, { color: P.mark, pri: 8, size: 13, weight: 700, align: 'left' });
+    if (near) L.add(T`${s3(f.H)} [m] "above A"`, bx - 40, yTop, { color: P.mark, pri: 9, size: 13, weight: 700, align: 'right' });
+    else L.add(T`${s3(f.H)} [m] "above A"`, lx + 40, yTop, { color: P.mark, pri: 9, size: 13, weight: 700, align: 'left' });
   }
   if (askY != null) {
     stroke(g, [{ x: bx - 50, y: askY }, { x: lx + 50, y: askY }], { color: P.mark, width: 1.6, alpha: 0.9 });
@@ -214,6 +214,7 @@ export function render(canvas, cam, o) {
     // out of the falling velocity's way; above the ball when there is no room below it
     const ax = q.x + (v < 0 ? 44 : 30), y0 = q.y + 50 > h - 8 ? q.y - 46 : q.y + 6;
     arrow(g, ax, y0, ax, y0 + 40, { color: P.acc, width: 2.2, head: 9 });
+    L.reserve({ x: ax - 6, y: y0, w: 12, h: 40 });
     L.add(T`${s3(f.g)} [m s^-2]`, ax + 8, y0 + 22, { color: P.acc, pri: 7, size: 13, weight: 700, align: 'left' });
   }
   if (t >= f.tRest - 1e-9) { const e = ageOf(t, f.tRest, f.tMax, Math.max(0.4, f.tMax * 0.15)); pulse(g, lx, oy, e.age, e.life, P.mark, { radius: 18 }); }
@@ -246,7 +247,8 @@ export function render(canvas, cam, o) {
   const inGround = showBall && tt >= f.tLand - 1e-9 && tt < f.tRest - 1e-9;
   const sunk = Math.max(0, depthNow) * ki;
   // the resting ball and its shaft fade out over the last moment before the replay begins
-  const fadeOut = f.tReplay != null && rt == null && t >= f.tRest ? clamp((f.tReplay - t) / 0.12, 0, 1) : 1;
+  const fadeOut = f.tReplay != null && rt == null && t >= f.tRest ? clamp((f.tReplay - t) / 0.12, 0, 1)
+    : rt != null ? clamp((t - f.tReplay) / 0.1, 0, 1) : 1;
   g.globalAlpha = fadeOut;
   if (showBall && sunk > 0) {
     // the shaft it has pushed open: a rounded U, darker at the bottom, its left wall lit

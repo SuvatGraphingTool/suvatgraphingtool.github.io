@@ -126,7 +126,8 @@ export function solveSink(k = {}) {
     if (c <= tRest) { const s = c - tLand; return -h - (vL * s - 0.5 * dec * s * s); }
     return -h - depth;
   };
-  const vel = (t) => { const c = Math.min(Math.max(t, 0), tMax); return c <= tLand ? u - g * c : c <= tRest ? -(vL - dec * (c - tLand)) : 0; };
+  // at rest exactly: the sink's line meets zero at tRest, not a rounding off it
+  const vel = (t) => { const c = Math.min(Math.max(t, 0), tMax); return c <= tLand ? u - g * c : c < tRest - 1e-12 ? -(vL - dec * (c - tLand)) : 0; };
   const acc = (t) => (t < tLand ? -g : t < tRest ? dec : 0);
   // the slow replay: over the pause, the moment it reaches the ground and sinks, at the
   // real time each instant of the pause stands for
