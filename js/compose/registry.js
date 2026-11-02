@@ -310,6 +310,8 @@ const WORDS = [
   [/\b(football|soccer ball)\b/, 'football'], [/\b(tennis ?ball)\b/, 'tennisBall'], [/\b(golf ?ball)\b/, 'golfBall'],
   [/\b(basket ?ball|netball)\b/, 'basketball'], [/\b(snowball)\b/, 'snowball'], [/\b(water ?balloon|water bomb)\b/, 'waterBalloon'],
   [/\b(shot ?put|the shot|a shot|cannonball|cannon ball|iron ball|lead shot)\b/, 'shot'],
+  // an athlete's hammer is a heavy ball on a wire: drawn as the shot
+  [/\b(hammer throw(?:er|ing)?|athletics hammer)\b/, 'shot'],
   [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
   [/\b(javelin)\b/, 'javelin'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
   [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],

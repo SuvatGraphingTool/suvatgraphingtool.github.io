@@ -378,7 +378,9 @@ const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] != null).
  */
 export function fromReading(x) {
   if (!x || typeof x !== 'object' || x.understood === false) return null;
-  const m = figureOf(x.who);
+  // "a hammer thrower releases…": an athlete's hammer, not a claw hammer
+  let m = figureOf(x.who);
+  if (m.figure === 'hammer' && /\bhammer throw|\bathletics hammer/i.test(`${x.summary || ''} ${x.words || ''}`)) m = figureOf('hammer thrower');
   // From a height draws its places over their own surface (a cliff over the
   // sea); a question that says otherwise ("the ground at the bottom") is
   // composed, whatever moves — a ball thrown by its thrower included
@@ -425,7 +427,11 @@ export function fromReading(x) {
   if (at && own === 'table') notes.push(`The ${at} is drawn as a table: only its height matters to the motion.`);
   // what it is let go from, drawn as itself
   const carrier = backdrop === 'air' ? carrierIn(words)?.carrier : null;
-  if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
+  // a release height a hand can reach is the thrower's hand above the
+  // ground, not a wall: a hammer, a shot, a basketball from 2 m
+  const fromHand = FIGURES[figure].thrown && numbers.h > 0 && numbers.h <= 2.6;
+  if (backdrop === 'ground' && fromHand) notes.push(`Let go ${num(numbers.h, 2, { trim: true })} m above the ground, from the thrower’s hand.`);
+  else if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
   notes.push(...assumedNotes(x));
   if (x.scenario === 'dropped' && JUMPS.test(`${x.summary || ''} ${x.words || ''}`)) notes.push('No speed was given for the jump, so it is taken as stepping off from rest. Give the speed on the values screen if the question has one.');
   const parts = Array.isArray(x.parts) ? x.parts.map((p) => {
