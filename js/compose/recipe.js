@@ -217,6 +217,8 @@ export function check(raw) {
   }
   // a bullet is fired, never thrown: from a rifle unless something else is named
   if (!launcher && engine === 'projectile' && backdrop !== 'air' && objects.some((o) => o.figure === 'bullet')) launcher = 'rifle';
+  // and a jet of water leaves a hose
+  if (!launcher && engine === 'projectile' && backdrop !== 'air' && objects.some((o) => o.figure === 'water')) launcher = 'hose';
   return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), ...(launcher ? { launcher } : {}), engine, objects, numbers, effects, notes } };
 }
 

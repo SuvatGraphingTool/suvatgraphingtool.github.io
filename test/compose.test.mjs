@@ -327,7 +327,7 @@ group('Places only the composer draws, and more of what students name', () => {
   ok(eff({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'waterBalloon' }], numbers: { h: 6, u: 0, theta: -90 } }) === 'splat' && eff({ backdrop: 'bridge', engine: 'projectile', objects: [{ figure: 'waterBalloon' }], numbers: { h: 6, u: 0, theta: -90 } }) === 'splash', 'a water balloon bursts on the ground, splashes in a river');
   ok(eff({ backdrop: 'road', engine: 'projectile', objects: [{ figure: 'phone' }], numbers: { h: 1.2, u: 0, theta: -90 } }) === 'crack', 'a dropped phone cracks');
   ok(check({ backdrop: 'snow', engine: 'projectile', objects: [{ figure: 'diver' }], numbers: { h: 12, u: 8, theta: 10 } }).ok, 'off a snowy ledge');
-  for (const [w, f, ex] of [['cat', 'cat', true], ['puppy', 'dog', true], ['chimpanzee', 'monkey', true], ['toad', 'frog', true], ['javelin', 'javelin', true], ['squirrel', 'cat', false], ['flea', 'frog', false], ['kangaroo', 'kangaroo', true]]) ok(figureOf(w).figure === f && figureOf(w).exact === ex, `“${w}” is drawn as ${f}${ex ? '' : ', and the reply says so'}`);
+  for (const [w, f, ex] of [['cat', 'cat', true], ['puppy', 'dog', true], ['chimpanzee', 'monkey', true], ['toad', 'frog', true], ['javelin', 'javelin', true], ['squirrel', 'cat', false], ['flea', 'flea', true], ['locust', 'grasshopper', true], ['kangaroo', 'kangaroo', true]]) ok(figureOf(w).figure === f && figureOf(w).exact === ex, `“${w}” is drawn as ${f}${ex ? '' : ', and the reply says so'}`);
   ok(whoIn('a cat jumps from a wall 2 m high') === 'cat' && whoIn('an athlete throws a javelin at 25 m/s') === 'javelin', 'the animal or the javelin, never the person');
   ok(check({ backdrop: 'house', engine: 'projectile', objects: [{ figure: 'cat' }], numbers: { h: 3, u: 4, theta: 20 } }).ok, 'a cat leaps off a roof');
   ok(placeIn('A stone is dropped from the end of the pier')?.backdrop === 'pier' && placeIn('a brick falls from scaffolding 15 m high')?.backdrop === 'site' && placeIn('thrown from the jetty')?.backdrop === 'harbour', 'a pier, a building site, and a jetty still the harbour');
@@ -390,6 +390,8 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
   ok(b?.launcher === 'rifle' && titleOf(b) === 'A bullet fired from a rifle', 'a bullet is fired from a rifle, never thrown');
   ok(check({ backdrop: 'castle', engine: 'projectile', objects: [{ figure: 'egg' }], numbers: { h: 15, u: 0, theta: -90 } }).recipe?.effects.join() === 'splat', 'an egg splats');
   ok(check({ backdrop: 'court', engine: 'projectile', objects: [{ figure: 'tennisBall' }], numbers: { h: 2.5, u: 25, theta: 0 } }).recipe?.effects.join() === 'chalk', 'a tennis ball on a court kicks up chalk');
+  const jet = check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'water' }], numbers: { h: 1, u: 10, theta: 40 } }).recipe;
+  ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });
 
 group('The veil names only the recipe’s own pieces', () => {

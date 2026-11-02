@@ -131,11 +131,15 @@ export const FIGURES = {
   egg:      { label: 'an egg', m: 0.06, min: 10, views: ['side'], thrown: true, prop: true, lands: 'splat' },
   // fired, never thrown: a rifle sends it off unless the recipe names another launcher
   bullet:   { label: 'a bullet', m: 0.03, min: 10, views: ['side'], thrown: true, prop: true, verb: 'fired' },
+  // a jet of water, drawn as the stream along its path; a hose sends it unless another launcher is named
+  water:    { label: 'a jet of water', m: 0.03, min: 10, views: ['side'], thrown: true, lands: 'splat' },
   // animals that leap by themselves (js/render/animals.js): `m` is nose to tail
   cat:      { label: 'a cat', m: 0.5, min: 30, views: ['side'], animal: true },
   dog:      { label: 'a dog', m: 0.8, min: 34, views: ['side'], animal: true },
   monkey:   { label: 'a monkey', m: 0.6, min: 30, views: ['side'], animal: true },
   frog:     { label: 'a frog', m: 0.12, min: 24, views: ['side'], animal: true },
+  grasshopper: { label: 'a grasshopper', m: 0.05, min: 36, views: ['side'], animal: true },
+  flea:     { label: 'a flea', m: 0.003, min: 26, views: ['side'], animal: true },
   bird:     { label: 'a bird', m: 0.4, min: 46, views: ['side'], flier: true },
   kangaroo: { label: 'a kangaroo', m: 1.6, min: 52, views: ['side'], animal: true },
   goat:     { label: 'a goat', m: 1.2, min: 46, views: ['side'], animal: true },
@@ -161,6 +165,7 @@ export const LAUNCHERS = {
   ramp:     { label: 'a ramp', verb: 'off', words: /\b(ramp|kicker|launch ramp|jump ramp)\b/ },
   catapult: { label: 'a catapult', verb: 'flung from', words: /\b(catapult|trebuchet|slingshot|siege engine)\b/ },
   rifle:    { label: 'a rifle', verb: 'fired from', words: /\b(rifle|gun|pistol|shotgun|musket)\b/ },
+  hose:     { label: 'a hose', verb: 'from', words: /\b(hose|hosepipe|garden hose|fire hose|spray gun)\b/ },
 };
 /** What a question says sends it off, or null. */
 export function launcherIn(text) {
@@ -386,7 +391,8 @@ const WORDS = [
   [/\b(hammer throw(?:er|ing)?|athletics hammer)\b/, 'shot'],
   [/\b(phone|mobile|smartphone)\b/, 'phone'], [/\b(book|textbook|dictionary)\b/, 'book'], [/\b(hammer|spanner|wrench)\b/, 'hammer'],
 [/\b(javelin)\b/, 'javelin'], [/\b(discus)\b/, 'discus'], [/\b(frisbee|flying disc)\b/, 'frisbee'], [/\b(darts?)\b/, 'dart'],
-  [/\b(shuttlecock|shuttle|birdie)\b/, 'shuttlecock'], [/\b(hockey ball)\b/, 'hockeyBall'], [/\b(eggs?)\b/, 'egg'], [/\b(bullet|pellet|round fired)\b/, 'bullet'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
+  [/\b(shuttlecock|shuttle|birdie)\b/, 'shuttlecock'], [/\b(jets? of water|water jet|stream of water|spray of water|water)\b/, 'water'],
+  [/\b(grasshopper|locust|cricket(?! ball)|katydid)\b/, 'grasshopper'], [/\b(flea)\b/, 'flea'], [/\b(hockey ball)\b/, 'hockeyBall'], [/\b(eggs?)\b/, 'egg'], [/\b(bullet|pellet|round fired)\b/, 'bullet'], [/\b(cat|kitten)\b/, 'cat'], [/\b(dog|puppy)\b/, 'dog'],
   [/\b(monkey|chimp|chimpanzee|lemur)\b/, 'monkey'], [/\b(frog|toad)\b/, 'frog'],
   [/\b(kangaroo|wallaby)\b/, 'kangaroo'], [/\b(goat|ibex|chamois|deer|sheep|lamb)\b/, 'goat'], [/\b(hailstone|hail ?stones?|hail)\b/, 'hailstone'], [/\b(raindrop|rain ?drop|drop of water|drop of rain)\b/, 'raindrop'], [/\b(dolphin|porpoise|orca|killer whale)\b/, 'dolphin'], [/\b(fish|salmon|trout|flying fish)\b/, 'fish'],
   [/\b(bus|coach|minibus)\b/, 'bus'], [/\b(tractor|quad bike)\b/, 'tractor'], [/\b(speedboat|speed boat|motorboat|motor boat|powerboat)\b/, 'speedboat'],
@@ -402,7 +408,7 @@ const NEAREST = [
   [/\b(crossbow bolt|spear)\b/, 'arrow'],
   [/\b(surfer|bmx)\b/, 'diver'],
   [/\b(missile|projectile|shell|stick|bottle|can|bag|helmet|bomb|nut|clam|mussel|prey|mouse)\b/, 'particle'],
-  [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], [/\b(flea|grasshopper|locust)\b/, 'frog'],
+  [/\b(squirrel|fox|rabbit|hare|leopard|cheetah)\b/, 'cat'], 
   [/\b(animal|bat|insect|bee)\b/, 'particle'],
 ];
 /**

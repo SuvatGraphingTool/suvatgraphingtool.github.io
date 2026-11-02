@@ -525,9 +525,22 @@ function launch(canvas, o) {
     const R0 = clamp(k * piece.m * 0.5, 5.5, 9);
     // gone under water, or burst: a water balloon is not there once it lands
     const gone = landed && ((wet && age > life * 0.2) || ((kind === 'waterBalloon' || (kind === 'egg' && !wet)) && age > 0.04));
-    if (aloft && !wet) softShadow(g, bx, oy + 1, R0 * 1.4, R0 * 0.35, clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
+    if (aloft && !wet && kind !== 'water') softShadow(g, bx, oy + 1, R0 * 1.4, R0 * 0.35, clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
     if (!gone) {
-      if (kind === 'apple') apple(g, bx, by, clamp(k * 0.05, 6, 10));
+      if (kind === 'water') {
+        // a jet of water: the stream along the engine's path from the nozzle to
+        // its front, kept flowing once it lands; the path's own line over it
+        const jet = pts.filter((p) => p.t <= t).map(at), wj = clamp(k * 0.05, 3, 7);
+        if (jet.length > 1) {
+          // (opaque: a see-through blue over the orange path would mix to the acceleration's violet)
+          stroke(g, jet, { color: '#7db8e6', width: wj + 2, alpha: 1 });
+          stroke(g, jet, { color: '#e2f2fc', width: Math.max(1.2, wj * 0.4), alpha: 1 });
+          stroke(g, jet, { color: P.vel, width: 1.4, alpha: 0.9 });
+          // droplets breaking off round the front
+          for (let i = 0; i < 6; i++) { const q = jet[Math.max(0, jet.length - 1 - i * 2)], j = (i * 37) % 7 - 3; g.fillStyle = 'rgba(160,205,240,0.85)'; g.beginPath(); g.arc(q.x + j, q.y + ((i * 53) % 9) - 4, Math.max(1.2, wj * 0.3), 0, Math.PI * 2); g.fill(); }
+        }
+      }
+      else if (kind === 'apple') apple(g, bx, by, clamp(k * 0.05, 6, 10));
       // resting on the surface, not sunk in it: lifted by its own radius
       // while it sits there, easing to the engine's point as it goes
       else if (kind === 'coin') coin(g, bx, by - (fired && t > 0 ? 0 : 3), 8, fired ? t * 9 : 0.25);

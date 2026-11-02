@@ -179,7 +179,43 @@ export function rifle(g, x, y, s, P, { aim = 0, t = -1, gy = y } = {}) {
   }
 }
 
+
+/** A garden hose: its spray gun at (x, y), the launch point, aimed `aim`
+    degrees, held up on a stake (or laid over the edge it sprays from), the
+    green hose looping down from it to the ground and away to its tap. The
+    water itself is the figure (composed.js draws the jet along the engine's
+    path). As it starts, the trigger's spray at the nozzle. */
+export function hose(g, x, y, s, P, { aim = 30, t = -1, gy = y } = {}) {
+  const E = env(), a = (Math.max(-60, Math.min(85, aim)) * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
+  const green = E.night ? '#2e5a34' : '#3f8a46', greenLo = E.night ? '#1e3a22' : '#2a5e30';
+  // the gun: nozzle, barrel back along the aim, the grip and trigger down from it
+  const bx = x - ca * s * 0.32, by = y + sa * s * 0.32;
+  const grip = { x: bx - ca * s * 0.02 + sa * s * 0.04, y: by + sa * s * 0.02 + ca * s * 0.04 }, gripEnd = { x: grip.x - ca * s * 0.06 + sa * s * 0.18, y: grip.y + sa * s * 0.06 + ca * s * 0.18 };
+  // the stake it is tied to, down to the ground, when it is held up off it
+  if (gy - gripEnd.y > s * 0.1) {
+    g.strokeStyle = E.night ? '#4a3a2c' : '#7a5a3a'; g.lineWidth = Math.max(2, s * 0.04); g.lineCap = 'round';
+    g.beginPath(); g.moveTo(gripEnd.x, gripEnd.y - s * 0.04); g.lineTo(gripEnd.x - s * 0.02, gy + 2); g.stroke();
+    softShadow(g, gripEnd.x, gy + 1, s * 0.12, s * 0.03, 0.6);
+  }
+  // the hose: from the grip's foot in a loop down to the ground, then back along it out of frame
+  const lowY = Math.max(gy, gripEnd.y + s * 0.1);
+  g.strokeStyle = greenLo; g.lineWidth = Math.max(3, s * 0.07); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(gripEnd.x, gripEnd.y); g.bezierCurveTo(gripEnd.x + s * 0.15, lowY, gripEnd.x - s * 0.3, lowY, gripEnd.x - s * 0.6, lowY - 1); g.lineTo(gripEnd.x - s * 3, lowY - 1); g.stroke();
+  g.strokeStyle = green; g.lineWidth = Math.max(1.6, s * 0.035); g.stroke();
+  // a coil of it by the stake
+  g.strokeStyle = greenLo; g.lineWidth = Math.max(2, s * 0.045); for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse(gripEnd.x - s * 0.9, lowY - s * 0.05 - i * s * 0.02, s * 0.2, s * 0.05, 0, 0, TAU); g.stroke(); }
+  // the gun itself, yellow and black
+  g.strokeStyle = '#2b2a2e'; g.lineWidth = Math.max(3, s * 0.07); g.beginPath(); g.moveTo(grip.x, grip.y); g.lineTo(gripEnd.x, gripEnd.y); g.stroke();
+  g.strokeStyle = '#e8c547'; g.lineWidth = Math.max(3.5, s * 0.08); g.beginPath(); g.moveTo(bx, by); g.lineTo(x - ca * s * 0.06, y + sa * s * 0.06); g.stroke();
+  g.strokeStyle = '#2b2a2e'; g.lineWidth = Math.max(4, s * 0.1); g.beginPath(); g.moveTo(x - ca * s * 0.07, y + sa * s * 0.07); g.lineTo(x, y); g.stroke();
+  // the first burst of spray at the nozzle as it starts
+  if (t >= 0 && t < 0.4) {
+    const q = t / 0.4;
+    for (let i = 0; i < 7; i++) { const sp = (i - 3) * 0.12, d = s * (0.1 + q * 0.3) * (0.6 + (i % 3) * 0.2); g.fillStyle = `rgba(190,225,250,${0.8 * (1 - q)})`; g.beginPath(); g.arc(x + Math.cos(a + sp) * d, y - Math.sin(a + sp) * d, Math.max(1.2, s * 0.02), 0, TAU); g.fill(); }
+  }
+}
+
 /** Each launcher by the registry's name: `size` px at k px a metre. */
-export const LAUNCHER_ART = { cannon, ramp, catapult, rifle };
+export const LAUNCHER_ART = { cannon, ramp, catapult, rifle, hose };
 // (a rifle near its true length, and never longer than half again the height it fires from)
-export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : clamp(3 * k, 60, 160));
+export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : clamp(3 * k, 60, 160));
