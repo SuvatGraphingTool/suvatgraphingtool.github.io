@@ -77,6 +77,7 @@ A kit is an object with:
 | `models` — `js/kits/models.js` (engine: journey) | `three-models` |
 | `wind` — `js/kits/wind.js` | `flying-in-a-wind` (engine js/core/wind.js; stage js/render/wind.js: from above, an airliner on its heading, the triangle on a card) |
 | `river` — `js/kits/river.js` | `across-the-river` (engine js/core/river.js; stage js/render/river.js: a river from above, a steered boat, the velocity triangle) |
+| `heli` — `js/kits/heli.js` | `over-the-rock` (engine js/core/heli.js on plane.js's motion; stage js/render/heli.js: the sea from above, the lighthouse, the rock in its surf, a coastguard helicopter with its rotor turning; `heliTop` is exported) |
 | `runway` — `js/kits/runway.js` | `take-off` (engine js/core/runway.js on the twelve's suvat `solve`; stage js/render/runway.js: an airfield, a twin-jet) |
 | `rocket` — `js/kits/rocket.js` | `firework-rocket` (engine js/core/rocket.js; stage js/render/rocket.js: a dusk field, flame and sparks, a burst at the top) |
 | `lift` — `js/kits/lift.js` | `the-lift` (the journey's engine; stage js/render/lift.js: a building cut away to its lift shaft) |
@@ -468,6 +469,16 @@ area from there sums to zero), a stop fixed by the total time `T`. Each
 segment's acceleration and displacement as working (`tripWorking`).
 
 Used by: `there-and-back`.
+
+### Over the rock — `js/core/heli.js`
+
+A helicopter at a constant height with a constant acceleration in i (east) and
+j (north), on `planeMotion`. `solveHeli({ r0, u, a, T, D, P })`: its speed and
+bearing at T; the first time it is D from its start (from rest ½|a|t² = D, else
+the first root of |ut + ½at²| = D); whether it passes directly over P (the i
+equation's times, checked in j), and then the average velocity, its size, the
+path length and the average speed, and whether they agree (`straight`).
+Answers in `answers.T`, `answers.D`, `answers.P`.
 
 ### Two in a plane — `js/core/twoplane.js`
 

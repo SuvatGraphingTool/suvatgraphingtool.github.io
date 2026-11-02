@@ -134,6 +134,8 @@ this library: *covered* names the one of the twelve that does it.
 | 98 | Edexcel | 6677/01 M1 | Jun 2005 | 1 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202005%20QP.pdf) | An aircraft from A at 2 m/s, constant a, leaves the 1.2 km runway at C 20 s later at 74 m/s: a, BC | – | **built** → `take-off` (a setting: the twelve's SUVAT on an airfield, and the runway left over) |
 | 99 | AQA | MM1B | Jun 2009 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202009%20QP%20-%20M1%20AQA.pdf) | A boat crosses a 16 m river flowing at 1.2 m/s straight to the point opposite in 10 s: resultant speed, speed through the water, angle to the bank | – | **built** → `across-the-river` |
 | 100 | AQA | MM1B | Jun 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202010%20QP%20-%20M1%20AQA.pdf) | An aeroplane flies due north at 100 m/s relative to air moving due east at 30 m/s: resultant speed, bearing | – | **built** → `flying-in-a-wind` |
+| 101 | AQA | MM1B | Jun 2013 | 8 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202013%20QP%20-%20M1%20AQA.pdf) | A helicopter at constant height passes over a lighthouse with a given velocity and constant acceleration (i east, j north): position vector, does it pass over a rock, when; average velocity; is its size the average speed | – | **built** → `over-the-rock` |
+| 102 | AQA | MM1B | Jun 2011 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/June%202011%20QP%20-%20M1%20AQA.pdf) | A helicopter hovering over a lighthouse sets off with constant acceleration: speed and bearing at a time; how long until it is a given distance from its start | – | **built** → `over-the-rock` |
 
 ## Built, and why it is built the way it is
 
@@ -435,6 +437,37 @@ a contrail behind; a compass and the velocity triangle on a card, both fixed
 while the map pans.
 
 **Parts.** (a) `R`, 104.4; (b) `bearing`, 017°.
+
+### `over-the-rock` — Over the rock
+
+**Papers.** AQA MM1B Jun 2013 Q8 (over a lighthouse at 500i + 200j with
+velocity −17.5i − 27j and acceleration 0.5i + 0.6j: level with a rock at
+200i − 400j east–west at 30 s and 40 s, over it only at 40 s; average velocity
+−7.5i − 15j; its size is not the average speed). AQA MM1B Jun 2011 Q7 (from
+hovering, 0.5i + 0.375j: 12.5 m s⁻¹ on 053° after 20 s; 500 m out after 40 s).
+
+**Why the twelve cannot.** Nothing among them moves in a plane seen from
+above. `vectors-ij` has the vector equations but not these questions: whether
+it passes over a point (both coordinates at one instant), how long until it is
+a distance from its start, an average velocity and an average speed.
+
+**How it is solved.** js/core/heli.js on plane.js's motion. Over the rock: the
+i equation gives the candidate times, the j equation picks the one where both
+agree. A distance from the start: from rest ½|a|t² = D; otherwise
+|ut + ½at²| = D, its first positive root. Average velocity is displacement over
+time; average speed is the path length (the speed integrated) over time. They
+are equal only on a straight path that never turns back.
+
+**The stage.** The sea from above: the lighthouse on its rock, the rock in its
+surf, a red-and-white coastguard helicopter with its rotor turning, its shadow
+and downwash on the water. The path faint in full and strong to now; at 30 s
+the north–south line through the rock (level, not over); at 40 s the rock
+flashes and the straight line from the lighthouse draws in as the average
+velocity; the circle of the distance from the start; a compass fixed while the
+map pans.
+
+**Parts.** (a) `answers.P.t`, 40; (b) `answers.P.av.x`, −7.5; (c)
+`answers.P.av.y`, −15; (d) from hovering, `answers.T.speed`, 12.5.
 
 ### `across-the-river` — Across the river
 

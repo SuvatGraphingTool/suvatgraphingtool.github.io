@@ -23,6 +23,7 @@ import { solveBounce, bounceWorking } from '../js/core/bounce.js';
 import { toLevel, rebound, timesAt } from '../js/core/stages.js';
 import { mathText, mathHTML, paren, num } from '../js/notation.js';
 import { resolveKit } from '../js/kitresolve.js';
+import { solveHeli } from '../js/core/heli.js';
 
 let pass = 0, fail = 0;
 const ok = (c, label, detail) => c ? (pass++, console.log(`  ok   ${label}`))
@@ -1469,9 +1470,11 @@ group('From the bridge, to the runner: OCR MEI H640/01 Jun 2024 Q14', async () =
   ok(near(s.f.pos(2.4).x, s.f.runner(2.4), 1e-9) && near(s.f.pos(2.4).y, -3.6, 1e-9), 'at the catch the ball is over the runner, 3.6 m below the throw');
   ok(near(s.f.pos(1).x, s.f.runner(1), 1e-9), 'and over the runner all the way');
   ok(bridgeWorking(s).length === 3, 'the working: across, up, the speed and the angle');
-  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind']) {
-    const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit], a = K.solve(K.read(e.example));
+  for (const id of ['from-the-bridge', 'two-apples', 'higher-than-far', 'land-together', 'above-the-roof', 'the-lift', 'firework-rocket', 'take-off', 'across-the-river', 'flying-in-a-wind', 'over-the-rock']) {
+    const e = LIBRARY.find((x) => x.id === id), K = KITS[e.kit];
     for (const p of (e.parts || []).filter((p) => p.paper != null)) {
+      // a part that gives more is solved with what it gives
+      const a = K.solve(K.read({ ...e.example, ...(p.given || {}) }));
       const v = String(p.find).split('.').reduce((o, k) => o?.[k], a);
       ok(near(v, p.paper, p.tol ?? 0.005), `${id} part (${p.label}): the engine's ${p.find} is the paper's ${p.paper}`, v);
     }
@@ -1592,6 +1595,21 @@ group('A question in parts: every part of every library scenario reproduces its 
   ok(Math.abs(rs[2].answer.values[0] - carried.meet.t) < 1e-12 && rs[2].carried[0].value === 8.75, 'a part that carries (a)’s 8.75 m forward is solved with it');
   ok(/Carries forward/.test(stripHTML(twoParts, rs, 2, [])), 'and it says so');
 }
+
+group('AQA MM1B Jun 2013 Q8 and Jun 2011 Q7: a helicopter over the sea', () => {
+  const s = solveHeli({ r0: { x: 500, y: 200 }, u: { x: -17.5, y: -27 }, a: { x: 0.5, y: 0.6 }, P: { x: 200, y: -400 } }), P = s.answers.P;
+  ok(s.ok && P.times.join() === '30,40', 'level with the rock east–west at 30 s and 40 s');
+  ok(P.over && P.t === 40, 'directly over it only at 40 s, where the j equation agrees');
+  ok(P.av.x === -7.5 && P.av.y === -15, 'average velocity −7.5i − 15j');
+  ok(!P.straight && P.sp > P.avs, 'its average speed is more than the size of its average velocity: the path curves');
+  const h = solveHeli({ a: { x: 0.5, y: 0.375 }, T: 20, D: 500 });
+  ok(Math.abs(h.answers.T.speed - 12.5) < 1e-9 && Math.round(h.answers.T.bearing) === 53, '12.5 m s⁻¹ on 053° after 20 s from hovering');
+  ok(Math.abs(h.answers.D.t - 40) < 1e-9, '500 m from the start after 40 s: ½|a|t² = D');
+  const g = solveHeli({ u: { x: 3, y: 4 }, a: { x: 0.3, y: -0.2 }, D: 100 }), r = g.answers.D.r;
+  ok(Math.abs(Math.hypot(r.x, r.y) - 100) < 1e-6, 'moving at the start, the first time it is 100 m out really is 100 m out');
+  ok(solveHeli({ r0: { x: 0, y: 0 }, u: { x: 1, y: 0 }, a: { x: 0, y: 1 }, P: { x: 2, y: 5 } }).answers.P.over === false, 'a rock it is level with but never over: said so');
+  ok(!solveHeli({ u: { x: 1 } }).ok, 'no acceleration given: it asks for one');
+});
 
 group('Resolve opens on every library stage, from its engine', () => {
   for (const e of LIBRARY) {
