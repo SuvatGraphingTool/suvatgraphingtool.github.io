@@ -67,7 +67,7 @@ export const EXTRACTION_SCHEMA = {
     library: { type: 'string', enum: LIBRARY_IDS, description: 'scenario "library" only: which library scenario, by its id.' },
     boxes: { type: 'object', description: 'scenario "library" only: the GIVEN values, keyed exactly as that scenario lists its boxes: {"A.h":0,"A.u":20}.' },
     example: { type: 'boolean', description: 'true when the student asked to be shown an example: the page fills the library scenario with its own exam numbers.' },
-    recipe: { type: 'object', description: 'scenario "compose" only: {"title","backdrop","engine","objects":[{"figure","name"}],"numbers":{...},"effects":[...]}, and "carrier" when backdrop is air (helicopter, plane, drone, bird, balloon); every name from the pieces listed under COMPOSING A SCENE.' },
+    recipe: { type: 'object', description: 'scenario "compose" only: {"title","backdrop","engine","objects":[{"figure","name"}],"numbers":{...},"effects":[...]}, and "carrier" when backdrop is air (helicopter, plane, drone, bird, balloon), and "launcher" (cannon, ramp, catapult) when one sends it off; every name from the pieces listed under COMPOSING A SCENE.' },
     parts: {
       type: 'array',
       items: { type: 'object' },

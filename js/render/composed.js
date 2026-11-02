@@ -38,6 +38,7 @@ import { ANIMALS, FEET, javelin } from './animals.js';
 import { golfer, kicker, archer, archerHand, GOLF_BALL_AT, KICK_BALL_AT } from './athletes.js';
 import { CARRIER_ART, carrierSize } from './carriers.js';
 import { VEHICLES } from './vehicles.js';
+import { LAUNCHER_ART, launcherSize } from './launchers.js';
 import { house } from './target.js';
 import { appleTree, apple } from './apples.js';
 import { grass, sandGround, tarmac, railBed, floorboards, interior, water, stone, skyscape, env, rng, softShadow } from './scenery.js';
@@ -196,7 +197,8 @@ function launch(canvas, o) {
     // a person throws it, unless it falls from a tree; small things are drawn
     // as themselves at the point, vehicles and people round it; off a table,
     // it leaves the table's edge: no one stands on the table
-    const thrown = (!!piece.thrown || kind === 'arrow') && R.backdrop !== 'orchard' && R.backdrop !== 'table' && !carried;
+    // (a cannon, a ramp or a catapult sends it off: no one throws it)
+    const thrown = (!!piece.thrown || kind === 'arrow') && R.backdrop !== 'orchard' && R.backdrop !== 'table' && !carried && !LAUNCHER_ART[R.launcher];
     const small = !!piece.thrown || !!piece.small || kind === 'arrow';
     // thrown from low down with nothing to stand on: the thrower stands on the
     // ground or the floor and lets go at hand height
@@ -234,7 +236,8 @@ function launch(canvas, o) {
     const place = R.backdrop === 'house' ? houseW(k) + 30 : R.backdrop === 'orchard' ? 2.4 * k
       : R.backdrop === 'board' ? boardLen(k, H0 * k) + 30 : R.backdrop === 'air' ? (carried ? carrierSize(R.carrier, k, w).s * 0.6 : Math.max(26, 0.75 * k) * 1.4)
       : R.backdrop === 'table' ? tableW(k, w) + 20 : R.backdrop === 'well' ? 90
-      : R.backdrop === 'city' && H0 > 0 ? cityWidth(H0, k, w) + 30 : 0;
+      : R.backdrop === 'city' && H0 > 0 ? cityWidth(H0, k, w) + 30
+      : LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k) * (R.launcher === 'ramp' ? 1.6 : 1.3) : 0;
     // a person stands upright on the edge before the off: room for all of them
     const upright = movers.some((m) => m.kind === 'diver' || m.kind === 'skateboarder');
     const head = (thrown && !byHand ? TH(k) : size(k) * (upright ? 1.05 : 0.6)) + 16 - (yTop - H0) * k;
@@ -268,7 +271,12 @@ function launch(canvas, o) {
   // ── the backdrop, and the place it is launched from
   // where each lands, and where the surface is named, kept clear of the place's props
   const clearX = [...movers.map((m) => X(m.f.pos(m.f.tMax).x)), w - 60];
-  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX });
+  // a launcher on level ground stands on it and reaches up to where it lets go:
+  // a ramp always, a cannon or a catapult up to its own height; no wall is drawn
+  const ls = LAUNCHER_ART[R.launcher] ? launcherSize(R.launcher, k) : 0;
+  // (a cannon is dug in where it fires from: on the ground, or on the wall it fires from)
+  const grounded = !!ls && !B.edge && H0 > 0 && R.launcher !== 'cannon' && (R.launcher === 'ramp' || H0 * k <= ls * 0.9);
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX });
 
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {
@@ -332,6 +340,10 @@ function launch(canvas, o) {
   } else if (thrown && striker) {
     const pose = m.going ? clamp(0.5 + t / Math.max(1e-6, 0.12 * f.tMax), 0, 1) : 0;
     striker(g, x0 - th * (kind === 'golfBall' ? GOLF_BALL_AT : KICK_BALL_AT) - sh, stand, th, P, { pose, ring: m.ring });
+  } else if (LAUNCHER_ART[R.launcher] && m.i === 0) {
+    // a cannon, a ramp or a catapult at the launch point, aimed as the engine
+    // launches it; it fires (or lets go) as the engine's clock starts
+    LAUNCHER_ART[R.launcher](g, x0, top, ls, P, { aim, t: m.going ? t : -1, gy: grounded && R.launcher !== 'cannon' ? oy : top + ls * (R.launcher === 'ramp' ? 0.3 : 0.1), phase: tRaw });
   } else if (thrown) {
     // a javelin is held along the throw, its grip in the hand, until it goes
     // (and so is anything thrown from the hand's own height: it leaves the hand)

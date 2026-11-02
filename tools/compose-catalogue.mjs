@@ -7,7 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, CARRIERS } from '../js/compose/registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, CARRIERS, LAUNCHERS } from '../js/compose/registry.js';
 import { compose } from '../js/compose/recipe.js';
 import { answersFor } from '../js/parts/answers.js';
 
@@ -29,6 +29,8 @@ export function catalogue() {
     ...Object.entries(FIGURES).map(([k, F]) => `  ${k} — ${F.label}${F.thrown ? ', thrown by a person' : ''}${F.views.includes('side') ? '' : ' (seen from above only)'}`),
     'carriers (backdrop air only, as "carrier": what it is let go from; balloon if left out):',
     `  ${Object.entries(CARRIERS).map(([k, C]) => `${k} — ${C.label}`).join('; ')}`,
+    'launchers (engine projectile, from a place, as "launcher": what sends it off instead of a person; left out if none is named):',
+    `  ${Object.entries(LAUNCHERS).map(([k, C]) => `${k} — ${C.label}`).join('; ')}`,
     'effects (optional; the app picks one from what it lands on):',
     ...Object.entries(EFFECTS).map(([k, X]) => `  ${k} — ${X.label}, ${X.what}`),
     'engines (how it moves):',

@@ -20,7 +20,7 @@
 // Nothing here calculates (CLAUDE.md rule 4). The engine solves; this file
 // only says which engine, with which boxes.
 
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, CARRIERS, figureOf, belowOf, placeOf, placeIn, carrierIn } from './registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, CARRIERS, LAUNCHERS, figureOf, belowOf, placeOf, placeIn, carrierIn, launcherIn } from './registry.js';
 import { toApp } from '../core/question.js';
 import { KITS } from '../kits/index.js';
 import { GRAVITY } from '../scenarios.js';
@@ -204,7 +204,14 @@ export function check(raw) {
     if (cw && cw !== carrier) carrierWord = cw;
     if (said && carrier === 'balloon' && !CARRIERS.balloon.words.test(said)) notes.push(`Drawn let go from a balloon: there is no ${clip(said, 20)} yet. Only where it is let go, and how fast it is moving then, matter to the motion.`);
   }
-  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), engine, objects, numbers, effects, notes } };
+  // what sends it off: a cannon, a ramp, a catapult (a launch only, from a place, not the air)
+  let launcher;
+  if (raw.launcher != null && (engine === 'projectile') && backdrop !== 'air') {
+    const said = String(raw.launcher).toLowerCase().trim();
+    launcher = LAUNCHERS[said] ? said : launcherIn(said)?.launcher;
+    if (!launcher) return no(`There is no launcher called “${clip(raw.launcher, 20)}”. The launchers are: ${listOf(LAUNCHERS)}.`);
+  }
+  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), ...(launcher ? { launcher } : {}), engine, objects, numbers, effects, notes } };
 }
 
 /** "A car off a cliff" — a title for a recipe that brought none. */
@@ -216,6 +223,7 @@ export function titleOf(r) {
   if (r.engine === 'projectile') {
     if (r.backdrop === 'air') return `${what} let go from ${r.carrier && r.carrier !== 'balloon' ? carrierName(r) : 'the air'}`;
     if (r.backdrop === 'well') return `${what} down a well`;
+    if (r.launcher) return `${what} ${LAUNCHERS[r.launcher].verb} ${LAUNCHERS[r.launcher].label}`;
     if (B.edge) return `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
     // (a place that draws a ledge of its own says so)
@@ -244,7 +252,7 @@ export function titleOf(r) {
 function idOf(r) {
   // what it is let go from is part of the scene (only when there is one, so
   // every other recipe keeps the id it had)
-  const s = JSON.stringify([r.title, r.backdrop, r.engine, r.objects, r.numbers, ...(r.carrier ? [r.carrier, r.carrierWord ?? null] : [])]);
+  const s = JSON.stringify([r.title, r.backdrop, r.engine, r.objects, r.numbers, ...(r.carrier ? [r.carrier, r.carrierWord ?? null] : []), ...(r.launcher ? [r.launcher] : [])]);
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
   return `composed-${(h >>> 0).toString(36)}`;
@@ -436,7 +444,9 @@ export function fromReading(x) {
   const lifted = !own && !under && LAUNCHES.includes(x.scenario) && m.figure !== 'bird' && !['balloon', undefined].includes(carrierIn(words)?.carrier);
   // a place From a height does not draw itself (level ground, snow, a ledge) is composed
   const elsewhere = fromHeight && HEIGHT_PLACES[x.boxes.place] && !TWELVE_PLACES[x.boxes.place];
-  if (small && !under && !own && !lifted && !elsewhere) return null;
+  // fired from a cannon, off a ramp, flung from a catapult: drawn with it, so composed
+  const sent = LAUNCHES.includes(x.scenario) && !!launcherIn(words);
+  if (small && !under && !own && !lifted && !elsewhere && !sent) return null;
   const figure = m.figure || 'ball';
   let backdrop, numbers, keys;
   if (fromHeight) {
@@ -466,8 +476,9 @@ export function fromReading(x) {
   // the question's own word for the place, in the title and said if it is drawn as another
   const at = own && BACKDROPS[own].edge && where.word && !['table', 'house'].includes(where.word) ? where.word : null;
   if (at && own === 'table') notes.push(`The ${at} is drawn as a table: only its height matters to the motion.`);
-  // what it is let go from, drawn as itself
+  // what it is let go from, drawn as itself; what sends it off
   const carrier = backdrop === 'air' ? carrierIn(words)?.word : null;
+  const launcher = backdrop !== 'air' ? launcherIn(words)?.launcher : null;
   // a release height a hand can reach is the thrower's hand above the
   // ground, not a wall: a hammer, a shot, a basketball from 2 m
   const fromHand = FIGURES[figure].thrown && figure !== 'golfBall' && numbers.h > 0 && numbers.h <= 2.6;
@@ -487,6 +498,6 @@ export function fromReading(x) {
   const asked = Array.isArray(x.asked) ? { asked: x.asked.map(rekey) } : Array.isArray(x.asks) ? { asks: x.asks } : {};
   return {
     understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes, ...asked,
-    recipe: { backdrop, ...(under ? { below: under } : {}), ...(carrier ? { carrier } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} off ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
+    recipe: { backdrop, ...(under ? { below: under } : {}), ...(carrier ? { carrier } : {}), ...(launcher ? { launcher } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} off ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
   };
 }

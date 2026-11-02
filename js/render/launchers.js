@@ -1,0 +1,124 @@
+// launchers.js — what sends a thing off, drawn at the launch point instead of
+// a person: a cannon aimed along the launch angle, with its muzzle flash and
+// smoke at the moment it fires; a ramp sloping up to the edge at the launch
+// angle, for a car, a bike, a skier or a skateboarder; a catapult whose arm
+// swings up and stops against its crossbar as it lets go.
+//
+// Each is `(g, x, y, s, P, { aim, t, fired, phase })`: the launch point at
+// (x, y) on the surface it stands on, `s` px its size, `aim` the launch angle
+// in degrees (up positive), `t` seconds since it was let go (negative before).
+// The engine says where and when (rule 4); these only draw. Nothing here is a
+// quantity.
+
+import { env, rng, softShadow } from './scenery.js';
+import { withAlpha, clamp } from './util.js';
+
+const TAU = Math.PI * 2;
+const ease = (u) => 1 - (1 - u) ** 3;
+
+/** A cannon in its emplacement: the muzzle at (x, y), the launch point on
+    the surface, aimed `aim` degrees up, poking over a wall of sandbags; the
+    gun on its carriage, two spoked wheels and its trail, sits in a pit dug
+    behind them. When it fires, it recoils, a flash at the muzzle and smoke
+    rolling out and up. */
+export function cannon(g, x, y, s, P, { aim = 30, t = -1, phase = 0 } = {}) {
+  const E = env(), a = (Math.max(-30, Math.min(85, aim)) * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
+  const L = s, rB = s * 0.11, recoil = t >= 0 ? Math.sin(Math.min(1, t / 0.25) * Math.PI) * s * 0.08 : 0;
+  const bx = x - ca * (L + recoil), by = y + sa * (L + recoil);
+  const wR = s * 0.26, wx = bx + ca * L * 0.25, wy = by - sa * L * 0.25 + wR * 0.2, gy = wy + wR;
+  // the pit: earth cut away behind the sandbags, darker toward its floor
+  const pg = g.createLinearGradient(0, y, 0, gy); pg.addColorStop(0, E.night ? '#2a221c' : '#6a5038'); pg.addColorStop(1, E.night ? '#1a1410' : '#3e2e20');
+  g.fillStyle = pg; g.beginPath(); g.moveTo(x - s * 1.6, y); g.lineTo(x - s * 0.02, y); g.lineTo(x - s * 0.1, gy + 2); g.lineTo(x - s * 1.45, gy + 2); g.closePath(); g.fill();
+  softShadow(g, wx, gy + 1, s * 0.6, s * 0.06, 0.9);
+  // the trail: a wooden beam from the axle back to the ground
+  g.strokeStyle = E.night ? '#4a3a2c' : '#6a4a2c'; g.lineWidth = s * 0.08; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(wx, wy); g.lineTo(wx - s * 0.7, gy - s * 0.04); g.stroke();
+  const bags = () => {
+    // the sandbag wall in front of it, its top at the surface, the muzzle over it
+    const bw = s * 0.22, bh = Math.max(5, s * 0.1);
+    for (let row = 0, yy = y + 1; yy < gy; row++, yy += bh * 0.85) for (let j = 0; j < 2; j++) {
+      const bx2 = x - s * 0.12 - j * bw * 0.9 + (row % 2) * bw * 0.45 - bw * 0.2;
+      g.fillStyle = E.night ? '#6a6250' : '#c9b48a'; g.beginPath(); g.roundRect(bx2, yy, bw, bh, bh * 0.45); g.fill();
+      g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1; g.stroke();
+      g.fillStyle = withAlpha('#ffffff', E.night ? 0.06 : 0.3); g.fillRect(bx2 + bw * 0.2, yy + 1, bw * 0.5, 1.2);
+    }
+  };
+  // the barrel: dark iron, tapered, banded, lit along its top
+  g.save(); g.translate(bx, by); g.rotate(-a);
+  const gr = g.createLinearGradient(0, -rB, 0, rB); gr.addColorStop(0, '#6a6e76'); gr.addColorStop(0.35, '#3a3e44'); gr.addColorStop(1, '#16181c');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(-rB * 0.6, -rB * 1.1); g.lineTo(L, -rB * 0.75); g.lineTo(L, rB * 0.75); g.lineTo(-rB * 0.6, rB * 1.1); g.arc(-rB * 0.6, 0, rB * 1.1, Math.PI / 2, Math.PI * 1.5); g.closePath(); g.fill();
+  g.fillStyle = '#2a2c30'; for (const f of [0.2, 0.55, 0.96]) g.fillRect(L * f - 2, -rB * (1.1 - f * 0.35) - 1, 4, rB * 2 * (1.1 - f * 0.35) + 2);
+  g.fillStyle = '#0a0a0c'; g.beginPath(); g.ellipse(L, 0, rB * 0.25, rB * 0.55, 0, 0, TAU); g.fill();
+  g.restore();
+  // a spoked wheel on the axle
+  g.strokeStyle = E.night ? '#6a5040' : '#8a6040'; g.lineWidth = Math.max(2, s * 0.04); g.beginPath(); g.arc(wx, wy, wR, 0, TAU); g.stroke();
+  g.lineWidth = Math.max(1.2, s * 0.02); for (let i = 0; i < 8; i++) { const q = phase + (i / 8) * TAU; g.beginPath(); g.moveTo(wx, wy); g.lineTo(wx + Math.cos(q) * wR, wy + Math.sin(q) * wR); g.stroke(); }
+  g.fillStyle = '#2a2c30'; g.beginPath(); g.arc(wx, wy, s * 0.04, 0, TAU); g.fill();
+  bags();
+  if (t >= 0) {
+    // the flash: brief, white-gold at the muzzle
+    const f = Math.max(0, 1 - t / 0.18);
+    if (f > 0) { const R = s * 0.5 * (0.6 + (1 - f)); const fg = g.createRadialGradient(x, y, 0, x, y, R); fg.addColorStop(0, `rgba(255,250,225,${0.95 * f})`); fg.addColorStop(0.4, `rgba(255,214,120,${0.7 * f})`); fg.addColorStop(1, 'rgba(255,214,120,0)'); g.fillStyle = fg; g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill(); }
+    // the smoke: puffs rolling out along the bore and rising, greying, thinning
+    const p = Math.min(1, t / 2.2), r = rng(7);
+    if (p < 1) for (let i = 0; i < 9; i++) {
+      const d = s * (0.2 + i * 0.12) * ease(Math.min(1, p * 2.5)), R = s * (0.12 + i * 0.03) * (0.6 + p * 1.6);
+      const cx = x + ca * d + (r() - 0.5) * s * 0.1, cy = y - sa * d - p * s * 0.5 - (r() - 0.2) * s * 0.1;
+      const sg = g.createRadialGradient(cx - R * 0.3, cy - R * 0.3, 0, cx, cy, R);
+      sg.addColorStop(0, `rgba(235,235,232,${0.8 * (1 - p)})`); sg.addColorStop(0.7, `rgba(200,200,198,${0.5 * (1 - p)})`); sg.addColorStop(1, 'rgba(160,160,160,0)');
+      g.fillStyle = sg; g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fill();
+    }
+  }
+}
+
+/** A ramp: a timber kicker on its frame rising to its lip at (x, y) at the
+    launch angle, from the ground at gy behind it; slats across its deck. */
+export function ramp(g, x, y, s, P, { aim = 20, gy = y } = {}) {
+  const E = env(), a = (Math.max(2, Math.min(60, aim)) * Math.PI) / 180, rise = Math.max(4, gy - y);
+  // its run: back from the lip at the slope's angle, down to its own foot
+  const run = Math.max(rise / Math.tan(a), s * 0.6), x0 = x - run;
+  const wood = E.night ? '#6a5040' : '#b08a5c', woodLo = E.night ? '#4a3830' : '#7a5636';
+  // the frame under it: posts and a brace
+  g.strokeStyle = woodLo; g.lineWidth = Math.max(2, s * 0.03);
+  for (const f of [0.35, 0.7, 0.98]) { const px = x0 + run * f, py = gy - rise * f; g.beginPath(); g.moveTo(px, py); g.lineTo(px, gy); g.stroke(); }
+  g.beginPath(); g.moveTo(x0 + run * 0.35, gy); g.lineTo(x - 2, y + 2); g.stroke();
+  // the deck: a thick board up to the lip, lit along its top, slats across it
+  const th = Math.max(4, s * 0.05);
+  g.fillStyle = wood; g.beginPath(); g.moveTo(x0, gy); g.lineTo(x, y); g.lineTo(x, y + th); g.lineTo(x0 + th / Math.tan(a), gy); g.closePath(); g.fill();
+  g.strokeStyle = withAlpha('#ffffff', E.night ? 0.12 : 0.4); g.lineWidth = 1.2; g.beginPath(); g.moveTo(x0, gy); g.lineTo(x, y); g.stroke();
+  g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 1; for (let f = 0.1; f < 1; f += 0.1) { const px = x0 + run * f, py = gy - rise * f; g.beginPath(); g.moveTo(px, py); g.lineTo(px + 1.5, py + th); g.stroke(); }
+  // its lip, a metal edge
+  g.fillStyle = '#8a9098'; g.fillRect(x - 3, y - 1, 4, th + 2);
+  softShadow(g, x0 + run * 0.6, gy + 1, run * 0.6, 4, 0.6);
+}
+
+/** A catapult: a timber frame on its base, the throwing arm pivoted low,
+    a cup at its end where the launch point is when it is loaded; the arm
+    swings up and stops against the padded crossbar as it lets go. */
+export function catapult(g, x, y, s, P, { aim = 45, t = -1, gy = y } = {}) {
+  const E = env(), wood = E.night ? '#6a5040' : '#9a6e44', woodLo = E.night ? '#4a3830' : '#6a4a2c';
+  // the arm reaches exactly from its pivot to the launch point, where the cup sits loaded
+  const piv = { x: x - s * 0.68, y: gy - s * 0.18 }, L = Math.hypot(x - piv.x, y - piv.y);
+  // the arm's angle: down and back when loaded, up to the crossbar once it fires
+  const a0 = Math.atan2(piv.y - y, x - piv.x), a1 = Math.PI / 2 + 0.25, u = t < 0 ? 0 : ease(Math.min(1, t / 0.2));
+  const aa = a0 + (a1 - a0) * u;
+  softShadow(g, piv.x, gy + 1, s * 0.6, s * 0.06, 0.9);
+  // the base, its wheels
+  g.fillStyle = woodLo; g.fillRect(piv.x - s * 0.5, gy - s * 0.1, s, s * 0.08);
+  for (const wx of [piv.x - s * 0.38, piv.x + s * 0.38]) { g.fillStyle = '#2b2628'; g.beginPath(); g.arc(wx, gy - s * 0.04, s * 0.06, 0, TAU); g.fill(); }
+  // the uprights and the crossbar, padded where the arm stops
+  g.strokeStyle = wood; g.lineWidth = s * 0.06; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(piv.x - s * 0.1, gy - s * 0.1); g.lineTo(piv.x + s * 0.02, gy - s * 0.75); g.lineTo(piv.x + s * 0.14, gy - s * 0.1); g.stroke();
+  g.fillStyle = E.night ? '#5a4a3a' : '#c9b27a'; g.beginPath(); g.ellipse(piv.x + s * 0.12, gy - s * 0.72, s * 0.07, s * 0.05, 0, 0, TAU); g.fill();
+  // the arm and its cup
+  const end = { x: piv.x + Math.cos(aa) * L, y: piv.y - Math.sin(aa) * L };
+  g.strokeStyle = wood; g.lineWidth = s * 0.07; g.beginPath(); g.moveTo(piv.x, piv.y); g.lineTo(end.x, end.y); g.stroke();
+  g.fillStyle = woodLo; g.beginPath(); g.arc(end.x, end.y, s * 0.09, aa - Math.PI * 0.9, aa + Math.PI * 0.1, true); g.closePath(); g.fill();
+  // the twisted rope at the pivot
+  g.fillStyle = E.night ? '#8a7a5a' : '#c9a96a'; g.beginPath(); g.arc(piv.x, piv.y, s * 0.07, 0, TAU); g.fill();
+  g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 1; for (let i = -2; i <= 2; i++) { g.beginPath(); g.moveTo(piv.x + i * s * 0.025, piv.y - s * 0.06); g.lineTo(piv.x + i * s * 0.025 + s * 0.02, piv.y + s * 0.06); g.stroke(); }
+}
+
+/** Each launcher by the registry's name: `size` px at k px a metre. */
+export const LAUNCHER_ART = { cannon, ramp, catapult };
+export const launcherSize = (kind, k) => (kind === 'cannon' ? clamp(2.4 * k, 56, 110) : kind === 'catapult' ? clamp(3 * k, 64, 130) : clamp(3 * k, 60, 160));

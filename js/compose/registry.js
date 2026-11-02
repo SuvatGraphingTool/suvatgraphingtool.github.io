@@ -129,6 +129,19 @@ export const CARRIERS = {
   drone:      { label: 'a drone', words: /\b(drone|quadcopter)\b/ },
   bird:       { label: 'a bird', words: /\b(bird|eagle|seagull|gull|hawk|crow|pelican|heron|osprey|owl)\b/ },
 };
+/** What sends it off, drawn at the launch point instead of a person: a
+    recipe's `launcher`. `verb` is how a title says it goes. */
+export const LAUNCHERS = {
+  cannon:   { label: 'a cannon', verb: 'fired from', words: /\b(cannon|mortar|field gun)\b/ },
+  ramp:     { label: 'a ramp', verb: 'off', words: /\b(ramp|kicker|launch ramp|jump ramp)\b/ },
+  catapult: { label: 'a catapult', verb: 'flung from', words: /\b(catapult|trebuchet|slingshot|siege engine)\b/ },
+};
+/** What a question says sends it off, or null. */
+export function launcherIn(text) {
+  const t = String(text ?? '').toLowerCase();
+  for (const [key, L] of Object.entries(LAUNCHERS)) { const m = t.match(L.words); if (m) return { launcher: key, word: m[1] }; }
+  return null;
+}
 /** What a question says it is let go from, or null. */
 export function carrierIn(text) {
   const t = String(text ?? '').toLowerCase();

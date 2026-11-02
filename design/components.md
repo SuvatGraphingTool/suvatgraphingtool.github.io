@@ -425,6 +425,19 @@ from a height, a rock ledge; it lands in a crater). Effect `catch` in
 stretched flat, takes it in both hands just above the ground (labels kept
 off them). Beach words never take a cliff, pier or harbour's question.
 
+Batch 12, launchers, in `js/render/launchers.js` (`LAUNCHER_ART`,
+`launcherSize`; registry `LAUNCHERS`, `launcherIn(text)`; a recipe's
+`launcher`, engine projectile, any backdrop but the air): drawn at the
+launch point in place of a person, aimed along the engine's launch angle.
+`cannon` (dug into a pit behind a wall of sandbags, its muzzle at the
+surface; it recoils, flashes and rolls out smoke as the engine's clock
+starts), `ramp` (a timber kicker on its frame rising to its lip at the
+launch angle; on level ground it stands on the ground and is the height,
+with no wall) and `catapult` (its arm loaded down to the cup at the launch
+point, swinging up against its padded crossbar as it lets go). Titles say
+"fired from a cannon", "off a ramp", "flung from a catapult"; the reader
+composes a ball or a stone that a launcher sends off.
+
 Figures added to `figures.js`: `diver(g, cx, cy, H, P, { tuck, arms, spin, dir })`
 — a person in a swimsuit and cap, drawn round the hip so a stage can turn
 them; `tuck` 0–1 folds the knees to the chest and the arms round the shins,
