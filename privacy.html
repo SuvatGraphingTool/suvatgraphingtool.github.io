@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy | SUVAT</title>
+<meta name="description" content="What SUVAT keeps, why, and how to delete it.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'>
+<link rel="stylesheet" href="./css/tokens.css">
+<!-- SUVAT's privacy policy, linked from Google's sign-in screen and from the
+     sign-in dialog. Say only what the code does: site/src/index.js (accounts),
+     js/ai/chats.js and js/account.js (chats), worker/ (reading a question). -->
+<style>
+  body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.65; }
+  main { width: min(720px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 80px; }
+  .home { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-muted); text-decoration: none; font-size: 14px; }
+  .home:hover { color: var(--ink); }
+  .word { font-weight: 700; letter-spacing: .06em; color: var(--ink-strong); }
+  h1 { margin: 32px 0 4px; font-size: 32px; line-height: 1.2; color: var(--ink-strong); letter-spacing: -0.01em; }
+  .date { margin: 0 0 32px; color: var(--ink-muted); font-size: 14px; }
+  h2 { margin: 40px 0 8px; font-size: 19px; color: var(--ink-strong); }
+  p, li { color: var(--ink); }
+  ul { padding-left: 20px; }
+  li { margin: 6px 0; }
+  .lead { font-size: 18px; color: var(--ink-strong); }
+  strong { color: var(--ink-strong); }
+  a { color: var(--ink-strong); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <a class="home" href="./"><span aria-hidden="true">←</span> <span class="word">SUVAT</span></a>
+
+  <h1>Privacy</h1>
+  <p class="date">Last updated 2 November 2026</p>
+
+  <p class="lead">SUVAT is a free mechanics playground for A-level students. It keeps as little about you as it can, never sells it, shows no adverts and does not track you.</p>
+
+  <h2>Without an account</h2>
+  <p>You can use all of SUVAT without signing in. Then nothing about you is kept by us. Your chats with Ask Suvat and your settings (theme, layout, your choice of <em>g</em>) are kept <strong>in your own browser only</strong>, and you can delete them from the Chats list, or by clearing this site's data in your browser.</p>
+
+  <h2>If you sign in</h2>
+  <p>You can sign in with Google or with a link sent to your email. We then keep:</p>
+  <ul>
+    <li><strong>Your email address and name</strong>, and, if you use Google, the account number Google gives us, so the same person gets the same account.</li>
+    <li><strong>Your chats with Ask Suvat</strong>, so they are there on every device you sign in on. A photo you send is kept only as a small preview. We keep up to 300 chats an account; the oldest go first.</li>
+    <li><strong>A sign-in cookie</strong> on your device, which keeps you signed in for up to 60 days. We store only a scrambled (hashed) copy of it.</li>
+  </ul>
+  <p>We never see or keep a password. From Google we ask only for your name and email address.</p>
+  <p>When you ask for an emailed sign-in link, we keep a scrambled copy of the link for 15 minutes, and a record of the email address and internet address it was asked from for 24 hours, so the site cannot be used to flood someone's inbox.</p>
+
+  <h2>Reading your questions</h2>
+  <p>When you ask Ask Suvat a question, or send a photo or PDF of one, it is sent to an AI model to be read: first Cloudflare's own (Workers AI), and if that cannot read it, Google's Gemini. Google's free service may keep what is sent to it and use it to improve its products. So <strong>do not put personal information in your questions</strong>. The working out, the graphs and every number are done by SUVAT itself, in your browser.</p>
+
+  <h2>Who handles it</h2>
+  <ul>
+    <li><strong>Cloudflare</strong> runs the site and stores accounts and chats (in Europe).</li>
+    <li><strong>Google</strong> handles signing in with Google, and reads questions when Cloudflare's model cannot.</li>
+    <li><strong>An email service</strong> sends sign-in links, if you choose an emailed link.</li>
+  </ul>
+  <p>We share your information with no one else, and use it for nothing but running SUVAT for you.</p>
+
+  <h2>Deleting it</h2>
+  <p>Delete one chat from the Chats list at any time. To delete everything, sign in, open your account from the sidebar and choose <strong>Delete my account</strong>: your account and every chat in it are deleted at once, on every device. Signing out removes your chats from that device.</p>
+
+  <h2>Your rights</h2>
+  <p>Under UK and EU data protection law you can ask to see, correct or delete what we hold about you, and you can complain to the Information Commissioner's Office (<a href="https://ico.org.uk/make-a-complaint/">ico.org.uk</a>). Most of this you can do yourself, as above.</p>
+
+  <h2>Age</h2>
+  <p>SUVAT is made for students aged 13 and over. If you are under 13, use it without an account.</p>
+
+  <h2>Changes</h2>
+  <p>If this changes, the date at the top changes with it.</p>
+</main>
+</body>
+</html>

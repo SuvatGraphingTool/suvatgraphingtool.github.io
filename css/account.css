@@ -76,3 +76,4 @@
 /* the chat list's note: signed out, an offer to sign in */
 .cl-signin { padding: 0; border: none; background: none; font: inherit; color: var(--ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .cl-signin[hidden] { display: none; }
+.acct-fine a { color: var(--ink-muted); text-underline-offset: 2px; }
