@@ -90,7 +90,7 @@ export function fromReader(id, raw, boxes = []) {
     // a kind named for a key ("time" where the key is "meeting"), and "when do they
     // meet / catch up / draw level" — the one meeting there is
     const meets = /\b(when|catch(es)?|meet|level|overtakes?|pass(es)?|collide)\b/.test(words);
-    const named = ['speed', 'time', 'height', 'distance', 'acceleration', 'angle'].filter((k) => words.includes(k));
+    const named = ['speed', 'time', 'height', 'distance', 'acceleration', 'angle', 'impulse'].filter((k) => words.includes(k));
     const asKind = (k) => only(k) || (k === 'time' && meets ? only('meeting') : null);
     const hit = offer.find((a) => a.key === r.answer)
       || (/sketch|graph/.test(words) ? only('graph') : null)

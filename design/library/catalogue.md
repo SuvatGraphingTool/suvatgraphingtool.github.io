@@ -746,11 +746,11 @@ moment it is at y. The run stops as it passes y after the bounce.
 **Papers.** Edexcel M1 Jun 2014 Q3 (released from rest 2 m above horizontal
 ground, rises to 1.5 m after the bounce: 6.26 m s⁻¹ just before, 5.42 m s⁻¹
 just after, a velocity–time sketch down positive, 1.75 s to the second
-impact; the impulse in (c) is out). Edexcel M1 Jun 2018 Q4 (thrown down from
-A, 2.5 m up, rebounds at 10 m s⁻¹: 0.11 s from the impact to B, 1 m up, and a
-velocity–time sketch from A to B; part (a) finds the throw speed, 24 m s⁻¹,
-from an impulse — out of scope, so the student gives the throw speed or the
-impact speed, 25 m s⁻¹, instead).
+impact; (c) the impulse on the 0.3 kg ball, found from the two speeds,
+3.5 N s). Edexcel M1 Jun 2018 Q4 (thrown down from A, 2.5 m up, rebounds at
+10 m s⁻¹: (a) the throw speed, 24 m s⁻¹, from an impulse of 7 N s on 0.2 kg —
+which gives the impact speed, 25 m s⁻¹; (b) 0.11 s from the impact to B, 1 m
+up; (c) a velocity–time sketch from A to B).
 
 **Why the twelve cannot.** The stadium's bounce is a restitution slider on a
 projectile: it never takes a rebound speed or a rebound height, never says the
@@ -784,7 +784,8 @@ time it is there after the bounce; up or down positive; g.
 **What makes it general.** Every one-ball vertical bounce question where the
 rebound is given. Not yet: a rebound found from a later event (OCR 4728 Jun
 2014 Q1, row 55: passes its start 0.87 s after the throw — the rebound speed is
-the unknown), or one found from an impulse (momentum: out).
+the unknown). An impulse is in, as the one momentum step at the bounce
+(`js/core/impulse.js`): it finds the impact speed, the rebound, or itself.
 
 ### `from-a-height` — From a cliff or a tower
 

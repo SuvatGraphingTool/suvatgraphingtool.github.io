@@ -405,9 +405,12 @@ export function bounceWorking(solved) {
     : by === 'I' ? { f: M`I = m("speed after" + "speed before")`, s: M`${d(P.I)} = ${d(P.mass)}("speed after" + ${nm(V)})`, r: M`u = ${nm(u2)} [m s^-1]` }
     : by === 'T' ? { f: M`s = ut + ½at^2`, s: M`${sbs(s * y)} = ${d(P.T)}u + ½ * ${sbs(a)} * ${d(P.T)}^2`, r: M`u = ${sf(u2)} [m s^-1]` }
     : { f: M`"speed after" = e * "speed before"`, s: M`${d(e, 3)} * ${nm(V)} = ${nm(w)}`, r: M`u = ${nm(u2)} [m s^-1]` };
+  // the impulse the ground gives, found from the two speeds (Edexcel M1 June 2014 Q3(c))
+  const irow = P.mass != null && !P.Igiven
+    ? [{ f: M`I = m("speed after" + "speed before")`, s: M`I = ${d(P.mass)}(${sf(w)} + ${sf(V)})`, r: M`I = ${sf(P.I)} [N s]` }] : [];
   out.push({
     title: 'The bounce',
-    rows: [brow],
+    rows: [brow, ...irow],
     note: (by === 'w' ? 'The paper gives the speed it leaves the ground with. '
       : by === 'I' ? `The impulse from the ground is the change in momentum: arriving down and leaving up, the two speeds add, so ${M`${d(P.I)} [N s]`} on ${M`${d(P.mass)} [kg]`} leaves ${M`${sf(w)} [m s^-1]`} for the rebound. `
       : by === 'T' ? `From the impact, the paper says where it is a time later: ${M`${d(y)} [m]`} up after ${M`${d(P.T)} [s]`}, with ${M`a = ${nm(a)}`} the whole way. That one equation has the rebound speed as its only unknown. `
@@ -415,7 +418,8 @@ export function bounceWorking(solved) {
       : by === 'same' ? 'The rebound given is a rounding faster than the impact, so it is taken as losing no speed. '
       : `It keeps ${M`${d(e, 3)}`} of the speed it arrives with, and leaves going up, so with ${pos} ${M`u`} is ${s > 0 ? 'positive' : 'negative'}. `)
       + `The velocity jumps from ${M`${nm(v1)}`} to ${M`${nm(u2)} [m s^-1]`} at the instant of the impact, which the model takes to last no time at all: `
-      + `that jump is the vertical step on the velocity–time graph. The speed just after the impact is ${M`${sf(w)} [m s^-1]`}.`,
+      + `that jump is the vertical step on the velocity–time graph. The speed just after the impact is ${M`${sf(w)} [m s^-1]`}.`
+      + (irow.length ? ` The impulse from the ground is the change in momentum: arriving down and leaving up, the two speeds add, so it is ${M`${sf(P.I)} [N s]`}, upwards.` : ''),
   });
 
   // 3 — each flight after a bounce, to the next impact

@@ -6,8 +6,8 @@
 // on the ground, a kick, a catch — never for a collision between two bodies
 // or a force over a time, which are another chapter (design/library/build-rules.md).
 //
-// Give the mass and any two of I, u and v: the third is found, with the row
-// that finds it, set as maths (rule 1). Nothing else here is momentum.
+// Give any three of m, I, u and v: the fourth is found, with the row that
+// finds it, set as maths (rule 1). Nothing else here is momentum.
 
 import { snap } from './numeric.js';
 import { M, num, signed } from '../notation.js';
@@ -21,15 +21,22 @@ const sg = (x) => signed(snap(x), 3, { trim: true });
  * @param o.I  the impulse (N s), signed: positive in the positive direction
  * @param o.u  the velocity just before (m s⁻¹), signed
  * @param o.v  the velocity just after (m s⁻¹), signed
- * @returns {{ ok: true, m, I, u, v, found: 'I'|'u'|'v'|null, row }} — `row` the working
+ * @returns {{ ok: true, m, I, u, v, found: 'm'|'I'|'u'|'v'|null, row }} — `row` the working
  *          row `{ f, s, r }` that found the missing one — or {{ ok: false, reason }}
  */
 export function impulseLink({ m, I, u, v } = {}) {
-  if (!have(m)) return { ok: false, reason: 'An impulse changes the momentum, so it needs the mass: give the mass.' };
+  const f = M`I = m(v - u)`;
+  if (!have(m)) {
+    // the mass, from an impulse and the change it made
+    if (!(have(I) && have(u) && have(v))) return { ok: false, reason: 'An impulse changes the momentum, so it needs the mass — or the impulse and both velocities, to find the mass.' };
+    if (Math.abs(v - u) < 1e-12) return { ok: false, reason: 'With no change in velocity there is no impulse, and nothing to find the mass from.' };
+    const mm = snap(I / (v - u));
+    if (!(mm > 0)) return { ok: false, reason: `An impulse of ${M`${sg(I)} [N s]`} cannot change the velocity from ${M`${sg(u)}`} to ${M`${sg(v)} [m s^-1]`}: it acts the other way.` };
+    return { ok: true, m: mm, I, u, v, found: 'm', row: { f, s: M`${sg(I)} = m(${sg(v)} - ${sg(u)})`, r: M`m = ${d(mm)} [kg]` } };
+  }
   if (!(m > 0)) return { ok: false, reason: 'The mass must be more than 0.' };
   const known = [have(I), have(u), have(v)].filter(Boolean).length;
   if (known < 2) return { ok: false, reason: 'Give two of the impulse, the velocity before and the velocity after: the third follows from I = m(v − u).' };
-  const f = M`I = m(v - u)`;
   if (!have(I)) {
     const J = snap(m * (v - u));
     return { ok: true, m, I: J, u, v, found: 'I', row: { f, s: M`I = ${d(m)}(${sg(v)} - ${sg(u)})`, r: M`I = ${d(J)} [N s]` } };

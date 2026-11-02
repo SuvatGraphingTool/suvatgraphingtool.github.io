@@ -214,13 +214,13 @@ export const LIBRARY = [
     name: 'A ball that bounces',
     sub: 'down to the ground, a jump in velocity, and up again',
     note: 'A ball is released, thrown down or thrown up from a height, hits horizontal ground and rebounds — given as the speed it leaves at, the height it rises to, or the fraction of its speed it keeps. Each flight is SUVAT with g alone; the impact is an instant, where the velocity jumps from one side of zero to the other. How fast just before and just after, when it passes a height, how long between bounces, and the time to the second impact.',
-    params: { start: 'drop', h: 2, H: 1.5, g: 9.8, n: 2, axis: 'down' },
+    params: { start: 'drop', h: 2, H: 1.5, m: 0.3, g: 9.8, n: 2, axis: 'down' },
     place: 'A ball over horizontal ground',
-    example: { start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down' },
+    example: { start: 'drop', h: 2, H: 1.5, m: 0.3, g: 9.8, axis: 'down' },
     parts: [
       { label: 'a', kind: 'speed', ask: 'How fast is the ball moving just before it first strikes the ground?', sym: 'v', find: 'extras.vIn1', unit: 'm s^-1', at: 'extras.t1', step: 'down to the ground', paper: 6.26 },
       { label: 'b', kind: 'speed', ask: 'How fast is it moving just after it leaves the ground, if it rises to 1.5 m?', sym: 'v', find: 'extras.vOut1', unit: 'm s^-1', at: 'extras.t1', step: 'bounce', paper: 5.42 },
-      { label: 'c', out: 'the impulse on the ball needs momentum, which is another chapter' },
+      { label: 'c', kind: 'impulse', ask: 'What is the magnitude of the impulse on the 0.3 kg ball in the first impact?', find: 'params.I', sym: 'I', unit: 'N s', dp: 2, trim: true, at: 'extras.t1', step: 'bounce', uses: ['a', 'b'], paper: 3.5 },
       { label: 'd', kind: 'graph', ask: 'Sketch the velocity–time graph from release to the second impact.', say: 'The velocity–time graph is drawn: a straight line down to the impact, a jump, then the same gradient again.', at: 'end' },
       { label: 'e', kind: 'time', ask: 'How long is it from release to the second impact?', find: 'f.tMax', sym: 't', unit: 's', at: 'end', step: 'from the start', uses: ['b'], paper: 1.75 },
     ],
@@ -229,10 +229,9 @@ export const LIBRARY = [
       // Edexcel M1 June 2018 Q4: down from 2.5 m, rebounds at 10 m/s, an impulse of 7 N s on 0.2 kg
       { kind: 'speed', say: 'the speed it is thrown with, U (found from the impulse)', find: 'params.U', sym: 'U', unit: 'm s^-1', trim: true, at: 0, step: 'impulse', paper: 24, example: { start: 'down', h: 2.5, w: 10, m: 0.2, I: 7, y: 1, g: 9.8, axis: 'down' } },
       { kind: 'time', say: 'the time from hitting the ground to first passing the height asked about', find: 'yAfter.since', sym: 't', unit: 's', dp: 2, at: 'yAfter.t', step: 'when it is', paper: 0.11, example: { start: 'down', h: 2.5, w: 10, m: 0.2, I: 7, y: 1, g: 9.8, axis: 'down' } },
-      { kind: 'impulse', say: 'the impulse from the ground', find: 'params.I', sym: 'I', unit: 'N s', trim: true, at: 'extras.t1', step: 'bounce', paper: 7, example: { start: 'down', h: 2.5, w: 10, m: 0.2, I: 7, y: 1, g: 9.8, axis: 'down' } },
     ],
     sources: [
-      { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2014', q: '3', part: 'all but the impulse' },
+      { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2014', q: '3' },
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2018', q: '4' },
     ],
     tags: ['bounce', 'bounces', 'bouncing', 'rebound', 'rebounds', 'impact', 'hits the ground', 'strikes the ground', 'ball',
