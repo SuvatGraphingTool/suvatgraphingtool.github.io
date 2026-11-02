@@ -49,6 +49,7 @@ const trimmed = (s) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, ''
 /** Half a figure's drawn height, as a fraction of its drawn length L — so it
     is drawn round the engine's point, not standing on it. */
 const BALLS = new Set(['football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball', 'rugbyBall', 'cricketBall', 'baseball', 'volleyball', 'hockeyBall']);
+const lerpN = (a, b, t) => a + (b - a) * t;
 // drawn pointing along the flight: a dart, a shuttlecock, a bullet
 const POINTED = new Set(['dart', 'shuttlecock', 'bullet']);
 const MIDDLE = { car: 0.16, lorry: 0.2, train: 0.11, cyclist: 0.45, motorcycle: 0.3, runner: 0.5 };
@@ -463,7 +464,7 @@ function launch(canvas, o) {
       // a fielder dives and takes it just above the ground
       else if (e === 'catch') continue;
       else if (e === 'confetti') confetti(g, lx, oy - 10, age, life, { size: phone ? 0.8 : 1.1 });
-      else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: kind === 'egg' ? clamp(k / 45, 0.5, 1.2) : clamp(k / 14, 1, 3), egg: kind === 'egg' }); g.restore(); }
+      else if (e === 'splat') { g.save(); if (H0 > 0) { g.beginPath(); g.rect(x0 + 1, 0, w, h); g.clip(); } splat(g, lx, oy, age, life, { size: kind === 'egg' ? clamp(k / 45, 0.5, 1.2) : clamp(k / 14, kind === 'water' ? 1.5 : 1, 3), egg: kind === 'egg' }); g.restore(); }
       else if (e === 'crack') crack(g, lx, oy, age, life, { size: phone ? 0.8 : 1 });
     }
     if (!f.vertical) {
@@ -533,11 +534,16 @@ function launch(canvas, o) {
         const jet = pts.filter((p) => p.t <= t).map(at), wj = clamp(k * 0.05, 3, 7);
         if (jet.length > 1) {
           // (opaque: a see-through blue over the orange path would mix to the acceleration's violet)
-          stroke(g, jet, { color: '#7db8e6', width: wj + 2, alpha: 1 });
-          stroke(g, jet, { color: '#e2f2fc', width: Math.max(1.2, wj * 0.4), alpha: 1 });
-          stroke(g, jet, { color: P.vel, width: 1.4, alpha: 0.9 });
+          // thick at the nozzle and thinning, breaking into drops over its last stretch
+          const n = jet.length, solid = Math.max(2, Math.floor(n * 0.75));
+          g.save(); g.lineCap = 'round'; g.strokeStyle = '#7db8e6';
+          for (let i = 1; i < solid; i++) { g.lineWidth = wj * lerpN(1.3, 0.7, i / n); g.beginPath(); g.moveTo(jet[i - 1].x, jet[i - 1].y); g.lineTo(jet[i].x, jet[i].y); g.stroke(); }
+          g.setLineDash([wj * 1.5, wj]); g.lineWidth = wj * 0.6; g.beginPath(); g.moveTo(jet[solid - 1].x, jet[solid - 1].y); for (let i = solid; i < n; i++) g.lineTo(jet[i].x, jet[i].y); g.stroke();
+          g.setLineDash([]); g.restore();
+          // the path itself, light, as it is under every figure
+          stroke(g, jet, { color: P.vel, width: 1.2, alpha: 0.45 });
           // droplets breaking off round the front
-          for (let i = 0; i < 6; i++) { const q = jet[Math.max(0, jet.length - 1 - i * 2)], j = (i * 37) % 7 - 3; g.fillStyle = 'rgba(160,205,240,0.85)'; g.beginPath(); g.arc(q.x + j, q.y + ((i * 53) % 9) - 4, Math.max(1.2, wj * 0.3), 0, Math.PI * 2); g.fill(); }
+          for (let i = 0; i < 8; i++) { const q = jet[Math.max(0, n - 1 - i * 2)], j = (i * 37) % 9 - 4; g.fillStyle = '#9ccbee'; g.beginPath(); g.arc(q.x + j, q.y + ((i * 53) % 11) - 5, Math.max(1.2, wj * 0.3), 0, Math.PI * 2); g.fill(); }
         }
       }
       else if (kind === 'apple') apple(g, bx, by, clamp(k * 0.05, 6, 10));

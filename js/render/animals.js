@@ -260,24 +260,25 @@ export function fish(g, x, y, L, P, { ang = 0, phase = 0, ring = null } = {}) {
     air), the short forelegs, the antennae swept back. */
 export function grasshopper(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null } = {}) {
   const E = env(), s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land)), ext = s * (1 - d * 0.7);
-  const body = E.night ? '#5a7a3a' : '#7aa83e', bodyLo = E.night ? '#3a5226' : '#4f7428', wing = E.night ? '#6a6a3a' : '#a8a35a';
+  const body = E.night ? '#7a9a2a' : '#a8d030', bodyLo = E.night ? '#4a6218' : '#5e8a1a', wing = E.night ? '#7a7a3a' : '#c8c060', ink = 'rgba(20,30,10,0.7)';
   g.save(); g.translate(x, y); g.rotate(spin - 0.06 * s * (1 - d));
   // the far legs, darker
   leg(g, [{ x: L * 0.12, y: L * 0.06 }, { x: L * 0.2, y: L * 0.16 }], L * 0.025, bodyLo);
   // the hind leg: thigh up and back from the hip, shin down to the foot; straightened out in the air
   const hip = { x: -L * 0.05, y: L * 0.04 }, kn = { x: hip.x - L * lerp(0.3, 0.42, ext), y: hip.y - L * lerp(0.16, 0.02, ext) };
   const ft = { x: kn.x + L * lerp(0.26, -0.3, ext), y: kn.y + L * lerp(0.28, 0.06, ext) };
+  leg(g, [hip, kn], L * 0.07 + 3, ink); leg(g, [kn, ft], L * 0.025 + 3, ink);
   leg(g, [hip, kn], L * 0.07, bodyLo); leg(g, [kn, ft], L * 0.025, bodyLo);
   // the body: head, thorax, the long abdomen
   const gr = g.createLinearGradient(0, -L * 0.1, 0, L * 0.1); gr.addColorStop(0, body); gr.addColorStop(1, bodyLo);
   g.fillStyle = gr; g.beginPath(); g.ellipse(-L * 0.08, L * 0.02, L * 0.34, L * 0.075, 0, 0, TAU); g.fill();
-  g.beginPath(); g.ellipse(L * 0.3, -L * 0.01, L * 0.1, L * 0.09, 0, 0, TAU); g.fill();
-  g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.stroke();
+  g.strokeStyle = ink; g.lineWidth = 1.5; g.stroke();
+  g.beginPath(); g.ellipse(L * 0.3, -L * 0.01, L * 0.1, L * 0.09, 0, 0, TAU); g.fill(); g.stroke();
   // the wings folded along the back
   g.fillStyle = withAlpha(wing, 0.9); g.beginPath(); g.moveTo(L * 0.18, -L * 0.05); g.quadraticCurveTo(-L * 0.2, -L * 0.12, -L * 0.46, -L * 0.02); g.quadraticCurveTo(-L * 0.15, -L * 0.02, L * 0.18, -L * 0.01); g.closePath(); g.fill();
   g.strokeStyle = withAlpha('#000000', 0.25); g.stroke();
   // the near hind thigh over the body, striped
-  leg(g, [hip, kn], L * 0.08, body);
+  leg(g, [hip, kn], L * 0.08 + 3, ink); leg(g, [hip, kn], L * 0.08, body);
   g.strokeStyle = withAlpha(bodyLo, 0.9); g.lineWidth = 1; for (let i = 1; i < 4; i++) { const u = i / 4; g.beginPath(); g.arc(lerp(hip.x, kn.x, u), lerp(hip.y, kn.y, u), L * 0.03, 0, Math.PI); g.stroke(); }
   // forelegs, the eye, the antennae
   leg(g, [{ x: L * 0.22, y: L * 0.05 }, { x: L * 0.26 + L * 0.06 * s, y: L * 0.16 }], L * 0.025, bodyLo);
@@ -292,20 +293,21 @@ export function grasshopper(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring 
     jumping legs folded under it, or flung out behind in the air. */
 export function flea(g, x, y, L, P, { leap = 0, land = 0, spin = 0, ring = null } = {}) {
   const E = env(), s = Math.max(0, Math.min(1, leap)), d = Math.max(0, Math.min(1, land)), ext = s * (1 - d * 0.7);
-  const shell = E.night ? '#4a3020' : '#6a3e22', shellLo = E.night ? '#2a1a10' : '#3a2214', limb = E.night ? '#5a4030' : '#8a5a36';
+  const shell = E.night ? '#3a2a22' : '#4a3226', shellLo = E.night ? '#1a120e' : '#22160f', limb = '#2a1c14';
   g.save(); g.translate(x, y); g.rotate(spin);
-  const hip = { x: -L * 0.12, y: L * 0.14 }, kn = { x: hip.x + L * lerp(0.05, -0.28, ext), y: hip.y + L * lerp(0.18, 0.06, ext) }, ft = { x: kn.x + L * lerp(0.3, -0.3, ext), y: kn.y + L * lerp(0.1, 0.1, ext) };
-  leg(g, [hip, kn, ft], L * 0.045, limb);
-  for (const [a, b] of [[0.05, 0.18], [0.2, 0.3]]) leg(g, [{ x: L * a, y: L * 0.14 }, { x: L * (a + 0.06), y: L * 0.3 }, { x: L * (a + 0.12), y: L * 0.32 }], L * 0.03, limb);
-  // the body: a tall oval of plates, glossy
-  const gr = g.createRadialGradient(-L * 0.05, -L * 0.15, L * 0.03, 0, 0, L * 0.4); gr.addColorStop(0, '#b07a4a'); gr.addColorStop(0.4, shell); gr.addColorStop(1, shellLo);
-  g.fillStyle = gr; g.beginPath(); g.ellipse(-L * 0.05, 0, L * 0.34, L * 0.24, -0.15, 0, TAU); g.fill();
-  g.strokeStyle = withAlpha('#000000', 0.45); g.lineWidth = 1; g.stroke();
-  for (let i = 1; i < 5; i++) { g.beginPath(); g.arc(-L * 0.35 + i * L * 0.13, 0, L * 0.22, -1.1, 1.1); g.stroke(); }
-  // the small head, its mouthparts and the eye
-  g.fillStyle = shell; g.beginPath(); g.ellipse(L * 0.32, L * 0.02, L * 0.1, L * 0.09, 0.3, 0, TAU); g.fill(); g.stroke();
-  leg(g, [{ x: L * 0.38, y: L * 0.08 }, { x: L * 0.4, y: L * 0.2 }], L * 0.02, limb);
-  eye(g, L * 0.34, -L * 0.01, L * 0.025);
+  // the long jumping legs from the back, folded under or flung out behind; the others under it
+  const hip = { x: -L * 0.12, y: L * 0.12 }, kn = { x: hip.x + L * lerp(0.08, -0.3, ext), y: hip.y + L * lerp(0.16, 0.04, ext) }, ft = { x: kn.x + L * lerp(0.3, -0.32, ext), y: kn.y + L * lerp(0.06, 0.1, ext) };
+  leg(g, [hip, kn, ft], L * 0.05, limb);
+  for (const a of [0.02, 0.16]) leg(g, [{ x: L * a, y: L * 0.14 }, { x: L * (a + 0.07), y: L * 0.28 }, { x: L * (a + 0.13), y: L * 0.3 }], L * 0.035, limb);
+  // the body: taller than long, hunched forward, in glossy plates with a cool sheen
+  const gr = g.createRadialGradient(-L * 0.08, -L * 0.18, L * 0.03, 0, -L * 0.02, L * 0.36); gr.addColorStop(0, '#9aa0aa'); gr.addColorStop(0.3, shell); gr.addColorStop(1, shellLo);
+  g.fillStyle = gr; g.beginPath(); g.ellipse(-L * 0.04, -L * 0.03, L * 0.26, L * 0.3, 0.35, 0, TAU); g.fill();
+  g.strokeStyle = withAlpha('#000000', 0.55); g.lineWidth = 1.2; g.stroke();
+  g.lineWidth = 1; for (let i = 1; i < 4; i++) { g.beginPath(); g.ellipse(-L * 0.04, -L * 0.03, L * 0.26, L * 0.3, 0.35, -0.6 + i * 0.5, 0.2 + i * 0.5); g.stroke(); }
+  // the small head, low at the front, its mouthparts and eye
+  g.fillStyle = shell; g.beginPath(); g.ellipse(L * 0.22, L * 0.12, L * 0.08, L * 0.07, 0.5, 0, TAU); g.fill(); g.stroke();
+  leg(g, [{ x: L * 0.27, y: L * 0.17 }, { x: L * 0.28, y: L * 0.27 }], L * 0.02, limb);
+  eye(g, L * 0.24, L * 0.1, L * 0.022);
   g.restore();
   ringed(g, x, y, L, ring);
 }

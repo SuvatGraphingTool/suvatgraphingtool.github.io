@@ -391,6 +391,7 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
   ok(check({ backdrop: 'castle', engine: 'projectile', objects: [{ figure: 'egg' }], numbers: { h: 15, u: 0, theta: -90 } }).recipe?.effects.join() === 'splat', 'an egg splats');
   ok(check({ backdrop: 'court', engine: 'projectile', objects: [{ figure: 'tennisBall' }], numbers: { h: 2.5, u: 25, theta: 0 } }).recipe?.effects.join() === 'chalk', 'a tennis ball on a court kicks up chalk');
   const jet = check({ backdrop: 'ground', engine: 'projectile', objects: [{ figure: 'water' }], numbers: { h: 1, u: 10, theta: 40 } }).recipe;
+  ok(whoIn('A diver jumps from a board 10 m above the water') === 'diver' && whoIn('In a cricket match, a ball is hit') !== 'grasshopper', 'water below and a cricket match never take over what moves');
   ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });
 

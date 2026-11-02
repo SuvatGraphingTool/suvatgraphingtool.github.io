@@ -191,19 +191,26 @@ export function hose(g, x, y, s, P, { aim = 30, t = -1, gy = y } = {}) {
   // the gun: nozzle, barrel back along the aim, the grip and trigger down from it
   const bx = x - ca * s * 0.32, by = y + sa * s * 0.32;
   const grip = { x: bx - ca * s * 0.02 + sa * s * 0.04, y: by + sa * s * 0.02 + ca * s * 0.04 }, gripEnd = { x: grip.x - ca * s * 0.06 + sa * s * 0.18, y: grip.y + sa * s * 0.06 + ca * s * 0.18 };
-  // the stake it is tied to, down to the ground, when it is held up off it
-  if (gy - gripEnd.y > s * 0.1) {
-    g.strokeStyle = E.night ? '#4a3a2c' : '#7a5a3a'; g.lineWidth = Math.max(2, s * 0.04); g.lineCap = 'round';
-    g.beginPath(); g.moveTo(gripEnd.x, gripEnd.y - s * 0.04); g.lineTo(gripEnd.x - s * 0.02, gy + 2); g.stroke();
-    softShadow(g, gripEnd.x, gy + 1, s * 0.12, s * 0.03, 0.6);
-  }
-  // the hose: from the grip's foot in a loop down to the ground, then back along it out of frame
-  const lowY = Math.max(gy, gripEnd.y + s * 0.1);
+  // held up off the ground on a stake, or laid on the top it sprays from
+  const staked = gy - gripEnd.y > s * 0.1, lowY = staked ? gy : y + s * 0.02;
+  // the hose: from the grip's foot in a loop down, then back along the ground (on a raised top,
+  // only a short run and its coil, kept to the top)
+  const run = staked ? s * 3 : s * 0.55;
   g.strokeStyle = greenLo; g.lineWidth = Math.max(3, s * 0.07); g.lineCap = 'round';
-  g.beginPath(); g.moveTo(gripEnd.x, gripEnd.y); g.bezierCurveTo(gripEnd.x + s * 0.15, lowY, gripEnd.x - s * 0.3, lowY, gripEnd.x - s * 0.6, lowY - 1); g.lineTo(gripEnd.x - s * 3, lowY - 1); g.stroke();
+  g.beginPath(); g.moveTo(gripEnd.x, gripEnd.y); g.bezierCurveTo(gripEnd.x + s * 0.15, lowY, gripEnd.x - s * 0.3, lowY, gripEnd.x - Math.min(s * 0.6, run), lowY - 1); g.lineTo(gripEnd.x - run, lowY - 1); g.stroke();
   g.strokeStyle = green; g.lineWidth = Math.max(1.6, s * 0.035); g.stroke();
-  // a coil of it by the stake
-  g.strokeStyle = greenLo; g.lineWidth = Math.max(2, s * 0.045); for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse(gripEnd.x - s * 0.9, lowY - s * 0.05 - i * s * 0.02, s * 0.2, s * 0.05, 0, 0, TAU); g.stroke(); }
+  // a coil of it on the ground (or the top)
+  const coilX = gripEnd.x - Math.min(s * 0.9, run * 0.8), coilR = staked ? s * 0.2 : s * 0.14;
+  g.strokeStyle = greenLo; g.lineWidth = Math.max(2, s * 0.045); for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse(coilX, lowY - s * 0.05 - i * s * 0.02, coilR, coilR * 0.25, 0, 0, TAU); g.stroke(); }
+  // the stake, over the hose and just behind the grip, the gun tied to it
+  if (staked) {
+    const sx = gripEnd.x - s * 0.08;
+    g.strokeStyle = E.night ? '#6a5440' : '#a07a50'; g.lineWidth = Math.max(3, s * 0.06); g.lineCap = 'butt';
+    g.beginPath(); g.moveTo(sx, grip.y - s * 0.04); g.lineTo(sx, gy + 2); g.stroke();
+    g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; g.beginPath(); g.moveTo(sx + Math.max(1.5, s * 0.03), grip.y - s * 0.04); g.lineTo(sx + Math.max(1.5, s * 0.03), gy + 2); g.stroke();
+    g.strokeStyle = '#d8d0b8'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx - s * 0.04, grip.y + s * 0.06); g.lineTo(gripEnd.x + s * 0.02, grip.y + s * 0.03); g.stroke();
+    softShadow(g, sx, gy + 1, s * 0.12, s * 0.03, 0.6);
+  }
   // the gun itself, yellow and black
   g.strokeStyle = '#2b2a2e'; g.lineWidth = Math.max(3, s * 0.07); g.beginPath(); g.moveTo(grip.x, grip.y); g.lineTo(gripEnd.x, gripEnd.y); g.stroke();
   g.strokeStyle = '#e8c547'; g.lineWidth = Math.max(3.5, s * 0.08); g.beginPath(); g.moveTo(bx, by); g.lineTo(x - ca * s * 0.06, y + sa * s * 0.06); g.stroke();
