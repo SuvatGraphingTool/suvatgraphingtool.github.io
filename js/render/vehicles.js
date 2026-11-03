@@ -214,13 +214,14 @@ export function horse(g, X, Y, L, P, { phase = 0, ring = null, airborne = false,
     huge treaded tyres, roll bar, the driver in the cab; blue with yellow
     stripes. */
 export function monsterTruck(g, X, Y, L, P, { phase = 0, ring = null, airborne = false } = {}) {
-  const E = env(), R = L * 0.21, blue = E.night ? '#2a3e6a' : '#2f5fa8', blueLo = E.night ? '#1a2848' : '#1e3e78';
+  const E = env(), R = L * 0.19, blue = E.night ? '#4a4e5a' : '#2e323c', blueLo = E.night ? '#30333c' : '#1b1d24';
   if (!airborne) softShadow(g, X - L * 0.5, Y + 1, L * 0.55, L * 0.06, 0.9);
   const rx = X - L * 0.78, fx = X - L * 0.22, axle = Y - R;
   // the suspension: struts and springs up from each axle to the chassis
-  const ch = Y - R * 2.15;
+  const ch = Y - R * 2.75;
   g.strokeStyle = E.night ? '#6a6e76' : '#8a9098'; g.lineWidth = Math.max(2, L * 0.02);
-  for (const wx of [rx, fx]) { g.beginPath(); g.moveTo(wx, axle); g.lineTo(wx + R * 0.3, ch); g.moveTo(wx, axle); g.lineTo(wx - R * 0.3, ch); g.stroke(); g.strokeStyle = '#e8c547'; g.lineWidth = Math.max(1.5, L * 0.012); for (let i = 0; i < 4; i++) { const yy = lerp(axle, ch, (i + 0.5) / 4); g.beginPath(); g.moveTo(wx - R * 0.12, yy); g.lineTo(wx + R * 0.12, yy + 2); g.stroke(); } g.strokeStyle = E.night ? '#6a6e76' : '#8a9098'; g.lineWidth = Math.max(2, L * 0.02); }
+  // (in the gap between the tyre tops and the chassis, inboard of the tyres, yellow coil springs)
+  for (const wx of [rx, fx]) { const sx = wx + (wx === rx ? R * 1.1 : -R * 1.1), top0 = axle - R * 1.05; g.beginPath(); g.moveTo(wx, axle); g.lineTo(sx, ch); g.stroke(); g.strokeStyle = '#e8c547'; g.lineWidth = Math.max(2, L * 0.016); for (let i = 0; i < 5; i++) { const yy = lerp(top0, ch, (i + 0.5) / 5), xx = lerp(wx, sx, (yy - axle) / (ch - axle)); g.beginPath(); g.moveTo(xx - R * 0.15, yy); g.lineTo(xx + R * 0.15, yy + 2.5); g.stroke(); } g.strokeStyle = E.night ? '#6a6e76' : '#8a9098'; g.lineWidth = Math.max(2, L * 0.02); }
   // the body: a pickup's bed behind, the cab, the bonnet to the front
   const top = ch - R * 1.1;
   const body = () => { g.beginPath(); g.moveTo(X - L, ch); g.lineTo(X - L, ch - R * 0.6); g.lineTo(X - L * 0.5, ch - R * 0.6); g.lineTo(X - L * 0.45, top); g.lineTo(X - L * 0.25, top); g.lineTo(X - L * 0.17, ch - R * 0.6); g.lineTo(X - L * 0.02, ch - R * 0.5); g.quadraticCurveTo(X, ch - R * 0.3, X, ch); g.closePath(); };
@@ -232,15 +233,19 @@ export function monsterTruck(g, X, Y, L, P, { phase = 0, ring = null, airborne =
   g.strokeStyle = '#2b2628'; g.lineWidth = Math.max(2, L * 0.018); g.beginPath(); g.moveTo(X - L * 0.9, ch - R * 0.6); g.lineTo(X - L * 0.85, top + R * 0.1); g.lineTo(X - L * 0.55, top + R * 0.1); g.lineTo(X - L * 0.52, ch - R * 0.6); g.stroke();
   // the great tyres, deep tread round them
   for (const wx of [rx, fx]) {
-    wheel(g, wx, axle, R, phase, '#c8ccd2', 6);
-    g.strokeStyle = withAlpha('#000000', 0.55); g.lineWidth = Math.max(1.5, R * 0.1); for (let i = 0; i < 14; i++) { const a = phase + (i / 14) * TAU; g.beginPath(); g.moveTo(wx + Math.cos(a) * R * 0.78, axle + Math.sin(a) * R * 0.78); g.lineTo(wx + Math.cos(a) * R, axle + Math.sin(a) * R); g.stroke(); }
+    g.fillStyle = '#1d1e22'; g.beginPath(); g.arc(wx, axle, R, 0, TAU); g.fill();
+    // the lugs standing out round the tread, notching its outline
+    for (let i = 0; i < 16; i++) { const a = phase + (i / 16) * TAU; g.save(); g.translate(wx + Math.cos(a) * R, axle + Math.sin(a) * R); g.rotate(a); g.fillStyle = '#1d1e22'; g.fillRect(-R * 0.04, -R * 0.1, R * 0.12, R * 0.2); g.restore(); }
+    g.strokeStyle = withAlpha('#ffffff', E.night ? 0.3 : 0.15); g.lineWidth = 1.2; g.beginPath(); g.arc(wx, axle, R * 1.02, 0, TAU); g.stroke();
+    g.fillStyle = '#c8ccd2'; g.beginPath(); g.arc(wx, axle, R * 0.4, 0, TAU); g.fill();
+    g.strokeStyle = withAlpha('#000000', 0.4); g.lineWidth = 1; for (let i = 0; i < 5; i++) { const a = phase + (i / 5) * TAU; g.beginPath(); g.moveTo(wx, axle); g.lineTo(wx + Math.cos(a) * R * 0.4, axle + Math.sin(a) * R * 0.4); g.stroke(); }
   }
 }
 
 /** A snowmobile: its skis at the front, the rubber track under the back, a
     low cowl and windscreen, the rider astride it, bent forward. */
 export function snowmobile(g, X, Y, L, P, { phase = 0, ring = null, airborne = false } = {}) {
-  const E = env(), H = L * 0.16, body = E.night ? '#2a3e6a' : '#2f5fa8', dark = '#2b2628';
+  const E = env(), H = L * 0.16, body = E.night ? '#c8ccd2' : '#eef0f3', dark = '#2b2628', suit = E.night ? '#5a6478' : '#3a3e48';
   if (!airborne) softShadow(g, X - L * 0.5, Y + 1, L * 0.5, L * 0.05, 0.8);
   // the ski: long, turned up at the tip
   g.strokeStyle = dark; g.lineWidth = Math.max(2, L * 0.02); g.lineCap = 'round';
@@ -254,22 +259,24 @@ export function snowmobile(g, X, Y, L, P, { phase = 0, ring = null, airborne = f
   // the body: the cowl sloping to the nose, the seat behind, the windscreen
   const b = () => { g.beginPath(); g.moveTo(X - L * 0.98, ty - H * 0.5); g.lineTo(X - L * 0.55, ty - H * 0.55); g.lineTo(X - L * 0.35, ty - H * 1.3); g.quadraticCurveTo(X - L * 0.08, ty - H * 1.2, X, ty - H * 0.2); g.lineTo(X - L * 0.1, ty + H * 0.1); g.lineTo(X - L * 0.98, ty); g.closePath(); };
   b(); g.fillStyle = body; g.fill(); outline(g, ring);
-  g.fillStyle = '#e8c547'; g.fillRect(X - L * 0.9, ty - H * 0.35, L * 0.5, H * 0.15);
+  g.fillStyle = '#2f5fa8'; g.fillRect(X - L * 0.9, ty - H * 0.35, L * 0.6, H * 0.18);
   g.fillStyle = dark; g.fillRect(X - L * 0.9, ty - H * 0.85, L * 0.45, H * 0.35);
-  g.fillStyle = withAlpha('#bcd6e6', 0.8); g.beginPath(); g.moveTo(X - L * 0.35, ty - H * 1.3); g.lineTo(X - L * 0.42, ty - H * 2.1); g.lineTo(X - L * 0.3, ty - H * 2.0); g.lineTo(X - L * 0.27, ty - H * 1.25); g.closePath(); g.fill();
+  g.fillStyle = withAlpha('#5a7a96', 0.6); g.beginPath(); g.moveTo(X - L * 0.35, ty - H * 1.3); g.lineTo(X - L * 0.42, ty - H * 2.1); g.lineTo(X - L * 0.3, ty - H * 2.0); g.lineTo(X - L * 0.27, ty - H * 1.25); g.closePath(); g.fill(); g.strokeStyle = '#2b2628'; g.lineWidth = 1.2; g.stroke();
   // the rider: astride, leaning forward to the bars, in a dark suit and helmet
-  const C = person(E), hip = { x: X - L * 0.65, y: ty - H * 0.85 }, sh = { x: X - L * 0.5, y: ty - H * 2.6 }, hand = { x: X - L * 0.36, y: ty - H * 1.5 };
-  g.strokeStyle = '#3a3e48'; g.lineWidth = H * 0.55; g.lineCap = 'round';
-  g.beginPath(); g.moveTo(hip.x, hip.y); g.lineTo(X - L * 0.55, ty - H * 0.2); g.stroke();
-  g.lineWidth = H * 0.7; g.beginPath(); g.moveTo(hip.x, hip.y); g.lineTo(sh.x, sh.y); g.stroke();
+  const C = person(E), hip = { x: X - L * 0.65, y: ty - H * 0.85 }, sh = { x: X - L * 0.42, y: ty - H * 2.2 }, hand = { x: X - L * 0.33, y: ty - H * 1.45 };
+  const knee = { x: X - L * 0.52, y: ty - H * 0.9 }, foot = { x: X - L * 0.6, y: ty - H * 0.2 };
+  g.strokeStyle = suit; g.lineCap = 'round'; g.lineJoin = 'round';
+  g.lineWidth = H * 0.55; g.beginPath(); g.moveTo(hip.x, hip.y); g.lineTo(knee.x, knee.y); g.lineTo(foot.x, foot.y); g.stroke();
+  g.lineWidth = H * 0.75; g.beginPath(); g.moveTo(hip.x, hip.y); g.lineTo(sh.x, sh.y); g.stroke();
   g.lineWidth = H * 0.35; g.beginPath(); g.moveTo(sh.x, sh.y); g.lineTo(hand.x, hand.y); g.stroke();
-  g.fillStyle = '#e8eaee'; g.beginPath(); g.arc(sh.x + H * 0.25, sh.y - H * 0.55, H * 0.42, 0, TAU); g.fill(); g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 1; g.stroke();
-  g.fillStyle = dark; g.beginPath(); g.arc(sh.x + H * 0.45, sh.y - H * 0.5, H * 0.2, -0.8, 0.8); g.fill();
+  if (E.night) { g.strokeStyle = withAlpha('#ffffff', 0.3); g.lineWidth = 1; g.beginPath(); g.moveTo(hip.x, hip.y - H * 0.35); g.lineTo(sh.x, sh.y - H * 0.35); g.stroke(); }
+  g.fillStyle = '#e8eaee'; g.beginPath(); g.arc(sh.x + H * 0.3, sh.y - H * 0.45, H * 0.42, 0, TAU); g.fill(); g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 1; g.stroke();
+  g.fillStyle = dark; g.beginPath(); g.arc(sh.x + H * 0.5, sh.y - H * 0.4, H * 0.2, -0.8, 0.8); g.fill();
   void C;
 }
 
 export const VEHICLES = {
   bus: { draw: bus, mid: 0.17 }, tractor: { draw: tractor, mid: 0.27 }, speedboat: { draw: speedboat, mid: 0.06 },
   jetski: { draw: jetski, mid: 0.2 }, skier: { draw: skier, mid: 0.25 }, snowboarder: { draw: snowboarder, mid: 0.35 }, horse: { draw: horse, mid: 0.6 },
-  monsterTruck: { draw: monsterTruck, mid: 0.42 }, snowmobile: { draw: snowmobile, mid: 0.2 },
+  monsterTruck: { draw: monsterTruck, mid: 0.5 }, snowmobile: { draw: snowmobile, mid: 0.2 },
 };

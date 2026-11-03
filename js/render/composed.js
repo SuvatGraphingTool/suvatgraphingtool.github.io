@@ -741,7 +741,15 @@ function launch(canvas, o) {
     if (aloft && !wet) softShadow(g, bx, oy + 1, Lp * 0.45, Math.max(2, Lp * 0.05), clamp(1 - (oy - by) / (h * 0.7), 0.15, 0.8));
     // a horse folds its legs as it jumps and lets them down to land
     const fo = { dir: 1, phase: turns, brake: false, ring: m.ring, airborne: aloft || (landed && wet), tuck: fired ? sm(p / 0.15) * (landed ? 0 : sm((1 - p) / 0.15)) : 0 };
-    const drawIt = () => { g.translate(bx + roll, by + lift); g.rotate(ang); if (V) V.draw(g, Lp / 2, 0, Lp, P, fo); else drawFigure(g, kind, Lp / 2, 0, Lp, P, fo); };
+    // down on dry ground still pitched, it is raised by how far its low end would dip, never buried
+    const settle = landed && !wet ? (Lp / 2) * Math.abs(Math.sin(ang)) : 0;
+    // on a ramp at the off it lies along the ramp, its front at the lip, turning about the front
+    const ramped = R.launcher === 'ramp' && fired && p < 0.1 ? 1 - sm(p / 0.1) : !fired && R.launcher === 'ramp' ? 1 : 0;
+    const a0 = Math.atan2(-v0.y, v0.x), angR = ang + (a0 - ang) * ramped;
+    const drawIt = () => {
+      if (ramped > 0) { g.translate(bx + roll + Lp / 2, by + lift); g.rotate(angR); if (V) V.draw(g, 0, 0, Lp, P, fo); else drawFigure(g, kind, 0, 0, Lp, P, fo); return; }
+      g.translate(bx + roll, by + lift - settle); g.rotate(ang); if (V) V.draw(g, Lp / 2, 0, Lp, P, fo); else drawFigure(g, kind, Lp / 2, 0, Lp, P, fo);
+    };
     // gone under: it sinks away, seen dimly through the water
     const sinkBy = sinks ? clamp((h - oy) * 0.6, 30, 160) * sm(age / life) : 0;
     if (sinks) { g.save(); g.beginPath(); g.rect(0, oy + 1, w, h - oy); g.clip(); g.globalAlpha = 0.35 * (1 - sm(age / life)); g.translate(0, sinkBy); drawIt(); g.restore(); }

@@ -94,7 +94,7 @@ export const FIGURES = {
   bus:      { label: 'a bus', m: 11, min: 84, views: ['side'] },
   tractor:  { label: 'a tractor', m: 4, min: 58, views: ['side'] },
   monsterTruck: { label: 'a monster truck', m: 5.5, min: 70, views: ['side'] },
-  snowmobile: { label: 'a snowmobile', m: 3, min: 56, views: ['side'] },
+  snowmobile: { label: 'a snowmobile', m: 3, min: 72, views: ['side'] },
   speedboat: { label: 'a speedboat', m: 6, min: 62, views: ['side'] },
   jetski:   { label: 'a jet ski', m: 3, min: 50, views: ['side'] },
   skier:    { label: 'a skier', m: 1.8, min: 72, views: ['side'], rides: true },
