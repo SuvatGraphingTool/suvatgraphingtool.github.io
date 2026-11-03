@@ -24,6 +24,8 @@ export const LAUNCH_ANSWERS = [
   { key: 'vTop', kind: 'speed', say: 'speed at its highest point (the top of its path)', find: 'f.ux', sym: 'v', unit: 'm s^-1', at: 'f.tApex' },
   { key: 'theta', kind: 'angle', say: 'angle of projection', find: 'params.theta', sym: 'theta', suffix: '°', dp: 1, at: 0 },
   // "the total time for which it is more than 19.6 m above O": the line's own answer
+  // "the times when it is 33.6 m above O": both moments it crosses the line
+  { key: 'lineTimes', kind: 'time', say: 'the times it is at the height asked (both of them: up and down)', find: ['above.t1', 'above.t2'], sym: 't', unit: 's', at: 'above.t1', when: '\\b(times|values of t|possible)\\b' },
   { key: 'above', kind: 'time', say: 'how long it spends above the height asked about (more than so many metres up)', find: 'above.above', sym: 't', unit: 's', at: 'above.t2', when: '\\b(above|more than|higher than|over)\\b' },
 ];
 export const ROAD_ANSWERS = [
@@ -126,7 +128,7 @@ export function fromReader(id, raw, boxes = []) {
       if (m.length < 2) return m[0] && (!thing || String(m[0].say || '').toLowerCase().includes(thing)) && !ends(m[0]) ? m[0] : null;
       // "how high does it go", "the highest point", "max height": the greatest height
       // and a "total" time or distance is the whole one
-      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}${/\b(hits?|reach(es)?|lands? on) the (floor|ground|water|sea|road|river)\b|\breturns?\b|\bcomes? back\b|\bback down\b/.test(words) ? ' lands' : ''}`;
+      const cue = `${words}${/\bhow high\b|\bhighest\b|\bmax(imum)? height\b/.test(words) ? ' greatest' : ''}${/\btotal\b/.test(words) ? ' whole' : ''}${/\bin the air\b/.test(words) ? ' flight' : ''}${/\bvalue of [a-z]\b/i.test(words) ? ' found' : ''}${/\b(the )?times\b|\bvalues of t\b/.test(words) ? ' both' : ''}${/\b(hits?|reach(es)?|lands? on) the (floor|ground|water|sea|road|river)\b|\breturns?\b|\bcomes? back\b|\bback down\b/.test(words) ? ' lands' : ''}`;
       const mine = new Set(cue.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)));
       const score = m.map((a) => String(a.say || '').toLowerCase().split(/[^a-z]+/).filter((w) => mine.has(w)).length);
       const best = Math.max(...score);
@@ -156,6 +158,8 @@ export function fromReader(id, raw, boxes = []) {
     const ends = (a) => a && ((START.test(words) && !END.test(words) && END.test(said(a)) && !START.test(said(a)))
       || (END.test(words) && !START.test(words) && START.test(said(a)) && !END.test(said(a))));
     let keyed = offer.find((a) => a.key === r.answer);
+    // an answer kept for certain words (`when`) needs them, even named by its key
+    if (keyed && (keyed.part || keyed).when && !new RegExp((keyed.part || keyed).when, 'i').test(words)) keyed = null;
     // "when …" asks a time, whatever key was named; and an answer that names these very
     // words (`when`) — the time at rest, the total distance — is more exact than the key
     if (keyed && /^\s*when\b/.test(words) && keyed.kind !== 'time' && keyed.kind !== 'meeting') keyed = null;
@@ -172,6 +176,8 @@ export function fromReader(id, raw, boxes = []) {
     if (atHeight && hit && /\blands?\b|\blanding\b|in the air|time of flight/.test(String(hit.say || hit.part?.ask || '').toLowerCase())) hit = null;
     // a time or a speed "to the mid-point" is the moment's, whatever key was named
     if (/mid-?point|\bmark\b/.test(words) && (hit?.key === 't' || hit?.key === 'v')) hit = offer.find((a) => a.key === `${hit.key}Mid`) || hit;
+    // "in terms of V": an expression in a letter, which a number is not — the working has each one once V is found
+    if (/\bin terms of\b/.test(words)) hit = null;
     const base = hit ? (hit.part || hit) : null;
     const p = base
       // with no words of its own, a part says what it is — never another paper's numbers
@@ -182,6 +188,7 @@ export function fromReader(id, raw, boxes = []) {
     delete p.key; delete p.part; delete p.paper; delete p.when; delete p.tol; delete p.given; delete p.carry; delete p.example;
     // honest about what it is: no answer line of its own, not "beyond the app" — the working often has it
     if (!base) p.say = 'This part has no answer line of its own here: look for it in the working, on the stage and in the graphs.';
+    if (!base && /\bin terms of\b/.test(words)) p.say = 'Asked in terms of a letter: the app works in numbers. Once the letter is found, the working shows each of these with it in.';
     if (!base && tie) p.either = tie.map((a) => { const q = { ...(a.part || a) }; delete q.key; delete q.part; delete q.paper; delete q.example; return q; });
     // every part's own answer is the engine's; a reader part's `uses` only says so
     p.uses = Array.isArray(r.uses) ? r.uses.map((x) => clip(x, 5).toLowerCase()).filter((x) => out.some((q) => q.label === x)) : [];

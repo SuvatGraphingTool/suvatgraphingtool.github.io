@@ -731,7 +731,7 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(cbs.ok && cbs.five.s.value === 36, 'so she brakes over 36 m, not 18');
   // 3 Nov, real Gemma readings (round 12)
   const trains = toPlace({ understood: true, scenario: 'library', library: 'two-on-a-road', summary: 'x', boxes: { 'A.u': 30, 'A.a': -0.5, 'A.t0': 0, 'B.u': 20, 'B.hold': 10, 'B.a': 0 } }, 'Train P passes a signal at 30 m/s and decelerates uniformly at 0.5 m/s². 10 s later train Q passes the same signal on a parallel track moving at a constant 20 m/s.');
-  ok(trains.boxes['B.t0'] === 10 && trains.boxes['B.hold'] === true, '"10 s later … at a constant 20 m/s": B sets off at 10 s and holds its speed; a hold is never a number');
+  ok(trains.boxes['B.t0'] === 10 && trains.boxes['B.hold'] == null, '"10 s later … at a constant 20 m/s": B sets off at 10 s; the 10 is not a time it holds its speed');
   const LK = KITS[byId('two-on-a-road').kit], lv = LK.solve(LK.read(trains.boxes));
   ok(lv.ok && Math.abs(lv.events.find((e) => e.kind === 'overtake').t - 54.641) < 1e-3, 'and Q draws level at 54.64 s');
   const para = toPlace({ understood: true, scenario: 'library', library: 'parachute-stages', summary: 'x', boxes: { D: 0, T: 0, t1: 4, v1: 0, a2: 6, t2: 0, v2: 5 } }, 'x');
@@ -777,6 +777,23 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(lights.boxes.T === 120 && /time at constant speed/.test(lights.parts[0].asks), '"takes 120 s to travel between": the whole time; "for T seconds" at that speed: T is the time at constant speed');
   const lv2 = JK.solve(JK.read(lights.boxes));
   ok(lv2.ok && lv2.J.tHold === 75 && fromReader('journey-stages', lights.parts)[0].find === 'J.tHold', 'M1 June 2013 Q5(b): T = 75');
+  // M1 June 2013 Q5(c)(d) (paraphrased): the motorcycle part, set up by the reader as a two-on-a-road of its own
+  const lightsWords = 'A car goes from rest at the first lights for 30 s to 22 m/s, holds it, then slows, coming to rest at the second lights 2145 m away, 120 s in all. (c) A motorcycle leaves the first lights 10 s after the car, from rest with constant acceleration a, and passes the car at A, 990 m on. Find the time it takes the motorcycle to reach A. (d) Find the value of a.';
+  const lx = toPlace({ understood: true, scenario: 'library', library: 'journey-stages', summary: 'x', who: 'car', boxes: { n: '3', u: 0, k1: 'up', v1: 22, t1: 30, k2: 'hold', k3: 'down', v3: 0, D: 2145 },
+    parts: [{ label: 'c', asks: 'time for the motorcycle to reach point A', answer: 'time1', scene: { library: 'two-on-a-road', boxes: { 'A.t0': 10, 'A.u': 0, 'A.hold': 0, 'A.a': 0, 'A.V': 22, 'A.tau': 0, 'A.ends': 'line', 'A.fig': 'car', 'A.x0': 0, 'B.t0': 0, 'B.u': 0, 'B.hold': 0, 'B.a': 0, 'B.V': 0, 'B.tau': 0, 'B.ends': 'line', 'B.fig': 'motorcycle', 'B.x0': 0, where: 'road', find: 'B.a', line: 990 } } },
+      { label: 'd', asks: 'the value of a', answer: 'acceleration', uses: ['c'] }] }, lightsWords);
+  const lb = lx.parts[0].scene.boxes;
+  ok(lb['A.t0'] === 0 && lb['B.t0'] === 10 && lb['A.tau'] === 30 && lb['A.V'] === 22 && lb['B.V'] == null && lb['A.ends'] == null && lb['B.a'] == null, 'the reader’s zeros dropped, the motorcycle leaving 10 s after the car, and the car’s 30 s from rest taken from the main question');
+  const LK2 = KITS[byId('two-on-a-road').kit], mv2 = LK2.solve(LK2.read(lb));
+  const mc = fromReader('two-on-a-road', [lx.parts[0]])[0], md = fromReader('two-on-a-road', [lx.parts[1]])[0];
+  ok(mv2.ok && mv2.meet.sinceLater === 50 && Math.abs(mv2.found.value - 0.792) < 1e-9 && mc.find === 'meet.sinceLater' && md.find === 'found.value', 'M1 June 2013 Q5: the motorcycle takes 50 s to reach A, and a = 0.792');
+  // M1 June 2011 Q1 and June 2015 Q7 (paraphrased)
+  const peak = toPlace({ understood: true, scenario: 'up', summary: 'x', h: 0, angleDegrees: 90, apexAboveLaunch: 40, parts: [{ label: 'a', asks: 'show the speed of projection', answer: 'u' }, { label: 'b', asks: 'the times when the ball is 33.6 m above O' }] }, 'Thrown up from O, it rises 40 m. (a) show its speed (b) find the times when it is 33.6 m above O');
+  ok(peak.heightLine === 33.6 && toApp(peak).id === 'time-above', 'a part asking when it is 33.6 m above O: the twelve’s line at that height');
+  ok(JSON.stringify(one('time-above', 'the times when the ball is 33.6 m above O')?.find) === '["above.t1","above.t2"]', 'and "the times" there are both crossings');
+  const tvx = fromReader('journey-stages', [{ label: 'b', asks: 'times accelerating, decelerating and at constant speed, in terms of V' }])[0];
+  ok(!tvx.find && /in terms of a letter/.test(tvx.say), '"in terms of V" is an expression in a letter: never answered with a number');
+  ok(fromReader('two-on-a-road', [{ label: 'a', asks: 'when does A catch B', answer: 'time' }])[0].find === 'events.overtake.t', 'an answer kept for certain words needs them even when its key is named');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

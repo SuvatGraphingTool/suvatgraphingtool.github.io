@@ -18,6 +18,8 @@
 // here), then a steady 0.5i + 0.375j, asked at 20 s and at 500 m out; no rock.
 const H11 = { 'r0.x': 0, 'r0.y': 0, 'u.x': 0, 'u.y': 0, 'a.x': 0.5, 'a.y': 0.375, T: 20, D: 500, 'P.x': '', 'P.y': '' };
 
+// one sets off from rest and reaches a speed it holds; the other leaves later and catches it at a line
+const TWO_LATER = { 'A.u': 0, 'A.V': 22, 'A.tau': 30, 'A.fig': 'car', 'B.t0': 10, 'B.u': 0, 'B.fig': 'motorcycle', find: 'B.a', line: 990 };
 // a journey that speeds up, holds and slows to rest — the shape the stage-kind answers need
 const JOURNEY_UHD = { n: 3, u: 8, k1: 'up', a1: 1.5, v1: 20, k2: 'hold', t2: 30, k3: 'down', v3: 0, D: 900 };
 
@@ -126,6 +128,9 @@ export const LIBRARY = [
     ],
     answers: [
       { kind: 'distance', say: 'how far from the start they are when one passes the other', find: 'events.overtake.x', sym: 'x', unit: 'm', trim: true, at: 'events.overtake.t', step: 'overtakes' },
+      // "the time it takes the motorcycle (which left later) to reach A", and "the value of a" the line fixes
+      { kind: 'time', say: 'the time the later one takes, from when it sets off, to draw level (to reach the point where it passes)', find: 'meet.sinceLater', sym: 't', unit: 's', trim: true, at: 'meet.t', when: '\\b(takes?|taken|to reach|to move from|from (when|the time) it)\\b', example: TWO_LATER },
+      { kind: 'acceleration', say: 'the value found for the one the paper asks about (the value of a, its acceleration)', find: 'found.value', sym: 'a', unit: 'm s^-2', trim: true, at: 'meet.t', example: TWO_LATER },
     ],
     sources: [
       { board: 'OCR A', paper: 'H240/03', session: 'Jun 2022', q: '9' },

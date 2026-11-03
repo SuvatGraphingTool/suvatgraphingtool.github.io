@@ -723,6 +723,9 @@ export function solveOvertake(k = {}) {
     ok: true, mode: 'overtake', axis: 'along', A, B, found, rejected, refRows, tLevel, line: have(k.line) ? k.line : null,
     events: events.map((e) => ({ ...e, own: { A: snap(Math.max(0, e.t - A.t0)), B: snap(Math.max(0, e.t - B.t0)) } })),
     later: after.length ? { t: snap(after[0].t), x: snap(after[0].x) } : null, before: have(k.line) ? 'the line' : have(k.at) ? 'then' : null,
+    // the first time they are level (at the line, or as one passes): on the clock, and on the
+    // clock of the one that set off later — "how long the motorcycle takes to reach A"
+    meet: (() => { const e = events.find((q) => q.kind === 'line' || q.kind === 'overtake'); return e ? { t: snap(e.t), x: snap(e.x), sinceLater: snap(Math.max(0, e.t - Math.max(A.t0, B.t0))) } : null; })(),
     change: [lineRows.A ?? changeRows(spec.A, A), lineRows.B ?? changeRows(spec.B, B)], given: spec,
     lineRows, where: f.where,
     f, extras, notes: notes.map(say), derived: derived.map(say),

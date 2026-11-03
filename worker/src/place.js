@@ -277,16 +277,66 @@ function bounceTo(x, words) {
  * Two on a road: one braking, with nothing said of where its braking ends, brakes
  * to rest — a car stops; it never reverses. "Brakes at 2 m/s²" is A.a = −2, A.V = 0.
  */
+/**
+ * A two-on-a-road a small reader filled in: the zeros it writes for blanks
+ * (a hold, a time changing, a speed changed to, a head start, the number to
+ * find), and who set off later, from "the motorcycle leaves … 10 s after the car".
+ */
+function laneBoxes(b, words, scene = false) {
+  const o = { ...b };
+  // in a part's own set-up the line is where they meet, not where either stops: the
+  // main question's "coming to rest" is of another place
+  if (scene) for (const w of ['A', 'B']) if (o[`${w}.ends`] === 'line') delete o[`${w}.ends`];
+  for (const w of ['A', 'B']) {
+    for (const k of ['hold', 'tau', 'x0']) if (o[`${w}.${k}`] === 0) delete o[`${w}.${k}`];
+    if (o[`${w}.V`] === 0 && !(o[`${w}.a`] < 0) && o[`${w}.ends`] == null) delete o[`${w}.V`];
+    // a speed it "changes to" that is the speed it starts at is no change: from rest to 0
+    if (o[`${w}.V`] != null && o[`${w}.V`] === o[`${w}.u`] && !(o[`${w}.a`] < 0)) delete o[`${w}.V`];
+    if (o.find === `${w}.a` && o[`${w}.a`] === 0) delete o[`${w}.a`];
+    // "its change of speed ends at the line" is coming to rest there: only when the words say it of that one
+    const fig = o[`${w}.fig`];
+    if (o[`${w}.ends`] === 'line' && !(fig && new RegExp(`\\b${fig}\\b[^.]*?\\b(comes?|coming) to rest\\b|\\b${fig}\\b[^.]*?\\bstops\\b`, 'i').test(String(words || '')))
+        && !(o[`${w}.a`] < 0 && o.find !== `${w}.a`)) delete o[`${w}.ends`];
+  }
+  const m = /\b(car|motorcycle|motorbike|lorry|truck|cyclist|bicycle|runner|train|bus|van)\b[^.]*?\b(?:leaves|sets off|starts|moves off)\b[^.]*?(\d+(?:\.\d+)?)\s*s(?:econds)?\s+after the\s+(car|motorcycle|motorbike|lorry|truck|cyclist|bicycle|runner|train|bus|van)\b/i.exec(String(words || ''));
+  if (m) {
+    const fig = (n) => ({ motorbike: 'motorcycle', truck: 'lorry', bicycle: 'cyclist' }[n.toLowerCase()] || n.toLowerCase());
+    const later = ['A', 'B'].find((w) => o[`${w}.fig`] === fig(m[1])), first = ['A', 'B'].find((w) => o[`${w}.fig`] === fig(m[3]));
+    if (later && first && later !== first) { o[`${later}.t0`] = Number(m[2]); o[`${first}.t0`] = 0; }
+  }
+  return o;
+}
+
 function lanes(x, words = '') {
+  // a part with a two-on-a-road of its own is put right the same way, and takes what the
+  // main question already said of the one it shares: "the car" of a journey from rest
+  if (Array.isArray(x?.parts)) {
+    const J = x.library === 'journey-stages' && x.boxes, who = String(x.who || '').toLowerCase();
+    const parts = x.parts.map((p) => {
+      const sc = p?.scene;
+      if (!sc || sc.library !== 'two-on-a-road' || !sc.boxes) return p;
+      const o = laneBoxes(sc.boxes, words, true);
+      const w = ['A', 'B'].find((k) => o[`${k}.fig`] && who.includes(o[`${k}.fig`]));
+      if (J && w && J.k1 === 'up' && J.u === 0) {
+        if (o[`${w}.u`] == null || o[`${w}.u`] === 0) o[`${w}.u`] = 0;
+        if (o[`${w}.V`] == null && typeof J.v1 === 'number') o[`${w}.V`] = J.v1;
+        if (o[`${w}.tau`] == null && typeof J.t1 === 'number') o[`${w}.tau`] = J.t1;
+        if (o[`${w}.a`] === 0) delete o[`${w}.a`];
+      }
+      return { ...p, scene: { ...sc, boxes: o } };
+    });
+    x = { ...x, parts };
+  }
   const b = x?.boxes;
   if (x?.library !== 'two-on-a-road' || !b) return x;
-  const o = { ...b };
+  const o = laneBoxes(b, words);
   for (const w of ['A', 'B']) {
     // "10 s later train Q passes … at a constant 20 m/s": a hold is yes or no; the 10 s is when it sets off
-    if (typeof o[`${w}.hold`] === 'number') {
+    // a hold is a time it holds its speed; a reader's "true" is none
+    if (typeof o[`${w}.hold`] !== 'number' && o[`${w}.hold`] != null) delete o[`${w}.hold`];
+    if (typeof o[`${w}.hold`] === 'number' && o[`${w}.t0`] == null) {
       const n = o[`${w}.hold`];
-      if (o[`${w}.t0`] == null && new RegExp(`\\b${n}\\s*(s|secs?|seconds)\\s+(later|after)\\b`, 'i').test(words)) o[`${w}.t0`] = n;
-      o[`${w}.hold`] = true;
+      if (new RegExp(`\\b${n}\\s*(s|secs?|seconds)\\s+(later|after)\\b`, 'i').test(words)) { o[`${w}.t0`] = n; delete o[`${w}.hold`]; }
     }
     if (typeof o[`${w}.a`] === 'number' && o[`${w}.a`] < 0 && o[`${w}.V`] == null && o[`${w}.tau`] == null && o[`${w}.ends`] == null) o[`${w}.V`] = 0;
   }
@@ -294,7 +344,7 @@ function lanes(x, words = '') {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(atTimed(timed(twoMarks(nthSecond(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words), words), words), words), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(lined(hooped(cleared(lowered(reacts(atTimed(timed(twoMarks(nthSecond(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words), words), words), words), words), words);
 }
 
 /**
@@ -526,6 +576,20 @@ function levelled(x, words) {
     return answer != null ? { ...rest, twelve: answer } : rest;
   });
   return out;
+}
+
+/**
+ * "Find the times when the ball is 33.6 m above O": one of the twelve from the ground,
+ * a part asking about a height it passes — the line the twelve's time-above draws.
+ */
+function lined(x, words) {
+  if (!x?.understood || !['up', 'arc', 'time-above'].includes(x.scenario) || x.heightLine != null || (x.h ?? 0) !== 0) return x;
+  const list = Array.isArray(x.parts) ? x.parts : Array.isArray(x.asked) ? x.asked : (x.asks || []).map((a) => ({ asks: a }));
+  for (const p of list) {
+    const m = /(\d+(?:\.\d+)?)\s*m\s*above\s+(?:O|the point|the ground|the launch|it|A)\b/i.exec(String(p?.asks || ''));
+    if (m) return { ...x, heightLine: Number(m[1]), ...(x.scenario === 'arc' ? { scenario: 'time-above' } : {}) };
+  }
+  return x;
 }
 
 /**
