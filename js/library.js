@@ -684,10 +684,10 @@ export const LIBRARY = [
     params: { look: 'tower', p: 35, dv: 10, g: 10 },
     place: 'Side on: an old stone tower over the fields, a marker on its wall 35 m up, or the edge of an inland cliff',
     example: { look: 'tower', p: 35, dv: 10, g: 10 },
-    reader: 'Only one of dv, k and tau: dv when the speed at the point is the ground speed less a number (V − 10 gives dv 10), k when the ground speed is a multiple of it, tau when the time for the last stretch is given. p is the point’s height above the ground.',
+    reader: 'Only one of dv, k and tau: dv when the speed at the point is the ground speed less a number (V − 10 gives dv 10), k when the ground speed is a multiple of it (a speed of three quarters of V at the point gives k 4/3), tau when the time for the last stretch is given. p is the point’s height above the ground.',
     parts: [
       { label: 'i', kind: 'speed', ask: 'Find V, its speed when it reaches the ground.', find: 'V', sym: 'V', unit: 'm s^-1', trim: true, at: 'f.tG', step: 'speed at the ground', paper: 40 },
-      { label: 'ii', kind: 'distance', ask: 'Find H, the height it was let go from.', find: 'H', sym: 'H', unit: 'm', trim: true, at: 'f.tG', step: 'height and the time', uses: ['i'], paper: 80 },
+      { label: 'ii', kind: 'height', ask: 'Find H, the height it was let go from.', find: 'H', sym: 'H', unit: 'm', trim: true, at: 'f.tG', step: 'height and the time', uses: ['i'], paper: 80 },
     ],
     answers: [
       { kind: 'time', say: 'the time it takes to fall to the ground', find: 'tG', sym: 't', unit: 's', dp: 2, at: 'f.tG', step: 'height and the time' },
@@ -703,7 +703,7 @@ export const LIBRARY = [
       realTitle: 'What the model leaves out',
       realLead: 'The paper’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
       why: [
-        ['No air resistance', 'it falls at g all the way; a real stone dropped 80 m is slowed a little by the air, most in the last stretch where it is fastest.'],
+        ['No air resistance', 'it falls at g all the way; a real stone falling this far is slowed by the air, a great deal in the last stretch where it is fastest.'],
         ['A particle', 'the stone’s size is ignored: it passes the point, and reaches the ground, at one instant.'],
       ],
       caveat: 'What the engine did compute is above: the speed at the ground from the last stretch (with V the unknown), then the height it fell from and the times.',

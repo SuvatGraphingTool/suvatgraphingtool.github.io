@@ -1758,8 +1758,12 @@ group('CIE 9709/42 Nov 2015 Q2: the last stretch of a fall', () => {
   const th = solveLastFall({ mode: 'diff', p: 35, dv: 10, u: 5, g: 10 });
   ok(th.ok && th.V === 40 && th.H === 78.75, 'thrown down at 5: the same V, a lower start');
   ok(!solveLastFall({ mode: 'time', p: 5, tau: 3, g: 9.8 }).ok, 'a last stretch too slow for any fall from above: refused');
+  ok(!solveLastFall({ mode: 'diff', p: 5, dv: 10, g: 10 }).ok, 'a point at the release itself (speed 0 there): refused');
+  { const K = KITS.lastfall, kv = K.solve(K.read({ p: 35, dv: 10, g: 10 })), hud = K.hud(kv.f, kv.f.tMax).left;
+    ok(/at the ground/.test(hud[1].k) && hud[2].v === '—', 'on the ground: the readouts say so, and give no acceleration');
+    ok(K.solve(K.read({ p: 20, k: '4/3', g: 9.8 })).ok, 'a multiple written 4/3 is read as a fraction'); }
   ok(!KITS.lastfall.solve(KITS.lastfall.read({ p: 35, dv: 10, tau: 1, g: 10 })).ok, 'two ways of giving the last stretch: refused');
-  ok(lastFallWorking(s).length === 2 && lastFallWorking(s)[0].rows.length === 2, 'the working: the last stretch, then the whole fall');
+  ok(lastFallWorking(s).length === 2 && lastFallWorking(s)[0].rows.length === 3 && /t=1s/.test(String(lastFallWorking(s)[0].rows[2].r).replace(/<[^>]+>/g, '')), 'the working: the last stretch (with its own time), then the whole fall');
   { const K = KITS.lastfall, kv = K.solve(K.read({ p: 35, dv: 10, g: 10 }));
     ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)) && resolveKit(K, kv, kv.f, 2).blocks[0].rows.every((q) => q.part !== 'x'), 'vertical: solid graphs and Resolve rows (rule 2)'); }
 });

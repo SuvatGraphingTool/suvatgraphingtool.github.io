@@ -55,10 +55,12 @@ export function render(canvas, cam, o) {
   // the point on the wall: a band of paler stone and a small iron marker, at p above the ground
   const yp = Y(f.p);
   g.fillStyle = withAlpha('#ffffff', E.night ? 0.12 : 0.28); g.fillRect(edge - wallW, yp - 2, wallW, 4);
-  g.fillStyle = '#2b2f36'; g.fillRect(edge - 2, yp - 6, 8, 12); g.fillStyle = '#c0392b'; g.fillRect(edge + 6, yp - 3, 10, 6);
+  // a dark iron bracket and a pale stone plaque: no colour of its own, the hues are the quantities'
+  g.fillStyle = '#2b2f36'; g.fillRect(edge - 2, yp - 6, 8, 12); g.fillStyle = E.night ? '#d9d2c4' : '#efe8da'; g.fillRect(edge + 6, yp - 4, 12, 8); g.strokeStyle = '#2b2f36'; g.lineWidth = 1; g.strokeRect(edge + 6, yp - 4, 12, 8);
 
   // ── the dimension lines, right of the drop: the height let go from, and the point's height (vertical: solid)
-  const dx = x0 + 230, dx2 = x0 + 160;
+  // kept on the stage however narrow: the height's line near the right edge, the point's inside it
+  const dx = Math.min(x0 + 230, w - 70), dx2 = Math.min(x0 + 160, dx - 56);
   const dim = (x, ya, yb, txt) => {
     stroke(g, [{ x, y: ya }, { x, y: yb }], { color: P.disp, width: 1.6 });
     for (const y of [ya, yb]) stroke(g, [{ x: x - 6, y }, { x: x + 6, y }], { color: P.disp, width: 1.6 });
@@ -79,12 +81,14 @@ export function render(canvas, cam, o) {
   if (fired && t >= f.tP - 1e-9) {
     const e = ageOf(t, f.tP, f.tMax, 0.9); pulse(g, x0, yp, e.age, e.life, P.mark, { radius: 22 });
     const tag = f.mode === 'diff' ? T`V - ${sf(f.dv)} = ${sf(f.vP)} [m s^-1] "here"` : T`${sf(f.vP)} [m s^-1] "here"`;
-    plate(g, L, P, tag, edge - wallW - 10, yp, P.vel, { align: 'right' });
+    // left of the wall — on a phone, where that is too narrow, just above the point right of the drop
+    if (phone) plate(g, L, P, tag, x0 + 14, yp - 18, P.vel, { align: 'left' }); else plate(g, L, P, tag, edge - wallW - 10, yp, P.vel, { align: 'right' });
   }
   const landed = fired && t >= f.tG - 1e-9;
   if (landed) {
     const e = ageOf(t, f.tG, f.tMax); dust(g, x0, ground, e.age, e.life, { size: 1.2, n: 16 });
-    plate(g, L, P, T`V = ${sf(f.V)} [m s^-1] "at the ground"`, edge - wallW - 10, ground - 16, P.vel, { align: 'right' });
+    // on the grass under the ground line: clear of the point's plate however low the point is
+    plate(g, L, P, T`V = ${sf(f.V)} [m s^-1] "at the ground"`, phone ? x0 + 14 : edge - wallW - 10, ground + 18, P.vel, { align: phone ? 'left' : 'right' });
   }
 
   // ── its velocity and acceleration, down positive (vertical: solid), between the drop and the dimension lines

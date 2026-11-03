@@ -36,10 +36,13 @@ export const lastfall = {
 
   resolveAxis: 'down',
   resolveEnds: true,
+  resolveEndWords: 'It reaches the ground here: the engine follows it no further.',
   resolveObjects: (f) => [{ name: '', pos: f.pos, vel: f.vel, acc: f.acc, from: 'where it was let go' }],
   read(v) {
+    // a multiple as the reader may write it, 4/3, is a fraction
+    const frac = (x) => { const m = typeof x === 'string' && x.match(/^\s*(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*$/); return m ? Number(m[1]) / Number(m[2]) : x; };
     const mode = v.tau != null && v.tau !== '' ? 'time' : v.k != null && v.k !== '' ? 'ratio' : 'diff';
-    return { look: v.look === 'cliff' ? 'cliff' : 'tower', mode, p: v.p, dv: v.dv, k: v.k, tau: v.tau, u: v.u, g: v.g };
+    return { look: v.look === 'cliff' ? 'cliff' : 'tower', mode, p: v.p, dv: v.dv, k: frac(v.k), tau: v.tau, u: v.u, g: v.g };
   },
   solve(k) {
     // one of the three ways the last stretch is given, and only one
@@ -54,8 +57,9 @@ export const lastfall = {
     return {
       left: [
         { k: 'Height above the ground', v: num(f.H - f.pos(t), 2), unit: 'm', hue: 'disp' },
-        { k: 'Velocity, down +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Acceleration, down +', v: num(f.g, 2), unit: 'm s⁻²', hue: 'acc' },
+        // on the ground the motion is over: its speed as it landed, said so; no acceleration
+        { k: t > f.tG + 1e-9 ? 'Velocity at the ground' : 'Velocity, down +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+        { k: 'Acceleration, down +', v: t > f.tG + 1e-9 ? '—' : num(f.g, 2), unit: t > f.tG + 1e-9 ? '' : 'm s⁻²', hue: 'acc' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };
