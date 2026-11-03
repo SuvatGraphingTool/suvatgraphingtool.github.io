@@ -20,10 +20,13 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 /** One answer, typeset: `t = 3.50 s`, two of them joined by "and". */
 export function answerHTML(run) {
   const p = run.part, a = run.answer;
+  if (p.expr) return a.ok ? a.html : '<span class="pans-none">The engine finds no answer to this part with these numbers.</span>';
   if (!p.find) return `<span class="pans-say">${esc(p.say || 'See the stage and the graphs.')}</span>`;
   if (!a.ok) return '<span class="pans-none">The engine finds no answer to this part with these numbers.</span>';
   const one = (v) => {
     if (typeof v === 'boolean') return esc(v ? p.words?.yes ?? 'Yes' : p.words?.no ?? 'No');
+    // a time on the 24-hour clock, as the engine gave it and the papers print it: 1512
+    if (p.clock) return M`"${p.clock === true ? 'at' : p.clock}" ${String(v).padStart(4, '0')}`;
     // in letters, a coefficient of one is not written: U/g, not 1U/g
     const c = num(v, p.dp ?? 2, { trim: !!p.trim });
     const n = (c === '1' && /^[A-Za-z]/.test(p.suffix || '') ? '' : c) + (p.suffix || '');

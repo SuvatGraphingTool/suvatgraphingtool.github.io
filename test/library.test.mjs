@@ -37,6 +37,7 @@ import { solveRunout, runoutWorking } from '../js/core/runout.js';
 import { solveDrive, driveWorking } from '../js/core/drive.js';
 import { solveTank, tankWorking } from '../js/core/tank.js';
 import { solveLastFall, lastFallWorking } from '../js/core/lastfall.js';
+import { solveCourse, courseWorking, clockHours, clockOf } from '../js/core/course.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1610,6 +1611,7 @@ group('A question in parts: every part of every library scenario reproduces its 
       if (!r.solved?.ok) continue;
       ok(r.moment && r.moment.t >= 0 && r.moment.t <= r.solved.f.tMax + 1e-9, `${at}: its moment is on the clock`);
       if (p.step != null) ok(stepOf(p, K.working(r.solved, r.moment.t)) >= 0 || stepOf(p, K.working(r.solved, 0)) >= 0, `${at}: its working step is there ("${p.step}")`);
+      if (p.expr) { ok(r.answer.ok && !/NaN|undefined|Infinity/.test(answerHTML(r)), `${at}: the engine typeset its expression`); continue; }
       if (!p.find) { ok(p.kind === 'graph' || p.kind === 'other', `${at} is a sketch, and the stage is its answer`); continue; }
       ok(r.answer.ok, `${at}: the engine has an answer at ${p.find}`);
       if (p.paper == null) continue;
@@ -1766,6 +1768,36 @@ group('CIE 9709/42 Nov 2015 Q2: the last stretch of a fall', () => {
   ok(lastFallWorking(s).length === 2 && lastFallWorking(s)[0].rows.length === 3 && /t=1s/.test(String(lastFallWorking(s)[0].rows[2].r).replace(/<[^>]+>/g, '')), 'the working: the last stretch (with its own time), then the whole fall');
   { const K = KITS.lastfall, kv = K.solve(K.read({ p: 35, dv: 10, g: 10 }));
     ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)) && resolveKit(K, kv, kv.f, 2).blocks[0].rows.every((q) => q.part !== 'x'), 'vertical: solid graphs and Resolve rows (rule 2)'); }
+});
+
+group('Edexcel M1 Jun 2006 Q7: a change of course', () => {
+  const k = { units: 'km', t0: 1200, r0: { x: 16, y: 5 }, v1: { x: -2.5, y: 6 }, tHit: 1500, tc: 1400, sp2: 5, dir2: 'N', due: 'E', T: 1600 };
+  const s = solveCourse(k);
+  ok(s.ok && s.heads[0].sp === 6.5 && Math.round(s.heads[0].br) === 337, '(a) 6.5 km/h, (b) on 337°', s.reason);
+  ok(s.R.x === 8.5 && s.R.y === 23 && s.Pc.x === 11 && s.Pc.y === 17, '(c) R = 8.5i + 23j; it turns at 11i + 17j');
+  ok(/17/.test(s.after.html) && /5/.test(s.after.html), '(d) r = 11i + (17 + 5t)j, typeset by the engine');
+  ok(s.answers.due.hhmm === 1512 && near(s.answers.due.after, 1.2) && s.answers.due.dist === 2.5, '(e) due east of R at 1512, 2.5 km from it');
+  ok(near(s.answers.at.dist, Math.hypot(2.5, 4)) && s.answers.at.pos.y === 27, '(f) 4.72 km from R at 1600');
+  ok(clockHours(1430) === 14.5 && clockHours(1290) == null && clockOf(15.2) === 1512 && clockOf(24.5) === 30, 'the 24-hour clock, both ways');
+  const v2 = solveCourse({ ...k, sp2: undefined, dir2: null, v2: { x: 0, y: 5 } });
+  ok(v2.ok && v2.answers.due.hhmm === 1512, 'the new velocity as its parts: the same');
+  const R = solveCourse({ ...k, tHit: undefined, R: { x: 8.5, y: 23 } });
+  ok(R.ok && R.tHit === 3 && R.notes.some((x) => /would have reached/.test(x)), 'the rock given: the first course would have hit it at 1500');
+  const no = solveCourse({ ...k, t0: undefined, tHit: 3, tc: 2, T: 4 });
+  ok(no.ok && no.answers.due.t === 3.2 && no.answers.due.hhmm == null, 'no clock: hours from t = 0');
+  const diag = solveCourse({ ...k, due: 'NE' });
+  ok(diag.ok && diag.answers.due && Math.abs(diag.answers.due.pos.x - 8.5 - (diag.answers.due.pos.y - 23)) < 1e-9, 'north-east of the rock: the two parts of r − R equal');
+  ok(solveCourse({ ...k, due: 'W' }).ok && !solveCourse({ ...k, due: 'W' }).answers.due, 'never due west of it on either course: no answer, and it says so');
+  ok(!solveCourse({ ...k, tc: 1600 }).ok, 'a turn after it would have hit the rock: refused');
+  ok(!solveCourse({ ...k, tc: 1100 }).ok, 'a turn before the start: refused');
+  ok(!solveCourse({ ...k, tc: 1475 }).ok, 'a clock time that is not one (14:75): refused');
+  ok(!solveCourse({ ...k, R: { x: 1, y: 1 } }).ok, 'the rock and the time it would be hit, both: refused');
+  ok(!solveCourse({ ...k, v1: { x: 0, y: 0 } }).ok && !solveCourse({ ...k, units: 'm' }).ok, 'standing still, or a clock in seconds: refused');
+  ok(courseWorking(s).map((x) => x.title).join('|') === 'On its first course|Where the rock is|After the change of course|Due east of the rock|At the time asked', 'the working, step by step');
+  { const K = KITS.course, kv = K.solve(K.read({ units: 'km', t0: 1200, 'r0.x': 16, 'r0.y': 5, 'v1.x': -2.5, 'v1.y': 6, tHit: 1500, tc: 1400, sp2: 5, dir2: 'N', due: 'E', T: 1600 }));
+    const gs = K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' });
+    ok(kv.ok && gs[0].series[0].dash && !gs[0].series[1].dash, 'east dashed, north solid (rule 2)');
+    ok(K.hud(kv.f, 3.2).right[0].v === '1512' && K.hud(kv.f, 0).left.length === 5, 'the readouts: the clock as the paper writes it, and the distance from the rock'); }
 });
 
 group('Audit 25: the end of a motion, early graph tags, fractions, a part of a jump', () => {

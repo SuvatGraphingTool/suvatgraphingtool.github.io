@@ -53,6 +53,8 @@ function value(solved, path) {
  * there (a meeting that never happens), and the strip says so instead.
  */
 export function answerOf(part, solved) {
+  // an expression the engine typeset (a position t hours after the turn): shown as it is
+  if (part.expr) { const html = pick(solved, part.expr); return { values: [], ok: typeof html === 'string' && html.length > 0, html }; }
   if (!part.find) return { values: [], ok: true };    // a sketch: the stage is the answer
   const paths = Array.isArray(part.find) ? part.find : [part.find];
   const values = paths.map((p) => value(solved, p));

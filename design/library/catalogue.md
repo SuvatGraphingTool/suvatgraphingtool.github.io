@@ -148,6 +148,7 @@ this library: *covered* names the one of the twelve that does it.
 | 122 | CIE | 9709/42 | Oct/Nov 2015 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w15_qp_42.pdf) | Released from rest at H; passes 35 m above the ground at V − 10, reaches it at V: find V and H | 10 | **built** → `last-stretch` |
 | 123 | Edexcel | 6677/01 M1 | Jun 2016 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202016%20QP.pdf) | Train M passes N at X (40 and 30 m/s); N holds 25 s, M holds T s, both brake to rest beside Y together; XY 975 m: T | – | **built** → `passed-at-x` |
 | 124 | Edexcel | 6677/01 M1 | Jun 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | Car P at 25 passes Q at 20; Q brakes from 25 s, P from T; both stop at X 800 m on together: T | – | **built** → `passed-at-x` |
+| 125 | Edexcel | 6677/01 M1 | Jun 2006 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202006%20QP.pdf) | A ship at constant velocity on course for a submerged rock (it would hit at 1500) turns due north at 1400: speed, bearing, the rock, its position after the turn, when due east of the rock, its distance at 1600 | – | **built** → `change-of-course` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -493,6 +494,30 @@ trains already moving at X, its parts are theirs, and the reader is told which i
 
 **How it is solved.** Each distance is the area under its own speed–time graph: the train
 whose hold is given gives the common time; the other's trapezium then gives its hold.
+
+### `change-of-course` — A change of course
+
+**Papers.** Edexcel M1 June 2006 Q7 (a ship at (−2.5i + 6j) km h⁻¹ from 16i + 5j at noon would
+hit a submerged rock at 1500; it turns due north at 5 km h⁻¹ at 1400: 6.5 km h⁻¹, 337°,
+R = 8.5i + 23j, r = 11i + (17 + 5t)j, due east of R at 1512, 4.72 km from it at 1600).
+
+**Why the others cannot.** `two-in-a-plane` moves two things at one constant velocity each
+from t = 0; `over-the-rock` has one constant acceleration. Here one ship has two velocities, one
+after the other, on a 24-hour clock, and the rock is fixed by when the first course would reach it.
+
+**How it is solved.** js/core/course.js: r = r₀ + vt on the first course; the rock is where that
+puts the ship at the time it would hit; at the turn r₁ = r₀ + v t_c, then r = r₁ + v₂t with t
+counted from the turn. Due east (or any compass direction) of the rock is one linear relation in
+t on each course, the first that falls inside its course; a distance is the length of r − R.
+Clock times are hours past midnight inside, printed back as the paper writes them (1512).
+
+**The stage.** The sea from above at one scale, a coast kept off the course with the
+coastguard's radar station on it (its scanner turning, a sweep across the water); the submerged
+rock (paler shallows, the rock dark under the water, weed, surge breaking over it) and the
+isolated-danger buoy moored beside it; the ship and its wake, a foam trail curling round the
+turn. The old course runs on faintly to the rock; before the turn the station's warning goes out
+in rings; the turn, the moment due east and the time asked each pulse, with the line from the
+rock drawn in and its time.
 
 ### `last-stretch` — The last stretch of a fall
 

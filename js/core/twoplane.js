@@ -29,7 +29,7 @@ const sgn = (x) => (d(x).startsWith('−') ? `(${d(x)})` : d(x));
 export const UNITS = { km: { len: 'km', time: 'h', speed: 'km h^-1', speedText: 'km h⁻¹' }, m: { len: 'm', time: 's', speed: 'm s^-1', speedText: 'm s⁻¹' } };
 
 /** c0 + c1 t as the coefficient of one unit vector: (2 − 4t). */
-function lin(c0, c1) {
+export function lin(c0, c1) {
   const parts = [];
   // the sign written as source, so "−4" is a minus and a 4, never a glyph
   if (!tiny(c0)) parts.push(`${c0 < 0 ? '-' : ''}${d(Math.abs(c0))}`);
@@ -40,7 +40,7 @@ function lin(c0, c1) {
   return parts.length ? parts.join(' ') : '0';
 }
 /** (c0 + c1 t)i + (e0 + e1 t)j, as notation source. */
-function vecT(cx, cy) {
+export function vecT(cx, cy) {
   const one = ([c0, c1], e) => {
     const s = lin(c0, c1);
     if (s === '0') return null;
