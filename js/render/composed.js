@@ -89,10 +89,10 @@ const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 /** The backdrop and the place things start from, for either stage: the
     library's own scenery for the recipe's backdrop, its top at `top` (H0 m),
     its edge at x0, the ground or the water at oy. */
-function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false, over, hoop, held = false, who, launcher }) {
+function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false, over, when, now = -1, hoop, held = false, who, launcher }) {
   const P = palette();
   // the places in js/render/places.js draw themselves and what they launch from
-  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, hoop, held, who, launcher }); return; }
+  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, when, now, hoop, held, who, launcher }); return; }
   const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
   // the place it is launched from, where the backdrop has no edge of its own:
   // a stone wall to stand on, a jetty over the sea, or the ground itself
@@ -285,11 +285,13 @@ function launch(canvas, o) {
   // (a cannon is dug in where it fires from: on the ground, or on the wall it fires from)
   const grounded = !!ls && !B.edge && H0 > 0 && ((R.launcher !== 'cannon' && (R.launcher === 'ramp' || H0 * k <= ls * 2.4)) || (R.launcher === 'cannon' && R.backdrop === 'circus'));
   // how high the lead's path is where it crosses x (a net across a court), or null
+  // when the lead passes over x (its last crossing, coming down), from the engine's own path; and its clock now
+  const when = (x) => { const p = lead.pts; let tt = null; for (let j = 1; j < p.length; j++) if ((p[j - 1].x - x) * (p[j].x - x) <= 0 && p[j].x !== p[j - 1].x) tt = p[j - 1].t + (p[j].t - p[j - 1].t) * (x - p[j - 1].x) / (p[j].x - p[j - 1].x); return tt; };
   const over = (x) => { const p = lead.pts; for (let j = 1; j < p.length; j++) if ((p[j - 1].x - x) * (p[j].x - x) <= 0 && p[j].x !== p[j - 1].x) return p[j - 1].y + (p[j].y - p[j - 1].y) * (x - p[j - 1].x) / (p[j].x - p[j - 1].x); return null; };
   // a hoop at the height a part asks about, where the engine passes it on the way down (rule 4)
   const lvl = lead.f.level, tDown = lvl?.times?.length ? lvl.times[lvl.times.length - 1] : null;
   const hoop = R.backdrop === 'arena' && lvl && lvl.xDown != null && tDown != null && !lvl.atTop ? { x: X(lvl.xDown), y: Y(lvl.L), age: lead.t >= tDown ? lead.t - tDown : -1, at: (cx) => { const y = over((cx - X(0)) / k); return y == null ? null : Y(y); } } : null;
-  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, hoop, held: lead.thrown, who: R.objects[0].figure, launcher: R.launcher });
+  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, when, now: lead.going ? lead.t : -1, hoop, held: lead.thrown, who: R.objects[0].figure, launcher: R.launcher });
 
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {

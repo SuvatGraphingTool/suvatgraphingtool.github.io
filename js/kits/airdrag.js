@@ -46,8 +46,8 @@ export const airdrag = {
     const left = [
       { k: 'Fallen, with air resistance', v: num(f.fallDrag(t), 2), unit: 'm', hue: 'disp' },
       // on the ground, the speed it landed at, said so
-      { k: t > f.t1 + 1e-9 ? 'Landed, with air resistance, at' : 'Speed, with air resistance', v: num(t > f.t1 + 1e-9 ? f.v1 : f.velDrag(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-      { k: t > f.t0 + 1e-9 ? 'Landed, with none, at' : 'Speed, with none', v: num(t > f.t0 + 1e-9 ? f.v0 : f.velFree(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+      { k: t > f.t1 + 1e-9 ? 'Landed at' : 'Speed, with air resistance', v: num(t > f.t1 + 1e-9 ? f.v1 : f.velDrag(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+      { k: t > f.t0 + 1e-9 ? 'With none, landed at' : 'Speed, with none', v: num(t > f.t0 + 1e-9 ? f.v0 : f.velFree(t), 2), unit: 'm s⁻¹', hue: 'vel' },
       { k: 'Acceleration, with air resistance', v: t <= f.t1 ? num(f.a, 3, { trim: true }) : '—', unit: t <= f.t1 ? 'm s⁻²' : '', hue: 'acc' },
     ];
     return { left: phone ? left.slice(1, 3) : left, right: [{ k: 'Time', v: num(t, 2), unit: 's' }] };
@@ -74,7 +74,7 @@ export const airdrag = {
     return `<svg viewBox="0 0 120 60" aria-hidden="true">
       <rect x="0" y="0" width="120" height="60" fill="#cfe3f0"/><rect x="0" y="52" width="120" height="8" fill="#8a8a90"/>
       <rect x="18" y="8" width="34" height="44" fill="#8d99a8"/><rect x="16" y="6" width="38" height="3" fill="#a6b1bd"/>
-      <path d="M62 8 V40" stroke="var(--disp)" stroke-width="2"/><circle cx="62" cy="40" r="4" fill="#f0a83a"/>
+      <path d="M62 8 V40" stroke="var(--disp)" stroke-width="2"/><circle cx="62" cy="40" r="4" fill="#efe9e2" stroke="#3b4250" stroke-width="0.8"/>
       <path d="M80 8 V48" stroke="var(--second)" stroke-width="2"/><circle cx="80" cy="48" r="4" fill="none" stroke="var(--second)" stroke-width="1.6"/>
     </svg>`;
   },

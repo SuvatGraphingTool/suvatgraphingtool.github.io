@@ -336,7 +336,8 @@ export const cityWidth = (H0, k, w) => clamp(Math.max(10, H0 * 0.35) * k, 90, w 
 /** A city: a skyline of towers with lit windows behind, the office block it
     leaves from (glass in a frame, a parapet and rooftop plant), the street
     below with its kerb, lamps and parked cars. */
-function city(g, { w, h, k, oy, x0, top, H0 }) {
+function city(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
   const E = env(), n = E.night, r = rng(101);
   skyscape(g, 0, 0, w, oy, { far: 'skyline', seed: 17, clouds: 2, farHeight: clamp((oy - 40) * 0.5, 40, 260), sun: false });
   // nearer blocks, darker, with windows and a roofline
@@ -358,13 +359,17 @@ function city(g, { w, h, k, oy, x0, top, H0 }) {
   for (let x = 0; x < w; x += 22) { g.beginPath(); g.moveTo(x, oy + rd + 3); g.lineTo(x - 8, h); g.stroke(); }
   g.fillStyle = withAlpha('#ffffff', n ? 0.25 : 0.6); for (let x = x0 + 20; x < w; x += 46) g.fillRect(x, oy + rd * 0.5 - 1, 22, 2);
   const lampH = clamp(5 * k, 36, 110);
+  const lane = (x, half) => (c.clearX || []).some((cx) => Math.abs(cx - x) < half + 40);
   for (let x = x0 + 70; x < w - 10; x += 170) {
+    if (lane(x, 10)) continue;
     g.strokeStyle = n ? '#555058' : '#4f4b50'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(x, oy + rd + 3); g.lineTo(x, oy - lampH); g.lineTo(x + lampH * 0.18, oy - lampH); g.stroke();
     g.fillStyle = n ? E.window : '#e8e2d0'; g.fillRect(x + lampH * 0.13, oy - lampH, lampH * 0.1, 4);
     if (n) { const lg = g.createRadialGradient(x + lampH * 0.18, oy - lampH + 6, 0, x + lampH * 0.18, oy - lampH + 6, lampH * 0.6); lg.addColorStop(0, withAlpha(E.window, 0.35)); lg.addColorStop(1, withAlpha(E.window, 0)); g.fillStyle = lg; g.fillRect(x - lampH * 0.5, oy - lampH - lampH * 0.5, lampH * 1.4, lampH * 1.2); }
   }
   for (let x = x0 + 110 + r() * 40; x < w - 20; x += 140 + r() * 120) {
-    const cl = clamp(4.4 * k, 34, 90), ch = cl * 0.28, cy = oy + rd * 0.25, col = ['#7a4a46', '#4c5f74', '#8a8a8e', '#3f4e44'][Math.floor(r() * 4)];
+    const cl = clamp(4.4 * k, 34, 90);
+    if (lane(x + cl / 2, cl / 2)) continue;
+    const _cl = cl, ch = cl * 0.28, cy = oy + rd * 0.25, col = ['#7a4a46', '#4c5f74', '#8a8a8e', '#3f4e44'][Math.floor(r() * 4)];
     g.fillStyle = col; g.beginPath(); g.roundRect(x, cy - ch, cl, ch * 0.62, 3); g.fill();
     g.beginPath(); g.roundRect(x + cl * 0.2, cy - ch * 1.35, cl * 0.55, ch * 0.5, 4); g.fill();
     g.fillStyle = n ? withAlpha('#9fb4c8', 0.5) : '#b8cad8'; g.fillRect(x + cl * 0.26, cy - ch * 1.25, cl * 0.2, ch * 0.32); g.fillRect(x + cl * 0.5, cy - ch * 1.25, cl * 0.2, ch * 0.32);
@@ -376,7 +381,7 @@ function city(g, { w, h, k, oy, x0, top, H0 }) {
     const gr = g.createLinearGradient(bx, 0, x0, 0);
     gr.addColorStop(0, n ? '#3c4250' : '#8d99a8'); gr.addColorStop(1, n ? '#272b35' : '#6b7684');
     g.fillStyle = gr; g.fillRect(bx, top, bw, oy - top);
-    const fl = clamp(3.2 * k, 10, 40);
+    const fl = Math.max(10, 3 * k);   // a storey is about 3 m
     for (let y = top + fl * 0.4; y < oy - 4; y += fl) {
       g.fillStyle = withAlpha('#000000', 0.18); g.fillRect(bx, y - 2, bw, 2);
       for (let x = bx + 6; x < x0 - 8; x += 14) { g.fillStyle = withAlpha(n ? E.window : '#cfe0ef', n ? (r() < 0.5 ? 0.85 : 0.2) : 0.75); g.fillRect(x, y + 2, 9, fl * 0.55); }
@@ -1157,51 +1162,68 @@ function pitch(g, c) {
     at 3 m, the touch judges at the foot of each post with their flags down.
     From a height, the near stand's upper tier. */
 function rugby(g, c) {
-  const { w, h, k, oy, x0, top, H0, X, over } = c;
+  const { w, h, k, oy, x0, top, H0, X, over, when, now = -1 } = c;
   const E = env(), n = E.night, r = rng(181);
   const horizon = H0 > 0 ? Math.max(oy - clamp((oy - 40) * 0.32, 40, 170), Math.min(oy - 30, top + 60)) : oy - clamp((oy - 40) * 0.32, 40, 170);
   sky(g, w, horizon - 60, x0, { far: 'none', seed: 97, clouds: 2 });
   if (n) { g.fillStyle = withAlpha('#2a3550', 0.5); g.fillRect(0, 0, w, horizon); }
   farStand(g, w, horizon, r, n, { tall: Math.min(clamp((horizon - 20) * 0.35, 30, 90), H0 > 0 ? Math.max(20, horizon - top - 8) : 90) });
   mownTurf(g, w, horizon, h, n, { lo: '#4f8f3e', hi: '#62a24c' });
-  // the posts: where the path comes down through 3 m, else past where it lands
-  const bar = 3, land = (c.clearX || [])[0] ?? x0 + 0.6 * (w - x0);
+  // the posts: where the kick is still about 1.2 m over the bar coming down, so it visibly sails over;
+  // if it never gets that high, past where it lands (it falls short) — and always with the whole H on the stage
+  const bar = 3, land = (c.clearX || [])[0] ?? x0 + 0.6 * (w - x0), depth = clamp(0.9 * k, 16, 30);
   let px = null;
-  if (typeof over === 'function' && X) {
-    for (let x = land; x > x0; x -= 2) { const y = over((x - X(0)) / k); if (y != null && y >= bar) { px = x; break; } }
-  }
-  if (px == null) px = Math.min(w - 40, land + clamp(4 * k, 40, 120));
-  // the lines across the pitch, side on: the try line at the posts, the 22 and the 10 m dashes back from it
+  if (typeof over === 'function' && X) for (let x = land; x > x0; x -= 2) { const y = over((x - X(0)) / k); if (y != null && y >= bar + 1.2) { px = x; break; } }
+  const short = px == null;
+  if (short) px = land + clamp(4 * k, 40, 120);
+  px = Math.min(px, w - depth - 70);
+  const tOver = !short && typeof when === 'function' && X ? when((px - X(0)) / k) : null;
+  const good = tOver != null && now >= tOver;
+  // the lines across the pitch, side on: the try line at the posts, the 22 and the 10 m dashes back from it; the near touchline
   const line = (x, dashed) => { g.save(); g.strokeStyle = withAlpha('#ffffff', n ? 0.45 : 0.8); g.lineWidth = 2; if (dashed) g.setLineDash([8, 7]);
     g.beginPath(); g.moveTo(x + 18, horizon + 2); g.lineTo(x - 18, h); g.stroke(); g.restore(); };
   line(px, false);
-  for (const m of [22, 40]) { const x = px - m * k; if (x > 10) line(x, m === 40); }
+  for (const m of [5, 22, 40]) { const x = px - m * k; if (x > 10) line(x, m !== 22); }
+  g.fillStyle = withAlpha('#ffffff', n ? 0.5 : 0.85); g.fillRect(0, oy + clamp((h - oy) * 0.5, 14, 60), w, 2.5);
   if (n) { const fl = g.createLinearGradient(0, horizon, 0, h); fl.addColorStop(0, 'rgba(255,246,216,0.12)'); fl.addColorStop(1, 'rgba(255,246,216,0)'); g.fillStyle = fl; g.fillRect(0, horizon, w, h - horizon); }
-  // the posts: two uprights, the far one up and to the right (depth), the crossbar at 3 m between them
-  const upH = Math.min(oy - 20, oy - clamp(11 * k, 80, oy - 30)), depth = clamp(0.9 * k, 10, 26);
-  const post = (x, y0, lw, col) => { g.strokeStyle = col; g.lineWidth = lw; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, upH - (oy - y0) * 0.02); g.stroke(); };
-  const white = n ? '#d8d6d0' : '#f6f4ee', shade = n ? '#9a9890' : '#c8c6be';
-  post(px + depth, oy - depth * 0.6, clamp(0.14 * k, 2, 5), shade);
-  const barY = oy - bar * k;
-  g.strokeStyle = white; g.lineWidth = clamp(0.12 * k, 2, 4); g.beginPath(); g.moveTo(px, barY); g.lineTo(px + depth, barY - depth * 0.6); g.stroke();
-  post(px, oy, clamp(0.18 * k, 2.5, 6), white);
-  // the pads at the foot of each post, in a club's colours
-  for (const [x, y0, s0] of [[px + depth, oy - depth * 0.6, 0.8], [px, oy, 1]]) {
-    const pw = clamp(0.5 * k, 7, 16) * s0, ph = clamp(1.6 * k, 16, 44) * s0;
-    g.fillStyle = '#b8282e'; g.beginPath(); g.roundRect(x - pw / 2, y0 - ph, pw, ph, 3); g.fill();
-    g.fillStyle = '#1d3e8a'; g.fillRect(x - pw / 2, y0 - ph * 0.62, pw, ph * 0.24);
+  // the H: the far upright fainter and a little higher (behind), the crossbar level across at 3 m, the near upright bright
+  const barY = oy - bar * k, upLen = Math.max(70, Math.min(11 * k, oy - 120)), white = n ? '#e4e2dc' : '#fbfaf6', far = n ? '#8a8880' : '#c9c7bf';
+  const lw = clamp(0.16 * k, 3, 6);
+  const upright = (x, y0, col, wide) => {
+    g.strokeStyle = col; g.lineWidth = wide; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y0 - upLen); g.stroke();
+    g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = wide * 0.35; g.beginPath(); g.moveTo(x + wide * 0.3, y0); g.lineTo(x + wide * 0.3, y0 - upLen); g.stroke();
+  };
+  upright(px + depth, oy - depth * 0.35, far, lw * 0.8);
+  // the crossbar: thicker than the uprights, level, with an end highlight; it pulses once as the kick goes over
+  const pulseBar = good && now - tOver < 0.5 ? 1 - (now - tOver) / 0.5 : 0;
+  g.strokeStyle = white; g.lineWidth = lw * 1.4 + pulseBar * 3; g.beginPath(); g.moveTo(px, barY); g.lineTo(px + depth, barY - depth * 0.35); g.stroke();
+  if (pulseBar) { g.strokeStyle = withAlpha('#fff6c8', 0.7 * pulseBar); g.lineWidth = lw * 4; g.beginPath(); g.moveTo(px, barY); g.lineTo(px + depth, barY - depth * 0.35); g.stroke(); }
+  upright(px, oy, white, lw);
+  // the pads at the foot of each post, navy and white
+  for (const [x, y0, s0] of [[px + depth, oy - depth * 0.35, 0.8], [px, oy, 1]]) {
+    const pw = Math.max(10, clamp(0.5 * k, 8, 16)) * s0, ph = Math.max(22, clamp(1.6 * k, 18, 44)) * s0;
+    g.fillStyle = '#1d3e8a'; g.beginPath(); g.roundRect(x - pw / 2, y0 - ph, pw, ph, 3); g.fill();
+    g.fillStyle = '#f2f2f2'; g.fillRect(x - pw / 2, y0 - ph * 0.62, pw, ph * 0.22);
   }
-  softShadow(g, px + depth * 0.5, oy + 1, clamp(1.2 * k, 14, 40), 3, 0.6);
-  // the touch judges at the posts, flags down
-  for (const [x, y0] of [[px - clamp(0.9 * k, 12, 30), oy], [px + depth + clamp(0.9 * k, 12, 30), oy - depth * 0.6]]) {
-    const pH = clamp(1.8 * k, 22, 60);
-    g.fillStyle = n ? '#2a2a2e' : '#1e1e22'; g.fillRect(x - pH * 0.06, y0 - pH * 0.45, pH * 0.12, pH * 0.45);
-    g.fillStyle = n ? '#c8a020' : '#e8c547'; g.fillRect(x - pH * 0.11, y0 - pH * 0.85, pH * 0.22, pH * 0.42);
-    g.fillStyle = n ? '#b08a74' : '#d9a988'; g.beginPath(); g.arc(x, y0 - pH * 0.93, pH * 0.09, 0, TAU); g.fill();
-    g.strokeStyle = '#555'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x + pH * 0.12, y0 - pH * 0.6); g.lineTo(x + pH * 0.2, y0 - pH * 0.18); g.stroke();
-    g.fillStyle = '#f2f2f2'; g.fillRect(x + pH * 0.2, y0 - pH * 0.3, pH * 0.16, pH * 0.12);
+  softShadow(g, px + depth * 0.5, oy + 1, clamp(1.2 * k, 16, 40), 3, 0.6);
+  // the touch judges, one at each post: a figure in a yellow bib, flag down — raised high once the kick is over
+  const raise = good ? clamp((now - tOver) / 0.35, 0, 1) : 0;
+  for (const [x, y0, s0] of [[px - Math.max(22, 0.9 * k), oy, 1], [px + depth + Math.max(22, 0.9 * k), oy - depth * 0.35, 0.85]]) {
+    const pH = Math.max(34, clamp(1.8 * k, 30, 60)) * s0;
+    g.strokeStyle = n ? '#2a2a2e' : '#1e1e22'; g.lineWidth = pH * 0.09; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x, y0 - pH * 0.45); g.lineTo(x - pH * 0.08, y0); g.moveTo(x, y0 - pH * 0.45); g.lineTo(x + pH * 0.08, y0); g.stroke();
+    g.fillStyle = n ? '#c8a020' : '#e8c547'; g.beginPath(); g.roundRect(x - pH * 0.11, y0 - pH * 0.86, pH * 0.22, pH * 0.43, 3); g.fill();
+    g.fillStyle = n ? '#b08a74' : '#d9a988'; g.beginPath(); g.arc(x, y0 - pH * 0.94, pH * 0.09, 0, TAU); g.fill();
+    // the flag arm: down by the side, swinging up overhead as the kick goes over
+    const a = Math.PI * 0.5 - raise * Math.PI * 0.95, ax = x + pH * 0.08, ay = y0 - pH * 0.8, hx = ax + Math.cos(a) * pH * 0.42, hy = ay + Math.sin(a) * pH * 0.42;
+    g.strokeStyle = n ? '#b08a74' : '#d9a988'; g.lineWidth = pH * 0.07; g.beginPath(); g.moveTo(ax, ay); g.lineTo(hx, hy); g.stroke();
+    g.strokeStyle = '#6a6a6a'; g.lineWidth = 1.4; const sx = hx + Math.cos(a) * pH * 0.3, sy = hy + Math.sin(a) * pH * 0.3; g.beginPath(); g.moveTo(hx, hy); g.lineTo(sx, sy); g.stroke();
+    g.fillStyle = '#f4f4f4'; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx + pH * 0.22, sy + pH * 0.05); g.lineTo(sx + pH * 0.02, sy + pH * 0.18); g.closePath(); g.fill();
+    g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 0.8; g.stroke();
   }
-  c.reserve?.({ x: px - 30, y: upH - 6, w: depth + 60, h: oy - upH + 6 });
+  // only the pads, the judges and a thin strip round each upright are kept from the labels
+  c.reserve?.({ x: px - 40, y: oy - 60, w: depth + 80, h: 62 });
+  c.reserve?.({ x: px - 6, y: oy - upLen, w: 12, h: upLen - 60 });
   if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
 }
 
