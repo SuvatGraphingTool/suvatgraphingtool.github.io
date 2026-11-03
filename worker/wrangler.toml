@@ -11,6 +11,9 @@ ALLOWED_ORIGINS = "https://suvat-ai.suvatgraphingtool.workers.dev,https://suvat-
 # which go straight on to Gemini. Then the Gemini models. A busy one hands on to the next,
 # and so does one that has used its day: on the free tier each model has its own 20 a day.
 # A ":low" after a name sets how hard it thinks; the default is "minimal", which 3.8 Flash refuses.
+# Each typed question carries only the catalogue it needs (src/focus.js).
+# "off" sends the whole catalogue with every question again.
+PROMPT_FOCUS = "on"
 MODELS = "@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash"
 
 # Per-IP rate limiting. Optional — without it the Worker still works and simply

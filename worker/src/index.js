@@ -10,7 +10,8 @@
 
 import { toPlace } from './place.js';
 import { toComposed, toFigure } from './composeplace.js';
-import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT } from './schema.js';
+import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt } from './schema.js';
+import { focusFor, libraryIdsIn, idsInHistory } from './focus.js';
 
 const MODELS_DEFAULT = '@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
 const MAX_IMAGE_BYTES = 1_500_000;      // the client resizes to ~150 KB; this is the backstop
@@ -108,9 +109,16 @@ export default {
     // see searchAnswer below. Everything else on this route is the reader.
     if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors);
 
+    // ONLY THE CATALOGUE THIS QUESTION NEEDS (focus.js): a typed or spoken
+    // question carries every library scenario as one line, and in full only
+    // those its words — and the chat so far — point to. A photo or a PDF has
+    // no words to go by, and the board lays out more: they get it all.
+    const said = [...earlier.filter((h) => h.role === 'user').map((h) => h.parts[0].text), say].join('\n');
+    const was = idsInHistory(earlier.filter((h) => h.role === 'model').map((h) => h.parts[0].text));
+    const focus = mode !== 'board' && !file && env.PROMPT_FOCUS !== 'off' ? focusFor(said, was) : null;
     const payload = {
       // BOARD: the same reading, and the layout of a whiteboard built from it.
-      system_instruction: { parts: [{ text: mode === 'board' ? BOARD_PROMPT : SYSTEM_PROMPT }] },
+      system_instruction: { parts: [{ text: mode === 'board' ? BOARD_PROMPT : focus ? systemPrompt(focus.library, focus.compose) : SYSTEM_PROMPT }] },
       contents: [...earlier, { role: 'user', parts }],
       generationConfig: {
         temperature: 0,                         // extraction, not writing
@@ -139,7 +147,16 @@ export default {
     // asked when the first is already late, so the quota cost is small.
     const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim()).filter(Boolean)
       .map((m) => { const [name, level] = m.split(':'); return { name, level: level || env.THINKING || 'minimal' }; });
-    const outcome = await race(env, models, payload);
+    let outcome = await race(env, models, payload);
+    // It chose a library scenario it was shown only as a line: ask once more,
+    // with that one in full, so its boxes are read, never guessed.
+    const unseen = focus && outcome.ok ? libraryIdsIn(outcome.extraction).filter((id) => !focus.ids.has(id)) : [];
+    if (unseen.length) {
+      const again = focusFor(said, [...was, ...unseen]);
+      payload.system_instruction = { parts: [{ text: systemPrompt(again.library, again.compose) }] };
+      const second = await race(env, models, payload);
+      if (second.ok) outcome = second;
+    }
     if (outcome.ok) return json({ ok: true, extraction: toComposed(toPlace(toFigure(outcome.extraction, words), words), words), model: outcome.model }, 200, cors);
     const { last, lastCap, capped, gone } = outcome;
 

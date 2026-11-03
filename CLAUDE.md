@@ -102,4 +102,5 @@ node test/compose.test.mjs      # the composer: recipes held to the registry, pl
 node test/library.test.mjs      # the Past-paper library: each scenario against its mark schemes
 node test/chats.test.mjs       # Ask Suvat's chats, kept in this browser
 node test/account.test.mjs     # accounts: sign-in, sessions, chats kept per account (site/)
+node test/focus.test.mjs       # the reader sends each question only the catalogue it needs (worker/src/focus.js)
 ```
