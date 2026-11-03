@@ -39,6 +39,9 @@ export const ROAD_ANSWERS = [
   // "when is P instantaneously at rest", and how far it goes counting the way back
   { key: 'tRest', kind: 'time', say: 'when it is (instantaneously) at rest, before it turns back', find: 'stop.t', sym: 't', unit: 's', at: 'stop.t', when: '\\b(rest|stops?|stationary|turns? (back|round))\\b' },
   { key: 'path', kind: 'distance', say: 'the total distance travelled, counting the way back (not the displacement)', find: 'path', sym: 'd', unit: 'm', at: 'end', when: '\\btotal distance\\b|\\bdistance (it )?travel' },
+  // "how far from the top is the first flag": from rest to the first point, before the stretch timed
+  { key: 'sBefore', kind: 'distance', say: 'how far it went from rest to the first point (from the top, from the start, to the first flag or post)', find: 'before.s', sym: 's', unit: 'm', at: 0, when: '\\bfrom (the )?(top|start|rest)\\b|\\bfirst (flag|post|mark|marker|point|lamp)' },
+  { key: 'tBefore', kind: 'time', say: 'how long it took from rest to reach the first point (the first flag or post)', find: 'before.t', sym: 't', unit: 's', at: 0, when: '\\bfrom (the )?(top|start|rest)\\b|\\bfirst (flag|post|mark|marker|point|lamp)' },
   { key: 'sAt', kind: 'distance', say: 'how far from the first point it is at the time asked (after so many seconds)', find: 'moment.s', sym: 's', unit: 'm', at: 'moment.t', when: '\\b(after|at t ?=|at time)\\b' },
   { key: 'vAt', kind: 'speed', say: 'its velocity at the time asked (after so many seconds)', find: 'moment.v', sym: 'v', unit: 'm s^-1', at: 'moment.t', when: '\\b(after|at t ?=|at time)\\b' },
 ];

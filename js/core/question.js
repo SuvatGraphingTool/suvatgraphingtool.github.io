@@ -285,7 +285,7 @@ export function toApp(x) {
     // or the first traveller its summary names. Lorry when it names none.
     const who = travellerIn(`${typeof x.object === 'string' ? x.object : ''} ${typeof x.summary === 'string' ? x.summary : ''}`);
     return {
-      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, at, nth, who, items, notes,
+      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, at, nth, fromRest: x.fromRest === true && isNum(x.u) && x.u > 0, who, items, notes,
       asks: Array.isArray(x.asks) ? x.asks.filter((q) => typeof q === 'string').slice(0, 6) : [],
       summary: typeof x.summary === 'string' ? x.summary : '',
       confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium',

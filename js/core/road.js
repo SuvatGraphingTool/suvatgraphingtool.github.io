@@ -239,8 +239,19 @@ export function solveRoad(k0 = {}) {
   ].filter((x) => isFinite(x.value));
 
   if (nthRows) derived.unshift(`${M`${d(k0.sNth)} [m]`} in second ${k0.nth}: ${nthRows[0].r}`);
+  // "she starts from rest … passes two flags": the stretch between them is the five, and how far
+  // (and how long) it took from rest to reach the first, at the same acceleration, is v² = 2as
+  let before = null;
+  if (k0.fromRest && V.u > EPS && V.a > EPS) {
+    before = { s: snap(V.u * V.u / (2 * V.a)), t: snap(V.u / V.a) };
+    before.rows = [
+      { f: M`v^2 = u^2 + 2as`, s: M`${d(V.u)}^2 = 0^2 + 2 * ${d(V.a)}s`, r: eqv('s', before.s) },
+      { f: M`v = u + at`, s: M`${d(V.u)} = 0 + ${d(V.a)}t`, r: eqv('t', before.t) },
+    ];
+    derived.push(`From rest to the first point: ${before.rows[0].r}, ${before.rows[1].r}`);
+  }
   return {
-    ok: true, mode: 'road', axis: 'along', params: f.params, f, nthRows, nth: nthRows ? k0.nth : undefined, stop, path,
+    ok: true, mode: 'road', axis: 'along', params: f.params, f, nthRows, nth: nthRows ? k0.nth : undefined, stop, path, before,
     derived, notes, five, extras, moment, answer: null, steps: r.steps, markStep,
     given, used: use, spare, clash: [], filled: {}, altTheta: null, assumedH: false,
     convention: 'Taking the direction from A towards B as positive.',
@@ -267,6 +278,10 @@ export function roadWorking(solved) {
       title: `${NAMES[st.target].replace(/^./, (c) => c.toUpperCase())}, from ${st.formula}`,
       rows: [{ f: st.rearranged, s: st.substitution, r: eqv(st.target, st.value) }],
     });
+  }
+  if (solved.before) {
+    out.push({ title: 'From rest to the first point', rows: solved.before.rows,
+      note: 'It started from rest with the same acceleration, so the speed it has at the first point took this long, and this far, to reach.' });
   }
   if (solved.markStep) {
     out.push({

@@ -755,6 +755,13 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(rp[0].find === 'stop.t' && rp[1].find === 'path', '"when is it at rest" is a time, whatever key; "total distance" counts the way back');
   const rr = solveRoad({ u: 10, a: -4, t: 6 });
   ok(rr.ok && rr.stop.t === 2.5 && rr.path === 37 && rr.five.s.value === -12, 'at rest at 2.5 s; 37 m travelled, −12 m displaced');
+  // the skier and the two flags (round 12's open reader miss)
+  const ski = toPlace({ understood: true, scenario: 'road', summary: 'x', u: 0, v: 5, s: 25, atDisplacement: 25, asks: ['distance from the top to the first flag'] }, 'A skier starts from rest at the top of a slope and accelerates uniformly. She passes two flags 25 m apart, the first at 5 m/s and the second at 10 m/s. How far from the top is the first flag?');
+  ok(ski.u === 5 && ski.v === 10 && ski.s === 25 && ski.fromRest === true && ski.atDisplacement == null, 'two flags 25 m apart, passed at 5 then 10 m/s: the stretch between them, started from rest earlier');
+  const skr = solveRoad({ u: 5, v: 10, s: 25, fromRest: true });
+  ok(skr.ok && Math.abs(skr.before.s - 25 / 3) < 1e-9 && Math.abs(skr.before.t - 10 / 3) < 1e-9 && roadWorking(skr).some((w) => w.title === 'From rest to the first point'), 'and the first flag is 8.33 m from the top, with its working');
+  ok(one('road', 'distance from the top to the first flag')?.find === 'before.s' && one('road', 'distance between the flags')?.find === 'five.s.value', '"from the top to the first flag" is the distance before the stretch; between the flags is the stretch');
+  ok(toApp({ understood: true, scenario: 'road', summary: 'x', u: 5, v: 10, s: 25, fromRest: true }).fromRest === true, 'the page reads fromRest');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

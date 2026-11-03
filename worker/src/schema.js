@@ -53,6 +53,7 @@ export const EXTRACTION_SCHEMA = {
     atDisplacement: { type: 'number', description: 'road only: a distance from the first point that a part asks about (not the mid-point).' },
     nthSecond: { type: 'integer', description: 'road only: "it travels 50 m during the fifth second" — the second, 5 (then s and t are left out).' },
     sInSecond: { type: 'number', description: 'road only, with nthSecond: the distance travelled in that one second, 50.' },
+    fromRest: { type: 'boolean', description: 'road only: true when the motion timed is a stretch between two marks (u at the first) of a motion that STARTED from rest earlier, with the same acceleration.' },
     atTime: { type: 'number', description: 'road only: a time from the first point that a part asks about, other than t itself ("its distance from O 6 s after passing O").' },
     apexAboveLaunch: { type: 'number', description: 'Greatest height ABOVE THE LAUNCH POINT, if GIVEN.' },
 

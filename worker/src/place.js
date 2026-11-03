@@ -261,7 +261,7 @@ function lanes(x, words = '') {
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(atTimed(timed(nthSecond(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words), words), words), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(atTimed(timed(twoMarks(nthSecond(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words), words), words), words), words);
 }
 
 /**
@@ -343,6 +343,22 @@ function nthSecond(x, words) {
   if (!(n >= 1) || !(typeof x.s === 'number')) return x;
   const { s, t, ...rest } = x;
   return { ...rest, nthSecond: n, sInSecond: s };
+}
+
+/**
+ * "From rest … passes two flags 25 m apart, the first at 5 m/s and the second at 10 m/s":
+ * the five are the stretch between the flags; that it started from rest earlier is `fromRest`,
+ * for the road to find how far back that was. A small reader puts the 5 m/s as the end speed.
+ */
+function twoMarks(x, words) {
+  if (x?.scenario !== 'road') return x;
+  const w = String(words || '');
+  const gap = /(\d+(?:\.\d+)?)\s*m\s+apart\b/i.exec(w);
+  const v1 = /\bfirst\b[^.?!]*?(\d+(?:\.\d+)?)\s*m\s*\/?\s*s\b/i.exec(w);
+  const v2 = /\bsecond\b(?!s)[^.?!]*?(\d+(?:\.\d+)?)\s*m\s*\/?\s*s\b/i.exec(w);
+  if (!gap || !v1 || !v2) return x;
+  const { a, t, atDisplacement, atMidpoint, ...rest } = x;
+  return { ...rest, u: Number(v1[1]), v: Number(v2[1]), s: Number(gap[1]), ...(/\bfrom rest\b/i.test(w) ? { fromRest: true } : {}) };
 }
 
 /**
