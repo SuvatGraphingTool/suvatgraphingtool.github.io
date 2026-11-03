@@ -2,6 +2,17 @@
 
 Short notes, newest first. What shipped, what was audited, where a session stopped.
 
+## 3 Nov 2026, later still — library 57 and batch 31 SHIPPED
+
+- **Library 57 `with-air-resistance`**: physics critic (4 blocking: claims after landing, the
+  forces part, the caveat, g ≤ 0 silently 9.8 — also in slopedrop and slopegates) and two UI rounds
+  (the ball in velocity orange, strings, the force card, plates on lines, scale; an app-wide fix:
+  `panels` in util.js reset the caller's alpha). Deployed with the audit 27/28 fixes: site bf0f31e2,
+  reader 13ce891d; the live files match; the live card sweep at 1440 is clean.
+- A third UI round was skipped to save usage; **audit 29 (57 and 58) must re-check 57's stage and
+  the rugby pitch**: the phone force card over the block, the facade's barcode windows, the back
+  garden's flat shed, the graph end labels on part markers.
+
 ## 3 Nov 2026, late — audits 27 and 28; library 57 built
 
 - **Audits 27 + 28** (53–56 and the day's app-wide changes): no wrong physics; fixed (2c8236b)

@@ -8,7 +8,11 @@ Short notes, newest first. Batches 1–29 are in the git history ("Component fac
   turf, the try line, the 22 and 10 m dashes; the H-posts (white uprights, padded feet, the
   crossbar at 3 m) stand where the engine's path comes down through 3 m, or past where it lands
   if it falls short; touch judges at the posts, flags down. "the posts" alone is not rugby
-  (roadside posts P, Q, R). Tests in test/compose.test.mjs. UI critic and live check to do.
+  (roadside posts P, Q, R). Tests in test/compose.test.mjs. Two UI rounds: a real H with a level
+  crossbar, the posts where the kick is 1.2 m (or 18 px) over the bar, a short kick landing well
+  before them, touch judges behind the posts raising their flags and the bar glowing at the
+  engine's crossing moment (composed.js now passes `when` and `now` to place drawings). Deployed.
+  Live Ask Suvat check to do (after 00:00 UTC).
 
 ## Batch 30 — 3 Nov 2026
 
