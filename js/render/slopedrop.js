@@ -185,7 +185,7 @@ export function render(canvas, cam, o) {
   L.add('Y', Yp.x - 22, Yp.y - 6, { color: P.ink, size: 16, weight: 800 });
   // the point below Y where they meet, marked on the track before they get there
   g.strokeStyle = withAlpha(P.mark, 0.7); g.lineWidth = 1.5; g.beginPath(); g.moveTo(Cp.x - 6, Cp.y + 6 * Math.tan(ang) - 6); g.lineTo(Cp.x + 6, Cp.y - 6); g.stroke();
-  L.add('C', Cp.x - 20, Cp.y + 22, { color: P.ink, size: 15, weight: 800 });
+  L.add('C', Cp.x - 34, Cp.y + 30, { color: P.ink, size: 15, weight: 800 });
 
   // ── each one's path: P's run down the track, Q's fall, faint in full and strong to now
   const nn = 60, runP = [], fallQ = [], nowP = [], nowQ = [];
@@ -208,7 +208,7 @@ export function render(canvas, cam, o) {
     fl.addColorStop(0, 'rgba(255,255,230,0.85)'); fl.addColorStop(1, 'rgba(255,255,230,0)');
     g.fillStyle = fl; g.beginPath(); g.arc(Cp.x, Cp.y, 30, 0, TAU); g.fill();
     dot(g, Cp.x, Cp.y, 5, { fill: P.mark, stroke: cssVar('--surface', '#131210'), width: 2 });
-    L.add(T`"they meet," T = ${tr(f.T)} [s]`, Cp.x + 70, Cp.y + 34, { color: P.mark, size: 14, weight: 700 });
+    L.add(T`"they meet," T = ${tr(f.T)} [s]`, Cp.x - 60, Cp.y - 70, { color: P.mark, size: 14, weight: 700, align: 'right' });
   }
 
   // ── the two of them now (over the flash, so both are seen meeting)

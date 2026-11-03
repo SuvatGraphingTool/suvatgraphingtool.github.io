@@ -389,4 +389,4 @@ function circusCannon(g, x, y, s, { a, ca, sa, L, rB, recoil, t, E, ground }) {
 /** Each launcher by the registry's name: `size` px at k px a metre. */
 export const LAUNCHER_ART = { cannon, ramp, catapult, rifle, hose, trampoline, machine };
 // (a rifle near its true length, and never longer than half again the height it fires from)
-export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : kind === 'trampoline' ? clamp(3.6 * k, 80, 200) : kind === 'machine' ? clamp(1.4 * k, 90, 140) : clamp(3 * k, 60, 160));
+export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : kind === 'trampoline' ? clamp(3.6 * k, 80, 200) : kind === 'machine' ? clamp(1.6 * k, 110, 150) : clamp(3 * k, 60, 160));

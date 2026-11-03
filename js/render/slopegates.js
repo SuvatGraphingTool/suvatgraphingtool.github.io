@@ -103,7 +103,7 @@ export function render(canvas, cam, o) {
   const ar = clamp(k * 0.25, 40, 90);
   g.save(); g.strokeStyle = withAlpha(P.ink, 0.5); g.lineWidth = 1; g.setLineDash([3, 3]);
   g.beginPath(); g.moveTo(foot.x, foot.y + tk); g.lineTo(foot.x + ar * 1.15, foot.y + tk); g.stroke(); g.restore();
-  if (f.theta != null) L.add(T`theta = ${tr(f.theta)}°`, foot.x + ar * 0.6, foot.y + tk + 16, { color: P.ink, size: 14, weight: 700, align: 'center', maxPush: 10 });
+  if (f.theta != null) L.add(T`theta = ${tr(f.theta)}°`, foot.x - 12, foot.y - 18, { color: P.ink, size: 14, weight: 700, align: 'right', maxPush: 10 });
   // the spring launcher, clamped at the board's foot below P
   { const lq = at(sBot * 0.55), lL = clamp(k * 0.1, 30, 60);
     g.save(); g.translate(lq.x, lq.y); g.rotate(ang);
@@ -122,7 +122,7 @@ export function render(canvas, cam, o) {
     const q = at(s), age = fired ? t - tt : -1;
     const hit = age >= 0 ? Math.max(0, 1 - age / Math.max(0.15, f.tMax * 0.12)) : 0;
     lightGate(g, q.x, q.y - 3, gateH, hit, benchTop + 4);
-    L.add(name, q.x - 14, q.y - gateH - 18, { color: P.ink, size: 16, weight: 800, align: 'center', maxPush: 6 });
+    L.add(name, q.x - 14, q.y - gateH - 26, { color: P.ink, size: 16, weight: 800, align: 'center', maxPush: 6 });
   }
   const dimY = (s) => at(s).y + tk + 22;
   for (const [a, b, dd] of [[0, f.d1, f.d1], [f.d1, f.d1 + f.d2, f.d2]]) {
@@ -132,7 +132,8 @@ export function render(canvas, cam, o) {
     L.add(T`${tr(dd)} [m]`, (A.x + B.x) / 2, (ya + yb) / 2 + 14, { color: P.disp, size: 13, weight: 700, align: 'center' });
   }
   // the timer on the worktop beyond the board, wired from each gate to a socket on its left side
-  const tw = phone ? 170 : 210, tx = Math.min(w - tw - 10, head.x + 60), ty = benchTop - 2, sockY = ty - 20;
+  // (on a phone, where the board takes the width, it stands in its own strip on the cupboards below, clear of the apparatus)
+  const tw = phone ? 170 : 210, tx = phone ? 12 : Math.min(w - tw - 10, head.x + 60), ty = phone ? h - 12 : benchTop - 2, sockY = ty - 20;
   g.strokeStyle = E.night ? '#111' : '#2a2a2a'; g.lineWidth = 1.4;
   for (const [, s0] of marks) { const q = at(s0); g.beginPath(); g.moveTo(q.x + 2, benchTop + 1); g.quadraticCurveTo((q.x + tx) / 2, benchTop + 8, tx, sockY); g.stroke(); }
   timer(g, tx, ty, tw, [fired && t >= f.t1 ? `P to Q  ${tr(f.t1)} s` : '', fired && t >= f.T ? `Q to R  ${tr(f.t2)} s` : ''], P);
@@ -151,8 +152,7 @@ export function render(canvas, cam, o) {
   const v = f.vel(t), aNow = f.acc(t), up = { x: Math.cos(ang), y: Math.sin(ang) };
   const vs = clamp(k * 0.35, 50, 140) / Math.max(f.u, 1e-9);
   // just above the block — lifted over the gate heads only while the block is passing a gate
-  const nearGate = marks.some(([, s0]) => Math.abs(at(s0).x - q.x) < bl * 1.6);
-  const lift = nearGate ? gateH + 30 : bh + 22;
+  const lift = bh + 16;
   const top = { x: q.x + nU.x * lift, y: q.y + nU.y * lift };
   if (fired && Math.abs(v) > 0.05 * f.u) {
     const lv = v * vs;
@@ -168,7 +168,7 @@ export function render(canvas, cam, o) {
   if (fired && f.tStop != null && t >= f.tStop - 1e-9) {
     const st = at(f.sStop), { age, life } = ageOf(t, f.tStop, f.tMax);
     pulse(g, st.x, st.y - bh / 2, age, life, P.mark, { radius: 30 });
-    L.add(T`"stops" ${tr(f.sStop)} [m] "up"`, st.x, st.y + tk + 64, { color: P.mark, size: 14, weight: 700, align: 'center', maxPush: 10 });
+    L.add(T`"stops" ${tr(f.sStop)} [m] "up"`, st.x, st.y - bh - 64, { color: P.mark, size: 14, weight: 700, align: 'center' });
   }
 
   L.draw(g, w, h);

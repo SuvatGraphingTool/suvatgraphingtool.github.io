@@ -1838,7 +1838,6 @@ function mineshaft(g, c) {
     for (let x = r() * 80; x < w; x += 60 + r() * 90) { g.beginPath(); g.moveTo(x, y0 + 2); g.lineTo(x + (r() - 0.5) * 8, y1 - 2); g.stroke(); }
     if (i === 0 || i === 4) { g.fillStyle = withAlpha(n ? '#8a7a66' : '#d8c09a', 0.55); for (let j = 0; j < w / 22; j++) { g.beginPath(); g.ellipse(r() * w, y0 + 4 + r() * (y1 - y0 - 8), 1.5 + r() * 2.5, 1 + r() * 1.5, r() * 3, 0, TAU); g.fill(); } }
   }
-  { const sx0 = clamp(x0 - hw - 60 - r() * 80, 20, w - 20); g.fillStyle = withAlpha(n ? '#6a8aa0' : '#4a6a7a', 0.35); g.fillRect(sx0, cut[2], 2, (cut[3] - cut[2]) * 0.9); g.fillRect(sx0 + 3, cut[2] + 8, 1.5, (cut[3] - cut[2]) * 0.6); }
   // the coal seam's sheen
   g.fillStyle = withAlpha('#ffffff', n ? 0.04 : 0.08); for (let x = r() * 30; x < w; x += 20 + r() * 40) g.fillRect(x, cut[3] + 2 + r() * (cut[4] - cut[3] - 4), 6 + r() * 10, 1);
   // the floor of the workings, below the bottom
@@ -1864,8 +1863,8 @@ function mineshaft(g, c) {
     g.strokeStyle = withAlpha(n ? '#ffffff' : '#000000', 0.45); g.lineWidth = 1;
     for (let m = step; m < D / k - step * 0.3; m += step) { const yy = surf + m * k; g.beginPath(); g.moveTo(L - wall - 8, yy); g.lineTo(L - wall, yy); g.stroke(); } }
   // side galleries off the shaft at intervals, propped and railed
-  { const galH = Math.max(16, 1.9 * k), galL = clamp(4 * k, 50, 150);
-    for (const f0 of [0.3, 0.62]) {
+  { const galH = Math.max(30, 1.9 * k), galL = clamp(4 * k, 70, 150);
+    for (const f0 of (D > 200 ? [0.3, 0.62] : [])) {
       const gy0 = surf + D * f0, side = f0 < 0.5 ? -1 : 1;
       if (gy0 + galH > oy - 30) continue;
       const gx0 = side < 0 ? L - wall - galL : Rr + wall, gx1 = side < 0 ? L - wall : Rr + wall + galL;

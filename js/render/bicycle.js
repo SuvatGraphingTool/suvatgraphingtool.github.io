@@ -176,8 +176,8 @@ export function render(canvas, cam, o) {
   // ── the finish, together
   if (fired && t >= f.T - 1e-9) {
     const { age, life } = ageOf(t, f.T, f.tMax);
-    pulse(g, S(f.J), (yA + yB) / 2 - Lf * 0.45, age, Math.max(life, 0.5), P.mark, { radius: Lf * 1.3 });
-    L.add(T`"together," T = ${s3(f.T)} [${U.time}]`, S(f.J) - 12, R - 16, { color: P.mark, size: 14, weight: 700, align: 'right', pri: 8 });
+    for (const y of [yA, yB]) pulse(g, S(f.J), y - Lf * 0.5, age, Math.max(life, 0.5), P.mark, { radius: Lf * 0.6 });
+    L.add(T`"together," T = ${s3(f.T)} [${U.time}]`, S(f.J) - 12, R - 36, { color: P.mark, size: 14, weight: 700, align: 'right', pri: 8 });
   }
 
   L.draw(g, w, h);

@@ -677,7 +677,10 @@ function launch(canvas, o) {
       } else if (bounced) {
         // off a trampoline: the feet carry the engine's point, upright the whole way —
         // crouched on the mat before, arms swung up as it leaves, knees bending to land
-        cx = bx; cy = by - DIVER_FEET * Lp;
+        // standing in the mat's dip before, and again as it lands (the trampoline's own sag, 0.15 of its size)
+        const lsz = launcherSize('trampoline', k, H0), left = f.tMax - t;
+        const dip = !fired ? lsz * 0.15 : left < 0.12 ? lsz * 0.15 * (1 - left / 0.12) : 0;
+        cx = bx; cy = by - DIVER_FEET * Lp + dip;
         m.body = { x: cx, y: cy };
         const tj = !fired ? 0.3 : 0.3 * (1 - ease(0, 0.06, p)) + 0.35 * ease(0.88, 1, p);
         diver(g, cx, cy, Lp, P, { ring: m.ring, tuck: tj, arms: !fired ? 0.15 : 0.15 + 0.85 * ease(0, 0.08, p) - 0.4 * ease(0.85, 1, p), spin: 0, stand: !fired });
