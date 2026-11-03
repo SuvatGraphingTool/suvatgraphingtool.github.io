@@ -25,7 +25,7 @@ const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b
 /** Words that must not be lost, on a plate of the card colour, kept inside the stage and clear of
     every plate and readout already placed (`taken`): tried where it belongs, then a row above or
     below, then on the anchor's other side — the nearest free place, never dropped. */
-function plate(g, L, P, taken, txt, x, y, color, { align = 'center', size = 13 } = {}) {
+function plate(g, L, P, taken, txt, x, y, color, { align = 'center', size = 13, maxY = Infinity } = {}) {
   g.save(); g.font = `700 ${Math.max(13, size)}px system-ui, sans-serif`;
   const tw = g.measureText(txt).width, bh = size + 7, W = g.canvas.clientWidth || Infinity, H = g.canvas.clientHeight || Infinity;
   const at = (al, ax, ay) => {
@@ -34,11 +34,14 @@ function plate(g, L, P, taken, txt, x, y, color, { align = 'center', size = 13 }
     return { x: bx, y: clamp(ay - bh / 2, 2, H - bh - 2), w: tw + 8, h: bh };
   };
   const flip = align === 'left' ? 'right' : align === 'right' ? 'left' : 'center', fx = align === 'left' ? x - 24 : align === 'right' ? x + 24 : x;
+  // nearest first: its own row and the next on either side, then the same on the other side, then further
   const tries = [];
-  for (const dy of [0, -22, 22, -44, 44, -66, 66]) tries.push([align, x, y + dy]);
-  for (const dy of [0, -22, 22, -44, 44]) tries.push([flip, fx, y + dy]);
+  for (const dy of [0, -22, 22]) tries.push([align, x, y + dy]);
+  for (const dy of [0, -22, 22]) tries.push([flip, fx, y + dy]);
+  for (const dy of [-44, 44, -66, 66]) tries.push([align, x, y + dy]);
+  for (const dy of [-44, 44]) tries.push([flip, fx, y + dy]);
   let box = null;
-  for (const [al, ax, ay] of tries) { const b = at(al, ax, ay); if (!taken.some((q) => hit(q, b))) { box = b; break; } }
+  for (const [al, ax, ay] of tries) { const b = at(al, ax, ay); if (b.y + b.h > maxY) continue; if (!taken.some((q) => hit(q, b))) { box = b; break; } }
   box ||= at(align, x, y);
   g.fillStyle = withAlpha(P.card, 0.88); g.beginPath(); g.roundRect?.(box.x, box.y, box.w, box.h, 4); g.fill();
   g.fillStyle = color; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(txt, box.x + 4, box.y + bh / 2 + 0.5); g.restore();
@@ -118,8 +121,9 @@ export function render(canvas, cam, o) {
     const e = ageOf(t, f.tP, f.tMax, 0.9); pulse(g, x0, yp, e.age, e.life, P.mark, { radius: 22 });
     // the paper's own given, on the plate: V − d, V over k, or (a second plate) the last stretch's time
     const tag = f.mode === 'diff' ? T`V - ${sf(f.dv)} = ${sf(f.vP)} [m s^-1] "here"` : f.mode === 'ratio' ? T`V/${sf(f.kk)} = ${sf(f.vP)} [m s^-1] "here"` : T`${sf(f.vP)} [m s^-1] "here"`;
-    put(tag, x0 + 14, yp - 18, P.vel, { align: 'left' });
-    if (f.mode === 'time') put(T`"the last" ${sf(f.p)} [m] "take" ${sf(f.tau)} [s]`, x0 + 14, yp + 22, P.ink, { align: 'left' });
+    // never below the ground line, where it would read as the speed there
+    put(tag, x0 + 14, yp - 18, P.vel, { align: 'left', maxY: ground - 2 });
+    if (f.mode === 'time') put(T`"the last" ${sf(f.p)} [m] "takes" ${sf(f.tau)} [s]`, x0 + 14, yp + 22, P.ink, { align: 'left', maxY: ground - 2 });
   }
   if (landed) {
     const e = ageOf(t, f.tG, f.tMax); dust(g, x0, ground, e.age, e.life, { size: 2, n: 26 });

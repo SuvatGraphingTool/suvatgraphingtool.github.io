@@ -97,7 +97,8 @@ export const lanes = {
         { k: 'B’s velocity', v: num(s.B.v, 2), unit: 'm s⁻¹', hue: 'vel' },
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' },
-              ...(lapse > 1 ? [{ k: 'Time-lapse', v: `${num(rate * lapse, 1, { trim: true })}×`, unit: 'real time' }] : [])],
+              // on a phone the right-hand readouts would cover the left: the time alone there
+              ...(lapse > 1 && !(typeof window !== 'undefined' && window.innerWidth < 520) ? [{ k: 'Time-lapse', v: `${num(rate * lapse, 1, { trim: true })}×`, unit: 'real time' }] : [])],
     };
   },
 

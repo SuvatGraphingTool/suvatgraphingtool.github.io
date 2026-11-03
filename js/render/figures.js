@@ -811,8 +811,10 @@ export function post(g, labels, X, Y, letter, color, P, { dashed = false, height
   g.strokeStyle = 'rgba(15,12,14,0.55)'; g.lineWidth = 1.2; g.stroke();
   g.strokeStyle = withAlpha(P.surface, 0.85); g.lineWidth = 1.4;
   g.beginPath(); g.roundRect(px + 3, py + 3, pw - 6, ph - 6, 4); g.stroke();
+  // the letter printed on its own plate: never moved off it, never dropped; the plate kept clear of labels
+  g.fillStyle = P.surface; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, X, py + ph / 2 + 0.5);
   g.restore();
-  labels.add(text, X, Y - height - 12, { color: P.surface, align: 'center', pri: 10, size: 17, weight: 700, bg: false });
+  labels.reserve?.({ x: px, y: py, w: pw + 3, h: ph + 3 });
 }
 
 /* ── street furniture: what stands beside a road or a line ─────────────── */
