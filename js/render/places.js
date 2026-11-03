@@ -2723,10 +2723,10 @@ function polar(g, c) {
 
 /* ── an oil rig, a tree house ───────────────────────────────────────────── */
 
-/** An oil rig standing in the open sea: its steel legs braced in X down into
-    the water, the deck it leaves from (from its edge), the derrick tower and a
-    crane above, the helideck's H, a flare boom; a supply ship off it, clear
-    of the flight. */
+/** An oil rig standing in the open sea: its grey steel legs braced in X down
+    into the water and on out of sight, the deck it leaves from (from its
+    edge), a deck module, the derrick tower, the helideck's H on the module;
+    a supply ship off it, clear of the flight; lights at night. */
 function oilrig(g, c) {
   const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
   const E = env(), n = E.night, r = rng(277), horizon = oy - clamp((oy - 40) * 0.2, 30, 110);
@@ -2744,14 +2744,15 @@ function oilrig(g, c) {
   }
   if (!(H0 > 0)) return;
   // the rig: legs from below the water up to the deck, braced; the deck; the derrick; the crane
-  const H = oy - top, dw = clamp(Math.max(H * 1.3, 30 * k), 120, x0 + 4), l = x0 - dw, steel = n ? '#6a6e76' : '#c8a840', steelLo = n ? '#4a4e56' : '#8a7428';
-  const legs = [l + dw * 0.12, l + dw * 0.5, x0 - dw * 0.1], deep = Math.min(h, oy + clamp((h - oy) * 0.8, 20, 120));
-  g.strokeStyle = steel; g.lineWidth = Math.max(4, k * 0.8);
+  const H = oy - top, dw = Math.min(clamp(Math.max(H * 1.3, 30 * k), 120, x0 + 4), Math.max(120, w * 0.45)), l = x0 - dw, steel = n ? '#7a7e86' : '#9aa0a8', steelLo = n ? '#5a5e66' : '#6a7280';
+  const legs = [l + dw * 0.12, l + dw * 0.5, x0 - dw * 0.1], deep = h;
+  g.strokeStyle = steel; g.lineWidth = clamp(0.5 * k, 4, 12);
   for (const lx of legs) { g.beginPath(); g.moveTo(lx, top + 6); g.lineTo(lx, deep); g.stroke(); }
-  g.strokeStyle = steelLo; g.lineWidth = Math.max(1.5, k * 0.25);
-  for (let i = 0; i < legs.length - 1; i++) for (let y = top + 8; y < oy - 4; y += Math.max(20, H / 3)) { const y2 = Math.min(oy, y + Math.max(20, H / 3)); g.beginPath(); g.moveTo(legs[i], y); g.lineTo(legs[i + 1], y2); g.moveTo(legs[i + 1], y); g.lineTo(legs[i], y2); g.stroke(); }
+  g.strokeStyle = steelLo; g.lineWidth = clamp(0.12 * k, 1.5, 4);
+  for (let i = 0; i < legs.length - 1; i++) for (let y = top + 8; y < h; y += Math.max(20, H / 3)) { const y2 = Math.min(oy, y + Math.max(20, H / 3)); g.beginPath(); g.moveTo(legs[i], y); g.lineTo(legs[i + 1], y2); g.moveTo(legs[i + 1], y); g.lineTo(legs[i], y2); g.stroke(); }
   // under the water, the legs dimmed
-  g.fillStyle = withAlpha(n ? '#0a1424' : '#2a4a62', 0.55); g.fillRect(l, oy, dw, deep - oy);
+  { const ug = g.createLinearGradient(0, oy, 0, h); ug.addColorStop(0, withAlpha(n ? '#0a1424' : '#2a4a62', 0.35)); ug.addColorStop(1, withAlpha(n ? '#0a1424' : '#2a4a62', 0.8)); g.fillStyle = ug; g.fillRect(l - 8, oy, dw + 16, h - oy); }
+  g.strokeStyle = withAlpha('#ffffff', 0.5); g.lineWidth = 1.5; for (const lx of legs) { g.beginPath(); g.moveTo(lx - 8, oy + 1); g.lineTo(lx + 8, oy + 1); g.stroke(); }
   // the deck: two levels, its railings, open at the edge it leaves from
   const dh = clamp(2.5 * k, 10, 36);
   g.fillStyle = n ? '#5a5e66' : '#9aa0a8'; g.fillRect(l - 6, top, dw + 6, dh * 0.35);
@@ -2768,19 +2769,25 @@ function oilrig(g, c) {
   g.fillStyle = n ? '#3a4a3a' : '#4f7a4a'; g.beginPath(); g.ellipse(hp.x, hp.y, hr, hr * 0.25, 0, 0, TAU); g.fill();
   g.strokeStyle = '#ffffff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(hp.x - hr * 0.25, hp.y - hr * 0.1); g.lineTo(hp.x - hr * 0.25, hp.y + hr * 0.1); g.moveTo(hp.x + hr * 0.25, hp.y - hr * 0.1); g.lineTo(hp.x + hr * 0.25, hp.y + hr * 0.1); g.moveTo(hp.x - hr * 0.25, hp.y); g.lineTo(hp.x + hr * 0.25, hp.y); g.stroke();
   // the railing along the deck, open at the front where it leaves from
-  const rh = clamp(1 * k, 6, 20); g.strokeStyle = n ? '#c8ccd2' : '#e8c547'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(l, top - rh); g.lineTo(x0 - clamp(1.2 * k, 8, 30), top - rh); g.stroke();
+  // the railing from past the derrick to near the edge: posts every metre and a top rail
+  const rh = clamp(1 * k, 6, 20), ra = dx + dw * 0.1, rb = x0 - clamp(1.2 * k, 8, 30);
+  if (rb > ra + 6) { g.strokeStyle = n ? '#c8ccd2' : '#5a6070'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(ra, top - rh); g.lineTo(rb, top - rh); for (let x = ra; x <= rb; x += Math.max(6, k)) { g.moveTo(x, top); g.lineTo(x, top - rh); } g.stroke(); }
+  // at night its lights: along the deck, on the derrick's top
+  if (n) { for (let x = l + 6; x < x0; x += Math.max(14, dw / 10)) { g.fillStyle = withAlpha(E.window, 0.9); g.beginPath(); g.arc(x, top + dh * 0.4, 1.8, 0, TAU); g.fill(); } g.fillStyle = '#ff6a6a'; g.beginPath(); g.arc(dx, dTop, 2.5, 0, TAU); g.fill(); }
   void r;
 }
 
-/** A tree house: a great oak, its platform and hut in the crown, the rope
-    ladder hanging to the grass; it leaves from the platform's edge. Lawn
-    and a fence beyond. */
+/** A tree house: a great oak, its crown high over the platform and the hut
+    on it, the rope ladder hanging to the grass by the trunk; it leaves from
+    the platform's edge. Lawn, and a garden fence beyond. */
 function treehouse(g, c) {
   const { w, h, k, oy, x0, top, H0 } = c;
   const E = env(), n = E.night, r = rng(281), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
   sky(g, w, horizon, x0, { far: 'none', seed: 199, clouds: 3 });
   for (let x = r() * 30; x < w; x += 30 + r() * 40) crown(g, x, horizon - 10 - r() * 8, 14 + r() * 14, n);
   mownTurf(g, w, horizon, h, n, { lo: '#6fa652', hi: '#7cb35c', line: false });
+  // a garden fence along the end of the lawn
+  { const fh = clamp(1.2 * k, 10, 36), fy = lerp(horizon, oy, 0.15); g.fillStyle = n ? '#4a3a2c' : '#8a6a4a'; g.fillRect(0, fy - fh, w, fh); g.strokeStyle = withAlpha('#000000', 0.2); g.lineWidth = 1; for (let x = 0; x < w; x += 9) { g.beginPath(); g.moveTo(x, fy - fh); g.lineTo(x, fy); g.stroke(); } }
   if (!(H0 > 0)) return;
   // the oak: a thick trunk behind the platform, its boughs, and the crown above
   const H = oy - top, tw = clamp(1 * k, 12, 50), pw = clamp(Math.max(3 * k, H * 0.6), 50, x0 - 10), tx = x0 - pw * 0.7;
@@ -2789,21 +2796,22 @@ function treehouse(g, c) {
   g.strokeStyle = barkLo; g.lineWidth = 1; for (let i = 0; i < 6; i++) { const bx = tx - tw * 0.4 + i * tw * 0.16; g.beginPath(); g.moveTo(bx, oy - 2); g.lineTo(bx + (r() - 0.5) * 4, top - H * 0.3); g.stroke(); }
   g.strokeStyle = bark; g.lineWidth = Math.max(3, tw * 0.35); g.lineCap = 'round'; for (const [ex, ey] of [[-1.2, -0.35], [0.9, -0.45], [-0.4, -0.6]]) { g.beginPath(); g.moveTo(tx, top - H * 0.3); g.quadraticCurveTo(tx + ex * pw * 0.3, top - H * 0.45, tx + ex * pw * 0.55, top + ey * H); g.stroke(); }
   const cr = clamp(Math.max(H * 0.5, pw * 0.6), 40, 200);
-  for (const [dx, dy, s] of [[-0.6, -0.9, 0.7], [0.2, -1.1, 0.8], [0.8, -0.7, 0.6], [-0.1, -0.6, 0.65]]) { const cx = tx + dx * cr, cy = top + dy * cr * 0.8; g.fillStyle = n ? '#1c2e1c' : '#3f6a3a'; g.beginPath(); g.arc(cx, cy, cr * s * 0.6, 0, TAU); g.fill(); g.fillStyle = n ? '#243a24' : '#4f7c45'; g.beginPath(); g.arc(cx - cr * 0.12, cy - cr * 0.12, cr * s * 0.36, 0, TAU); g.fill(); }
+  // (lifted well above the platform, a lighter, yellower green than the hedge)
+  for (const [dx, dy, s] of [[-0.6, -1.1, 0.7], [0.2, -1.35, 0.8], [0.8, -0.95, 0.6], [-0.1, -0.85, 0.65]]) { const cx = tx + dx * cr, cy = top - cr * 0.15 + dy * cr * 0.8; g.fillStyle = n ? '#2e4a24' : '#6a9a3a'; g.beginPath(); g.arc(cx, cy, cr * s * 0.6, 0, TAU); g.fill(); g.fillStyle = n ? '#3a5a2c' : '#86b04a'; g.beginPath(); g.arc(cx - cr * 0.12, cy - cr * 0.12, cr * s * 0.36, 0, TAU); g.fill(); }
   // the platform: planks on joists, a brace to the trunk, the hut on it
   const pl = x0 - pw, ph = clamp(0.25 * k, 4, 10), wood = n ? '#5a4a3a' : '#a07a50', woodLo = n ? '#3a2e24' : '#6a5034';
   g.fillStyle = wood; g.fillRect(pl, top, pw, ph); g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; for (let x = pl + 6; x < x0; x += 7) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, top + ph); g.stroke(); }
   g.strokeStyle = woodLo; g.lineWidth = Math.max(2, 0.12 * k); g.beginPath(); g.moveTo(tx, top + H * 0.35); g.lineTo(x0 - pw * 0.1, top + ph); g.moveTo(tx, top + H * 0.35); g.lineTo(pl + 4, top + ph); g.stroke();
-  const hw = pw * 0.5, hh = clamp(1.8 * k, 18, 70);
+  const hw = Math.min(pw * 0.6, Math.max(pw * 0.5, 1.6 * k)), hh = clamp(1.9 * k, 18, 220);
   g.fillStyle = n ? '#6a5a44' : '#c8a870'; g.fillRect(pl + 2, top - hh, hw, hh);
   g.strokeStyle = withAlpha('#000000', 0.2); for (let y = top - hh + 5; y < top; y += 5) { g.beginPath(); g.moveTo(pl + 2, y); g.lineTo(pl + 2 + hw, y); g.stroke(); }
-  g.fillStyle = '#2a2018'; g.fillRect(pl + hw * 0.55, top - hh * 0.75, hw * 0.3, hh * 0.75);
+  g.fillStyle = '#2a2018'; g.fillRect(pl + hw * 0.55, top - Math.min(hh * 0.85, 1.5 * k), hw * 0.3, Math.min(hh * 0.85, 1.5 * k));
   g.fillStyle = n ? '#4a3a2c' : '#7a5a3a'; g.beginPath(); g.moveTo(pl - 6, top - hh); g.lineTo(pl + hw * 0.5, top - hh - hh * 0.6); g.lineTo(pl + hw + 8, top - hh); g.closePath(); g.fill();
   // the rope ladder from the platform's edge down to the lawn, a little short of the throw's edge
-  const lx = x0 - pw * 0.25; g.strokeStyle = n ? '#8a7a5a' : '#c8a870'; g.lineWidth = 1.5;
+  const lx = pl + pw * 0.15; g.strokeStyle = n ? '#8a7a5a' : '#c8a870'; g.lineWidth = 1.5;
   g.beginPath(); g.moveTo(lx, top + ph); g.lineTo(lx, oy - 2); g.moveTo(lx + 9, top + ph); g.lineTo(lx + 9, oy - 2); for (let y = top + ph + 8; y < oy - 2; y += 9) { g.moveTo(lx, y); g.lineTo(lx + 9, y); } g.stroke();
   // the railing behind where it leaves from
-  g.strokeStyle = woodLo; g.lineWidth = 2; const rh = clamp(0.9 * k, 8, 34); g.beginPath(); g.moveTo(pl + hw + 4, top - rh); g.lineTo(x0 - pw * 0.35, top - rh); g.moveTo(x0 - pw * 0.35, top); g.lineTo(x0 - pw * 0.35, top - rh); g.stroke();
+  g.strokeStyle = woodLo; g.lineWidth = 2; const rh = clamp(0.9 * k, 8, 34); g.beginPath(); g.moveTo(pl + hw + 4, top - rh); g.lineTo(x0 - pw * 0.3, top - rh); g.moveTo(pl + hw + 4, top); g.lineTo(pl + hw + 4, top - rh); g.moveTo(x0 - pw * 0.3, top); g.lineTo(x0 - pw * 0.3, top - rh); g.stroke();
   softShadow(g, tx, oy + 2, pw * 0.6, 5, 0.6);
 }
 
