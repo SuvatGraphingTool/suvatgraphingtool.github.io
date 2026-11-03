@@ -1127,6 +1127,81 @@ export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, 
 const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
 
 /**
+ * A high jumper doing the flop, drawn round the hip (cx, cy) — the centre of
+ * mass the engine moves — H px tall, travelling to the right. `u` runs the
+ * jump: 0 at the take-off, `pk` at the top, 1 as the shoulders meet the mat;
+ * `rest` (0 to 1) after that lays them flat on their back. Before the off
+ * (`stand`) they stand at the take-off. The pose is keyframed by joint
+ * angles: at the take-off the inside knee drives up and the inside arm
+ * reaches, the back turned to the bar; over it the body arches — hips
+ * highest, head and shoulders hanging past the bar, knees hanging back —
+ * then the chin tucks and the legs kick up so the shoulders go down onto the
+ * mat. An athletics vest with a bib, shorts, spikes, short hair.
+ */
+export function highJumper(g, cx, cy, H, P, { u = 0, pk = 0.5, rest = 0, stand = false, ring = null } = {}) {
+  const E = env(), skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
+  const vest = ring || (E.night ? '#3a52a8' : '#2848a8'), vestHi = E.night ? '#5d76c8' : '#4a68cc', shorts = '#1b1d22', hair = '#2b211c';
+  const lw = Math.max(3, H * 0.07), T = H * 0.3, L1 = H * 0.25, L2 = H * 0.24, UA = H * 0.165, FA = H * 0.155, FOOT = H * 0.075;
+  // keyframes: [u, torso, neck, thigh near, shin near, thigh far, shin far, arm near, forearm near, arm far, forearm far] (degrees, y up, +x ahead)
+  const K = stand ? [[0, 92, 0, -90, -90, -92, -92, -96, -92, -100, -95]] : [
+    [0, 96, 4, 0, -95, -96, -104, 104, 96, -125, -100],
+    [pk * 0.45, 62, -8, -112, -122, -118, -128, 20, 10, -40, -55],
+    [pk, -18, -38, -160, -92, -164, -96, -32, -48, -38, -52],
+    [pk + (1 - pk) * 0.55, -58, 22, -228, -238, -232, -244, -110, -130, -118, -138],
+    [1, -74, 24, -252, -258, -256, -262, -140, -160, -146, -166],
+  ];
+  const at = (q) => {
+    if (q <= K[0][0]) return K[0].slice(1);
+    for (let i = 1; i < K.length; i++) if (q <= K[i][0]) { const a = K[i - 1], b = K[i], s = (q - a[0]) / (b[0] - a[0] || 1), e = s * s * (3 - 2 * s); return a.slice(1).map((v, j) => v + (b[j + 1] - v) * e); }
+    return K[K.length - 1].slice(1);
+  };
+  let A = at(Math.max(0, Math.min(1, u)));
+  // after the shoulders land: lying flat on the back, the legs coming down
+  if (rest > 0 && !stand) { const B = [-4, 6, -192, -198, -196, -202, -166, -176, -172, -182], e = rest * rest * (3 - 2 * rest); A = A.map((v, j) => v + (B[j] - v) * e); }
+  const [tor, neck, thN, shN, thF, shF, uaN, faN, uaF, faF] = A.map((d) => (d * Math.PI) / 180);
+  // world y is up; the screen's is down
+  const dir = (a, l, o) => ({ x: o.x + Math.cos(a) * l, y: o.y - Math.sin(a) * l });
+  g.save(); g.translate(cx, cy);
+  const HIP = { x: 0, y: 0 }, SH = dir(tor, T, HIP), NK = dir(tor, H * 0.035, SH), HEAD = dir(tor + neck, H * 0.075, NK);
+  const leg = (th, sh, o = HIP) => { const KN = dir(th, L1, o), AN = dir(sh, L2, KN); return [o, KN, AN]; };
+  const near = leg(thN, shN), far = leg(thF, shF, { x: -H * 0.012, y: 0 });
+  const arm = (ua, fa) => { const EL = dir(ua, UA, SH); return [SH, EL, dir(fa, FA, EL)]; };
+  const aN = arm(uaN, faN), aF = arm(uaF, faF);
+  // the foot: flat when standing, pointed in the air; a white spike shoe
+  const shoe = (lg, sh) => { const toe = dir(stand ? sh - Math.PI / 2 * 1.98 : sh - 0.35, FOOT, lg[2]); limb(g, [lg[2], toe], '#f2f2ee', lw * 0.9); g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 1; g.beginPath(); g.moveTo(lg[2].x, lg[2].y); g.lineTo(toe.x, toe.y); g.stroke(); };
+  // far limbs first, in shade
+  limb(g, far, skinFar, lw * 0.95); shoe(far, shF);
+  limb(g, aF, skinFar, lw * 0.72);
+  // shorts over the hips and the tops of the thighs, then the vest
+  limb(g, [HIP, dir(thF, L1 * 0.35, HIP)], shorts, lw * 1.45);
+  limb(g, [HIP, SH], vest, lw * 2.1);
+  g.fillStyle = shorts; g.beginPath(); g.arc(0, 0, lw * 1.05, 0, TAU); g.fill();
+  // the vest's side stripe and the bib pinned to its front
+  const front = tor + Math.PI / 2, m0 = dir(tor, T * 0.25, HIP), m1 = dir(tor, T * 0.82, HIP);
+  g.strokeStyle = vestHi; g.lineWidth = Math.max(1, lw * 0.35); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(m0.x, m0.y); g.lineTo(m1.x, m1.y); g.stroke();
+  const bib = dir(front, lw * 0.55, dir(tor, T * 0.55, HIP));
+  g.save(); g.translate(bib.x, bib.y); g.rotate(-tor + Math.PI / 2);
+  g.fillStyle = '#f6f6f2'; g.fillRect(-lw * 0.55, -T * 0.16, lw * 0.8, T * 0.32);
+  g.fillStyle = '#2b2628'; for (let i = 0; i < 3; i++) g.fillRect(-lw * 0.4, -T * 0.1 + i * T * 0.075, lw * 0.5, Math.max(1, T * 0.03));
+  g.restore();
+  // the near leg in its shorts, then the neck and head, then the near arm
+  limb(g, near, skin, lw); shoe(near, shN);
+  limb(g, [HIP, dir(thN, L1 * 0.35, HIP)], shorts, lw * 1.45);
+  limb(g, [SH, NK], skinFar, lw * 0.8);
+  const hr = H * 0.078;
+  const hg = g.createRadialGradient(HEAD.x - hr * 0.3, HEAD.y - hr * 0.3, hr * 0.1, HEAD.x, HEAD.y, hr); hg.addColorStop(0, skin); hg.addColorStop(1, skinFar);
+  g.fillStyle = hg; g.beginPath(); g.arc(HEAD.x, HEAD.y, hr, 0, TAU); g.fill();
+  // short hair over the back of the head; the face to the front, an eye
+  const crown = -(tor + neck) + Math.PI * 0.22;
+  g.fillStyle = hair; g.beginPath(); g.arc(HEAD.x, HEAD.y, hr * 1.04, crown - Math.PI * 0.55, crown + Math.PI * 0.55); g.closePath(); g.fill();
+  const ey = dir(tor + neck + 1.1, hr * 0.5, HEAD);
+  g.fillStyle = '#2b2628'; g.beginPath(); g.arc(ey.x, ey.y, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
+  limb(g, aN, skin, lw * 0.78);
+  g.restore();
+}
+
+/**
  * A skateboarder: the same person crouched for balance, arms out, on a deck
  * with its wheels, drawn round the hip (cx, cy) like the diver. `phase` turns
  * the wheels. The deck is under the feet: SKATE_FEET × H below the hip.

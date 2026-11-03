@@ -67,10 +67,10 @@ export function solveForce(k = {}) {
   } else if (byF) {
     const F = vec(k.F);
     a = V(F.x / m, F.y / m); how = 'force';
-    rows.push({ f: M`vec F = m vec a`, s: M`${br(F)} = ${d(m)}vec a`, r: M`vec a = ${vsrc(a)} [m s^-2]` });
+    rows.push({ f: M`vec F = m vec a`, s: M`(${vsrc(F)}) = ${m === 1 ? '' : d(m)}vec a`, r: M`vec a = ${vsrc(a)} [m s^-2]` });
   } else { a = vec(k.a); how = 'given'; }
   const F = m != null ? V(m * a.x, m * a.y) : null;
-  if (F && how !== 'force') rows.push({ f: M`vec F = m vec a`, s: M`${d(m)}${br(a)}`, r: M`vec F = ${vsrc(F)} [N]` });
+  if (F && how !== 'force') rows.push({ f: M`vec F = m vec a`, s: m === 1 ? M`${vsrc(a)}` : M`${d(m)}(${vsrc(a)})`, r: M`vec F = ${vsrc(F)} [N]` });
   const big = F || a, isF = !!F, still = mag(a) < EPS;
   let angle = null;
   if (!still) {
@@ -118,7 +118,7 @@ export function forceWorking(solved) {
     { title: 'The force and the acceleration', rows: solved.rows,
       note: solved.how === 'velocities' ? `The force is constant, so the acceleration is too: the change in velocity over the time it took. Then ${M`vec F = m vec a`}, a vector equation — each component on its own.`
         : `Newton’s second law, ${M`vec F = m vec a`}, as a vector equation: each component on its own. The force and the acceleration point the same way.` },
-    { title: 'At the start', rows: [...solved.pre, solved.start], note: 'Its speed is the size of its velocity: Pythagoras on the two components.' },
+    { title: 'At the start', rows: solved.pre.length ? solved.pre : [solved.start], note: 'Its speed is the size of its velocity: Pythagoras on the two components.' },
     // the motion's own sections: the two vector equations, and each answer
     ...planeWorking({ ...solved, pre: [] }),
   ];

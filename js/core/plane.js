@@ -99,7 +99,11 @@ export function vecSum(cx, cy, dp = 3) {
 /** A bracket only round two or more terms: (1 + t), but 2t and t bare. */
 const br = (src) => (/[+−-]/.test(src.slice(1)) ? `(${src})` : src);
 /** k·x, written as a student writes it: x, −x, 2x. */
-const times = (k, x) => (Math.abs(k - 1) < EPS ? x : Math.abs(k + 1) < EPS ? `-${x}` : `${d(k)}${x}`);
+// (a bare number, or one with a minus, is bracketed: 2(−5), never 2−5 or −−5)
+const times = (k, x) => {
+  const bare = /^[−-]/.test(x) || /^[\d.]+$/.test(x), y = bare && !/^\(/.test(x) ? `(${x})` : x;
+  return Math.abs(k - 1) < EPS ? x : Math.abs(k + 1) < EPS ? `-${y}` : `${d(k)}${y}`;
+};
 
 /** Roots in the run, in order: t > 0 (strict), or t ≥ 0. */
 const after0 = (roots, strict = true) => roots.map(snap).filter((t) => (strict ? t > 1e-9 : t >= -1e-9)).sort((p, q) => p - q);

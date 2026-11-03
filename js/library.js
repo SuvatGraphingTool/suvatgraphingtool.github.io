@@ -926,7 +926,7 @@ export const LIBRARY = [
     params: { m: 2, u: { x: 2, y: -5 }, vT: { x: 7, y: 10 }, T: 5, at: { par: { x: 1, y: 0 } } },
     place: 'A frozen lake, seen from above: a model hovercraft, its fan pushing one way',
     example: { m: 2, 'u.x': 2, 'u.y': -5, 'vT.x': 7, 'vT.y': 10, T: 5, 'par.x': 1, 'par.y': 0 },
-    reader: 'm is the mass in kg; u.x, u.y the velocity at t = 0; then ONE of: vT.x, vT.y with T (a velocity at a later time T), F.x, F.y (the force in newtons), a.x, a.y (the acceleration). Asked: at.t a time; par.x, par.y "parallel to" a vector (parallel to i is par.x 1, par.y 0); at.moving a compass direction it moves in; at.x, at.y a coordinate; at.speed a speed.',
+    reader: 'm is the mass in kg; u.x, u.y the velocity at t = 0; then ONE of: vT.x, vT.y with T (a velocity at a later time T), F.x, F.y (the force in newtons), a.x, a.y (the acceleration). Asked: at.t a time; par.x, par.y "parallel to" a vector (parallel to i is par.x 1, par.y 0); at.x, at.y a coordinate; at.speed a speed.',
     parts: [
       { label: 'a', kind: 'speed', ask: 'Find the speed of the particle at $t = 0$.', find: 'speed0', sym: 'abs(vec u)', unit: 'm s^-1', dp: 2, at: 0, step: 'At the start', paper: 5.39, tol: 0.006 },
       { label: 'b', kind: 'force', ask: 'Find the force $vec F$ in the form $a vec(i) + b vec(j)$.', expr: 'exprs.F', at: 'f.T', step: 'force and the acceleration' },
@@ -934,7 +934,7 @@ export const LIBRARY = [
     ],
     answers: [
       { kind: 'force', say: 'the force, as a vector, and its size', find: 'forceMag', sym: 'abs(vec F)', unit: 'N', trim: true, at: 0, step: 'force and the acceleration' },
-      { kind: 'angle', say: 'the angle the force (and the acceleration) makes with i', find: 'angle', sym: 'theta', unit: '°', dp: 1, at: 0, step: 'force and the acceleration' },
+      { kind: 'angle', say: 'the angle the force (and the acceleration) makes with i', find: 'angle', sym: 'theta', suffix: '°', dp: 1, at: 0, step: 'force and the acceleration' },
     ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jan 2011', q: '4', part: 'all' },

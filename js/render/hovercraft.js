@@ -197,9 +197,9 @@ export function render(canvas, cam, o) {
       if (an > 1e-9) {
         const len = s.phone ? 46 : 58, ux = Fv.x / an, uy = -Fv.y / an;
         const x0 = x + ux * L * 0.5, y0 = y + uy * L * 0.5, x1 = x0 + ux * len, y1 = y0 + uy * len;
-        arrow(g, x0, y0, x1, y1, { color: s.P.ink, width: 3, head: 13 });
+        arrow(g, x0, y0, x1, y1, { color: f.force ? s.P.ink : s.P.acc, width: 3, head: 13 });
         s.off([{ x: x0, y: y0 }, { x: x1, y: y1 }], 8);
-        s.Q.add(f.force ? T`vec F = ${vsrc(f.force)} [N]` : T`vec a = ${vsrc(f.a)} [m s^-2]`, x1, y1, { color: s.P.ink, pri: 7, size: s.phone ? 13 : 14, weight: 700 });
+        s.Q.add(f.force ? T`vec F = ${vsrc(f.force)} [N]` : T`vec a = ${vsrc(f.a)} [m s^-2]`, x1, y1, { color: f.force ? s.P.ink : s.P.acc, pri: 7, size: s.phone ? 13 : 14, weight: 700 });
       }
       hovercraftTop(g, x, y, L, ang, { spin: s.t * 40, blowing: an > 1e-9 });
     },

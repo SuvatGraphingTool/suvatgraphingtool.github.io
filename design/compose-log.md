@@ -43,3 +43,9 @@ Short notes, newest first. Batches 1–29 are in the git history ("Component fac
   captions 3–4 lines; the Display drawer over a composed scene on a phone; the headframe under the
   readouts on a phone; the trampoline's phone fit.
 - **Live Ask Suvat check still to do** (the reader allowance was spent on 3 Nov; after 00:00 UTC).
+
+## 3 Nov 2026, late evening — batch 32 (high jump) redrawn after its UI critic; shipped
+
+The first version failed its UI round; redrawn as in design/library/build-log.md (same date).
+Shipped without a second UI round; the live Ask Suvat checks for batches 30–32 wait for the
+reader's allowance (after 00:00 UTC).

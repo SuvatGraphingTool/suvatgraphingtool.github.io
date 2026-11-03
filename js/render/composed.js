@@ -28,7 +28,7 @@
 import { BACKDROPS, FIGURES as PIECES, placeOf } from '../compose/registry.js';
 import { dust, pulse, flash, squash } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, sig3, withAlpha } from './util.js';
-import { thrower, throwerHand, THROWER_MIN, ballAt, drawFigure, phaseFor, particle, fence, diver, DIVER_FEET, skateboarder, SKATE_FEET, parcel } from './figures.js';
+import { thrower, throwerHand, THROWER_MIN, ballAt, drawFigure, phaseFor, particle, fence, diver, highJumper, DIVER_FEET, skateboarder, SKATE_FEET, parcel } from './figures.js';
 import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, tower, bridge, divingBoard, balloon, well, bigSplash, pebble, fitClear } from './heights.js';
 import { table, labWall } from './bench.js';
 import { PLACE_ART, cityWidth, headframeH } from './places.js';
@@ -92,7 +92,7 @@ const boardLen = (k, drop) => clamp(Math.max(1.6 * k, drop * 0.5), 70, 160);
 function scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand, clearX = [], reserve = () => {}, leap = false, over, when, now = -1, level = null, hoop, held = false, who, launcher }) {
   const P = palette();
   // the places in js/render/places.js draw themselves and what they launch from
-  if (PLACE_ART[R.backdrop]) { PLACE_ART[R.backdrop](g, { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, when, now, level, hoop, held, who, launcher }); return; }
+  if (PLACE_ART[R.backdrop]) { const c = { w, h, k, X, Y, oy, x0, top, H0: byHand ? 0 : H0, phase, P, clearX, reserve, leap, over, when, now, level, hoop, held, who, launcher }; PLACE_ART[R.backdrop](g, c); return c; }
   const horizon = (q) => oy - clamp((oy - 40) * q, 26, 110);
   // the place it is launched from, where the backdrop has no edge of its own:
   // a stone wall to stand on, a jetty over the sea, or the ground itself
@@ -256,6 +256,7 @@ function launch(canvas, o) {
     const winch = R.backdrop === 'well' ? 130 - (yTop - H0) * k : 0;
     // on a phone a table takes only its own room, so the motion has the rest
     if (phone && R.backdrop === 'table') return { l: tableW(k, w) + 12, r: 40, t: Math.max(36, head) };
+    if (R.backdrop === 'highjump') return { l: body * 0.45 + 40, r: 2.2 * k + 40, t: Math.max(36, head) };
     return { l: Math.max(body * 0.9, place) + 80 + behind(k), r: 70 + Math.max(...movers.map((m) => (m.small ? 22 : size(k, m.piece) * 0.55))), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown, winch, R.launcher === 'trampoline' ? size(k) * 1.15 + 16 : 0, R.backdrop === 'mineshaft' ? headframeH(k) * 1.2 + 16 - (yTop - H0) * k : 0) };
   };
   // the readouts are cards over the stage: the path may pass behind them, but
@@ -269,7 +270,7 @@ function launch(canvas, o) {
     const p = pads(k), box = { xLo: -p.l / k, xHi: xMax + p.r / k, yLo: 0, yHi: yTop + p.t / k };
     // on a phone the readouts sit over the top of the stage: the sky takes the
     // spare height, and the place stands low, clear of them
-    F = fitClear(box, w, h, phone, R.backdrop === 'table' ? 0.75 : phone ? 0.6 : 0.35, (fs) => clear(fs, p), 76);
+    F = fitClear(box, w, h, phone, R.backdrop === 'table' ? 0.75 : R.backdrop === 'highjump' ? 0.85 : phone ? 0.6 : 0.35, (fs) => clear(fs, p), R.backdrop === 'highjump' ? 96 : 76);
     if (!F) return null;
     k = F.k;
   }
@@ -291,7 +292,7 @@ function launch(canvas, o) {
   // a hoop at the height a part asks about, where the engine passes it on the way down (rule 4)
   const lvl = lead.f.level, tDown = lvl?.times?.length ? lvl.times[lvl.times.length - 1] : null;
   const hoop = R.backdrop === 'arena' && lvl && lvl.xDown != null && tDown != null && !lvl.atTop ? { x: X(lvl.xDown), y: Y(lvl.L), age: lead.t >= tDown ? lead.t - tDown : -1, at: (cx) => { const y = over((cx - X(0)) / k); return y == null ? null : Y(y); } } : null;
-  scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, when, now: lead.going ? lead.t : -1, level: lvl ? lvl.L : null, hoop, held: lead.thrown, who: R.objects[0].figure, launcher: R.launcher });
+  const placed = scenery(g, R, { w, h, k, X, Y, oy, x0, top, H0, xMax, phase, houseW, byHand: byHand || grounded, clearX, reserve: (box) => L.reserve(box), leap: !!PIECES[R.objects[0].figure]?.swims, over, when, now: lead.going ? lead.t : -1, level: lvl ? lvl.L : null, hoop, held: lead.thrown, who: R.objects[0].figure, launcher: R.launcher });
 
   // ── the height it starts at, as a dimension line beside the place
   if (H0 > 0) {
@@ -311,7 +312,9 @@ function launch(canvas, o) {
   {
   // keep labels off the path and out from under the readouts
   for (const m of movers) for (let i = 0; i < m.pts.length; i += 4) L.reserve({ x: X(m.pts[i].x) - 5, y: Y(m.pts[i].y) - 5, w: 10, h: 10 });
-  if (!phone) { L.reserve({ x: 0, y: 0, w: HUD, h: HUD_H - 40 }); L.reserve({ x: w - 130, y: 0, w: 130, h: 56 }); }
+  // (and the Resolve button and the clock, top right)
+  if (!phone) { L.reserve({ x: 0, y: 0, w: HUD, h: HUD_H - 40 }); L.reserve({ x: w - 300, y: 0, w: 300, h: 84 }); }
+  else L.reserve({ x: w - 150, y: 0, w: 150, h: 120 });
 
   // ── a height a part asks about: a marker line across, ringed where crossed
   const lv = lead.f.level, t = lead.t;
@@ -463,7 +466,7 @@ function launch(canvas, o) {
         bigSplash(g, lx, oy, age, life, Math.max(clamp(k / 5, phone ? 1 : 1.5, phone ? 1.5 : 2.6), small ? 0 : size(k, piece) / 26));
         ripples(g, lx, oy, age, life, Math.max(1, (small ? 12 : size(k, piece) * 0.5) / 18));
       }
-      else if (e === 'dust' && !wet) dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k, piece) / 30), n: 22 });
+      else if (e === 'dust' && !wet && R.backdrop !== 'highjump') dust(g, lx, oy, age, life, { size: small ? 1.6 : Math.max(2.4, size(k, piece) / 30), n: 22 });
       else if (e === 'ring') pulse(g, lx, oy, age, life, P.mark);
       else if (e === 'flash') flash(g, lx, oy - 6, age, life);
       else if (e === 'net' || e === 'swish' || e === 'kick' || e === 'rustle') continue;
@@ -670,12 +673,17 @@ function launch(canvas, o) {
       m.body = { x: cx, y: cy - (fired ? 0 : Lp * 0.25) };
       const longJump = R.backdrop === 'stadium' && !(H0 > 0), shot = !!LAUNCHER_ART[R.launcher] && R.launcher !== 'trampoline', bounced = R.launcher === 'trampoline';
       if (R.backdrop === 'highjump') {
-        // a high jumper: standing at the take-off, then the hips carry the engine's point (its centre of mass);
-        // laid back over the bar at the top (a flop), and landing on the back on the mat
-        const flop = ease(0.15, 0.5, p);
-        cx = bx; cy = by - DIVER_FEET * Lp * (1 - ease(0, 0.12, p));
+        // a high jumper: standing at the take-off, then the hips carry the engine's point (its centre
+        // of mass) head first over the bar in a flop; where the path comes down through the mat's top
+        // (the place's own reckoning, from the engine's path) they lie on it, on their back
+        const G = placed?.hj, tm = G?.tMat ?? f.tMax, onMat = !!G && m.going && t >= tm;
+        cx = bx; cy = by - (fired ? 0 : DIVER_FEET * Lp);
+        if (onMat) { cx = Math.min(bx, G.xMat + 0.4 * k); cy = oy - G.mH + (G.dent || 0) * 0.5 - Lp * 0.07; }
         m.body = { x: cx, y: cy };
-        diver(g, cx, cy, Lp, P, { ring: m.ring, tuck: 0.1 * (1 - flop), arms: !fired ? 0.15 : 0.6 + 0.4 * flop, spin: fired ? -flop * Math.PI * 0.55 : 0, stand: !fired });
+        const over = !!G && cx > G.mx0 - 10 && cx < G.mx1 + 10;
+        if (aloft || onMat) softShadow(g, cx, over ? oy - G.mH + 2 : oy + 1, Lp * 0.3, Math.max(2, Lp * 0.04), clamp(0.7 - (over ? oy - G.mH - cy : oy - cy) / (h * 0.5), 0.1, 0.6));
+        const tApex = f.uy > 0 ? f.tApex : 0;
+        highJumper(g, cx, cy, Lp, P, { ring: m.ring, stand: !fired, u: fired ? clamp(t / tm, 0, 1) : 0, pk: clamp(tApex / tm, 0.2, 0.8), rest: onMat ? clamp((t - tm) / Math.max(0.15, f.tMax - tm), 0, 1) * 0.6 + (landed ? 0.4 * clamp(age / 0.5, 0, 1) : 0) : 0 });
       } else if (longJump) {
         // a long jumper: the feet carry the engine's point from the board to the sand, never below it;
         // knees up and arms forward in the air, sitting into the pit with the legs out in front
@@ -827,7 +835,12 @@ function launch(canvas, o) {
   const name = netted ? 'the safety net' : R.backdrop === 'stadium' && R.objects[0].figure === 'diver' && !(H0 > 0) ? 'the sand pit' : { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', lake: 'the lake', island: 'the sand', skatepark: 'the concrete', circus: 'the ring', polar: 'the sea', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor', rugby: 'the pitch', highjump: 'the mat', mineshaft: 'the bottom of the shaft' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   // (at a lake thrown by hand, the place drew the shore: the name goes over the water)
   const under = wet && H0 > 0 && !(R.backdrop === 'lake' && byHand) && R.backdrop !== 'polar';
-  L.add(name, under ? x0 - 12 : w - 14, under ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
+  // the high jump's mat is named on its own front face
+  const hj = R.backdrop === 'highjump' ? placed?.hj : null;
+  if (hj) L.add(name, hj.mx1 - hj.Dm * hj.s2 - 10, oy + hj.Dm * hj.sy - hj.mH * 0.5, { color: '#f4f6fa', align: 'right', pri: 4, size: 13, maxPush: 6 });
+  else L.add(name, under ? x0 - 12 : w - 14, under ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });
+  // what stands in front of the motion: the place's own front layer (the high jump's near upright)
+  if (placed && PLACE_ART[R.backdrop]?.front) PLACE_ART[R.backdrop].front(g, placed);
 
   L.draw(g, w, h);
   return null;

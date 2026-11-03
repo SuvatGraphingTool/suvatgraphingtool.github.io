@@ -2,6 +2,29 @@
 
 Short notes, newest first. What shipped, what was audited, where a session stopped.
 
+## 3 Nov 2026, late evening — library 59 SHIPPED (one physics round); batch 32 redone; STOPPED (usage)
+
+- **Library 59 `pushed-by-a-force`** (Edexcel M1 Jan 2011 Q4; Jun 2008 Q3 through the same boxes):
+  F = ma in i and j: a from two velocities, the force or as given; |F| and its angle with i; then
+  js/core/plane.js. Stage js/render/hovercraft.js (a model hovercraft on a frozen lake) on the plane's
+  stage, now `drawPlane` with hooks. Physics critic round 1: papers right; fixed the F = ma
+  substitution ("23j"), the plane's "parallel to" relation (2(−5), and a crash on "−−5" — an older
+  plane.js bug), compass questions dropped (i, j are not east/north here), the a-arrow's hue, the
+  doubled |u| row. **Open for audit 30 (58 and 59):** engine tests for js/core/force.js (Jun 2008
+  numbers, refusals, zero force, vT-only, one-term vectors, par with non-unit parts); notes that
+  claim F = ma with no mass; the r0 boxes; (c) as 5⁄3; an answers entry for the velocity at a time;
+  the UI critic round has NOT been run.
+- **Batch 32 (high jump)** UI critic FAILED the first version (feet-first pose, a stub of a bar seen
+  end-on, red dashed bar, landing in front of the mat, dust, the long-jump pit showing). Redrawn:
+  a `highJumper` figure (head-first flop, arch, kick, lying on the mat), `highjumpGeom` shared by
+  place and stage, a receding mat with quilting, handles, a dent and an air puff, uprights with feet,
+  scale, collar and peg, a solid white bar that bows on a clean jump and rolls off when knocked,
+  a front layer (`PLACE_ART[x].front`), labels kept off Resolve and the clock (all composed scenes).
+  Shipped WITHOUT a second UI round. **Open:** the bar reads slanted in perspective; check the
+  knock-off timing at the peak; a dark shadow blob on the mat; the wear patch; the phone framing.
+- **Stopped** here at the user's request (usage). Next: the 00:10 UTC wake-up (reader checks, QA),
+  then audit 30 with the items above.
+
 ## 3 Nov 2026, evening — library 58 SHIPPED; audit 29 done
 
 - **Library 58 `drop-or-ramp`** (OCR 4728 Jan 2009 Q6): audit 29 doubled as its physics critic

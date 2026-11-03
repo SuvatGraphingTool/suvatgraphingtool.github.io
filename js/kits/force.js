@@ -29,7 +29,7 @@ export const force = {
     { key: 'm', col: 'm', label: 'Mass (kg)', placeholder: '—', hint: `For the force in newtons: ${M`vec F = m vec a`}.` },
     comp('u.x', 'u', 'i', 'm s⁻¹', `For ${M`2vec(i) - 5vec(j)`}, 2 here …`), comp('u.y', 'u', 'j', 'm s⁻¹', '… and −5 here.'),
     comp('vT.x', 'vT', 'i', 'm s⁻¹', 'Its velocity at the later time …'), comp('vT.y', 'vT', 'j', 'm s⁻¹', '… the j part.'),
-    { key: 'T', col: 'vT', label: 'At time (s)', placeholder: '—', hint: 'When it has that velocity.' },
+    { key: 'T', col: 'vT', label: 'Time it has it (s)', placeholder: '—', hint: 'When it has that velocity.' },
   ],
   cols: { m: 'The particle', u: 'Velocity at the start', vT: 'Velocity at a later time' },
   rows: [
@@ -37,12 +37,13 @@ export const force = {
       fields: [comp('F.x', 'F', 'i', 'N', 'Leave the later velocity blank.'), comp('F.y', 'F', 'j', 'N', 'With the mass above.')] },
     { title: 'Or the acceleration',
       fields: [comp('a.x', 'a', 'i', 'm s⁻²', 'Leave the later velocity and the force blank.'), comp('a.y', 'a', 'j', 'm s⁻²', 'With the mass, it gives the force.')] },
-    ...plane.rows.slice(1),
+    // the paper's i and j are not east and north here: no compass directions
+    ...plane.rows.slice(1).filter((r) => r.title !== 'Directions'),
   ],
   read(vals) {
     const v = (n) => ({ x: vals[`${n}.x`], y: vals[`${n}.y`] });
     return { m: vals.m, u: v('u'), vT: v('vT'), T: vals.T, F: v('F'), a: v('a'), r0: v('r0'),
-             at: { t: vals['at.t'], x: vals['at.x'], y: vals['at.y'], speed: vals['at.speed'], moving: vals['at.moving'], due: vals['at.due'],
+             at: { t: vals['at.t'], x: vals['at.x'], y: vals['at.y'], speed: vals['at.speed'],
                    par: { x: vals['par.x'], y: vals['par.y'] } } };
   },
   solve: solveForce,

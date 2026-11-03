@@ -1231,48 +1231,163 @@ function rugby(g, c) {
   if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
 }
 
-/** A high jump in an athletics stadium: the stadium's stand and track behind, the jumping apron in
-    front of them; the uprights and the bar stand where the jump peaks — at the height a part asks
-    about, or just under the top of the jump — and the blue crash mat beyond. If the path is under
-    the bar there, the bar is knocked off at the engine's moment and falls to the mat; if it clears,
-    the bar trembles as the jumper goes over. */
-function highjump(g, c) {
-  const { w, h, k, X, oy, x0, over, when, now = -1, level } = c;
-  stadium(g, { ...c, H0: 0 });
-  const E = env(), n = E.night;
-  // the apron: a fan of track surface round the take-off
-  g.fillStyle = n ? '#2c3e5a' : '#4a72a8'; g.beginPath(); g.ellipse(x0 + 2 * k, oy + 6, clamp(5 * k, 60, 260), clamp((h - oy) * 0.5, 10, 40), 0, 0, TAU); g.fill();
-  // where the jump peaks, and its height there
+/** Where the high jump's pieces stand, from the engine's own path (rule 4):
+    the bar where the path peaks (at the height a part asks about, `level`,
+    or just under the top), whether the path clears it and when it passes; the
+    crash mat, 0.7 m deep, from just behind the bar to well past where the
+    path comes down through its top, and when it does. The bar and the mat
+    recede into the screen: a point `d` px in front of the jump's plane is
+    drawn d·sy px lower and d·s2 px to the left. Shared by the place, which draws
+    them, and the stage, which lays the jumper on the mat. */
+export function highjumpGeom({ k, X, oy, x0, w, over, when, level }) {
+  if (typeof over !== 'function' || !X) return null;
   let px = null, peak = -Infinity;
-  if (typeof over === 'function' && X) for (let x = x0 + 4; x < w; x += 2) { const y = over((x - X(0)) / k); if (y == null) continue; if (y > peak) { peak = y; px = x; } }
-  if (px == null) return;
+  for (let x = x0 + 4; x < w; x += 2) { const y = over((x - X(0)) / k); if (y == null) continue; if (y > peak) { peak = y; px = x; } }
+  if (px == null) return null;
   const bar = level != null && isFinite(level) ? level : Math.max(0.5, peak - 0.08);
-  const clears = peak >= bar;
-  const tBar = typeof when === 'function' ? when((px - X(0)) / k) : null;
-  // the mat: a deep blue foam block from just before the bar to past where it lands
-  const land = (c.clearX || [])[0] ?? px + 3 * k, mx0 = px - 0.8 * k, mx1 = Math.max(land + 1.2 * k, px + 3 * k), mH = clamp(0.6 * k, 12, 40);
-  const mg = g.createLinearGradient(0, oy - mH, 0, oy);
-  mg.addColorStop(0, n ? '#3a5f9a' : '#3d7dd8'); mg.addColorStop(1, n ? '#22385e' : '#24508e');
-  g.fillStyle = mg; g.beginPath(); g.roundRect(mx0, oy - mH, mx1 - mx0, mH, 6); g.fill();
-  g.fillStyle = 'rgba(255,255,255,0.25)'; g.fillRect(mx0 + 4, oy - mH + 2, mx1 - mx0 - 8, 2);
-  g.strokeStyle = 'rgba(0,0,0,0.25)'; g.lineWidth = 1; for (let x = mx0 + 30; x < mx1 - 10; x += 40) { g.beginPath(); g.moveTo(x, oy - mH + 3); g.lineTo(x, oy - 2); g.stroke(); }
-  softShadow(g, (mx0 + mx1) / 2, oy + 2, (mx1 - mx0) * 0.55, 4, 0.6);
-  // the uprights on their bases, the far one a little behind
-  const barY = oy - bar * k, upH = (bar + 0.6) * k, depth = clamp(0.8 * k, 12, 28);
-  for (const [x, col, wide] of [[px + depth, n ? '#8a8880' : '#c9c7bf', 3], [px, n ? '#e4e2dc' : '#fbfaf6', 4]]) {
-    g.strokeStyle = col; g.lineWidth = wide; g.beginPath(); g.moveTo(x, oy); g.lineTo(x, oy - upH); g.stroke();
-    g.fillStyle = '#3c4046'; g.fillRect(x - 10, oy - 4, 20, 4);
-    g.strokeStyle = withAlpha('#000000', 0.4); g.lineWidth = 1; for (let y = oy - 10; y > oy - upH; y -= clamp(0.1 * k, 4, 10)) { g.beginPath(); g.moveTo(x - 3, y); g.lineTo(x + 3, y); g.stroke(); }
-  }
-  // the bar: across at its height — trembling as a clean jump passes, knocked off and falling to the mat if not
-  const age = tBar != null && now >= tBar ? now - tBar : -1;
-  let y0 = barY, y1 = barY, sw = 0;
-  if (age >= 0 && !clears) { const u = clamp(age / 0.5, 0, 1); y0 = barY + (oy - mH - barY) * (u * u); y1 = barY + (oy - mH - barY) * Math.min(1, (u * 1.3) ** 2); }
-  else if (age >= 0) sw = Math.sin(age * 40) * Math.exp(-age * 6) * 3;
-  g.save(); g.strokeStyle = '#f2f2f2'; g.lineWidth = 3.5; g.lineCap = 'round'; g.beginPath(); g.moveTo(px, y0 + sw); g.lineTo(px + depth, y1 - sw); g.stroke();
-  g.strokeStyle = '#d23a2e'; g.lineWidth = 3.5; g.setLineDash([5, 5]); g.beginPath(); g.moveTo(px, y0 + sw); g.lineTo(px + depth, y1 - sw); g.stroke(); g.restore();
-  c.reserve?.({ x: px - 12, y: oy - upH - 6, w: depth + 24, h: 14 });
+  const matHm = 0.7, mH = Math.max(14, matHm * k);
+  let xMat = null;
+  for (let x = px; x < px + 40 * k; x += 1) { const y = over((x - X(0)) / k); if (y == null) break; if (y <= matHm) { xMat = x; break; } }
+  if (xMat == null) xMat = px + 1.5 * k;
+  const D = clamp(1.2 * k, 26, 90), Dm = D * 1.3, s2 = 1.25, sy = 0.42;
+  return {
+    px, peak, bar, clears: peak >= bar, tBar: typeof when === 'function' ? when((px - X(0)) / k) : null,
+    matHm, mH, xMat, tMat: typeof when === 'function' ? when((xMat - X(0)) / k) : null,
+    D, Dm, s2, sy, mx0: px + 0.1 * k, mx1: Math.max(xMat + 1.8 * k, px + 4 * k), barY: oy - bar * k, upH: (bar + 0.45) * k,
+  };
 }
+
+/** An upright of the high jump standing at (x, y): a weighted foot, the
+    metal post with its height scale, a collar at the bar's height with the
+    peg the bar rests on, a cap; `rock` px sways its top. */
+function hjUpright(g, x, y, upH, barY, n, rock = 0, near = true) {
+  const top = y - upH, col = near ? (n ? '#d8d6d0' : '#f4f3ef') : (n ? '#9a988f' : '#cfccc3');
+  g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.ellipse(x + 6, y + 2, 18, 4, 0, 0, TAU); g.fill();
+  g.fillStyle = '#34383e'; g.beginPath(); g.roundRect(x - 14, y - 6, 28, 7, 2); g.fill();
+  g.fillStyle = '#4a4f57'; g.fillRect(x - 12, y - 6, 24, 2);
+  g.strokeStyle = col; g.lineWidth = near ? 5 : 4; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x + rock, top); g.stroke();
+  g.strokeStyle = withAlpha('#000000', 0.28); g.lineWidth = 1.2; g.beginPath(); g.moveTo(x + 1.6, y - 6); g.lineTo(x + 1.6 + rock, top); g.stroke();
+  // the height scale up the post
+  g.strokeStyle = withAlpha('#000000', 0.45); g.lineWidth = 1;
+  for (let yy = y - 14, i = 0; yy > top + 6; yy -= 5, i++) { const r0 = rock * (y - yy) / upH; g.beginPath(); g.moveTo(x - (i % 4 ? 2 : 4) + r0, yy); g.lineTo(x + r0, yy); g.stroke(); }
+  // the collar and the peg the bar sits on
+  const rb = rock * (y - barY) / upH;
+  g.fillStyle = '#2d3036'; g.fillRect(x - 4 + rb, barY - 3, 8, 9);
+  g.fillStyle = '#e8b13a'; g.fillRect(x - 1 + rb, barY - 1, 3, 3);
+  g.fillStyle = '#2d3036'; g.beginPath(); g.arc(x + rock, top, 3, 0, TAU); g.fill();
+}
+
+/** The bar from (x0, y0) to (x1, y1), bowed down `bow` px in the middle: a
+    white rod, its underside shaded, solid — never dashed (rule 2). `part`
+    draws only its first part, from the near end. */
+function hjBar(g, x0, y0, x1, y1, bow = 0, part = 1) {
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + bow * 2;
+  const q = (t) => ({ x: (1 - t) ** 2 * x0 + 2 * (1 - t) * t * cx + t * t * x1, y: (1 - t) ** 2 * y0 + 2 * (1 - t) * t * cy + t * t * y1 });
+  const pts = []; for (let i = 0; i <= 24; i++) pts.push(q((i / 24) * part));
+  const line = (col, wd, dy) => { g.strokeStyle = col; g.lineWidth = wd; g.lineCap = 'round'; g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y + dy) : g.moveTo(p.x, p.y + dy))); g.stroke(); };
+  line(withAlpha('#000000', 0.35), 6, 1.2);
+  line('#f7f7f4', 4.5, 0);
+  line(withAlpha('#9aa0a8', 0.9), 1.4, 1.4);
+}
+
+/** A high jump in an athletics stadium: the stadium's stand and track behind,
+    the jumping apron round the take-off; the uprights and the bar stand where
+    the jump peaks and the crash mat beyond, receding into the screen
+    (`highjumpGeom`). A clean jump bows the bar and shakes it on its pegs as
+    the jumper goes over; one under the bar clips it at the engine's moment,
+    and it rolls off its pegs onto the mat, bouncing once. The near upright
+    and the near part of the bar are drawn after the jumper (`highjump.front`). */
+function highjump(g, c) {
+  const { w, h, k, X, oy, x0, now = -1 } = c;
+  stadium(g, { ...c, H0: 0, who: null });
+  const E = env(), n = E.night, r = rng(181);
+  // the apron: a D-shaped fan of track surface round the take-off, its grain, a worn patch at the take-off
+  const ax0 = x0 - clamp(9 * k, 120, 520), ax1 = x0 + clamp(2.2 * k, 40, 160), ad = clamp((h - oy) * 0.55, 14, 60), aS = 0.85;
+  g.save();
+  g.beginPath(); g.moveTo(ax0 - ad * aS, oy + ad); g.lineTo(ax1 - ad * aS, oy + ad); g.quadraticCurveTo(ax1 + ad * 1.4, oy, ax1 + ad * aS, oy - ad * 0.7); g.lineTo(ax0 + ad * 0.7 * aS, oy - ad * 0.7); g.closePath();
+  g.fillStyle = n ? '#2c3e5a' : '#4a72a8'; g.fill(); g.clip();
+  g.fillStyle = withAlpha('#ffffff', n ? 0.05 : 0.08); for (let i = 0; i < 260; i++) g.fillRect(ax0 - ad + r() * (ax1 - ax0 + 2 * ad), oy - ad + r() * ad * 2, 1.4, 1.4);
+  g.fillStyle = withAlpha('#000000', 0.08); for (let i = 0; i < 200; i++) g.fillRect(ax0 - ad + r() * (ax1 - ax0 + 2 * ad), oy - ad + r() * ad * 2, 1.4, 1.4);
+  const wear = g.createRadialGradient(x0, oy, 0, x0, oy, clamp(0.8 * k, 16, 50)); wear.addColorStop(0, withAlpha('#ffffff', n ? 0.07 : 0.14)); wear.addColorStop(1, withAlpha('#ffffff', 0));
+  g.fillStyle = wear; g.fillRect(x0 - 80, oy - 80, 160, 160);
+  // the run-up's curve, marked in short strips of tape: solid strips, never a dashed line (rule 2)
+  g.fillStyle = withAlpha('#f4f2ea', 0.75);
+  for (let i = 1; i < 7; i++) { const u = i / 7, xx = x0 - u * clamp(7 * k, 100, 420), yy = oy + ad * 0.6 * u * u; g.fillRect(xx - 5, yy - 1, 10, 2.4); }
+  g.fillStyle = '#f4f2ea'; g.fillRect(x0 - 2, oy - 4, 4, 9);
+  g.restore();
+  const G = highjumpGeom(c);
+  if (!G) return;
+  c.hj = G;
+  const { px, D, Dm, s2, sy, mx0, mx1, mH, upH } = G;
+  // the mat: the front face, the right side and the top, quilted, its cover's handles and its darker skirt
+  const nl = (x, d) => ({ x: x - d * s2, y: oy + d * sy }), fr = (x, d) => ({ x: x + d * s2, y: oy - d * sy });
+  const age = G.tMat != null && now >= G.tMat ? now - G.tMat : -1;
+  // the landing dents the top: deepest just after, a little of it left
+  const dent = age < 0 ? 0 : clamp(0.28 * k, 4, 16) * (age < 0.12 ? age / 0.12 : 0.45 + 0.55 * Math.exp(-(age - 0.12) * 5));
+  c.hj.dent = dent;
+  const A = nl(mx0, Dm), B = nl(mx1, Dm), C = fr(mx1, Dm), D0 = fr(mx0, Dm);
+  softShadow(g, (A.x + C.x) / 2 + 8, oy + Dm * sy * 0.2 + 4, (mx1 - mx0) * 0.6, Dm * sy * 0.9, 0.55);
+  const top = n ? '#3a5f9a' : '#3d7dd8', side = n ? '#2a4775' : '#2d64b4', face = n ? '#22385e' : '#24508e';
+  // the right side
+  g.fillStyle = side; g.beginPath(); g.moveTo(B.x, B.y - mH); g.lineTo(C.x, C.y - mH); g.lineTo(C.x, C.y); g.lineTo(B.x, B.y); g.closePath(); g.fill();
+  // the top, its near edge sagging where the jumper lands
+  const xm = G.xMat;
+  g.fillStyle = top; g.beginPath(); g.moveTo(A.x, A.y - mH);
+  for (let x = mx0; x <= mx1; x += 4) { const dd = dent * Math.exp(-(((x - xm) / Math.max(20, 0.6 * k)) ** 2)); g.lineTo(x - Dm * s2, A.y - mH + dd * 0.5); }
+  g.lineTo(B.x, B.y - mH); g.lineTo(C.x, C.y - mH); g.lineTo(D0.x, D0.y - mH); g.closePath(); g.fill();
+  // the quilting: seams across the top and along it
+  g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = 1;
+  for (let x = mx0 + 0.6 * k; x < mx1 - 0.2 * k; x += Math.max(18, 0.6 * k)) { const a = nl(x, Dm), b = fr(x, Dm); g.beginPath(); g.moveTo(a.x, a.y - mH + 2); g.lineTo(b.x, b.y - mH); g.stroke(); }
+  for (const d of [Dm * 0.33, -Dm * 0.33]) { const a = nl(mx0, d), b = nl(mx1, d); g.beginPath(); g.moveTo(a.x, a.y - mH); g.lineTo(b.x, b.y - mH); g.stroke(); }
+  // the dent, a soft hollow round where it lands
+  if (dent > 0) { const dg = g.createRadialGradient(xm, oy - mH, 0, xm, oy - mH, Math.max(16, 0.9 * k)); dg.addColorStop(0, withAlpha('#000000', clamp(dent / 30, 0.08, 0.35))); dg.addColorStop(1, withAlpha('#000000', 0)); g.fillStyle = dg; g.beginPath(); g.ellipse(xm, oy - mH, Math.max(16, 0.9 * k), Dm * sy * 0.6, 0, 0, TAU); g.fill(); }
+  // the front face, rounded at its pillow edge, with its skirt and handles
+  const fg = g.createLinearGradient(0, A.y - mH, 0, A.y);
+  fg.addColorStop(0, face); fg.addColorStop(1, n ? '#182945' : '#1c3f72');
+  g.fillStyle = fg; g.beginPath(); g.roundRect(A.x, A.y - mH, B.x - A.x, mH, Math.min(10, mH * 0.3)); g.fill();
+  g.fillStyle = withAlpha('#000000', 0.25); g.fillRect(A.x + 3, A.y - mH * 0.22, B.x - A.x - 6, mH * 0.22 - 1);
+  g.strokeStyle = withAlpha('#ffffff', 0.28); g.lineWidth = 2; g.beginPath(); g.moveTo(A.x + 6, A.y - mH + 2); g.lineTo(B.x - 6, B.y - mH + 2); g.stroke();
+  g.strokeStyle = withAlpha('#000000', 0.45); g.lineWidth = 2;
+  for (let x = A.x + 0.8 * k; x < B.x - 0.4 * k; x += Math.max(40, 1.4 * k)) { g.beginPath(); g.arc(x, A.y - mH * 0.5, 4, Math.PI, 0); g.stroke(); }
+  // a breath of air from the seams as it lands
+  if (age >= 0 && age < 0.45) { g.strokeStyle = withAlpha('#ffffff', 0.5 * (1 - age / 0.45)); g.lineWidth = 1.4; for (const sgn of [-1, 1]) for (let i = 0; i < 3; i++) { const sx = xm + sgn * (14 + i * 9 + age * 60), sy = oy - mH + 4 + i * 3; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx + sgn * 8, sy - 3); g.stroke(); } }
+  // the far upright and the far half of the bar, behind the jumper
+  const far = fr(px, D), near = nl(px, D);
+  const st = hjState(G, now, k, oy);
+  hjUpright(g, far.x, far.y, upH, far.y - G.bar * k, n, st.rock, false);
+  if (!st.off) hjBar(g, far.x + st.rock * G.bar / (G.bar + 0.45), far.y - G.bar * k, near.x + st.rock * G.bar / (G.bar + 0.45), near.y - G.bar * k, st.bow);
+  c.reserve?.({ x: near.x - 16, y: near.y - upH - 6, w: far.x - near.x + 32, h: 14 });
+  c.reserve?.({ x: near.x - 16, y: far.y - G.bar * k - 8, w: far.x - near.x + 32, h: near.y - far.y + 16 });
+}
+
+/** How the bar is doing now: bowing and shaking after a clean jump, or
+    knocked off — its centre falling forward onto the mat and bouncing once. */
+function hjState(G, now, k, oy) {
+  const a = G.tBar != null && now >= G.tBar ? now - G.tBar : -1;
+  if (a < 0) return { bow: 0, rock: 0, off: false, a };
+  if (G.clears) return { bow: a < 0.6 ? 3.5 * Math.sin(a * 26) * Math.exp(-a * 6) : 0, rock: a < 0.6 ? 1.6 * Math.sin(a * 34) * Math.exp(-a * 7) : 0, off: false, a };
+  const fall = 0.42, u = clamp(a / fall, 0, 1);
+  const land = oy - G.mH - 4, dx = 0.7 * k * u, dy = (land - G.barY) * u * u;
+  const bounce = a > fall ? Math.abs(Math.sin((a - fall) * 9)) * 10 * Math.exp(-(a - fall) * 7) : 0;
+  return { bow: 0, rock: 3 * Math.sin(a * 22) * Math.exp(-a * 4), off: true, a, cx: G.px + dx, cy: G.barY + dy - bounce, tilt: 0.25 * u };
+}
+
+/** Over the jumper: the near upright and the near part of the bar; a bar
+    knocked off is drawn here as it falls, with the flash where it was clipped. */
+highjump.front = (g, c) => {
+  const G = c.hj; if (!G) return;
+  const { k, oy, now = -1 } = c, n = env().night, { px, D, s2, sy, upH } = G;
+  const far = { x: px + D * s2, y: oy - D * sy }, near = { x: px - D * s2, y: oy + D * sy };
+  const st = hjState(G, now, k, oy), lean = st.rock * G.bar / (G.bar + 0.45);
+  if (st.off) {
+    if (st.a < 0.16) { const fa = 1 - st.a / 0.16; g.fillStyle = withAlpha('#ffffff', 0.85 * fa); g.beginPath(); for (let i = 0; i < 10; i++) { const R = i % 2 ? 4 : 12, an = (i / 10) * TAU; const x = px + Math.cos(an) * R * (1 + st.a * 3), y = G.barY + Math.sin(an) * R * (1 + st.a * 3); if (i) g.lineTo(x, y); else g.moveTo(x, y); } g.closePath(); g.fill(); }
+    const hx = (far.x - near.x) / 2, hy = (far.y - near.y) / 2, ca = Math.cos(st.tilt), sa = Math.sin(st.tilt);
+    const ex = hx * ca - hy * sa, ey = hx * sa + hy * ca;
+    hjBar(g, st.cx - ex, st.cy - ey, st.cx + ex, st.cy + ey);
+  } else hjBar(g, near.x + lean, near.y - G.bar * k, far.x + lean, far.y - G.bar * k, st.bow, 0.38);
+  hjUpright(g, near.x, near.y, upH, near.y - G.bar * k, n, st.rock, true);
+};
 
 /** A golf course: a tree line with a clubhouse beyond, the fairway mown in
     stripes between the rough, a bunker clear of where it lands, and the
