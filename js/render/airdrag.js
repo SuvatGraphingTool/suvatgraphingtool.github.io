@@ -64,7 +64,7 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: xGhost, y: top }, { x: xGhost, y: yG }], { color: P.second, width: 2.4 });
   stroke(g, [{ x: xBall, y: top }, { x: xBall, y: yB }], { color: P.disp, width: 2.6 });
   L.add('no air resistance', xGhost + 12, top - 16, { color: P.second, size: 13, weight: 700, align: 'left' });
-  L.add('with it', xBall - 6, top - 16, { color: P.disp, size: 13, weight: 700, align: 'right' });
+  L.add('with air resistance', xBall - 6, top - 16, { color: P.disp, size: 13, weight: 700, align: 'right' });
 
   // ── landings: dust and a plate with the speed, each at the engine's moment
   for (const [tl, x, v, col] of [[f.t0, xGhost, f.v0, P.second], [f.t1, xBall, f.v1, P.vel]]) {
@@ -86,18 +86,19 @@ export function render(canvas, cam, o) {
   }
   ball(g, xBall, yBb, r, false);
   if (f.m != null && f.R != null && (falling || !fired || t === 0)) {
-    const W = f.m * f.g, sc = clamp(k * 1.2, 30, 70) / W;
-    arrow(g, xBall - r - 14, yBb, xBall - r - 14, yBb + W * sc, { color: P.ink, width: 2.2, head: 8 });
-    if (f.R > 1e-9) arrow(g, xBall - r - 14, yBb, xBall - r - 14, yBb - Math.max(12, f.R * sc), { color: P.ink, width: 2.2, head: 8 });
-    L.add(T`mg = ${tr(W)} [N]`, xBall - r - 22, yBb + W * sc * 0.75, { color: P.ink, size: 13, weight: 700, align: 'right' });
-    if (f.R > 1e-9) L.add(T`R = ${tr(f.R)} [N]`, xBall - r - 22, yBb - Math.max(12, f.R * sc) * 0.8 - 6, { color: P.ink, size: 13, weight: 700, align: 'right' });
+    // to one scale, each from the ball's own edge: the weight from its foot, the resistance from its top
+    const W = f.m * f.g, sc = clamp(k * 1.6, 40, 90) / W, ax = xBall - r - 12;
+    arrow(g, ax, yBb + r * 0.2, ax, yBb + r * 0.2 + W * sc, { color: P.ink, width: 2.2, head: 8 });
+    if (f.R > 1e-9) arrow(g, ax, yBb - r * 0.2, ax, yBb - r * 0.2 - Math.max(6, f.R * sc), { color: P.ink, width: 2.2, head: Math.min(8, Math.max(5, f.R * sc * 0.6)) });
+    L.add(T`mg = ${tr(W)} [N]`, ax - 8, yBb + W * sc * 0.75, { color: P.ink, size: 13, weight: 700, align: 'right' });
+    if (f.R > 1e-9) L.add(T`R = ${tr(f.R)} [N]`, ax - 8, yBb - Math.max(6, f.R * sc) - 12, { color: P.ink, size: 13, weight: 700, align: 'right' });
   }
   // each one's velocity, down (solid: vertical, rule 2), beside its ball
   if (fired && t > 0) {
     const vs = clamp(k * 2.2, 50, 130) / f.v0;
     for (const [x, yb, v, done] of [[xGhost, yGb, f.velFree(t), t >= f.t0], [xBall, yBb, f.velDrag(t), t >= f.t1]]) {
       if (done) continue;
-      arrow(g, x + r + 10, yb, x + r + 10, yb + v * vs, { color: P.vel, width: 2.4, head: 9 });
+      arrow(g, x + r + 10, yb, x + r + 10, Math.min(oy - 2, yb + v * vs), { color: P.vel, width: 2.4, head: 9 });
     }
   }
 

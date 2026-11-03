@@ -982,7 +982,8 @@ function recomputeKit() {
 function paperValues(scenario, boxes) {
   const ex = scenario?.example;
   if (!ex || scenario.group !== 'library') return true;
-  const val = (x) => (x == null || x === '' ? '' : String(x));
+  // compared as numbers where they are numbers: 15.0 is 15
+  const val = (x) => (x == null || x === '' ? '' : x !== true && x !== false && isFinite(Number(x)) ? String(Number(x)) : String(x));
   const keys = new Set([...Object.keys(ex), ...Object.keys(boxes).filter((k) => val(boxes[k]) !== '')]);
   return [...keys].every((k) => (k === 'g' && ex.g == null) || val(ex[k]) === val(boxes[k]) || (ex[k] == null && val(boxes[k]) === ''));
 }

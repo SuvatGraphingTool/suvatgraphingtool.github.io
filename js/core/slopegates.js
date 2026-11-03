@@ -30,7 +30,8 @@ const cu = (c, v) => `${Math.abs(c - 1) < 1e-12 ? '' : d(c)}${v}`;
  */
 export function solveSlopeGates(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
-  const g = have(k.g) && k.g > 0 ? k.g : 9.8;
+  if (have(k.g) && !(k.g > 0)) return fail('Give g as a positive number.');
+  const g = have(k.g) ? k.g : 9.8;
   for (const [x, what] of [[k.d1, 'PQ'], [k.t1, 'the time from P to Q'], [k.d2, 'QR'], [k.t2, 'the time from Q to R']]) {
     if (!have(x)) return fail(`Give ${what}.`);
     if (!(x > 0)) return fail(`Give ${what} as a positive number.`);

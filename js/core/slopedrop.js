@@ -37,7 +37,8 @@ function inT(c1, c2) {
  */
 export function solveSlopeDrop(k = {}) {
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
-  const g = have(k.g) && k.g > 0 ? k.g : 9.8;
+  if (have(k.g) && !(k.g > 0)) return fail('Give g as a positive number.');
+  const g = have(k.g) ? k.g : 9.8;
   const u = have(k.u) ? k.u : null, w = have(k.w) ? k.w : 0;
   if (u == null) return fail('Give P’s speed down the slope as it leaves X.');
   if (u < 0) return fail('P is sent down the slope: give its speed as a positive number (or 0).');

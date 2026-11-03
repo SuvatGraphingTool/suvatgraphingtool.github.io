@@ -32,8 +32,6 @@ export const airdrag = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'ticks', 'acceleration'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'down',
-  resolveEnds: true,
-  resolveEndWords: 'It reaches the ground here: the engine follows it no further.',
   resolveObjects: (f) => [
     { name: 'With air resistance', pos: (t) => f.fallDrag(t), vel: f.velDrag, acc: f.accDrag, axis: 'down', from: 'where it was let go' },
     { name: 'With none', pos: (t) => f.fallFree(t), vel: f.velFree, acc: f.accFree, axis: 'down', from: 'where it was let go' },
@@ -46,26 +44,29 @@ export const airdrag = {
   hud(f, t) {
     const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 560px)').matches;
     const left = [
-      { k: 'Fallen', v: num(f.fallDrag(t), 2), unit: 'm', hue: 'disp' },
-      { k: 'Speed, with air resistance', v: num(f.velDrag(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-      { k: 'Speed, with none', v: num(f.velFree(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-      { k: 'Acceleration, with it', v: t < f.t1 ? num(f.a, 2) : '—', unit: t < f.t1 ? 'm s⁻²' : '', hue: 'acc' },
+      { k: 'Fallen, with air resistance', v: num(f.fallDrag(t), 2), unit: 'm', hue: 'disp' },
+      // on the ground, the speed it landed at, said so
+      { k: t > f.t1 + 1e-9 ? 'Landed, with air resistance, at' : 'Speed, with air resistance', v: num(t > f.t1 + 1e-9 ? f.v1 : f.velDrag(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+      { k: t > f.t0 + 1e-9 ? 'Landed, with none, at' : 'Speed, with none', v: num(t > f.t0 + 1e-9 ? f.v0 : f.velFree(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+      { k: 'Acceleration, with air resistance', v: t <= f.t1 ? num(f.a, 3, { trim: true }) : '—', unit: t <= f.t1 ? 'm s⁻²' : '', hue: 'acc' },
     ];
     return { left: phone ? left.slice(1, 3) : left, right: [{ k: 'Time', v: num(t, 2), unit: 's' }] };
   },
 
   /* Straight down: solid (rule 2). The model with none in the second object's stone. */
   graphs(f, t, P) {
+    // each line ends where its ball lands: nothing after it is claimed
+    const upTo = (fn, tl) => (tt) => (tt > tl + 1e-9 ? NaN : fn(tt));
     return [
       { canvas: 'g-s', title: 'Distance fallen–time', unit: 'm', tMax: f.tMax, t, series: [
-        { label: 'with none', tag: 'none', fn: f.fallFree, color: P.second, dash: null },
-        { label: 'with air resistance', tag: 'with', fn: f.fallDrag, color: P.disp, dash: null }] },
+        { label: 'with none', tag: 'none', fn: upTo(f.fallFree, f.t0), color: P.second, dash: null },
+        { label: 'with air resistance', tag: 'with', fn: upTo(f.fallDrag, f.t1), color: P.disp, dash: null }] },
       { canvas: 'g-v', title: 'Speed–time', unit: 'm s⁻¹', tMax: f.tMax, t, series: [
-        { label: 'with none', tag: 'none', fn: f.velFree, color: P.second, dash: null },
-        { label: 'with air resistance', tag: 'with', fn: f.velDrag, color: P.vel, dash: null }] },
+        { label: 'with none', tag: 'none', fn: upTo(f.velFree, f.t0), color: P.second, dash: null },
+        { label: 'with air resistance', tag: 'with', fn: upTo(f.velDrag, f.t1), color: P.vel, dash: null }] },
       { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax: f.tMax, t, series: [
-        { label: 'with none', tag: 'none', fn: f.accFree, color: P.second, dash: null, breaks: [f.t0] },
-        { label: 'with air resistance', tag: 'with', fn: f.accDrag, color: P.acc, dash: null, breaks: [f.t1] }] },
+        { label: 'with none', tag: 'none', fn: upTo(f.accFree, f.t0), color: P.second, dash: null },
+        { label: 'with air resistance', tag: 'with', fn: upTo(f.accDrag, f.t1), color: P.acc, dash: null }] },
     ];
   },
 
@@ -81,7 +82,7 @@ export const airdrag = {
   ending(s) {
     return {
       eyebrow: 'Two models of one fall',
-      title: `${T`${num(s.v1, 3, { trim: true })} [m s^-1]`} with the air, ${T`${num(s.v0, 3, { trim: true })} [m s^-1]`} without.`,
+      title: `${T`${num(s.v1, 3, { trim: true })} [m s^-1]`} with air resistance, ${T`${num(s.v0, 3, { trim: true })} [m s^-1]`} without.`,
       body: s.notes.map((x) => `<p>${x}</p>`).join(''),
       real: true,
     };

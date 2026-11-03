@@ -871,7 +871,7 @@ export const LIBRARY = [
     reader: 'h is the height it falls; m its mass; R the constant air resistance in newtons — or a, its acceleration with the resistance, or v, the speed it lands at with it (one of R, a, v). u only when it is thrown down.',
     parts: [
       { label: 'a', kind: 'speed', ask: 'Find the speed it hits the ground at, with no air resistance.', find: 'v0', sym: 'v', unit: 'm s^-1', dp: 1, at: 'f.t0', step: 'no air resistance', paper: 17.1, tol: 0.06 },
-      { label: 'b.i', kind: 'graph', ask: 'Draw a diagram of the forces on the ball as it falls.', say: 'The stage draws them on the ball while it falls: its weight down, the air resistance up.', at: 'f.t1' },
+      { label: 'b.i', kind: 'graph', ask: 'Draw a diagram of the forces on the ball as it falls.', say: 'The stage draws them on the ball while it falls: its weight down, the air resistance up.', at: 'f.tMid' },
       { label: 'b.ii', kind: 'show', ask: 'With 0.9 N of air resistance on the 0.5 kg ball, show its acceleration is 8 m s⁻².', find: 'a', sym: 'a', unit: 'm s^-2', trim: true, at: 0, step: 'with the air resistance', paper: 8 },
       { label: 'b.iii', kind: 'speed', ask: 'Find the speed it hits the ground at.', find: 'v1', sym: 'v', unit: 'm s^-1', dp: 1, at: 'f.t1', step: 'with the air resistance', uses: ['b.ii'], paper: 15.5, tol: 0.06 },
       { label: 'b.iv', kind: 'other', ask: 'Why may the air resistance not really be constant?', say: 'Air resistance grows with speed: as the ball speeds up, the air pushes back harder.', at: 'f.t1' },
@@ -889,7 +889,7 @@ export const LIBRARY = [
         ['A constant resistance', 'real air resistance grows with speed, roughly as its square: small at first, largest just before it lands.'],
         ['A particle', 'the ball has no size and does not spin.'],
       ],
-      caveat: 'What the engine did compute is above: the fall with no air resistance, the acceleration with it from F = ma, and the fall with it.',
+      caveat: 'What the engine did compute is above: the fall with no air resistance; the acceleration with it — from F = ma, or from the speed it lands at, or as given; and the fall with it.',
     } },
   { id: 'into-the-water', group: 'library', kit: 'tank',
     name: 'Into the water',
