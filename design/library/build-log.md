@@ -2,6 +2,18 @@
 
 Short notes, newest first. What shipped, what was audited, where a session stopped.
 
+## 3 Nov 2026, later — audit 26 done; library 54 and 55 built
+
+- **Audit 26** (51 `last-stretch`, 52 `passed-at-x`): papers right, no wrong physics. Fixed (30e6197):
+  paper parts only on the paper's numbers (app-wide: `paperValues` in js/app.js); the lanes card
+  under the clock on a phone; "differ by 0"; fractions kept as fractions in lastfall; a word space
+  beside maths on canvas (js/notation.js); units on "Ready"; caveats true for any numbers.
+  **Open polish:** Resolve after landing on last-stretch says "at t = 4.2 s … going down"; ending
+  rounding 43.8 vs 43.75; near-degenerate H ≈ p; overlaps on the passed-at-x v–t graph and the
+  last-stretch plates on a phone; M/N names on passed-at-x and "from the start" on rails in Resolve.
+- **Library 54 `slope-and-drop`** (OCR 4728 Jan 2011 Q5) and **55 `one-bicycle`** (OCR 4728 Jun
+  2015 Q3) built and pushed; with 53, in front of one physics critic, then one UI critic.
+
 ## 3 Nov 2026, afternoon — scenario 53 built; audit 26 restarted
 
 - **Library 53 `change-of-course`** (Edexcel M1 Jun 2006 Q7): a ship on course for a submerged
