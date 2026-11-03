@@ -984,7 +984,7 @@ function paperValues(scenario, boxes) {
   if (!ex || scenario.group !== 'library') return true;
   const val = (x) => (x == null || x === '' ? '' : String(x));
   const keys = new Set([...Object.keys(ex), ...Object.keys(boxes).filter((k) => val(boxes[k]) !== '')]);
-  return [...keys].every((k) => k === 'g' || val(ex[k]) === val(boxes[k]) || (ex[k] == null && val(boxes[k]) === ''));
+  return [...keys].every((k) => (k === 'g' && ex.g == null) || val(ex[k]) === val(boxes[k]) || (ex[k] == null && val(boxes[k]) === ''));
 }
 
 const sameKitBoxes = (a, b) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);

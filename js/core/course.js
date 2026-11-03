@@ -144,8 +144,11 @@ export function solveCourse(k = {}) {
   const legs = [{ t0: 0, t1: tc ?? Infinity, r0, v: v1 }];
   if (tc != null) legs.push({ t0: tc, t1: Infinity, r0: Pc, v: v2 });
   const legAt = (t) => (legs.length > 1 && t >= tc - 1e-12 ? legs[1] : legs[0]);
-  const pos = (t) => { const L = legAt(t); return { x: L.r0.x + L.v.x * (t - L.t0), y: L.r0.y + L.v.y * (t - L.t0) }; };
-  const vel = (t) => legAt(t).v;
+  // once it reaches the rock it goes no further: `wreck` is set below, when the engine finds that moment
+  let wreck = null;
+  const posAt = (t) => { const L = legAt(t); return { x: L.r0.x + L.v.x * (t - L.t0), y: L.r0.y + L.v.y * (t - L.t0) }; };
+  const pos = (t) => posAt(wreck != null ? Math.min(t, wreck) : t);
+  const vel = (t) => (wreck != null && t > wreck + 1e-12 ? { x: 0, y: 0 } : legAt(t).v);
 
   const turn = [];
   let afterExpr = null;
@@ -166,6 +169,7 @@ export function solveCourse(k = {}) {
     const s0 = sx == null ? sy : sy == null ? sx : Math.abs(sx - sy) < 1e-9 ? sx : NaN;
     if (have(s0) && s0 > 1e-9) { hitNew = snap(tc + s0); notes.push(`Its new course takes it onto the rock too, ${whenAt(hitNew)}.`); }
   }
+  wreck = tc == null ? tHit : hitNew;
 
   // ── when is the ship due `due` of the rock? On each leg Δ = r − R is linear in t
   const answers = {};
@@ -189,6 +193,7 @@ export function solveCourse(k = {}) {
       if (s < -1e-9 || t > L.t1 + 1e-9) continue;
       const dl = { x: c.x + m.x * s, y: c.y + m.y * s };
       if (Math.hypot(dl.x, dl.y) < 1e-9 || dl.x * D.x + dl.y * D.y <= 1e-9) continue;
+      if (wreck != null && t > wreck + 1e-9) continue;          // after it has reached the rock: no more of it
       found.push({ leg: i, s, t, dl: V(dl.x, dl.y), c, m });
     }
     const rel = D.x === 0 ? M`x = x_R` : D.y === 0 ? M`y = y_R` : D.x === D.y ? M`x - x_R = y - y_R` : M`x - x_R = -(y - y_R)`;
@@ -210,7 +215,8 @@ export function solveCourse(k = {}) {
 
   // ── where it is at a time asked, and how far from the rock
   const atRows = [];
-  if (A.t != null) {
+  if (A.t != null && wreck != null && A.t > wreck + 1e-9) notes.push(`It reaches the rock ${whenAt(wreck)}, before the time asked: the engine follows it no further.`);
+  else if (A.t != null) {
     const t = A.t, L = legAt(t), p = V(pos(t).x, pos(t).y), s = snap(t - L.t0);
     atRows.push({ f: L === legs[0] ? M`vec r = vec r_0 + vec(v)t` : M`vec r = vec r_1 + vec(v)t`, s: M`${from(L.r0)}${d(s)}(${vsrc(L.v)})`, r: M`vec r = ${vsrc(p)} [${U.len}]` });
     const out = { t, hhmm: clocked ? clockOf(h0 + t) : null, day: day(t), pos: p };
@@ -229,7 +235,7 @@ export function solveCourse(k = {}) {
   if (!derived.length) derived.push(`${M`${d(heads[0].sp)} [${U.speed}]`} on ${M`${num(heads[0].br, 0)}°`}`);
 
   const times = [tc, tHit, hitNew, answers.due?.t, A.t].filter((x) => have(x) && x >= 0);
-  const tMax = Math.max(0.5, ...times.map((x) => x * 1.12));
+  const tMax = wreck != null ? Math.max(wreck, ...times.filter((x) => x <= wreck)) : Math.max(0.5, ...times.map((x) => x * 1.12));
   const f = {
     kind: 'course', hitNew, tMax, tFlight: tMax, U, clocked, h0, legs, tc, tHit, R, Pc, answers,
     pos, vel, clock: (t) => (clocked ? clockOf(h0 + t) : null),

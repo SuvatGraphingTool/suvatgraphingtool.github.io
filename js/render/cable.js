@@ -65,7 +65,7 @@ export function render(canvas, cam, o) {
   const Tn = f.M == null ? null : still ? f.weight : f.tension(t), R = !f.m ? null : still ? f.weightPassenger : f.floor(t), a = still ? 0 : st.a;
   // a part that asks for one of the forces has it marked, in the stage it is asked about
   const ask = askPart?.find === 'T1' || askPart?.find === 'T3' ? 'T' : askPart?.find === 'R3' || askPart?.find === 'R1' ? 'R' : null;
-  const wLab = f.m ? T`(M + m)g` : T`M g`;
+  const wSrc = f.m ? '(M + m)g' : 'M g';   // notation source, typeset once where it is used
 
   if (!card) {
     // no room for a card: the forces in one line along the foot of the stage
@@ -116,7 +116,7 @@ export function render(canvas, cam, o) {
     if (kind === 'lift') {
       cab(g, x, y, 34, 28, P);
       g.strokeStyle = '#9aa0a8'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y - 14 - 3); g.lineTo(x, y - 14 - 9); g.stroke();
-      upTxt = T`T = ${fN(q.up)} [N]`; downTxt = T`${wLab} = ${fN(q.down)} [N]`; mark = ask === 'T';
+      upTxt = T`T = ${fN(q.up)} [N]`; downTxt = T`${wSrc} = ${fN(q.down)} [N]`; mark = ask === 'T';
     } else {
       g.strokeStyle = withAlpha(P.ink, 0.6); g.lineWidth = 2; g.beginPath(); g.moveTo(x - 16, y + q.H / 2); g.lineTo(x + 16, y + q.H / 2); g.stroke();
       runner(g, x, y + q.H / 2, q.H, P, { still: true });

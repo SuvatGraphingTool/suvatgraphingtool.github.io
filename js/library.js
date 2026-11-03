@@ -859,7 +859,7 @@ export const LIBRARY = [
         ['A particle', 'the block has no size: the gates see it at one instant, and it does not tip or roll.'],
         ['No air resistance', 'at these speeds, rightly so.'],
       ],
-      caveat: 'What the engine did compute is above: u and a from the two stretches together, then μ from F = ma along the slope, and whether friction can hold it where it stops.',
+      caveat: 'What the engine did compute is above: u and a from the two stretches together; and, given the slope’s angle, μ from F = ma along the slope and whether friction can hold it where it stops.',
     } },
   { id: 'into-the-water', group: 'library', kit: 'tank',
     name: 'Into the water',

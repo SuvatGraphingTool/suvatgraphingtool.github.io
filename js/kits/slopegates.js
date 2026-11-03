@@ -71,8 +71,8 @@ export const slopegates = {
 
   ending(s) {
     return {
-      eyebrow: s.mu != null ? 'Friction, from its timing' : 'Its deceleration, from its timing',
-      title: s.mu != null ? `${T`mu = ${num(s.mu, 3, { trim: true })}`}.` : `It slows at ${T`${num(s.dec, 3, { trim: true })} [m s^-2]`}.`,
+      eyebrow: s.mu != null ? 'Friction, from its timing' : 'Its motion, from its timing',
+      title: s.mu != null ? `${T`mu = ${num(s.mu, Math.max(0, 2 - Math.floor(Math.log10(Math.abs(s.mu) || 1))), { trim: true })}`}.` : s.a < -1e-12 ? `It slows at ${T`${num(s.dec, 3, { trim: true })} [m s^-2]`}.` : s.a > 1e-12 ? `It speeds up at ${T`${num(s.a, 3, { trim: true })} [m s^-2]`}.` : 'It moves at a steady speed.',
       body: s.notes.map((x) => `<p>${x}</p>`).join(''),
       real: true,
     };

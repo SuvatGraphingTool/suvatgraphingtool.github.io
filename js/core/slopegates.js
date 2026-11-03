@@ -21,7 +21,9 @@ const have = (x) => typeof x === 'number' && isFinite(x);
 const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
 const RAD = Math.PI / 180;
 /** A number as the paper would write it exactly: 23/15, −2/3 — or its decimal when it is no simple fraction. */
-const exact = (x) => { const r = rat(Math.abs(x), 60); return r && r.q > 1 ? `${x < 0 ? '-' : ''}${r.p}/${r.q}` : d(x); };
+const exact = (x) => { const r = rat(Math.abs(x), 60); return r && r.q > 1 && r.p < 1000 ? `${x < 0 ? '-' : ''}${r.p}/${r.q}` : d(x); };
+/** c·u as source, with no coefficient of one */
+const cu = (c, v) => `${Math.abs(c - 1) < 1e-12 ? '' : d(c)}${v}`;
 
 /**
  * @param k { d1, t1: the first stretch (P to Q) and its time; d2, t2: the second (Q to R); theta: the slope's angle; g }
@@ -31,7 +33,7 @@ export function solveSlopeGates(k = {}) {
   const g = have(k.g) && k.g > 0 ? k.g : 9.8;
   for (const [x, what] of [[k.d1, 'PQ'], [k.t1, 'the time from P to Q'], [k.d2, 'QR'], [k.t2, 'the time from Q to R']]) {
     if (!have(x)) return fail(`Give ${what}.`);
-    if (!(x > 0)) return fail(`${what.replace(/^t/, 'T')} is more than 0.`);
+    if (!(x > 0)) return fail(`Give ${what} as a positive number.`);
   }
   const { d1, t1, d2, t2 } = k, T = t1 + t2;
   // P to Q: d1 = u t1 + ½ a t1²;  P to R: d1 + d2 = u T + ½ a T²
@@ -39,16 +41,17 @@ export function solveSlopeGates(k = {}) {
   const u = snap((d1 * 0.5 * T * T - 0.5 * t1 * t1 * (d1 + d2)) / det);
   const a = snap((t1 * (d1 + d2) - T * d1) / det);
   const rows = [
-    { f: M`s = ut + 1/2 at^2`, s: M`${d(d1)} = ${d(t1)}u + ${d(0.5 * t1 * t1)}a`, r: M`"P to Q"` },
-    { f: M`s = ut + 1/2 at^2`, s: M`${d(d1 + d2)} = ${d(T)}u + ${d(0.5 * T * T)}a`, r: M`"P to R"` },
+    { f: M`s = ut + 1/2 at^2`, s: M`${d(d1)} = ${cu(t1, 'u')} + ${cu(0.5 * t1 * t1, 'a')}`, r: M`"P to Q"` },
+    { f: M`s = ut + 1/2 at^2`, s: M`${d(d1 + d2)} = ${cu(T, 'u')} + ${cu(0.5 * T * T, 'a')}`, r: M`"P to R"` },
     { f: M`"together"`, s: '', r: M`a = ${exact(a)} [m s^-2], u = ${exact(u)} [m s^-1]` },
   ];
   if (!(u > 0)) return fail(`Those stretches and times need it to set off at ${M`u = ${d(u)} [m s^-1]`}: it must be moving up the slope at P.`);
   const vQ = snap(u + a * t1), vR = snap(u + a * T);
-  if (vR < -1e-9) return fail(`It would have stopped and come back before R: at those times its velocity at R is ${M`${d(vR)} [m s^-1]`}. Up a slope it reaches R still moving up, or just at rest.`);
+  if (vR < -1e-9) return fail(`At one deceleration those times need it to pass R, stop beyond it and come back down to R (its velocity at R would be ${M`${d(vR)} [m s^-1]`}): on a rough slope it comes back more slowly than it went up, so these times cannot happen.`);
   const notes = [
-    a < 0 ? `From the two stretches it slows at ${M`${exact(-a)} [m s^-2]`}, and it was sent off at ${M`u = ${exact(u)} [m s^-1]`}.`
-      : `From the two stretches it speeds up at ${M`${exact(a)} [m s^-2]`} — up a slope, something must be pushing it.`,
+    a < -1e-12 ? `From the two stretches it slows at ${M`${exact(-a)} [m s^-2]`}, and it was sent off at ${M`u = ${exact(u)} [m s^-1]`}.`
+      : a > 1e-12 ? `From the two stretches it speeds up at ${M`${exact(a)} [m s^-2]`} — up a slope, something must be pushing it.`
+        : `From the two stretches it moves at a steady ${M`${exact(u)} [m s^-1]`} — up a slope, friction and weight alone would slow it: something must be pushing it.`,
     `It passes Q at ${M`${d(vQ)} [m s^-1]`} and R at ${M`${d(vR)} [m s^-1]`}.`,
   ];
   const derived = [M`a = ${exact(a)} [m s^-2]`, M`u = ${exact(u)} [m s^-1]`];
@@ -58,7 +61,7 @@ export function solveSlopeGates(k = {}) {
   if (have(k.theta)) {
     if (!(k.theta > 0 && k.theta < 90)) return fail('The slope’s angle is between 0° and 90°.');
     const sn = Math.sin(k.theta * RAD), cs = Math.cos(k.theta * RAD);
-    if (!(a < 0)) return fail('Speeding up as it goes up a slope, it cannot be friction and weight alone: no coefficient of friction gives that.');
+    if (!(a < -1e-12)) return fail(a > 1e-12 ? 'Speeding up as it goes up a slope, it cannot be friction and weight alone: no coefficient of friction gives that.' : 'At a steady speed up a slope, it cannot be friction and weight alone, which both slow it: no coefficient of friction gives that.');
     mu = snap((-a - g * sn) / (g * cs));
     fr.push({ f: M`R = mg cos theta`, s: '', r: M`F = mu R = mu mg cos theta` });
     fr.push({ f: M`-mg sin theta - mu mg cos theta = ma`, s: M`-${d(g)} sin ${d(k.theta)}° - ${d(g)} mu cos ${d(k.theta)}° = ${exact(a)}`, r: M`mu = ${d(mu)}` });
@@ -78,7 +81,8 @@ export function solveSlopeGates(k = {}) {
   }
   // the clock runs from P to R, and on to where it stops (and a little back) when it slows
   const tEnd = tStop != null ? Math.max(T, tStop) : T;
-  const tMax = snap(tEnd + (back ? Math.min(tEnd * 0.4, 1.5) : tEnd * 0.06));
+  // without the angle nobody knows whether it stays or slides back: the clock ends where it stops
+  const tMax = snap(mu == null && tStop != null ? tEnd : tEnd + (back ? Math.min(tEnd * 0.4, 1.5) : tEnd * 0.06));
   const pos = (t) => {
     if (tStop == null || t <= tStop) return u * t + 0.5 * a * t * t;
     const down = back ? 0.5 * back * (t - tStop) * (t - tStop) : 0;
@@ -91,6 +95,7 @@ export function solveSlopeGates(k = {}) {
     pos, vel, acc, params: { u, theta: k.theta ?? 0, h: 0, g }, bounces: 0, segments: [], horiz: null, kineticEnergy: () => 0, momentum: () => 0,
     path(n = 100, tEnd2 = tMax) { const o = []; for (let i = 0; i <= n; i++) { const t = (i / n) * tEnd2; o.push({ t, x: pos(t), y: 0 }); } return o; },
   };
+  if (mu == null && tStop != null) notes.push(`It stops ${M`${d(sStop)} [m]`} up the slope from P. Whether it stays there or slides back needs the slope’s angle.`);
   return { ok: true, mode: 'slopegates', f, u, a, dec: snap(-a), vQ, vR, mu, back, sStop, tStop, rows, fr, notes, derived, params: f.params,
     exprs: { u: M`u = ${exact(u)} [m s^-1]`, i: `${a < 0 ? `it slows at ${M`${exact(-a)} [m s^-2]`}` : M`a = ${exact(a)} [m s^-2]`} <span class="pand">and</span> ${M`u = ${exact(u)} [m s^-1]`}` }, convention: 'Distance is measured up the slope from P; a velocity or an acceleration up the slope is positive.' };
 }
