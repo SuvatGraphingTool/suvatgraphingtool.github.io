@@ -1793,6 +1793,123 @@ function quarry(g, c) {
   scree(g, x0 - (nb - 1) * back, oy, k);
 }
 
+
+/* ── a mine shaft ──────────────────────────────────────────────────────── */
+
+/** The height of a mine's headframe over its shaft, px: drawn above the lip. */
+export const headframeH = (k) => clamp(4.5 * k, 46, 120);
+
+/** A mine shaft, side on and cut away: the pithead on the moor — the steel
+    headframe straddling the shaft with its winding wheel turning slowly, the
+    rope down the shaft's side, the brick winding house and a spoil heap —
+    then the ground cut open below: bands of rock and coal, the shaft lined in
+    timber sets every couple of metres, dark inside, the cage parked at its
+    foot; at the bottom a rubble floor lit by a lamp, the mouth of a tunnel
+    with rails and a tub. The shaft is centred on the drop at x0 and widened
+    to take whatever lands off to the side. */
+function mineshaft(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(331);
+  const surf = H0 > 0 ? top : oy;
+  sky(g, w, surf, x0, { far: 'hills', seed: 171, clouds: 3 });
+  const land = Math.max(x0, (c.clearX || [])[0] ?? x0);
+  const hw = clamp(0.9 * k, 16, 30), L = x0 - hw, Rr = land + hw;
+  // the moor at the surface, a thin band of turf over the rock
+  const turf = n ? '#2f3a2a' : '#6f8a4e';
+  g.fillStyle = turf; g.fillRect(0, surf - 3, w, 8);
+  // the rock below, cut away: bands of sandstone, shale and coal, wavy where they meet
+  const D = Math.max(20, oy - surf);
+  const bands = n ? ['#4a4036', '#3a342e', '#2a2724', '#16151a', '#3e362e', '#2c2a28'] : ['#a8865e', '#8e7a66', '#6c645c', '#2a2826', '#9a7e5e', '#7a6e62'];
+  const cut = [0, 0.18, 0.4, 0.55, 0.62, 0.85, 1.4].map((f) => surf + 5 + f * D);
+  for (let i = 0; i < bands.length; i++) {
+    g.fillStyle = bands[i]; g.beginPath(); g.moveTo(-4, cut[i]);
+    for (let x = -4; x <= w + 8; x += 24) g.lineTo(x, cut[i] + Math.sin(x / 70 + i) * (i ? 3 : 0));
+    for (let x = w + 8; x >= -4; x -= 24) g.lineTo(x, cut[i + 1] + Math.sin(x / 70 + i + 1) * 3);
+    g.closePath(); g.fill();
+  }
+  g.fillStyle = withAlpha('#000000', 0.18);
+  for (let i = 0; i < (w * D) / 900; i++) { const x = r() * w, y = surf + 8 + r() * D; g.fillRect(x, y, 2 + r() * 6, 1.2); }
+  // the coal seam's sheen
+  g.fillStyle = withAlpha('#ffffff', n ? 0.04 : 0.08); for (let x = r() * 30; x < w; x += 20 + r() * 40) g.fillRect(x, cut[3] + 2 + r() * (cut[4] - cut[3] - 4), 6 + r() * 10, 1);
+  // the floor of the workings, below the bottom
+  g.fillStyle = n ? '#25221f' : '#4e463e'; g.fillRect(0, oy, w, h - oy);
+  // the shaft: dark inside, lit a little from the top, timber sets every 2 m down its walls
+  const sg = g.createLinearGradient(0, surf, 0, oy);
+  sg.addColorStop(0, n ? '#1a1916' : '#3a332c'); sg.addColorStop(0.3, n ? '#0c0c0c' : '#16130f'); sg.addColorStop(1, '#0a0908');
+  g.fillStyle = sg; g.fillRect(L, surf, Rr - L, oy - surf);
+  const wall = Math.max(3, hw * 0.22), timber = n ? '#5a4632' : '#8a6a46', timberLo = n ? '#3a2c20' : '#5e4630';
+  g.fillStyle = timberLo; g.fillRect(L - wall, surf, wall, oy - surf); g.fillRect(Rr, surf, wall, oy - surf);
+  const set = Math.max(16, 2 * k);
+  for (let y = surf + set * 0.5; y < oy - 4; y += set) {
+    g.fillStyle = timber; g.fillRect(L - wall, y, Rr - L + wall * 2, Math.max(2, wall * 0.5));
+    g.fillStyle = withAlpha('#000000', 0.35); g.fillRect(L - wall, y + Math.max(2, wall * 0.5), Rr - L + wall * 2, 1);
+  }
+  // the winding rope down the shaft's far side, and the cage parked at the foot
+  const ropeX = L + Math.max(3, hw * 0.25);
+  g.strokeStyle = n ? '#8a8a8a' : '#55585e'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(ropeX, surf - headframeH(k) * 0.82); g.lineTo(ropeX, oy - Math.max(18, 1.8 * k)); g.stroke();
+  const cw = Math.max(10, Math.min(hw * 0.9, 1.3 * k)), ch = Math.max(16, 1.8 * k);
+  g.fillStyle = n ? '#3a3e44' : '#5c636c'; g.fillRect(ropeX - cw * 0.15, oy - ch, cw, ch);
+  g.strokeStyle = withAlpha('#000000', 0.5); g.lineWidth = 1; g.strokeRect(ropeX - cw * 0.15, oy - ch, cw, ch);
+  for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(ropeX - cw * 0.15, oy - ch + (ch * i) / 4); g.lineTo(ropeX + cw * 0.85, oy - ch + (ch * i) / 4); g.stroke(); }
+  // the bottom: rubble, the lamp on the wall and its pool of light, a tunnel off it with rails and a tub
+  const lampX = Rr + wall * 0.5, lampY = oy - Math.max(16, 1.4 * k);
+  const tunH = Math.max(28, 2.4 * k), tunR = Math.min(Rr + wall + clamp(6 * k, 80, 220), w + 4);
+  // the tunnel off the shaft's foot, its props, the rails and a tub on them
+  g.fillStyle = '#0d0c0b'; g.beginPath(); g.moveTo(Rr + wall, oy); g.lineTo(tunR, oy); g.lineTo(tunR, oy - tunH * 0.8); g.quadraticCurveTo((tunR + Rr) / 2, oy - tunH * 1.1, Rr + wall, oy - tunH); g.closePath(); g.fill();
+  for (let x = Rr + wall + 10; x < tunR; x += Math.max(18, 2 * k)) { g.fillStyle = timber; g.fillRect(x - 2, oy - tunH * 0.95, 3, tunH * 0.95); g.fillRect(x - 6, oy - tunH * 0.95, 10, 2); }
+  g.strokeStyle = '#8a8f96'; g.lineWidth = 1.2; for (const dy of [-2, -5]) { g.beginPath(); g.moveTo(Rr, oy + dy); g.lineTo(tunR, oy + dy); g.stroke(); }
+  const tubW = Math.max(22, 1.6 * k), tubX = Rr + wall + Math.max(24, 3 * k);
+  if (tubX + tubW < tunR - 4) {
+    g.fillStyle = n ? '#5a3e2a' : '#8a5a36'; g.beginPath(); g.moveTo(tubX, oy - tubW * 0.75); g.lineTo(tubX + tubW, oy - tubW * 0.75); g.lineTo(tubX + tubW * 0.9, oy - tubW * 0.2); g.lineTo(tubX + tubW * 0.1, oy - tubW * 0.2); g.closePath(); g.fill();
+    g.fillStyle = withAlpha('#ffffff', 0.12); g.fillRect(tubX + 2, oy - tubW * 0.72, tubW - 4, 2);
+    g.fillStyle = '#2a2a2a'; for (const fx of [0.25, 0.75]) { g.beginPath(); g.arc(tubX + tubW * fx, oy - tubW * 0.15, tubW * 0.12, 0, TAU); g.fill(); }
+    g.fillStyle = '#1c1c1c'; g.beginPath(); g.ellipse(tubX + tubW / 2, oy - tubW * 0.75, tubW * 0.45, tubW * 0.14, 0, Math.PI, TAU); g.fill();
+    c.reserve?.({ x: tubX - 2, y: oy - tubW, w: tubW + 4, h: tubW });
+  }
+  // the lamp at the foot and its pool of warm light
+  const lg = g.createRadialGradient(lampX, lampY, 0, lampX, lampY, Math.max(60, 4 * k));
+  lg.addColorStop(0, 'rgba(255,210,130,0.55)'); lg.addColorStop(1, 'rgba(255,210,130,0)');
+  g.fillStyle = lg; g.fillRect(lampX - 4 * k - 60, lampY - 4 * k - 60, 8 * k + 120, 8 * k + 120);
+  g.fillStyle = '#ffd88a'; g.beginPath(); g.arc(lampX, lampY, 3.5, 0, TAU); g.fill();
+  g.fillStyle = n ? '#4a4038' : '#7a6a58'; for (let x = L - wall; x < Rr + wall; x += 4) { g.beginPath(); g.arc(x + r() * 3, oy, 1.5 + r() * 2.5, Math.PI, TAU); g.fill(); }
+  // the shaft collar at the surface, concrete, and the fence round it
+  g.fillStyle = n ? '#6a6862' : '#b9b4a8'; g.fillRect(L - wall - 6, surf - 4, wall + 6, 6); g.fillRect(Rr, surf - 4, wall + 6, 6);
+  // the headframe: two steel legs spread over the shaft, braced, the wheel on top turning
+  const HF = headframeH(k), hx = (L + Rr) / 2, hy = surf - HF;
+  const steel = n ? '#7a2e28' : '#a33a2e', steelLo = n ? '#4e1e1a' : '#6e2820';
+  g.strokeStyle = steelLo; g.lineWidth = Math.max(2, HF * 0.035);
+  const spread = Math.max(Rr - L, HF * 0.5) / 2 + wall + 4;
+  g.beginPath(); g.moveTo(hx - spread, surf - 2); g.lineTo(hx - HF * 0.08, hy + HF * 0.1); g.moveTo(hx + spread, surf - 2); g.lineTo(hx + HF * 0.08, hy + HF * 0.1); g.stroke();
+  // the back-leg strut out to the winding house side
+  g.beginPath(); g.moveTo(hx + HF * 0.08, hy + HF * 0.12); g.lineTo(hx + spread + HF * 0.55, surf - 2); g.stroke();
+  g.strokeStyle = steel; g.lineWidth = Math.max(1, HF * 0.015);
+  for (let i = 1; i < 6; i++) {
+    const f = i / 6, yA = surf - 2 - (surf - 2 - (hy + HF * 0.1)) * f, xa = hx - spread + (spread - HF * 0.08) * f, xb = hx + spread - (spread - HF * 0.08) * f;
+    g.beginPath(); g.moveTo(xa, yA); g.lineTo(xb, yA); g.stroke();
+    if (i < 5) { const f2 = (i + 1) / 6, yB = surf - 2 - (surf - 2 - (hy + HF * 0.1)) * f2; g.beginPath(); g.moveTo(xa, yA); g.lineTo(hx + spread - (spread - HF * 0.08) * f2, yB); g.stroke(); }
+  }
+  const wr = HF * 0.16, spin = phase * 0.4;
+  g.fillStyle = steelLo; g.fillRect(hx - wr * 1.2, hy + HF * 0.06, wr * 2.4, Math.max(2, HF * 0.04));
+  g.strokeStyle = n ? '#9a9a9a' : '#3a3d42'; g.lineWidth = Math.max(1.5, wr * 0.14); g.beginPath(); g.arc(hx, hy, wr, 0, TAU); g.stroke();
+  g.lineWidth = Math.max(1, wr * 0.06);
+  for (let i = 0; i < 6; i++) { const a = spin + (i / 6) * TAU; g.beginPath(); g.moveTo(hx, hy); g.lineTo(hx + Math.cos(a) * wr, hy + Math.sin(a) * wr); g.stroke(); }
+  g.fillStyle = '#2a2a2a'; g.beginPath(); g.arc(hx, hy, Math.max(1.5, wr * 0.15), 0, TAU); g.fill();
+  // the rope from the wheel down to the shaft, and back to the winding house
+  const whX = hx + spread + HF * 0.7, whW = Math.max(40, HF * 0.6), whH = Math.max(24, HF * 0.38);
+  g.strokeStyle = n ? '#8a8a8a' : '#55585e'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(hx - wr, hy); g.lineTo(ropeX, surf); g.moveTo(hx, hy - wr); g.lineTo(whX, surf - whH * 0.6); g.stroke();
+  if (whX + whW < w + 20 && clearOf(whX + whW / 2, c, whW)) {
+    g.fillStyle = n ? '#5a3a2e' : '#9a5a44'; g.fillRect(whX, surf - whH, whW, whH);
+    g.fillStyle = n ? '#3a3a3e' : '#5a5e66'; g.beginPath(); g.moveTo(whX - 3, surf - whH); g.lineTo(whX + whW / 2, surf - whH - whH * 0.4); g.lineTo(whX + whW + 3, surf - whH); g.closePath(); g.fill();
+    g.strokeStyle = withAlpha('#000000', 0.2); g.lineWidth = 1; for (let y = surf - whH + 4; y < surf; y += 4) { g.beginPath(); g.moveTo(whX, y); g.lineTo(whX + whW, y); g.stroke(); }
+    g.fillStyle = n ? 'rgba(255,214,140,0.85)' : '#3a4a5a'; for (let i = 0; i < 3; i++) g.fillRect(whX + whW * (0.15 + i * 0.28), surf - whH * 0.75, whW * 0.14, whH * 0.35);
+    c.reserve?.({ x: whX - 4, y: surf - whH * 1.45, w: whW + 8, h: whH * 1.45 });
+  }
+  // a spoil heap behind, on the other side
+  const sx = L - wall - clamp(5 * k, 50, 160);
+  if (sx > 20) { g.fillStyle = n ? '#2a2826' : '#4a4642'; g.beginPath(); g.moveTo(sx - clamp(4 * k, 40, 120), surf); g.quadraticCurveTo(sx, surf - clamp(3 * k, 26, 80), sx + clamp(4 * k, 40, 120), surf); g.closePath(); g.fill(); }
+  c.reserve?.({ x: hx - spread - 4, y: hy - wr - 6, w: spread * 2 + 8, h: surf - hy + wr + 6 });
+}
+
 /* ── courts, and a castle ───────────────────────────────────────────────── */
 
 /** A line across a court seen side on and a little from in front: from the
@@ -2895,4 +3012,4 @@ function fairground(g, c) {
 }
 
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse, fairground };
+export const PLACE_ART = { mineshaft, mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse, fairground };

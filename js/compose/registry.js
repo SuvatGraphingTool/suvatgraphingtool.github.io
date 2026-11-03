@@ -77,6 +77,7 @@ export const BACKDROPS = {
   fairground: { label: 'A fairground', what: 'a fairground: striped stalls and bunting on trodden grass; from a height, the top gondola of a Ferris wheel', place: 'fairground', below: 'ground', art: true, on: 'at a fairground', high: 'the top of a Ferris wheel' },
   carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
   volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
+  mineshaft: { label: 'A mine shaft', what: 'a mine shaft cut away down to its rock floor, the pithead’s headframe and winding wheel over it: it moves straight up or down', place: 'mineshaft', below: 'ground', edge: true, at: 'the top of a mine shaft', art: true },
   quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
   air:     { label: 'In the air', what: 'open sky high above fields: let go from what carries it: a hovering balloon, a helicopter, a plane, a drone or a bird ("carrier")', place: 'air', below: 'ground', edge: true, at: 'a balloon' },
 };
@@ -507,6 +508,7 @@ const ONLY_HERE = [
   [/\b(multi-?storey car park|car park|parking garage|parking deck)\b/, 'carpark'],
   [/\b(volcano|volcanic|erupt(?:s|ion|ing)?|lava bomb)\b/, 'volcano'],
   [/\b(quarry|quarry face|rock face of (?:a|the) quarry)\b/, 'quarry'],
+  [/\b(mine ?shaft|pit ?shaft|shaft of (?:a|the) (?:coal |tin |gold )?mine|(?:coal|tin|gold|disused) mine|pithead)\b/, 'mineshaft'],
   [new RegExp(`${FROM}(?:(?:top|battlements?|walls?|ramparts?|tower) of (?:a|the)\\s+)?(castle|castle wall|battlements|ramparts|fortress|fort)\\b`), 'castle'],
   [/\b(?:on|along|across|onto)\s+(?:a|the|an)\s+(?:runway|airfield|apron)\b|\b(aircraft steps|airstairs?|control tower)\b/, 'runway'],
   [/\b(?:in|across|into|around)\s+(?:a|the|his|her|their|my)\s+(?:back ?)?(garden)\b|\b(garden shed|shed roof|washing line|greenhouse)\b/, 'garden'],

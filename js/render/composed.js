@@ -31,7 +31,7 @@ import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, sig3, withAlpha 
 import { thrower, throwerHand, THROWER_MIN, ballAt, drawFigure, phaseFor, particle, fence, diver, DIVER_FEET, skateboarder, SKATE_FEET, parcel } from './figures.js';
 import { seaScene, riverScene, poolScene, fields, curtainWall, tree, seaCliff, tower, bridge, divingBoard, balloon, well, bigSplash, pebble, fitClear } from './heights.js';
 import { table, labWall } from './bench.js';
-import { PLACE_ART, cityWidth } from './places.js';
+import { PLACE_ART, cityWidth, headframeH } from './places.js';
 import { drawProp } from './props.js';
 import { crater, snowPuff, divot, sparks, confetti, smokeTrail, splat, crack, leaves, sandSpray, mud, burst, goal, skid, bubbles, diveCatch, chalk, kick, rustle, shockwave } from './impacts.js';
 import { ANIMALS, FEET, SWIMMERS, javelin } from './animals.js';
@@ -256,7 +256,7 @@ function launch(canvas, o) {
     const winch = R.backdrop === 'well' ? 130 - (yTop - H0) * k : 0;
     // on a phone a table takes only its own room, so the motion has the rest
     if (phone && R.backdrop === 'table') return { l: tableW(k, w) + 12, r: 40, t: Math.max(36, head) };
-    return { l: Math.max(body * 0.9, place) + 80 + behind(k), r: 70 + Math.max(...movers.map((m) => (m.small ? 22 : size(k, m.piece) * 0.55))), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown, winch, R.launcher === 'trampoline' ? size(k) * 1.15 + 16 : 0) };
+    return { l: Math.max(body * 0.9, place) + 80 + behind(k), r: 70 + Math.max(...movers.map((m) => (m.small ? 22 : size(k, m.piece) * 0.55))), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown, winch, R.launcher === 'trampoline' ? size(k) * 1.15 + 16 : 0, R.backdrop === 'mineshaft' ? headframeH(k) * 1.2 + 16 - (yTop - H0) * k : 0) };
   };
   // the readouts are cards over the stage: the path may pass behind them, but
   // the place's top and its height's label stay clear of them
@@ -812,7 +812,7 @@ function launch(canvas, o) {
 
   // ── what it lands on, named on it
   const netted = R.backdrop === 'circus' && R.objects[0].figure === 'diver' && (H0 > 0 || R.launcher === 'cannon');
-  const name = netted ? 'the safety net' : R.backdrop === 'stadium' && R.objects[0].figure === 'diver' && !(H0 > 0) ? 'the sand pit' : { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', lake: 'the lake', island: 'the sand', skatepark: 'the concrete', circus: 'the ring', polar: 'the sea', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
+  const name = netted ? 'the safety net' : R.backdrop === 'stadium' && R.objects[0].figure === 'diver' && !(H0 > 0) ? 'the sand pit' : { pitch: 'the pitch', stadium: 'the infield', court: 'the court', arena: 'the court', castle: 'the field', runway: 'the runway', garden: 'the lawn', farm: 'the field', cricket: 'the outfield', lake: 'the lake', island: 'the sand', skatepark: 'the concrete', circus: 'the ring', polar: 'the sea', carpark: 'the street', volcano: 'the plain', quarry: 'the quarry floor', mineshaft: 'the bottom of the shaft' }[R.backdrop] || { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the water', well: 'the water', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' }[B.below] || 'the ground';
   // (at a lake thrown by hand, the place drew the shore: the name goes over the water)
   const under = wet && H0 > 0 && !(R.backdrop === 'lake' && byHand) && R.backdrop !== 'polar';
   L.add(name, under ? x0 - 12 : w - 14, under ? oy + 20 : oy - 14, { color: P.ink, align: 'right', pri: 4, size: 13 });

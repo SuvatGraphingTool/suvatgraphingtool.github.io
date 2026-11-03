@@ -404,6 +404,9 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
     const mat = check({ backdrop: 'garden', engine: 'projectile', launcher: 'trampoline', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 8, theta: 90 } }).recipe;
     ok(mat && !mat.effects.includes('kick') && !mat.effects.includes('dust'), 'off the mat and back onto it: no dust kicked up, none on landing');
     ok(check({ backdrop: 'garden', engine: 'projectile', launcher: 'trampoline', objects: [{ figure: 'diver' }], numbers: { h: 1, u: 8, theta: 80 } }).recipe?.effects.includes('dust'), 'heights from the lawn: it lands on the lawn, in dust'); }
+  ok(placeIn('A stone is dropped down a mine shaft 80 m deep')?.backdrop === 'mineshaft' && placeIn('a stone falls down the shaft of a disused coal mine')?.backdrop === 'mineshaft' && placeIn('a friend of mine throws a ball')?.backdrop !== 'mineshaft', 'batch 30: a mine shaft, and "mine" the word is not one');
+  { const ms = check({ backdrop: 'mineshaft', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 60, u: 0, theta: 0 } }).recipe;
+    ok(ms && ms.effects.includes('dust') && /mine shaft/.test(titleOf(ms)), 'down the mine shaft, landing in dust on its floor'); }
   ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });
 
