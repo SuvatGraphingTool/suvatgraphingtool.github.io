@@ -2721,5 +2721,91 @@ function polar(g, c) {
   g.strokeStyle = withAlpha('#ffffff', 0.8); g.lineWidth = 2; g.beginPath(); g.moveTo(x0 - 2, oy + 1); g.lineTo(x0 + 18, oy + 1); g.stroke();
 }
 
+/* ── an oil rig, a tree house ───────────────────────────────────────────── */
+
+/** An oil rig standing in the open sea: its steel legs braced in X down into
+    the water, the deck it leaves from (from its edge), the derrick tower and a
+    crane above, the helideck's H, a flare boom; a supply ship off it, clear
+    of the flight. */
+function oilrig(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(277), horizon = oy - clamp((oy - 40) * 0.2, 30, 110);
+  sky(g, w, horizon, x0, { far: 'none', seed: 197, clouds: 3 });
+  water(g, 0, w, horizon, h, { phase });
+  const land = (c.clearX || [])[0] ?? w;
+  // a supply ship on the horizon side, clear of where it lands
+  const sl = clamp(12 * k, 60, 180), sx = [land + 90 + sl / 2, w - sl / 2 - 20].find((x) => x + sl / 2 < w - 4 && Math.abs(x - land) > sl / 2 + 50 && underSky(c, x - sl / 2, x + sl / 2, lerp(horizon, oy, 0.3) - sl * 0.3, 30));
+  if (sx != null) {
+    const sy = lerp(horizon, oy, 0.3);
+    g.fillStyle = n ? '#3a3e48' : '#2f5fa8'; g.beginPath(); g.moveTo(sx - sl / 2, sy - sl * 0.08); g.lineTo(sx + sl / 2, sy - sl * 0.1); g.lineTo(sx + sl * 0.42, sy); g.lineTo(sx - sl * 0.46, sy); g.closePath(); g.fill();
+    g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(sx + sl * 0.1, sy - sl * 0.24, sl * 0.28, sl * 0.15);
+    g.fillStyle = n ? withAlpha(E.window, 0.7) : '#3a4656'; g.fillRect(sx + sl * 0.13, sy - sl * 0.22, sl * 0.22, sl * 0.04);
+    c.reserve?.({ x: sx - sl / 2 - 4, y: sy - sl * 0.28, w: sl + 8, h: sl * 0.3 });
+  }
+  if (!(H0 > 0)) return;
+  // the rig: legs from below the water up to the deck, braced; the deck; the derrick; the crane
+  const H = oy - top, dw = clamp(Math.max(H * 1.3, 30 * k), 120, x0 + 4), l = x0 - dw, steel = n ? '#6a6e76' : '#c8a840', steelLo = n ? '#4a4e56' : '#8a7428';
+  const legs = [l + dw * 0.12, l + dw * 0.5, x0 - dw * 0.1], deep = Math.min(h, oy + clamp((h - oy) * 0.8, 20, 120));
+  g.strokeStyle = steel; g.lineWidth = Math.max(4, k * 0.8);
+  for (const lx of legs) { g.beginPath(); g.moveTo(lx, top + 6); g.lineTo(lx, deep); g.stroke(); }
+  g.strokeStyle = steelLo; g.lineWidth = Math.max(1.5, k * 0.25);
+  for (let i = 0; i < legs.length - 1; i++) for (let y = top + 8; y < oy - 4; y += Math.max(20, H / 3)) { const y2 = Math.min(oy, y + Math.max(20, H / 3)); g.beginPath(); g.moveTo(legs[i], y); g.lineTo(legs[i + 1], y2); g.moveTo(legs[i + 1], y); g.lineTo(legs[i], y2); g.stroke(); }
+  // under the water, the legs dimmed
+  g.fillStyle = withAlpha(n ? '#0a1424' : '#2a4a62', 0.55); g.fillRect(l, oy, dw, deep - oy);
+  // the deck: two levels, its railings, open at the edge it leaves from
+  const dh = clamp(2.5 * k, 10, 36);
+  g.fillStyle = n ? '#5a5e66' : '#9aa0a8'; g.fillRect(l - 6, top, dw + 6, dh * 0.35);
+  g.fillStyle = n ? '#4a4e56' : '#7a828e'; g.fillRect(l, top + dh * 0.35, dw, dh * 0.65);
+  g.fillStyle = n ? '#8a8e96' : '#e8eaee'; for (let i = 0; i < 6; i++) g.fillRect(l + dw * (0.05 + i * 0.15), top + dh * 0.5, dw * 0.08, dh * 0.3);
+  // modules on the deck: blocks, the derrick tower, the crane, the helideck, the flare boom
+  const bh = clamp(3 * k, 14, 70);
+  g.fillStyle = n ? '#6a6e76' : '#e8eaee'; g.fillRect(l + dw * 0.05, top - bh, dw * 0.3, bh);
+  g.fillStyle = n ? '#3a3e48' : '#2f5fa8'; g.fillRect(l + dw * 0.05, top - bh, dw * 0.3, bh * 0.15);
+  const dx = l + dw * 0.5, dTop = top - clamp(10 * k, 50, 220);
+  g.strokeStyle = n ? '#8a8e96' : '#c8a840'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(dx - dw * 0.08, top); g.lineTo(dx, dTop); g.lineTo(dx + dw * 0.08, top);
+  for (let i = 1; i < 6; i++) { const y = lerp(top, dTop, i / 6), hw = dw * 0.08 * (1 - i / 6); g.moveTo(dx - hw, y); g.lineTo(dx + hw, y); } g.stroke();
+  const hp = { x: l + dw * 0.2, y: top - bh - 4 }, hr = clamp(2.5 * k, 12, 40);
+  g.fillStyle = n ? '#3a4a3a' : '#4f7a4a'; g.beginPath(); g.ellipse(hp.x, hp.y, hr, hr * 0.25, 0, 0, TAU); g.fill();
+  g.strokeStyle = '#ffffff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(hp.x - hr * 0.25, hp.y - hr * 0.1); g.lineTo(hp.x - hr * 0.25, hp.y + hr * 0.1); g.moveTo(hp.x + hr * 0.25, hp.y - hr * 0.1); g.lineTo(hp.x + hr * 0.25, hp.y + hr * 0.1); g.moveTo(hp.x - hr * 0.25, hp.y); g.lineTo(hp.x + hr * 0.25, hp.y); g.stroke();
+  // the railing along the deck, open at the front where it leaves from
+  const rh = clamp(1 * k, 6, 20); g.strokeStyle = n ? '#c8ccd2' : '#e8c547'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(l, top - rh); g.lineTo(x0 - clamp(1.2 * k, 8, 30), top - rh); g.stroke();
+  void r;
+}
+
+/** A tree house: a great oak, its platform and hut in the crown, the rope
+    ladder hanging to the grass; it leaves from the platform's edge. Lawn
+    and a fence beyond. */
+function treehouse(g, c) {
+  const { w, h, k, oy, x0, top, H0 } = c;
+  const E = env(), n = E.night, r = rng(281), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
+  sky(g, w, horizon, x0, { far: 'none', seed: 199, clouds: 3 });
+  for (let x = r() * 30; x < w; x += 30 + r() * 40) crown(g, x, horizon - 10 - r() * 8, 14 + r() * 14, n);
+  mownTurf(g, w, horizon, h, n, { lo: '#6fa652', hi: '#7cb35c', line: false });
+  if (!(H0 > 0)) return;
+  // the oak: a thick trunk behind the platform, its boughs, and the crown above
+  const H = oy - top, tw = clamp(1 * k, 12, 50), pw = clamp(Math.max(3 * k, H * 0.6), 50, x0 - 10), tx = x0 - pw * 0.7;
+  const bark = n ? '#3a2e24' : '#6a4a32', barkLo = n ? '#2a2018' : '#4e3624';
+  g.fillStyle = bark; g.beginPath(); g.moveTo(tx - tw * 0.8, oy); g.quadraticCurveTo(tx - tw * 0.5, lerp(oy, top, 0.5), tx - tw * 0.45, top - H * 0.5); g.lineTo(tx + tw * 0.45, top - H * 0.5); g.quadraticCurveTo(tx + tw * 0.5, lerp(oy, top, 0.5), tx + tw * 0.8, oy); g.closePath(); g.fill();
+  g.strokeStyle = barkLo; g.lineWidth = 1; for (let i = 0; i < 6; i++) { const bx = tx - tw * 0.4 + i * tw * 0.16; g.beginPath(); g.moveTo(bx, oy - 2); g.lineTo(bx + (r() - 0.5) * 4, top - H * 0.3); g.stroke(); }
+  g.strokeStyle = bark; g.lineWidth = Math.max(3, tw * 0.35); g.lineCap = 'round'; for (const [ex, ey] of [[-1.2, -0.35], [0.9, -0.45], [-0.4, -0.6]]) { g.beginPath(); g.moveTo(tx, top - H * 0.3); g.quadraticCurveTo(tx + ex * pw * 0.3, top - H * 0.45, tx + ex * pw * 0.55, top + ey * H); g.stroke(); }
+  const cr = clamp(Math.max(H * 0.5, pw * 0.6), 40, 200);
+  for (const [dx, dy, s] of [[-0.6, -0.9, 0.7], [0.2, -1.1, 0.8], [0.8, -0.7, 0.6], [-0.1, -0.6, 0.65]]) { const cx = tx + dx * cr, cy = top + dy * cr * 0.8; g.fillStyle = n ? '#1c2e1c' : '#3f6a3a'; g.beginPath(); g.arc(cx, cy, cr * s * 0.6, 0, TAU); g.fill(); g.fillStyle = n ? '#243a24' : '#4f7c45'; g.beginPath(); g.arc(cx - cr * 0.12, cy - cr * 0.12, cr * s * 0.36, 0, TAU); g.fill(); }
+  // the platform: planks on joists, a brace to the trunk, the hut on it
+  const pl = x0 - pw, ph = clamp(0.25 * k, 4, 10), wood = n ? '#5a4a3a' : '#a07a50', woodLo = n ? '#3a2e24' : '#6a5034';
+  g.fillStyle = wood; g.fillRect(pl, top, pw, ph); g.strokeStyle = withAlpha('#000000', 0.3); g.lineWidth = 1; for (let x = pl + 6; x < x0; x += 7) { g.beginPath(); g.moveTo(x, top); g.lineTo(x, top + ph); g.stroke(); }
+  g.strokeStyle = woodLo; g.lineWidth = Math.max(2, 0.12 * k); g.beginPath(); g.moveTo(tx, top + H * 0.35); g.lineTo(x0 - pw * 0.1, top + ph); g.moveTo(tx, top + H * 0.35); g.lineTo(pl + 4, top + ph); g.stroke();
+  const hw = pw * 0.5, hh = clamp(1.8 * k, 18, 70);
+  g.fillStyle = n ? '#6a5a44' : '#c8a870'; g.fillRect(pl + 2, top - hh, hw, hh);
+  g.strokeStyle = withAlpha('#000000', 0.2); for (let y = top - hh + 5; y < top; y += 5) { g.beginPath(); g.moveTo(pl + 2, y); g.lineTo(pl + 2 + hw, y); g.stroke(); }
+  g.fillStyle = '#2a2018'; g.fillRect(pl + hw * 0.55, top - hh * 0.75, hw * 0.3, hh * 0.75);
+  g.fillStyle = n ? '#4a3a2c' : '#7a5a3a'; g.beginPath(); g.moveTo(pl - 6, top - hh); g.lineTo(pl + hw * 0.5, top - hh - hh * 0.6); g.lineTo(pl + hw + 8, top - hh); g.closePath(); g.fill();
+  // the rope ladder from the platform's edge down to the lawn, a little short of the throw's edge
+  const lx = x0 - pw * 0.25; g.strokeStyle = n ? '#8a7a5a' : '#c8a870'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(lx, top + ph); g.lineTo(lx, oy - 2); g.moveTo(lx + 9, top + ph); g.lineTo(lx + 9, oy - 2); for (let y = top + ph + 8; y < oy - 2; y += 9) { g.moveTo(lx, y); g.lineTo(lx + 9, y); } g.stroke();
+  // the railing behind where it leaves from
+  g.strokeStyle = woodLo; g.lineWidth = 2; const rh = clamp(0.9 * k, 8, 34); g.beginPath(); g.moveTo(pl + hw + 4, top - rh); g.lineTo(x0 - pw * 0.35, top - rh); g.moveTo(x0 - pw * 0.35, top); g.lineTo(x0 - pw * 0.35, top - rh); g.stroke();
+  softShadow(g, tx, oy + 2, pw * 0.6, 5, 0.6);
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse };

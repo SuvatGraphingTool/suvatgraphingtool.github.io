@@ -75,6 +75,8 @@ export const PLACES = {
   skatepark: { word: 'start', top: 'where it starts', below: 'the concrete', lands: 'lands on the concrete', foot: 'where it started', level: true },
   circus:  { word: 'start', top: 'where it starts', below: 'the ring', lands: 'lands in the ring', foot: 'where it started', level: true },
   polar:   { word: 'start', top: 'where it starts', below: 'the sea', lands: 'goes into the sea', foot: 'where it started', level: true },
+  oilrig:  { word: 'rig', top: 'the deck of the rig', below: 'the sea', lands: 'hits the sea', foot: 'at the foot of the rig' },
+  treehouse: { word: 'tree house', top: 'the tree house platform', below: 'the lawn', lands: 'lands on the lawn', foot: 'below the platform' },
   // a dolphin or a fish leaping from the water at the foot of a place
   pool:    { word: 'start', top: 'where it leaves the water', below: 'the water', lands: 'goes back into the water', foot: 'where it left the water', level: true, from: 'where it left the water' },
   site:    { word: 'scaffold', top: 'the top of the scaffolding', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the scaffolding' },
