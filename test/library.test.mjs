@@ -36,6 +36,7 @@ import { solveRope, ropeWorking } from '../js/core/rope.js';
 import { solveRunout, runoutWorking } from '../js/core/runout.js';
 import { solveDrive, driveWorking } from '../js/core/drive.js';
 import { solveTank, tankWorking } from '../js/core/tank.js';
+import { solveLastFall, lastFallWorking } from '../js/core/lastfall.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1745,6 +1746,22 @@ group('CIE 9709/04 specimen Q2 and Edexcel M1 Nov 2002 Q5: down the slope and ac
     const ks = K.solve(K.read({ alpha: 30, L: 3, m: 0.5, F2: 1, g: 10 }));
     ok(/foot of the slope/.test(resolveKit(K, ks, ks.f, ks.f.tB + 0.5).blocks[0].rows[0].note), 'on the level, displacement measured from the foot');
     ok(near(c.dec, 3.6), 'the deceleration as a size'); }
+});
+
+group('CIE 9709/42 Nov 2015 Q2: the last stretch of a fall', () => {
+  const s = solveLastFall({ mode: 'diff', p: 35, dv: 10, g: 10 });
+  ok(s.ok && s.V === 40 && s.vP === 30 && s.H === 80 && s.tG === 4, '(i) V = 40; (ii) H = 80 m; 4 s to the ground', s.reason);
+  const t = solveLastFall({ mode: 'time', p: 25, tau: 1, g: 9.8 });
+  ok(t.ok && near(t.vP, 20.1) && near(t.V, 29.9) && near(t.H, 29.9 ** 2 / 19.6), 'the last 25 m in 1 s: 20.1 at the point, 29.9 at the ground');
+  const r = solveLastFall({ mode: 'ratio', p: 20, k: 2, g: 9.8 });
+  ok(r.ok && near(r.V, 2 * r.vP) && near(r.V ** 2 - r.vP ** 2, 2 * 9.8 * 20), 'twice as fast at the ground: V² − (V/2)² = 2gp');
+  const th = solveLastFall({ mode: 'diff', p: 35, dv: 10, u: 5, g: 10 });
+  ok(th.ok && th.V === 40 && th.H === 78.75, 'thrown down at 5: the same V, a lower start');
+  ok(!solveLastFall({ mode: 'time', p: 5, tau: 3, g: 9.8 }).ok, 'a last stretch too slow for any fall from above: refused');
+  ok(!KITS.lastfall.solve(KITS.lastfall.read({ p: 35, dv: 10, tau: 1, g: 10 })).ok, 'two ways of giving the last stretch: refused');
+  ok(lastFallWorking(s).length === 2 && lastFallWorking(s)[0].rows.length === 2, 'the working: the last stretch, then the whole fall');
+  { const K = KITS.lastfall, kv = K.solve(K.read({ p: 35, dv: 10, g: 10 }));
+    ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)) && resolveKit(K, kv, kv.f, 2).blocks[0].rows.every((q) => q.part !== 'x'), 'vertical: solid graphs and Resolve rows (rule 2)'); }
 });
 
 group('Audit 25: the end of a motion, early graph tags, fractions, a part of a jump', () => {
