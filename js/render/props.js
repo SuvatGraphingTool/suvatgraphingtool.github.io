@@ -269,13 +269,63 @@ function coconut(g, x, y, R, spin) {
   g.restore(); rim(g, x, y, R, 'rgba(20,12,6,0.6)');
 }
 
-export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball, hailstone, raindrop, discus, frisbee, dart, shuttlecock, hockeyBall, egg, bullet, brick, coconut };
+/** A bottle: clear glass with a green tint, its label, the neck and cap,
+    tumbling, a highlight down its side. */
+function bottle(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(spin * 0.7);
+  const L = R * 2.2, W = R * 0.75;
+  g.fillStyle = 'rgba(120,170,130,0.75)'; g.beginPath(); g.roundRect(-L / 2, -W / 2, L * 0.68, W, W * 0.3); g.fill();
+  g.beginPath(); g.moveTo(L * 0.18, -W / 2); g.quadraticCurveTo(L * 0.3, -W * 0.2, L * 0.36, -W * 0.18); g.lineTo(L * 0.5, -W * 0.18); g.lineTo(L * 0.5, W * 0.18); g.lineTo(L * 0.36, W * 0.18); g.quadraticCurveTo(L * 0.3, W * 0.2, L * 0.18, W / 2); g.closePath(); g.fill();
+  g.fillStyle = '#e8e4dc'; g.fillRect(-L * 0.3, -W / 2, L * 0.3, W);
+  g.fillStyle = '#2f5fa8'; g.fillRect(-L * 0.26, -W * 0.2, L * 0.22, W * 0.4);
+  g.fillStyle = '#c8ccd2'; g.fillRect(L * 0.47, -W * 0.22, L * 0.05, W * 0.44);
+  g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(-L * 0.45, -W * 0.38, L * 0.6, W * 0.1);
+  g.strokeStyle = 'rgba(30,60,40,0.7)'; g.lineWidth = 1; g.beginPath(); g.roundRect(-L / 2, -W / 2, L * 0.68, W, W * 0.3); g.stroke();
+  g.restore();
+}
+/** A drink can: aluminium, a coloured wrap, its ring-pull top, tumbling. */
+function can(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(spin * 0.8);
+  const L = R * 1.7, W = R * 1.05;
+  const gr = g.createLinearGradient(0, -W / 2, 0, W / 2); gr.addColorStop(0, '#5a8ad8'); gr.addColorStop(0.45, '#2f5fa8'); gr.addColorStop(1, '#173a70');
+  g.fillStyle = gr; g.beginPath(); g.roundRect(-L / 2, -W / 2, L, W, W * 0.12); g.fill();
+  g.fillStyle = '#d8dce2'; g.fillRect(L / 2 - L * 0.08, -W / 2, L * 0.08, W); g.fillRect(-L / 2, -W / 2, L * 0.06, W);
+  g.fillStyle = '#f2c21b'; g.fillRect(-L * 0.2, -W * 0.15, L * 0.35, W * 0.3);
+  g.strokeStyle = 'rgba(10,20,40,0.7)'; g.lineWidth = 1; g.beginPath(); g.roundRect(-L / 2, -W / 2, L, W, W * 0.12); g.stroke();
+  g.restore();
+}
+/** A key: a brass bow with its hole, the shank and the cut bit, turning. */
+function key(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(spin);
+  const L = R * 2;
+  g.fillStyle = '#c9a13a'; g.strokeStyle = 'rgba(70,50,10,0.8)'; g.lineWidth = 1;
+  g.beginPath(); g.arc(-L * 0.3, 0, R * 0.55, 0, TAU); g.arc(-L * 0.3, 0, R * 0.2, 0, TAU, true); g.fill('evenodd'); g.stroke();
+  g.beginPath(); g.moveTo(-L * 0.05, -R * 0.14); g.lineTo(L * 0.5, -R * 0.14); g.lineTo(L * 0.5, R * 0.3); g.lineTo(L * 0.42, R * 0.3); g.lineTo(L * 0.38, R * 0.14); g.lineTo(L * 0.3, R * 0.3); g.lineTo(L * 0.24, R * 0.14); g.lineTo(-L * 0.05, R * 0.14); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(0, -R * 0.1, L * 0.4, R * 0.06);
+  g.restore();
+}
+/** A pencil: yellow hexagonal body, the sharpened point, a pink eraser in
+    its metal band, spinning end over end. */
+function pencil(g, x, y, R, spin) {
+  g.save(); g.translate(x, y); g.rotate(spin * 1.2);
+  const L = R * 2.6, W = R * 0.36;
+  g.fillStyle = '#f2c21b'; g.fillRect(-L / 2 + L * 0.14, -W / 2, L * 0.66, W);
+  g.fillStyle = '#c89a10'; g.fillRect(-L / 2 + L * 0.14, W * 0.1, L * 0.66, W * 0.4);
+  g.fillStyle = '#e8d0a0'; g.beginPath(); g.moveTo(L * 0.3, -W / 2); g.lineTo(L / 2, 0); g.lineTo(L * 0.3, W / 2); g.closePath(); g.fill();
+  g.fillStyle = '#2b2a2e'; g.beginPath(); g.moveTo(L * 0.44, -W * 0.15); g.lineTo(L / 2, 0); g.lineTo(L * 0.44, W * 0.15); g.closePath(); g.fill();
+  g.fillStyle = '#b8bcc2'; g.fillRect(-L / 2 + L * 0.06, -W / 2, L * 0.08, W);
+  g.fillStyle = '#e89aaa'; g.beginPath(); g.roundRect(-L / 2, -W / 2, L * 0.07, W, W * 0.3); g.fill();
+  g.strokeStyle = 'rgba(60,40,0,0.7)'; g.lineWidth = 1; g.strokeRect(-L / 2, -W / 2, L * 0.8, W);
+  g.restore();
+}
+
+export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowball, waterBalloon, phone, book, hammer, rugbyBall, cricketBall, baseball, volleyball, hailstone, raindrop, discus, frisbee, dart, shuttlecock, hockeyBall, egg, bullet, brick, coconut, bottle, can, key, pencil };
 
 /** Draw a prop by name at (x, y), R px, turned by spin, ringed for B. */
 export function drawProp(g, kind, x, y, R, spin = 0, ring = null, o = {}) {
   const f = PROPS[kind];
   if (!f) return false;
   f(g, x, y, R, spin, o);
-  ringed(g, x, y, R * (['phone', 'book', 'hammer', 'dart', 'discus', 'frisbee', 'bullet', 'shuttlecock'].includes(kind) ? 1.2 : 1), ring);
+  ringed(g, x, y, R * (['phone', 'book', 'hammer', 'dart', 'discus', 'frisbee', 'bullet', 'shuttlecock', 'bottle', 'can', 'key', 'pencil'].includes(kind) ? 1.2 : 1), ring);
   return true;
 }

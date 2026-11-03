@@ -143,6 +143,10 @@ export const FIGURES = {
   // a jet of water, drawn as the stream along its path; a hose sends it unless another launcher is named
   brick:    { label: 'a brick', m: 0.22, min: 18, views: ['side'], thrown: true, prop: true },
   coconut:  { label: 'a coconut', m: 0.15, min: 11, views: ['side'], thrown: true, prop: true },
+  bottle:   { label: 'a bottle', m: 0.3, min: 14, views: ['side'], thrown: true, prop: true },
+  can:      { label: 'a drink can', m: 0.12, min: 12, views: ['side'], thrown: true, prop: true },
+  key:      { label: 'a key', m: 0.06, min: 12, views: ['side'], thrown: true, prop: true },
+  pencil:   { label: 'a pencil', m: 0.18, min: 14, views: ['side'], thrown: true, prop: true },
   water:    { label: 'a jet of water', m: 0.03, min: 10, views: ['side'], thrown: true, lands: 'splat' },
   // animals that leap by themselves (js/render/animals.js): `m` is nose to tail
   cat:      { label: 'a cat', m: 0.5, min: 30, views: ['side'], animal: true },
@@ -419,7 +423,8 @@ const WORDS = [
   [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
   [/\b(bird|kingfisher|gannet|seagull|gull|eagle|hawk|falcon|osprey|pelican|heron|tern|cormorant|puffin|swallow|pigeon|owl|crow|duck)\b/, 'bird'],
   [/\b(bricks?)\b/, 'brick'], [/\b(coconuts?)\b/, 'coconut'],
-  [/\b(stone|pebble|rock|key|object|mass)\b/, 'stone'],
+  [/\b(bottles?)\b/, 'bottle'], [/\b(drinks? cans?|cans? of (?:drink|cola|lemonade|pop|beans)|soda cans?|tin cans?|empty cans?)\b/, 'can'], [/\b(keys?|bunch of keys)\b/, 'key'], [/\b(pencils?|pens?|crayon)\b/, 'pencil'],
+  [/\b(stone|pebble|rock|object|mass)\b/, 'stone'],
   [/\b(ball)\b/, 'ball'],
   [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit)\b/, 'apple'],
 ];
@@ -427,7 +432,7 @@ const WORDS = [
 const NEAREST = [
   [/\b(crossbow bolt|spear)\b/, 'arrow'],
   [/\b(surfer|bmx)\b/, 'diver'],
-  [/\b(missile|projectile|shell|stick|bottle|can|bag|helmet|bomb|nut|clam|mussel|prey|mouse)\b/, 'particle'],
+  [/\b(missile|projectile|shell|stick|bag|helmet|bomb|nut|clam|mussel|prey|mouse)\b/, 'particle'],
   [/\b(fox|leopard|cheetah|lion|tiger)\b/, 'cat'], 
   [/\b(animal|bat|insect|bee)\b/, 'particle'],
 ];
