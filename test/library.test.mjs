@@ -42,6 +42,7 @@ import { solveSlopeDrop, slopeDropWorking } from '../js/core/slopedrop.js';
 import { solveBicycle, bicycleWorking } from '../js/core/bicycle.js';
 import { solveSlopeGates, slopeGatesWorking } from '../js/core/slopegates.js';
 import { solveAirDrag, airDragWorking } from '../js/core/airdrag.js';
+import { solveDropRamp, dropRampWorking } from '../js/core/dropramp.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1772,6 +1773,16 @@ group('CIE 9709/42 Nov 2015 Q2: the last stretch of a fall', () => {
   ok(lastFallWorking(s).length === 2 && lastFallWorking(s)[0].rows.length === 3 && /t=1s/.test(String(lastFallWorking(s)[0].rows[2].r).replace(/<[^>]+>/g, '')), 'the working: the last stretch (with its own time), then the whole fall');
   { const K = KITS.lastfall, kv = K.solve(K.read({ p: 35, dv: 10, g: 10 }));
     ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)) && resolveKit(K, kv, kv.f, 2).blocks[0].rows.every((q) => q.part !== 'x'), 'vertical: solid graphs and Resolve rows (rule 2)'); }
+});
+
+group('OCR 4728 Jan 2009 Q6: dropped, or slid down a ramp', () => {
+  const s = solveDropRamp({ h: 2.5, thetaV: 60, mu: 0.2, m: 2, g: 9.8 });
+  ok(s.ok && near(s.tD, 5 / 7) && near(s.vD, 7) && near(s.a, 3.2026, 1e-3) && near(s.L, 5) && near(s.vR, 5.659, 1e-3), '(i) 0.714 s, 7; (ii) a = 3.2, 5 m, 5.66', s.reason);
+  ok(solveDropRamp({ h: 2.5, theta: 30, mu: 0.2, g: 9.8 }).vR === s.vR, 'the angle to the horizontal, and no mass: the same speed');
+  ok(near(solveDropRamp({ h: 2.5, theta: 30 }).vR, 7), 'a smooth ramp: the same speed as dropped');
+  ok(!solveDropRamp({ h: 2.5, theta: 10, mu: 0.3 }).ok && !solveDropRamp({ h: 2.5, theta: 30, thetaV: 60 }).ok && !solveDropRamp({ h: 2.5 }).ok, 'friction holds it, both angles, or none: refused');
+  ok(!solveDropRamp({ h: 2.5, theta: 30, g: -9.8 }).ok && !solveDropRamp({ h: -1, theta: 30 }).ok, 'a negative g or height: refused');
+  ok(dropRampWorking(s).map((x) => x.title).join('|') === 'Dropped|Down the ramp', 'the working, both ways');
 });
 
 group('AQA MM1B Jan 2010 Q4: with and without air resistance', () => {

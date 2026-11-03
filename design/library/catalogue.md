@@ -153,6 +153,7 @@ this library: *covered* names the one of the twelve that does it.
 | 127 | OCR | 4728 M1 | Jun 2015 | 3 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/2015-q-7.pdf) | A cycles at 20 for 1 h, leaves the bicycle, walks at 5; B walks at 4, finds it, cycles at 15; they arrive together: A's cycling distance, B's walking time, T, the journey | – | **built** → `one-bicycle` |
 | 128 | CIE | 9709/41 | Oct/Nov 2018 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w18_qp_41.pdf) | Projected up a rough 3° slope past P, Q, R; PQ = QR = 0.8 m in 0.6 s and 1 s: deceleration ⅔, u = 23/15, μ | 10 | **built** → `timed-up-the-slope` |
 | 129 | AQA | MM1B | Jan 2010 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202010%20QP%20-%20M1%20AQA.PDF) | A 0.5 kg ball let go from 15 m: its landing speed with no air resistance; with a constant 0.9 N: a = 8, the landing speed; why it is not constant | 9.8 | **built** → `with-air-resistance` |
+| 130 | OCR | 4728 M1 | Jan 2009 | 6 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/jan-2009-q-17.pdf) | Parcels 2.5 m above a trolley: dropped (time, speed); slid down a ramp at 60° to the vertical, μ = 0.2, 2 kg: the speed at the trolley | 9.8 | **built** → `drop-or-ramp` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -498,6 +499,23 @@ trains already moving at X, its parts are theirs, and the reader is told which i
 
 **How it is solved.** Each distance is the area under its own speed–time graph: the train
 whose hold is given gives the common time; the other's trapezium then gives its hold.
+
+### `drop-or-ramp` — Dropped, or slid down a ramp
+
+**Papers.** OCR 4728 Jan 2009 Q6 (parcels 2.5 m above a trolley: dropped, 0.714 s and 7 m s⁻¹;
+down a ramp at 60° to the vertical, μ = 0.2, 2 kg: R = 16.97, F = 3.39, a = 3.2, 5 m, 5.66 m s⁻¹).
+
+**Why the others cannot.** `down-a-rough-slope` finds μ from a run down a slope; `from-a-height`
+drops. Here one height is taken both ways and the two compared, the ramp given by its angle to the
+vertical.
+
+**How it is solved.** js/core/dropramp.js: s = ½gt², v² = 2gh; R = mg cos θ, F = μR,
+mg sin θ − F = ma, s = h ÷ sin θ, v² = 2as.
+
+**The stage.** A warehouse loading bay (`loadingBay`, now shared from js/render/runout.js): the
+dock and a steel ramp in grip tape down to a flatbed trolley; a conveyor's end at the same height
+over a second trolley; the parcels from figures.js; each trolley jolts as its parcel lands; a card
+with the forces on the parcel on the ramp.
 
 ### `with-air-resistance` — With and without air resistance
 

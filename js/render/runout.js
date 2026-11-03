@@ -59,6 +59,55 @@ function rider(g, L, P) {
   g.restore();
 }
 
+/** A warehouse's loading bay side on: the corrugated back wall, trusses and hung lamps, racking
+    with boxes, the concrete floor with its yellow aisle line; the loading dock (its face, bumpers,
+    roller shutter, a box on top) up to `top`, and the steel ramp from the dock's edge down to
+    `foot` on the floor at oy. `sa`, `ca` are the ramp's sine and cosine, `out` its outward normal;
+    Ls a size (an object's length) the props are drawn to. Shared by the stages that need one. */
+export function loadingBay(g, { w, h, oy, top, foot, Ls, sa, ca, out, ramp = true }) {
+  const E = env();
+  // the warehouse: a corrugated back wall, steel columns, racking with boxes, lamps hung from the trusses
+  const wall = g.createLinearGradient(0, 0, 0, oy); wall.addColorStop(0, E.night ? '#2b3036' : '#c9ced4'); wall.addColorStop(1, E.night ? '#3a4047' : '#dde1e5');
+  g.fillStyle = wall; g.fillRect(0, 0, w, oy);
+  g.strokeStyle = withAlpha('#000000', 0.08); g.lineWidth = 2; for (let x = 0; x < w; x += 9) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, oy); g.stroke(); }
+  g.strokeStyle = E.night ? '#4a5058' : '#8d949c'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 26); g.lineTo(w, 26); g.stroke();
+  for (let x = 30; x < w; x += 120) { g.beginPath(); g.moveTo(x, 26); g.lineTo(x + 60, 8); g.lineTo(x + 120, 26); g.stroke(); }
+  for (let x = 90; x < w; x += 240) {
+    g.fillStyle = E.night ? '#3f4650' : '#6f7882'; g.fillRect(x - 6, 26, 12, oy - 26);
+    g.fillStyle = '#2b2f36'; g.fillRect(x + 50, 26, 2, 18); g.fillStyle = E.night ? '#ffe29a' : '#fff4cf'; g.beginPath(); g.arc(x + 51, 48, 7, Math.PI, 0); g.fill();
+    if (E.night) { const lg = g.createRadialGradient(x + 51, 50, 2, x + 51, 50, 90); lg.addColorStop(0, 'rgba(255,226,154,0.25)'); lg.addColorStop(1, 'rgba(255,226,154,0)'); g.fillStyle = lg; g.fillRect(x - 40, 40, 180, 120); }
+  }
+  { const r = rng(17), rackY = oy - 6;
+    for (let x = foot.x + 30; x < w - 20; x += 150) {
+      g.strokeStyle = '#d06a2a'; g.lineWidth = 3; for (const dx of [0, 110]) { g.beginPath(); g.moveTo(x + dx, rackY); g.lineTo(x + dx, rackY - 120); g.stroke(); }
+      g.strokeStyle = '#2f6db0'; for (const lv of [40, 80, 120]) { g.beginPath(); g.moveTo(x, rackY - lv); g.lineTo(x + 110, rackY - lv); g.stroke(); }
+      for (const lv of [0, 40, 80]) for (let bx = x + 6; bx < x + 100; bx += 34) { const bh = 18 + r() * 14; g.fillStyle = r() < 0.5 ? '#b98a55' : '#a8794a'; g.fillRect(bx, rackY - lv - bh - 2, 28, bh); g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(bx + 11, rackY - lv - bh - 2, 6, bh); }
+    } }
+  // the floor: a concrete slab with joints, a yellow aisle line, scuffs
+  const fl = g.createLinearGradient(0, oy, 0, h); fl.addColorStop(0, E.night ? '#4a4b4f' : '#b4b5b1'); fl.addColorStop(1, E.night ? '#35363a' : '#93948f');
+  g.fillStyle = fl; g.fillRect(-20, oy, w + 40, h);
+  g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = 1; for (let x = (foot.x % 140) - 140; x < w; x += 140) { g.beginPath(); g.moveTo(x, oy); g.lineTo(x - 40, h); g.stroke(); }
+  g.fillStyle = '#e8c242'; g.fillRect(-20, oy + 12, w + 40, 4);
+  { const r = rng(4); g.fillStyle = withAlpha('#000000', 0.08); for (let i = 0; i < 18; i++) { g.beginPath(); g.ellipse(r() * w, oy + 20 + r() * (h - oy), 10 + r() * 30, 2 + r() * 3, 0, 0, TAU); g.fill(); } }
+  // the loading dock: a concrete face with rubber bumpers and a steel edge, a roller shutter above, boxes on top
+  const dockR = top.x - 2;
+  g.fillStyle = E.night ? '#5a5853' : '#a7a29a'; g.fillRect(-20, top.y, dockR + 20, oy - top.y);
+  g.strokeStyle = withAlpha('#000000', 0.15); for (let y = top.y + 14; y < oy; y += 14) { g.beginPath(); g.moveTo(-20, y); g.lineTo(dockR, y); g.stroke(); }
+  g.fillStyle = '#6b7079'; g.fillRect(-20, top.y - 3, dockR + 20, 4);
+  g.fillStyle = '#1d1e21'; for (let y = top.y + 10; y < oy - 12; y += 30) g.fillRect(dockR - 6, y, 8, 16);
+  const shH = Math.min(top.y - 30, Ls * 2.2);
+  if (shH > 20) { g.fillStyle = E.night ? '#565c64' : '#9aa1aa'; g.fillRect(Math.max(-20, dockR - Ls * 2.4), top.y - shH, Ls * 2.2, shH); g.strokeStyle = withAlpha('#000000', 0.18); for (let y = top.y - shH + 5; y < top.y; y += 5) { g.beginPath(); g.moveTo(Math.max(-20, dockR - Ls * 2.4), y); g.lineTo(dockR - Ls * 0.2, y); g.stroke(); } }
+  if (dockR - Ls * 0.6 > 0) { g.fillStyle = '#b98a55'; g.fillRect(dockR - Ls * 0.95, top.y - 22, 26, 22); g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(dockR - Ls * 0.95 + 10, top.y - 22, 6, 22); }
+  if (!ramp) return;
+  // the ramp: a thick steel channel with a kerb, a hinged lip at the top and a toe plate at the foot, square legs on base plates
+  const th = 9, nx = -sa, ny = ca;
+  g.fillStyle = '#9ea4ab'; g.beginPath(); g.moveTo(top.x, top.y); g.lineTo(foot.x, oy); g.lineTo(foot.x + nx * th, oy + ny * th); g.lineTo(top.x + nx * th, top.y + ny * th); g.closePath(); g.fill();
+  g.strokeStyle = '#5b6068'; g.lineWidth = 2; g.beginPath(); g.moveTo(top.x - out.x * 5, top.y - out.y * 5 - 0); g.lineTo(foot.x - out.x * 5 + 0, oy - out.y * 5); g.stroke();
+  g.strokeStyle = withAlpha('#3c4046', 0.45); g.lineWidth = 1; for (let i = 1; i < 20; i++) { const u = i / 20, x = top.x + (foot.x - top.x) * u, y = top.y + (oy - top.y) * u; g.beginPath(); g.moveTo(x - 2, y + 2); g.lineTo(x + 2, y + 5); g.stroke(); }
+  g.fillStyle = '#7d838c'; g.fillRect(top.x - 12, top.y - 2, 14, 4); g.fillRect(foot.x - 2, oy - 2, 12, 3);
+  for (const u of [0.35, 0.7]) { const x = top.x + (foot.x - top.x) * u, y = top.y + (oy - top.y) * u + th; g.fillStyle = '#5b6068'; g.fillRect(x - 3, y, 6, oy - y); g.fillStyle = '#3c4046'; g.fillRect(x - 7, oy - 3, 14, 3); }
+}
+
 export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, fired = true, show = {} } = o;
   if (!f || f.kind !== 'runout') return null;
@@ -115,45 +164,7 @@ export function render(canvas, cam, o) {
     { g.fillStyle = 'rgba(255,255,255,0.75)'; const hsh = (n) => { const z = Math.sin(n * 127.1 + 311.7) * 43758.5453; return z - Math.floor(z); };
       for (let i = 0; i < 50; i++) { const x = ((hsh(i) * (w + 20) + t * 18) % (w + 20)) - 10, y = ((hsh(i + 99) * (h + 20) + t * 40) % (h + 20)) - 10; g.beginPath(); g.arc(x, y, 1.2 + hsh(i + 7), 0, TAU); g.fill(); } }
   } else {
-    // the warehouse: a corrugated back wall, steel columns, racking with boxes, lamps hung from the trusses
-    const wall = g.createLinearGradient(0, 0, 0, oy); wall.addColorStop(0, E.night ? '#2b3036' : '#c9ced4'); wall.addColorStop(1, E.night ? '#3a4047' : '#dde1e5');
-    g.fillStyle = wall; g.fillRect(0, 0, w, oy);
-    g.strokeStyle = withAlpha('#000000', 0.08); g.lineWidth = 2; for (let x = 0; x < w; x += 9) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, oy); g.stroke(); }
-    g.strokeStyle = E.night ? '#4a5058' : '#8d949c'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 26); g.lineTo(w, 26); g.stroke();
-    for (let x = 30; x < w; x += 120) { g.beginPath(); g.moveTo(x, 26); g.lineTo(x + 60, 8); g.lineTo(x + 120, 26); g.stroke(); }
-    for (let x = 90; x < w; x += 240) {
-      g.fillStyle = E.night ? '#3f4650' : '#6f7882'; g.fillRect(x - 6, 26, 12, oy - 26);
-      g.fillStyle = '#2b2f36'; g.fillRect(x + 50, 26, 2, 18); g.fillStyle = E.night ? '#ffe29a' : '#fff4cf'; g.beginPath(); g.arc(x + 51, 48, 7, Math.PI, 0); g.fill();
-      if (E.night) { const lg = g.createRadialGradient(x + 51, 50, 2, x + 51, 50, 90); lg.addColorStop(0, 'rgba(255,226,154,0.25)'); lg.addColorStop(1, 'rgba(255,226,154,0)'); g.fillStyle = lg; g.fillRect(x - 40, 40, 180, 120); }
-    }
-    { const r = rng(17), rackY = oy - 6;
-      for (let x = foot.x + 30; x < w - 20; x += 150) {
-        g.strokeStyle = '#d06a2a'; g.lineWidth = 3; for (const dx of [0, 110]) { g.beginPath(); g.moveTo(x + dx, rackY); g.lineTo(x + dx, rackY - 120); g.stroke(); }
-        g.strokeStyle = '#2f6db0'; for (const lv of [40, 80, 120]) { g.beginPath(); g.moveTo(x, rackY - lv); g.lineTo(x + 110, rackY - lv); g.stroke(); }
-        for (const lv of [0, 40, 80]) for (let bx = x + 6; bx < x + 100; bx += 34) { const bh = 18 + r() * 14; g.fillStyle = r() < 0.5 ? '#b98a55' : '#a8794a'; g.fillRect(bx, rackY - lv - bh - 2, 28, bh); g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(bx + 11, rackY - lv - bh - 2, 6, bh); }
-      } }
-    // the floor: a concrete slab with joints, a yellow aisle line, scuffs
-    const fl = g.createLinearGradient(0, oy, 0, h); fl.addColorStop(0, E.night ? '#4a4b4f' : '#b4b5b1'); fl.addColorStop(1, E.night ? '#35363a' : '#93948f');
-    g.fillStyle = fl; g.fillRect(-20, oy, w + 40, h);
-    g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = 1; for (let x = (foot.x % 140) - 140; x < w; x += 140) { g.beginPath(); g.moveTo(x, oy); g.lineTo(x - 40, h); g.stroke(); }
-    g.fillStyle = '#e8c242'; g.fillRect(-20, oy + 12, w + 40, 4);
-    { const r = rng(4); g.fillStyle = withAlpha('#000000', 0.08); for (let i = 0; i < 18; i++) { g.beginPath(); g.ellipse(r() * w, oy + 20 + r() * (h - oy), 10 + r() * 30, 2 + r() * 3, 0, 0, TAU); g.fill(); } }
-    // the loading dock: a concrete face with rubber bumpers and a steel edge, a roller shutter above, boxes on top
-    const dockR = top.x - 2;
-    g.fillStyle = E.night ? '#5a5853' : '#a7a29a'; g.fillRect(-20, top.y, dockR + 20, oy - top.y);
-    g.strokeStyle = withAlpha('#000000', 0.15); for (let y = top.y + 14; y < oy; y += 14) { g.beginPath(); g.moveTo(-20, y); g.lineTo(dockR, y); g.stroke(); }
-    g.fillStyle = '#6b7079'; g.fillRect(-20, top.y - 3, dockR + 20, 4);
-    g.fillStyle = '#1d1e21'; for (let y = top.y + 10; y < oy - 12; y += 30) g.fillRect(dockR - 6, y, 8, 16);
-    const shH = Math.min(top.y - 30, Ls * 2.2);
-    if (shH > 20) { g.fillStyle = E.night ? '#565c64' : '#9aa1aa'; g.fillRect(Math.max(-20, dockR - Ls * 2.4), top.y - shH, Ls * 2.2, shH); g.strokeStyle = withAlpha('#000000', 0.18); for (let y = top.y - shH + 5; y < top.y; y += 5) { g.beginPath(); g.moveTo(Math.max(-20, dockR - Ls * 2.4), y); g.lineTo(dockR - Ls * 0.2, y); g.stroke(); } }
-    if (dockR - Ls * 0.6 > 0) { g.fillStyle = '#b98a55'; g.fillRect(dockR - Ls * 0.95, top.y - 22, 26, 22); g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(dockR - Ls * 0.95 + 10, top.y - 22, 6, 22); }
-    // the ramp: a thick steel channel with a kerb, a hinged lip at the top and a toe plate at the foot, square legs on base plates
-    const th = 9, nx = -sa, ny = ca;
-    g.fillStyle = '#9ea4ab'; g.beginPath(); g.moveTo(top.x, top.y); g.lineTo(foot.x, oy); g.lineTo(foot.x + nx * th, oy + ny * th); g.lineTo(top.x + nx * th, top.y + ny * th); g.closePath(); g.fill();
-    g.strokeStyle = '#5b6068'; g.lineWidth = 2; g.beginPath(); g.moveTo(top.x - out.x * 5, top.y - out.y * 5 - 0); g.lineTo(foot.x - out.x * 5 + 0, oy - out.y * 5); g.stroke();
-    g.strokeStyle = withAlpha('#3c4046', 0.45); g.lineWidth = 1; for (let i = 1; i < 20; i++) { const u = i / 20, x = top.x + (foot.x - top.x) * u, y = top.y + (oy - top.y) * u; g.beginPath(); g.moveTo(x - 2, y + 2); g.lineTo(x + 2, y + 5); g.stroke(); }
-    g.fillStyle = '#7d838c'; g.fillRect(top.x - 12, top.y - 2, 14, 4); g.fillRect(foot.x - 2, oy - 2, 12, 3);
-    for (const u of [0.35, 0.7]) { const x = top.x + (foot.x - top.x) * u, y = top.y + (oy - top.y) * u + th; g.fillStyle = '#5b6068'; g.fillRect(x - 3, y, 6, oy - y); g.fillStyle = '#3c4046'; g.fillRect(x - 7, oy - 3, 14, 3); }
+    loadingBay(g, { w, h, oy, top, foot, Ls, sa, ca, out });
   }
 
   // ── the slope's angle at its foot: a dark ink that reads on snow, its label inside the opening
