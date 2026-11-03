@@ -210,7 +210,66 @@ export function horse(g, X, Y, L, P, { phase = 0, ring = null, airborne = false,
 
 /** Each, by the registry's name, with where its middle is (the engine's
     point) as a fraction of its length above what it runs on. */
+/** A monster truck: a pickup's body lifted high on its suspension over four
+    huge treaded tyres, roll bar, the driver in the cab; blue with yellow
+    stripes. */
+export function monsterTruck(g, X, Y, L, P, { phase = 0, ring = null, airborne = false } = {}) {
+  const E = env(), R = L * 0.21, blue = E.night ? '#2a3e6a' : '#2f5fa8', blueLo = E.night ? '#1a2848' : '#1e3e78';
+  if (!airborne) softShadow(g, X - L * 0.5, Y + 1, L * 0.55, L * 0.06, 0.9);
+  const rx = X - L * 0.78, fx = X - L * 0.22, axle = Y - R;
+  // the suspension: struts and springs up from each axle to the chassis
+  const ch = Y - R * 2.15;
+  g.strokeStyle = E.night ? '#6a6e76' : '#8a9098'; g.lineWidth = Math.max(2, L * 0.02);
+  for (const wx of [rx, fx]) { g.beginPath(); g.moveTo(wx, axle); g.lineTo(wx + R * 0.3, ch); g.moveTo(wx, axle); g.lineTo(wx - R * 0.3, ch); g.stroke(); g.strokeStyle = '#e8c547'; g.lineWidth = Math.max(1.5, L * 0.012); for (let i = 0; i < 4; i++) { const yy = lerp(axle, ch, (i + 0.5) / 4); g.beginPath(); g.moveTo(wx - R * 0.12, yy); g.lineTo(wx + R * 0.12, yy + 2); g.stroke(); } g.strokeStyle = E.night ? '#6a6e76' : '#8a9098'; g.lineWidth = Math.max(2, L * 0.02); }
+  // the body: a pickup's bed behind, the cab, the bonnet to the front
+  const top = ch - R * 1.1;
+  const body = () => { g.beginPath(); g.moveTo(X - L, ch); g.lineTo(X - L, ch - R * 0.6); g.lineTo(X - L * 0.5, ch - R * 0.6); g.lineTo(X - L * 0.45, top); g.lineTo(X - L * 0.25, top); g.lineTo(X - L * 0.17, ch - R * 0.6); g.lineTo(X - L * 0.02, ch - R * 0.5); g.quadraticCurveTo(X, ch - R * 0.3, X, ch); g.closePath(); };
+  body(); const gr = g.createLinearGradient(0, top, 0, ch); gr.addColorStop(0, blue); gr.addColorStop(1, blueLo); g.fillStyle = gr; g.fill(); outline(g, ring);
+  g.fillStyle = '#e8c547'; g.fillRect(X - L * 0.98, ch - R * 0.38, L * 0.94, R * 0.12);
+  g.fillStyle = E.night ? withAlpha(E.window, 0.5) : withAlpha('#bcd6e6', 0.85); g.beginPath(); g.moveTo(X - L * 0.43, top + 3); g.lineTo(X - L * 0.27, top + 3); g.lineTo(X - L * 0.21, ch - R * 0.62); g.lineTo(X - L * 0.43, ch - R * 0.62); g.closePath(); g.fill();
+  const C = person(E); g.fillStyle = C.skin; g.beginPath(); g.arc(X - L * 0.33, top + (ch - top) * 0.32, R * 0.16, 0, TAU); g.fill();
+  // the roll bar over the bed
+  g.strokeStyle = '#2b2628'; g.lineWidth = Math.max(2, L * 0.018); g.beginPath(); g.moveTo(X - L * 0.9, ch - R * 0.6); g.lineTo(X - L * 0.85, top + R * 0.1); g.lineTo(X - L * 0.55, top + R * 0.1); g.lineTo(X - L * 0.52, ch - R * 0.6); g.stroke();
+  // the great tyres, deep tread round them
+  for (const wx of [rx, fx]) {
+    wheel(g, wx, axle, R, phase, '#c8ccd2', 6);
+    g.strokeStyle = withAlpha('#000000', 0.55); g.lineWidth = Math.max(1.5, R * 0.1); for (let i = 0; i < 14; i++) { const a = phase + (i / 14) * TAU; g.beginPath(); g.moveTo(wx + Math.cos(a) * R * 0.78, axle + Math.sin(a) * R * 0.78); g.lineTo(wx + Math.cos(a) * R, axle + Math.sin(a) * R); g.stroke(); }
+  }
+}
+
+/** A snowmobile: its skis at the front, the rubber track under the back, a
+    low cowl and windscreen, the rider astride it, bent forward. */
+export function snowmobile(g, X, Y, L, P, { phase = 0, ring = null, airborne = false } = {}) {
+  const E = env(), H = L * 0.16, body = E.night ? '#2a3e6a' : '#2f5fa8', dark = '#2b2628';
+  if (!airborne) softShadow(g, X - L * 0.5, Y + 1, L * 0.5, L * 0.05, 0.8);
+  // the ski: long, turned up at the tip
+  g.strokeStyle = dark; g.lineWidth = Math.max(2, L * 0.02); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(X - L * 0.42, Y - 1); g.lineTo(X - L * 0.05, Y - 1); g.quadraticCurveTo(X + L * 0.02, Y - 1, X + L * 0.02, Y - H * 0.5); g.stroke();
+  g.beginPath(); g.moveTo(X - L * 0.2, Y - 1); g.lineTo(X - L * 0.25, Y - H * 1.1); g.stroke();
+  // the track: a belt round its wheels under the back
+  const tx0 = X - L, tx1 = X - L * 0.45, ty = Y - H * 0.45;
+  g.fillStyle = dark; g.beginPath(); g.roundRect(tx0, ty - H * 0.45, tx1 - tx0, H * 0.9, H * 0.45); g.fill();
+  g.strokeStyle = withAlpha('#ffffff', 0.25); g.lineWidth = 1; for (let x = tx0 + ((phase * 6) % 6); x < tx1; x += 6) { g.beginPath(); g.moveTo(x, ty + H * 0.4); g.lineTo(x, ty + H * 0.45); g.stroke(); }
+  for (const wx of [tx0 + H * 0.45, (tx0 + tx1) / 2, tx1 - H * 0.45]) { g.fillStyle = '#8a9098'; g.beginPath(); g.arc(wx, ty, H * 0.28, 0, TAU); g.fill(); }
+  // the body: the cowl sloping to the nose, the seat behind, the windscreen
+  const b = () => { g.beginPath(); g.moveTo(X - L * 0.98, ty - H * 0.5); g.lineTo(X - L * 0.55, ty - H * 0.55); g.lineTo(X - L * 0.35, ty - H * 1.3); g.quadraticCurveTo(X - L * 0.08, ty - H * 1.2, X, ty - H * 0.2); g.lineTo(X - L * 0.1, ty + H * 0.1); g.lineTo(X - L * 0.98, ty); g.closePath(); };
+  b(); g.fillStyle = body; g.fill(); outline(g, ring);
+  g.fillStyle = '#e8c547'; g.fillRect(X - L * 0.9, ty - H * 0.35, L * 0.5, H * 0.15);
+  g.fillStyle = dark; g.fillRect(X - L * 0.9, ty - H * 0.85, L * 0.45, H * 0.35);
+  g.fillStyle = withAlpha('#bcd6e6', 0.8); g.beginPath(); g.moveTo(X - L * 0.35, ty - H * 1.3); g.lineTo(X - L * 0.42, ty - H * 2.1); g.lineTo(X - L * 0.3, ty - H * 2.0); g.lineTo(X - L * 0.27, ty - H * 1.25); g.closePath(); g.fill();
+  // the rider: astride, leaning forward to the bars, in a dark suit and helmet
+  const C = person(E), hip = { x: X - L * 0.65, y: ty - H * 0.85 }, sh = { x: X - L * 0.5, y: ty - H * 2.6 }, hand = { x: X - L * 0.36, y: ty - H * 1.5 };
+  g.strokeStyle = '#3a3e48'; g.lineWidth = H * 0.55; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(hip.x, hip.y); g.lineTo(X - L * 0.55, ty - H * 0.2); g.stroke();
+  g.lineWidth = H * 0.7; g.beginPath(); g.moveTo(hip.x, hip.y); g.lineTo(sh.x, sh.y); g.stroke();
+  g.lineWidth = H * 0.35; g.beginPath(); g.moveTo(sh.x, sh.y); g.lineTo(hand.x, hand.y); g.stroke();
+  g.fillStyle = '#e8eaee'; g.beginPath(); g.arc(sh.x + H * 0.25, sh.y - H * 0.55, H * 0.42, 0, TAU); g.fill(); g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 1; g.stroke();
+  g.fillStyle = dark; g.beginPath(); g.arc(sh.x + H * 0.45, sh.y - H * 0.5, H * 0.2, -0.8, 0.8); g.fill();
+  void C;
+}
+
 export const VEHICLES = {
   bus: { draw: bus, mid: 0.17 }, tractor: { draw: tractor, mid: 0.27 }, speedboat: { draw: speedboat, mid: 0.06 },
   jetski: { draw: jetski, mid: 0.2 }, skier: { draw: skier, mid: 0.25 }, snowboarder: { draw: snowboarder, mid: 0.35 }, horse: { draw: horse, mid: 0.6 },
+  monsterTruck: { draw: monsterTruck, mid: 0.42 }, snowmobile: { draw: snowmobile, mid: 0.2 },
 };

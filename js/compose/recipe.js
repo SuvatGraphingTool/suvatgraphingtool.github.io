@@ -40,8 +40,8 @@ const listOf = (o) => Object.keys(o).join(', ');
 /** A sentence's first letter up. */
 const Up = (s) => s.replace(/^./, (c) => c.toUpperCase());
 // what skids on landing, and what sinks
-const WHEELS = ['car', 'lorry', 'motorcycle', 'bus', 'tractor'];
-const SINKS = ['stone', 'shot', 'hammer', 'coin', 'marble', 'particle', 'phone', 'book', 'sandbag', 'bucket', 'parcel', 'car', 'lorry', 'motorcycle', 'bus', 'tractor', 'cyclist'];
+const WHEELS = ['car', 'lorry', 'motorcycle', 'bus', 'tractor', 'monsterTruck'];
+const SINKS = ['stone', 'shot', 'hammer', 'coin', 'marble', 'particle', 'phone', 'book', 'sandbag', 'bucket', 'parcel', 'car', 'lorry', 'motorcycle', 'bus', 'tractor', 'monsterTruck', 'snowmobile', 'cyclist'];
 /** What it is let go from, in the question's own word: "a seagull", "a helicopter". */
 const carrierName = (r) => (r.carrierWord ? `${/^[aeiou]/.test(r.carrierWord) ? 'an' : 'a'} ${r.carrierWord}` : CARRIERS[r.carrier || 'balloon'].label);
 
