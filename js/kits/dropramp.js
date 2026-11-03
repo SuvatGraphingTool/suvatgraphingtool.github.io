@@ -48,7 +48,7 @@ export const dropramp = {
       { k: 'Down the ramp', v: num(f.sR(t), 2), unit: 'm', hue: 'disp' },
       { k: t > f.tR + 1e-9 ? 'Reached the trolley at' : 'Speed, down the ramp', v: num(t > f.tR + 1e-9 ? f.vR : f.velR(t), 2), unit: 'm s⁻¹', hue: 'vel' },
       { k: t > f.tD + 1e-9 ? 'Dropped, landed at' : 'Speed, dropped', v: num(t > f.tD + 1e-9 ? f.vD : f.velD(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-      { k: 'Acceleration, down the ramp', v: t <= f.tR ? num(f.a, 3, { trim: true }) : '—', unit: t <= f.tR ? 'm s⁻²' : '', hue: 'acc' },
+      { k: t <= f.tR ? 'Acceleration, down the ramp' : 'On the trolley, at rest: acceleration', v: t <= f.tR ? num(f.a, 3, { trim: true }) : '0', unit: 'm s⁻²', hue: 'acc' },
     ];
     return { left: phone ? left.slice(1, 3) : left, right: [{ k: 'Time', v: num(t, 2), unit: 's' }] };
   },
