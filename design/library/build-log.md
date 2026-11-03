@@ -2,6 +2,19 @@
 
 Short notes, newest first. What shipped, what was audited, where a session stopped.
 
+## 3 Nov 2026, evening — library 58 SHIPPED; audit 29 done
+
+- **Library 58 `drop-or-ramp`** (OCR 4728 Jan 2009 Q6): audit 29 doubled as its physics critic
+  (rule 4: the stages computed forces — now the engines give them; a false caveat; layout); one UI
+  round (the drop lane through the conveyor's leg, landings, arrows, framing, conveyor and trolley
+  detail, card labels). Deployed: site 83d36327, reader dfba3ee4; live files match; live sweep clean.
+  The loading bay is now a shared drawing (`loadingBay`, js/render/runout.js), pixel-identical in
+  `down-and-across`.
+- **Audit 29** also re-checked 57: fixed the phone force card and the "(not to scale)" overprint.
+- **Open, for audit 30 (58 and 59):** 58's second UI round was not run (to save usage): the phone
+  layout is small, the conveyor clipped on a phone; check the forces card at more angles.
+- Today: 53–58 shipped (six), audits 26–29, component batches 30–31.
+
 ## 3 Nov 2026, later still — library 57 and batch 31 SHIPPED
 
 - **Library 57 `with-air-resistance`**: physics critic (4 blocking: claims after landing, the
