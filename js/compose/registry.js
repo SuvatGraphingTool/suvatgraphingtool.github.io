@@ -189,6 +189,7 @@ export const LAUNCHERS = {
   catapult: { label: 'a catapult', verb: 'flung from', words: /\b(catapult|trebuchet|slingshot|siege engine)\b/ },
   rifle:    { label: 'a rifle', verb: 'fired from', words: /\b(rifle|gun|pistol|shotgun|musket)\b/ },
   hose:     { label: 'a hose', verb: 'from', words: /\b(hose|hosepipe|garden hose|fire hose|spray gun)\b/ },
+  trampoline: { label: 'a trampoline', verb: 'bounces off', words: /\b(trampoline|trampolining|trampolinist)\b/ },
 };
 /** What a question says sends it off, or null. */
 export function launcherIn(text) {
@@ -404,7 +405,7 @@ export const placeOf = (r) => ({ ...BACKDROPS[r.backdrop], below: r.below || BAC
    becomes a figure — exactly, or the closest one there is, saying so — so
    what moves is what is drawn, everywhere; never a silent ball. */
 const WORDS = [
-  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager|astronaut|spaceman|spacewoman|cosmonaut|human cannonball|trapeze artist)\b/, 'diver'],
+  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|trampolinist|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager|astronaut|spaceman|spacewoman|cosmonaut|human cannonball|trapeze artist)\b/, 'diver'],
   [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
   [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
   [/\b(sandbag|sand ?bag|sack|bag of (sand|flour)|ballast)\b/, 'sandbag'], [/\b(bucket|pail)\b/, 'bucket'],

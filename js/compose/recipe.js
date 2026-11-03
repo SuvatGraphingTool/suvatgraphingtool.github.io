@@ -184,7 +184,9 @@ export function check(raw) {
   const goalward = backdrop === 'pitch' && objects.some((o) => ['football', 'ball'].includes(o.figure)) ? 'net' : null;
   // a long jumper lands in the stadium's sand pit
   const pit = backdrop === 'stadium' && objects.some((o) => o.figure === 'diver') && !(numbers.h > 0) ? 'sand' : null;
-  const lands = MOMENTS[engine] || own || goalward || pit || B.lands || LANDS_WITH[B.below];
+  // off a trampoline with heights from its mat, it comes down on the mat: no dust
+  const mat = /trampolin/i.test(String(raw.launcher ?? '')) && !(numbers.h > 0);
+  const lands = mat ? null : MOMENTS[engine] || own || goalward || pit || B.lands || LANDS_WITH[B.below];
   if (!effects.length && lands) effects.push(lands);
   if (objects.some((o) => o.figure === 'rocket' || o.figure === 'firework') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
   // with nothing asked: a vehicle down on dry ground skids and smokes as it
@@ -197,7 +199,7 @@ export function check(raw) {
   if (!(raw.effects || []).length && engine === 'projectile') {
     // (never off a synthetic runway or a rider gliding over snow)
     const leaper = objects.some((o) => FIGURES[o.figure]?.animal || o.figure === 'diver');
-    if (leaper && !(numbers.h > 0) && dry && backdrop !== 'stadium' && !effects.includes('kick')) effects.push('kick');
+    if (leaper && !mat && !(numbers.h > 0) && dry && backdrop !== 'stadium' && !effects.includes('kick')) effects.push('kick');
     if (backdrop === 'orchard' && !effects.includes('rustle')) effects.push('rustle');
     // a shot, a brick or a hammer down on tarmac, a floor or concrete: a shockwave of dust and cracks
     if (['road', 'floor'].includes(B.below) && objects.some((o) => ['shot', 'brick', 'hammer'].includes(o.figure)) && effects.length === 1 && ['dust', 'crack', 'ring'].includes(effects[0])) effects[0] = 'shockwave';

@@ -399,6 +399,11 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
   ok(titleOf(check({ title: 'A can of cola off a bridge', backdrop: 'bridge', engine: 'projectile', objects: [{ figure: 'can' }], numbers: { h: 15, u: 0, theta: -90 } }).recipe) === 'A drink can falling from a bridge', "the reader's 'off' for a drop from rest gives way to the app's own title");
   ok(check({ backdrop: 'bridge', engine: 'projectile', objects: [{ figure: 'can' }], numbers: { h: 15, u: 0 } }).recipe?.numbers.theta === 0, 'dropped from rest it needs no angle');
   ok(whoIn('A diver jumps from a board 10 m above the water') === 'diver' && whoIn('In a cricket match, a ball is hit') !== 'grasshopper', 'water below and a cricket match never take over what moves');
+  { const tr = fromReading({ understood: true, scenario: 'arc', h: 0, u: 8, angleDegrees: 90, summary: 'A trampolinist leaves the trampoline vertically at 8 m/s.', who: 'trampolinist' })?.recipe;
+    ok(tr?.launcher === 'trampoline' && tr.objects[0].figure === 'diver' && titleOf(tr) === 'A person bounces off a trampoline', 'batch 30: a trampolinist bounces off a trampoline, drawn as a person');
+    const mat = check({ backdrop: 'garden', engine: 'projectile', launcher: 'trampoline', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 8, theta: 90 } }).recipe;
+    ok(mat && !mat.effects.includes('kick') && !mat.effects.includes('dust'), 'off the mat and back onto it: no dust kicked up, none on landing');
+    ok(check({ backdrop: 'garden', engine: 'projectile', launcher: 'trampoline', objects: [{ figure: 'diver' }], numbers: { h: 1, u: 8, theta: 80 } }).recipe?.effects.includes('dust'), 'heights from the lawn: it lands on the lawn, in dust'); }
   ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });
 

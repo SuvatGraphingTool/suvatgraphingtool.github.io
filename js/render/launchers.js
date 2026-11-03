@@ -2,7 +2,8 @@
 // a person: a cannon aimed along the launch angle, with its muzzle flash and
 // smoke at the moment it fires; a ramp sloping up to the edge at the launch
 // angle, for a car, a bike, a skier or a skateboarder; a catapult whose arm
-// swings up and stops against its crossbar as it lets go.
+// swings up and stops against its crossbar as it lets go; a trampoline whose
+// mat sags under the jumper and springs back as they leave it.
 //
 // Each is `(g, x, y, s, P, { aim, t, fired, phase })`: the launch point at
 // (x, y) on the surface it stands on, `s` px its size, `aim` the launch angle
@@ -225,6 +226,59 @@ export function hose(g, x, y, s, P, { aim = 30, t = -1, gy = y } = {}) {
 }
 
 
+/** A garden trampoline seen side on and a little from above, the launch point
+    (x, y) the middle of its bed: the black mat inside a ring of springs, the
+    blue safety pad round the frame, the galvanised W legs down to the ground
+    (gy). Loaded (t < 0) the mat sags under the jumper's push; as the engine
+    lets go (t = 0) it springs up past flat and rings down, the springs
+    stretching and easing with it. `s` is its width. */
+export function trampoline(g, x, y, s, P, { t = -1, gy = y } = {}) {
+  const E = env(), rx = s / 2, ry = Math.max(5, s * 0.09);
+  // how far the mat is pushed down at its middle: loaded before, springing back after
+  const sag = t < 0 ? s * 0.07 : t < 0.6 ? -s * 0.06 * Math.exp(-t * 6) * Math.cos(t * 26) * (t < 0.05 ? t / 0.05 : 1) + s * 0.07 * Math.max(0, 1 - t / 0.05) : 0;
+  const legH = Math.max(6, gy - y);
+  softShadow(g, x, gy + 1, rx * 1.05, Math.max(3, ry * 0.5), 0.8);
+  // the legs: two W frames, the far one fainter, each from the frame down to its foot rail
+  const steel = E.night ? '#8a9098' : '#a9b0b8', steelLo = E.night ? '#5a6068' : '#6f767e';
+  for (const [k, col, lw] of [[-1, steelLo, Math.max(2, s * 0.018)], [1, steel, Math.max(2.4, s * 0.022)]]) {
+    const yTop = y + k * ry * 0.55, dx = rx * 0.62;
+    g.strokeStyle = col; g.lineWidth = lw; g.lineCap = 'round'; g.lineJoin = 'round';
+    for (const sx of [-1, 1]) {
+      g.beginPath(); g.moveTo(x + sx * dx, yTop); g.lineTo(x + sx * (dx - s * 0.1), gy); g.lineTo(x + sx * (dx + s * 0.1), gy); g.lineTo(x + sx * dx, yTop); g.stroke();
+    }
+  }
+  // the far half of the frame and pad, behind the mat
+  const padW = Math.max(4, s * 0.05);
+  const blue = E.night ? '#2b5a8a' : '#2f7fd0', blueLo = E.night ? '#1d3e60' : '#1f5a96', blueHi = E.night ? '#4a7ab0' : '#6fb2f0';
+  g.strokeStyle = blueLo; g.lineWidth = padW; g.beginPath(); g.ellipse(x, y, rx, ry, 0, Math.PI, TAU); g.stroke();
+  // the mat: black, pushed down at its middle; its weave catching the light
+  const mx = rx * 0.86, my = ry * 0.86;
+  const mat = () => { g.beginPath(); g.moveTo(x - mx, y); g.bezierCurveTo(x - mx * 0.6, y - my + sag, x + mx * 0.6, y - my + sag, x + mx, y); g.bezierCurveTo(x + mx * 0.6, y + my + sag, x - mx * 0.6, y + my + sag, x - mx, y); g.closePath(); };
+  const mg = g.createLinearGradient(x - mx, y, x + mx, y + my);
+  mg.addColorStop(0, E.night ? '#2c2d33' : '#3a3c44'); mg.addColorStop(1, E.night ? '#121316' : '#16171b');
+  mat(); g.fillStyle = mg; g.fill();
+  g.save(); mat(); g.clip();
+  g.strokeStyle = withAlpha('#ffffff', E.night ? 0.05 : 0.08); g.lineWidth = 1;
+  for (let i = -6; i <= 6; i++) { g.beginPath(); g.moveTo(x + i * mx * 0.16, y - my * 1.2 + sag); g.lineTo(x + i * mx * 0.16 + my * 0.6, y + my * 1.2 + sag); g.stroke(); }
+  g.fillStyle = withAlpha('#ffffff', E.night ? 0.05 : 0.1); g.beginPath(); g.ellipse(x - mx * 0.3, y - my * 0.3 + sag * 0.6, mx * 0.35, my * 0.25, -0.1, 0, TAU); g.fill();
+  g.restore();
+  // the springs: short steel coils from the frame to the mat's edge, stretched as it sags
+  g.strokeStyle = steel; g.lineWidth = Math.max(1, s * 0.006);
+  const nS = 28;
+  for (let i = 0; i < nS; i++) {
+    const a = (i / nS) * TAU, cx = Math.cos(a), cy = Math.sin(a);
+    const ox = x + cx * rx * 0.97, oy2 = y + cy * ry * 0.97, ix = x + cx * mx, iy = y + cy * my + sag * 0.25 * (1 - Math.abs(cx));
+    g.beginPath(); g.moveTo(ox, oy2);
+    for (let q = 1; q <= 5; q++) { const u = q / 5, zz = (q % 2 ? 1 : -1) * Math.max(0.8, s * 0.004); g.lineTo(ox + (ix - ox) * u - cy * zz, oy2 + (iy - oy2) * u + cx * zz); }
+    g.stroke();
+  }
+  // the near half of the pad: padded blue, lit along its top edge
+  g.strokeStyle = blue; g.lineWidth = padW; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI); g.stroke();
+  g.strokeStyle = blueHi; g.lineWidth = Math.max(1, padW * 0.3); g.beginPath(); g.ellipse(x, y - padW * 0.25, rx, ry, 0, 0.1, Math.PI - 0.1); g.stroke();
+  // the skirt under the near frame's edge
+  g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.ellipse(x, y + ry + padW * 0.6, rx * 0.9, Math.max(2, padW * 0.4), 0, 0, Math.PI); g.fill();
+}
+
 /** The circus's cannon: a long barrel painted blue with yellow bands and
     stars, its breech on a red-and-gold wagon with spoked wheels standing on
     the ring's sawdust, its muzzle at the launch point. Smoke and a flash as
@@ -260,6 +314,6 @@ function circusCannon(g, x, y, s, { a, ca, sa, L, rB, recoil, t, E, ground }) {
 }
 
 /** Each launcher by the registry's name: `size` px at k px a metre. */
-export const LAUNCHER_ART = { cannon, ramp, catapult, rifle, hose };
+export const LAUNCHER_ART = { cannon, ramp, catapult, rifle, hose, trampoline };
 // (a rifle near its true length, and never longer than half again the height it fires from)
-export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : clamp(3 * k, 60, 160));
+export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : kind === 'trampoline' ? clamp(3.6 * k, 80, 200) : clamp(3 * k, 60, 160));

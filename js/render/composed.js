@@ -256,7 +256,7 @@ function launch(canvas, o) {
     const winch = R.backdrop === 'well' ? 130 - (yTop - H0) * k : 0;
     // on a phone a table takes only its own room, so the motion has the rest
     if (phone && R.backdrop === 'table') return { l: tableW(k, w) + 12, r: 40, t: Math.max(36, head) };
-    return { l: Math.max(body * 0.9, place) + 80 + behind(k), r: 70 + Math.max(...movers.map((m) => (m.small ? 22 : size(k, m.piece) * 0.55))), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown, winch) };
+    return { l: Math.max(body * 0.9, place) + 80 + behind(k), r: 70 + Math.max(...movers.map((m) => (m.small ? 22 : size(k, m.piece) * 0.55))), t: Math.max(R.backdrop === 'bridge' ? 80 : 36, head, crown, winch, R.launcher === 'trampoline' ? size(k) * 1.15 + 16 : 0) };
   };
   // the readouts are cards over the stage: the path may pass behind them, but
   // the place's top and its height's label stay clear of them
@@ -332,7 +332,7 @@ function launch(canvas, o) {
   // ── who throws it: at the edge, wound up before the throw, through after it
   const v0 = f.vel(0), aim = (Math.atan2(v0.y, v0.x) * 180) / Math.PI;
   // a launcher's ground, and a catapult's swing: up over the first moments of the flight
-  const lgy = grounded && (R.launcher !== 'cannon' || R.backdrop === 'circus') ? oy : top + ls * (R.launcher === 'ramp' ? 0.3 : 0.1);
+  const lgy = grounded && (R.launcher !== 'cannon' || R.backdrop === 'circus') ? oy : top + ls * (R.launcher === 'ramp' ? 0.3 : R.launcher === 'trampoline' ? 0.24 : 0.1);
   const swing = m.going ? clamp(t / Math.max(1e-6, 0.06 * f.tMax), 0, 1) : 0;
   // a tennis ball is served, a baseball or a cricket ball batted: where the racquet or the bat meets it
   // (at hand height only: from a stand or a wall it is thrown, never batted)
@@ -666,7 +666,7 @@ function launch(canvas, o) {
       // a full turn (or a lean and back) so it lands upright
       const spin = down ? 0 : steep ? ease(0.15, 0.85, p) * Math.PI * (wet ? 3 : 2) : wet ? ease(0.05, 1, p) * Math.PI * 0.85 : Math.sin(ease(0.05, 0.95, p) * Math.PI) * 0.6;
       m.body = { x: cx, y: cy - (fired ? 0 : Lp * 0.25) };
-      const longJump = R.backdrop === 'stadium' && !(H0 > 0), shot = !!LAUNCHER_ART[R.launcher];
+      const longJump = R.backdrop === 'stadium' && !(H0 > 0), shot = !!LAUNCHER_ART[R.launcher] && R.launcher !== 'trampoline', bounced = R.launcher === 'trampoline';
       if (longJump) {
         // a long jumper: the feet carry the engine's point from the board to the sand, never below it;
         // knees up and arms forward in the air, sitting into the pit with the legs out in front
@@ -674,6 +674,13 @@ function launch(canvas, o) {
         cx = bx; cy = by - DIVER_FEET * Lp * (1 - 0.5 * tj);
         m.body = { x: cx, y: cy };
         diver(g, cx, cy, Lp, P, { ring: m.ring, tuck: tj, arms: !fired ? 0.15 : 0.55 + 0.25 * ease(0.1, 0.4, p), spin: fired ? -0.15 * ease(0.1, 0.4, p) + 0.25 * ease(0.75, 1, p) : 0, stand: !fired });
+      } else if (bounced) {
+        // off a trampoline: the feet carry the engine's point, upright the whole way —
+        // crouched on the mat before, arms swung up as it leaves, knees bending to land
+        cx = bx; cy = by - DIVER_FEET * Lp;
+        m.body = { x: cx, y: cy };
+        const tj = !fired ? 0.3 : 0.3 * (1 - ease(0, 0.06, p)) + 0.35 * ease(0.88, 1, p);
+        diver(g, cx, cy, Lp, P, { ring: m.ring, tuck: tj, arms: !fired ? 0.15 : 0.15 + 0.85 * ease(0, 0.08, p) - 0.4 * ease(0.85, 1, p), spin: 0, stand: !fired });
       } else if (shot) {
         // a human cannonball: inside the barrel until clear of the muzzle, then head first along the path
         const q = f.pos(t), out = fired && Math.hypot(X(q.x) - X(0), Y(q.y) - Y(H0)) > Lp * 0.6;
