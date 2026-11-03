@@ -2,6 +2,15 @@
 
 Short notes, newest first. What shipped, what was audited, where a session stopped.
 
+## 3 Nov 2026, night — 53–56 and batch 30 SHIPPED
+
+- Physics critic round 2 passed 53–56 after its fixes (844f495), including an older crash it found:
+  the lift's stage typeset its weight label twice (js/render/cable.js). A browser sweep of all 56
+  cards (open, launch, scrub; laptop and phone) is clean locally and live.
+- **Deployed:** site (version faed3f6f) and reader (ff43069e); the changed files live match HEAD.
+  Live screenshots of the four new stages checked.
+- **Next:** audits 27 (53, 54) and 28 (55, 56) together; then library 57.
+
 ## 3 Nov 2026, evening — 53–56 through their critics
 
 - **Library 56 `timed-up-the-slope`** (CIE 9709/41 Nov 2018 Q6) built: two timed stretches up a
