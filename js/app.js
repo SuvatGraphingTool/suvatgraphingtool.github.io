@@ -14,7 +14,7 @@ import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
 import { compose, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
-import { figureOf, placeOf } from './compose/registry.js';
+import { figureOf, belowOf, placeOf } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
@@ -3650,6 +3650,8 @@ function applyComposed(x, { graph = true } = {}) {
       && ['ball', 'stone', 'particle'].includes(String(x.recipe.objects[0]?.figure).toLowerCase())) {
     x = { ...x, recipe: { ...x.recipe, objects: [{ ...x.recipe.objects[0], figure: who.figure }] } };
   }
+  // the surface below, when the reader left it out but the question names one ("a bridge above a road")
+  if (x.recipe?.backdrop && !x.recipe.below) { const b = belowOf(x.recipe.backdrop, `${x.summary || ''} ${x.words || ''}`); if (b) x = { ...x, recipe: { ...x.recipe, below: b } }; }
   const c = compose(x.recipe);
   if (!c.ok) return { ok: false, error: `Suvat could not put that scene together: ${c.reason}` };
   const s = register(c, null);

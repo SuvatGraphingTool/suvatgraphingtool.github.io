@@ -230,7 +230,9 @@ export function check(raw) {
   if (!launcher && engine === 'projectile' && backdrop !== 'air' && objects.some((o) => o.figure === 'bullet')) launcher = 'rifle';
   // and a jet of water leaves a hose
   if (!launcher && engine === 'projectile' && backdrop !== 'air' && objects.some((o) => o.figure === 'water')) launcher = 'hose';
-  return { ok: true, recipe: { title: clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), ...(launcher ? { launcher } : {}), engine, objects, numbers, effects, notes } };
+  // (a title that says thrown or off for something let go from rest is the reader's slip: the app's own is used)
+  const slip = numbers.u === 0 && numbers.h > 0 && /\b(?:off|thrown|launched)\b/i.test(String(raw.title ?? ''));
+  return { ok: true, recipe: { title: slip ? undefined : clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), ...(launcher ? { launcher } : {}), engine, objects, numbers, effects, notes } };
 }
 
 /** "A car off a cliff" — a title for a recipe that brought none. */
