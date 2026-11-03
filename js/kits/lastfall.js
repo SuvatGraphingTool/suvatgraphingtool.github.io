@@ -32,7 +32,8 @@ export const lastfall = {
     ] },
   ],
   g: [9.8, 9.81, 10],
-  hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'ticks'], extras: ['energy'], bounce: true },
+  // the acceleration is always drawn (it is g, the whole point): no switch that would say it is off
+  hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'ticks', 'acceleration'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'down',
   resolveEnds: true,

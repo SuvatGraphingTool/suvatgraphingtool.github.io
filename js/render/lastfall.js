@@ -93,24 +93,12 @@ export function render(canvas, cam, o) {
   { const gr = g.createRadialGradient(x0 - 3, yNow - 3, 1, x0, yNow, size); gr.addColorStop(0, '#d8d2c8'); gr.addColorStop(1, '#6d665c');
     g.fillStyle = gr; g.beginPath(); g.ellipse(x0, yNow, size, size * 0.8, 0.4, 0, TAU); g.fill(); }
   L.reserve({ x: x0 - size, y: yNow - size, w: size * 2, h: size * 2 });
+  // the stone and the marker are kept clear of every plate
+  taken.push({ x: x0 - size - 2, y: yNow - size - 2, w: size * 2 + 4, h: size * 2 + 4 }, { x: edge - 4, y: yp - 8, w: 26, h: 16 });
 
-  // ── the moments: past the point, and at the ground; the speeds on plates, left of the wall's edge
-  if (fired && t >= f.tP - 1e-9) {
-    const e = ageOf(t, f.tP, f.tMax, 0.9); pulse(g, x0, yp, e.age, e.life, P.mark, { radius: 22 });
-    // the paper's own given, on the plate: V − d, V ÷ k, or the last stretch's time
-    const tag = f.mode === 'diff' ? T`V - ${sf(f.dv)} = ${sf(f.vP)} [m s^-1] "here"` : f.mode === 'ratio' ? T`V/${sf(f.kk)} = ${sf(f.vP)} [m s^-1] "here"`
-      : T`${sf(f.vP)} [m s^-1] "here; the last" ${sf(f.p)} [m] "take" ${sf(f.tau)} [s]`;
-    // left of the wall — on a phone, where that is too narrow, just above the point right of the drop
-    put(tag, x0 + 14, yp - 18, P.vel, { align: 'left' });
-  }
-  const landed = fired && t >= f.tG - 1e-9;
-  if (landed) {
-    const e = ageOf(t, f.tG, f.tMax); dust(g, x0, ground, e.age, e.life, { size: 2, n: 26 });
-    // on the grass under the ground line: clear of the point's plate however low the point is
-    put(T`V = ${sf(f.V)} [m s^-1] "at the ground"`, x0 + 14, ground + 18, P.vel, { align: 'left' });
-  }
-
-  // ── its velocity and acceleration, down positive (vertical: solid), between the drop and the dimension lines
+  // ── its velocity and acceleration, down positive (vertical: solid): the arrows first, reserved, so no
+  // plate is ever drawn under one; their numbers placed last, each beside its own arrow
+  const landed = fired && t >= f.tG - 1e-9, later = [];
   if (!landed) {
     const room = Math.max(0, ground - yNow - 8);
     // below the stone while there is room; in the last metres, above it, pointing down at it
@@ -118,12 +106,27 @@ export function render(canvas, cam, o) {
       const len = clamp((val / max) * 70, 22, 70), below = room >= len;
       const y0 = below ? yNow : yNow - size - len, y1 = below ? yNow + len : yNow - size;
       arrow(g, bx, y0, bx, y1, { color: c, width: wd, head: 9 });
-      taken.push({ x: bx - 6, y: y0 - 2, w: 12, h: len + 4 });
-      put(T`${sf(val)} [${unit}]`, right ? bx + 8 : bx - 8, (y0 + y1) / 2, c, { align: right ? 'left' : 'right' });
+      taken.push({ x: bx - 3, y: y0 - 2, w: 6, h: len + 4 });
+      later.push([T`${sf(val)} [${unit}]`, right ? bx + 12 : bx - 12, (y0 + y1) / 2, c, { align: right ? 'left' : 'right' }]);
     };
     if (show.velocity !== false && f.vel(t) > 0.05) col(x0, f.vel(t), Math.max(f.V, 1e-9), P.vel, 'm s^-1', 2.6);
     if (fired) col(x0 + 30, f.g, f.g, P.acc, 'm s^-2', 2.2, true);
   }
+
+  // ── the moments: past the point, and at the ground; the speeds on plates right of the drop
+  if (fired && t >= f.tP - 1e-9) {
+    const e = ageOf(t, f.tP, f.tMax, 0.9); pulse(g, x0, yp, e.age, e.life, P.mark, { radius: 22 });
+    // the paper's own given, on the plate: V − d, V over k, or (a second plate) the last stretch's time
+    const tag = f.mode === 'diff' ? T`V - ${sf(f.dv)} = ${sf(f.vP)} [m s^-1] "here"` : f.mode === 'ratio' ? T`V/${sf(f.kk)} = ${sf(f.vP)} [m s^-1] "here"` : T`${sf(f.vP)} [m s^-1] "here"`;
+    put(tag, x0 + 14, yp - 18, P.vel, { align: 'left' });
+    if (f.mode === 'time') put(T`"the last" ${sf(f.p)} [m] "take" ${sf(f.tau)} [s]`, x0 + 14, yp + 22, P.ink, { align: 'left' });
+  }
+  if (landed) {
+    const e = ageOf(t, f.tG, f.tMax); dust(g, x0, ground, e.age, e.life, { size: 2, n: 26 });
+    // on the grass under the ground line: clear of the point's plate however low the point is
+    put(T`V = ${sf(f.V)} [m s^-1] "at the ground"`, x0 + 14, ground + 18, P.vel, { align: 'left' });
+  }
+  for (const a of later) put(...a);
   L.draw(g, w, h);
   return null;
 }
