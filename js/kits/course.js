@@ -77,13 +77,14 @@ export const course = {
   /* East dashed (horizontal), north solid (vertical): rule 2. The velocity
      jumps at the turn; between the turns it is constant, and so a = 0. */
   graphs(f, t, P) {
-    const U = f.U, two = (fn, c) => [
-      { label: 'east', tag: T`x`, fn: (tt) => fn(tt).x, color: c, dash: [6, 4] },
-      { label: 'north', tag: T`y`, fn: (tt) => fn(tt).y, color: c, dash: null },
+    // the velocity jumps at the turn: drawn as a jump, not joined by a line
+    const U = f.U, cut = f.tc != null ? [f.tc] : [], two = (fn, c, breaks = []) => [
+      { label: 'east', tag: T`x`, fn: (tt) => fn(tt).x, color: c, dash: [6, 4], breaks },
+      { label: 'north', tag: T`y`, fn: (tt) => fn(tt).y, color: c, dash: null, breaks },
     ];
     return [
       { canvas: 'g-s', title: 'Position–time', unit: U.len, tMax: f.tMax, t, series: two(f.pos, P.disp) },
-      { canvas: 'g-v', title: 'Velocity–time', unit: U.speedText, tMax: f.tMax, t, series: two(f.vel, P.vel) },
+      { canvas: 'g-v', title: 'Velocity–time', unit: U.speedText, tMax: f.tMax, t, series: two(f.vel, P.vel, cut) },
       { canvas: 'g-a', title: 'Acceleration–time', unit: U.len === 'km' ? 'km h⁻²' : 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'on each course', tag: 'each course', fn: () => 0, color: P.acc, dash: null }] },
     ];
   },

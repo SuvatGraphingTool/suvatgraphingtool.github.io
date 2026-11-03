@@ -64,8 +64,8 @@ export const bicycle = {
         { label: 'B', tag: 'B', fn: f.posB, color: P.second, dash: [6, 4] },
         { label: 'A', tag: 'A', fn: f.posA, color: P.disp, dash: [6, 4] }] },
       { canvas: 'g-v', title: 'Speed–time', unit: U.speedText, tMax: f.tMax, t, series: [
-        { label: 'B', tag: 'B', fn: f.velB, color: P.second, dash: [6, 4] },
-        { label: 'A', tag: 'A', fn: f.velA, color: P.vel, dash: [6, 4] }] },
+        { label: 'B', tag: 'B', fn: f.velB, color: P.second, dash: [6, 4], breaks: [f.tB1] },
+        { label: 'A', tag: 'A', fn: f.velA, color: P.vel, dash: [6, 4], breaks: [f.tA1] }] },
       { canvas: 'g-a', title: 'Acceleration–time', unit: U.len === 'km' ? 'km h⁻²' : 'm s⁻²', tMax: f.tMax, t, series: [
         { label: 'each stage steady', tag: 'A, B', fn: () => 0, color: P.acc, dash: [6, 4] }] },
     ];

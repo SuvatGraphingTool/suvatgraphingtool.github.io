@@ -55,7 +55,7 @@ export const slopegates = {
     return [
       { canvas: 'g-s', title: 'Displacement–time, up +', unit: 'm', tMax: f.tMax, t, series: [{ label: 'up the slope', tag: T`s`, fn: f.pos, color: P.disp, dash: null }] },
       { canvas: 'g-v', title: 'Velocity–time, up +', unit: 'm s⁻¹', tMax: f.tMax, t, series: [{ label: 'velocity', tag: T`v`, fn: f.vel, color: P.vel, dash: null }] },
-      { canvas: 'g-a', title: 'Acceleration–time, up +', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: f.acc, color: P.acc, dash: null }] },
+      { canvas: 'g-a', title: 'Acceleration–time, up +', unit: 'm s⁻²', tMax: f.tMax, t, series: [{ label: 'acceleration', tag: T`a`, fn: f.acc, color: P.acc, dash: null, breaks: f.tStop != null && f.tStop < f.tMax ? [f.tStop] : [] }] },
     ];
   },
 
