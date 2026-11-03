@@ -2,6 +2,15 @@
 
 Short notes, newest first. Batches 1–29 are in the git history ("Component factory batch N").
 
+## Batch 32 — 3 Nov 2026
+
+- **highjump** (backdrop, js/render/places.js): the athletics stadium's high jump — the apron,
+  the uprights and the bar where the engine's path peaks (at the `level` a part asks about, else
+  just under the peak), the blue crash mat. If the path is under the bar it is knocked off at the
+  engine's moment and falls to the mat; if it clears, the bar trembles. The jumper stands at the
+  take-off, then the hips carry the path, laid back over the bar (a flop). composed.js passes
+  `level` to place drawings. Tests in test/compose.test.mjs. UI critic and live check to do.
+
 ## Batch 31 — 3 Nov 2026
 
 - **rugby** (backdrop, js/render/places.js): a rugby ground — the stand and its crowd, striped

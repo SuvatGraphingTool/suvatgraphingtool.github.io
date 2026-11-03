@@ -1231,6 +1231,49 @@ function rugby(g, c) {
   if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
 }
 
+/** A high jump in an athletics stadium: the stadium's stand and track behind, the jumping apron in
+    front of them; the uprights and the bar stand where the jump peaks — at the height a part asks
+    about, or just under the top of the jump — and the blue crash mat beyond. If the path is under
+    the bar there, the bar is knocked off at the engine's moment and falls to the mat; if it clears,
+    the bar trembles as the jumper goes over. */
+function highjump(g, c) {
+  const { w, h, k, X, oy, x0, over, when, now = -1, level } = c;
+  stadium(g, { ...c, H0: 0 });
+  const E = env(), n = E.night;
+  // the apron: a fan of track surface round the take-off
+  g.fillStyle = n ? '#2c3e5a' : '#4a72a8'; g.beginPath(); g.ellipse(x0 + 2 * k, oy + 6, clamp(5 * k, 60, 260), clamp((h - oy) * 0.5, 10, 40), 0, 0, TAU); g.fill();
+  // where the jump peaks, and its height there
+  let px = null, peak = -Infinity;
+  if (typeof over === 'function' && X) for (let x = x0 + 4; x < w; x += 2) { const y = over((x - X(0)) / k); if (y == null) continue; if (y > peak) { peak = y; px = x; } }
+  if (px == null) return;
+  const bar = level != null && isFinite(level) ? level : Math.max(0.5, peak - 0.08);
+  const clears = peak >= bar;
+  const tBar = typeof when === 'function' ? when((px - X(0)) / k) : null;
+  // the mat: a deep blue foam block from just before the bar to past where it lands
+  const land = (c.clearX || [])[0] ?? px + 3 * k, mx0 = px - 0.8 * k, mx1 = Math.max(land + 1.2 * k, px + 3 * k), mH = clamp(0.6 * k, 12, 40);
+  const mg = g.createLinearGradient(0, oy - mH, 0, oy);
+  mg.addColorStop(0, n ? '#3a5f9a' : '#3d7dd8'); mg.addColorStop(1, n ? '#22385e' : '#24508e');
+  g.fillStyle = mg; g.beginPath(); g.roundRect(mx0, oy - mH, mx1 - mx0, mH, 6); g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.25)'; g.fillRect(mx0 + 4, oy - mH + 2, mx1 - mx0 - 8, 2);
+  g.strokeStyle = 'rgba(0,0,0,0.25)'; g.lineWidth = 1; for (let x = mx0 + 30; x < mx1 - 10; x += 40) { g.beginPath(); g.moveTo(x, oy - mH + 3); g.lineTo(x, oy - 2); g.stroke(); }
+  softShadow(g, (mx0 + mx1) / 2, oy + 2, (mx1 - mx0) * 0.55, 4, 0.6);
+  // the uprights on their bases, the far one a little behind
+  const barY = oy - bar * k, upH = (bar + 0.6) * k, depth = clamp(0.8 * k, 12, 28);
+  for (const [x, col, wide] of [[px + depth, n ? '#8a8880' : '#c9c7bf', 3], [px, n ? '#e4e2dc' : '#fbfaf6', 4]]) {
+    g.strokeStyle = col; g.lineWidth = wide; g.beginPath(); g.moveTo(x, oy); g.lineTo(x, oy - upH); g.stroke();
+    g.fillStyle = '#3c4046'; g.fillRect(x - 10, oy - 4, 20, 4);
+    g.strokeStyle = withAlpha('#000000', 0.4); g.lineWidth = 1; for (let y = oy - 10; y > oy - upH; y -= clamp(0.1 * k, 4, 10)) { g.beginPath(); g.moveTo(x - 3, y); g.lineTo(x + 3, y); g.stroke(); }
+  }
+  // the bar: across at its height — trembling as a clean jump passes, knocked off and falling to the mat if not
+  const age = tBar != null && now >= tBar ? now - tBar : -1;
+  let y0 = barY, y1 = barY, sw = 0;
+  if (age >= 0 && !clears) { const u = clamp(age / 0.5, 0, 1); y0 = barY + (oy - mH - barY) * (u * u); y1 = barY + (oy - mH - barY) * Math.min(1, (u * 1.3) ** 2); }
+  else if (age >= 0) sw = Math.sin(age * 40) * Math.exp(-age * 6) * 3;
+  g.save(); g.strokeStyle = '#f2f2f2'; g.lineWidth = 3.5; g.lineCap = 'round'; g.beginPath(); g.moveTo(px, y0 + sw); g.lineTo(px + depth, y1 - sw); g.stroke();
+  g.strokeStyle = '#d23a2e'; g.lineWidth = 3.5; g.setLineDash([5, 5]); g.beginPath(); g.moveTo(px, y0 + sw); g.lineTo(px + depth, y1 - sw); g.stroke(); g.restore();
+  c.reserve?.({ x: px - 12, y: oy - upH - 6, w: depth + 24, h: 14 });
+}
+
 /** A golf course: a tree line with a clubhouse beyond, the fairway mown in
     stripes between the rough, a bunker clear of where it lands, and the
     green with its pin and flag a little beyond the landing; from a height,
@@ -3122,4 +3165,4 @@ function fairground(g, c) {
 }
 
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { rugby, mineshaft, mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse, fairground };
+export const PLACE_ART = { highjump, rugby, mineshaft, mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse, fairground };

@@ -412,6 +412,8 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
     ok(fromReading({ understood: true, scenario: 'arc', h: 0.8, u: 25, angleDegrees: 5, summary: 'A bowling machine projects a cricket ball horizontally.', who: 'cricket ball' })?.recipe?.launcher === 'machine', 'a bowling machine is one too'); }
   ok(placeIn('A rugby player kicks a conversion from 30 m')?.backdrop === 'rugby' && placeIn('In a rugby match, a ball is kicked')?.backdrop === 'rugby' && placeIn('Three posts P, Q and R are at the side of a road')?.backdrop !== 'rugby', 'batch 31: a rugby pitch, and roadside posts are not rugby posts');
   { const rg = check({ backdrop: 'rugby', engine: 'projectile', objects: [{ figure: 'rugbyBall' }], numbers: { h: 0, u: 20, theta: 35 } }).recipe; ok(rg && /rugby/.test(titleOf(rg)), 'a rugby ball kicked on a rugby pitch'); }
+  ok(placeIn('A high jumper takes off at 5 m/s at 65 degrees')?.backdrop === 'highjump' && placeIn('a long jumper takes off')?.backdrop === 'stadium', 'batch 32: a high jump, and a long jump stays in the stadium');
+  ok(check({ backdrop: 'highjump', engine: 'projectile', objects: [{ figure: 'diver' }], numbers: { h: 0, u: 5.5, theta: 65, level: 1.6 } }).recipe?.backdrop === 'highjump', 'a high jump with its bar at the height a part asks about');
   ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });
 
