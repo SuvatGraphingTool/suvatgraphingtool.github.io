@@ -2830,8 +2830,8 @@ function fairground(g, c) {
   g.fillStyle = withAlpha(n ? '#3a3020' : '#b8a878', 0.35); g.fillRect(0, lerp(horizon, oy, 0.5), w, h - lerp(horizon, oy, 0.5));
   const land = (c.clearX || [])[0] ?? w;
   // the stalls: striped awnings in blue and white, yellow and white, along the back
-  const sw = clamp(2.5 * k, 30, 90), sh = sw * 0.7, sy = lerp(horizon, oy, 0.25);
-  const stripes = n ? [['#3a4a7a', '#8a8e96'], ['#7a6a3a', '#8a8e96']] : [['#2f5fa8', '#f4f4f4'], ['#e8c547', '#f4f4f4'], ['#5fae7a', '#f4f4f4']];
+  const sw = clamp(2.5 * k, 30, 90), sh = sw * 0.7, sy = lerp(horizon, oy, 0.12);
+  const stripes = n ? [['#3a4a7a', '#8a8e96'], ['#7a6a3a', '#8a8e96']] : [['#2f5fa8', '#f4f4f4'], ['#e8c547', '#f4f4f4'], ['#e86a9a', '#f4f4f4']];
   for (let x = 10 + r() * 20, i = 0; x < w - sw; x += sw + 10 + r() * 30, i++) {
     if (!underSky(c, x, x + sw, sy - sh - 6, 30)) continue;
     g.fillStyle = n ? '#4a4038' : '#c8b896'; g.fillRect(x + 3, sy - sh * 0.6, sw - 6, sh * 0.6);
@@ -2842,32 +2842,54 @@ function fairground(g, c) {
   }
   // bunting across the back
   g.strokeStyle = n ? '#6a6e76' : '#8a9098'; g.lineWidth = 1; const by = sy - sh - 14; g.beginPath(); g.moveTo(0, by); for (let x = 0; x <= w; x += 60) g.quadraticCurveTo(x + 30, by + 8, x + 60, by); g.stroke();
-  const flags = n ? ['#5a6a8a', '#8a8a5a', '#6a8a6a'] : ['#2f5fa8', '#e8c547', '#5fae7a', '#f4f4f4'];
+  const flags = n ? ['#5a6a8a', '#8a8a5a', '#8a8e96'] : ['#2f5fa8', '#e8c547', '#e86a9a', '#f4f4f4'];
   for (let x = 6, i = 0; x < w; x += 12, i++) { const yy = by + Math.sin(((x % 60) / 60) * Math.PI) * 6; g.fillStyle = flags[i % flags.length]; g.beginPath(); g.moveTo(x, yy); g.lineTo(x + 8, yy); g.lineTo(x + 4, yy + 8); g.closePath(); g.fill(); }
-  if (!(H0 > 0)) return;
-  // the Ferris wheel: its hub below and behind the top gondola, the rim through the gondolas
-  const H = oy - top, R = Math.max(H * 0.45, 3 * k), cx = x0 - clamp(0.6 * k, 6, 20), cy = top + R, rim = n ? '#c8ccd2' : '#7a828e', frame = n ? '#8a8e96' : '#5a6070';
-  // the A-frame legs from the hub to the ground
+  if (!(H0 > 0)) {
+    // a Ferris wheel far off on the horizon, faint
+    const fr = clamp((oy - horizon) * 0.5, 20, 90), fx = clamp(x0 + (w - x0) * 0.75, w * 0.5, w - fr - 10), fy = horizon - fr - 4;
+    if (underSky(c, fx - fr, fx + fr, fy - fr, 20)) {
+      g.save(); g.globalAlpha = 0.4; g.strokeStyle = n ? '#c8ccd2' : '#5a6070'; g.lineWidth = 2; g.beginPath(); g.arc(fx, fy, fr, 0, TAU); g.stroke();
+      g.lineWidth = 1; for (let i = 0; i < 10; i++) { const a2 = (i / 10) * TAU; g.beginPath(); g.moveTo(fx, fy); g.lineTo(fx + Math.cos(a2) * fr, fy + Math.sin(a2) * fr); g.stroke(); }
+      g.lineWidth = 2; g.beginPath(); g.moveTo(fx, fy); g.lineTo(fx - fr * 0.5, horizon); g.moveTo(fx, fy); g.lineTo(fx + fr * 0.5, horizon); g.stroke(); g.restore();
+    }
+    return;
+  }
+  // the Ferris wheel, behind the plane of the flight (drawn faint): the launch is a cabin hanging
+  // from the rim near its top, its floor at the launch height; the hub is set back to the left
+  const H = oy - top, gw = clamp(2.6 * k, 18, 80), hang = clamp(2.7 * k, 20, 110);
+  const piv = { x: x0 - gw * 0.5, y: top - hang };
+  const room = oy - piv.y - 0.03 * H, R = Math.max(gw * 1.5, Math.min(Math.max(H * 0.5, 5 * k), room / 1.94));
+  const cx = piv.x - R * 0.35, cy = piv.y + R * Math.sqrt(1 - 0.35 * 0.35);
+  const rimC = n ? '#c8ccd2' : '#5a6070', frame = n ? '#9aa0a8' : '#4a5060';
+  g.save(); g.globalAlpha = 0.6;
   g.strokeStyle = frame; g.lineWidth = clamp(0.25 * k, 3, 8); g.lineCap = 'round';
   g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - R * 0.55, oy); g.moveTo(cx, cy); g.lineTo(cx + R * 0.55, oy); g.moveTo(cx - R * 0.3, lerp(cy, oy, 0.55)); g.lineTo(cx + R * 0.3, lerp(cy, oy, 0.55)); g.stroke();
-  // the rim and spokes (turned a little by the clock, though the top gondola is where it leaves)
-  g.strokeStyle = rim; g.lineWidth = clamp(0.15 * k, 2, 5); g.beginPath(); g.arc(cx, cy, R * 0.92, 0, TAU); g.stroke();
-  g.lineWidth = 1; g.strokeStyle = withAlpha(rim, 0.8); const nsp = 12;
-  for (let i = 0; i < nsp; i++) { const a = (i / nsp) * TAU; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R * 0.92, cy + Math.sin(a) * R * 0.92); g.stroke(); }
-  g.fillStyle = frame; g.beginPath(); g.arc(cx, cy, Math.max(3, R * 0.05), 0, TAU); g.fill();
-  // the gondolas hanging level, the top one open at the front where it leaves from
-  const gw = clamp(1.4 * k, 10, 40), gh = gw * 0.75, cols = n ? ['#5a6a8a', '#8a8a5a', '#6a8a6a'] : ['#2f5fa8', '#e8c547', '#5fae7a'];
-  for (let i = 0; i < nsp; i++) {
-    const a = -Math.PI / 2 + (i / nsp) * TAU, px = cx + Math.cos(a) * R * 0.92, py = cy + Math.sin(a) * R * 0.92;
-    if (i === 0) continue;
-    g.strokeStyle = frame; g.lineWidth = 1; g.beginPath(); g.moveTo(px, py); g.lineTo(px, py + gh * 0.3); g.stroke();
-    g.fillStyle = cols[i % cols.length]; g.beginPath(); g.roundRect(px - gw / 2, py + gh * 0.3, gw, gh, 3); g.fill();
-    if (n) { g.fillStyle = withAlpha(E.window, 0.9); g.beginPath(); g.arc(px, py, 2, 0, TAU); g.fill(); }
+  g.strokeStyle = rimC; g.lineWidth = clamp(0.15 * k, 3, 6); g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.stroke();
+  g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, R * 0.9, 0, TAU); g.stroke();
+  g.lineWidth = 1; const nsp = 12; for (let i = 0; i < nsp; i++) { const a2 = (i / nsp) * TAU; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a2) * R, cy + Math.sin(a2) * R); g.stroke(); }
+  g.fillStyle = frame; g.beginPath(); g.arc(cx, cy, Math.max(4, R * 0.05), 0, TAU); g.fill();
+  g.restore();
+  // the other cabins hanging level round the rim, any the path crosses left out
+  const cols = n ? ['#5a6a8a', '#8a8a5a', '#8a8e96'] : ['#2f5fa8', '#e8c547', '#f2ede0'], ga = Math.atan2(piv.y - cy, piv.x - cx);
+  const pathY = (px) => { const y = c.over?.((px - c.X(0)) / k); return y == null ? null : c.Y(y); };
+  for (let i = 1; i < 10; i++) {
+    const a2 = ga + (i / 10) * TAU, px = cx + Math.cos(a2) * R, py = cy + Math.sin(a2) * R, bw = gw * 0.8, bh = bw * 0.8;
+    const yA = pathY(px - bw / 2), yB = pathY(px + bw / 2), lo = py + bh * 0.2 - 8, hi = py + bh * 1.2 + 8;
+    if ([yA, yB].some((yy) => yy != null && yy > lo && yy < hi) || (px + bw / 2 > x0 - 4 && py > top)) continue;
+    g.strokeStyle = frame; g.lineWidth = 1; g.beginPath(); g.moveTo(px, py); g.lineTo(px, py + bh * 0.2); g.stroke();
+    g.fillStyle = cols[i % cols.length]; g.beginPath(); g.roundRect(px - bw / 2, py + bh * 0.2, bw, bh, 3); g.fill(); g.strokeStyle = withAlpha('#000000', 0.35); g.stroke();
+    g.fillStyle = withAlpha(n ? E.window : '#bcd6e6', 0.8); g.fillRect(px - bw * 0.35, py + bh * 0.35, bw * 0.7, bh * 0.3);
   }
-  // the top gondola: its floor at the launch height, the person standing in it, open at the front
-  g.fillStyle = cols[0]; g.fillRect(x0 - gw * 1.1, top, gw * 1.1, clamp(0.2 * k, 3, 8));
-  g.strokeStyle = cols[0]; g.lineWidth = 2; g.beginPath(); g.moveTo(x0 - gw * 1.1, top); g.lineTo(x0 - gw * 1.1, top - gh * 0.9); g.lineTo(x0 - gw * 0.2, top - gh * 0.9); g.stroke();
-  g.strokeStyle = frame; g.lineWidth = 1.2; g.beginPath(); g.moveTo(cx, top); g.lineTo(cx, top - gh * 0.9); g.stroke();
+  // bulbs round the rim at night, glowing
+  if (n) for (let i = 0; i < 24; i++) { const a2 = (i / 24) * TAU, bx = cx + Math.cos(a2) * R, by = cy + Math.sin(a2) * R; const gl = g.createRadialGradient(bx, by, 0, bx, by, 8); gl.addColorStop(0, withAlpha(E.window, 0.9)); gl.addColorStop(1, withAlpha(E.window, 0)); g.fillStyle = gl; g.fillRect(bx - 8, by - 8, 16, 16); g.fillStyle = '#fff6d8'; g.beginPath(); g.arc(bx, by, 1.8, 0, TAU); g.fill(); }
+  // the launch cabin: its hanger from the pivot to the roof, the roof, a back wall, waist-high sides, open at the front
+  const roofY = top - hang * 0.85, wallH = clamp(1.1 * k, 8, 44), cab = cols[0], cl = x0 - gw;
+  g.strokeStyle = frame; g.lineWidth = 2; g.beginPath(); g.moveTo(piv.x, piv.y); g.lineTo(piv.x, roofY); g.stroke();
+  g.fillStyle = cab; g.beginPath(); g.moveTo(cl - 4, roofY + 4); g.quadraticCurveTo(piv.x, roofY - 6, x0 + 4, roofY + 4); g.closePath(); g.fill();
+  g.fillStyle = withAlpha(cab, 0.85); g.fillRect(cl, roofY + 3, 4, top - roofY - 3);
+  g.fillStyle = cab; g.fillRect(cl, top - wallH, gw * 0.35, wallH); g.fillRect(cl, top, gw, clamp(0.25 * k, 3, 9));
+  g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 1; g.strokeRect(cl, top - wallH, gw * 0.35, wallH);
+  g.strokeStyle = cab; g.lineWidth = 2; g.beginPath(); g.moveTo(x0 - 2, roofY + 4); g.lineTo(x0 - 2, roofY + (top - roofY) * 0.25); g.stroke();
   softShadow(g, cx, oy + 2, R * 0.6, 4, 0.5);
   void phase;
 }
