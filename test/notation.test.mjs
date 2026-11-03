@@ -722,6 +722,24 @@ group('The Past-paper library: down the slope and across the flat, everything it
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
+group('The Past-paper library: up a rough slope, timed, everything it says', () => {
+  const K = KITS.slopegates, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  for (const k of [{ theta: 3 }, {}, { theta: 10 }, { t2: 3 }, { theta: 0.5 }, { d1: 1, t1: 1, d2: 3, t2: 1 }, { d1: 1, t1: 1, d2: 3, t2: 1, theta: 5 }, { d1: 0 }, { t1: -1 }]) {
+    const r = K.solve(K.read({ d1: 0.8, t1: 0.6, d2: 0.8, t2: 1, g: 10, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('The Past-paper library: two travellers, one bicycle, everything it says', () => {
   const K = KITS.bicycle, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
   const bag = [];

@@ -151,6 +151,7 @@ this library: *covered* names the one of the twelve that does it.
 | 125 | Edexcel | 6677/01 M1 | Jun 2006 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202006%20QP.pdf) | A ship at constant velocity on course for a submerged rock (it would hit at 1500) turns due north at 1400: speed, bearing, the rock, its position after the turn, when due east of the rock, its distance at 1600 | – | **built** → `change-of-course` |
 | 126 | OCR | 4728 M1 | Jan 2011 | 5 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/jan-2011-q-19.pdf) | P projected down a smooth slope at 4.9 (a = 4.9) as Q is let go at Y level with X; they collide below Y: the distances in T, θ, T = 2/3, the speeds | 9.8 | **built** → `slope-and-drop` |
 | 127 | OCR | 4728 M1 | Jun 2015 | 3 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/2015-q-7.pdf) | A cycles at 20 for 1 h, leaves the bicycle, walks at 5; B walks at 4, finds it, cycles at 15; they arrive together: A's cycling distance, B's walking time, T, the journey | – | **built** → `one-bicycle` |
+| 128 | CIE | 9709/41 | Oct/Nov 2018 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w18_qp_41.pdf) | Projected up a rough 3° slope past P, Q, R; PQ = QR = 0.8 m in 0.6 s and 1 s: deceleration ⅔, u = 23/15, μ | 10 | **built** → `timed-up-the-slope` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -496,6 +497,23 @@ trains already moving at X, its parts are theirs, and the reader is told which i
 
 **How it is solved.** Each distance is the area under its own speed–time graph: the train
 whose hold is given gives the common time; the other's trapezium then gives its hold.
+
+### `timed-up-the-slope` — Up a rough slope, timed
+
+**Papers.** Cambridge 9709/41 Oct/Nov 2018 Q6 (up a rough 3° slope past P, Q, R; PQ = QR = 0.8 m
+in 0.6 s and 1 s: a = −⅔, u = 23/15, μ = 0.0144 with g = 10).
+
+**Why the others cannot.** `past-the-posts` times two stretches on a level road and stops at u
+and a; `up-a-rough-slope` starts from a speed and μ. Here the timing gives the motion, and F = ma
+along the slope turns that into μ.
+
+**How it is solved.** js/core/slopegates.js: s = ut + ½at² for P to Q and for P to R, solved
+together; −mg sin θ − μ mg cos θ = ma for μ; at rest it slides back only if tan θ > μ.
+
+**The stage.** A lab: a board faced in sandpaper on the bench, propped at the true angle, a
+spring launcher at its foot, light gates at P, Q, R whose beams turn green as the block breaks them,
+wired to a timer that shows each stretch's time; PQ and QR marked under the board; where it stops
+a pulse, and if friction cannot hold it, it slides back.
 
 ### `one-bicycle` — Two travellers, one bicycle
 

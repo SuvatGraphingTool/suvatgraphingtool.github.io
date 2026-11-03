@@ -40,6 +40,7 @@ import { solveLastFall, lastFallWorking } from '../js/core/lastfall.js';
 import { solveCourse, courseWorking, clockHours, clockOf } from '../js/core/course.js';
 import { solveSlopeDrop, slopeDropWorking } from '../js/core/slopedrop.js';
 import { solveBicycle, bicycleWorking } from '../js/core/bicycle.js';
+import { solveSlopeGates, slopeGatesWorking } from '../js/core/slopegates.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1770,6 +1771,18 @@ group('CIE 9709/42 Nov 2015 Q2: the last stretch of a fall', () => {
   ok(lastFallWorking(s).length === 2 && lastFallWorking(s)[0].rows.length === 3 && /t=1s/.test(String(lastFallWorking(s)[0].rows[2].r).replace(/<[^>]+>/g, '')), 'the working: the last stretch (with its own time), then the whole fall');
   { const K = KITS.lastfall, kv = K.solve(K.read({ p: 35, dv: 10, g: 10 }));
     ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)) && resolveKit(K, kv, kv.f, 2).blocks[0].rows.every((q) => q.part !== 'x'), 'vertical: solid graphs and Resolve rows (rule 2)'); }
+});
+
+group('CIE 9709/41 Nov 2018 Q6: up a rough slope, timed', () => {
+  const s = solveSlopeGates({ d1: 0.8, t1: 0.6, d2: 0.8, t2: 1, theta: 3, g: 10 });
+  ok(s.ok && near(s.a, -2 / 3) && near(s.u, 23 / 15) && /23/.test(s.exprs.i) && /15/.test(s.exprs.i), '(i) a = −⅔, u = 23/15, set as fractions', s.reason);
+  ok(near(s.mu, 0.01435, 1e-4) && s.back > 0, '(ii) μ = 0.0144; tan 3° > μ, so it slides back');
+  const m = solveSlopeGates({ d1: 0.8, t1: 0.6, d2: 0.8, t2: 1 });
+  ok(m.ok && m.mu == null && slopeGatesWorking(m).length === 1, 'no angle: only the motion');
+  ok(!solveSlopeGates({ d1: 0.8, t1: 0.6, d2: 0.8, t2: 1, theta: 10, g: 10 }).ok, 'slowing less than a smooth 10° slope would make it: no friction fits');
+  ok(!solveSlopeGates({ d1: 0.8, t1: 0.6, d2: 0.8, t2: 3 }).ok && !solveSlopeGates({ d1: 1, t1: 1, d2: 3, t2: 1, theta: 5 }).ok, 'back before R, or speeding up the slope with friction asked: refused');
+  const hold = solveSlopeGates({ d1: 0.8, t1: 0.6, d2: 0.8, t2: 1, theta: 0.5, g: 10 });
+  ok(hold.ok && hold.back == null && hold.f.pos(hold.f.tMax) === hold.sStop, 'a gentler slope: friction holds it where it stops');
 });
 
 group('OCR 4728 Jun 2015 Q3: two travellers, one bicycle', () => {
