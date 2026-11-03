@@ -282,6 +282,7 @@ export function markRadius(scale) {
 
    Everything is inside the caller's clip, so nothing can escape the disc. */
 function panels(ctx, x, y, R, P) {
+  const a0 = ctx.globalAlpha;   // the caller's own alpha, kept: a faded ball stays faded
   const TILT = -0.45;                       // towards the light, up and left
   const pent = (cx, cy, r, rot, squashAxis, squash) => {
     ctx.beginPath();
@@ -301,7 +302,7 @@ function panels(ctx, x, y, R, P) {
 
   // the seams first, so the pentagons sit on top of them
   ctx.strokeStyle = P.ballLine;
-  ctx.globalAlpha = 0.34;
+  ctx.globalAlpha = a0 * 0.34;
   ctx.lineWidth = Math.max(0.7, R * 0.055);
   for (let i = 0; i < 5; i++) {
     const a = TILT + (i / 5) * Math.PI * 2 + Math.PI / 5;
@@ -310,7 +311,7 @@ function panels(ctx, x, y, R, P) {
     ctx.lineTo(x + Math.cos(a) * R * 1.02, y + Math.sin(a) * R * 1.02);
     ctx.stroke();
   }
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = a0;
 
   const CX = x - R * 0.08, CY = y - R * 0.08;   // the face we are looking at
   ctx.fillStyle = P.ballLine;

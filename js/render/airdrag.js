@@ -47,16 +47,15 @@ export function render(canvas, cam, o) {
   // ── each drop's track: faint dots, and a strobe of where it was at equal times (the free one spreads faster)
   for (const [x, col] of [[xBall, P.disp], [xGhost, P.second]]) { g.save(); g.setLineDash([1, 6]); g.lineCap = 'round'; stroke(g, [{ x, y: top }, { x, y: oy }], { color: col, width: 1.6, alpha: 0.35 }); g.restore(); }
   if (fired && t > 0) {
-    const dt = f.tMax / 9;
+    const dt = f.tMax / 5, disc = (x, y, col, a) => { g.save(); g.globalAlpha = a; g.fillStyle = col; g.beginPath(); g.arc(x, y, r * 0.6, 0, TAU); g.fill(); g.restore(); };
     for (let tt = dt; tt < t - dt * 0.3; tt += dt) {
-      if (tt <= f.t1) { g.save(); g.globalAlpha = 0.22; ballSprite(g, xBall, Math.min(Y(f.fallDrag(tt)), oy - r), r * 0.8); g.restore(); }
-      if (tt <= f.t0) { g.save(); g.globalAlpha = 0.18; ballSprite(g, xGhost, Math.min(Y(f.fallFree(tt)), oy - r), r * 0.8); g.restore(); }
+      if (tt <= f.t1) disc(xBall, Math.min(Y(f.fallDrag(tt)), oy - r), P.disp, 0.3);
+      if (tt <= f.t0) disc(xGhost, Math.min(Y(f.fallFree(tt)), oy - r), P.second, 0.25);
     }
   }
-
   // ── landings: dust, a squash and a scuff that stays, the speed on a plate outside each lane
   const yG = Y(f.fallFree(t)), yB = Y(f.fallDrag(t));
-  for (const [tl, x, v, side] of [[f.t0, xGhost, f.v0, 1], [f.t1, xBall, f.v1, -1]]) {
+  for (const [tl, x, v, side] of [[f.t0, xGhost, f.v0, 1], [f.t1, xBall, f.v1, 1]]) {
     if (!fired || t < tl - 1e-9) continue;
     const { age, life } = ageOf(t, tl, f.tMax);
     g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.ellipse(x, oy + 2, r * 1.1, r * 0.25, 0, 0, TAU); g.fill();
@@ -96,18 +95,21 @@ export function render(canvas, cam, o) {
   // ── the forces on the ball as it falls, on a card of their own: an enlarged ball, its weight down and the
   //    air resistance up from its centre, to one scale (the screen's, out of the pan and zoom)
   unview(g);
-  if (f.m != null && f.R != null) {
-    const cw = phone ? 150 : 190, ch = phone ? 150 : 170, cx = w - cw - 14, cy = h - ch - 14;
+  if (f.m != null && f.R != null && !(fired && t > f.t1 + 1e-9)) {
+    // as it falls (it is at rest once it lands, and the card goes); on a phone under the readouts, clear of both lanes
+    const cw = phone ? 140 : 200, ch = phone ? 150 : 180, cx = phone ? 10 : w - cw - 14, cy = phone ? HB[0].y + HB[0].h + 10 : h - ch - 14;
     paper(g, cx, cy, cw, ch);
     const txt = (s0, x, y, c, al = 'left', size = 13) => { g.save(); g.font = `700 ${size}px ${cssVar('--font', 'system-ui, sans-serif')}`; g.fillStyle = c; g.textAlign = al; g.textBaseline = 'middle'; g.fillText(s0, x, y); g.restore(); };
-    txt('The forces on the ball', cx + 12, cy + 16, P.muted);
-    const bx = cx + 52, by = cy + ch * 0.55, W = f.m * f.g, sc = (ch * 0.36) / W, br = 12;
+    txt(phone ? 'The forces' : 'The forces on the ball', cx + 12, cy + 16, P.muted);
+    const br = phone ? 16 : 22, bx = cx + (phone ? 40 : 56), by = cy + ch * 0.56, W = f.m * f.g;
+    // to one scale: the card is sized so the smaller force is still at least 18 px
+    const sc = Math.min((ch * 0.3) / W, f.R > 1e-9 ? Infinity : Infinity), rLen = f.R * sc, floored = f.R > 1e-9 && rLen < 18;
     ballSprite(g, bx, by, br);
-    arrow(g, bx, by, bx, by + W * sc, { color: P.ink, width: 2.4, head: 9 });
-    if (f.R > 1e-9) arrow(g, bx, by, bx, by - Math.max(24, f.R * sc), { color: P.ink, width: 2.4, head: 9 });
-    txt(T`mg = ${tr(W)} [N]`, bx + 18, by + W * sc - 6, P.ink);
-    if (f.R > 1e-9) txt(T`R = ${tr(f.R)} [N]`, bx + 18, by - Math.max(24, f.R * sc) + 6, P.ink);
-    else txt('no air resistance', bx + 18, by - 24, P.muted);
+    arrow(g, bx, by + br, bx, by + br + W * sc, { color: P.ink, width: 2.4, head: 9 });
+    if (f.R > 1e-9) arrow(g, bx, by - br, bx, by - br - Math.max(18, rLen), { color: P.ink, width: 2.4, head: Math.min(9, Math.max(6, Math.max(18, rLen) * 0.5)) });
+    txt(T`mg = ${tr(W)} [N]`, bx + br + 8, by + br + W * sc * 0.7, P.ink);
+    if (f.R > 1e-9) txt(T`R = ${tr(f.R)} [N]`, bx + br + 8, by - br - Math.max(18, rLen) * 0.6, P.ink);
+    if (floored) txt('(R not to scale)', cx + 12, cy + ch - 14, P.muted);
   }
   return null;
 }

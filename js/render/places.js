@@ -1173,10 +1173,13 @@ function rugby(g, c) {
   // if it never gets that high, past where it lands (it falls short) — and always with the whole H on the stage
   const bar = 3, land = (c.clearX || [])[0] ?? x0 + 0.6 * (w - x0), depth = clamp(0.9 * k, 16, 30);
   let px = null;
-  if (typeof over === 'function' && X) for (let x = land; x > x0; x -= 2) { const y = over((x - X(0)) / k); if (y != null && y >= bar + 1.2) { px = x; break; } }
+  // over by 1.2 m, or 18 px, whichever is more
+  const clearBy = Math.max(1.2, 18 / k);
+  if (typeof over === 'function' && X) for (let x = land; x > x0; x -= 2) { const y = over((x - X(0)) / k); if (y != null && y >= bar + clearBy) { px = x; break; } }
   const short = px == null;
-  if (short) px = land + clamp(4 * k, 40, 120);
-  px = Math.min(px, w - depth - 70);
+  // a short kick lands well before the posts: at least 3 m (and 60 px) of grass between
+  if (short) px = Math.max(land + 40, Math.min(land + Math.max(60, 3 * k, clamp(4 * k, 40, 120)), w - depth - 90));
+  else px = Math.min(px, w - depth - 70);
   const tOver = !short && typeof when === 'function' && X ? when((px - X(0)) / k) : null;
   const good = tOver != null && now >= tOver;
   // the lines across the pitch, side on: the try line at the posts, the 22 and the 10 m dashes back from it; the near touchline
@@ -1193,14 +1196,14 @@ function rugby(g, c) {
     g.strokeStyle = col; g.lineWidth = wide; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y0 - upLen); g.stroke();
     g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = wide * 0.35; g.beginPath(); g.moveTo(x + wide * 0.3, y0); g.lineTo(x + wide * 0.3, y0 - upLen); g.stroke();
   };
-  upright(px + depth, oy - depth * 0.35, far, lw * 0.8);
+  upright(px + depth, oy, far, lw * 0.8);
   // the crossbar: thicker than the uprights, level, with an end highlight; it pulses once as the kick goes over
   const pulseBar = good && now - tOver < 0.5 ? 1 - (now - tOver) / 0.5 : 0;
-  g.strokeStyle = white; g.lineWidth = lw * 1.4 + pulseBar * 3; g.beginPath(); g.moveTo(px, barY); g.lineTo(px + depth, barY - depth * 0.35); g.stroke();
-  if (pulseBar) { g.strokeStyle = withAlpha('#fff6c8', 0.7 * pulseBar); g.lineWidth = lw * 4; g.beginPath(); g.moveTo(px, barY); g.lineTo(px + depth, barY - depth * 0.35); g.stroke(); }
+  g.strokeStyle = white; g.lineWidth = lw * 1.4 + pulseBar * 3; g.beginPath(); g.moveTo(px, barY); g.lineTo(px + depth, barY); g.stroke();
+  if (pulseBar) { g.strokeStyle = withAlpha('#fff6c8', 0.7 * pulseBar); g.lineWidth = lw * 4; g.beginPath(); g.moveTo(px, barY); g.lineTo(px + depth, barY); g.stroke(); }
   upright(px, oy, white, lw);
   // the pads at the foot of each post, navy and white
-  for (const [x, y0, s0] of [[px + depth, oy - depth * 0.35, 0.8], [px, oy, 1]]) {
+  for (const [x, y0, s0] of [[px + depth, oy, 0.8], [px, oy, 1]]) {
     const pw = Math.max(10, clamp(0.5 * k, 8, 16)) * s0, ph = Math.max(22, clamp(1.6 * k, 18, 44)) * s0;
     g.fillStyle = '#1d3e8a'; g.beginPath(); g.roundRect(x - pw / 2, y0 - ph, pw, ph, 3); g.fill();
     g.fillStyle = '#f2f2f2'; g.fillRect(x - pw / 2, y0 - ph * 0.62, pw, ph * 0.22);
@@ -1208,8 +1211,8 @@ function rugby(g, c) {
   softShadow(g, px + depth * 0.5, oy + 1, clamp(1.2 * k, 16, 40), 3, 0.6);
   // the touch judges, one at each post: a figure in a yellow bib, flag down — raised high once the kick is over
   const raise = good ? clamp((now - tOver) / 0.35, 0, 1) : 0;
-  for (const [x, y0, s0] of [[px - Math.max(22, 0.9 * k), oy, 1], [px + depth + Math.max(22, 0.9 * k), oy - depth * 0.35, 0.85]]) {
-    const pH = Math.max(34, clamp(1.8 * k, 30, 60)) * s0;
+  for (const [x, y0, s0] of [[px + depth + Math.max(18, 0.9 * k), oy, 0.9], [px + depth + Math.max(18, 0.9 * k) * 2.2, oy, 0.8]]) {
+    const pH = Math.min(upLen * 0.45, Math.max(26, clamp(1.8 * k, 26, 60))) * s0;
     g.strokeStyle = n ? '#2a2a2e' : '#1e1e22'; g.lineWidth = pH * 0.09; g.lineCap = 'round';
     g.beginPath(); g.moveTo(x, y0 - pH * 0.45); g.lineTo(x - pH * 0.08, y0); g.moveTo(x, y0 - pH * 0.45); g.lineTo(x + pH * 0.08, y0); g.stroke();
     g.fillStyle = n ? '#c8a020' : '#e8c547'; g.beginPath(); g.roundRect(x - pH * 0.11, y0 - pH * 0.86, pH * 0.22, pH * 0.43, 3); g.fill();
@@ -1222,7 +1225,8 @@ function rugby(g, c) {
     g.strokeStyle = withAlpha('#000000', 0.25); g.lineWidth = 0.8; g.stroke();
   }
   // only the pads, the judges and a thin strip round each upright are kept from the labels
-  c.reserve?.({ x: px - 40, y: oy - 60, w: depth + 80, h: 62 });
+  c.reserve?.({ x: px - 8, y: oy - 46, w: depth + 16, h: 48 });
+  c.reserve?.({ x: px + depth + 10, y: oy - 60, w: Math.max(18, 0.9 * k) * 2.2 + 30, h: 62 });
   c.reserve?.({ x: px - 6, y: oy - upLen, w: 12, h: upLen - 60 });
   if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
 }
