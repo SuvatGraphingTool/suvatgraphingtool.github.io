@@ -226,6 +226,8 @@ export function check(raw) {
     launcher = LAUNCHERS[said] ? said : launcherIn(said)?.launcher;
     if (!launcher) return no(`There is no launcher called “${clip(raw.launcher, 20)}”. The launchers are: ${listOf(LAUNCHERS)}.`);
   }
+  // let go from rest it has no angle to give: it falls straight down
+  if (engine === 'projectile' && numbers.u === 0 && numbers.theta == null) numbers.theta = 0;
   // a bullet is fired, never thrown: from a rifle unless something else is named
   if (!launcher && engine === 'projectile' && backdrop !== 'air' && objects.some((o) => o.figure === 'bullet')) launcher = 'rifle';
   // and a jet of water leaves a hose
