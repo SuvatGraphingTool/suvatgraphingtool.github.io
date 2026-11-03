@@ -152,6 +152,7 @@ this library: *covered* names the one of the twelve that does it.
 | 126 | OCR | 4728 M1 | Jan 2011 | 5 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/jan-2011-q-19.pdf) | P projected down a smooth slope at 4.9 (a = 4.9) as Q is let go at Y level with X; they collide below Y: the distances in T, θ, T = 2/3, the speeds | 9.8 | **built** → `slope-and-drop` |
 | 127 | OCR | 4728 M1 | Jun 2015 | 3 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/2015-q-7.pdf) | A cycles at 20 for 1 h, leaves the bicycle, walks at 5; B walks at 4, finds it, cycles at 15; they arrive together: A's cycling distance, B's walking time, T, the journey | – | **built** → `one-bicycle` |
 | 128 | CIE | 9709/41 | Oct/Nov 2018 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w18_qp_41.pdf) | Projected up a rough 3° slope past P, Q, R; PQ = QR = 0.8 m in 0.6 s and 1 s: deceleration ⅔, u = 23/15, μ | 10 | **built** → `timed-up-the-slope` |
+| 129 | AQA | MM1B | Jan 2010 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202010%20QP%20-%20M1%20AQA.PDF) | A 0.5 kg ball let go from 15 m: its landing speed with no air resistance; with a constant 0.9 N: a = 8, the landing speed; why it is not constant | 9.8 | **built** → `with-air-resistance` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -497,6 +498,21 @@ trains already moving at X, its parts are theirs, and the reader is told which i
 
 **How it is solved.** Each distance is the area under its own speed–time graph: the train
 whose hold is given gives the common time; the other's trapezium then gives its hold.
+
+### `with-air-resistance` — With and without air resistance
+
+**Papers.** AQA MM1B Jan 2010 Q4 (0.5 kg ball from rest, 15 m: 17.1 m s⁻¹ with none; 0.9 N
+constant: a = 8, 15.5 m s⁻¹; why the resistance is not constant).
+
+**Why the others cannot.** `from-a-height` falls at g; `into-the-water` adds a resistance only in
+the water, after a free fall. Here one fall is modelled twice and compared.
+
+**How it is solved.** js/core/airdrag.js: v² = u² + 2gh with none; mg − R = ma, then
+v² = u² + 2ah with it — or R from a or from the landing speed.
+
+**The stage.** A city street side on, the ball let go from the roof of a block: beside it a ghost
+of it falling with no air resistance, landing first; the ball's weight and the resistance drawn on
+it while it falls, air streaming past; dust and a speed plate as each lands.
 
 ### `timed-up-the-slope` — Up a rough slope, timed
 

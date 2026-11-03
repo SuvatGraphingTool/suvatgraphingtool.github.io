@@ -41,6 +41,7 @@ import { solveCourse, courseWorking, clockHours, clockOf } from '../js/core/cour
 import { solveSlopeDrop, slopeDropWorking } from '../js/core/slopedrop.js';
 import { solveBicycle, bicycleWorking } from '../js/core/bicycle.js';
 import { solveSlopeGates, slopeGatesWorking } from '../js/core/slopegates.js';
+import { solveAirDrag, airDragWorking } from '../js/core/airdrag.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1771,6 +1772,16 @@ group('CIE 9709/42 Nov 2015 Q2: the last stretch of a fall', () => {
   ok(lastFallWorking(s).length === 2 && lastFallWorking(s)[0].rows.length === 3 && /t=1s/.test(String(lastFallWorking(s)[0].rows[2].r).replace(/<[^>]+>/g, '')), 'the working: the last stretch (with its own time), then the whole fall');
   { const K = KITS.lastfall, kv = K.solve(K.read({ p: 35, dv: 10, g: 10 }));
     ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)) && resolveKit(K, kv, kv.f, 2).blocks[0].rows.every((q) => q.part !== 'x'), 'vertical: solid graphs and Resolve rows (rule 2)'); }
+});
+
+group('AQA MM1B Jan 2010 Q4: with and without air resistance', () => {
+  const s = solveAirDrag({ h: 15, m: 0.5, R: 0.9, g: 9.8 });
+  ok(s.ok && near(s.v0, Math.sqrt(294)) && s.a === 8 && near(s.v1, Math.sqrt(240)), '(a) 17.1; (b)(ii) a = 8; (b)(iii) 15.5', s.reason);
+  ok(s.t0 < s.t1 && s.f.fallFree(s.t0) === 15 && s.f.fallDrag(s.t1) === 15, 'the model with none lands first; both at the ground');
+  ok(near(solveAirDrag({ h: 15, m: 0.5, v: Math.sqrt(240), g: 9.8 }).R, 0.9) && solveAirDrag({ h: 15, a: 8 }).R == null, 'R from the landing speed; from a with no mass, no R');
+  ok(!solveAirDrag({ h: 15, m: 0.5, R: 5 }).ok && !solveAirDrag({ h: 15, v: 20 }).ok && !solveAirDrag({ h: 15, R: 0.9 }).ok, 'a resistance at least the weight, a landing faster than free fall, or R with no mass: refused');
+  ok(!solveAirDrag({ h: 15, m: 0.5, R: 0.9, a: 8 }).ok && !solveAirDrag({ h: 0, m: 0.5, R: 0.9 }).ok, 'two of R, a, v, or no height: refused');
+  ok(airDragWorking(s).map((x) => x.title).join('|') === 'With no air resistance|With the air resistance', 'the working, both models');
 });
 
 group('CIE 9709/41 Nov 2018 Q6: up a rough slope, timed', () => {
