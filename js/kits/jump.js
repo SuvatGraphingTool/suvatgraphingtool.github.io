@@ -41,24 +41,59 @@ export const jump = {
   solve(k) {
     const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
     if (!(k.g > 0)) return fail('Choose the value of g the paper uses.');
-    const r = solveJourney({ u: 0, D: k.D, T: k.T,
-      stages: [{ kind: 'up', a: k.g, t: k.t1, v: k.v1 }, { kind: 'down', a: k.a2, t: k.t2, v: k.v2 }, { kind: 'hold' }] });
+    const have = (x) => typeof x === 'number' && isFinite(x);
     // the engine says 'journey'; this one is a jump
     const word = (x) => String(x).replace(/\bjourney\b/g, 'jump').replace(/\bjourneys\b/g, 'jumps');
+    const free = { kind: 'up', a: k.g, t: k.t1, v: k.v1 }, brake = { kind: 'down', a: k.a2, t: k.t2, v: k.v2 };
+    if (have(k.D) || have(k.T)) {
+      const r = solveJourney({ u: 0, D: k.D, T: k.T, stages: [free, brake, { kind: 'hold' }] });
+      if (!r.ok) return { ...r, reason: word(r.reason) };
+      r.notes = r.notes.map(word);
+      r.f.jump = { D: r.f.pos(r.f.tMax).x };
+      r.convention = 'Down is positive: every distance is how far it has fallen, every speed downwards.';
+      return r;
+    }
+    // A PART OF A JUMP: a question part may give only the free fall, or the free fall and the
+    // canopy, and ask about those alone. The engine solves the stages that are fixed; with no
+    // height or total time the steady fall is shown for a few seconds and no ground is claimed.
+    if (!have(k.t1) && !have(k.v1)) return fail('Still needed: how long it falls freely, or its speed when the canopy opens — and, for the whole jump, the height or the total time.');
+    const braked = have(k.a2) && (have(k.t2) || have(k.v2)) || (have(k.t2) && have(k.v2));
+    let r;
+    if (braked) {
+      const pre = solveJourney({ u: 0, stages: [free, brake] });
+      if (!pre.ok) return { ...pre, reason: word(pre.reason) };
+      const show = Math.max(3, pre.f.tMax * 0.5);
+      r = solveJourney({ u: 0, stages: [free, brake, { kind: 'hold', t: show }] });
+    } else r = solveJourney({ u: 0, stages: [free] });
     if (!r.ok) return { ...r, reason: word(r.reason) };
-    r.notes = r.notes.map(word);
-    const D = r.f.pos(r.f.tMax).x;
-    r.f.jump = { D };
+    r.notes = [...r.notes.map(word).filter((x) => !/whole (time|distance)|altogether|in all/i.test(x)),
+      braked ? 'No height and no total time are given, so only the free fall and the canopy are fixed: the steady fall after them is shown for a few seconds, and no ground is drawn. Give the height or the total time for the whole jump.'
+        : 'Only the free fall is given, so only it is shown, and no ground is drawn. Give the canopy’s deceleration with its time or the speed it slows to, and the height or the total time, for the whole jump.'];
+    r.f.jump = { D: null, partial: true, shown: r.f.pos(r.f.tMax).x, braked };
+    // no whole time or height was found: none is offered to a part that asks for one
+    r.J = { ...r.J, T: undefined, D: undefined };
+    r.derived = (r.derived || []).filter((x) => !/^\s*[TD]\s*=/.test(String(x).replace(/<[^>]+>/g, '')));
+    r.partial = true;
     r.convention = 'Down is positive: every distance is how far it has fallen, every speed downwards.';
     return r;
   },
-  working: (solved) => journeyWorking(solved).map((s) => ({ ...s, title: String(s.title).replace(/\bjourney\b/g, 'jump') })),
+  working(solved) {
+    const steps = journeyWorking(solved).map((s) => ({ ...s, title: String(s.title).replace(/\bjourney\b/g, 'jump') }));
+    if (!solved.f.jump.partial) return steps;
+    // a part of a jump: the stages that are fixed, and their own distances — no whole time or
+    // height, and nothing for the steady fall the stage only shows for a few seconds
+    const plain = (x) => String(x).replace(/<[^>]+>/g, '');
+    const keep = solved.f.jump.braked ? /^s[12]=/ : /^s1=/;
+    const dist = steps.slice(1).flatMap((st) => st.rows).filter((row) => keep.test(plain(row.r).replace(/\s/g, '')));
+    return [steps[0], ...(dist.length ? [{ title: 'How far it falls in each stage', rows: dist, note: 'Each distance is the area of its own piece of the speed–time graph.' }] : [])];
+  },
   render: stage.render,
 
   hud(f, t) {
     return {
       left: [
-        { k: 'Height above the ground', v: num(f.jump.D - f.pos(t).x, 1), unit: 'm', hue: 'disp' },
+        // for a part of a jump the ground's height is not given: no height above it is shown
+        ...(f.jump.partial ? [] : [{ k: 'Height above the ground', v: num(f.jump.D - f.pos(t).x, 1), unit: 'm', hue: 'disp' }]),
         { k: 'Fallen', v: num(f.pos(t).x, 1), unit: 'm', hue: 'disp' },
         { k: 'Speed, down', v: num(f.vel(t).x, 2), unit: 'm s⁻¹', hue: 'vel' },
         { k: 'Acceleration, down', v: num(f.accel(t), 2), unit: 'm s⁻²', hue: 'acc' },
@@ -92,7 +127,8 @@ export const jump = {
 
   ending(solved) {
     const f = solved.f, st = f.stages;
-    const title = `On the ground after ${tr(f.tMax)} s, from ${tr(f.jump.D)} m.`;
+    const part = !!f.jump.partial;
+    const title = part ? `Fallen ${tr(f.pos(f.tMax).x)} m in the ${tr(f.tMax)} s shown; the ground’s height is not given.` : `On the ground after ${tr(f.tMax)} s, from ${tr(f.jump.D)} m.`;
     const name = ['Free fall', 'Under the canopy', 'Steady'];
     const cell = (x) => `<b>${tr(x)}</b>`;
     const rows = st.map((s, i) => {
@@ -101,7 +137,7 @@ export const jump = {
         <span role="cell">${cell(s.u)}</span><span role="cell">${cell(v)}</span><span role="cell">${cell(s.a)}</span><span role="cell">${cell(sx)}</span><span role="cell">${cell(t1 - s.t0)}</span></div>`;
     }).join('');
     return {
-      eyebrow: `A <span class="u">${tr(f.jump.D)}</span> <span class="u">m</span> jump`,
+      eyebrow: part ? 'Part of a jump' : `A <span class="u">${tr(f.jump.D)}</span> <span class="u">m</span> jump`,
       title,
       body: `${solved.notes.map((x) => `<p>${x}</p>`).join('')}<div class="ph-tab" role="table" aria-label="Each stage of the jump">
         <div class="ph-head" role="row"><span role="columnheader">Stage</span><span role="columnheader">${M`u`}</span><span role="columnheader">${M`v`}</span>

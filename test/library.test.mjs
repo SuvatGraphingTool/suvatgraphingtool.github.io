@@ -1747,6 +1747,18 @@ group('CIE 9709/04 specimen Q2 and Edexcel M1 Nov 2002 Q5: down the slope and ac
     ok(near(c.dec, 3.6), 'the deceleration as a size'); }
 });
 
+group('A parachute jump, from a part of it (QA: it needed the whole jump given)', () => {
+  const K = KITS.jump, strip = (x) => String(x).replace(/<[^>]+>/g, '');
+  const a = K.solve(K.read({ g: 10, t1: 3 }));
+  ok(a.ok && a.J.v1 === 30 && a.f.jump.partial && a.J.T === undefined, 'free fall alone: 30 m s⁻¹ when the canopy opens, no whole time claimed', a.reason);
+  const b = K.solve(K.read({ g: 10, t1: 3, a2: 12, t2: 2 }));
+  ok(b.ok && b.J.v2 === 6 && b.f.jump.braked && !b.derived.some((x) => /^[TD]=/.test(strip(x).replace(/\s/g, ''))), 'free fall and the canopy: 6 m s⁻¹, no height or total time in what it found');
+  ok(K.working(b).every((st) => st.rows.every((r) => !/^(T|s3)=/.test(strip(r.r).replace(/\s/g, '')))), 'the working: no whole time, nothing for the steady fall it only shows');
+  ok(K.hud(b.f, 1).left.every((x) => !/ground/.test(x.k)) && /not given/.test(K.ending(b).title), 'no height above a ground nobody gave');
+  ok(!K.solve(K.read({ g: 10, a2: 12 })).ok, 'without the free fall: what is still needed is said');
+  ok(K.solve(K.read({ g: 10, D: 550, t1: 3, a2: 12, t2: 2 })).J.T > 83, 'with the height, the whole jump as before');
+});
+
 group('CIE 9709/41 Nov 2014 Q6: into the water', () => {
   const s = solveTank({ h: 5, D: 4, m: 3, aL: 5.5, g: 10 });
   ok(s.ok && near(s.R, 13.5) && near(s.v1, 10) && near(s.t1, 1) && near(s.v2, 12) && near(s.tB, 1 + 2 / 5.5), '(i) R = 13.5 N; (ii) 10 m s⁻¹ at 1 s, 12 m s⁻¹ at the bottom at 1.36 s', s.reason);

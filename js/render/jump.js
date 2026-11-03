@@ -455,7 +455,9 @@ export function render(canvas, cam, o) {
   const P = palette(), K = kit(), E = K.E;
   const L = labels();
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  const D = f.jump.D, st = f.stages;
+  // a part of a jump (no height or total time given): no ground is drawn, and the ruler measures
+  // how far it has fallen from the aircraft, not a height above a ground nobody gave
+  const partial = !!f.jump.partial, D = partial ? f.jump.shown * 1.15 : f.jump.D, st = f.stages;
   const phone = w < 520, sz = phone ? 0.8 : 1;
 
   // the readouts' corners (the HUD), kept clear of labels
@@ -463,8 +465,8 @@ export function render(canvas, cam, o) {
   else { L.reserve({ x: 0, y: 0, w: 250, h: 250 }); L.reserve({ x: w - 160, y: 0, w: 160, h: 76 }); }
 
   // one scale: the whole drop, aircraft to field, fills the height of the stage
-  const ground = h - clamp(h * 0.16, 50, 96);           // where it lands, on the fields
-  const horizon = ground - clamp(h * 0.11, 36, 70);
+  const ground = partial ? h + 4 : h - clamp(h * 0.16, 50, 96);   // where it lands, on the fields (off the stage for a part)
+  const horizon = partial ? h + 2 : ground - clamp(h * 0.11, 36, 70);
   const top = phone ? 112 : 92;
   const k = (ground - top) / D;
   const Y = (hgt) => ground - hgt * k;                  // hgt = height above the ground
@@ -481,8 +483,7 @@ export function render(canvas, cam, o) {
   const hr = rng(5);
   farHills(g, 0, w, horizon, phone ? 12 : 18, mix(E.grassAlt, E.haze, 0.72), hr);
   farHills(g, 0, w, horizon, phone ? 7 : 10, mix(E.grassAlt, E.haze, 0.5), hr);
-  fields(g, 0, w, horizon, h, { vx: w * 0.5 });
-  target(g, cx, ground, phone ? 22 : 30, E);
+  if (!partial) { fields(g, 0, w, horizon, h, { vx: w * 0.5 }); target(g, cx, ground, phone ? 22 : 30, E); }
 
   // the aircraft it leaves, its open door over the column at the jump, then
   // banking away: climbing, drawing off to the right and shrinking into the
@@ -508,14 +509,16 @@ export function render(canvas, cam, o) {
   const marks = [];
   const names = ['canopy opens', 'steady speed'];
   st.slice(1).forEach((s, i) => { const hh = D - fallen(s.t0); if (hh > 0 && hh < D) marks.push({ hh, t: s.t0, name: names[i] ?? 'next stage' }); });
-  const rulerTags = [{ y: Y(D), text: T`${s3(D)} [m]`, color: P.ink, pri: 8, pin: true }, ...marks.map((m) => ({ y: Y(m.hh), text: T`${s3(m.hh)} [m]`, color: P.mark, pri: 7 })), { y: Y(0), text: T`0 [m]`, color: P.ink, pri: 8, pin: true }];
+  const rl = (hh) => (partial ? D - hh : hh);           // what a ruler mark says: height, or for a part how far fallen
+  const rulerTags = [{ y: Y(D), text: partial ? T`"fallen" 0 [m]` : T`${s3(D)} [m]`, color: P.ink, pri: 8, pin: true }, ...marks.map((m) => ({ y: Y(m.hh), text: T`${s3(rl(m.hh))} [m]`, color: P.mark, pri: 7 })), ...(partial ? [] : [{ y: Y(0), text: T`0 [m]`, color: P.ink, pri: 8, pin: true }])];
   spread(rulerTags, 25, 12, h - 12);
   const step = niceStep(D, phone ? 5 : 7);
-  for (let hh = 0; hh <= D + 1e-9; hh += step) {
+  for (let q = 0; q <= D + 1e-9; q += step) {
+    const hh = partial ? D - q : q;
     if (marks.some((m) => Math.abs(Y(m.hh) - Y(hh)) < 7)) continue;
     stroke(g, [{ x: rx - 5, y: Y(hh) }, { x: rx + 5, y: Y(hh) }], { color: P.ink, width: 1.4 });
     if (rulerTags.some((r) => Math.abs(r.ly - Y(hh)) < 25)) continue;
-    L.add(T`${s3(hh)} [m]`, rx + 10, Y(hh), { color: P.ink, align: 'left', pri: 1, size: 13, maxPush: 0 });
+    L.add(T`${s3(q)} [m]`, rx + 10, Y(hh), { color: P.ink, align: 'left', pri: 1, size: 13, maxPush: 0 });
   }
   const x0m = cx - (phone ? 42 : 60), tags = marks.map((m) => ({ y: Y(m.hh), m }));
   spread(tags, 25, 12, h - 12);
@@ -558,7 +561,7 @@ export function render(canvas, cam, o) {
   // the jumper: in the box position, then under the canopy
   const t1 = st[1]?.t0 ?? Infinity;
   const open = t >= t1 - 1e-9;
-  const landed = t >= f.tMax - 1e-9;
+  const landed = !partial && t >= f.tMax - 1e-9;
   const { age, life } = ageOf(t, f.tMax, f.tMax);
   // the collapse runs over the first third of the dust's life; at the end of the playback it is down
   const fold = landed ? ease(age / (life * 0.35)) : 0;
@@ -608,6 +611,8 @@ export function render(canvas, cam, o) {
     arrow(g, ax, ay, ax, ay + Math.sign(a) * 40 * sz, { color: P.acc, width: 2.4, head: 10 });
     L.reserve({ x: ax - 7, y: Math.min(ay, ay + Math.sign(a) * 40 * sz), w: 14, h: 40 * sz });
   }
+  // a part of a jump: the ground is below, at a height the question did not give
+  if (partial) L.add('The ground: its height is not given', cx, h - 18, { color: P.ink, pri: 9, size: 13, weight: 700, align: 'center' });
   if (landed) {
     L.reserve({ x: cx - 40, y: ground - 30, w: 80, h: 36 });
     L.add(T`"on the ground," t = ${s3(f.tMax)} [s]`, cx - 30, ground + 26, { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700 });
