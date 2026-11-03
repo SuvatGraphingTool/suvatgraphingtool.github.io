@@ -146,6 +146,8 @@ this library: *covered* names the one of the twelve that does it.
 | 120 | CIE | 9709/43 | May/Jun 2015 | 4 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_s15_qp_43.pdf) | A 12 000 kg lorry up a 500 m hill rising 25 m, 24 then 16 m/s, resistance 7500 N: the driving force (by energy in the paper; by SUVAT and F = ma here) | 10 | **built** → `up-and-down-the-hill` |
 | 121 | CIE | 9709/41 | Oct/Nov 2014 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w14_qp_41.pdf) | 3 kg falls from rest 5 m to a liquid 4 m deep, accelerating at 5.5 m/s² in it: the resistance; the v–t graph to the bottom | 10 | **built** → `into-the-water` |
 | 122 | CIE | 9709/42 | Oct/Nov 2015 | 2 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w15_qp_42.pdf) | Released from rest at H; passes 35 m above the ground at V − 10, reaches it at V: find V and H | 10 | **built** → `last-stretch` |
+| 123 | Edexcel | 6677/01 M1 | Jun 2016 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202016%20QP.pdf) | Train M passes N at X (40 and 30 m/s); N holds 25 s, M holds T s, both brake to rest beside Y together; XY 975 m: T | – | **built** → `passed-at-x` |
+| 124 | Edexcel | 6677/01 M1 | Jun 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | Car P at 25 passes Q at 20; Q brakes from 25 s, P from T; both stop at X 800 m on together: T | – | **built** → `passed-at-x` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -477,6 +479,20 @@ rest), then on the level −F = ma and SUVAT to rest.
 in the snow; or a loading dock, a chequer-plate ramp and a warehouse floor with a suitcase.
 The angle at the foot, the slope's length beside it, its speed at the bottom, a dashed ruler
 of the run-out on the level.
+
+### `passed-at-x` — Overtaken at X, stopped together at Y
+
+**Papers.** Edexcel 6677/01 M1 Jun 2016 Q4 (M passes N beside X at 40 and 30 m s⁻¹; N holds
+30 for 25 s, M holds 40 for T s, both brake uniformly to rest beside Y at the same moment,
+XY = 975 m: T = 8.75). Edexcel 6677/01 M1 Jun 2010 Q5 (cars at 25 and 20, X 800 m on: T = 9).
+
+**Why it is its own scenario.** The engine is `two-on-a-road`'s (js/core/overtake.js), and
+it was listed there; but the reader sent these papers to `two-trains`, which starts both
+from rest, and the stage opened on a different example. This one opens on the papers' own
+trains already moving at X, its parts are theirs, and the reader is told which is which.
+
+**How it is solved.** Each distance is the area under its own speed–time graph: the train
+whose hold is given gives the common time; the other's trapezium then gives its hold.
 
 ### `last-stretch` — The last stretch of a fall
 

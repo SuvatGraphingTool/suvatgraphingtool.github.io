@@ -66,7 +66,7 @@ A kit is an object with:
 |---|---|
 | `pair` — `js/kits/pair.js` | `pair-vertical` |
 | `journey` — `js/kits/journey.js` | `journey-stages` |
-| `lanes` — `js/kits/lanes.js` | `two-on-a-road` |
+| `lanes` — `js/kits/lanes.js` | `two-on-a-road`, `passed-at-x` |
 | `plane` — `js/kits/plane.js` | `vectors-ij` |
 | `target` — `js/kits/target.js` | `over-the-wall` |
 | `height` — `js/kits/height.js` | `from-a-height` |
