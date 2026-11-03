@@ -150,6 +150,7 @@ this library: *covered* names the one of the twelve that does it.
 | 124 | Edexcel | 6677/01 M1 | Jun 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | Car P at 25 passes Q at 20; Q brakes from 25 s, P from T; both stop at X 800 m on together: T | – | **built** → `passed-at-x` |
 | 125 | Edexcel | 6677/01 M1 | Jun 2006 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202006%20QP.pdf) | A ship at constant velocity on course for a submerged rock (it would hit at 1500) turns due north at 1400: speed, bearing, the rock, its position after the turn, when due east of the rock, its distance at 1600 | – | **built** → `change-of-course` |
 | 126 | OCR | 4728 M1 | Jan 2011 | 5 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/jan-2011-q-19.pdf) | P projected down a smooth slope at 4.9 (a = 4.9) as Q is let go at Y level with X; they collide below Y: the distances in T, θ, T = 2/3, the speeds | 9.8 | **built** → `slope-and-drop` |
+| 127 | OCR | 4728 M1 | Jun 2015 | 3 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/2015-q-7.pdf) | A cycles at 20 for 1 h, leaves the bicycle, walks at 5; B walks at 4, finds it, cycles at 15; they arrive together: A's cycling distance, B's walking time, T, the journey | – | **built** → `one-bicycle` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -495,6 +496,24 @@ trains already moving at X, its parts are theirs, and the reader is told which i
 
 **How it is solved.** Each distance is the area under its own speed–time graph: the train
 whose hold is given gives the common time; the other's trapezium then gives its hold.
+
+### `one-bicycle` — Two travellers, one bicycle
+
+**Papers.** OCR 4728 Jun 2015 Q3 (A cycles at 20 km h⁻¹ for 1 h then walks at 5; B walks at 4
+to the bicycle, then cycles at 15; they arrive together: 20 km, 5 h, T = 7, 50 km).
+
+**Why the others cannot.** `two-on-a-road` changes a speed at a time or a place given in the
+question; here B's change comes where A's ends, and the finish is fixed only by their arriving
+together. `there-and-back` is one traveller.
+
+**How it is solved.** js/core/bicycle.js: D = A's ride × its time; B reaches it at D ÷ B's walk;
+equal whole distances at T, D + A's walk (T − t_A) = D + B's ride (T − t_B), give T, then J.
+Refused: B reaching the bicycle before it is left, B riding no faster than A walks.
+
+**The stage.** A country road side on through hills, a fingerpost at the start, a village and a
+chequered line at the finish, marker posts numbered under the road. A cycles in the far lane,
+leaves the bicycle on its stand at the verge and walks on; B walks in the near lane, picks it up
+(a pulse each time it changes hands) and rides; both pulse together at the finish.
 
 ### `slope-and-drop` — Down the slope, and straight down
 

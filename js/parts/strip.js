@@ -125,7 +125,7 @@ export function ticksHTML(runs, solved, k) {
   const tMax = solved?.f?.tMax;
   if (!(tMax > 0)) return '';
   const f = (t) => Math.min(Math.max(t / tMax, 0), 1);
-  const on = runs.filter((r) => r && r.solved === solved && r.moment && (r.part.find || r.part.kind === 'graph'))
+  const on = runs.filter((r) => r && r.solved === solved && r.moment && (r.part.find || r.part.expr || r.part.kind === 'graph'))
     .map((r) => ({ r, f: f(r.moment.t) })).sort((x, y) => x.f - y.f);
   const groups = [];
   for (const x of on) {
