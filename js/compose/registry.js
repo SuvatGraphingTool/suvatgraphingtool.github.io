@@ -423,7 +423,7 @@ const WORDS = [
   [/\b(horse|pony|showjumper|show jumper)\b/, 'horse'],
   [/\b(bird|kingfisher|gannet|seagull|gull|eagle|hawk|falcon|osprey|pelican|heron|tern|cormorant|puffin|swallow|pigeon|owl|crow|duck)\b/, 'bird'],
   [/\b(bricks?)\b/, 'brick'], [/\b(coconuts?)\b/, 'coconut'],
-  [/\b(bottles?)\b/, 'bottle'], [/\b(drinks? cans?|cans? of (?:drink|cola|lemonade|pop|beans)|soda cans?|tin cans?|empty cans?)\b/, 'can'], [/\b(keys?|bunch of keys)\b/, 'key'], [/\b(pencils?|pens?|crayon)\b/, 'pencil'],
+  [/\b(bottles?)\b/, 'bottle'], [/\b(drinks? cans?|cans? of (?:drink|cola|lemonade|pop)|soda cans?|tin cans?|empty cans?)\b|\b(?:a|the) (cans?)\b(?=\s+(?:is|was|falls|rolls|lands|slides|of)|$)/, 'can'], [/\b((?:a|the|his|her|my|their|some|car|door|house) keys?|bunch of keys)\b(?!\s+(?:point|idea|fact|step|stage|result))/, 'key'], [/\b(pencils?|pens?|crayon)\b/, 'pencil'],
   [/\b(stone|pebble|rock|object|mass)\b/, 'stone'],
   [/\b(ball)\b/, 'ball'],
   [/\b(particle|point mass)\b/, 'particle'], [/\b(apple|fruit)\b/, 'apple'],

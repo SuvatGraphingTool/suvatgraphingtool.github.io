@@ -50,6 +50,8 @@ const trimmed = (s) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, ''
     is drawn round the engine's point, not standing on it. */
 const BALLS = new Set(['football', 'tennisBall', 'golfBall', 'basketball', 'shot', 'snowball', 'rugbyBall', 'cricketBall', 'baseball', 'volleyball', 'hockeyBall']);
 const lerpN = (a, b, t) => a + (b - a) * t;
+// props that lie flat when they come to rest: their half-thickness then (× R), the spin they rest at, the least R they are drawn at
+const FLAT = { bottle: { half: 0.375, rest: 0, min: 10 }, can: { half: 0.53, rest: 0, min: 10 }, key: { half: 0.3, rest: 0, min: 10 }, pencil: { half: 0.2, rest: 0.1, min: 11 } };
 // drawn pointing along the flight: a dart, a shuttlecock, a bullet
 const POINTED = new Set(['dart', 'shuttlecock', 'bullet']);
 const MIDDLE = { car: 0.16, lorry: 0.2, train: 0.11, cyclist: 0.45, motorcycle: 0.3, runner: 0.5 };
@@ -587,10 +589,12 @@ function launch(canvas, o) {
         // a ball to scale, never smaller than reads; resting on the turf or the
         // tee one radius up before it is struck and once it has landed
         const ball = BALLS.has(kind), Rp = kind === 'bullet' ? 5 : clamp(k * piece.m * 0.5, ball ? (kind === 'golfBall' ? 3.5 : 4) : kind === 'dart' || kind === 'brick' ? 11 : 7, POINTED.has(kind) || kind === 'discus' || kind === 'frisbee' || kind === 'brick' ? 13 : 10);
-        const lift = ball && !aloft && !(landed && wet) ? Rp : 0;
+        // a long thing lies flat where it comes to rest, its half-thickness up off the surface
+        const flat = FLAT[kind], Rq = flat ? Math.max(Rp, flat.min) : Rp;
+        const lift = !aloft && !(landed && wet) ? (ball ? Rp : flat ? flat.half * Rq : 0) : 0;
         // pointed along its flight, and a dart stuck point first where it lands
         const ang = fired ? Math.atan2(-v.y, v.x) : Math.atan2(-v0.y, v0.x), dig = landed && kind === 'dart' ? Rp * 0.75 : 0;
-        drawProp(g, kind, bx - Math.cos(ang) * dig, by - lift - Math.sin(ang) * dig, Rp, fired ? t * 7 : 0.3, m.ring, { cracked: landed && R.effects.includes('crack'), ang });
+        drawProp(g, kind, bx - Math.cos(ang) * dig, by - lift - Math.sin(ang) * dig, Rq, flat && landed && !wet ? flat.rest : fired ? t * 7 : 0.3, m.ring, { cracked: landed && R.effects.includes('crack'), ang });
       }
       else if (kind === 'ball') ballAt(g, bx, by, R0, m.ring);
       else if (kind === 'particle') particle(g, bx, by, R0 * 2, P, { ring: m.ring });

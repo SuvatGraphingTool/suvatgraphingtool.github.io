@@ -274,7 +274,7 @@ function coconut(g, x, y, R, spin) {
 function bottle(g, x, y, R, spin) {
   g.save(); g.translate(x, y); g.rotate(spin * 0.7);
   const L = R * 2.2, W = R * 0.75;
-  g.fillStyle = 'rgba(120,170,130,0.75)'; g.beginPath(); g.roundRect(-L / 2, -W / 2, L * 0.68, W, W * 0.3); g.fill();
+  g.fillStyle = 'rgba(95,154,108,0.9)'; g.beginPath(); g.roundRect(-L / 2, -W / 2, L * 0.68, W, W * 0.3); g.fill();
   g.beginPath(); g.moveTo(L * 0.18, -W / 2); g.quadraticCurveTo(L * 0.3, -W * 0.2, L * 0.36, -W * 0.18); g.lineTo(L * 0.5, -W * 0.18); g.lineTo(L * 0.5, W * 0.18); g.lineTo(L * 0.36, W * 0.18); g.quadraticCurveTo(L * 0.3, W * 0.2, L * 0.18, W / 2); g.closePath(); g.fill();
   g.fillStyle = '#e8e4dc'; g.fillRect(-L * 0.3, -W / 2, L * 0.3, W);
   g.fillStyle = '#2f5fa8'; g.fillRect(-L * 0.26, -W * 0.2, L * 0.22, W * 0.4);
@@ -287,11 +287,14 @@ function bottle(g, x, y, R, spin) {
 function can(g, x, y, R, spin) {
   g.save(); g.translate(x, y); g.rotate(spin * 0.8);
   const L = R * 1.7, W = R * 1.05;
-  const gr = g.createLinearGradient(0, -W / 2, 0, W / 2); gr.addColorStop(0, '#5a8ad8'); gr.addColorStop(0.45, '#2f5fa8'); gr.addColorStop(1, '#173a70');
-  g.fillStyle = gr; g.beginPath(); g.roundRect(-L / 2, -W / 2, L, W, W * 0.12); g.fill();
-  g.fillStyle = '#d8dce2'; g.fillRect(L / 2 - L * 0.08, -W / 2, L * 0.08, W); g.fillRect(-L / 2, -W / 2, L * 0.06, W);
-  g.fillStyle = '#f2c21b'; g.fillRect(-L * 0.2, -W * 0.15, L * 0.35, W * 0.3);
-  g.strokeStyle = 'rgba(10,20,40,0.7)'; g.lineWidth = 1; g.beginPath(); g.roundRect(-L / 2, -W / 2, L, W, W * 0.12); g.stroke();
+  const gr = g.createLinearGradient(0, -W / 2, 0, W / 2); gr.addColorStop(0, '#5a8ad8'); gr.addColorStop(0.35, '#2f5fa8'); gr.addColorStop(1, '#173a70');
+  g.fillStyle = gr; g.fillRect(-L / 2, -W / 2, L, W);
+  g.fillStyle = 'rgba(255,255,255,0.45)'; g.fillRect(-L / 2, -W * 0.3, L, W * 0.12);
+  g.fillStyle = '#f2c21b'; g.fillRect(-L * 0.18, -W * 0.18, L * 0.3, W * 0.36);
+  g.strokeStyle = 'rgba(10,20,40,0.75)'; g.lineWidth = 1; g.beginPath(); g.moveTo(-L / 2, -W / 2); g.lineTo(L / 2, -W / 2); g.moveTo(-L / 2, W / 2); g.lineTo(L / 2, W / 2); g.stroke();
+  // the lids: silver ellipses with a rim, the ring-pull on one
+  for (const e of [-L / 2, L / 2]) { g.fillStyle = '#d8dce2'; g.beginPath(); g.ellipse(e, 0, L * 0.09, W / 2, 0, 0, TAU); g.fill(); g.strokeStyle = 'rgba(60,66,76,0.85)'; g.stroke(); }
+  g.strokeStyle = '#8a9098'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(L / 2 + L * 0.02, -W * 0.12, L * 0.04, W * 0.12, 0, 0, TAU); g.stroke();
   g.restore();
 }
 /** A key: a brass bow with its hole, the shank and the cut bit, turning. */
@@ -314,7 +317,7 @@ function pencil(g, x, y, R, spin) {
   g.fillStyle = '#e8d0a0'; g.beginPath(); g.moveTo(L * 0.3, -W / 2); g.lineTo(L / 2, 0); g.lineTo(L * 0.3, W / 2); g.closePath(); g.fill();
   g.fillStyle = '#2b2a2e'; g.beginPath(); g.moveTo(L * 0.44, -W * 0.15); g.lineTo(L / 2, 0); g.lineTo(L * 0.44, W * 0.15); g.closePath(); g.fill();
   g.fillStyle = '#b8bcc2'; g.fillRect(-L / 2 + L * 0.06, -W / 2, L * 0.08, W);
-  g.fillStyle = '#e89aaa'; g.beginPath(); g.roundRect(-L / 2, -W / 2, L * 0.07, W, W * 0.3); g.fill();
+  g.fillStyle = '#f0b49a'; g.beginPath(); g.roundRect(-L / 2, -W / 2, L * 0.07, W, W * 0.3); g.fill();
   g.strokeStyle = 'rgba(60,40,0,0.7)'; g.lineWidth = 1; g.strokeRect(-L / 2, -W / 2, L * 0.8, W);
   g.restore();
 }
