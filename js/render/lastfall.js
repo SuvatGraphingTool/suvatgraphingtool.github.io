@@ -120,7 +120,7 @@ export function render(canvas, cam, o) {
   if (fired && t >= f.tP - 1e-9) {
     const e = ageOf(t, f.tP, f.tMax, 0.9); pulse(g, x0, yp, e.age, e.life, P.mark, { radius: 22 });
     // the paper's own given, on the plate: V − d, V over k, or (a second plate) the last stretch's time
-    const tag = f.mode === 'diff' ? T`V - ${sf(f.dv)} = ${sf(f.vP)} [m s^-1] "here"` : f.mode === 'ratio' ? T`V/${sf(f.kk)} = ${sf(f.vP)} [m s^-1] "here"` : T`${sf(f.vP)} [m s^-1] "here"`;
+    const tag = f.mode === 'diff' ? T`V - ${sf(f.dv)} = ${sf(f.vP)} [m s^-1] "here"` : f.mode === 'ratio' ? (f.kFrac ? T`(${f.kFrac.q}/${f.kFrac.p})V = ${sf(f.vP)} [m s^-1] "here"` : T`V/${sf(f.kk)} = ${sf(f.vP)} [m s^-1] "here"`) : T`${sf(f.vP)} [m s^-1] "here"`;
     // never below the ground line, where it would read as the speed there
     put(tag, x0 + 14, yp - 18, P.vel, { align: 'left', maxY: ground - 2 });
     if (f.mode === 'time') put(T`"the last" ${sf(f.p)} [m] "takes" ${sf(f.tau)} [s]`, x0 + 14, yp + 22, P.ink, { align: 'left', maxY: ground - 2 });

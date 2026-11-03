@@ -183,7 +183,7 @@ export const lanes = {
           ${M`s`} in ${M`[m]`} from where it started and ${M`t`} in ${M`[s]`} from when it set off — the time a paper usually asks for.</p>
       </div>` : '';
     // two at rest at the line have no difference in speed to report
-    const dv = ex('vA') === 0 && ex('vB') === 0 ? null : ex('dv');
+    const dv = Math.abs(ex('vA')) < 1e-9 && Math.abs(ex('vB')) < 1e-9 ? null : ex('dv');
     const say = solved.where === 'rail' ? railWords : (x) => x;
     return {
       eyebrow: say(main ? `Level at ${tr(main.t, 3)} <span class="u">s</span>, ${tr(main.x)} <span class="u">m</span> from the start`

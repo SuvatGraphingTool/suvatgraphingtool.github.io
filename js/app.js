@@ -969,11 +969,22 @@ function recomputeKit() {
   // A QUESTION IN PARTS: every part solved by this same engine, each with the
   // boxes it adds (js/parts/parts.js). The stage starts on the whole motion.
   const base = solved, boxes = { ...state.kit };
-  const parts = state.readerParts || scenario.parts;
+  // a library scenario's own parts are its paper's, numbers and all: once the
+  // values are no longer the paper's, they would say what is no longer true
+  const parts = state.readerParts || (paperValues(scenario, boxes) ? scenario.parts : null);
   state.runs = parts?.length ? walk((b) => (sameKitBoxes(b, boxes) ? base : K.solve(K.read(b))), boxes, parts) : null;
   state.part = -1; state.stopAt = null;
   renderParts();
   syncRate(); refreshSteps(); dirty = true;
+}
+
+/** Are these the values of the scenario's paper (its `example`)? Blank boxes and its own set the same. A scenario with no example has nothing to differ from. */
+function paperValues(scenario, boxes) {
+  const ex = scenario?.example;
+  if (!ex || scenario.group !== 'library') return true;
+  const val = (x) => (x == null || x === '' ? '' : String(x));
+  const keys = new Set([...Object.keys(ex), ...Object.keys(boxes).filter((k) => val(boxes[k]) !== '')]);
+  return [...keys].every((k) => k === 'g' || val(ex[k]) === val(boxes[k]) || (ex[k] == null && val(boxes[k]) === ''));
 }
 
 const sameKitBoxes = (a, b) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);

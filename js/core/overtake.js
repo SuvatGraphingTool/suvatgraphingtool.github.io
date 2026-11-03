@@ -704,7 +704,7 @@ export function solveOvertake(k = {}) {
   const own = extras.filter((x) => x.key.startsWith('own'));
   const derived = [
     // t_B already says whose it is
-    ...(found ? [`${found.what === 'tau' || found.what === 'hold' ? '' : `${found.who}\u2019s `}${M`${found.sym} = ${d(found.value)}`}`] : []),
+    ...(found ? [`${found.what === 'tau' || found.what === 'hold' ? '' : `${found.who}\u2019s `}${M`${found.sym} = ${d(found.value)} [${{ tau: 's', hold: 's', V: 'm s^-1', a: 'm s^-2' }[found.what] || 's'}]`}`] : []),
     ...own.map((x) => `${x.key.slice(3)} has been moving ${M`${d(x.value)} [s]`}`),
     ...events.filter((e) => e.kind !== 'start').map((e) => `${e.kind === 'overtake' ? `${e.ahead} passes` : 'level'} at ${M`t = ${d(e.t)} [s]`}`),
   ];

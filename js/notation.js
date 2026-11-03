@@ -556,7 +556,8 @@ function renderText(n) {
         if (i > 0) {
           if (it.k === 'op') out += (it.unary || it.comma) ? '' : ' ';
           else if (prev.k === 'op') out += prev.unary ? '' : ' ';
-          else out += gapNeeded(prev, it) ? THIN : '';
+          // beside a word a thin gap reads as none on a canvas: a word gets a word space
+          else out += prev.k === 'text' || it.k === 'text' ? ' ' : gapNeeded(prev, it) ? THIN : '';
         }
         out += renderText(it);
       });

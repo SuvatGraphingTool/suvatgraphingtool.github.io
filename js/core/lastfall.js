@@ -16,7 +16,7 @@
 //
 // THE ENGINE CALCULATES (CLAUDE.md rule 4).
 
-import { snap } from './numeric.js';
+import { snap, rat } from './numeric.js';
 import { M, num } from '../notation.js';
 
 const have = (x) => typeof x === 'number' && isFinite(x);
@@ -53,8 +53,11 @@ export function solveLastFall(k = {}) {
     const kk = k.k;
     // V² − (V/k)² = 2gp
     V = snap(Math.sqrt((2 * g * p) / (1 - 1 / (kk * kk)))); vP = snap(V / kk);
-    rows.push({ f: M`V^2 = (V/${g6(kk)})^2 + 2gs`, s: M`V^2 (1 - 1/${g6(kk * kk)}) = 2 * ${d(g)} * ${d(p)}`, r: M`V^2 = ${d(snap(V * V))}` });
-    rows.push({ f: M`V = sqrt(V^2)`, s: M`V = sqrt(${d(snap(V * V))})`, r: M`V = ${d(V)} [m s^-1]` });
+    // a multiple the student gave as a fraction, 4/3, stays one: at the point the speed is (3/4)V
+    const fr = rat(kk, 50), frac = fr && fr.q > 1;
+    const atP = frac ? `(${fr.q}/${fr.p})V` : `V/${g6(kk)}`, sqP = frac ? `${fr.q * fr.q}/${fr.p * fr.p}` : `1/${g6(kk * kk)}`;
+    rows.push({ f: M`V^2 = (${atP})^2 + 2gs`, s: M`V^2 (1 - ${sqP}) = 2 × ${d(g)} × ${d(p)}`, r: M`V^2 = ${d(snap(V * V))}` });
+    rows.push({ f: '', s: M`V = sqrt(${d(snap(V * V))})`, r: M`V = ${d(V)} [m s^-1]` });
   } else {
     if (!have(k.tau) || !(k.tau > 0)) return fail('Still needed: how long the last stretch takes, a positive number of seconds.');
     const tau = k.tau;
@@ -83,13 +86,13 @@ export function solveLastFall(k = {}) {
 
   const notes = [
     mode === 'diff' ? `Over the last ${M`${d(p)} [m]`} it speeds up by ${M`${d(k.dv)} [m s^-1]`}: from ${M`${d(vP)}`} to ${M`${d(V)} [m s^-1]`}, ${M`${d(tLast)} [s]`} for that stretch.`
-      : mode === 'ratio' ? `Over the last ${M`${d(p)} [m]`} its speed grows ${g6(k.k)} times: from ${M`${d(vP)}`} to ${M`${d(V)} [m s^-1]`}.`
+      : mode === 'ratio' ? `Over the last ${M`${d(p)} [m]`} its speed grows ${(() => { const r0 = rat(k.k, 50); return r0 && r0.q > 1 ? M`${r0.p}/${r0.q}` : g6(k.k); })()} times: from ${M`${d(vP)}`} to ${M`${d(V)} [m s^-1]`}.`
         : `It covers the last ${M`${d(p)} [m]`} in ${M`${d(k.tau)} [s]`}, passing the point at ${M`${d(vP)} [m s^-1]`} and reaching the ground at ${M`${d(V)} [m s^-1]`}.`,
     `It was let go ${M`${d(H)} [m]`} above the ground${u ? `, thrown down at ${M`${d(u)} [m s^-1]`}` : ', from rest'}, and reaches the ground ${M`${d(tG)} [s]`} later.`,
   ];
   const derived = [M`V = ${d(V)} [m s^-1]`, M`H = ${d(H)} [m]`];
 
-  const f = { kind: 'lastfall', look: k.look === 'cliff' ? 'cliff' : 'tower', mode, g, u, p, H, V, vP, tP, tG, tLast, dv: k.dv ?? null, kk: k.k ?? null, tau: k.tau ?? null,
+  const f = { kind: 'lastfall', look: k.look === 'cliff' ? 'cliff' : 'tower', mode, g, u, p, H, V, vP, tP, tG, tLast, dv: k.dv ?? null, kk: k.k ?? null, kFrac: (() => { const r0 = have(k.k) ? rat(k.k, 50) : null; return r0 && r0.q > 1 ? r0 : null; })(), tau: k.tau ?? null,
     pos, vel, acc, tMax, tFlight: tMax, tMid: snap(tG / 2), params: { u: 0, theta: 0, h: 0, g } };
   return { ok: true, mode: 'lastfall', V, vP, H, tG, tP, tLast, rows, notes, derived, f };
 }

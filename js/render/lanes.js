@@ -31,7 +31,7 @@
 // Everything drawn is read from js/core/overtake.js (rule 4).
 
 import { landscape, paper, tarmac, env, rng, softShadow } from './scenery.js';
-import { fitCanvas, unview, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, cssVar } from './util.js';
+import { fitCanvas, unview, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, cssVar, hudBoxes } from './util.js';
 import { T, num } from '../notation.js';
 import { drawFigure, train, rails, post, phaseFor, trafficLights, FIGURES } from './figures.js';
 import { pulse, ageOf } from './effects.js';
@@ -54,7 +54,9 @@ export function s3(x) {
 export function screen(w, h, n, wide = 146, wideL = 196) {
   const phone = w < 520;
   const hudR = 16 + (phone ? wide : wideL) + 4, hudB = 16 + n * (phone ? 55 : 64) + (n - 1) * 8;
-  return { phone, hudR, hudB, cardX0: hudR + (phone ? 4 : 44), cardY0: phone ? 80 : 90, cardX1: w - (phone ? 8 : 12) };
+  // on a phone the card starts under the right-hand stack (Resolve and the clock), never behind it
+  const right = hudBoxes(w, n)[1];
+  return { phone, hudR, hudB, cardX0: hudR + (phone ? 4 : 44), cardY0: phone ? Math.max(80, right ? right.y + right.h + 8 : 0) : 90, cardX1: w - (phone ? 8 : 12) };
 }
 
 /** Each road figure's true shape, per px of its drawn size L: how tall it
