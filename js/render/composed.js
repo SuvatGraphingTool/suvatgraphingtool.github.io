@@ -370,7 +370,7 @@ function launch(canvas, o) {
     // a cannon, a ramp or a catapult at the launch point, aimed as the engine
     // launches it; it fires (or lets go) as the engine's clock starts
     L.reserve({ x: x0 - ls * 1.5, y: top - ls * 0.7, w: ls * 1.55, h: Math.max(ls * 1.1, (grounded ? oy : top) - top + ls * 0.7) });
-    LAUNCHER_ART[R.launcher](g, x0, top, ls, P, { aim, t: m.going ? t : -1, gy: lgy, swing, phase: tRaw, circus: R.backdrop === 'circus' });
+    LAUNCHER_ART[R.launcher](g, x0, top, ls, P, { aim, t: m.going ? t : -1, tLeft: m.going ? f.tMax - t : -1, gy: lgy, swing, phase: tRaw, circus: R.backdrop === 'circus' });
   } else if (thrown) {
     // a javelin is held along the throw, its grip in the hand, until it goes
     // (and so is anything thrown from the hand's own height: it leaves the hand)

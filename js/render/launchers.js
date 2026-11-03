@@ -233,10 +233,13 @@ export function hose(g, x, y, s, P, { aim = 30, t = -1, gy = y } = {}) {
     (gy). Loaded (t < 0) the mat sags under the jumper's push; as the engine
     lets go (t = 0) it springs up past flat and rings down, the springs
     stretching and easing with it. `s` is its width. */
-export function trampoline(g, x, y, s, P, { t = -1, gy = y } = {}) {
+export function trampoline(g, x, y, s, P, { t = -1, gy = y, tLeft = -1 } = {}) {
   const E = env(), rx = s / 2, ry = Math.max(5, s * 0.09);
   // how far the mat is pushed down at its middle: loaded before, springing back after
-  const sag = t < 0 ? s * 0.07 : t < 0.6 ? -s * 0.06 * Math.exp(-t * 6) * Math.cos(t * 26) * (t < 0.05 ? t / 0.05 : 1) + s * 0.07 * Math.max(0, 1 - t / 0.05) : 0;
+  const deep = s * 0.15;
+  // loaded under the jumper before; springing up past flat and ringing down as they leave; loaded again as they land
+  let sag = t < 0 ? deep : t < 0.08 ? deep * (1 - t / 0.08) : t < 0.7 ? -deep * 0.35 * Math.exp(-(t - 0.08) * 6) * Math.sin((t - 0.08) * 26) : 0;
+  if (tLeft >= 0 && tLeft < 0.12) sag = deep * (1 - tLeft / 0.12);
   const legH = Math.max(6, gy - y);
   softShadow(g, x, gy + 1, rx * 1.05, Math.max(3, ry * 0.5), 0.8);
   // the legs: two W frames, the far one fainter, each from the frame down to its foot rail
@@ -288,7 +291,7 @@ export function trampoline(g, x, y, s, P, { t = -1, gy = y } = {}) {
     jolts back, a puff at the mouth, the wheels a blur. `s` is its size. */
 export function machine(g, x, y, s, P, { aim = 15, t = -1, gy = y, phase = 0 } = {}) {
   const E = env(), a = (Math.max(-30, Math.min(80, aim)) * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
-  const kick = t >= 0 && t < 0.25 ? Math.sin((t / 0.25) * Math.PI) * s * 0.03 : 0;
+  const kick = t >= 0 && t < 0.25 ? Math.sin((t / 0.25) * Math.PI) * s * 0.08 : 0;
   const bx = x - ca * (s * 0.42 + kick), by = y + sa * (s * 0.42 + kick);   // the barrel's back
   const hx = bx - s * 0.02, hy = by;                                        // the head: the wheels' housing
   const ground = Math.max(gy, hy + s * 0.25);
@@ -301,8 +304,11 @@ export function machine(g, x, y, s, P, { aim = 15, t = -1, gy = y, phase = 0 } =
   g.fillStyle = '#1e1f23'; g.beginPath(); g.arc(hx + s * 0.22, ground - s * 0.06, s * 0.06, 0, TAU); g.fill();
   g.fillStyle = steel; g.beginPath(); g.arc(hx + s * 0.22, ground - s * 0.06, s * 0.025, 0, TAU); g.fill();
   g.fillStyle = '#2a2b30'; g.fillRect(hx - s * 0.36, ground - s * 0.03, s * 0.08, s * 0.03);
+  // rubber feet, and the power cable trailing away along the ground
+  g.fillStyle = '#16171a'; g.fillRect(hx - s * 0.37, ground - s * 0.012, s * 0.1, s * 0.016);
+  g.strokeStyle = '#1e1f23'; g.lineWidth = Math.max(1.5, s * 0.015); g.beginPath(); g.moveTo(hx, hy + s * 0.12); g.bezierCurveTo(hx - s * 0.1, ground, hx - s * 0.5, ground - 1, hx - s * 0.9, ground - 1); g.stroke();
   // the barrel: a tube from the head to the mouth, along the aim
-  const bw = Math.max(5, s * 0.09);
+  const bw = Math.max(7, s * 0.12);
   g.strokeStyle = E.night ? '#1d4f8a' : '#2667b8'; g.lineWidth = bw; g.lineCap = 'butt';
   g.beginPath(); g.moveTo(bx, by); g.lineTo(x - ca * kick, y + sa * kick); g.stroke();
   g.strokeStyle = withAlpha('#ffffff', 0.25); g.lineWidth = Math.max(1, bw * 0.25);
@@ -320,6 +326,13 @@ export function machine(g, x, y, s, P, { aim = 15, t = -1, gy = y, phase = 0 } =
     g.strokeStyle = withAlpha('#ffffff', 0.35); g.lineWidth = 1;
     for (let i = 0; i < 3; i++) { const q = spin + (i * TAU) / 3 + (dy > 0 ? 1 : 0); g.beginPath(); g.arc(hx, hy + dy, HR * 0.26, q, q + 0.9); g.stroke(); }
   }
+  // the control panel on the head's side: a dial and its knob, a red switch
+  g.fillStyle = '#e8ecf2'; g.beginPath(); g.roundRect(hx - HR * 0.95, hy + HR * 0.2, HR * 0.55, HR * 0.5, 2); g.fill();
+  g.strokeStyle = '#3a3e46'; g.lineWidth = 1; g.beginPath(); g.arc(hx - HR * 0.68, hy + HR * 0.45, HR * 0.14, 0, TAU); g.stroke();
+  g.beginPath(); g.moveTo(hx - HR * 0.68, hy + HR * 0.45); g.lineTo(hx - HR * 0.6, hy + HR * 0.35); g.stroke();
+  g.fillStyle = '#c0392b'; g.fillRect(hx - HR * 0.5, hy + HR * 0.52, HR * 0.08, HR * 0.1);
+  // as it throws: the wheels a blur, a ring of speed round them
+  if (t >= 0 && t < 0.3) { const q = 1 - t / 0.3; g.strokeStyle = `rgba(255,255,255,${0.6 * q})`; g.lineWidth = 2; g.beginPath(); g.arc(hx, hy, HR * (1.05 + (1 - q) * 0.4), 0, TAU); g.stroke(); }
   // the hopper on top: a wire basket heaped with balls, yellow-green
   const tx = hx - HR * 0.2, ty = hy - HR * 0.85;
   g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.moveTo(tx - HR * 1.1, ty - HR * 1.1); g.lineTo(tx + HR * 1.1, ty - HR * 1.1); g.lineTo(tx + HR * 0.4, ty); g.lineTo(tx - HR * 0.4, ty); g.closePath(); g.fill();
@@ -335,7 +348,7 @@ export function machine(g, x, y, s, P, { aim = 15, t = -1, gy = y, phase = 0 } =
   // the puff at the mouth as it fires
   if (t >= 0 && t < 0.35) {
     const q = t / 0.35;
-    for (let i = 0; i < 5; i++) { const d = s * (0.05 + q * 0.18), sp = (i - 2) * 0.35; g.fillStyle = withAlpha('#ffffff', 0.45 * (1 - q)); g.beginPath(); g.arc(x + Math.cos(a + sp) * d, y - Math.sin(a + sp) * d, s * (0.02 + q * 0.03), 0, TAU); g.fill(); }
+    for (let i = 0; i < 7; i++) { const d = s * (0.06 + q * 0.4), sp = (i - 3) * 0.3; g.fillStyle = withAlpha('#ffffff', 0.5 * (1 - q)); g.beginPath(); g.arc(x + Math.cos(a + sp) * d, y - Math.sin(a + sp) * d, s * (0.05 + q * 0.08), 0, TAU); g.fill(); }
   }
 }
 
@@ -376,4 +389,4 @@ function circusCannon(g, x, y, s, { a, ca, sa, L, rB, recoil, t, E, ground }) {
 /** Each launcher by the registry's name: `size` px at k px a metre. */
 export const LAUNCHER_ART = { cannon, ramp, catapult, rifle, hose, trampoline, machine };
 // (a rifle near its true length, and never longer than half again the height it fires from)
-export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : kind === 'trampoline' ? clamp(3.6 * k, 80, 200) : kind === 'machine' ? clamp(1.4 * k, 64, 110) : clamp(3 * k, 60, 160));
+export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : kind === 'trampoline' ? clamp(3.6 * k, 80, 200) : kind === 'machine' ? clamp(1.4 * k, 90, 140) : clamp(3 * k, 60, 160));

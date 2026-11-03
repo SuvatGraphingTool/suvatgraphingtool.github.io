@@ -90,14 +90,26 @@ export function render(canvas, cam, o) {
   const U = f.U;
 
   // ── the road along the bottom, A in the far lane and B in the near
-  const Lf = clamp(h * 0.13, phone ? 46 : 56, 84);           // a person's (and a bicycle's) size
+  const Lf = clamp(h * 0.17, phone ? 50 : 64, 110);           // a person's (and a bicycle's) size
   const d = Math.max(2 * Lf * 0.95 + 26, 110);
   const below = phone ? 60 : 48;
   const R = Math.round(h - below - d);
   const horizon = R - 28;
-  const sx0 = phone ? 40 : Math.max(80, HUD[0].x + HUD[0].w + 34), sx1 = w - (phone ? 70 : 150);
+  const sx0 = phone ? 40 : Math.max(80, HUD[0].x + HUD[0].w + 34), sx1 = w - (phone ? 96 : 230);
   const S = (x) => sx0 + (x / f.J) * (sx1 - sx0);
   landscape(g, w, h, horizon, { far: 'hills', seed: 57, clouds: 5 });
+  // a hedgerow along the far side of the fields, its trees standing up out of it, and telegraph poles along the road
+  { const r = rng(91);
+    for (let x = -20; x < w + 40; x += 34 + r() * 30) bush(g, x, horizon + 4, clamp(Lf * (0.5 + r() * 0.3), 24, 60), Math.floor(r() * 99));
+    for (let x = 30 + r() * 60; x < w; x += 170 + r() * 90) { const tH = clamp(Lf * (1.3 + r() * 0.6), 60, 150); const E2 = env();
+      g.fillStyle = E2.night ? '#2a2420' : '#5a4636'; g.fillRect(x - 2, horizon + 4 - tH * 0.45, 4, tH * 0.45);
+      for (const [dx, dy, rr] of [[0, -0.55, 0.32], [-0.18, -0.42, 0.24], [0.2, -0.45, 0.26]]) { const cx = x + dx * tH, cy = horizon + 4 + dy * tH, R0 = rr * tH;
+        const gr = g.createRadialGradient(cx - R0 * 0.4, cy - R0 * 0.4, R0 * 0.1, cx, cy, R0); gr.addColorStop(0, E2.night ? '#3e4a30' : '#86a05a'); gr.addColorStop(1, E2.night ? '#1c2416' : '#3e5428');
+        g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R0, 0, TAU); g.fill(); } }
+    const poleH = clamp(Lf * 1.6, 80, 170), E3 = env();
+    for (let x = 60; x < w; x += 260) { g.fillStyle = E3.night ? '#3a2e26' : '#6e5440'; g.fillRect(x - 2.5, R - 14 - poleH, 5, poleH); g.fillRect(x - 14, R - 14 - poleH + 8, 28, 3); }
+    g.strokeStyle = E3.night ? 'rgba(200,200,200,0.25)' : 'rgba(40,40,40,0.35)'; g.lineWidth = 1;
+    for (const dy of [9, 9]) { g.beginPath(); for (let x = 60; x < w + 260; x += 260) { const y0 = R - 14 - poleH + dy; if (x === 60) g.moveTo(x - 12, y0); else g.quadraticCurveTo(x - 130, y0 + 12, x - 12, y0); } g.stroke(); } }
   const keep = [[S(0) - 40, S(0) + 30], [S(f.D) - Lf, S(f.D) + Lf], [S(f.J) - 20, w]];
   verge(g, 0, w, R - 11, { seed: 63, scale: phone ? 0.8 : 1, keep });
   road(g, 0, w, R, d, { seed: 29 });
@@ -121,22 +133,27 @@ export function render(canvas, cam, o) {
   g.save(); g.setLineDash([3, 4]); stroke(g, [{ x: S(f.D), y: R + 2 }, { x: S(f.D), y: R + d - 2 }], { color: P.muted, width: 1.4 }); g.restore();
 
   // ── the bicycle where it lies, between A leaving it and B finding it
-  const bk = f.bikeAt(t);
+  // the bicycle between riders: A wheels it to the verge and stands it there; B, arriving,
+  // takes it from the verge into the lane (art only, round the engine's two moments)
+  const bk = f.bikeAt(t), hand = f.tMax * 0.05, ease = (u) => u * u * (3 - 2 * u);
+  const verge0 = R - 4;
   if (!bk.who) {
-    bicycle(g, S(f.D) - Lf * 0.5, R - 4, Lf, { dir: 1 });
-    L.add('the bicycle', S(f.D), R - Lf * 0.9, { color: P.ink, size: 13, weight: 700, align: 'center', pri: 5 });
+    const u = t < f.tA1 + hand ? ease(clamp((t - f.tA1) / hand, 0, 1)) : t > f.tB1 - hand ? 1 - ease(clamp((f.tB1 - t) / hand, 0, 1)) : null;
+    const y = u == null ? verge0 : t < f.tA1 + hand ? yA + (verge0 - yA) * u : verge0 + (yB - verge0) * u;
+    bicycle(g, S(f.D) - Lf * 0.5, y, Lf, { dir: 1, lean: u == null ? 0.08 : 0 });
+    if (u == null) L.add('the bicycle', S(f.D), R - Lf * 1.05, { color: P.ink, size: 13, weight: 700, align: 'center', pri: 5 });
   }
-  // it changes hands: a pulse where A leaves it, and where B takes it
+  // it changes hands: a pulse round the bicycle where A leaves it, and where B takes it
   for (const [tt, y] of [[f.tA1, yA], [f.tB1, yB]]) {
     if (!fired || t < tt - 1e-9) continue;
     const { age, life } = ageOf(t, tt, f.tMax);
-    pulse(g, S(f.D), y - Lf * 0.45, age, life, P.mark, { radius: Lf * 0.8 });
+    pulse(g, S(f.D), y - Lf * 0.3, age, life, P.mark, { radius: Lf * 1.1 });
   }
 
   // ── A and B: riding or walking, at their own speeds
   const who = [
-    { name: 'A', y: yA, pos: f.posA, vel: f.velA, rides: (tt) => tt < f.tA1, col: P.vel, walkSpeed: f.A.walk, rideSpeed: f.A.ride, t0: 0, t1: f.tA1 },
-    { name: 'B', y: yB, pos: f.posB, vel: f.velB, rides: (tt) => tt >= f.tB1, col: P.second, walkSpeed: f.B.walk, rideSpeed: f.B.ride, t0: f.tB1 },
+    { name: 'A', y: yA, pos: f.posA, vel: f.velA, rides: (tt) => tt < f.tA1, col: null, ink: P.ink, walkSpeed: f.A.walk, rideSpeed: f.A.ride, t0: 0, t1: f.tA1 },
+    { name: 'B', y: yB, pos: f.posB, vel: f.velB, rides: (tt) => tt >= f.tB1, col: P.second, ink: P.second, walkSpeed: f.B.walk, rideSpeed: f.B.ride, t0: f.tB1 },
   ];
   const kpx = (sx1 - sx0) / f.J;                                 // px per unit of distance, for the strides
   for (const p of who) {
@@ -148,18 +165,19 @@ export function render(canvas, cam, o) {
     else drawFigure(g, 'runner', x, p.y, Lf * 0.98, P, { dir: 1, ring: p.col, still: !fired || done || t === 0, phase: phaseFor('runner', Lf, gone * kpx * 0.35) });
     // its velocity, along the road: dashed (rule 2)
     if (fired && !done && t > 0) {
-      const v = p.vel(t), len = clamp((v / Math.max(f.A.ride, f.B.ride)) * Lf * 1.4, 18, Lf * 1.5), vy = p.y - Lf * (riding ? 1.1 : 1.15);
-      arrow(g, x - (riding ? Lf * 0.3 : 0), vy, x - (riding ? Lf * 0.3 : 0) + len, vy, { color: P.velVec, width: 2.4, head: 9, dash: [6, 4] });
-      L.add(T`${s3(v)} [${U.speedText === 'km h⁻¹' ? 'km h^-1' : 'm s^-1'}]`, x - (riding ? Lf * 0.3 : 0) + len + 8, vy, { color: P.vel, size: 13, weight: 700, align: 'left', pri: 4 });
+      // in front of it, at waist height in its own lane, never up on the verge
+      const v = p.vel(t), len = clamp((v / Math.max(f.A.ride, f.B.ride)) * Lf * 1.6, 40, Lf * 1.8), vy = p.y - Lf * 0.5, x0 = x + Lf * (riding ? 0.08 : 0.3);
+      arrow(g, x0, vy, x0 + len, vy, { color: P.velVec, width: 2.6, head: 10, dash: [6, 4] });
+      L.add(T`${s3(v)} [${U.speedText === 'km h⁻¹' ? 'km h^-1' : 'm s^-1'}]`, x0 + len + 8, vy, { color: P.vel, size: 13, weight: 700, align: 'left', pri: 4 });
     }
-    L.add(p.name, x - (riding ? Lf * 1.15 : Lf * 0.42), p.y - Lf * 0.55, { color: p.col, size: 16, weight: 800, align: 'center', pri: 9 });
+    L.add(p.name, x - (riding ? Lf * 1.15 : Lf * 0.42), p.y - Lf * 0.55, { color: p.ink, size: 16, weight: 800, align: 'center', pri: 9 });
   }
 
   // ── the finish, together
   if (fired && t >= f.T - 1e-9) {
     const { age, life } = ageOf(t, f.T, f.tMax);
-    for (const y of [yA, yB]) pulse(g, S(f.J), y - Lf * 0.45, age, Math.max(life, 0.5), P.mark, { radius: Lf * 0.8 });
-    L.add(T`"together at the finish," T = ${s3(f.T)} [${U.time}]`, (S(f.D) + S(f.J)) / 2, R - Lf * 1.4, { color: P.mark, size: 14, weight: 700, align: 'center', pri: 8 });
+    pulse(g, S(f.J), (yA + yB) / 2 - Lf * 0.45, age, Math.max(life, 0.5), P.mark, { radius: Lf * 1.3 });
+    L.add(T`"together," T = ${s3(f.T)} [${U.time}]`, S(f.J) - 12, R - 16, { color: P.mark, size: 14, weight: 700, align: 'right', pri: 8 });
   }
 
   L.draw(g, w, h);

@@ -111,9 +111,9 @@ export function dangerBuoy(g, x, y, s = 22, phase = 0) {
   if (E.night) {
     const c = (phase * 0.02) % 1, on = c < 0.06 || (c > 0.12 && c < 0.18);
     if (on) {
-      const lg = g.createRadialGradient(0, -s * 0.62, 0, 0, -s * 0.62, s * 0.7);
+      const lg = g.createRadialGradient(0, -s * 0.62, 0, 0, -s * 0.62, s * 0.32);
       lg.addColorStop(0, 'rgba(255,255,240,0.95)'); lg.addColorStop(1, 'rgba(255,255,240,0)');
-      g.fillStyle = lg; g.beginPath(); g.arc(0, -s * 0.62, s * 0.7, 0, TAU); g.fill();
+      g.fillStyle = lg; g.beginPath(); g.arc(0, -s * 0.62, s * 0.32, 0, TAU); g.fill();
     }
   }
   g.restore();
@@ -183,7 +183,7 @@ export function render(canvas, cam, o) {
   const box = { xLo: Math.min(...all.map((p) => p.x)), xHi: Math.max(...all.map((p) => p.x)), yLo: Math.min(...all.map((p) => p.y)), yHi: Math.max(...all.map((p) => p.y)) };
   const sp = Math.max(box.xHi - box.xLo, box.yHi - box.yLo, 1);
   for (const [lo, hi] of [['xLo', 'xHi'], ['yLo', 'yHi']]) { const m = Math.max(0, sp * 0.25 - (box[hi] - box[lo])) / 2; box[lo] -= m; box[hi] += m; }
-  const S = clamp(Math.min(w, h) * 0.095, 38, 54);
+  const S = clamp(Math.min(w, h) * 0.1, phone ? 40 : 48, 62);
   const pad = S * 0.95;
   const hudBoxes = hudOf(w, phone ? 3 : (f.R ? 5 : 4));
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 20), cY = h - cR - (phone ? 14 : 22);
@@ -196,9 +196,11 @@ export function render(canvas, cam, o) {
   // ── the sea, a coast kept off the course and the rock, and the station on it
   const trackPx = pts.map(px), Rp = f.R ? px(f.R) : null;
   const ring = Rp ? Array.from({ length: 12 }, (_, i) => ({ x: Rp.x + Math.cos((i / 12) * TAU) * 40, y: Rp.y + Math.sin((i / 12) * TAU) * 40 })) : [];
-  const sea = seaFromAbove(g, 0, 0, w, h, { phase, avoid: [...trackPx, ...ring, { x: X(0), y: Y(0) }], coast: true, hud: true });
-  const station = sea?.light || null;
-  if (station) radarStation(g, station.x, station.y, phone ? 40 : 54, phase * 0.09);
+  const boxPts = (b) => { const o2 = []; for (let i = 0; i <= 4; i++) for (let j = 0; j <= 4; j++) o2.push({ x: b.x + (b.w * i) / 4, y: b.y + (b.h * j) / 4 }); return o2; };
+  const sea = seaFromAbove(g, 0, 0, w, h, { phase, avoid: [...trackPx, ...ring, { x: X(0), y: Y(0) }, ...(hudBoxes[1] ? boxPts(hudBoxes[1]) : []), ...boxPts(compassBox)], coast: true, hud: true, lightAvoid: [...hudBoxes, compassBox] });
+  // the station stands where the coast leaves room — never under the readouts
+  const station = sea?.light && !hudBoxes.some((b) => sea.light.x > b.x - 30 && sea.light.x < b.x + b.w + 30 && sea.light.y > b.y - 30 && sea.light.y < b.y + b.h + 30) ? sea.light : null;
+  if (station) radarStation(g, station.x, station.y, phone ? 48 : 66, phase * 0.09);
 
   // the words: kept off the readouts, the compass, the lines and each other
   const Q = placer(g, w, h);
@@ -217,11 +219,27 @@ export function render(canvas, cam, o) {
     jTop: X(0) < hudBoxes[0].x + hudBoxes[0].w + 10 ? hudBoxes[0].h + 14 : 16 });
   for (const b of gridWords) hold(b);
 
+  // ── the ship's heading, eased round the turn (art only; where it is is the engine's), and its wake — under the rock and its buoy
+  const now = px(f.pos(t));
+  const v1 = f.legs[0].v, v2 = f.legs[1]?.v;
+  const hd = (v) => Math.atan2(-v.y, v.x);
+  let a = hd(f.vel(t));
+  if (v2 && Math.hypot(v2.x, v2.y) > 1e-9 && t >= f.tc) {
+    const k = clamp((t - f.tc) / (f.tMax * 0.04), 0, 1), e = 1 - (1 - k) ** 2;
+    let da = hd(v2) - hd(v1); da = ((da + Math.PI) % TAU + TAU) % TAU - Math.PI;
+    a = hd(v1) + da * e;
+  }
+  const moving = Math.hypot(f.vel(t).x, f.vel(t).y) > 1e-9;
+  const wake = fired && moving ? clamp(t / Math.max(1e-9, f.tMax * 0.08), 0, 1) : 0;
+  if (wake > 0) shipTop(g, now.x, now.y, S, a, P.ink, P, { wake, phase: phase * 3, part: 'wake' });
   // ── the rock and its buoy
   if (Rp) {
     rockSubmerged(g, Rp.x, Rp.y, phone ? 13 : 16, phase);
-    dangerBuoy(g, Rp.x + 26, Rp.y - 14, phone ? 18 : 22, phase);
-    hold({ x: Rp.x - 18, y: Rp.y - 40, w: 58, h: 56 });
+    // the buoy moored on the side of the rock away from the ship's track, never in its way
+    let near = trackPx[0]; for (const q of trackPx) if (Math.hypot(q.x - Rp.x, q.y - Rp.y) < Math.hypot(near.x - Rp.x, near.y - Rp.y)) near = q;
+    const dd = Math.hypot(near.x - Rp.x, near.y - Rp.y) || 1, bx = Rp.x - ((near.x - Rp.x) / dd) * 34, by = Rp.y - ((near.y - Rp.y) / dd) * 34;
+    dangerBuoy(g, bx, by + 8, phone ? 26 : 32, phase);
+    hold({ x: Math.min(Rp.x, bx) - 20, y: Math.min(Rp.y, by) - 34, w: Math.abs(bx - Rp.x) + 40, h: Math.abs(by - Rp.y) + 54 });
     Q.add('R', Rp.x, Rp.y, { color: P.ink, pri: 9, size: 16, weight: 800 });
   }
 
@@ -290,32 +308,21 @@ export function render(canvas, cam, o) {
     Q.line([Rp, q], 8);
     pulse(g, q.x, q.y, age, life, P.mark, { radius: 40 });
     dot(g, q.x, q.y, 5.5, { fill: P.mark, stroke: cssVar('--surface', '#131210'), width: 2 });
-    Q.add(phone ? an.short : an.word, (q.x + Rp.x) / 2, (q.y + Rp.y) / 2, { color: P.mark, pri: 8, size: 14, weight: 700 });
+    Q.add(phone ? an.short : an.word, phone ? q.x : (q.x + Rp.x) / 2, phone ? q.y : (q.y + Rp.y) / 2, { color: P.mark, pri: 8, size: 14, weight: 700 });
   }
 
   // ── how far from the rock now, between the moments asked about
-  const now = px(f.pos(t));
   const atAsked = [...asked.map((a) => a.t), ...(f.tc != null ? [f.tc] : [])].some((ta) => Math.abs(ta - t) < f.tMax * 0.03);
   // (not while it heads straight for the rock: the old course is that line, and says so)
   const v = f.vel(t), toR = Rp ? Math.abs((Rp.x - now.x) * -v.y - (Rp.y - now.y) * v.x) / (Math.hypot(v.x, v.y) * Math.hypot(Rp.x - now.x, Rp.y - now.y) || 1) : 1;
-  if (Rp && Math.hypot(now.x - Rp.x, now.y - Rp.y) > 70 && !atAsked && fired && t > 0 && toR > 0.05) {
+  const angTo = (p2) => Math.atan2(p2.y - Rp?.y, p2.x - Rp?.x);
+  const nearAsked = Rp && asked.some((an) => t >= an.t && Math.abs(((angTo(now) - angTo(px(f.pos(an.t))) + Math.PI * 3) % TAU) - Math.PI) < 0.26);
+  if (!phone && !nearAsked && Rp && Math.hypot(now.x - Rp.x, now.y - Rp.y) > 70 && !atAsked && fired && t > 0 && toR > 0.05) {
     stroke(g, [Rp, now], { color: P.mark, width: 1.4, alpha: 0.6 });
     Q.line([Rp, now], 8);
     Q.add(T`${tr(f.dist(t))} [${U.len}] "from R"`, (now.x + Rp.x) / 2, (now.y + Rp.y) / 2, { color: P.mark, pri: 5, size: 13, weight: 700 });
   }
 
-  // ── the ship: its heading eased round the turn (art only; where it is is the engine's)
-  const v1 = f.legs[0].v, v2 = f.legs[1]?.v;
-  const hd = (v) => Math.atan2(-v.y, v.x);
-  let a = hd(f.vel(t));
-  if (v2 && Math.hypot(v2.x, v2.y) > 1e-9 && t >= f.tc) {
-    const k = clamp((t - f.tc) / (f.tMax * 0.04), 0, 1), e = 1 - (1 - k) ** 2;
-    let da = hd(v2) - hd(v1); da = ((da + Math.PI) % TAU + TAU) % TAU - Math.PI;
-    a = hd(v1) + da * e;
-  }
-  const moving = Math.hypot(f.vel(t).x, f.vel(t).y) > 1e-9;
-  const wake = fired && moving ? clamp(t / Math.max(1e-9, f.tMax * 0.08), 0, 1) : 0;
-  if (wake > 0) shipTop(g, now.x, now.y, S, a, P.ink, P, { wake, phase: phase * 3, part: 'wake' });
   shipTop(g, now.x, now.y, S, a, P.disp, P, { wake, phase: phase * 3, part: 'hull' });
   hold({ x: now.x - S * 0.4, y: now.y - S * 0.4, w: S * 0.8, h: S * 0.8 });
   Q.add('S', now.x, now.y, { color: P.disp, pri: 9, size: 16, weight: 800 });

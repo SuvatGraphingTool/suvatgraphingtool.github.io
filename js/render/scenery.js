@@ -335,14 +335,14 @@ function landSpot(x, y, w, h, avoid, r, o = {}) {
     const depth = (u) => base * (0.78 + 0.22 * wob(u)) + base * 0.75 * bump(u);
     const shape = (off) => { const pts = []; for (let i = 0; i <= N; i++) pts.push(at(i / N, Math.max(0, depth(i / N) + off))); return [at(1, -4), at(0, -4), ...pts]; };
     const shore = (off) => { const pts = []; for (let i = 0; i <= N; i++) pts.push(at(i / N, Math.max(0, depth(i / N) + off))); return pts; };
-    return { shape, shore, light: at(bumpU, depth(bumpU) * 0.62), size: base };
+    return { shape, shore, light: at(bumpU, depth(bumpU) * 0.62), lightAt: (u) => at(u, depth(u) * 0.62), size: base };
   }
   const [cx, cy, a0, a1] = corners[best.side], R0 = best.R;
   const rad = (u) => R0 * (0.8 + 0.18 * wob(u)) + R0 * 0.35 * bump(u);
   const pt = (u, rr) => { const a = a0 + (a1 - a0) * u; return { x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr }; };
   const shape = (off) => { const pts = [{ x: cx, y: cy }]; for (let i = 0; i <= N; i++) pts.push(pt(i / N, Math.max(0, rad(i / N) + off))); return pts; };
   const shore = (off) => { const pts = []; for (let i = 0; i <= N; i++) pts.push(pt(i / N, Math.max(0, rad(i / N) + off))); return pts; };
-  return { shape, shore, light: pt(bumpU, rad(bumpU) * 0.68), size: R0 * 0.5 };
+  return { shape, shore, light: pt(bumpU, rad(bumpU) * 0.68), lightAt: (u) => pt(u, rad(u) * 0.68), size: R0 * 0.5 };
 }
 
 const poly = (g, pts) => { g.beginPath(); g.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y); g.closePath(); };
@@ -497,7 +497,12 @@ export function seaFromAbove(g, x, y, w, h, o = {}) {
   let light = null;
   if (o.coast && avoid.length) {
     const land = landSpot(x, y, w, h, avoid, rng((o.seed ?? 23) + 5), o);
-    if (land) { drawLand(g, land, E, r, phase); light = land.light; }
+    if (land) {
+      drawLand(g, land, E, r, phase); light = land.light;
+      // a spot for a landmark that no box (the readouts) covers: along the same shore, if it must move
+      const hidden = (p) => (o.lightAvoid || []).some((b) => p.x > b.x - 30 && p.x < b.x + b.w + 30 && p.y > b.y - 30 && p.y < b.y + b.h + 30);
+      if (o.lightAvoid && hidden(light)) { light = null; for (const u of [0.5, 0.6, 0.4, 0.7, 0.3, 0.8, 0.2, 0.85, 0.15]) { const p = land.lightAt(u); if (p.x > 20 && p.x < x + w - 20 && p.y > 20 && p.y < y + h - 20 && !hidden(p)) { light = p; break; } } }
+    }
   }
   for (const is of o.islands || []) {
     const ir = rng(Math.round(is.x * 7 + is.y * 13)), iw = wobble(ir, 3);

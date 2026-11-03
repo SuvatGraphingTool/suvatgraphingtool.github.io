@@ -62,7 +62,7 @@ function steelBall(g, x, y, r) {
 function glider(g, x, y, a, L) {
   g.save(); g.translate(x, y); g.rotate(a);
   const H = L * 0.42;
-  const rg = g.createLinearGradient(0, -H, 0, 0); rg.addColorStop(0, '#e2574a'); rg.addColorStop(1, '#a3281e');
+  const rg = g.createLinearGradient(0, -H, 0, 0); rg.addColorStop(0, '#6f9fd8'); rg.addColorStop(1, '#2c5a92');
   g.fillStyle = rg; g.beginPath(); g.moveTo(-L / 2, 0); g.lineTo(-L / 2 + H * 0.5, -H); g.lineTo(L / 2 - H * 0.5, -H); g.lineTo(L / 2, 0); g.closePath(); g.fill();
   g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.stroke();
   g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(-L / 2 + H * 0.55, -H + 1.5, L - H * 1.1, 2);
@@ -85,10 +85,10 @@ export function render(canvas, cam, o) {
   // ── the frame: the track from a little above X to the floor below C, and Y's stand
   const run = f.sP * 1.35;                                  // the track runs on past C
   const foot = { x: run * cs, y: -run * sn };
-  const box = { xLo: -0.18 * f.sP, xHi: Math.max(foot.x, f.XY) + 0.25 * f.sP, yLo: foot.y - 0.08 * f.sP, yHi: 0.3 * f.sP };
+  const box = { xLo: -0.12 * f.sP, xHi: Math.max(foot.x, f.XY) + 0.12 * f.sP, yLo: foot.y - 0.04 * f.sP, yHi: 0.24 * f.sP };
   const floorBand = phone ? 30 : 40;
   const area = { left: phone ? 18 : 60, right: w - (phone ? 18 : 40), top: phone ? 150 : 100, bottom: h - floorBand };
-  const F = fitSide(box, area, { sky: 0.35 });
+  const F = fitSide(box, area, { sky: 0.15 });
   const { X, Y, k } = F;
   const floorY = Y(foot.y);
   const px = (p) => ({ x: X(p.x), y: Y(p.y) });
@@ -98,6 +98,11 @@ export function render(canvas, cam, o) {
   // the floor: lino, lit from the left
   const fg = g.createLinearGradient(0, floorY, 0, h); fg.addColorStop(0, E.night ? '#3a3a40' : '#b9b5a8'); fg.addColorStop(1, E.night ? '#2a2a2e' : '#9e9a8e');
   g.fillStyle = fg; g.fillRect(0, floorY, w, h - floorY);
+  // lino tiles: joints running away from us in perspective, and across
+  g.strokeStyle = E.night ? 'rgba(0,0,0,0.35)' : 'rgba(80,74,64,0.25)'; g.lineWidth = 1;
+  for (let i = -12; i <= 12; i++) { g.beginPath(); g.moveTo(w / 2 + i * 70, floorY); g.lineTo(w / 2 + i * 150, h); g.stroke(); }
+  for (let y = floorY + 10, k2 = 10; y < h; k2 *= 1.5, y += k2) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+  g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(0, floorY, w, 2);
 
   // ── the track on its trestle: polished aluminium from above X down to the floor
   const top = { x: -0.12 * f.sP * cs, y: 0.12 * f.sP * sn };
@@ -121,8 +126,19 @@ export function render(canvas, cam, o) {
   const tg = g.createLinearGradient(0, 0, 0, thick); tg.addColorStop(0, '#f3f5f8'); tg.addColorStop(0.4, '#b8bec6'); tg.addColorStop(1, '#6e757e');
   g.fillStyle = tg; g.fillRect(0, 0, len, thick);
   g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(0, 0, len, 1.2);
-  g.fillStyle = 'rgba(0,0,0,0.25)'; for (let x = 18; x < len; x += 22) g.fillRect(x, thick * 0.55, 2, 2);
+  // the beam's lower, shaded face (it is triangular in section), its rows of air holes, the end stops
+  g.fillStyle = 'rgba(0,0,0,0.28)'; g.beginPath(); g.moveTo(0, thick); g.lineTo(len, thick); g.lineTo(len - 4, thick * 1.7); g.lineTo(4, thick * 1.7); g.closePath(); g.fill();
+  g.fillStyle = 'rgba(30,34,40,0.55)'; for (let x = 14; x < len - 10; x += 11) { g.beginPath(); g.arc(x, thick * 0.35, 1.1, 0, TAU); g.fill(); g.beginPath(); g.arc(x + 5, thick * 0.7, 1.1, 0, TAU); g.fill(); }
+  for (const ex of [2, len - 8]) { g.fillStyle = '#3a3e46'; g.fillRect(ex, -thick * 0.9, 6, thick * 1.9); }
   g.restore();
+  // the blower's hose, from the track's upper end down to the blower on the floor
+  { const hx = A.x + 10, hy = A.y + thick, bx = Math.max(16, A.x - 40);
+    g.strokeStyle = E.night ? '#2a2c30' : '#3a3d42'; g.lineWidth = 7; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(hx, hy); g.bezierCurveTo(hx - 10, hy + 60, bx + 30, floorY - 30, bx + 14, floorY - 16); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,0.15)'; g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = E.night ? '#2e4a6a' : '#3a6aa8'; g.beginPath(); g.roundRect(bx - 4, floorY - 30, 36, 30, 4); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.3)'; for (let i = 0; i < 4; i++) g.fillRect(bx + 2 + i * 7, floorY - 24, 3, 16);
+    softShadow(g, bx + 14, floorY + 1, 22, 3, 0.6); }
   softShadow(g, (A.x + B.x) / 2, floorY + 2, len * 0.45, 5, 0.5);
   // the spring launcher at X: a block at the top of the track, its plunger and spring
   const Xp = px({ x: 0, y: 0 });
@@ -144,10 +160,19 @@ export function render(canvas, cam, o) {
   const rodTop = Yp.y - clamp(k * 0.35, 36, 70);
   g.fillStyle = '#a9b0b8'; g.fillRect(rodX - 2.5, rodTop, 5, floorY - rodTop - 8);
   g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(rodX - 2.5, rodTop, 1.5, floorY - rodTop - 8);
-  const ms = clamp(k * 0.1, 16, 26), magY = Yp.y - Math.max(8, ms * 0.15) - 7;
+  const rb = clamp(k * 0.05, 7, 12), ms = clamp(k * 0.1, 18, 28), magY = Yp.y - rb;
   g.fillStyle = '#5a5f68'; g.fillRect(rodX - 7, magY - ms * 1.0, 14, 14);
   g.strokeStyle = '#7a808a'; g.lineWidth = 4; g.beginPath(); g.moveTo(rodX, magY - ms * 0.95 + 7); g.lineTo(Yp.x, magY - ms * 0.95 + 7); g.stroke();
   electromagnet(g, Yp.x, magY, ms, !(fired && t > 0));
+  // the power pack on the floor by the stand, its leads up to the magnet
+  { const px0 = Math.max(rodX + 46, B.x + 24), pw = 54, ph = 34;
+    for (const [col, dx] of [['#c0392b', -4], ['#222', 4]]) { g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(Yp.x + dx, magY - ms * 1.25); g.bezierCurveTo(Yp.x + dx + 30, magY - ms * 2.6, px0 + 10 + dx, floorY - ph - 60, px0 + 14 + dx, floorY - ph + 6); g.stroke(); }
+    g.fillStyle = E.night ? '#3a3e46' : '#d8dade'; g.beginPath(); g.roundRect(px0, floorY - ph, pw, ph, 4); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.stroke();
+    g.fillStyle = '#c0392b'; g.beginPath(); g.arc(px0 + 10, floorY - ph + 8, 3, 0, TAU); g.fill();
+    g.fillStyle = '#222'; g.beginPath(); g.arc(px0 + 18, floorY - ph + 8, 3, 0, TAU); g.fill();
+    g.fillStyle = '#5a5f68'; g.beginPath(); g.arc(px0 + 38, floorY - ph * 0.45, 7, 0, TAU); g.fill();
+    softShadow(g, px0 + pw / 2, floorY + 1, pw * 0.6, 3, 0.6); }
 
   // ── the level through X and Y, and the angle at X
   g.save(); g.setLineDash([2, 5]); g.lineCap = 'round';
@@ -160,7 +185,7 @@ export function render(canvas, cam, o) {
   L.add('Y', Yp.x - 22, Yp.y - 6, { color: P.ink, size: 16, weight: 800 });
   // the point below Y where they meet, marked on the track before they get there
   g.strokeStyle = withAlpha(P.mark, 0.7); g.lineWidth = 1.5; g.beginPath(); g.moveTo(Cp.x - 6, Cp.y + 6 * Math.tan(ang) - 6); g.lineTo(Cp.x + 6, Cp.y - 6); g.stroke();
-  L.add('C', Cp.x + 18 * nU.y * -1 + 14, Cp.y + 16, { color: P.ink, size: 15, weight: 800 });
+  L.add('C', Cp.x - 20, Cp.y + 22, { color: P.ink, size: 15, weight: 800 });
 
   // ── each one's path: P's run down the track, Q's fall, faint in full and strong to now
   const nn = 60, runP = [], fallQ = [], nowP = [], nowQ = [];
@@ -175,11 +200,22 @@ export function render(canvas, cam, o) {
   stroke(g, nowP, { color: P.disp, width: 3 });
   stroke(g, nowQ, { color: P.second, width: 3 });
 
-  // ── the two of them now
+  // ── they meet: a flash and a ring at C, with T
+  if (fired && t >= f.T - 1e-9) {
+    const { age, life } = ageOf(t, f.T, f.tMax);
+    pulse(g, Cp.x, Cp.y, Math.max(age, 0.001), Math.max(life, 0.6), P.mark, { radius: 46 });
+    const fl = g.createRadialGradient(Cp.x, Cp.y, 0, Cp.x, Cp.y, 30);
+    fl.addColorStop(0, 'rgba(255,255,230,0.85)'); fl.addColorStop(1, 'rgba(255,255,230,0)');
+    g.fillStyle = fl; g.beginPath(); g.arc(Cp.x, Cp.y, 30, 0, TAU); g.fill();
+    dot(g, Cp.x, Cp.y, 5, { fill: P.mark, stroke: cssVar('--surface', '#131210'), width: 2 });
+    L.add(T`"they meet," T = ${tr(f.T)} [s]`, Cp.x + 70, Cp.y + 34, { color: P.mark, size: 14, weight: 700 });
+  }
+
+  // ── the two of them now (over the flash, so both are seen meeting)
   const pP = px(f.posP(t)), pQ = px(f.posQ(t));
-  const gl = clamp(k * 0.16, 18, 34), rb = clamp(k * 0.045, 6, 10);
+  const gl = clamp(k * 0.2, 34, 56);
   glider(g, pP.x, pP.y - 1, ang, gl);
-  steelBall(g, pQ.x, Math.max(pQ.y, magY + rb) + (t > 0 ? 0 : 0), rb);
+  steelBall(g, pQ.x, pQ.y, rb);
   // each one's velocity, on its arrow, while they move
   if (fired && t > 1e-9) {
     const vs = clamp(k * 0.3, 44, 120) / Math.max(f.vP, f.vQ, 1e-9);
@@ -192,17 +228,6 @@ export function render(canvas, cam, o) {
   }
   L.add('P', pP.x - nU.x * -1 * 0 + nU.x * (gl * 1.1), pP.y + nU.y * (gl * 1.1), { color: P.disp, size: 15, weight: 800 });
   L.add('Q', pQ.x + rb + 14, pQ.y - 4, { color: P.second, size: 15, weight: 800 });
-
-  // ── they meet: a flash and a ring at C, with T
-  if (fired && t >= f.T - 1e-9) {
-    const { age, life } = ageOf(t, f.T, f.tMax);
-    pulse(g, Cp.x, Cp.y, Math.max(age, 0.001), Math.max(life, 0.6), P.mark, { radius: 46 });
-    const fl = g.createRadialGradient(Cp.x, Cp.y, 0, Cp.x, Cp.y, 30);
-    fl.addColorStop(0, 'rgba(255,255,230,0.85)'); fl.addColorStop(1, 'rgba(255,255,230,0)');
-    g.fillStyle = fl; g.beginPath(); g.arc(Cp.x, Cp.y, 30, 0, TAU); g.fill();
-    dot(g, Cp.x, Cp.y, 5, { fill: P.mark, stroke: cssVar('--surface', '#131210'), width: 2 });
-    L.add(T`"they meet," T = ${tr(f.T)} [s]`, Cp.x + 70, Cp.y + 34, { color: P.mark, size: 14, weight: 700 });
-  }
 
   L.draw(g, w, h);
   unview(g);

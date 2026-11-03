@@ -748,7 +748,7 @@ export const LIBRARY = [
     sub: 'a ship on course for a submerged rock turns due north at 1400 — when is it due east of the rock, and how far away at 1600?',
     note: 'A ship moves at a constant velocity (−2.5i + 6j) km h⁻¹, east as i and north as j: 6.5 km h⁻¹ on a bearing of 337°. At noon it is at 16i + 5j km, and held on that course it would reach a submerged rock at 1500, three hours on, so the rock is at (16i + 5j) + 3(−2.5i + 6j) = 8.5i + 23j. Warned, the captain holds the course until 1400, at 11i + 17j, then turns due north at 5 km h⁻¹: t hours later the ship is at 11i + (17 + 5t)j. Due east of the rock its j part is the rock’s, 17 + 5t = 23, so t = 1.2: at 1512. At 1600 it is at 11i + 27j, and the vector from the rock is 2.5i + 4j, 4.72 km long.',
     params: { units: 'km', t0: 1200, r0: { x: 16, y: 5 }, v1: { x: -2.5, y: 6 }, tHit: 1500, tc: 1400, sp2: 5, dir2: 'N', due: 'E', T: 1600 },
-    place: 'The sea from above, east and north: a coast with the coastguard’s radar station, a submerged rock with its danger buoy, and the ship',
+    place: 'The sea from above: a radar station, a submerged rock and its buoy',
     example: { units: 'km', t0: 1200, 'r0.x': 16, 'r0.y': 5, 'v1.x': -2.5, 'v1.y': 6, tHit: 1500, tc: 1400, sp2: 5, dir2: 'N', due: 'E', T: 1600 },
     reader: 'Times on the 24-hour clock as the paper writes them (t0 1200, tc 1400, tHit 1500, T 1600); blank t0 when the paper counts hours from t = 0. Give the rock as R, or tHit when the paper says when the ship would reach it on its course. The new velocity as v2 (two parts), or as sp2 and dir2 ("due north at 5 km/h" is sp2 5, dir2 N). due asks when the ship is due that way of the rock; T asks where it is then and how far from the rock.',
     parts: [
@@ -780,7 +780,7 @@ export const LIBRARY = [
     sub: 'one sent down a smooth slope, one let fall from a point level with it — they meet on the slope below the second: when, and how steep?',
     note: 'X is on a smooth slope and Y level with it, out over the slope. P is sent down the slope from X at 4.9 m s⁻¹ and speeds up at 4.9 m s⁻²; at that instant Q is let go from rest at Y. After T s, P has gone 4.9T + 2.45T² down the slope and Q has fallen 4.9T². Down a smooth slope a = g sin θ, so 4.9 = 9.8 sin θ and θ = 30°. They meet on the slope directly below Y, where Q’s fall is P’s run times sin θ: 4.9T² = (4.9T + 2.45T²) × ½, so T = ⅔ s. Then P is moving at 4.9 + 4.9 × ⅔ = 8.17 m s⁻¹ and Q at 9.8 × ⅔ = 6.53 m s⁻¹.',
     params: { u: 4.9, a: 4.9, g: 9.8 },
-    place: 'Side on: a physics lab — an air track tilted on a timber trestle with a spring launcher at X, and a clamp stand holding an electromagnet at Y',
+    place: 'A physics lab: a tilted air track, and an electromagnet at Y',
     example: { u: 4.9, a: 4.9, g: 9.8 },
     reader: 'u is P’s speed down the slope at X; a its acceleration down the slope, or theta the slope’s angle (one is enough: on a smooth slope a = g sin θ); w Q’s speed straight down at Y, blank when it is let go from rest. Y is level with X and they meet on the slope directly below Y.',
     parts: [
@@ -810,7 +810,7 @@ export const LIBRARY = [
     sub: 'one rides then walks, the other walks then rides the same bicycle — they arrive together: how long, and how far?',
     note: 'A and B set off together on the same road with one bicycle. A cycles at 20 km h⁻¹ for an hour, leaves the bicycle at the roadside and walks on at 5 km h⁻¹. B walks at 4 km h⁻¹ and reaches the bicycle, 20 km out, after 20 ÷ 4 = 5 hours, then cycles at 15 km h⁻¹. They arrive together at T hours: A has gone 20 + 5(T − 1), B 4 × 5 + 15(T − 5); equal, so T = 7. The journey is 20 + 5 × 6 = 50 km.',
     params: { units: 'km', A: { ride: 20, rideT: 1, walk: 5 }, B: { walk: 4, ride: 15 } },
-    place: 'Side on: a country road through the hills, from a fingerpost at the start to a village at the finish, the bicycle left at the roadside',
+    place: 'A country road, the bicycle left at the roadside',
     example: { 'A.ride': 20, 'A.rideT': 1, 'A.walk': 5, 'B.walk': 4, 'B.ride': 15 },
     reader: 'A rides first, then walks; B walks first, then rides the bicycle A left. A.ride and A.walk are A’s speeds; A.rideT how long A rides (or A.rideD how far); B.walk and B.ride B’s speeds. Both set off together and arrive together.',
     parts: [
@@ -838,7 +838,7 @@ export const LIBRARY = [
     sub: 'sent up a rough slope past three marks 0.8 m apart, 0.6 s then 1 s — its deceleration, its starting speed as a fraction, and the coefficient of friction',
     note: 'A particle is sent up a line of greatest slope of a rough plane at 3°, past P, Q and R, with PQ = QR = 0.8 m. It takes 0.6 s from P to Q and 1 s from Q to R. From P to Q, 0.8 = 0.6u + 0.18a; from P to R, 1.6 = 1.6u + 1.28a. Together, a = −⅔ and u = 23⁄15 m s⁻¹: it slows at ⅔ m s⁻². Going up, friction and the weight’s component both act down the slope: −mg sin 3° − μ mg cos 3° = m(−⅔), so with g = 10, μ = 0.0144.',
     params: { d1: 0.8, t1: 0.6, d2: 0.8, t2: 1, theta: 3, g: 10 },
-    place: 'Side on: a physics lab — a sanded board on the bench, propped at one end, light gates at P, Q and R wired to a timer',
+    place: 'A physics lab: a sanded board and light gates at P, Q and R',
     example: { d1: 0.8, t1: 0.6, d2: 0.8, t2: 1, theta: 3, g: 10 },
     reader: 'd1 and t1 are the first stretch (PQ) and the time it takes, d2 and t2 the next (QR). theta is the slope’s angle, only for the coefficient of friction. Distances are along the slope from P.',
     parts: [

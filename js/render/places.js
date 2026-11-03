@@ -1797,7 +1797,7 @@ function quarry(g, c) {
 /* ── a mine shaft ──────────────────────────────────────────────────────── */
 
 /** The height of a mine's headframe over its shaft, px: drawn above the lip. */
-export const headframeH = (k) => clamp(4.5 * k, 46, 120);
+export const headframeH = (k) => clamp(4.5 * k, 72, 130);
 
 /** A mine shaft, side on and cut away: the pithead on the moor — the steel
     headframe straddling the shaft with its winding wheel turning slowly, the
@@ -1829,6 +1829,16 @@ function mineshaft(g, c) {
   }
   g.fillStyle = withAlpha('#000000', 0.18);
   for (let i = 0; i < (w * D) / 900; i++) { const x = r() * w, y = surf + 8 + r() * D; g.fillRect(x, y, 2 + r() * 6, 1.2); }
+  // bedding: fine lines within each band, joints across them, pebbles in the sandstone, a seep of water
+  for (let i = 0; i < bands.length; i++) {
+    const y0 = cut[i], y1 = Math.min(cut[i + 1], oy);
+    g.strokeStyle = withAlpha(n ? '#ffffff' : '#000000', 0.07); g.lineWidth = 1;
+    for (let y = y0 + 6; y < y1 - 3; y += 5 + r() * 6) { g.beginPath(); for (let x = -4; x <= w + 8; x += 30) g.lineTo(x, y + Math.sin(x / 55 + y) * 1.5); g.stroke(); }
+    g.strokeStyle = withAlpha('#000000', 0.16);
+    for (let x = r() * 80; x < w; x += 60 + r() * 90) { g.beginPath(); g.moveTo(x, y0 + 2); g.lineTo(x + (r() - 0.5) * 8, y1 - 2); g.stroke(); }
+    if (i === 0 || i === 4) { g.fillStyle = withAlpha(n ? '#8a7a66' : '#d8c09a', 0.55); for (let j = 0; j < w / 22; j++) { g.beginPath(); g.ellipse(r() * w, y0 + 4 + r() * (y1 - y0 - 8), 1.5 + r() * 2.5, 1 + r() * 1.5, r() * 3, 0, TAU); g.fill(); } }
+  }
+  { const sx0 = clamp(x0 - hw - 60 - r() * 80, 20, w - 20); g.fillStyle = withAlpha(n ? '#6a8aa0' : '#4a6a7a', 0.35); g.fillRect(sx0, cut[2], 2, (cut[3] - cut[2]) * 0.9); g.fillRect(sx0 + 3, cut[2] + 8, 1.5, (cut[3] - cut[2]) * 0.6); }
   // the coal seam's sheen
   g.fillStyle = withAlpha('#ffffff', n ? 0.04 : 0.08); for (let x = r() * 30; x < w; x += 20 + r() * 40) g.fillRect(x, cut[3] + 2 + r() * (cut[4] - cut[3] - 4), 6 + r() * 10, 1);
   // the floor of the workings, below the bottom
@@ -1839,11 +1849,30 @@ function mineshaft(g, c) {
   g.fillStyle = sg; g.fillRect(L, surf, Rr - L, oy - surf);
   const wall = Math.max(3, hw * 0.22), timber = n ? '#5a4632' : '#8a6a46', timberLo = n ? '#3a2c20' : '#5e4630';
   g.fillStyle = timberLo; g.fillRect(L - wall, surf, wall, oy - surf); g.fillRect(Rr, surf, wall, oy - surf);
-  const set = Math.max(16, 2 * k);
+  const set = Math.max(18, 2 * k), bun = Math.max(5, (Rr - L) * 0.16);
   for (let y = surf + set * 0.5; y < oy - 4; y += set) {
-    g.fillStyle = timber; g.fillRect(L - wall, y, Rr - L + wall * 2, Math.max(2, wall * 0.5));
-    g.fillStyle = withAlpha('#000000', 0.35); g.fillRect(L - wall, y + Math.max(2, wall * 0.5), Rr - L + wall * 2, 1);
+    // a bunton at each wall: short timbers bolted in, not a ladder across the shaft
+    for (const [bx, bw] of [[L - wall, wall + bun], [Rr - bun, bun + wall]]) {
+      g.fillStyle = timber; g.fillRect(bx, y, bw, Math.max(3, wall * 0.6));
+      g.fillStyle = withAlpha('#000000', 0.35); g.fillRect(bx, y + Math.max(3, wall * 0.6), bw, 1);
+    }
   }
+  // a pipe down the far wall
+  g.fillStyle = n ? '#4a4e56' : '#6a7078'; g.fillRect(Rr - bun * 0.6, surf, 3, oy - surf);
+  // the depth down the shaft, marked every round number of metres
+  { const step = D / k > 120 ? 50 : D / k > 50 ? 20 : D / k > 20 ? 10 : 5;
+    g.strokeStyle = withAlpha(n ? '#ffffff' : '#000000', 0.45); g.lineWidth = 1;
+    for (let m = step; m < D / k - step * 0.3; m += step) { const yy = surf + m * k; g.beginPath(); g.moveTo(L - wall - 8, yy); g.lineTo(L - wall, yy); g.stroke(); } }
+  // side galleries off the shaft at intervals, propped and railed
+  { const galH = Math.max(16, 1.9 * k), galL = clamp(4 * k, 50, 150);
+    for (const f0 of [0.3, 0.62]) {
+      const gy0 = surf + D * f0, side = f0 < 0.5 ? -1 : 1;
+      if (gy0 + galH > oy - 30) continue;
+      const gx0 = side < 0 ? L - wall - galL : Rr + wall, gx1 = side < 0 ? L - wall : Rr + wall + galL;
+      g.fillStyle = '#0e0d0c'; g.beginPath(); g.moveTo(gx0, gy0 + galH); g.lineTo(gx1, gy0 + galH); g.lineTo(gx1, gy0); g.quadraticCurveTo((gx0 + gx1) / 2, gy0 - galH * 0.25, gx0, gy0); g.closePath(); g.fill();
+      for (let x = gx0 + 8; x < gx1 - 4; x += Math.max(16, 2 * k)) { g.fillStyle = timber; g.fillRect(x, gy0, 3, galH); g.fillRect(x - 4, gy0, 11, 2); }
+      g.strokeStyle = '#7a8088'; g.lineWidth = 1; g.beginPath(); g.moveTo(gx0, gy0 + galH - 2); g.lineTo(gx1, gy0 + galH - 2); g.stroke();
+    } }
   // the winding rope down the shaft's far side, and the cage parked at the foot
   const ropeX = L + Math.max(3, hw * 0.25);
   g.strokeStyle = n ? '#8a8a8a' : '#55585e'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(ropeX, surf - headframeH(k) * 0.82); g.lineTo(ropeX, oy - Math.max(18, 1.8 * k)); g.stroke();
