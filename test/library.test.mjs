@@ -38,6 +38,7 @@ import { solveDrive, driveWorking } from '../js/core/drive.js';
 import { solveTank, tankWorking } from '../js/core/tank.js';
 import { solveLastFall, lastFallWorking } from '../js/core/lastfall.js';
 import { solveCourse, courseWorking, clockHours, clockOf } from '../js/core/course.js';
+import { solveSlopeDrop, slopeDropWorking } from '../js/core/slopedrop.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1768,6 +1769,22 @@ group('CIE 9709/42 Nov 2015 Q2: the last stretch of a fall', () => {
   ok(lastFallWorking(s).length === 2 && lastFallWorking(s)[0].rows.length === 3 && /t=1s/.test(String(lastFallWorking(s)[0].rows[2].r).replace(/<[^>]+>/g, '')), 'the working: the last stretch (with its own time), then the whole fall');
   { const K = KITS.lastfall, kv = K.solve(K.read({ p: 35, dv: 10, g: 10 }));
     ok(K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)) && resolveKit(K, kv, kv.f, 2).blocks[0].rows.every((q) => q.part !== 'x'), 'vertical: solid graphs and Resolve rows (rule 2)'); }
+});
+
+group('OCR 4728 Jan 2011 Q5: down the slope, and straight down', () => {
+  const s = solveSlopeDrop({ u: 4.9, a: 4.9, g: 9.8 });
+  ok(s.ok && s.theta === 30 && near(s.T, 2 / 3) && near(s.vP, 49 / 6) && near(s.vQ, 9.8 * 2 / 3), '(i) θ = 30°, T = ⅔; (ii) 8.17 and 6.53', s.reason);
+  ok(near(s.yQ, s.sP * 0.5) && near(s.XY, s.sP * Math.cos(Math.PI / 6)), 'they meet below Y: Q’s fall is P’s drop');
+  ok(/2\.45/.test(s.exprs.both) && /4\.9/.test(s.exprs.both), '(i)(a) the distances in T, typeset');
+  const th = solveSlopeDrop({ u: 4.9, theta: 30, g: 9.8 });
+  ok(th.ok && near(th.T, 2 / 3) && near(th.a, 4.9), 'the angle given instead: the same');
+  const thrown = solveSlopeDrop({ u: 5, theta: 30, w: 1, g: 9.8 });
+  ok(thrown.ok && near(thrown.yQ, thrown.sP * 0.5), 'Q thrown down at 1 m/s: still below Y');
+  ok(!solveSlopeDrop({ u: 0, a: 4.9 }).ok && !solveSlopeDrop({ u: 5, theta: 30, w: 3 }).ok, 'from rest they meet only at the start; Q thrown too fast never meets P');
+  ok(!solveSlopeDrop({ u: 5, a: 12 }).ok && !solveSlopeDrop({ u: 5, a: 4.9, theta: 40 }).ok && !solveSlopeDrop({ u: 5 }).ok, 'an acceleration no smooth slope gives, two that disagree, or neither: refused');
+  ok(slopeDropWorking(s).map((x) => x.title).join('|') === 'The slope|Each, in terms of T|They meet below Y|Their speeds as they meet', 'the working, step by step');
+  { const K = KITS.slopedrop, kv = K.solve(K.read({ u: 4.9, a: 4.9, g: 9.8 }));
+    ok(K.graphs(kv.f, 0.3, { disp: '#0', vel: '#0', acc: '#0', mark: '#0', second: '#0' }).every((gr) => gr.series.every((x) => x.dash == null)), 'neither across: every line solid (rule 2)'); }
 });
 
 group('Edexcel M1 Jun 2006 Q7: a change of course', () => {

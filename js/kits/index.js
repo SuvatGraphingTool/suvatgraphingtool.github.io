@@ -51,6 +51,7 @@ import { drive } from './drive.js';
 import { tank } from './tank.js';
 import { lastfall } from './lastfall.js';
 import { course } from './course.js';
+import { slopedrop } from './slopedrop.js';
 import { twin } from './twin.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket, runway, river, wind, heli, ice, twin, wall, hill, rough, sink, slide, cable, rope, runout, drive, tank, lastfall, course };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket, runway, river, wind, heli, ice, twin, wall, hill, rough, sink, slide, cable, rope, runout, drive, tank, lastfall, course, slopedrop };

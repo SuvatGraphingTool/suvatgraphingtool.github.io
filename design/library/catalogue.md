@@ -149,6 +149,7 @@ this library: *covered* names the one of the twelve that does it.
 | 123 | Edexcel | 6677/01 M1 | Jun 2016 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202016%20QP.pdf) | Train M passes N at X (40 and 30 m/s); N holds 25 s, M holds T s, both brake to rest beside Y together; XY 975 m: T | – | **built** → `passed-at-x` |
 | 124 | Edexcel | 6677/01 M1 | Jun 2010 | 5 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | Car P at 25 passes Q at 20; Q brakes from 25 s, P from T; both stop at X 800 m on together: T | – | **built** → `passed-at-x` |
 | 125 | Edexcel | 6677/01 M1 | Jun 2006 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/June%202006%20QP.pdf) | A ship at constant velocity on course for a submerged rock (it would hit at 1500) turns due north at 1400: speed, bearing, the rock, its position after the turn, when due east of the rock, its distance at 1600 | – | **built** → `change-of-course` |
+| 126 | OCR | 4728 M1 | Jan 2011 | 5 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/jan-2011-q-19.pdf) | P projected down a smooth slope at 4.9 (a = 4.9) as Q is let go at Y level with X; they collide below Y: the distances in T, θ, T = 2/3, the speeds | 9.8 | **built** → `slope-and-drop` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -494,6 +495,25 @@ trains already moving at X, its parts are theirs, and the reader is told which i
 
 **How it is solved.** Each distance is the area under its own speed–time graph: the train
 whose hold is given gives the common time; the other's trapezium then gives its hold.
+
+### `slope-and-drop` — Down the slope, and straight down
+
+**Papers.** OCR 4728 Jan 2011 Q5 (P sent down a smooth slope from X at 4.9 m s⁻¹ with a = 4.9;
+Q let go from rest at Y, level with X; they collide on the slope below Y: θ = 30°, T = ⅔ s,
+8.17 and 6.53 m s⁻¹).
+
+**Why the others cannot.** `pair-vertical` and `two-up-letters` meet on one vertical line; the
+slope scenarios have one particle. Here one runs down a slope and one falls, and the meeting is
+fixed by geometry: Q's fall equals P's drop.
+
+**How it is solved.** js/core/slopedrop.js: a = g sin θ (F = ma on a smooth slope) gives θ from
+a or a from θ; s_P = uT + ½aT², y_Q = wT + ½gT²; below Y, y_Q = s_P sin θ, a quadratic with one
+root at T = 0, the other the meeting; then v = u + at for each and XY = s_P cos θ.
+
+**The stage.** A physics lab side on: an aluminium air track tilted on a timber trestle, a spring
+launcher at X and a red glider with its card flag; a clamp stand on the floor holding an
+electromagnet at Y, the steel ball under it, its pilot lamp going out as it lets go. The level
+XY and θ at X; P's run and Q's fall in their colours; a flash and a ring at C with T.
 
 ### `change-of-course` — A change of course
 
