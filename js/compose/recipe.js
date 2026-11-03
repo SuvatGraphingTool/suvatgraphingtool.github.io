@@ -245,18 +245,21 @@ export function titleOf(r) {
     if (r.launcher) return `${what} ${LAUNCHERS[r.launcher].verb} ${LAUNCHERS[r.launcher].label}`;
     if (r.backdrop === 'volcano') return `${what} thrown out of a volcano’s crater`;
     if (B.edge && r.numbers.h === 0 && F.swims) return `${what} leaping from the water below ${B.at.replace(/^the (?:top|rim|edge|end|deck|crest|gallery) of /, '')}`;
-    if (B.edge) return `${what} off ${B.at}`;
+    // let go from rest it falls, never 'thrown': dropped from the hand, falling from a height
+    const rest = r.numbers.u === 0 && r.numbers.h > 0;
+    if (B.edge) return rest ? `${what} falling from ${B.at}` : `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
     // (a place that draws a ledge of its own says so)
     // thrown from a hand's height, the thrower stands on the ground: no wall
     // (an archer's arrow is loosed from the hand's height too)
     const byHand = (F.thrown || r.objects[0].figure === 'arrow') && r.objects[0].figure !== 'golfBall' && r.numbers.h > 0 && r.numbers.h <= (r.objects[0].figure === 'tennisBall' ? 3.4 : 2.6);
-    if (byHand && r.backdrop === 'ground') return `${what} ${F.verb || 'thrown'}`;
+    if (byHand && r.backdrop === 'ground') return rest ? `${what} dropped` : `${what} ${F.verb || 'thrown'}`;
     // a person leaping off level ground in a stadium is a long jumper
     if (r.backdrop === 'stadium' && r.objects[0].figure === 'diver' && !(r.numbers.h > 0)) return 'A long jumper in an athletics stadium';
     // (a coconut let go from rest falls from its palm)
     if (r.backdrop === 'island' && r.objects[0].figure === 'coconut' && r.numbers.h > 0 && !(r.numbers.u > 0)) return `${what} falling from a palm tree`;
-    if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} off ${(B.higher && r.numbers.h > B.higher[0] ? B.higher[1] : B.high) || 'a wall'}`;
+    if (!byHand && r.numbers.h > 0 && r.backdrop !== 'hall' && r.backdrop !== 'sea') return `${what} ${rest ? 'falling from' : 'off'} ${(B.higher && r.numbers.h > B.higher[0] ? B.higher[1] : B.high) || 'a wall'}`;
+    if (rest) return `${what} dropped ${where}`;
     const how = F.verb || (F.thrown ? 'thrown' : F.animal || F.swims ? 'leaping' : 'launched');
     return r.backdrop === 'ground' ? `${what} ${how} from the ground` : `${what} ${how} ${where}`;
   }
@@ -525,6 +528,6 @@ export function fromReading(x) {
   const asked = Array.isArray(x.asked) ? { asked: x.asked.map(rekey) } : Array.isArray(x.asks) ? { asks: x.asks } : {};
   return {
     understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes, ...asked,
-    recipe: { backdrop, ...(under ? { below: under } : {}), ...(carrier ? { carrier } : {}), ...(launcher ? { launcher } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} off ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
+    recipe: { backdrop, ...(under ? { below: under } : {}), ...(carrier ? { carrier } : {}), ...(launcher ? { launcher } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} ${numbers.u === 0 && numbers.h > 0 ? 'falling from' : 'off'} ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
   };
 }
