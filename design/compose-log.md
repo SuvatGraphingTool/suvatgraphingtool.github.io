@@ -1,0 +1,18 @@
+# Component factory — the log
+
+Short notes, newest first. Batches 1–29 are in the git history ("Component factory batch N").
+
+## Batch 30 — 3 Nov 2026
+
+- **trampoline** (launcher, js/render/launchers.js): a garden trampoline side on — black mat in
+  a ring of springs, blue pad, W legs; the mat sags under the jumper and springs back, ringing
+  down, as the engine lets go. The person rides upright on the engine's point, arms up, knees
+  bending to land. Heights from the mat: it lands back on it, no dust. "trampolinist" is a person.
+- **mineshaft** (backdrop, js/render/places.js): the pithead's headframe and turning winding
+  wheel, the rope to the cage, winding house, spoil heap; cut away below through sandstone, shale
+  and a coal seam, the timber-lined shaft to a lamp-lit rubble floor and a tunnel with rails and
+  a tub. "a friend of mine" is not a mine.
+- **machine** (launcher): a tennis or cricket ball machine — hopper of balls, throwing wheels
+  spinning, the barrel on the launch angle; it jolts and puffs as the ball goes.
+- Tests in test/compose.test.mjs. Pushed (60b3551, c2a44f0, a51cd9d); **UI critic and live
+  Ask Suvat check still to do** (the reader allowance was spent on 3 Nov; after 00:00 UTC).
