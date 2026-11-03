@@ -3,7 +3,8 @@
 // smoke at the moment it fires; a ramp sloping up to the edge at the launch
 // angle, for a car, a bike, a skier or a skateboarder; a catapult whose arm
 // swings up and stops against its crossbar as it lets go; a trampoline whose
-// mat sags under the jumper and springs back as they leave it.
+// mat sags under the jumper and springs back as they leave it; a coach's
+// ball machine that jolts as it throws.
 //
 // Each is `(g, x, y, s, P, { aim, t, fired, phase })`: the launch point at
 // (x, y) on the surface it stands on, `s` px its size, `aim` the launch angle
@@ -279,6 +280,65 @@ export function trampoline(g, x, y, s, P, { t = -1, gy = y } = {}) {
   g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.ellipse(x, y + ry + padW * 0.6, rx * 0.9, Math.max(2, padW * 0.4), 0, 0, Math.PI); g.fill();
 }
 
+/** A ball-throwing machine on its wheeled stand, the kind a tennis or cricket
+    coach sets up, side on: the hopper of balls on top, the barrel aimed `aim`
+    degrees up with its mouth at the launch point (x, y), the two throwing
+    wheels inside it spinning (blurred) and the stand's legs and wheels down
+    to the ground (gy). As the engine lets the ball go (t = 0) the machine
+    jolts back, a puff at the mouth, the wheels a blur. `s` is its size. */
+export function machine(g, x, y, s, P, { aim = 15, t = -1, gy = y, phase = 0 } = {}) {
+  const E = env(), a = (Math.max(-30, Math.min(80, aim)) * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
+  const kick = t >= 0 && t < 0.25 ? Math.sin((t / 0.25) * Math.PI) * s * 0.03 : 0;
+  const bx = x - ca * (s * 0.42 + kick), by = y + sa * (s * 0.42 + kick);   // the barrel's back
+  const hx = bx - s * 0.02, hy = by;                                        // the head: the wheels' housing
+  const ground = Math.max(gy, hy + s * 0.25);
+  softShadow(g, hx, ground + 1, s * 0.38, Math.max(3, s * 0.04), 0.8);
+  // the stand: a post down from the head to a two-wheeled base, and a rear leg
+  const steel = E.night ? '#7a8088' : '#9aa1a9', steelLo = E.night ? '#4e545c' : '#626870';
+  g.strokeStyle = steelLo; g.lineWidth = Math.max(2.5, s * 0.04); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(hx, hy + s * 0.08); g.lineTo(hx, ground - s * 0.08); g.stroke();
+  g.beginPath(); g.moveTo(hx, ground - s * 0.1); g.lineTo(hx - s * 0.32, ground - s * 0.02); g.moveTo(hx, ground - s * 0.1); g.lineTo(hx + s * 0.22, ground - s * 0.06); g.stroke();
+  g.fillStyle = '#1e1f23'; g.beginPath(); g.arc(hx + s * 0.22, ground - s * 0.06, s * 0.06, 0, TAU); g.fill();
+  g.fillStyle = steel; g.beginPath(); g.arc(hx + s * 0.22, ground - s * 0.06, s * 0.025, 0, TAU); g.fill();
+  g.fillStyle = '#2a2b30'; g.fillRect(hx - s * 0.36, ground - s * 0.03, s * 0.08, s * 0.03);
+  // the barrel: a tube from the head to the mouth, along the aim
+  const bw = Math.max(5, s * 0.09);
+  g.strokeStyle = E.night ? '#1d4f8a' : '#2667b8'; g.lineWidth = bw; g.lineCap = 'butt';
+  g.beginPath(); g.moveTo(bx, by); g.lineTo(x - ca * kick, y + sa * kick); g.stroke();
+  g.strokeStyle = withAlpha('#ffffff', 0.25); g.lineWidth = Math.max(1, bw * 0.25);
+  g.beginPath(); g.moveTo(bx - sa * bw * 0.25, by - ca * bw * 0.25); g.lineTo(x - ca * kick - sa * bw * 0.25, y + sa * kick - ca * bw * 0.25); g.stroke();
+  g.fillStyle = '#1a1b1f'; g.beginPath(); g.arc(x - ca * kick, y + sa * kick, bw * 0.55, 0, TAU); g.fill();
+  // the head: a rounded housing, its two throwing wheels behind a window, spinning
+  const HR = s * 0.16;
+  const hg = g.createLinearGradient(hx - HR, hy - HR, hx + HR, hy + HR);
+  hg.addColorStop(0, E.night ? '#3a7ac0' : '#4c8fe0'); hg.addColorStop(1, E.night ? '#1d4f8a' : '#1f5aa8');
+  g.fillStyle = hg; g.beginPath(); g.roundRect(hx - HR, hy - HR * 0.85, HR * 2, HR * 1.7, HR * 0.4); g.fill();
+  g.strokeStyle = withAlpha('#000000', 0.35); g.lineWidth = 1; g.stroke();
+  const spin = phase * 40 + (t >= 0 ? t * 120 : 0);
+  for (const dy of [-HR * 0.38, HR * 0.38]) {
+    g.fillStyle = '#26272c'; g.beginPath(); g.arc(hx, hy + dy, HR * 0.36, 0, TAU); g.fill();
+    g.strokeStyle = withAlpha('#ffffff', 0.35); g.lineWidth = 1;
+    for (let i = 0; i < 3; i++) { const q = spin + (i * TAU) / 3 + (dy > 0 ? 1 : 0); g.beginPath(); g.arc(hx, hy + dy, HR * 0.26, q, q + 0.9); g.stroke(); }
+  }
+  // the hopper on top: a wire basket heaped with balls, yellow-green
+  const tx = hx - HR * 0.2, ty = hy - HR * 0.85;
+  g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.moveTo(tx - HR * 1.1, ty - HR * 1.1); g.lineTo(tx + HR * 1.1, ty - HR * 1.1); g.lineTo(tx + HR * 0.4, ty); g.lineTo(tx - HR * 0.4, ty); g.closePath(); g.fill();
+  const br = Math.max(2.2, HR * 0.2), ball = '#d8e84a', ballLo = '#9fb02a';
+  for (const [u, v] of [[-0.75, -1.25], [-0.25, -1.3], [0.25, -1.3], [0.75, -1.25], [-0.5, -1.65], [0, -1.7], [0.5, -1.65], [-0.2, -2.0], [0.25, -2.0]]) {
+    const cx = tx + u * HR, cy = ty + v * HR * 0.75;
+    const bg = g.createRadialGradient(cx - br * 0.3, cy - br * 0.3, 0, cx, cy, br);
+    bg.addColorStop(0, ball); bg.addColorStop(1, ballLo);
+    g.fillStyle = bg; g.beginPath(); g.arc(cx, cy, br, 0, TAU); g.fill();
+  }
+  g.strokeStyle = E.night ? '#9aa1a9' : '#555b62'; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(tx - HR * 1.1, ty - HR * 1.1); g.lineTo(tx - HR * 0.4, ty); g.lineTo(tx + HR * 0.4, ty); g.lineTo(tx + HR * 1.1, ty - HR * 1.1); g.stroke();
+  // the puff at the mouth as it fires
+  if (t >= 0 && t < 0.35) {
+    const q = t / 0.35;
+    for (let i = 0; i < 5; i++) { const d = s * (0.05 + q * 0.18), sp = (i - 2) * 0.35; g.fillStyle = withAlpha('#ffffff', 0.45 * (1 - q)); g.beginPath(); g.arc(x + Math.cos(a + sp) * d, y - Math.sin(a + sp) * d, s * (0.02 + q * 0.03), 0, TAU); g.fill(); }
+  }
+}
+
 /** The circus's cannon: a long barrel painted blue with yellow bands and
     stars, its breech on a red-and-gold wagon with spoked wheels standing on
     the ring's sawdust, its muzzle at the launch point. Smoke and a flash as
@@ -314,6 +374,6 @@ function circusCannon(g, x, y, s, { a, ca, sa, L, rB, recoil, t, E, ground }) {
 }
 
 /** Each launcher by the registry's name: `size` px at k px a metre. */
-export const LAUNCHER_ART = { cannon, ramp, catapult, rifle, hose, trampoline };
+export const LAUNCHER_ART = { cannon, ramp, catapult, rifle, hose, trampoline, machine };
 // (a rifle near its true length, and never longer than half again the height it fires from)
-export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : kind === 'trampoline' ? clamp(3.6 * k, 80, 200) : clamp(3 * k, 60, 160));
+export const launcherSize = (kind, k, H0 = 0) => (kind === 'cannon' ? clamp(2.4 * k, 64, 120) : kind === 'catapult' ? clamp(3 * k, 92, 160) : kind === 'rifle' ? Math.min(clamp(1.1 * k, 28, 96), Math.max(28, H0 * k * 1.5)) : kind === 'hose' ? clamp(1.2 * k, 40, 90) : kind === 'trampoline' ? clamp(3.6 * k, 80, 200) : kind === 'machine' ? clamp(1.4 * k, 64, 110) : clamp(3 * k, 60, 160));

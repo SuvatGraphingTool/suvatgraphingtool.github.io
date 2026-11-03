@@ -407,6 +407,9 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
   ok(placeIn('A stone is dropped down a mine shaft 80 m deep')?.backdrop === 'mineshaft' && placeIn('a stone falls down the shaft of a disused coal mine')?.backdrop === 'mineshaft' && placeIn('a friend of mine throws a ball')?.backdrop !== 'mineshaft', 'batch 30: a mine shaft, and "mine" the word is not one');
   { const ms = check({ backdrop: 'mineshaft', engine: 'projectile', objects: [{ figure: 'stone' }], numbers: { h: 60, u: 0, theta: 0 } }).recipe;
     ok(ms && ms.effects.includes('dust') && /mine shaft/.test(titleOf(ms)), 'down the mine shaft, landing in dust on its floor'); }
+  { const bm = fromReading({ understood: true, scenario: 'arc', h: 1, u: 20, angleDegrees: 10, summary: 'A tennis ball machine fires a ball at 20 m/s at 10 degrees from 1 m above the court.', who: 'tennis ball' })?.recipe;
+    ok(bm?.launcher === 'machine' && bm.objects[0].figure === 'tennisBall' && titleOf(bm) === 'A tennis ball fired from a ball machine', 'batch 30: a ball machine fires a tennis ball');
+    ok(fromReading({ understood: true, scenario: 'arc', h: 0.8, u: 25, angleDegrees: 5, summary: 'A bowling machine projects a cricket ball horizontally.', who: 'cricket ball' })?.recipe?.launcher === 'machine', 'a bowling machine is one too'); }
   ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });
 

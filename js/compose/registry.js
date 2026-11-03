@@ -190,6 +190,7 @@ export const LAUNCHERS = {
   catapult: { label: 'a catapult', verb: 'flung from', words: /\b(catapult|trebuchet|slingshot|siege engine)\b/ },
   rifle:    { label: 'a rifle', verb: 'fired from', words: /\b(rifle|gun|pistol|shotgun|musket)\b/ },
   hose:     { label: 'a hose', verb: 'from', words: /\b(hose|hosepipe|garden hose|fire hose|spray gun)\b/ },
+  machine:  { label: 'a ball machine', verb: 'fired from', words: /\b(ball machine|ball-throwing machine|bowling machine|pitching machine|ball launcher|serving machine|(?:tennis|cricket|baseball|football) machine)\b/ },
   trampoline: { label: 'a trampoline', verb: 'bounces off', words: /\b(trampoline|trampolining|trampolinist)\b/ },
 };
 /** What a question says sends it off, or null. */
