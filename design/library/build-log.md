@@ -2,6 +2,17 @@
 
 Short notes, newest first. What shipped, what was audited, where a session stopped.
 
+## 3 Nov 2026, late — audits 27 and 28; library 57 built
+
+- **Audits 27 + 28** (53–56 and the day's app-wide changes): no wrong physics; fixed (2c8236b)
+  "until it reaches the rock" when it turns first, slope-and-drop's speed labels beside the wrong
+  particle, coefficients of one, Resolve wording, units splitting across lines, title rounding.
+  **Open polish:** "Resolve at" asks hours, not a clock time, on the course; part ticks overlap on a
+  phone (app-wide); parts whose moment is the end open the ending card mid-flow (app-wide); the
+  course's axis names over the rock at the edges; slopegates' a–t title over its tick.
+- **Library 57 `with-air-resistance`** (AQA MM1B Jan 2010 Q4) built and pushed, not deployed:
+  physics critic running.
+
 ## 3 Nov 2026, night — 53–56 and batch 30 SHIPPED
 
 - Physics critic round 2 passed 53–56 after its fixes (844f495), including an older crash it found:
