@@ -47,12 +47,16 @@ export function solveDropRamp(k = {}) {
   const a = snap(g * (sn - mu * cs)), L = snap(h / sn);
   const ramp = [];
   if (have(k.thetaV)) ramp.push({ f: M`"to the horizontal"`, s: M`90° - ${d(k.thetaV)}°`, r: M`theta = ${d(th)}°` });
+  let forces = null;
   if (m != null) {
     const R = snap(m * g * cs), F = snap(mu * R), W = snap(m * g * sn);
+    forces = { weight: snap(m * g), R, F, along: W };
     ramp.push({ f: M`R = mg cos theta`, s: M`${d(m)} × ${d(g)} cos ${d(th)}°`, r: M`R = ${d(R)} [N]` });
     if (mu > 0) ramp.push({ f: M`F = mu R`, s: M`${d(mu)} × ${d(R)}`, r: M`F = ${d(F)} [N]` });
-    ramp.push({ f: M`mg sin theta - F = ma`, s: M`${d(W)} - ${d(F)} = ${d(m)}a`, r: M`a = ${d(a)} [m s^-2]` });
-  } else ramp.push({ f: M`a = g(sin theta - mu cos theta)`, s: M`${d(g)}(sin ${d(th)}° - ${d(mu)} cos ${d(th)}°)`, r: M`a = ${d(a)} [m s^-2]` });
+    ramp.push(mu > 0 ? { f: M`mg sin theta - F = ma`, s: M`${d(W)} - ${d(F)} = ${m === 1 ? '' : d(m)}a`, r: M`a = ${d(a)} [m s^-2]` }
+      : { f: M`mg sin theta = ma`, s: M`${d(W)} = ${m === 1 ? '' : d(m)}a`, r: M`a = ${d(a)} [m s^-2] "(smooth: no friction)"` });
+  } else ramp.push(mu > 0 ? { f: M`a = g(sin theta - mu cos theta)`, s: M`${d(g)}(sin ${d(th)}° - ${d(mu)} cos ${d(th)}°)`, r: M`a = ${d(a)} [m s^-2]` }
+    : { f: M`a = g sin theta`, s: M`${d(g)} sin ${d(th)}°`, r: M`a = ${d(a)} [m s^-2] "(smooth)"` });
   if (!(a > 1e-9)) return fail(`On this ramp friction is at least the pull down it (${M`mu >= tan theta = ${d(snap(sn / cs))}`}): let go from rest, the parcel stays where it is.`);
   const vR = snap(Math.sqrt(2 * a * L)), tR = snap(vR / a);
   ramp.push({ f: M`"its length"`, s: M`${d(h)}/sin ${d(th)}°`, r: M`s = ${d(L)} [m]` });
@@ -62,10 +66,10 @@ export function solveDropRamp(k = {}) {
     `Dropped, it falls ${M`${d(h)} [m]`} in ${M`${d(tD)} [s]`} and hits the trolley at ${M`${d(vD)} [m s^-1]`}.`,
     `Down the ramp it speeds up at ${M`${d(a)} [m s^-2]`} over ${M`${d(L)} [m]`}, taking ${M`${d(tR)} [s]`}, and reaches the trolley at ${M`${d(vR)} [m s^-1]`}${vR < vD ? `, ${M`${d(snap(vD - vR))} [m s^-1]`} slower than dropped` : ''}.`,
   ];
-  const derived = [M`v = ${d(vD)} [m s^-1]`, M`a = ${d(a)} [m s^-2]`, M`v = ${d(vR)} [m s^-1]`];
+  const derived = [`dropped, ${M`v = ${d(vD)} [m s^-1]`}`, `down the ramp, ${M`a = ${d(a)} [m s^-2]`} and ${M`v = ${d(vR)} [m s^-1]`}`];
   const tMax = snap(Math.max(tD, tR) * 1.06);
   const f = {
-    kind: 'dropramp', tMax, tFlight: tR, h, theta: th, mu, m, g, a, L, tD, vD, tR, vR,
+    kind: 'dropramp', forces, tMax, tFlight: tR, h, theta: th, mu, m, g, a, L, tD, vD, tR, vR,
     fallD: (t) => Math.min(h, 0.5 * g * t * t), sR: (t) => Math.min(L, 0.5 * a * t * t),
     velD: (t) => (t <= tD ? g * t : 0), velR: (t) => (t <= tR ? a * t : 0), accD: (t) => (t <= tD ? g : 0), accR: (t) => (t <= tR ? a : 0),
     pos: (t) => ({ x: Math.min(L, 0.5 * a * t * t) * cs, y: h - Math.min(L, 0.5 * a * t * t) * sn }), vel: (t) => ({ x: (t <= tR ? a * t : 0) * cs, y: -(t <= tR ? a * t : 0) * sn }),

@@ -90,26 +90,27 @@ export function render(canvas, cam, o) {
       L.add(T`${nm}`, x + r + 20, (yb + end) / 2, { color: P.vel, size: 14, weight: 700, align: 'left' });
     }
   }
+  // the card's corner is kept from the labels (on a phone, under the readouts)
+  if (f.m != null && f.R != null) L.reserve(phone ? { x: 8, y: HB[0].y + HB[0].h + 8, w: 104, h: 124 } : { x: w - 214, y: h - 204, w: 200, h: 190 });
   L.draw(g, w, h);
 
   // ── the forces on the ball as it falls, on a card of their own: an enlarged ball, its weight down and the
   //    air resistance up from its centre, to one scale (the screen's, out of the pan and zoom)
   unview(g);
   if (f.m != null && f.R != null && !(fired && t > f.t1 + 1e-9)) {
-    // as it falls (it is at rest once it lands, and the card goes); on a phone under the readouts, clear of both lanes
-    const cw = phone ? 140 : 200, ch = phone ? 150 : 180, cx = phone ? 10 : w - cw - 14, cy = phone ? HB[0].y + HB[0].h + 10 : h - ch - 14;
+    // as it falls (it is at rest once it lands, and the card goes); on a phone a small chip under the readouts
+    const cw = phone ? 104 : 200, ch = phone ? 124 : 190, cx = phone ? 8 : w - cw - 14, cy = phone ? HB[0].y + HB[0].h + 8 : h - ch - 14;
     paper(g, cx, cy, cw, ch);
     const txt = (s0, x, y, c, al = 'left', size = 13) => { g.save(); g.font = `700 ${size}px ${cssVar('--font', 'system-ui, sans-serif')}`; g.fillStyle = c; g.textAlign = al; g.textBaseline = 'middle'; g.fillText(s0, x, y); g.restore(); };
-    txt(phone ? 'The forces' : 'The forces on the ball', cx + 12, cy + 16, P.muted);
-    const br = phone ? 16 : 22, bx = cx + (phone ? 40 : 56), by = cy + ch * 0.56, W = f.m * f.g;
-    // to one scale: the card is sized so the smaller force is still at least 18 px
-    const sc = Math.min((ch * 0.3) / W, f.R > 1e-9 ? Infinity : Infinity), rLen = f.R * sc, floored = f.R > 1e-9 && rLen < 18;
+    txt(phone ? 'Forces' : 'The forces on the ball', cx + 10, cy + 15, P.muted);
+    const W = f.weight, rLenTrue = f.R * ((ch * 0.28) / W), floored = f.R > 1e-9 && rLenTrue < 18;
+    if (floored && !phone) txt('(R not to scale)', cx + 10, cy + 33, P.muted);
+    const br = phone ? 10 : 20, bx = cx + (phone ? 22 : 50), by = cy + ch * (phone ? 0.5 : 0.52), sc = (ch * 0.28) / W, rLen = Math.max(18, rLenTrue);
     ballSprite(g, bx, by, br);
     arrow(g, bx, by + br, bx, by + br + W * sc, { color: P.ink, width: 2.4, head: 9 });
-    if (f.R > 1e-9) arrow(g, bx, by - br, bx, by - br - Math.max(18, rLen), { color: P.ink, width: 2.4, head: Math.min(9, Math.max(6, Math.max(18, rLen) * 0.5)) });
-    txt(T`mg = ${tr(W)} [N]`, bx + br + 8, by + br + W * sc * 0.7, P.ink);
-    if (f.R > 1e-9) txt(T`R = ${tr(f.R)} [N]`, bx + br + 8, by - br - Math.max(18, rLen) * 0.6, P.ink);
-    if (floored) txt('(R not to scale)', cx + 12, cy + ch - 14, P.muted);
+    if (f.R > 1e-9) arrow(g, bx, by - br, bx, by - br - rLen, { color: P.ink, width: 2.4, head: Math.min(9, Math.max(6, rLen * 0.5)) });
+    txt(T`mg = ${tr(W)} [N]`, bx + br + 6, by + br + W * sc * 0.55, P.ink);
+    if (f.R > 1e-9) txt(T`R = ${tr(f.R)} [N]`, bx + br + 6, by - br - rLen * 0.6, P.ink);
   }
   return null;
 }

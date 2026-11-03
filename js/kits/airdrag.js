@@ -32,6 +32,7 @@ export const airdrag = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'ticks', 'acceleration'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'down',
+  resolveEndWords: 'It reaches the ground here: the engine follows it no further.',
   resolveObjects: (f) => [
     { name: 'With air resistance', pos: (t) => f.fallDrag(t), vel: f.velDrag, acc: f.accDrag, axis: 'down', from: 'where it was let go' },
     { name: 'With none', pos: (t) => f.fallFree(t), vel: f.velFree, acc: f.accFree, axis: 'down', from: 'where it was let go' },

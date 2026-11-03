@@ -917,7 +917,7 @@ export const LIBRARY = [
         ['Particles', 'the parcels have no size: they do not tip or roll, and the ramp meets the trolley’s deck exactly.'],
         ['Constant friction', 'μR the whole way down; no air resistance on either.'],
       ],
-      caveat: 'What the engine did compute is above: the drop at g, then on the ramp the normal reaction, friction and the weight’s component, its acceleration, its length and the speed at the bottom.',
+      caveat: 'What the engine did compute is above: the drop at g; on the ramp its acceleration — from the forces when the mass is given — its length and the speed at the bottom.',
     } },
   { id: 'into-the-water', group: 'library', kit: 'tank',
     name: 'Into the water',

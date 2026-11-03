@@ -47,7 +47,7 @@ export function solveAirDrag(k = {}) {
     if (!(k.R >= 0)) return fail('The resistance is a size: give it as 0 or more.');
     if (k.R >= m * g - 1e-12) return fail(`A resistance of ${M`${d(k.R)} [N]`} is at least the weight, ${M`mg = ${d(snap(m * g))} [N]`}: it would never speed up as it falls. The model needs a resistance less than the weight.`);
     R = k.R; a = snap(g - R / m);
-    rows.push({ f: M`mg - R = ma`, s: M`${d(m)} × ${d(g)} - ${d(R)} = ${d(m)}a`, r: M`a = ${d(a)} [m s^-2]` });
+    rows.push({ f: M`mg - R = ma`, s: M`${d(m)} × ${d(g)} - ${d(R)} = ${m === 1 ? '' : d(m)}a`, r: M`a = ${d(a)} [m s^-2]` });
   } else if (have(k.a)) {
     if (!(k.a > 0 && k.a <= g)) return fail(`With air resistance against it, it speeds up at more than 0 and no more than ${M`g = ${d(g)} [m s^-2]`}.`);
     a = k.a;
@@ -73,11 +73,11 @@ export function solveAirDrag(k = {}) {
     none ? `With no resistance after all, the two models are one fall: it lands at ${M`${d(v1)} [m s^-1]`} either way.` : `With ${R != null ? `a resistance of ${M`${d(R)} [N]`} against its weight${m != null ? ` of ${M`${d(snap(m * g))} [N]`}` : ''}` : 'the air against it'}, it speeds up at only ${M`${d(a)} [m s^-2]`} and lands at ${M`${d(v1)} [m s^-1]`}, ${M`${d(snap(v0 - v1))} [m s^-1]`} slower, after ${M`${d(t1)} [s]`}.`,
   ];
   if (h > 2000) notes.push('A constant resistance over a fall this long is a poor model: a real one grows with speed until the ball stops speeding up.');
-  const derived = [M`v = ${d(v0)} [m s^-1]`, M`a = ${d(a)} [m s^-2]`, M`v = ${d(v1)} [m s^-1]`];
+  const derived = [`with none, ${M`v = ${d(v0)} [m s^-1]`}`, `with air resistance, ${M`a = ${d(a)} [m s^-2]`} and ${M`v = ${d(v1)} [m s^-1]`}`];
   const tMax = snap(Math.max(t0, t1) * 1.06);
   const fallFree = (t) => Math.min(h, u * t + 0.5 * g * t * t), fallDrag = (t) => Math.min(h, u * t + 0.5 * a * t * t);
   const f = {
-    kind: 'airdrag', tMax, tFlight: t1, h, u, m, g, a, R, v0, v1, t0, t1,
+    kind: 'airdrag', weight: m != null ? snap(m * g) : null, tMax, tFlight: t1, h, u, m, g, a, R, v0, v1, t0, t1,
     tMid: snap(t1 / 2), fallFree, fallDrag, velFree: (t) => (t <= t0 ? u + g * t : 0), velDrag: (t) => (t <= t1 ? u + a * t : 0),
     accFree: (t) => (t <= t0 ? g : 0), accDrag: (t) => (t <= t1 ? a : 0),
     pos: (t) => ({ x: 0, y: h - fallDrag(t) }), vel: (t) => ({ x: 0, y: -(t <= t1 ? u + a * t : 0) }),

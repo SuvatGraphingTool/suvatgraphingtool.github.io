@@ -62,7 +62,7 @@ export function render(canvas, cam, o) {
   const floorY = h - clamp(h * 0.1, 30, 60), deckH = clamp(h * 0.06, 18, 34), deckY = floorY - deckH;
   const runM = f.L * cs, left = phone ? 20 : Math.max(HB[0].x + HB[0].w + 40, 60);
   // room on the right for the ramp's trolley, the conveyor's lane and its trolley, and the height
-  const rightRoom = phone ? 190 : 360;
+  const rightRoom = phone ? 230 : 380;
   const k = Math.min((w - left - rightRoom) / runM, (deckY - (phone ? 170 : 90)) / f.h);
   const dockX = left + (phone ? 10 : 30), topY = deckY - f.h * k, footX = dockX + runM * k;
   const Ls = clamp(k * 0.5, 30, 60), pl = clamp(k * 0.42, 26, 50);
@@ -70,8 +70,8 @@ export function render(canvas, cam, o) {
   // (its racking starts past the right edge: the trolleys and the drop lane stand clear in front of the wall)
   loadingBay(g, { w, h, oy: floorY, top: { x: dockX, y: topY }, foot: { x: w + 40, y: deckY }, Ls, sa, ca, out, ramp: false });
   // the drop lane: the conveyor's end at the same height over its own trolley, right of the ramp's trolley
-  const dropX = footX + (phone ? 100 : 190), convEnd = dropX - pl * 0.1;
-  conveyor(g, convEnd, topY + pl * 0.36, Math.min(w + 10, convEnd + 260), floorY);
+  const dropX = footX + pl * 2.6 + pl * 1.3 + 30, convEnd = dropX - pl * 0.1;
+  conveyor(g, convEnd, topY, Math.min(w + 10, convEnd + 260), floorY);
   // ── the ramp: a steel channel from the dock's edge down to the trolley, grip tape on its face
   g.save(); g.translate(dockX, topY); g.rotate(th);
   const len = (f.L * k), tk = 9;
@@ -104,8 +104,8 @@ export function render(canvas, cam, o) {
   const yD = topY + f.fallD(t) * k;
   const dropping = fired && t > 0 && t < f.tD;
   parcel(g, dropX, yD - pl * 0.36, pl, P, { spin: dropping ? Math.min(0.5, t * 0.8) : 0 });
-  L.add('down the ramp', dockX + 10, topY - 22, { color: P.ink, size: 13, weight: 700, align: 'left' });
-  L.add('dropped', dropX, topY - 22, { color: P.ink, size: 13, weight: 700, align: 'center' });
+  L.add('down the ramp', dockX + 10, topY - pl - 12, { color: P.ink, size: 13, weight: 700, align: 'left' });
+  L.add('dropped', dropX, topY - pl - 12, { color: P.ink, size: 13, weight: 700, align: 'center' });
   // each one's velocity while it moves (solid: neither is across, rule 2), and its landing
   if (fired && t > 0) {
     const vs = clamp(k * 0.3, 40, 110) / f.vD;
@@ -118,27 +118,35 @@ export function render(canvas, cam, o) {
     pulse(g, x, y - pl * 0.3, age, life, P.mark, { radius: pl });
     L.add(T`${tr(v)} [m s^-1]`, x, y - pl * 1.3, { color: P.vel, size: 14, weight: 700, align: 'center' });
   }
+  // the forces card: below the readouts on the left, over the dock's face, where there is room; else top right under the clock
+  const below = HB[0].y + HB[0].h + 10, cardBox = { cw: 220, chh: 160 };
+  if (h - below - 20 >= cardBox.chh) Object.assign(cardBox, { cx: 14, cy: below });
+  // (with no room there it is left out, as on a phone: the forces are in the working)
+  const showCard = !phone && f.forces && cardBox.cx != null;
+  if (showCard) L.reserve({ x: cardBox.cx, y: cardBox.cy, w: cardBox.cw, h: cardBox.chh });
   L.draw(g, w, h);
 
   // ── the forces on the parcel on the ramp, on a card: weight down, the normal reaction, friction up the slope
   unview(g);
-  if (!phone && f.m != null && !(fired && t > f.tR + 1e-9)) {
-    const cw = phone ? 150 : 210, chh = phone ? 140 : 180, cx = phone ? 10 : 14, cy = phone ? HB[0].y + HB[0].h + 10 : h - chh - 14;
+  if (showCard && !(fired && t > f.tR + 1e-9)) {
+    // the forces the engine found, on a card at the top of the stage between the readouts
+    const { cw, chh, cx, cy } = cardBox, Fz = f.forces;
     paper(g, cx, cy, cw, chh);
     const txt = (s0, x, y, c, al = 'left') => { g.save(); g.font = `700 13px ${cssVar('--font', 'system-ui, sans-serif')}`; g.fillStyle = c; g.textAlign = al; g.textBaseline = 'middle'; g.fillText(s0, x, y); g.restore(); };
-    txt(phone ? 'The forces' : 'The forces on the parcel', cx + 12, cy + 16, P.muted);
-    const bx = cx + cw * 0.42, by = cy + chh * 0.58, W = f.m * f.g, sc = (chh * 0.3) / W;
+    txt('The forces on the parcel', cx + 12, cy + 16, P.muted);
+    const bx = cx + cw * 0.45, by = cy + chh * 0.6, sc = (chh * 0.3) / Fz.weight, half = 14, n2 = { x: sn, y: -cs };
     g.save(); g.translate(bx, by); g.rotate(th);
-    g.strokeStyle = withAlpha(P.ink, 0.5); g.lineWidth = 1.2; g.beginPath(); g.moveTo(-cw * 0.35, 12); g.lineTo(cw * 0.35, 12); g.stroke();
-    g.fillStyle = '#b98a55'; g.fillRect(-14, -12, 28, 24);
+    g.strokeStyle = withAlpha(P.ink, 0.5); g.lineWidth = 1.2; g.beginPath(); g.moveTo(-cw * 0.35, half); g.lineTo(cw * 0.35, half); g.stroke();
+    g.fillStyle = '#b98a55'; g.fillRect(-half, -half, half * 2, half * 2);
     g.restore();
-    arrow(g, bx, by, bx, by + W * sc, { color: P.ink, width: 2.2, head: 8 });
-    const R = W * Math.cos(th), F = f.mu * R;
-    arrow(g, bx, by, bx + nU.x * R * sc, by + nU.y * R * sc, { color: P.ink, width: 2.2, head: 8 });
-    if (F > 1e-9) arrow(g, bx, by, bx - cs * Math.max(14, F * sc), by - sn * Math.max(14, F * sc), { color: P.ink, width: 2.2, head: 8 });
-    txt(T`mg = ${tr(W)} [N]`, bx + 8, by + W * sc - 4, P.ink);
-    txt(T`R = ${tr(R)} [N]`, bx + nU.x * R * sc + 6, by + nU.y * R * sc - 6, P.ink);
-    if (F > 1e-9) txt(T`F = ${tr(F)} [N]`, bx - cs * Math.max(14, F * sc) - 6, by - sn * Math.max(14, F * sc) - 10, P.ink, 'right');
+    const floor = (x) => Math.max(16, x), small = Fz.R * sc < 16 || (Fz.F > 1e-9 && Fz.F * sc < 16);
+    arrow(g, bx, by + half, bx, by + half + floor(Fz.weight * sc), { color: P.ink, width: 2.2, head: 8 });
+    arrow(g, bx + n2.x * half, by + n2.y * half, bx + n2.x * (half + floor(Fz.R * sc)), by + n2.y * (half + floor(Fz.R * sc)), { color: P.ink, width: 2.2, head: 8 });
+    if (Fz.F > 1e-9) arrow(g, bx - cs * half, by - sn * half, bx - cs * (half + floor(Fz.F * sc)), by - sn * (half + floor(Fz.F * sc)), { color: P.ink, width: 2.2, head: 8 });
+    txt(T`mg = ${tr(Fz.weight)} [N]`, bx + 10, by + half + floor(Fz.weight * sc) - 4, P.ink);
+    txt(T`R = ${tr(Fz.R)} [N]`, bx + n2.x * (half + floor(Fz.R * sc)) + 6, by + n2.y * (half + floor(Fz.R * sc)) - 6, P.ink);
+    if (Fz.F > 1e-9) txt(T`F = ${tr(Fz.F)} [N]`, bx - cs * (half + floor(Fz.F * sc)) - 6, by - sn * (half + floor(Fz.F * sc)) - 10, P.ink, 'right');
+    if (small) txt('(not to scale)', cx + 12, cy + 33, P.muted);
   }
   return null;
 }

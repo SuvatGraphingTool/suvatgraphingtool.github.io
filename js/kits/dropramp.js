@@ -31,6 +31,7 @@ export const dropramp = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'ticks', 'acceleration'], extras: ['energy'], bounce: true },
 
   resolvePart: '',
+  resolveEndWords: 'It reaches the trolley here: the engine follows it no further.',
   resolveObjects: (f) => [
     { name: 'Down the ramp', pos: f.sR, vel: f.velR, acc: f.accR, axis: 'along', from: 'the top of the ramp' },
     { name: 'Dropped', pos: f.fallD, vel: f.velD, acc: f.accD, axis: 'down', from: 'where it was let go' },
