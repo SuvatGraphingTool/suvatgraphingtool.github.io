@@ -184,6 +184,10 @@ export function solveRoad(k0 = {}) {
     notes.push(`It starts from rest and speeds up towards ${V.a > 0 ? 'B' : 'A'}.`);
   }
   const tStop = Math.abs(V.a) > EPS ? -V.u / V.a : NaN;
+  // when it is at rest, if it ever is, and the distance it travels counting the way back
+  const sAt = (t) => snap(V.u * t + 0.5 * V.a * t * t);
+  const stop = tStop > EPS && tStop <= V.t + 1e-6 ? { t: snap(tStop), s: sAt(tStop) } : null;
+  const path = stop && tStop < V.t - 1e-6 ? snap(Math.abs(stop.s) + Math.abs(V.s - stop.s)) : snap(Math.abs(V.s));
   if (tStop > EPS && tStop < V.t - 1e-6) {
     // a lorry or a train does not turn round on its own (it would have to
     // reverse); a runner or a cyclist simply turns and goes back
@@ -236,7 +240,7 @@ export function solveRoad(k0 = {}) {
 
   if (nthRows) derived.unshift(`${M`${d(k0.sNth)} [m]`} in second ${k0.nth}: ${nthRows[0].r}`);
   return {
-    ok: true, mode: 'road', axis: 'along', params: f.params, f, nthRows, nth: nthRows ? k0.nth : undefined,
+    ok: true, mode: 'road', axis: 'along', params: f.params, f, nthRows, nth: nthRows ? k0.nth : undefined, stop, path,
     derived, notes, five, extras, moment, answer: null, steps: r.steps, markStep,
     given, used: use, spare, clash: [], filled: {}, altTheta: null, assumedH: false,
     convention: 'Taking the direction from A towards B as positive.',

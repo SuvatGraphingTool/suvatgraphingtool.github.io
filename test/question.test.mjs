@@ -693,7 +693,7 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(rd.atTime === 6 && rd.t === 4, 'a time the question asks about, not the motion’s own t: atTime 6');
   const rs = solveRoad({ u: 20, v: 0, t: 4, at: 6 });
   ok(rs.ok && rs.moment.byTime && rs.moment.s === 30 && rs.moment.v === -10, 'and 6 s after O it is 30 m from O, moving back at 10 m s⁻¹');
-  ok(one('road', 'distance from O after 6 s')?.find === 'moment.s' && one('road', 'distance travelled')?.find === 'five.s.value', '"after 6 s" is the moment’s distance; a plain distance is the whole one');
+  ok(one('road', 'distance from O after 6 s')?.find === 'moment.s' && one('road', 'the distance between A and B')?.find === 'five.s.value' && one('road', 'distance travelled')?.find === 'path', '"after 6 s" is the moment’s distance; a plain distance is the whole one, and "distance travelled" counts any way back');
   const { toApp } = await import('../js/core/question.js');
   ok(toApp({ understood: true, scenario: 'road', summary: 'x', u: 20, v: 0, t: 4, atTime: 6 }).at === 6, 'the page reads atTime');
   const cliffH = toPlace({ understood: true, scenario: 'platform-angle', summary: 'x', u: 20, angleDegrees: 35, s: 50, below: 'sea', asks: ['height of the cliff'] }, 'A stone is thrown from the top of a vertical cliff at 20 m/s at 35° above the horizontal and lands in the sea 50 m from the foot of the cliff. Find the height of the cliff.');
@@ -729,6 +729,32 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(cb.u === 12 && cb.a === -2 && cb.t == null && cb.v === 0, 'twice the speed, the same deceleration: the first motion’s rate, found by the engine, and not its time');
   const cbs = solveRoad({ u: cb.u, v: cb.v, a: cb.a });
   ok(cbs.ok && cbs.five.s.value === 36, 'so she brakes over 36 m, not 18');
+  // 3 Nov, real Gemma readings (round 12)
+  const trains = toPlace({ understood: true, scenario: 'library', library: 'two-on-a-road', summary: 'x', boxes: { 'A.u': 30, 'A.a': -0.5, 'A.t0': 0, 'B.u': 20, 'B.hold': 10, 'B.a': 0 } }, 'Train P passes a signal at 30 m/s and decelerates uniformly at 0.5 m/s². 10 s later train Q passes the same signal on a parallel track moving at a constant 20 m/s.');
+  ok(trains.boxes['B.t0'] === 10 && trains.boxes['B.hold'] === true, '"10 s later … at a constant 20 m/s": B sets off at 10 s and holds its speed; a hold is never a number');
+  const LK = KITS[byId('two-on-a-road').kit], lv = LK.solve(LK.read(trains.boxes));
+  ok(lv.ok && Math.abs(lv.events.find((e) => e.kind === 'overtake').t - 54.641) < 1e-3, 'and Q draws level at 54.64 s');
+  const para = toPlace({ understood: true, scenario: 'library', library: 'parachute-stages', summary: 'x', boxes: { D: 0, T: 0, t1: 4, v1: 0, a2: 6, t2: 0, v2: 5 } }, 'x');
+  ok(!('D' in para.boxes) && !('T' in para.boxes) && !('v1' in para.boxes) && !('t2' in para.boxes) && para.boxes.t1 === 4, 'zeros a reader writes for what it does not know — a whole distance, a stage time, the opening speed — are left out');
+  const sled = toPlace({ understood: true, scenario: 'library', library: 'journey-stages', summary: 'x', boxes: { n: 2, u: 0, k1: 'up', v1: 60, t1: 4, k2: 'down', v2: 0, a2: 10, D: 0 } }, 'x');
+  ok(!('D' in sled.boxes), 'a whole distance of 0 is not one');
+  const boat = toPlace({ understood: true, scenario: 'library', library: 'vectors-ij', summary: 'x', boxes: { 'r0.x': 2, 'r0.y': -3, 'u.x': 4, 'u.y': 3, 'at.due': 'E' } }, 'At time t = 0 a boat is at (2i − 3j) km and moves with constant velocity (4i + 3j) km/h.');
+  ok(boat.boxes['a.x'] === 0 && boat.boxes['a.y'] === 0, 'constant velocity: no acceleration');
+  ok(toPlace({ understood: true, scenario: 'library', library: 'over-the-wall', summary: 'x', boxes: { u: 20, theta: 15, d: 11, H: 2.44, kind: 'crossbar' } }, 'x').boxes.kind === 'point', 'a crossbar it should go under is a point to pass, not a wall it hits');
+  const coco = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'palm tree', h: 0, u: 0, v: 14 } }, 'A coconut falls from a palm tree and hits the sand at 14 m/s. How tall is the tree?');
+  ok(coco.boxes.h == null, 'a height of 0 beside the speed it lands at is the height asked');
+  const cs = HK.solve(HK.read({ place: 'tree', u: 0, v: 14, g: 9.81 }));
+  ok(cs.ok && Math.abs(cs.h - 9.9898) < 1e-3 && cs.hRows.length === 1, 'and v² = u² + 2gh gives 9.99 m, in one row');
+  const stoneX = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'ground', h: 14, u: 21, theta: 90 }, parts: [{ label: 'a', asks: 'greatest height above the ground', answer: 'height' }, { label: 'b', asks: 'time at least 28 m above the ground', twelve: 'above' }] }, 'A stone is thrown up at 21 m/s from 14 m. (a) Find its greatest height. (b) Find the time for which it is at least 28 m above the ground.');
+  ok(stoneX.boxes.level === 14 && !stoneX.parts[1].twelve, '"at least 28 m above the ground", from 14 m: a level 14 m above the throw');
+  const sv4 = HK.solve(HK.read({ ...stoneX.boxes, place: 'tower', g: 9.81 }));
+  const unmarked = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'ground', h: 14, u: 21, theta: 90 }, parts: [{ label: 'a', asks: 'time at least 28 m above the ground' }] }, 'a stone thrown up at 21 m/s from 14 m: how long is it at least 28 m above the ground');
+  ok(unmarked.boxes.level === 14 && unmarked.asked?.length === 1, 'and the same with no parts marked');
+  ok(sv4.ok && Math.abs(sv4.level.above - 2.629) < 1e-3 && one('from-a-height', 'time at least 28 m above the ground')?.find === 'level.above', 'and it is that high for 2.63 s');
+  const rp = fromReader('road', [{ label: 'a', asks: 'when the particle is at rest', answer: 'v' }, { label: 'b', asks: 'total distance travelled in the first 6 s', answer: 's' }]);
+  ok(rp[0].find === 'stop.t' && rp[1].find === 'path', '"when is it at rest" is a time, whatever key; "total distance" counts the way back');
+  const rr = solveRoad({ u: 10, a: -4, t: 6 });
+  ok(rr.ok && rr.stop.t === 2.5 && rr.path === 37 && rr.five.s.value === -12, 'at rest at 2.5 s; 37 m travelled, −12 m displaced');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

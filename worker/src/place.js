@@ -101,7 +101,16 @@ const LET_GO = /\b(push(ed|es)?|roll(s|ed)?|drop(s|ped)?|falls?|fell|let go|rele
  * - pushed, rolled or let go with no speed anywhere in the question, it
  *   starts from rest, and the reply says so.
  */
+/** "Moves with constant velocity (4i + 3j)": no acceleration, 0 in both parts. */
+function steady(x, words) {
+  const b = x?.boxes;
+  if (x?.library !== 'vectors-ij' || !b || b['a.x'] != null || b['a.y'] != null) return x;
+  if (!/\b(constant|steady|uniform) velocity\b/i.test(words)) return x;
+  return { ...x, boxes: { ...b, 'a.x': 0, 'a.y': 0 } };
+}
+
 function settle(x, words) {
+  x = steady(x, words);
   // composed, let go from what carries it: a balloon moves straight up or down, and a
   // speed read as negative ("descending at 3 m/s" as u = −3) is a speed downwards
   const n = x?.scenario === 'compose' && x.recipe?.numbers;
@@ -121,7 +130,7 @@ function settle(x, words) {
   const text = `${words} ${x.summary || ''}`;
   const out = { ...x, boxes: { ...b } };
   // "hits the water 2.5 s later. how deep is the well": a height of 0 with a time is the height asked
-  if (b.h === 0 && b.t > 0) delete out.boxes.h;
+  if (b.h === 0 && (b.t > 0 || b.v > 0) && !/\b(from|on) the ground\b/i.test(text)) delete out.boxes.h;
   // "the splash is HEARD 3 s later; the speed of sound is 340 m/s": that time is the fall and the
   // sound back up together, never the fall alone (the engine splits them)
   const c = /speed of sound[^.?!]*?(\d+(?:\.\d+)?)\s*m|(\d+(?:\.\d+)?)\s*m\s*\/?\s*s(?:\^?-1|⁻¹)?[^.?!]*\bsound\b/i.exec(text);
@@ -168,7 +177,18 @@ function marked(x, words) {
  * 20 m/s" put 20 in the held stage's v, where it is the speed the stage
  * before it ENDS at. And "decelerates to rest" ends at 0.
  */
+// a 0 a small reader writes for a number it does not know: a whole distance or time,
+// a stage's time, the speed a parachute opens at — none of them can be 0
+const NEVER_ZERO = { 'journey-stages': /^(D|T|t\d)$/, 'parachute-stages': /^(D|T|t\d|v1)$/ };
+function unzero(x) {
+  const re = NEVER_ZERO[x?.library];
+  if (!re || !x.boxes) return x;
+  const o = Object.fromEntries(Object.entries(x.boxes).filter(([k, v]) => !(re.test(k) && v === 0)));
+  return { ...x, boxes: o };
+}
+
 function stages(x, words) {
+  x = unzero(x);
   const b = x?.boxes;
   if (x?.library !== 'journey-stages' || !b) return x;
   const out = { ...x, boxes: { ...b } }, o = out.boxes;
@@ -224,18 +244,24 @@ function bounceTo(x, words) {
  * Two on a road: one braking, with nothing said of where its braking ends, brakes
  * to rest — a car stops; it never reverses. "Brakes at 2 m/s²" is A.a = −2, A.V = 0.
  */
-function lanes(x) {
+function lanes(x, words = '') {
   const b = x?.boxes;
   if (x?.library !== 'two-on-a-road' || !b) return x;
   const o = { ...b };
   for (const w of ['A', 'B']) {
+    // "10 s later train Q passes … at a constant 20 m/s": a hold is yes or no; the 10 s is when it sets off
+    if (typeof o[`${w}.hold`] === 'number') {
+      const n = o[`${w}.hold`];
+      if (o[`${w}.t0`] == null && new RegExp(`\\b${n}\\s*(s|secs?|seconds)\\s+(later|after)\\b`, 'i').test(words)) o[`${w}.t0`] = n;
+      o[`${w}.hold`] = true;
+    }
     if (typeof o[`${w}.a`] === 'number' && o[`${w}.a`] < 0 && o[`${w}.V`] == null && o[`${w}.tau`] == null && o[`${w}.ends`] == null) o[`${w}.V`] = 0;
   }
   return { ...x, boxes: o };
 }
 
 export function toPlace(x, words = '') {
-  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(atTimed(timed(nthSecond(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words), words)), words);
+  return edexcel(lanes(bounceTo(stages(settle(placed(levelled(hooped(cleared(lowered(reacts(atTimed(timed(nthSecond(known(marked(x, words)), words), words), words), words), words), words), words), words), words), words), words), words), words), words);
 }
 
 /**
@@ -341,7 +367,13 @@ function atTimed(x, words) {
 const OBSTACLE = /\b(net|wall|fence|hedge|tree)\b/i;
 const NUM = '(\\d+(?:\\.\\d+)?)';
 const HITS = /\b(hits?|strikes?|reach(es)?)\b[^.?!]*\b(wall|fence)\b/i;
+// what a projectile passes, in a reader's own words, as Over the wall's: a crossbar or a goal it
+// should go UNDER is a point to pass, not a wall it hits
+const KINDS = { crossbar: 'point', bar: 'point', goal: 'point', hoop: 'point', basket: 'point', hedge: 'fence', building: 'wall' };
 function cleared(x, words) {
+  if (x?.library === 'over-the-wall' && x.boxes && KINDS[String(x.boxes.kind).toLowerCase()]) {
+    return { ...x, boxes: { ...x.boxes, kind: KINDS[String(x.boxes.kind).toLowerCase()] } };
+  }
   // "a wall 20 m away … the height at which it hits the wall": a wall it hits, with no height of its own
   const hits = HITS.test(words);
   if (!x?.understood || x.library === 'over-the-wall' || !(/\b(clears?|over|passes)\b/i.test(words) || hits)) return x;
@@ -388,11 +420,27 @@ function cleared(x, words) {
 const RATIO = { tan: Math.atan, sin: Math.asin, cos: Math.acos };
 function levelled(x, words) {
   const parts = Array.isArray(x?.parts) ? x.parts : null;
+  // a question with no parts marked asks the same ("time at least 28 m above the ground")
+  if (!parts && Array.isArray(x?.asked) && x.understood) {
+    const y = levelled({ ...x, parts: x.asked, asked: undefined }, words);
+    if (y === x || !y.parts) return x;
+    const { parts: asked, ...rest } = y;
+    return { ...rest, asked };
+  }
   if (!parts || !x.understood) return x;
   const levelOf = (sc) => (sc && typeof sc === 'object' ? sc.level ?? sc.numbers?.level ?? sc.boxes?.level : undefined);
   const only = (sc) => sc && typeof sc === 'object' && Object.keys(sc).every((k) => k === 'level' || ((k === 'numbers' || k === 'boxes') && Object.keys(sc[k] || {}).every((j) => j === 'level')));
   const i = parts.findIndex((p) => p && only(p.scene) && Number(levelOf(p.scene)) > 0);
-  if (i < 0) return x;
+  if (i < 0) {
+    // From a height already, a part "at least 28 m above the ground" with no set-up: that height is its level
+    const b = x.library === 'from-a-height' && x.boxes;
+    const j = b && b.level == null ? parts.findIndex((p) => /\b\d+(?:\.\d+)?\s*m\s*above\b/i.test(String(p?.asks || ''))) : -1;
+    if (j < 0) return x;
+    const ask = String(parts[j].asks), N = Number(/(\d+(?:\.\d+)?)\s*m\s*above/i.exec(ask)[1]);
+    const level = /above (the )?(ground|floor|sea|water)/i.test(ask) ? N - (Number(b.h) || 0) : N;
+    if (Math.abs(level) < 1e-9) return x;
+    return { ...x, boxes: { ...b, level }, parts: parts.map((p, k) => (k === j ? (({ answer, twelve, ...rest }) => rest)(p) : p)) };
+  }
   let h0, u, theta;
   if (x.scenario === 'arc' || x.scenario in ANGLE) {
     h0 = x.scenario === 'arc' ? 0 : x.h;

@@ -317,6 +317,8 @@ export const PROJECTILE_ANSWERS = [
   { kind: 'time', say: 'when it is first at the height a part asks about (numbers.level)', find: 'level.times.0', sym: 't', unit: 's', at: 'level.times.0', step: 'above the throw' },
   { kind: 'time', say: 'when it is there again, on the way down', find: 'level.times.1', sym: 't', unit: 's', at: 'level.times.1', step: 'above the throw' },
   // a hoop, a basket or a target at the height asked: where it passes it, on the way down
+  // "the time for which it is at least 28 m above the ground": from passing the level on the way up to on the way down
+  { key: 'timeAbove', kind: 'time', say: 'how long it spends above the height a part asks about (numbers.level): at least, or more than, so many metres up', find: 'level.above', sym: 't', unit: 's', trim: true, at: 'level.times.1', when: '\\b(above|at least|more than|higher than)\\b', step: 'above the throw' },
   { key: 'distance2', kind: 'distance', say: 'how far out it is when it is at the height a part asks about (numbers.level), on its way down: the hoop, the basket or the target', find: 'level.xDown', sym: 'x', unit: 'm', trim: true, at: 'level.times.1', step: 'above the throw', when: '\\b(hoop|basket|ring|target|bull)|\\bway down\\b|\\d m (above|high|up)\\b' },
   { kind: 'graph', say: 'a sketch of the graphs: the stage draws them' },
 ];

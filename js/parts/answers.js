@@ -36,6 +36,9 @@ export const ROAD_ANSWERS = [
   { key: 'tMid', kind: 'time', say: 'the time from the first point to the mid-point (or the mark)', find: 'moment.t', sym: 't', unit: 's', at: 'moment.t' },
   { key: 'vMid', kind: 'speed', say: 'the speed at the mid-point (or the mark)', find: 'moment.v', sym: 'v', unit: 'm s^-1', at: 'moment.t' },
   // a time the question asks about, past the end of the motion too ("its distance from O after 6 s")
+  // "when is P instantaneously at rest", and how far it goes counting the way back
+  { key: 'tRest', kind: 'time', say: 'when it is (instantaneously) at rest, before it turns back', find: 'stop.t', sym: 't', unit: 's', at: 'stop.t', when: '\\b(rest|stops?|stationary|turns? (back|round))\\b' },
+  { key: 'path', kind: 'distance', say: 'the total distance travelled, counting the way back (not the displacement)', find: 'path', sym: 'd', unit: 'm', at: 'end', when: '\\btotal distance\\b|\\bdistance (it )?travel' },
   { key: 'sAt', kind: 'distance', say: 'how far from the first point it is at the time asked (after so many seconds)', find: 'moment.s', sym: 's', unit: 'm', at: 'moment.t', when: '\\b(after|at t ?=|at time)\\b' },
   { key: 'vAt', kind: 'speed', say: 'its velocity at the time asked (after so many seconds)', find: 'moment.v', sym: 'v', unit: 'm s^-1', at: 'moment.t', when: '\\b(after|at t ?=|at time)\\b' },
 ];
@@ -147,7 +150,12 @@ export function fromReader(id, raw, boxes = []) {
     const START = /projection|projected|launch|thrown with|initial|it was thrown|kicked with|hit with/, END = /hits?|lands?|landing|strikes?|enters?/;
     const ends = (a) => a && ((START.test(words) && !END.test(words) && END.test(said(a)) && !START.test(said(a)))
       || (END.test(words) && !START.test(words) && START.test(said(a)) && !END.test(said(a))));
-    const keyed = offer.find((a) => a.key === r.answer);
+    let keyed = offer.find((a) => a.key === r.answer);
+    // "when …" asks a time, whatever key was named; and an answer that names these very
+    // words (`when`) — the time at rest, the total distance — is more exact than the key
+    if (keyed && /^\s*when\b/.test(words) && keyed.kind !== 'time' && keyed.kind !== 'meeting') keyed = null;
+    const exact = keyed && offer.find((a) => a !== keyed && a.kind === keyed.kind && (a.part || a).when && new RegExp((a.part || a).when, 'i').test(words));
+    if (exact) keyed = exact;
     let hit = (contra(keyed) || ends(keyed) ? null : keyed)
       || (/sketch|graph/.test(words) ? only('graph') : null)
       || (typeof r.answer === 'string' ? asKind(r.answer.replace(/\d+$/, '')) : null)

@@ -119,6 +119,13 @@ export function solveHeight(k0 = {}) {
     sRows.push({ f: M`h = ut_1 + ½gt_1^2 = c(T - t_1)`, s: M`${d(uu)}t_1 + ½ * ${d(k.g)}t_1^2 = ${d(c)}(${d(T)} - t_1)`, r: M`t_1 = ${d(t1)} [s]` });
     k = { ...k, t: t1, theta: -90, u: uu };
   }
+  // "hits the sand at 14 m/s: how tall is the tree": the speed it lands at and the speed it
+  // leaves with give the height, whatever the angle — v² = u² + 2gh
+  if (!have(k.h) && !have(k.t) && !have(k.s) && have(k.v) && have(k.u) && k.v > k.u && k.u >= 0) {
+    const hh = snap((k.v * k.v - k.u * k.u) / (2 * k.g));
+    sRows.push({ f: M`v^2 = u^2 + 2gh`, s: M`${d(k.v)}^2 = ${d(k.u)}^2 + 2 * ${d(k.g)}h`, r: M`h = ${d(hh)} [m]` });
+    k = { ...k, h: hh, theta: have(k.theta) ? k.theta : (k.u === 0 ? -90 : k.theta), v: undefined };
+  }
   // "lands 50 m from the foot of the cliff: find the height": how far out it
   // lands and the launch give the time in the air, t = s/(u cos θ), and that the height
   if (!have(k.h) && !have(k.t) && have(k.s) && k.s > 0 && have(k.u) && k.u > 0 && have(k.theta) && Math.abs(Math.abs(k.theta) - 90) > 1e-9) {
@@ -196,11 +203,13 @@ export function solveHeight(k0 = {}) {
     times = times.map(snap).filter((x) => x > 1e-9);
     // how far out it is then — a hoop or a target at that height is there; the last is on its way down
     const xs = times.map((t) => snap(Math.abs(f.ux) * t));
-    level = { rel: k.level, L, times, atTop, xs, xDown: xs.length ? xs[xs.length - 1] : undefined };
+    level = { rel: k.level, L, times, atTop, xs, xDown: xs.length ? xs[xs.length - 1] : undefined,
+      // how long it is at least that high: from passing it on the way up to passing it on the way down
+      above: times.length === 2 ? snap(times[1] - times[0]) : undefined };
     const at = Math.abs(k.level) < 1e-12 ? 'back at the height it was thrown from'
       : `${M`${d(Math.abs(k.level))} [m]`} ${k.level >= 0 ? 'above' : 'below'} ${Pl.from || 'where it was thrown from'}`;
     lines.push(atTop ? `It is ${at} once, at the top of its path, ${M`t = ${d(times[0])} [s]`}.`
-      : times.length === 2 ? `It is ${at} twice: at ${M`t = ${d(times[0])} [s]`} on the way up and ${M`t = ${d(times[1])} [s]`} on the way down.`
+      : times.length === 2 ? `It is ${at} twice: at ${M`t = ${d(times[0])} [s]`} on the way up and ${M`t = ${d(times[1])} [s]`} on the way down, so above it for ${M`${d(level.above)} [s]`}.`
         : times.length === 1 ? `It is ${at} once, at ${M`t = ${d(times[0])} [s]`}.`
           : `It is never ${at}.`);
   }
@@ -221,7 +230,8 @@ export function solveHeight(k0 = {}) {
   return {
     ok: true, mode: 'height', axis: straight ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical: straight, topRows, foundH: !have(k0.h),
     // the height, worked from the time in the air: s = u_y t − ½gt², and h = −s
-    hRows: have(k0.h) ? [] : [...sRows,
+    // (found from the speed it lands at, the one row is the whole of it)
+    hRows: have(k0.h) ? [] : !have(k.t) ? sRows : [...sRows,
       { f: M`s = u_y t - ½gt^2`, s: M`${d(snap(f.uy))} * ${d(k.t)} - ½ * ${d(k.g)} * ${d(k.t)}^2`, r: M`s = ${d(-k.h)} [m]` },
       { f: M`h = -s`, s: '', r: M`h = ${d(k.h)} [m]` },
     ],
