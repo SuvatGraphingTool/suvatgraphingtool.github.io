@@ -154,6 +154,8 @@ this library: *covered* names the one of the twelve that does it.
 | 128 | CIE | 9709/41 | Oct/Nov 2018 | 6 | [paper](https://papers.xtremepape.rs/CAIE/AS%20and%20A%20Level/Mathematics%20(9709)/9709_w18_qp_41.pdf) | Projected up a rough 3° slope past P, Q, R; PQ = QR = 0.8 m in 0.6 s and 1 s: deceleration ⅔, u = 23/15, μ | 10 | **built** → `timed-up-the-slope` |
 | 129 | AQA | MM1B | Jan 2010 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-AQA/January%202010%20QP%20-%20M1%20AQA.PDF) | A 0.5 kg ball let go from 15 m: its landing speed with no air resistance; with a constant 0.9 N: a = 8, the landing speed; why it is not constant | 9.8 | **built** → `with-air-resistance` |
 | 130 | OCR | 4728 M1 | Jan 2009 | 6 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/jan-2009-q-17.pdf) | Parcels 2.5 m above a trolley: dropped (time, speed); slid down a ramp at 60° to the vertical, μ = 0.2, 2 kg: the speed at the trolley | 9.8 | **built** → `drop-or-ramp` |
+| 131 | Edexcel | 6677/01 M1 | Jan 2011 | 4 | — | 2 kg particle under a constant force: velocity 2i − 5j at t = 0 and 7i + 10j at t = 5; speed at t = 0, F, when parallel to i | — | **built** → `pushed-by-a-force` |
+| 132 | Edexcel | 6677/01 M1 | Jun 2008 | 3 | — | 0.4 kg particle accelerating at 6i + 8j: its angle with i, the size of F, the velocity at t = 5 from 9i − 10j | — | **built** → `pushed-by-a-force` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -499,6 +501,26 @@ trains already moving at X, its parts are theirs, and the reader is told which i
 
 **How it is solved.** Each distance is the area under its own speed–time graph: the train
 whose hold is given gives the common time; the other's trapezium then gives its hold.
+
+### `pushed-by-a-force` — A constant force, in i and j
+
+**Papers.** Edexcel M1 Jan 2011 Q4 (2 kg; 2i − 5j at t = 0, 7i + 10j at t = 5: √29 = 5.39 m s⁻¹;
+a = i + 3j, F = 2i + 6j N; parallel to i at t = 5⁄3 s). Edexcel M1 Jun 2008 Q3 (0.4 kg, a = 6i + 8j:
+53° to i, F = 2.4i + 3.2j, 4 N; from 9i − 10j, 39i + 30j at t = 5).
+
+**Why the others cannot.** `vectors-ij` is given the acceleration; here it comes from two
+velocities and the time between them, or from the force and the mass — F = ma as a vector
+equation — and the force itself, its size and its angle with i, are asked.
+
+**How it is solved.** js/core/force.js: a = (v − u) ÷ t, or a = F ÷ m; F = ma; |F| from Pythagoras
+and cos θ = Fₓ ÷ |F|; |u| likewise; then js/core/plane.js for the motion (v = u + at, r = ut + ½at²,
+each in i and j) and each moment asked.
+
+**The stage.** A frozen lake from above (`frozenLake`, js/render/hovercraft.js): ice with black-ice
+patches, drifted snow, cracks and skate marks, a snowy shore with reeds and pines kept off the
+path; a model hovercraft (`hovercraftTop`) with its nose along the force and its fan blowing back,
+the force drawn from it in ink. The motion, the axes and the moments asked are the plane's own stage
+(`drawPlane`, js/render/vectors.js, now open to a backdrop and a body).
 
 ### `drop-or-ramp` — Dropped, or slid down a ramp
 

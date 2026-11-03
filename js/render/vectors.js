@@ -34,14 +34,29 @@ function told(a, ta, short) {
   const at = T`t = ${s3(ta)} [s]`;
   const word = short && a.key && a.key.length <= 2 ? a.key : a.D?.word;
   if (a.kind === 'due') return T`"due ${word} of O," t = ${s3(ta)} [s]`;
+  // "parallel to" a vector: its words are already set (plain Unicode), the time after them
+  if (a.kind === 'moving' && a.D?.src) return `moving ${a.D.plain}, ${T`t = ${s3(ta)} [s]`}`;
   if (a.kind === 'moving' && word) return T`"moving ${word}," t = ${s3(ta)} [s]`;
   if (a.kind === 'moving') return T`"moving that way," t = ${s3(ta)} [s]`;
   return at;
 }
 
 export function render(canvas, cam, o) {
+  if (!o.traj || o.traj.kind !== 'plane') return null;
+  return drawPlane(canvas, o);
+}
+
+/**
+ * The plane's stage, for any motion in i and j that js/core/plane.js ran. A
+ * scenario that puts it somewhere else gives `look`:
+ *   ground(g, w, h, { avoid, keep }) — the backdrop, filling the canvas (default: a field);
+ *   body(g, x, y, s) — the particle at (x, y) px (default: a ball), where `s` is
+ *     { P, Q, hold, off, F, t, f, phone, surface } for whatever it draws with it;
+ *   bodyR — the particle's half-size, px, kept clear of words;
+ *   compass: false — no compass, when the paper's i and j are not east and north.
+ */
+export function drawPlane(canvas, o, look = {}) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
-  if (!f || f.kind !== 'plane') return null;
   const { ctx: g, w, h } = fitCanvas(canvas);
   const P = palette();
   const L = labels();
@@ -59,7 +74,7 @@ export function render(canvas, cam, o) {
   const tAsk = asked.length ? Math.min(f.tMax, Math.max(...asked.map((q) => q.ta)) * 1.12) : f.tMax;
   const hudBoxes = hudOf(w, ROWS);   // the readouts, where they really are
   const cR = phone ? 19 : 24, cX = w - cR - (phone ? 12 : 22), cY = h - cR - (phone ? 14 : 24);
-  const compassBox = { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
+  const compassBox = look.compass === false ? { x: w + 10, y: h + 10, w: 0, h: 0 } : { x: cX - cR - 4, y: cY - cR - 24, w: cR * 2 + 8, h: cR * 2 + 28 };
   // the velocity arrow is drawn to one scale, tau seconds of travel at that
   // velocity, and each frame holds the arrow's tip as well as the path, so the
   // arrow never runs off the canvas
@@ -87,7 +102,8 @@ export function render(canvas, cam, o) {
   //    frames (so they never move)
   const wholePx = whole.map(px);
   const both = [near.F, far.F].flatMap((G) => [...whole.map((p) => ({ x: G.X(p.x), y: G.Y(p.y) })), { x: G.X(0), y: G.Y(0) }]);
-  fieldFromAbove(g, 0, 0, w, h, { avoid: both, keep: hudBoxes });
+  if (look.ground) look.ground(g, w, h, { avoid: both, keep: hudBoxes });
+  else fieldFromAbove(g, 0, 0, w, h, { avoid: both, keep: hudBoxes });
   // the words: kept off the readouts, the compass, every line drawn and each other
   const Q = placer(g, w, h);
   const off = (pts) => Q.line(pts);
@@ -171,7 +187,7 @@ export function render(canvas, cam, o) {
   }
   // one scale for the whole run (tau, above), so an arrow's length always says its speed
   const sp0 = f.speed(t), vl = tau * F.k;
-  softShadow(g, pX + 4, pY + 7, 15, 6);
+  if (!look.body) softShadow(g, pX + 4, pY + 7, 15, 6);
   if (show.velocity !== false && sp0 > 1e-6) {
     // one scale throughout, but never so short it hides under the ball
     const k0 = Math.max(vl, 24 / sp0), ex = pX + v.x * k0, ey = pY - v.y * k0;
@@ -189,8 +205,10 @@ export function render(canvas, cam, o) {
     const an = Math.hypot(A.x, A.y);
     if (an > 1e-9) { arrow(g, pX, pY, pX + (A.x / an) * 44, pY - (A.y / an) * 44, { color: P.acc, width: 2.4, head: 10 }); Q.line([{ x: pX, y: pY }, { x: pX + (A.x / an) * 44, y: pY - (A.y / an) * 44 }]); }
   }
-  ballAt(g, pX, pY, 11);
-  hold({ x: pX - 14, y: pY - 14, w: 28, h: 28 });
+  const bR = look.bodyR ?? 14;
+  if (look.body) look.body(g, pX, pY, { P, Q, hold, off, F, t, f, phone, surface });
+  else ballAt(g, pX, pY, 11);
+  hold({ x: pX - bR, y: pY - bR, w: bR * 2, h: bR * 2 });
 
   Q.flush(L);
   Ls.draw(g, w, h);
@@ -198,6 +216,6 @@ export function render(canvas, cam, o) {
 
   // ── the compass: the screen's, not the field's
   unview(g);
-  compassRose(g, cX, cY, cR, P);
+  if (look.compass !== false) compassRose(g, cX, cY, cR, P);
   return null;
 }
