@@ -180,7 +180,7 @@ export function render(canvas, cam, o) {
 
   // ── the object, where it is (resting ON the floor at the bottom, not sunk into it); a faint line of where it has been
   const yObj = Y(f.h - f.pos(t)), yNow = Math.min(yObj, yBot - rest), inLiquid = t >= f.t1 - 1e-9;
-  if (f.pos(t) > 1e-6) stroke(g, [{ x: x0, y: yTop }, { x: x0, y: yNow }], { color: withAlpha(P.ink, 0.5), width: 1.2, dash: [2, 5] });
+  if (f.pos(t) > 1e-6) stroke(g, [{ x: x0, y: yTop }, { x: x0, y: yNow }], { color: withAlpha(P.ink, 0.28), width: 1.2 });
   if (fired && inLiquid && !over) {
     const r = rng(29), depthNow = Math.max(0, yNow - ySurf);
     g.fillStyle = withAlpha('#ffffff', 0.55);

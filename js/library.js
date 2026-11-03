@@ -683,7 +683,7 @@ export const LIBRARY = [
     example: { look: 'pool', h: 5, D: 4, m: 3, aL: 5.5, g: 10 },
     parts: [
       { label: 'i', kind: 'force', ask: 'Find the resistance to motion of the particle while it is moving in the liquid.', find: 'R', sym: 'R', unit: 'N', trim: true, at: 'f.tMid', step: 'Through the liquid', paper: 13.5 },
-      { label: 'ii', kind: 'graph', graph: 'g-v', ask: 'Sketch the velocity–time graph from when it starts to move until it reaches the bottom, showing the velocity and the time when it enters the liquid and when it reaches the bottom.', say: 'The velocity–time graph: steeper through the air, less steep in the liquid; 10 m s⁻¹ at 1 s, 12 m s⁻¹ at 1.36 s.', at: 'f.tB' },
+      { label: 'ii', kind: 'graph', graph: 'g-v', ask: 'Draw its velocity–time graph from the moment it is let go to the moment it hits the bottom, marking its speed and the time both as it meets the liquid and as it reaches the bottom.', say: 'The velocity–time graph: steeper through the air, less steep in the liquid; 10 m s⁻¹ at 1 s, 12 m s⁻¹ at 1.36 s.', at: 'f.tB' },
     ],
     answers: [
       { kind: 'speed', say: 'its speed when it reaches the bottom of the container', find: 'v2', sym: 'v', unit: 'm s^-1', trim: true, at: 'f.tB', step: 'Through the liquid' },
@@ -710,6 +710,7 @@ export const LIBRARY = [
     sub: 'a 1250 kg car, 1200 N of driving force against 350 N — its speed after 100 m from rest, driven up the hill and driven down it',
     note: 'A 1250 kg car has a driving force of 1200 N against a resistance of 350 N, on a road with sin α = 0.05 (g = 10). Driven up the hill, the weight’s component down the slope, 1250 × 10 × 0.05 = 625 N, works against it as well: 1200 − 350 − 625 = 1250a, a = 0.18 m s⁻², and after 100 m from rest v² = 2 × 0.18 × 100, so v = 6 m s⁻¹. Driven down the hill the same 625 N helps: a = 1.18 m s⁻², and v = √236 ≈ 15.4 m s⁻¹.',
     params: { way: 'both', look: 'car', m: 1250, D: 1200, R: 350, sinA: 0.05, s: 100, g: 10 },
+    reader: 'way is up, down or both: both when the paper asks for each, but given the speed at the end (to find the driving force or the resistance) it is up or down, never both. sinA is the sine of the road’s angle (1/20 as written, or 0.05); h is how far the road rises over the distance s.',
     place: 'Side on: a country road climbing a hillside from a village, one car driven up it and one down it',
     example: { way: 'both', look: 'car', m: 1250, D: 1200, R: 350, sinA: 0.05, s: 100, g: 10 },
     parts: [

@@ -387,7 +387,7 @@ group('The Past-paper library: a parachute jump, everything it says', () => {
   const K = KITS.jump;
   const bag = [];
   let said = 0;
-  for (const k of [{ g: 10, D: 550, t1: 3, a2: 12, t2: 2 }, { g: 9.8, T: 60, v1: 40, a2: 10, v2: 5 }, { g: 9.81, D: 1000, t1: 4, a2: 8, v2: 6 }, { g: 10, D: 10, t1: 3, a2: 12, t2: 2 }, {}]) {
+  for (const k of [{ g: 10, D: 550, t1: 3, a2: 12, t2: 2 }, { g: 9.8, T: 60, v1: 40, a2: 10, v2: 5 }, { g: 9.81, D: 1000, t1: 4, a2: 8, v2: 6 }, { g: 10, D: 10, t1: 3, a2: 12, t2: 2 }, { g: 10, t1: 3 }, { g: 10, t1: 3, a2: 12, t2: 2 }, { g: 10, a2: 12 }, {}]) {
     const r = K.solve(k);
     for (const x of r.derived || []) { said++; check('derived', x, bag); }
     for (const x of r.notes || []) { said++; check('note', x, bag); }

@@ -37,7 +37,8 @@ export const tank = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'down',
-  resolveObjects: (f) => [{ name: '', pos: f.pos, vel: f.vel, acc: f.acc, from: 'where it was let go' }],
+  // at rest at the end the model has no acceleration to give: a = 0, so Resolve says 'At rest', never 'momentarily'
+  resolveObjects: (f) => [{ name: '', pos: f.pos, vel: f.vel, acc: (t) => (f.stops && t >= f.tB - 1e-9 ? 0 : f.acc(t)), from: 'where it was let go' }],
   resolveEnds: true,
   read(v) { return { look: v.look === 'lab' ? 'lab' : 'pool', h: v.h, u: v.u, D: v.D, m: v.m, R: v.R, aL: v.aL, g: v.g }; },
   solve: solveTank,
@@ -50,7 +51,8 @@ export const tank = {
     return {
       left: [
         { k: 'Down from the start', v: num(f.pos(t), 2), unit: 'm', hue: 'disp' },
-        { k: 'Velocity, down +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+        // held at the end: its velocity then, and said so
+        { k: gone ? (f.stops ? 'Velocity at rest' : 'Velocity at the bottom') : 'Velocity, down +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
         // past the end the model has no acceleration to give: none is shown
         { k: 'Acceleration, down +', v: gone ? '—' : num(f.acc(t), 2), unit: gone ? '' : 'm s⁻²', hue: 'acc' },
       ],

@@ -93,7 +93,8 @@ export function solveDrive(k = {}) {
         why: a === 0 ? 'from rest the forces balance: it does not get going'
           : name === 'up' ? 'from rest the driving force is less than the resistance and the weight’s component together: it cannot get going up the hill'
             : 'from rest the resistance is more than the driving force and the weight’s component together: it does not get going' };
-      if (v2 < -1e-9) {
+      // slowing: does it stop strictly short of the distance? (relative, not a fixed tolerance on v²)
+      if (a < 0 && (u * u) / (-2 * a) < s * (1 - 1e-9)) {
         const sStop = snap((u * u) / (-2 * a));
         rows.push({ f: M`0 = u^2 + 2as`, s: M`0 = ${d(u)}^2 + 2 * ${sb(a)}s`, r: M`s = ${d(sStop)} [m]` });
         return { name, ok: false, rows, a, why: `it slows to rest after ${M`${d(sStop)} [m]`}, short of the ${M`${d(s)} [m]`}; this scenario follows it no further` };

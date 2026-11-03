@@ -1747,6 +1747,22 @@ group('CIE 9709/04 specimen Q2 and Edexcel M1 Nov 2002 Q5: down the slope and ac
     ok(near(c.dec, 3.6), 'the deceleration as a size'); }
 });
 
+group('Audit 25: the end of a motion, early graph tags, fractions, a part of a jump', () => {
+  const strip = (x) => String(x).replace(/<[^>]+>/g, '');
+  { const K = KITS.tank, r = K.solve(K.read({ h: 5, D: 4, m: 3, aL: -20, g: 10 })), card = resolveKit(K, r, r.f, r.f.tMax);
+    ok(r.stops && !JSON.stringify(card).includes('omentarily') && card.blocks[0].rows.some((q) => q.value === 0 && /cceleration/.test(q.name)), 'at rest in the water: Resolve gives a = 0, never "momentarily"'); }
+  { const K = KITS.drive, r = K.solve(K.read({ way: 'up', m: 1000, D: 0, R: 0, sinA: 0.1, s: 50, u: 10, g: 10 })), card = resolveKit(K, r, r.f, r.f.tMax);
+    ok(r.ok && !JSON.stringify(card).includes('omentarily') && K.hud(r.f, r.f.tMax).left.at(-1).v === '—', 'a car held at rest at the end: no "momentarily", no acceleration in the readouts'); }
+  { const K = KITS.drive, r = K.solve(K.read({ m: 1250, D: 1200, R: 350, sinA: '1/20', s: 100, g: 10 }));
+    ok(r.ok && near(r.vUp, 6), 'sin α written as 1/20 is read as a fraction'); }
+  ok(solveDrive({ way: 'up', m: 1000, D: 0, R: 0, sinA: 0.1, s: 50.00000001, u: 10, g: 10 }).ok, 'stopping within a hair of the distance: it covers it, not "short of" it');
+  { const K = KITS.drive, r = K.solve(K.read({ m: 1000, D: 5000, R: 0, sinA: 0.01, s: 5, g: 10 })), P0 = { disp: '#0', vel: '#0', acc: '#0', second: '#1', mark: '#0' };
+    const tags = endTags(K.graphs(r.f, r.f.tMax, P0)[0].series, r.f.tMax, (y) => 200 - y, 30, 200);
+    ok(tags.length === 2 && tags.every((tg) => tg.tEnd < r.f.tMax * 0.99), 'a short drive both ways: both lines end early, and each tag knows where'); }
+  { const K = KITS.jump, r = K.solve(K.read({ g: 10, t1: 3, a2: 12, t2: 2 }));
+    ok(!/Steady/.test(K.ending(r).body) && r.J.t3 === undefined && r.J.s3 === undefined, 'a part of a jump: no steady stage in its table or its values'); }
+});
+
 group('A parachute jump, from a part of it (QA: it needed the whole jump given)', () => {
   const K = KITS.jump, strip = (x) => String(x).replace(/<[^>]+>/g, '');
   const a = K.solve(K.read({ g: 10, t1: 3 }));

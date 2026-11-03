@@ -35,6 +35,7 @@ export const jump = {
   hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'down',
+  resolveEnds: true,
   read(vals) {
     return { g: vals.g, D: vals.D, T: vals.T, t1: vals.t1, v1: vals.v1, a2: vals.a2, t2: vals.t2, v2: vals.v2 };
   },
@@ -71,7 +72,8 @@ export const jump = {
         : 'Only the free fall is given, so only it is shown, and no ground is drawn. Give the canopy’s deceleration with its time or the speed it slows to, and the height or the total time, for the whole jump.'];
     r.f.jump = { D: null, partial: true, shown: r.f.pos(r.f.tMax).x, braked };
     // no whole time or height was found: none is offered to a part that asks for one
-    r.J = { ...r.J, T: undefined, D: undefined };
+    // nothing from the steady fall it only shows: no t3, s3 or held stage for a part to read
+    r.J = { ...r.J, T: undefined, D: undefined, t3: undefined, s3: undefined, v3: undefined, tHold: undefined, sHold: undefined };
     r.derived = (r.derived || []).filter((x) => !/^\s*[TD]\s*=/.test(String(x).replace(/<[^>]+>/g, '')));
     r.partial = true;
     r.convention = 'Down is positive: every distance is how far it has fallen, every speed downwards.';
@@ -131,7 +133,8 @@ export const jump = {
     const title = part ? `Fallen ${tr(f.pos(f.tMax).x)} m in the ${tr(f.tMax)} s shown; the ground’s height is not given.` : `On the ground after ${tr(f.tMax)} s, from ${tr(f.jump.D)} m.`;
     const name = ['Free fall', 'Under the canopy', 'Steady'];
     const cell = (x) => `<b>${tr(x)}</b>`;
-    const rows = st.map((s, i) => {
+    // a part of a jump: the steady fall is only shown, not given — no row for it
+    const rows = st.filter((s, i) => !(part && i === 2)).map((s, i) => {
       const t1 = isFinite(s.t1) ? s.t1 : f.tMax, v = f.vel(t1).x, sx = f.pos(t1).x - s.x0;
       return `<div class="ph-row" role="row" data-key="${i ? 'second' : 'first'}"><span class="ph-name" role="cell"><b>${i + 1}</b><em>${name[i] || ''}</em></span>
         <span role="cell">${cell(s.u)}</span><span role="cell">${cell(v)}</span><span role="cell">${cell(s.a)}</span><span role="cell">${cell(sx)}</span><span role="cell">${cell(t1 - s.t0)}</span></div>`;

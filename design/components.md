@@ -132,6 +132,7 @@ parts: [
 | `span` | `[from, to]` instead of `at`, for an interval (a time above a line): both ends ringed, the band marked on the clock |
 | `graph` | for a `graph` part: which graph it asks for (`'g-s'`, `'g-v'`, `'g-a'`); the velocity–time one when left out |
 | (stage) | a kit's stage gets the part on show as `o.askPart` (the part object, or null), so it can mark what the part asks for |
+| (graphs) | a series whose `fn` returns NaN past its own end (a motion that is over) is tagged beside its last point, not in the margin; early tags are spread among themselves and never push a margin tag; the tag margin is as wide as the widest tag |
 | `step` | which working step answers it: text matched against the step titles (case and tags ignored), or an index into `kit.working()` |
 | `given` | `{ box: value }` — boxes this part adds or changes, from this part on, keyed as `example` is. Leave it out when the example already holds everything |
 | `carry` | `{ box: 'a' }` — from this part on, the box takes part (a)'s answer: the ENGINE's value, never a typed one. The part says so: "using t = 3.5 s from (a)" |

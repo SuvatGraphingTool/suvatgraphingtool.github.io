@@ -44,10 +44,16 @@ export const drive = {
   resolveAxis: 'along',
   // along the road up a slope: neither across nor up, so solid (rule 2)
   resolvePart: '',
-  resolveObjects: (f) => f.ways.map((n) => ({ name: f.ways.length > 1 ? `Driven ${WAY[n]}` : '', pos: f[n].pos, vel: f[n].vel, acc: f[n].acc, from: FROM[n] })),
+  // held at the end at rest: no acceleration claimed, so Resolve says 'At rest', never 'momentarily'
+  resolveObjects: (f) => f.ways.map((n) => ({ name: f.ways.length > 1 ? `Driven ${WAY[n]}` : '', pos: f[n].pos, vel: f[n].vel,
+    acc: (t) => (t >= f[n].t - 1e-9 && Math.abs(f[n].v) < 1e-9 ? 0 : f[n].acc(t)), from: FROM[n] })),
   resolveWords: { pos: 'forwards', neg: 'backwards', plus: 'The way it drives', line: 'along the road' },
   resolveEnds: true,
-  read(v) { return { way: v.way ?? 'both', look: v.look ?? 'car', m: v.m, D: v.D, R: v.R, u: v.u, v: v.v, s: v.s, sinA: v.sinA, alpha: v.alpha, h: v.h, g: v.g }; },
+  // a sine as the papers write it, 1/20, is a fraction: read it as one
+  read(v) {
+    const frac = (x) => { const m = typeof x === 'string' && x.match(/^\s*(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*$/); return m ? Number(m[1]) / Number(m[2]) : x; };
+    return { way: v.way ?? 'both', look: v.look ?? 'car', m: v.m, D: v.D, R: v.R, u: v.u, v: v.v, s: v.s, sinA: frac(v.sinA), alpha: v.alpha, h: v.h, g: v.g };
+  },
   solve: (k) => { const r = solveDrive(k); if (r.ok) r.f.look = k.look === 'lorry' ? 'lorry' : 'car'; return r; },
   working: (solved) => driveWorking(solved),
   render: stage.render,
@@ -63,7 +69,8 @@ export const drive = {
       return [
         { k: two ? `${who}along the road` : `${who}${who ? 'along' : 'Along'} the road`, v: num(w.pos(t), 2), unit: 'm', hue: 'disp' },
         { k: two ? `${who}velocity` : `${who}${who ? 'velocity' : 'Velocity'}`, v: num(w.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-        ...(two ? [] : [{ k: 'Acceleration', v: num(w.a, 2), unit: 'm s⁻²', hue: 'acc' }]),
+        // held at the end the model gives no acceleration: none shown, as the water's readouts do
+        ...(two ? [] : [{ k: 'Acceleration', v: end && t > w.t + 1e-9 ? '—' : num(w.a, 2), unit: end && t > w.t + 1e-9 ? '' : 'm s⁻²', hue: 'acc' }]),
       ];
     });
     return { left: rows, right: [{ k: 'Time', v: num(t, 2), unit: 's' }] };

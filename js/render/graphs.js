@@ -156,7 +156,17 @@ export function drawGraph(canvas, spec) {
   // its own end, drawn here rather than queued, so nothing can move it off.
   if (lettered) {
     const xe = PAD.l + gw;
-    for (const tg of endTags(series, tMax, Y, PAD.t + 6, PAD.t + gh)) {
+    // lines that stop well before the end are tagged at their own ends, apart from the margin's spread
+    // (so they never push a margin tag off its line), and spread among themselves where two meet
+    const all = endTags(series, tMax, Y, PAD.t + 6, PAD.t + gh), isEarly = (tg) => X(tg.tEnd) < xe - 30;
+    const earlyTags = new Set(all.filter(isEarly).map((tg) => tg.tag));
+    const margin = endTags(series.filter((s) => !earlyTags.has(s.tag)), tMax, Y, PAD.t + 6, PAD.t + gh);
+    const early = all.filter(isEarly).sort((p, q) => p.y0 - q.y0);
+    for (let i = 0; i < early.length; i++) {
+      early[i].y0 = Math.max(early[i].y0, PAD.t + 34);
+      for (let j = 0; j < i; j++) if (Math.abs(X(early[i].tEnd) - X(early[j].tEnd)) < 50 && Math.abs(early[i].y0 - early[j].y0) < 18) early[i].y0 = early[j].y0 + 18;
+    }
+    for (const tg of [...margin, ...early]) {
       // a line that stopped well before the end (its motion is over) carries its tag at its own end,
       // rather than out in the margin by another line's end
       const xs = X(tg.tEnd), early = xs < xe - 30;
