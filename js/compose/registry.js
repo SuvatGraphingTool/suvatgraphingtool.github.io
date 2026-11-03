@@ -74,6 +74,7 @@ export const BACKDROPS = {
   polar:   { label: 'The polar sea', what: 'the polar sea: icebergs on the horizon, floes on the dark water; from the ice at the water’s edge, or (from a height) the face of an ice shelf', place: 'polar', below: 'sea', art: true, on: 'at the edge of the ice', high: 'an ice shelf' },
   oilrig:  { label: 'An oil rig', what: 'an oil rig in the open sea: its braced steel legs, the deck it leaves from, a derrick, a helideck, a supply ship off it', place: 'oilrig', below: 'sea', edge: true, at: 'the deck of an oil rig', art: true },
   treehouse: { label: 'A tree house', what: 'a tree house in a great oak: its platform and hut in the crown, the rope ladder down to the lawn', place: 'treehouse', below: 'ground', edge: true, at: 'a tree house', art: true },
+  fairground: { label: 'A fairground', what: 'a fairground: striped stalls and bunting on trodden grass; from a height, the top gondola of a Ferris wheel', place: 'fairground', below: 'ground', art: true, on: 'at a fairground', high: 'the top of a Ferris wheel' },
   carpark: { label: 'A multi-storey car park', what: 'a multi-storey car park: concrete decks with cars parked, a barrier along each edge, the stair tower; from the top deck, the street below', place: 'carpark', below: 'road', edge: true, at: 'the top of a multi-storey car park', art: true },
   volcano: { label: 'A volcano', what: 'a volcano: its cone, lava glowing in the crater and down a channel, an ash plume, a plain of old lava flows below', place: 'volcano', below: 'ground', edge: true, at: 'the crater of a volcano', art: true, lands: 'crater' },
   quarry:  { label: 'A quarry', what: 'a limestone quarry: drilled benches stepping down to its floor, a rock pool, a dump truck', place: 'quarry', below: 'ground', edge: true, at: 'the edge of a quarry', art: true },
@@ -517,6 +518,7 @@ const ONLY_HERE = [
   [/\b(ice shelf|ice floe|ice sheet|iceberg|antarctic|arctic|polar)\b/, 'polar'],
   [/\b(oil rig|oil platform|drilling platform|offshore platform|gas platform)\b/, 'oilrig'],
   [/\b(tree ?house|treehouse)\b/, 'treehouse'],
+  [/\b(ferris wheel|big wheel|fairground|funfair|fun fair|carnival|london eye)\b/, 'fairground'],
   [/\b(tennis court|centre court|grass court|hard court|clay court|tennis match|tennis player)\b/, 'court'],
   [/\b(basketball (?:court|hoop|player|ring|net|arena)|netball (?:court|hoop|post|ring)|(?:through|into|at) the (?:hoop|ring)|free throw|jump shot|slam dunk)\b/, 'arena'],
   // on a beach, but not a cliff, pier or harbour over one ("off the cliff onto the beach" is the cliff's)

@@ -2815,5 +2815,62 @@ function treehouse(g, c) {
   softShadow(g, tx, oy + 2, pw * 0.6, 5, 0.6);
 }
 
+/* ── a fairground ───────────────────────────────────────────────────────── */
+
+/** A fairground: striped stalls and a helter-skelter along the back, bunting,
+    the trodden grass; from a height, a Ferris wheel whose top gondola is where
+    it leaves from — its rim, spokes and the A-frame legs to the ground, the
+    gondolas hanging level round it, lit at night. */
+function fairground(g, c) {
+  const { w, h, k, oy, x0, top, H0, phase = 0 } = c;
+  const E = env(), n = E.night, r = rng(283), horizon = oy - clamp((oy - 40) * 0.3, 40, 150);
+  sky(g, w, horizon, x0, { far: 'none', seed: 211, clouds: 3 });
+  for (let x = r() * 30; x < w; x += 30 + r() * 40) crown(g, x, horizon - 10 - r() * 8, 14 + r() * 12, n);
+  grass(g, 0, w, horizon, h);
+  g.fillStyle = withAlpha(n ? '#3a3020' : '#b8a878', 0.35); g.fillRect(0, lerp(horizon, oy, 0.5), w, h - lerp(horizon, oy, 0.5));
+  const land = (c.clearX || [])[0] ?? w;
+  // the stalls: striped awnings in blue and white, yellow and white, along the back
+  const sw = clamp(2.5 * k, 30, 90), sh = sw * 0.7, sy = lerp(horizon, oy, 0.25);
+  const stripes = n ? [['#3a4a7a', '#8a8e96'], ['#7a6a3a', '#8a8e96']] : [['#2f5fa8', '#f4f4f4'], ['#e8c547', '#f4f4f4'], ['#5fae7a', '#f4f4f4']];
+  for (let x = 10 + r() * 20, i = 0; x < w - sw; x += sw + 10 + r() * 30, i++) {
+    if (!underSky(c, x, x + sw, sy - sh - 6, 30)) continue;
+    g.fillStyle = n ? '#4a4038' : '#c8b896'; g.fillRect(x + 3, sy - sh * 0.6, sw - 6, sh * 0.6);
+    g.fillStyle = n ? withAlpha(E.window, 0.7) : '#3a3036'; g.fillRect(x + 6, sy - sh * 0.5, sw - 12, sh * 0.3);
+    const [a, b] = stripes[i % stripes.length]; const nst = 6;
+    for (let j = 0; j < nst; j++) { g.fillStyle = j % 2 ? b : a; g.beginPath(); g.moveTo(x + (sw * j) / nst, sy - sh * 0.6); g.lineTo(x + (sw * (j + 1)) / nst, sy - sh * 0.6); g.lineTo(x + (sw * (j + 1)) / nst, sy - sh); g.lineTo(x + (sw * j) / nst, sy - sh); g.closePath(); g.fill(); }
+    g.fillStyle = a; for (let j = 0; j < nst; j++) { g.beginPath(); g.arc(x + (sw * (j + 0.5)) / nst, sy - sh * 0.6, sw / nst / 2, 0, Math.PI); g.fill(); }
+  }
+  // bunting across the back
+  g.strokeStyle = n ? '#6a6e76' : '#8a9098'; g.lineWidth = 1; const by = sy - sh - 14; g.beginPath(); g.moveTo(0, by); for (let x = 0; x <= w; x += 60) g.quadraticCurveTo(x + 30, by + 8, x + 60, by); g.stroke();
+  const flags = n ? ['#5a6a8a', '#8a8a5a', '#6a8a6a'] : ['#2f5fa8', '#e8c547', '#5fae7a', '#f4f4f4'];
+  for (let x = 6, i = 0; x < w; x += 12, i++) { const yy = by + Math.sin(((x % 60) / 60) * Math.PI) * 6; g.fillStyle = flags[i % flags.length]; g.beginPath(); g.moveTo(x, yy); g.lineTo(x + 8, yy); g.lineTo(x + 4, yy + 8); g.closePath(); g.fill(); }
+  if (!(H0 > 0)) return;
+  // the Ferris wheel: its hub below and behind the top gondola, the rim through the gondolas
+  const H = oy - top, R = Math.max(H * 0.45, 3 * k), cx = x0 - clamp(0.6 * k, 6, 20), cy = top + R, rim = n ? '#c8ccd2' : '#7a828e', frame = n ? '#8a8e96' : '#5a6070';
+  // the A-frame legs from the hub to the ground
+  g.strokeStyle = frame; g.lineWidth = clamp(0.25 * k, 3, 8); g.lineCap = 'round';
+  g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - R * 0.55, oy); g.moveTo(cx, cy); g.lineTo(cx + R * 0.55, oy); g.moveTo(cx - R * 0.3, lerp(cy, oy, 0.55)); g.lineTo(cx + R * 0.3, lerp(cy, oy, 0.55)); g.stroke();
+  // the rim and spokes (turned a little by the clock, though the top gondola is where it leaves)
+  g.strokeStyle = rim; g.lineWidth = clamp(0.15 * k, 2, 5); g.beginPath(); g.arc(cx, cy, R * 0.92, 0, TAU); g.stroke();
+  g.lineWidth = 1; g.strokeStyle = withAlpha(rim, 0.8); const nsp = 12;
+  for (let i = 0; i < nsp; i++) { const a = (i / nsp) * TAU; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R * 0.92, cy + Math.sin(a) * R * 0.92); g.stroke(); }
+  g.fillStyle = frame; g.beginPath(); g.arc(cx, cy, Math.max(3, R * 0.05), 0, TAU); g.fill();
+  // the gondolas hanging level, the top one open at the front where it leaves from
+  const gw = clamp(1.4 * k, 10, 40), gh = gw * 0.75, cols = n ? ['#5a6a8a', '#8a8a5a', '#6a8a6a'] : ['#2f5fa8', '#e8c547', '#5fae7a'];
+  for (let i = 0; i < nsp; i++) {
+    const a = -Math.PI / 2 + (i / nsp) * TAU, px = cx + Math.cos(a) * R * 0.92, py = cy + Math.sin(a) * R * 0.92;
+    if (i === 0) continue;
+    g.strokeStyle = frame; g.lineWidth = 1; g.beginPath(); g.moveTo(px, py); g.lineTo(px, py + gh * 0.3); g.stroke();
+    g.fillStyle = cols[i % cols.length]; g.beginPath(); g.roundRect(px - gw / 2, py + gh * 0.3, gw, gh, 3); g.fill();
+    if (n) { g.fillStyle = withAlpha(E.window, 0.9); g.beginPath(); g.arc(px, py, 2, 0, TAU); g.fill(); }
+  }
+  // the top gondola: its floor at the launch height, the person standing in it, open at the front
+  g.fillStyle = cols[0]; g.fillRect(x0 - gw * 1.1, top, gw * 1.1, clamp(0.2 * k, 3, 8));
+  g.strokeStyle = cols[0]; g.lineWidth = 2; g.beginPath(); g.moveTo(x0 - gw * 1.1, top); g.lineTo(x0 - gw * 1.1, top - gh * 0.9); g.lineTo(x0 - gw * 0.2, top - gh * 0.9); g.stroke();
+  g.strokeStyle = frame; g.lineWidth = 1.2; g.beginPath(); g.moveTo(cx, top); g.lineTo(cx, top - gh * 0.9); g.stroke();
+  softShadow(g, cx, oy + 2, R * 0.6, 4, 0.5);
+  void phase;
+}
+
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse };
+export const PLACE_ART = { mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse, fairground };
