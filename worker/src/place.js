@@ -129,6 +129,11 @@ function settle(x, words) {
   if (x?.library !== 'from-a-height' || !b) return x;
   const text = `${words} ${x.summary || ''}`;
   const out = { ...x, boxes: { ...b } };
+  // "projected vertically upwards" with no angle given: 90°, and downwards −90°
+  if (b.theta == null || b.theta === '') {
+    if (/\bvertically up(wards)?\b|\bstraight up(wards)?\b/i.test(text)) out.boxes.theta = 90;
+    else if (/\bvertically down(wards)?\b|\bstraight down(wards)?\b/i.test(text)) out.boxes.theta = -90;
+  }
   // "hits the water 2.5 s later. how deep is the well": a height of 0 with a time is the height asked
   if (b.h === 0 && (b.t > 0 || b.v > 0) && !/\b(from|on) the ground\b/i.test(text)) delete out.boxes.h;
   // "the splash is HEARD 3 s later; the speed of sound is 340 m/s": that time is the fall and the
@@ -192,6 +197,34 @@ function stages(x, words) {
   const b = x?.boxes;
   if (x?.library !== 'journey-stages' || !b) return x;
   const out = { ...x, boxes: { ...b } }, o = out.boxes;
+  // as many stages as it says what they do: "n: 4" with three stages is three
+  const said = [1, 2, 3, 4, 5, 6].filter((i) => ['up', 'hold', 'down'].includes(o[`k${i}`]));
+  if (said.length && said.length === Math.max(...said) && Number(o.n) > said.length) o.n = said.length;
+  // "the distance run by the girl in the first 64 s": the time asked about, in the at.t box
+  const list = Array.isArray(out.parts) ? out.parts : Array.isArray(out.asked) ? out.asked : [];
+  if (o['at.t'] == null) {
+    for (const p of list) {
+      const m = /\b(?:first|after|at t ?=)\s*(\d+(?:\.\d+)?)\s*(?:s|secs?|seconds)\b/i.exec(String(p?.asks || ''));
+      const at = m ? Number(m[1]) : typeof p?.atTime === 'number' ? p.atTime : null;
+      if (at > 0) { o['at.t'] = at; break; }
+    }
+  }
+  // "maintains this speed for T seconds … find the value of T": what the letter is, said beside it
+  const LET = { hold: 'the time at constant speed', up: 'the time speeding up', down: 'the time slowing down' };
+  for (const p of list) {
+    const m = /\bvalue of ([A-Z])\b/.exec(String(p?.asks || ''));
+    if (!m || /\(/.test(p.asks)) continue;
+    const L = m[1], w = String(words || '');
+    const kind = new RegExp(`\\b(maintains|holds|constant speed|steady)[^.]*?\\bfor ${L} (s|seconds)\\b|\\bfor ${L} (s|seconds)[^.]*?\\b(constant speed|steady)`, 'i').test(w) ? 'hold'
+      : new RegExp(`\\baccelerat[^.]*?\\bfor ${L} (s|seconds)\\b`, 'i').test(w) ? 'up'
+      : new RegExp(`\\bdecelerat[^.]*?\\bfor ${L} (s|seconds)\\b`, 'i').test(w) ? 'down' : null;
+    if (kind) p.asks = `${p.asks} (${LET[kind]})`;
+  }
+  // "runs a 400 m race in a time of 84 s", "takes 120 s to travel between": the whole time
+  if (o.T == null) {
+    const T = /\bin a (?:total )?time of\s*(\d+(?:\.\d+)?)\s*s\b|\btakes\s*(\d+(?:\.\d+)?)\s*s\s*to (?:travel|go|run|complete)\b|\btotal time (?:of|is|taken is)\s*(\d+(?:\.\d+)?)\s*s\b/i.exec(String(words || ''));
+    if (T) o.T = Number(T[1] ?? T[2] ?? T[3]);
+  }
   const n = Number(o.n) || 0;
   // a rate the reader left out: the one acceleration in the words no stage has, given
   // to the one stage that changes speed with neither its rate nor its end speed
@@ -271,7 +304,19 @@ export function toPlace(x, words = '') {
  * library scenario, its numbers as boxes, for the values screen to ask the rest.
  */
 const FIVE_KEYS = ['u', 'v', 'a', 's', 't'];
+/** "with speed u m s⁻¹ … show that u = 21": a letter is the number asked for, never a value — left out. */
+const LETTER = (v) => typeof v === 'string' && /^\s*[A-Za-z]\s*$/.test(v);
+function unlettered(x) {
+  if (!x || typeof x !== 'object') return x;
+  const clean = (o) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).filter(([k, v]) => !(LETTER(v) && !/kind|fig|place|start|mode|look|axis|find|pick|from|where|who/.test(k)))) : o);
+  let y = x;
+  for (const k of ['u', 'v', 'a', 's', 't', 'h', 'g']) if (LETTER(y[k])) { y = { ...y }; delete y[k]; }
+  if (y.boxes) y = { ...y, boxes: clean(y.boxes) };
+  if (y.recipe?.numbers) y = { ...y, recipe: { ...y.recipe, numbers: clean(y.recipe.numbers) } };
+  return y;
+}
 function known(x) {
+  x = unlettered(x);
   if (!x?.understood || !x.scenario || SCENARIO_IDS.includes(x.scenario)) return x;
   const nums = Object.fromEntries(FIVE_KEYS.filter((k) => typeof x[k] === 'number' && isFinite(x[k])).map((k) => [k, x[k]]));
   if (Object.keys(nums).length >= 3) {

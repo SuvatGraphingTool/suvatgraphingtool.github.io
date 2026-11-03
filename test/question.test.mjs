@@ -762,6 +762,21 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(skr.ok && Math.abs(skr.before.s - 25 / 3) < 1e-9 && Math.abs(skr.before.t - 10 / 3) < 1e-9 && roadWorking(skr).some((w) => w.title === 'From rest to the first point'), 'and the first flag is 8.33 m from the top, with its working');
   ok(one('road', 'distance from the top to the first flag')?.find === 'before.s' && one('road', 'distance between the flags')?.find === 'five.s.value', '"from the top to the first flag" is the distance before the stretch; between the flags is the stretch');
   ok(toApp({ understood: true, scenario: 'road', summary: 'x', u: 5, v: 10, s: 25, fromRest: true }).fromRest === true, 'the page reads fromRest');
+  // Edexcel M1 past papers through Gemma, 3 Nov (paraphrased here; the papers' words go only to the reader)
+  const pq = toPlace({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'x', boxes: { place: 'ground', h: 17.5, u: 'u', v: 28, level: 19 }, parts: [{ label: 'a', asks: 'show that u = 21', twelve: 'u' }, { label: 'b', asks: 'possible values of t when P is 19 m above A' }] }, 'P is projected vertically upwards from A, 17.5 m up, with speed u, and reaches the ground at 28 m/s. (a) show u (b) when is it 19 m above A');
+  ok(!('u' in pq.boxes) && pq.boxes.theta === 90, 'a letter for the number asked (u) is left out; "vertically upwards" is 90°');
+  const pqv = HK.solve(HK.read({ ...pq.boxes, place: 'tower', g: 9.8 }));
+  ok(pqv.ok && Math.abs(pqv.f.params.u - 21) < 1e-9 && Math.abs(pqv.level.times[0] - 1.3) < 5e-3 && Math.abs(pqv.level.times[1] - 2.99) < 5e-3, 'M1 June 2012 Q5: u = 21, and 19 m above A at 1.30 s and 2.99 s');
+  ok(JSON.stringify(one('from-a-height', 'possible values of t when P is 19 m above A')?.find) === '["level.times.0","level.times.1"]', 'and "the possible values of t" is both times');
+  const race = toPlace({ understood: true, scenario: 'library', library: 'journey-stages', summary: 'x', boxes: { n: 4, u: 0, k1: 'up', v1: 5, t1: 4, k2: 'hold', t2: 60, k3: 'down', t3: 20, D: 400 }, parts: [{ label: 'b', asks: 'distance run in the first 64 s', atTime: 64 }, { label: 'c', asks: 'the final speed V' }, { label: 'd', asks: 'the deceleration in the final 20 s' }] }, 'A girl runs a 400 m race in a time of 84 s, three stages. (b) distance in the first 64 s (c) V (d) deceleration');
+  ok(race.boxes.n === 3 && race.boxes.T === 84 && race.boxes['at.t'] === 64, 'three stages said are three; "in a time of 84 s" is the whole time; the first 64 s is the time asked');
+  const rv = JK.solve(JK.read(race.boxes));
+  const rpart = fromReader('journey-stages', race.parts);
+  ok(rv.ok && rv.f.answers[0].s === 310 && rv.J.V === 4 && Math.abs(rv.J.aDown - 0.05) < 1e-9 && rpart[0].find === 'f.answers.0.s' && rpart[2].find === 'J.aDown', 'M1 June 2011 Q4: 310 m, V = 4, 0.05 m s⁻²');
+  const lights = toPlace({ understood: true, scenario: 'library', library: 'journey-stages', summary: 'x', boxes: { n: '3', u: 0, k1: 'up', v1: 22, t1: 30, k2: 'hold', k3: 'down', v3: 0, D: 2145 }, parts: [{ label: 'b', asks: 'the value of T', answer: 't2' }] }, 'A car takes 120 s to travel between two sets of lights 2145 m apart: from rest for 30 s to 22 m/s, then maintains this speed for T seconds, then slows to rest. (b) Find the value of T.');
+  ok(lights.boxes.T === 120 && /time at constant speed/.test(lights.parts[0].asks), '"takes 120 s to travel between": the whole time; "for T seconds" at that speed: T is the time at constant speed');
+  const lv2 = JK.solve(JK.read(lights.boxes));
+  ok(lv2.ok && lv2.J.tHold === 75 && fromReader('journey-stages', lights.parts)[0].find === 'J.tHold', 'M1 June 2013 Q5(b): T = 75');
   const hi = one('up', 'how high does it go');
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }

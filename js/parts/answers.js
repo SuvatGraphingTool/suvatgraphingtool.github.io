@@ -98,7 +98,7 @@ const STOP = new Set(['what', 'when', 'where', 'which', 'find', 'from', 'that', 
 
 // "how long is the ramp" is a distance; "how long until it lands" a time
 const HOW = [[/\bhow (high|tall|deep)\b|\bdepth\b/, 'height'], [/\brange\b/, 'distance'], [/\bhow far\b/, 'distance'], [/\bhow (fast|quickly)\b/, 'speed'],
-  [/\bhow long (is|was) (the|a|an)\b/, 'distance'], [/\bhow long\b|\bhow many seconds\b/, 'time']];
+  [/\bhow long (is|was) (the|a|an)\b/, 'distance'], [/\bhow long\b|\bhow many seconds\b|\bvalues? of t\b/, 'time']];
 
 export function fromReader(id, raw, boxes = []) {
   const s = byId(id);
@@ -138,7 +138,9 @@ export function fromReader(id, raw, boxes = []) {
     // meet / catch up / draw level" — the one meeting there is
     const meets = /\b(when|catch(es)?|meet|level|overtakes?|pass(es)?|collide)\b/.test(words);
     // "the deceleration" or "the retardation" asks for the acceleration (deceleration does not contain the word)
-    const named = ['speed', 'time', 'height', 'distance', 'acceleration', 'angle', 'impulse'].filter((k) => words.includes(k) || (k === 'acceleration' && /decelerat|retard/.test(words)));
+    // in the order the question says them: "the time at constant speed" is a time
+    const at = (k) => { const i = words.indexOf(k); return i >= 0 ? i : k === 'acceleration' ? words.search(/decelerat|retard/) : -1; };
+    const named = ['speed', 'time', 'height', 'distance', 'acceleration', 'angle', 'impulse'].filter((k) => at(k) >= 0).sort((p, q) => at(p) - at(q));
     // a student's "how high", "how far", "how fast", "how long until": the kind, in their words
     // "when it hits the floor": a time, where there is no meeting to time
     const how = HOW.find(([re]) => re.test(words))?.[1] || (/^\s*when\b/.test(words) && !offer.some((a) => a.kind === 'meeting') ? 'time' : undefined);

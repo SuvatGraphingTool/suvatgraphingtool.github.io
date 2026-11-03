@@ -82,6 +82,9 @@ export const LIBRARY = [
       { kind: 'acceleration', say: 'the acceleration while speeding up', find: 'J.aUp', sym: 'a', unit: 'm s^-2', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
       { kind: 'acceleration', say: 'the deceleration while slowing down (braking, retardation)', find: 'J.aDown', sym: 'a', unit: 'm s^-2', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
       { kind: 'distance', say: 'the distance it covers at constant speed (steady)', find: 'J.sHold', sym: 's', unit: 'm', trim: true, at: 'end', step: 'each stage', example: JOURNEY_UHD },
+      // "the distance run in the first 64 s": where it is, and how fast, at the time asked (the at.t box)
+      { kind: 'distance', say: 'how far it has gone at the time asked (in the first so many seconds)', find: 'f.answers.0.s', sym: 's', unit: 'm', trim: true, at: 'f.answers.0.t', when: '\\b(first|after|at t ?=|at time)\\b', example: { ...JOURNEY_UHD, 'at.t': 10 } },
+      { kind: 'speed', say: 'its speed at the time asked (after so many seconds)', find: 'f.answers.0.v', sym: 'v', unit: 'm s^-1', trim: true, at: 'f.answers.0.t', when: '\\b(first|after|at t ?=|at time)\\b', example: { ...JOURNEY_UHD, 'at.t': 10 } },
     ],
     sources: [
       { board: 'Edexcel', paper: '6677/01 M1', session: 'Jun 2012', q: '4' },
@@ -991,6 +994,8 @@ export const LIBRARY = [
       { kind: 'distance', say: 'how far out it lands, horizontally, from below where it was thrown', find: 'out', sym: 'x', unit: 'm', trim: true, at: 'end', step: 'horizontal' },
       // "the speed with which it was thrown": found from where it lands, the time or the speed it lands at
       { kind: 'speed', say: 'the speed it is thrown with (the speed of projection)', find: 'params.u', sym: 'u', unit: 'm s^-1', trim: true, at: 0, example: { place: 'tower', h: 45, theta: 0, s: 30, g: 9.81 } },
+      // "find the possible values of t" when it is at the height asked: both, up and down
+      { kind: 'time', say: 'the times it is at the height asked (both of them, the possible values of t: on the way up and on the way down)', find: ['level.times.0', 'level.times.1'], sym: 't', unit: 's', trim: true, at: 'level.times.0', when: '\\b(times|values of t|possible)\\b', example: { place: 'tower', h: 17.5, u: 21, theta: 90, level: 19, g: 9.8 } },
       // "the time for which it is at least 28 m above the ground"
       { kind: 'time', say: 'how long it spends above the height asked about (at least, or more than, so many metres up)', find: 'level.above', sym: 't', unit: 's', trim: true, at: 'level.times.1', when: '\\b(above|at least|more than|higher than)\\b', example: { place: 'tower', h: 14, u: 21, theta: 90, level: 14, g: 9.81 } },
       // a hoop, a basket or a target at a height: where it passes it, on the way down
