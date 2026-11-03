@@ -14,5 +14,11 @@ Short notes, newest first. Batches 1–29 are in the git history ("Component fac
   a tub. "a friend of mine" is not a mine.
 - **machine** (launcher): a tennis or cricket ball machine — hopper of balls, throwing wheels
   spinning, the barrel on the launch angle; it jolts and puffs as the ball goes.
-- Tests in test/compose.test.mjs. Pushed (60b3551, c2a44f0, a51cd9d); **UI critic and live
-  Ask Suvat check still to do** (the reader allowance was spent on 3 Nov; after 00:00 UTC).
+- Tests in test/compose.test.mjs. Pushed (60b3551, c2a44f0, a51cd9d).
+- **UI critic, two rounds:** the machine bigger (a panel, cable, a jolt, a puff, a ring round its
+  wheels); the trampoline's mat sags 0.15 of its size, loads again on landing, the jumper's feet
+  in the dip; the shaft's bedding, buntons at the walls, galleries (deep shafts only), depth ticks,
+  a taller headframe; "reaches the bottom at the foot of the shaft". Open polish: composer
+  captions 3–4 lines; the Display drawer over a composed scene on a phone; the headframe under the
+  readouts on a phone; the trampoline's phone fit.
+- **Live Ask Suvat check still to do** (the reader allowance was spent on 3 Nov; after 00:00 UTC).

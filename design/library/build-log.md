@@ -2,6 +2,18 @@
 
 Short notes, newest first. What shipped, what was audited, where a session stopped.
 
+## 3 Nov 2026, evening — 53–56 through their critics
+
+- **Library 56 `timed-up-the-slope`** (CIE 9709/41 Nov 2018 Q6) built: two timed stretches up a
+  rough slope give a and u (exact fractions), then μ; a lab with light gates and a timer.
+- **Physics critic round 1** (53–55): papers right; fixed a crash with no clock, `tvec`, units
+  outside maths, clock answers past midnight, the ship onto the rock, sailing along the line
+  through the rock, a/θ range checks, false refusals and caveats. Round 2 (with 56) running.
+- **UI critic rounds 1–2** (53–56 and batch 30): fixed the colour rule on the road, the slope
+  lab's timer and layout, the magnet and the meeting, the buoy and the wake; open polish only:
+  the "337 °" readout spacing, part chips overlapping on a phone, the Display drawer over a
+  composed scene on a phone, composer captions 3–4 lines, chart detail on the course.
+
 ## 3 Nov 2026, later — audit 26 done; library 54 and 55 built
 
 - **Audit 26** (51 `last-stretch`, 52 `passed-at-x`): papers right, no wrong physics. Fixed (30e6197):
