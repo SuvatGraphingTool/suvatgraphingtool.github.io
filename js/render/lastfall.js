@@ -20,15 +20,29 @@ import { T, num } from '../notation.js';
 const TAU = Math.PI * 2;
 const sf = (x) => num(Number(x.toPrecision(3)), 6, { trim: true });
 
-/** Words that must not be lost on a plate of the card colour, in their place, kept inside the stage. */
-function plate(g, L, P, txt, x, y, color, { align = 'center', size = 13 } = {}) {
+const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/** Words that must not be lost, on a plate of the card colour, kept inside the stage and clear of
+    every plate and readout already placed (`taken`): tried where it belongs, then a row above or
+    below, then on the anchor's other side — the nearest free place, never dropped. */
+function plate(g, L, P, taken, txt, x, y, color, { align = 'center', size = 13 } = {}) {
   g.save(); g.font = `700 ${Math.max(13, size)}px system-ui, sans-serif`;
-  const tw = g.measureText(txt).width, bh = size + 7, W = g.canvas.clientWidth || Infinity;
-  let bx = align === 'left' ? x - 4 : align === 'right' ? x - tw - 4 : x - tw / 2 - 4;
-  const shift = clamp(bx, 4, Math.max(4, W - tw - 12)) - bx; bx += shift; x += shift;
-  g.fillStyle = withAlpha(P.card, 0.85); g.beginPath(); g.roundRect?.(bx, y - bh / 2, tw + 8, bh, 4); g.fill();
-  g.fillStyle = color; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(txt, x, y + 0.5); g.restore();
-  L.reserve({ x: bx, y: y - bh / 2, w: tw + 8, h: bh });
+  const tw = g.measureText(txt).width, bh = size + 7, W = g.canvas.clientWidth || Infinity, H = g.canvas.clientHeight || Infinity;
+  const at = (al, ax, ay) => {
+    let bx = al === 'left' ? ax - 4 : al === 'right' ? ax - tw - 4 : ax - tw / 2 - 4;
+    bx = clamp(bx, 4, Math.max(4, W - tw - 12));
+    return { x: bx, y: clamp(ay - bh / 2, 2, H - bh - 2), w: tw + 8, h: bh };
+  };
+  const flip = align === 'left' ? 'right' : align === 'right' ? 'left' : 'center', fx = align === 'left' ? x - 24 : align === 'right' ? x + 24 : x;
+  const tries = [];
+  for (const dy of [0, -22, 22, -44, 44, -66, 66]) tries.push([align, x, y + dy]);
+  for (const dy of [0, -22, 22, -44, 44]) tries.push([flip, fx, y + dy]);
+  let box = null;
+  for (const [al, ax, ay] of tries) { const b = at(al, ax, ay); if (!taken.some((q) => hit(q, b))) { box = b; break; } }
+  box ||= at(align, x, y);
+  g.fillStyle = withAlpha(P.card, 0.88); g.beginPath(); g.roundRect?.(box.x, box.y, box.w, box.h, 4); g.fill();
+  g.fillStyle = color; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(txt, box.x + 4, box.y + bh / 2 + 0.5); g.restore();
+  taken.push(box); L.reserve(box);
 }
 
 export function render(canvas, cam, o) {
@@ -37,13 +51,16 @@ export function render(canvas, cam, o) {
   const { ctx: g, w, h } = fitCanvas(canvas);
   const P = palette(), L = labels(), E = env(), phone = w < 520;
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
-  const HB = hudBoxes(w, 3); for (const b of HB) L.reserve(b);
+  // on a phone the readouts are two rows (the kit says so too): the fall gets the height
+  const HB = hudBoxes(w, phone ? 2 : 3); for (const b of HB) L.reserve(b);
+  const taken = [...HB], put = (...a) => plate(g, L, P, taken, ...a);
 
   // ── one vertical scale, from the top to the ground; the drop line right of the wall
   const ground = h - clamp(h * 0.14, 40, 80), top = phone ? HB[0].h + 30 : Math.max(HB[1].h + 34, 40);
   const k = (ground - top) / f.H, Y = (hgt) => ground - hgt * k;   // hgt above the ground
   const wallW = clamp(w * 0.16, 70, 150), edge = phone ? Math.round(w * 0.42) : Math.round(Math.max(HB[0].w + wallW + 40, w * 0.4));
-  const x0 = edge + 14, size = 9;
+  // the drop clear of the wall and its marker: the stone never passes through the plaque
+  const x0 = edge + 30, size = 9;
   const horizon = ground - clamp(h * 0.18, 40, 110);
 
   // ── the place: sky and fields, the ground, the tower or the cliff
@@ -54,7 +71,7 @@ export function render(canvas, cam, o) {
 
   // the point on the wall: a band of paler stone and a small iron marker, at p above the ground
   const yp = Y(f.p);
-  g.fillStyle = withAlpha('#ffffff', E.night ? 0.12 : 0.28); g.fillRect(edge - wallW, yp - 2, wallW, 4);
+  if (f.look !== 'cliff' && yp < ground - 34) { g.fillStyle = withAlpha('#ffffff', E.night ? 0.12 : 0.28); g.fillRect(edge - wallW, yp - 2, wallW, 4); }
   // a dark iron bracket and a pale stone plaque: no colour of its own, the hues are the quantities'
   g.fillStyle = '#2b2f36'; g.fillRect(edge - 2, yp - 6, 8, 12); g.fillStyle = E.night ? '#d9d2c4' : '#efe8da'; g.fillRect(edge + 6, yp - 4, 12, 8); g.strokeStyle = '#2b2f36'; g.lineWidth = 1; g.strokeRect(edge + 6, yp - 4, 12, 8);
 
@@ -64,7 +81,7 @@ export function render(canvas, cam, o) {
   const dim = (x, ya, yb, txt) => {
     stroke(g, [{ x, y: ya }, { x, y: yb }], { color: P.disp, width: 1.6 });
     for (const y of [ya, yb]) stroke(g, [{ x: x - 6, y }, { x: x + 6, y }], { color: P.disp, width: 1.6 });
-    plate(g, L, P, txt, x + 10, (ya + yb) / 2, P.disp, { align: 'left', size: 14 });
+    put(txt, x + 10, (ya + yb) / 2, P.disp, { align: 'left', size: 14 });
   };
   dim(dx, Y(f.H), ground, T`H = ${sf(f.H)} [m]`);
   dim(dx2, yp, ground, T`${sf(f.p)} [m]`);
@@ -80,24 +97,29 @@ export function render(canvas, cam, o) {
   // ── the moments: past the point, and at the ground; the speeds on plates, left of the wall's edge
   if (fired && t >= f.tP - 1e-9) {
     const e = ageOf(t, f.tP, f.tMax, 0.9); pulse(g, x0, yp, e.age, e.life, P.mark, { radius: 22 });
-    const tag = f.mode === 'diff' ? T`V - ${sf(f.dv)} = ${sf(f.vP)} [m s^-1] "here"` : T`${sf(f.vP)} [m s^-1] "here"`;
+    // the paper's own given, on the plate: V − d, V ÷ k, or the last stretch's time
+    const tag = f.mode === 'diff' ? T`V - ${sf(f.dv)} = ${sf(f.vP)} [m s^-1] "here"` : f.mode === 'ratio' ? T`V/${sf(f.kk)} = ${sf(f.vP)} [m s^-1] "here"`
+      : T`${sf(f.vP)} [m s^-1] "here; the last" ${sf(f.p)} [m] "take" ${sf(f.tau)} [s]`;
     // left of the wall — on a phone, where that is too narrow, just above the point right of the drop
-    if (phone) plate(g, L, P, tag, x0 + 14, yp - 18, P.vel, { align: 'left' }); else plate(g, L, P, tag, edge - wallW - 10, yp, P.vel, { align: 'right' });
+    put(tag, x0 + 14, yp - 18, P.vel, { align: 'left' });
   }
   const landed = fired && t >= f.tG - 1e-9;
   if (landed) {
-    const e = ageOf(t, f.tG, f.tMax); dust(g, x0, ground, e.age, e.life, { size: 1.2, n: 16 });
+    const e = ageOf(t, f.tG, f.tMax); dust(g, x0, ground, e.age, e.life, { size: 2, n: 26 });
     // on the grass under the ground line: clear of the point's plate however low the point is
-    plate(g, L, P, T`V = ${sf(f.V)} [m s^-1] "at the ground"`, phone ? x0 + 14 : edge - wallW - 10, ground + 18, P.vel, { align: phone ? 'left' : 'right' });
+    put(T`V = ${sf(f.V)} [m s^-1] "at the ground"`, x0 + 14, ground + 18, P.vel, { align: 'left' });
   }
 
   // ── its velocity and acceleration, down positive (vertical: solid), between the drop and the dimension lines
   if (!landed) {
     const room = Math.max(0, ground - yNow - 8);
+    // below the stone while there is room; in the last metres, above it, pointing down at it
     const col = (bx, val, max, c, unit, wd, right) => {
-      const len = Math.min(clamp((val / max) * 70, 22, 70), room); if (len < 22) return;
-      arrow(g, bx, yNow, bx, yNow + len, { color: c, width: wd, head: 9 });
-      plate(g, L, P, T`${sf(val)} [${unit}]`, right ? bx + 8 : bx - 8, yNow + len * 0.55, c, { align: right ? 'left' : 'right' });
+      const len = clamp((val / max) * 70, 22, 70), below = room >= len;
+      const y0 = below ? yNow : yNow - size - len, y1 = below ? yNow + len : yNow - size;
+      arrow(g, bx, y0, bx, y1, { color: c, width: wd, head: 9 });
+      taken.push({ x: bx - 6, y: y0 - 2, w: 12, h: len + 4 });
+      put(T`${sf(val)} [${unit}]`, right ? bx + 8 : bx - 8, (y0 + y1) / 2, c, { align: right ? 'left' : 'right' });
     };
     if (show.velocity !== false && f.vel(t) > 0.05) col(x0, f.vel(t), Math.max(f.V, 1e-9), P.vel, 'm s^-1', 2.6);
     if (fired) col(x0 + 30, f.g, f.g, P.acc, 'm s^-2', 2.2, true);

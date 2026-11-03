@@ -32,7 +32,7 @@ export const lastfall = {
     ] },
   ],
   g: [9.8, 9.81, 10],
-  hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
+  hides: { shows: ['components', 'apex', 'ruler', 'range', 'grid', 'ticks'], extras: ['energy'], bounce: true },
 
   resolveAxis: 'down',
   resolveEnds: true,
@@ -54,12 +54,14 @@ export const lastfall = {
   render: stage.render,
 
   hud(f, t) {
+    // on a phone two rows (the acceleration, g, is on its arrow): the fall gets the stage's height
+    const narrow = typeof window !== 'undefined' && window.innerWidth < 520;
     return {
       left: [
         { k: 'Height above the ground', v: num(f.H - f.pos(t), 2), unit: 'm', hue: 'disp' },
         // on the ground the motion is over: its speed as it landed, said so; no acceleration
         { k: t > f.tG + 1e-9 ? 'Velocity at the ground' : 'Velocity, down +', v: num(f.vel(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Acceleration, down +', v: t > f.tG + 1e-9 ? '—' : num(f.g, 2), unit: t > f.tG + 1e-9 ? '' : 'm s⁻²', hue: 'acc' },
+        ...(narrow ? [] : [{ k: 'Acceleration, down +', v: t > f.tG + 1e-9 ? '—' : num(f.g, 2), unit: t > f.tG + 1e-9 ? '' : 'm s⁻²', hue: 'acc' }]),
       ],
       right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
     };
@@ -79,7 +81,7 @@ export const lastfall = {
     return `<svg viewBox="0 0 120 60" aria-hidden="true">
       <rect x="0" y="0" width="120" height="60" fill="#cfe3f0"/><rect x="0" y="50" width="120" height="10" fill="#7fa65a"/>
       <rect x="30" y="8" width="26" height="42" fill="#c4b6aa"/><path d="M30 8 h4 v-4 h4 v4 h4 v-4 h4 v4 h4 v-4 h4 v4 h2" fill="#c4b6aa"/>
-      <rect x="56" y="34" width="8" height="3" fill="#c0392b"/><circle cx="66" cy="22" r="3" fill="#6d665c"/>
+      <rect x="56" y="33" width="8" height="5" fill="#efe8da" stroke="#2b2f36" stroke-width="0.6"/><circle cx="66" cy="22" r="3" fill="#6d665c"/>
       <path d="M90 8 V50 M86 8 h8 M86 50 h8" stroke="#2a9d8f" stroke-width="1.4"/>
     </svg>`;
   },

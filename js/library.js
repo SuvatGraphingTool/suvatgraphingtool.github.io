@@ -682,7 +682,7 @@ export const LIBRARY = [
     sub: 'it passes 35 m above the ground at V − 10, and lands at V — how fast, and from how high?',
     note: 'A stone is let go from rest and falls freely (g = 10). It passes a point 35 m above the ground at V − 10 m s⁻¹ and reaches the ground at V m s⁻¹. Over those last 35 m, v² = u² + 2as with V unknown: V² = (V − 10)² + 2 × 10 × 35, so 20V − 100 = 700 and V = 40. Then from the release, 40² = 2 × 10 × H: it fell from H = 80 m, taking 4 s.',
     params: { look: 'tower', p: 35, dv: 10, g: 10 },
-    place: 'Side on: an old stone tower over the fields, a marker on its wall 35 m up, or the edge of an inland cliff',
+    place: 'Side on: an old stone tower over the fields, or the edge of an inland cliff, with a marker at the point above the ground',
     example: { look: 'tower', p: 35, dv: 10, g: 10 },
     reader: 'Only one of dv, k and tau: dv when the speed at the point is the ground speed less a number (V − 10 gives dv 10), k when the ground speed is a multiple of it (a speed of three quarters of V at the point gives k 4/3), tau when the time for the last stretch is given. p is the point’s height above the ground.',
     parts: [
