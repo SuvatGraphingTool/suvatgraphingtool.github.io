@@ -72,7 +72,7 @@ export const slopegates = {
   ending(s) {
     return {
       eyebrow: s.mu != null ? 'Friction, from its timing' : 'Its deceleration, from its timing',
-      title: s.mu != null ? `${M`mu = ${num(s.mu, 3, { trim: true })}`}.` : `It slows at ${M`${num(s.dec, 3, { trim: true })} [m s^-2]`}.`,
+      title: s.mu != null ? `${T`mu = ${num(s.mu, 3, { trim: true })}`}.` : `It slows at ${T`${num(s.dec, 3, { trim: true })} [m s^-2]`}.`,
       body: s.notes.map((x) => `<p>${x}</p>`).join(''),
       real: true,
     };

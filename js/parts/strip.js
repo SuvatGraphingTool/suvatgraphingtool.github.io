@@ -23,17 +23,18 @@ export function answerHTML(run) {
   if (p.expr) return a.ok ? a.html : '<span class="pans-none">The engine finds no answer to this part with these numbers.</span>';
   if (!p.find) return `<span class="pans-say">${esc(p.say || 'See the stage and the graphs.')}</span>`;
   if (!a.ok) return '<span class="pans-none">The engine finds no answer to this part with these numbers.</span>';
-  const one = (v) => {
+  const one = (v, i = 0) => {
+    const sym = Array.isArray(p.sym) ? p.sym[i] : p.sym;
     if (typeof v === 'boolean') return esc(v ? p.words?.yes ?? 'Yes' : p.words?.no ?? 'No');
     // a time on the 24-hour clock, as the engine gave it and the papers print it: 1512
     if (p.clock) return M`"${p.clock === true ? 'at' : p.clock}" ${String(v).padStart(4, '0')}`;
     // in letters, a coefficient of one is not written: U/g, not 1U/g
     const c = num(v, p.dp ?? 2, { trim: !!p.trim });
     const n = (c === '1' && /^[A-Za-z]/.test(p.suffix || '') ? '' : c) + (p.suffix || '');
-    if (!p.sym) return p.unit ? M`${n} [${p.unit}]` : M`${n}`;
+    if (!sym) return p.unit ? M`${n} [${p.unit}]` : M`${n}`;
     // an answer that is a range is said as one: θ > 76.0°
     const rel = ['<', '>', '<=', '>='].includes(p.rel) ? p.rel : '=';
-    return p.unit ? M`${p.sym} ${rel} ${n} [${p.unit}]` : M`${p.sym} ${rel} ${n}`;
+    return p.unit ? M`${sym} ${rel} ${n} [${p.unit}]` : M`${sym} ${rel} ${n}`;
   };
   if (p.ratio) {
     // a ratio, in its lowest terms as the engine gave it: AB : BC = 64 : 27
@@ -49,7 +50,7 @@ export function answerHTML(run) {
     const lhs = p.sym ? `${p.sym} = ` : '';
     return p.unit ? M`${lhs}(${body}) [${p.unit}]` : M`${lhs}${body}`;
   }
-  return a.values.map(one).join(' <span class="pand">and</span> ');
+  return a.values.map((v, i) => one(v, i)).join(' <span class="pand">and</span> ');
 }
 
 /** "using t = 3.50 s from (a)" — what the part carries forward, said. */
@@ -84,7 +85,7 @@ export function stripHTML(parts, runs, k, steps, more = null) {
   const other = (l) => `<button class="pchip other${wide({ label: l })}" type="button" data-scene="${esc(more.elsewhere[l])}" aria-label="Part ${esc(l)}: open its own set-up">${tag({ label: l })}</button>`;
   const own = parts.map((p, i) => p.out
     ? `<button class="pchip${wide(p)}" type="button" disabled title="Not in this app: ${esc(p.out)}" aria-label="Part ${esc(p.label)}: not in this app — ${esc(p.out)}">${tag(p)}</button>`
-    : `<button class="pchip${wide(p)}" type="button" data-part="${i}" aria-pressed="${i === k}"${i < k ? ' data-done="true"' : ''}${runs[i]?.part.find || runs[i]?.part.kind === 'graph' ? '' : ' data-none="true"'} aria-label="Part ${esc(p.label)}">${tag(p)}</button>`);
+    : `<button class="pchip${wide(p)}" type="button" data-part="${i}" aria-pressed="${i === k}"${i < k ? ' data-done="true"' : ''}${runs[i]?.part.find || runs[i]?.part.expr || runs[i]?.part.kind === 'graph' ? '' : ' data-none="true"'} aria-label="Part ${esc(p.label)}">${tag(p)}</button>`);
   const chips = more
     ? more.order.map((l) => (more.elsewhere[l] ? other(l) : own[parts.findIndex((p) => String(p.label) === l)] ?? '')).join('')
     : own.join('');

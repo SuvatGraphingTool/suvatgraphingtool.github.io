@@ -101,11 +101,11 @@ export const course = {
   },
 
   ending(s) {
-    const a = s.answers;
+    const a = s.answers, at = (x) => (x.hhmm != null ? `at ${clockText(x.hhmm)}${x.day}` : `at ${T`t = ${tr(x.t)} [${s.U.time}]`}`);
     return {
       eyebrow: s.tc != null ? 'A change of course' : 'On course',
-      title: a.due ? `Due ${a.due.word} of the rock ${a.due.hhmm != null ? `at ${clockText(a.due.hhmm)}` : `at t = ${tr(a.due.t)} ${s.U.time}`}.`
-        : a.at?.dist != null ? `${tr(a.at.dist)} ${s.U.len} from the rock.` : s.R ? `The rock is at ${T`${vsrc(s.R)}`}.` : 'Its course, from O.',
+      title: a.due ? `Due ${a.due.word} of the rock ${at(a.due)}.`
+        : a.at?.dist != null ? `${T`${tr(a.at.dist)} [${s.U.len}]`} from the rock.` : s.R ? `The rock is at ${vsrc(s.R) === '0' ? 'O' : T`${vsrc(s.R)}`}.` : 'Its course, from O.',
       body: s.notes.map((x) => `<p>${x}</p>`).join(''),
       real: true,
     };

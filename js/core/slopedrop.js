@@ -26,7 +26,7 @@ const RAD = Math.PI / 180;
 /** c₁T + c₂T² as notation source, in T: 4.9T + 2.45T². */
 function inT(c1, c2) {
   const parts = [];
-  if (Math.abs(c1) > 1e-12) parts.push(`${d(c1)}T`);
+  if (Math.abs(c1) > 1e-12) parts.push(`${Math.abs(c1 - 1) < 1e-12 ? '' : d(c1)}T`);
   if (Math.abs(c2) > 1e-12) parts.push(`${parts.length ? '+ ' : ''}${d(c2)}T^2`);
   return parts.length ? parts.join(' ') : '0';
 }
@@ -45,9 +45,11 @@ export function solveSlopeDrop(k = {}) {
   const rows = [];
   let a, th;
   if (have(k.a) && have(k.theta)) {
-    // both given: on a smooth slope they must agree
+    // both given: each must be possible, and on a smooth slope they must agree; then the angle's own a is used
+    if (!(k.theta > 0 && k.theta < 90)) return fail('The slope’s angle is between 0° and 90°.');
+    if (!(k.a > 0)) return fail('P speeds up down a smooth slope: give its acceleration as a positive number.');
     if (Math.abs(k.a - g * Math.sin(k.theta * RAD)) > 1e-3 * g) return fail(`On a smooth slope at ${d(k.theta)}° the acceleration is ${M`g sin theta = ${d(snap(g * Math.sin(k.theta * RAD)))} [m s^-2]`}: give the angle or the acceleration, not two that disagree.`);
-    a = k.a; th = k.theta;
+    th = k.theta; a = snap(g * Math.sin(th * RAD));
   } else if (have(k.a)) {
     if (!(k.a > 0)) return fail('P speeds up down a smooth slope: give its acceleration as a positive number.');
     if (k.a >= g) return fail(`Down a smooth slope the acceleration is ${M`g sin theta`}, less than ${M`g = ${d(g)} [m s^-2]`}: no slope gives ${M`${d(k.a)} [m s^-2]`}.`);
@@ -62,14 +64,14 @@ export function solveSlopeDrop(k = {}) {
 
   // each, T s after both set off
   const each = [
-    { f: M`s = ut + 1/2 at^2`, s: M`s_P = ${d(u)}T + 1/2 × ${d(a)}T^2`, r: M`s_P = ${inT(u, a / 2)}` },
-    { f: M`s = ut + 1/2 at^2`, s: M`y_Q = ${w ? `${d(w)}T + ` : ''}1/2 × ${d(g)}T^2`, r: M`y_Q = ${inT(w, g / 2)}` },
+    { f: M`s = ut + 1/2 at^2`, s: M`s_P = ${u === 1 ? '' : d(u)}T + 1/2 × ${d(a)}T^2`, r: M`s_P = ${inT(u, a / 2)}` },
+    { f: M`s = ut + 1/2 at^2`, s: M`y_Q = ${w ? `${w === 1 ? '' : d(w)}T + ` : ''}1/2 × ${d(g)}T^2`, r: M`y_Q = ${inT(w, g / 2)}` },
   ];
   // they meet below Y: Q has dropped as far as P has, y_Q = s_P sin θ; one root is T = 0, at the start
   //   wT + ½gT² = (uT + ½aT²) sin θ  →  T = (u sin θ − w) / (½(g − a sin θ))
   const den = 0.5 * (g - a * sn), num0 = u * sn - w;
   if (!(den > 1e-12)) return fail('Q falls no faster than P drops: they never meet below Y.');
-  if (!(num0 > 1e-12)) return fail(w > 0 ? 'Q is thrown down too fast: it is below P’s line the moment it goes, and the slope is never under it as P arrives.' : 'Sent from rest, P starts level with Q and drops more slowly: they meet only at the start.');
+  if (!(num0 > 1e-12)) return fail(`Q drops faster than P from the start${u > 0 ? '' : ' (P is let go from rest)'}, so it reaches the slope below Y before P gets there: they never meet.`);
   const T = snap(num0 / den);
   const sP = snap(u * T + 0.5 * a * T * T), yQ = snap(w * T + 0.5 * g * T * T);
   const XY = snap(sP * cs), vP = snap(u + a * T), vQ = snap(w + g * T);

@@ -279,7 +279,7 @@ export function render(canvas, cam, o) {
   // ── each moment asked about, once the clock reaches it: the line from the rock draws in
   const asked = [];
   if (A.due) asked.push({ t: A.due.t, word: `due ${A.due.word} of R, ${when(A.due.t)}`, short: when(A.due.t) });
-  if (A.at && f.R) asked.push({ t: A.at.t, word: T`${tr(A.at.dist)} [${U.len}] "from R," ${when(A.at.t)}`, short: T`${tr(A.at.dist)} [${U.len}], ${when(A.at.t)}` });
+  if (A.at && f.R) asked.push({ t: A.at.t, word: `${T`${tr(A.at.dist)} [${U.len}]`} from R, ${when(A.at.t)}`, short: `${T`${tr(A.at.dist)} [${U.len}]`}, ${when(A.at.t)}` });
   for (const an of asked) {
     if (!Rp || t < an.t - 1e-9) continue;
     const q = px(f.pos(an.t)), { age, life } = ageOf(t, an.t, f.tMax);

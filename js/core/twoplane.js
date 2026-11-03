@@ -45,7 +45,7 @@ export function vecT(cx, cy) {
     const s = lin(c0, c1);
     if (s === '0') return null;
     const two = !tiny(c0) && !tiny(c1);
-    return { neg: !two && s.startsWith('-'), body: two ? `(${s})vec(${e})` : `${s.replace(/^-/, '').replace(/^1(?=t)/, '')}vec(${e})`.replace(/^vec/, 'vec') };
+    return { neg: !two && s.startsWith('-'), body: two ? `(${s})vec(${e})` : `${s.replace(/^-/, '').replace(/^1(?=t)/, '')} vec(${e})`.replace(/^ vec/, 'vec') };
   };
   const a = one(cx, 'i'), b = one(cy, 'j');
   if (!a && !b) return '0';

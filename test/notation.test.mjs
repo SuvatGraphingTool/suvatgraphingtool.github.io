@@ -781,7 +781,7 @@ group('The Past-paper library: a change of course, everything it says', () => {
   const K = KITS.course, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
   const bag = [];
   const base = { units: 'km', t0: 1200, 'r0.x': 16, 'r0.y': 5, 'v1.x': -2.5, 'v1.y': 6, tHit: 1500, tc: 1400, sp2: 5, dir2: 'N', due: 'E', T: 1600 };
-  for (const k of [{}, { due: 'NE' }, { due: 'W' }, { sp2: null, dir2: null, 'v2.x': -3, 'v2.y': -1 }, { t0: null, tHit: 3, tc: 2, T: 4 }, { tHit: null, 'R.x': 2, 'R.y': -4 }, { tc: 1600 }, { tc: 1475 }, { units: 'm' }, { dir2: 'SW' }, { 'v1.x': 0, 'v1.y': 0 }]) {
+  for (const k of [{}, { due: 'NE' }, { due: 'W' }, { sp2: null, dir2: null, 'v2.x': -3, 'v2.y': -1 }, { t0: null, tHit: 3, tc: 2, T: 4 }, { tHit: null, 'R.x': 2, 'R.y': -4 }, { tc: 1600 }, { tc: 1475 }, { units: 'm' }, { dir2: 'SW' }, { 'v1.x': 0, 'v1.y': 0 }, { 'r0.x': 0, 'r0.y': 0, sp2: null, dir2: null, 'v2.x': 5, 'v2.y': 0 }, { t0: 2200, tHit: null, 'R.x': 8.5, 'R.y': 23, tc: 2300, sp2: 0.5, T: null }, { 'r0.x': 10, 'r0.y': 0, 'v1.x': -1, 'v1.y': 0, tHit: null, 'R.x': 0, 'R.y': 0, tc: null, sp2: null, dir2: null, t0: null, T: null }]) {
     const r = K.solve(K.read({ ...base, ...k }));
     for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
     if (r.ok) {

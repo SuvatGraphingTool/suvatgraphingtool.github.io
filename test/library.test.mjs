@@ -1836,6 +1836,11 @@ group('Edexcel M1 Jun 2006 Q7: a change of course', () => {
   ok(!solveCourse({ ...k, tc: 1475 }).ok, 'a clock time that is not one (14:75): refused');
   ok(!solveCourse({ ...k, R: { x: 1, y: 1 } }).ok, 'the rock and the time it would be hit, both: refused');
   ok(!solveCourse({ ...k, v1: { x: 0, y: 0 } }).ok && !solveCourse({ ...k, units: 'm' }).ok, 'standing still, or a clock in seconds: refused');
+  { const o = solveCourse({ r0: { x: 0, y: 0 }, v1: { x: 0, y: 6 }, tHit: 3, tc: 2, v2: { x: 5, y: 0 } });
+    ok(o.ok && !/tvec|[a-z]vec/.test(o.after.html) && !/\(0\) \+/.test(o.turn.map((r) => r.s).join('')), 'from O: no “tvec”, no (0) + …'); }
+  ok(solveCourse({ ...k, t0: 2200, tHit: undefined, R: { x: 8.5, y: 23 }, tc: 2300, sp2: 0.5, T: undefined }).answers.due.day === ' the next day', 'past midnight: the next day, said');
+  ok(!solveCourse({ ...k, tc: 1500 }).ok && solveCourse({ ...k, sp2: undefined, dir2: null, v2: { x: -2.5, y: 6 } }).f.hitNew === 3, 'turning on the rock refused; a new course onto it, found');
+  ok(solveCourse({ r0: { x: 10, y: 0 }, v1: { x: -1, y: 0 }, R: { x: 0, y: 0 }, due: 'E' }).answers.due?.along, 'along the line through the rock: due east from the start, not never');
   ok(courseWorking(s).map((x) => x.title).join('|') === 'On its first course|Where the rock is|After the change of course|Due east of the rock|At the time asked', 'the working, step by step');
   { const K = KITS.course, kv = K.solve(K.read({ units: 'km', t0: 1200, 'r0.x': 16, 'r0.y': 5, 'v1.x': -2.5, 'v1.y': 6, tHit: 1500, tc: 1400, sp2: 5, dir2: 'N', due: 'E', T: 1600 }));
     const gs = K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' });
