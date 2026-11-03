@@ -410,6 +410,8 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
   { const bm = fromReading({ understood: true, scenario: 'arc', h: 1, u: 20, angleDegrees: 10, summary: 'A tennis ball machine fires a ball at 20 m/s at 10 degrees from 1 m above the court.', who: 'tennis ball' })?.recipe;
     ok(bm?.launcher === 'machine' && bm.objects[0].figure === 'tennisBall' && titleOf(bm) === 'A tennis ball fired from a ball machine', 'batch 30: a ball machine fires a tennis ball');
     ok(fromReading({ understood: true, scenario: 'arc', h: 0.8, u: 25, angleDegrees: 5, summary: 'A bowling machine projects a cricket ball horizontally.', who: 'cricket ball' })?.recipe?.launcher === 'machine', 'a bowling machine is one too'); }
+  ok(placeIn('A rugby player kicks a conversion from 30 m')?.backdrop === 'rugby' && placeIn('In a rugby match, a ball is kicked')?.backdrop === 'rugby' && placeIn('Three posts P, Q and R are at the side of a road')?.backdrop !== 'rugby', 'batch 31: a rugby pitch, and roadside posts are not rugby posts');
+  { const rg = check({ backdrop: 'rugby', engine: 'projectile', objects: [{ figure: 'rugbyBall' }], numbers: { h: 0, u: 20, theta: 35 } }).recipe; ok(rg && /rugby/.test(titleOf(rg)), 'a rugby ball kicked on a rugby pitch'); }
   ok(jet?.launcher === 'hose' && titleOf(jet) === 'A jet of water from a hose' && figureOf('a jet of water').figure === 'water', 'a jet of water leaves a hose');
 });
 

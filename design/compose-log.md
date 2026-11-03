@@ -2,6 +2,14 @@
 
 Short notes, newest first. Batches 1–29 are in the git history ("Component factory batch N").
 
+## Batch 31 — 3 Nov 2026
+
+- **rugby** (backdrop, js/render/places.js): a rugby ground — the stand and its crowd, striped
+  turf, the try line, the 22 and 10 m dashes; the H-posts (white uprights, padded feet, the
+  crossbar at 3 m) stand where the engine's path comes down through 3 m, or past where it lands
+  if it falls short; touch judges at the posts, flags down. "the posts" alone is not rugby
+  (roadside posts P, Q, R). Tests in test/compose.test.mjs. UI critic and live check to do.
+
 ## Batch 30 — 3 Nov 2026
 
 - **trampoline** (launcher, js/render/launchers.js): a garden trampoline side on — black mat in

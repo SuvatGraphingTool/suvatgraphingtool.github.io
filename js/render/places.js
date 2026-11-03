@@ -1149,6 +1149,62 @@ function pitch(g, c) {
   if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
 }
 
+/** A rugby pitch: the far stand and its crowd, the turf mown in stripes, the
+    try line, the 22 and the 10-metre dashes across it; the H-shaped posts
+    stand where the kick comes down through the crossbar's height (3 m) — or,
+    if it falls short, beyond where it lands — seen side on and a little from
+    in front: two tall white uprights in their pads, the crossbar between them
+    at 3 m, the touch judges at the foot of each post with their flags down.
+    From a height, the near stand's upper tier. */
+function rugby(g, c) {
+  const { w, h, k, oy, x0, top, H0, X, over } = c;
+  const E = env(), n = E.night, r = rng(181);
+  const horizon = H0 > 0 ? Math.max(oy - clamp((oy - 40) * 0.32, 40, 170), Math.min(oy - 30, top + 60)) : oy - clamp((oy - 40) * 0.32, 40, 170);
+  sky(g, w, horizon - 60, x0, { far: 'none', seed: 97, clouds: 2 });
+  if (n) { g.fillStyle = withAlpha('#2a3550', 0.5); g.fillRect(0, 0, w, horizon); }
+  farStand(g, w, horizon, r, n, { tall: Math.min(clamp((horizon - 20) * 0.35, 30, 90), H0 > 0 ? Math.max(20, horizon - top - 8) : 90) });
+  mownTurf(g, w, horizon, h, n, { lo: '#4f8f3e', hi: '#62a24c' });
+  // the posts: where the path comes down through 3 m, else past where it lands
+  const bar = 3, land = (c.clearX || [])[0] ?? x0 + 0.6 * (w - x0);
+  let px = null;
+  if (typeof over === 'function' && X) {
+    for (let x = land; x > x0; x -= 2) { const y = over((x - X(0)) / k); if (y != null && y >= bar) { px = x; break; } }
+  }
+  if (px == null) px = Math.min(w - 40, land + clamp(4 * k, 40, 120));
+  // the lines across the pitch, side on: the try line at the posts, the 22 and the 10 m dashes back from it
+  const line = (x, dashed) => { g.save(); g.strokeStyle = withAlpha('#ffffff', n ? 0.45 : 0.8); g.lineWidth = 2; if (dashed) g.setLineDash([8, 7]);
+    g.beginPath(); g.moveTo(x + 18, horizon + 2); g.lineTo(x - 18, h); g.stroke(); g.restore(); };
+  line(px, false);
+  for (const m of [22, 40]) { const x = px - m * k; if (x > 10) line(x, m === 40); }
+  if (n) { const fl = g.createLinearGradient(0, horizon, 0, h); fl.addColorStop(0, 'rgba(255,246,216,0.12)'); fl.addColorStop(1, 'rgba(255,246,216,0)'); g.fillStyle = fl; g.fillRect(0, horizon, w, h - horizon); }
+  // the posts: two uprights, the far one up and to the right (depth), the crossbar at 3 m between them
+  const upH = Math.min(oy - 20, oy - clamp(11 * k, 80, oy - 30)), depth = clamp(0.9 * k, 10, 26);
+  const post = (x, y0, lw, col) => { g.strokeStyle = col; g.lineWidth = lw; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, upH - (oy - y0) * 0.02); g.stroke(); };
+  const white = n ? '#d8d6d0' : '#f6f4ee', shade = n ? '#9a9890' : '#c8c6be';
+  post(px + depth, oy - depth * 0.6, clamp(0.14 * k, 2, 5), shade);
+  const barY = oy - bar * k;
+  g.strokeStyle = white; g.lineWidth = clamp(0.12 * k, 2, 4); g.beginPath(); g.moveTo(px, barY); g.lineTo(px + depth, barY - depth * 0.6); g.stroke();
+  post(px, oy, clamp(0.18 * k, 2.5, 6), white);
+  // the pads at the foot of each post, in a club's colours
+  for (const [x, y0, s0] of [[px + depth, oy - depth * 0.6, 0.8], [px, oy, 1]]) {
+    const pw = clamp(0.5 * k, 7, 16) * s0, ph = clamp(1.6 * k, 16, 44) * s0;
+    g.fillStyle = '#b8282e'; g.beginPath(); g.roundRect(x - pw / 2, y0 - ph, pw, ph, 3); g.fill();
+    g.fillStyle = '#1d3e8a'; g.fillRect(x - pw / 2, y0 - ph * 0.62, pw, ph * 0.24);
+  }
+  softShadow(g, px + depth * 0.5, oy + 1, clamp(1.2 * k, 14, 40), 3, 0.6);
+  // the touch judges at the posts, flags down
+  for (const [x, y0] of [[px - clamp(0.9 * k, 12, 30), oy], [px + depth + clamp(0.9 * k, 12, 30), oy - depth * 0.6]]) {
+    const pH = clamp(1.8 * k, 22, 60);
+    g.fillStyle = n ? '#2a2a2e' : '#1e1e22'; g.fillRect(x - pH * 0.06, y0 - pH * 0.45, pH * 0.12, pH * 0.45);
+    g.fillStyle = n ? '#c8a020' : '#e8c547'; g.fillRect(x - pH * 0.11, y0 - pH * 0.85, pH * 0.22, pH * 0.42);
+    g.fillStyle = n ? '#b08a74' : '#d9a988'; g.beginPath(); g.arc(x, y0 - pH * 0.93, pH * 0.09, 0, TAU); g.fill();
+    g.strokeStyle = '#555'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x + pH * 0.12, y0 - pH * 0.6); g.lineTo(x + pH * 0.2, y0 - pH * 0.18); g.stroke();
+    g.fillStyle = '#f2f2f2'; g.fillRect(x + pH * 0.2, y0 - pH * 0.3, pH * 0.16, pH * 0.12);
+  }
+  c.reserve?.({ x: px - 30, y: upH - 6, w: depth + 60, h: oy - upH + 6 });
+  if (H0 > 0) grandstand(g, x0, top, oy, k, r, n);
+}
+
 /** A golf course: a tree line with a clubhouse beyond, the fairway mown in
     stripes between the rough, a bunker clear of where it lands, and the
     green with its pin and flag a little beyond the landing; from a height,
@@ -3040,4 +3096,4 @@ function fairground(g, c) {
 }
 
 /** The places this file draws, by the registry's names. */
-export const PLACE_ART = { mineshaft, mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse, fairground };
+export const PLACE_ART = { rugby, mineshaft, mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse, fairground };

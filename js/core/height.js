@@ -63,6 +63,7 @@ export const PLACES = {
   carpark: { word: 'car park', top: 'the top deck of the car park', below: 'the street', lands: 'hits the street', foot: 'at the foot of the car park' },
   volcano: { word: 'crater', top: 'the crater', below: 'the plain', lands: 'lands on the plain', foot: 'below the crater' },
   mineshaft: { word: 'shaft', top: 'the top of the shaft', below: 'the bottom of the shaft', lands: 'reaches the bottom', foot: 'at the foot of the shaft' },
+  rugby:   { word: 'start', top: 'where it is kicked from', below: 'the pitch', lands: 'lands on the pitch', foot: 'where it was kicked', level: true },
   quarry:  { word: 'quarry', top: 'the edge of the quarry', below: 'the quarry floor', lands: 'hits the quarry floor', foot: 'at the foot of the quarry face' },
   court:   { word: 'start', top: 'where it starts', below: 'the court', lands: 'lands on the court', foot: 'where it started', level: true },
   arena:   { word: 'start', top: 'where it starts', below: 'the floor', lands: 'lands on the floor', foot: 'where it started', level: true },
