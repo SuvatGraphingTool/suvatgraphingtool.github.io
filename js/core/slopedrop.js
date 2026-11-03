@@ -27,7 +27,7 @@ const RAD = Math.PI / 180;
 function inT(c1, c2) {
   const parts = [];
   if (Math.abs(c1) > 1e-12) parts.push(`${Math.abs(c1 - 1) < 1e-12 ? '' : d(c1)}T`);
-  if (Math.abs(c2) > 1e-12) parts.push(`${parts.length ? '+ ' : ''}${d(c2)}T^2`);
+  if (Math.abs(c2) > 1e-12) parts.push(`${parts.length ? '+ ' : ''}${Math.abs(c2 - 1) < 1e-12 ? '' : d(c2)}T^2`);
   return parts.length ? parts.join(' ') : '0';
 }
 
@@ -64,14 +64,14 @@ export function solveSlopeDrop(k = {}) {
 
   // each, T s after both set off
   const each = [
-    { f: M`s = ut + 1/2 at^2`, s: M`s_P = ${u === 1 ? '' : d(u)}T + 1/2 × ${d(a)}T^2`, r: M`s_P = ${inT(u, a / 2)}` },
+    { f: M`s = ut + 1/2 at^2`, s: M`s_P = ${u === 1 ? '' : d(u)}T + 1/2 × ${a === 1 ? '' : d(a)}T^2`, r: M`s_P = ${inT(u, a / 2)}` },
     { f: M`s = ut + 1/2 at^2`, s: M`y_Q = ${w ? `${w === 1 ? '' : d(w)}T + ` : ''}1/2 × ${d(g)}T^2`, r: M`y_Q = ${inT(w, g / 2)}` },
   ];
   // they meet below Y: Q has dropped as far as P has, y_Q = s_P sin θ; one root is T = 0, at the start
   //   wT + ½gT² = (uT + ½aT²) sin θ  →  T = (u sin θ − w) / (½(g − a sin θ))
   const den = 0.5 * (g - a * sn), num0 = u * sn - w;
   if (!(den > 1e-12)) return fail('Q falls no faster than P drops: they never meet below Y.');
-  if (!(num0 > 1e-12)) return fail(`Q drops faster than P from the start${u > 0 ? '' : ' (P is let go from rest)'}, so it reaches the slope below Y before P gets there: they never meet.`);
+  if (!(num0 > 1e-12)) return fail(`Q drops ${Math.abs(num0) < 1e-9 && u > 0 ? 'as fast as P at the start and faster after' : 'faster than P from the start'}${u > 0 ? '' : ' (P is let go from rest)'}, so it reaches the slope below Y before P gets there: they never meet.`);
   const T = snap(num0 / den);
   const sP = snap(u * T + 0.5 * a * T * T), yQ = snap(w * T + 0.5 * g * T * T);
   const XY = snap(sP * cs), vP = snap(u + a * T), vQ = snap(w + g * T);

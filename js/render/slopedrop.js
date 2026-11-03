@@ -223,8 +223,9 @@ export function render(canvas, cam, o) {
     const pc = { x: pP.x + nU.x * gl * 0.6, y: pP.y + nU.y * gl * 0.6 };
     arrow(g, pc.x, pc.y, pc.x + Math.cos(ang) * lp, pc.y + Math.sin(ang) * lp, { color: P.vel, width: 2.4, head: 9 });
     arrow(g, pQ.x - rb - 8, pQ.y, pQ.x - rb - 8, pQ.y + lq, { color: P.vel, width: 2.4, head: 9 });
-    L.add(T`${tr(f.velP(t))} [m s^-1]`, pc.x + Math.cos(ang) * lp * 0.5 + nU.x * 22, pc.y + Math.sin(ang) * lp * 0.5 + nU.y * 22, { color: P.vel, size: 13, weight: 700 });
-    L.add(T`${tr(f.velQ(t))} [m s^-1]`, pQ.x - rb - 16, pQ.y + lq * 0.5, { color: P.vel, size: 13, weight: 700, align: 'right' });
+    // each label on the side away from the other: P's below its arrow (off the slope, downward), Q's right of its ball
+    L.add(T`v_P = ${tr(f.velP(t))} [m s^-1]`, pc.x + Math.cos(ang) * lp * 0.6 - nU.x * (gl + 26), pc.y + Math.sin(ang) * lp * 0.6 - nU.y * (gl + 26), { color: P.vel, size: 13, weight: 700, align: 'left' });
+    L.add(T`v_Q = ${tr(f.velQ(t))} [m s^-1]`, pQ.x + rb + 14, pQ.y + lq * 0.5, { color: P.vel, size: 13, weight: 700, align: 'left' });
   }
   L.add('P', pP.x - nU.x * -1 * 0 + nU.x * (gl * 1.1), pP.y + nU.y * (gl * 1.1), { color: P.disp, size: 15, weight: 800 });
   L.add('Q', pQ.x + rb + 14, pQ.y - 4, { color: P.second, size: 15, weight: 800 });

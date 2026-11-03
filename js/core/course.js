@@ -186,7 +186,12 @@ export function solveCourse(k = {}) {
         // the line to the rock never turns on this leg: either it is never that way, or it sails along
         // that line, that way of the rock from the leg's start (it is due that way the whole stretch)
         const q0 = c.x * D.x + c.y * D.y, q1 = m.x * D.x + m.y * D.y;
-        if (tiny(a0) && q0 > 1e-9) found.push({ leg: i, s: 0, t: L.t0, dl: V(c.x, c.y), c, m, along: true, until: q1 < -1e-9 ? snap(L.t0 - q0 / q1) : null });
+        if (tiny(a0) && q0 > 1e-9) {
+          // until it reaches the rock — or, sooner, until this leg ends at the turn
+          const reach = q1 < -1e-9 ? snap(L.t0 - q0 / q1) : null, ends = isFinite(L.t1) ? L.t1 : null;
+          const until = reach != null && (ends == null || reach <= ends + 1e-9) ? reach : ends;
+          found.push({ leg: i, s: 0, t: L.t0, dl: V(c.x, c.y), c, m, along: true, until, untilTurn: until != null && until === ends && until !== reach, still: tiny(Math.hypot(m.x, m.y)) });
+        }
         continue;
       }
       const s = snap(-a0 / a1), t = snap(L.t0 + s);
@@ -206,7 +211,7 @@ export function solveCourse(k = {}) {
         : { f: rel, s: sub, r: a.leg ? M`t = ${d(a.s)} [${U.time}] "after the turn"` : M`t = ${d(a.s)} [${U.time}]` });
       if (clocked) dueRows.push({ f: M`"the time"`, s: M`${d(a.s)} [h] "after" ${clockText(clockOf(h0 + legs[a.leg].t0))}`, r: when(a.t) });
       dueRows.push({ f: M`abs(vec r - vec R)`, s: M`sqrt(${sgn(a.dl.x)}^2 + ${sgn(a.dl.y)}^2)`, r: M`${d(dist)} [${U.len}]` });
-      notes.push(a.along ? `It sails along the line through the rock, due ${D.word} of it from ${whenAt(a.t).replace(/^at /, '')}${a.until != null ? ` until it reaches it ${whenAt(a.until)}` : ''}.`
+      notes.push(a.along ? `${a.still ? 'At rest on the line through the rock, it is' : 'It sails along the line through the rock,'} due ${D.word} of it from ${whenAt(a.t).replace(/^at /, '')}${a.until != null ? (a.untilTurn ? ` until it changes course ${whenAt(a.until)}` : ` until it reaches it ${whenAt(a.until)}`) : ''}.`
         : `It is due ${D.word} of the rock ${whenAt(a.t)}, ${M`${d(dist)} [${U.len}]`} from it, at ${M`${vsrc(p)} [${U.len}]`}.`);
       derived.push(`due ${D.word} of the rock ${whenAt(a.t)}`);
       answers.due = { t: a.t, along: !!a.along, day: day(a.t), after: a.leg ? a.s : null, hhmm: clocked ? clockOf(h0 + a.t) : null, pos: p, dist, word: D.word, leg: a.leg };

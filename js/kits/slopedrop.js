@@ -31,6 +31,7 @@ export const slopedrop = {
   resolveEnds: true,
   resolveEndWords: 'They meet here: the engine follows them no further.',
   resolvePart: '',
+  resolveWords: { pos: 'going down the slope', neg: 'going up the slope', plus: 'Down the slope', line: 'along the slope' },
   resolveObjects: (f) => [
     { name: 'P', pos: (t) => f.posP(t).s, vel: f.velP, acc: () => f.a, axis: 'along', from: 'X, down the slope' },
     { name: 'Q', pos: (t) => f.posQ(t).s, vel: f.velQ, acc: () => f.g, axis: 'down', from: 'Y' },
@@ -83,7 +84,7 @@ export const slopedrop = {
   ending(s) {
     return {
       eyebrow: 'They meet below Y',
-      title: `After ${num(s.T, 3, { trim: true })} s, on the slope at ${num(s.theta, 3, { trim: true })}°.`,
+      title: `After ${num(s.T, 4, { trim: true })} s, on the slope at ${num(s.theta, 3, { trim: true })}°.`,
       body: s.notes.map((x) => `<p>${x}</p>`).join(''),
       real: true,
     };

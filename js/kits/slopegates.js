@@ -31,7 +31,7 @@ export const slopegates = {
 
   resolveAxis: 'along',
   resolvePart: '',
-  resolveWords: { pos: 'up the slope', neg: 'down the slope', plus: 'up the slope +', line: 'the slope' },
+  resolveWords: { pos: 'going up the slope', neg: 'going down the slope', plus: 'Up the slope', line: 'along the slope' },
   resolveObjects: (f) => [{ name: '', pos: f.pos, vel: f.vel, acc: f.acc, from: 'P, up the slope' }],
   read(v) {
     return { d1: v.d1, t1: v.t1, d2: v.d2, t2: v.t2, theta: v.theta, g: v.g };
@@ -72,7 +72,7 @@ export const slopegates = {
   ending(s) {
     return {
       eyebrow: s.mu != null ? 'Friction, from its timing' : 'Its motion, from its timing',
-      title: s.mu != null ? `${T`mu = ${num(s.mu, Math.max(0, 2 - Math.floor(Math.log10(Math.abs(s.mu) || 1))), { trim: true })}`}.` : s.a < -1e-12 ? `It slows at ${T`${num(s.dec, 3, { trim: true })} [m s^-2]`}.` : s.a > 1e-12 ? `It speeds up at ${T`${num(s.a, 3, { trim: true })} [m s^-2]`}.` : 'It moves at a steady speed.',
+      title: s.mu != null ? `${T`mu = ${num(s.mu, 4, { trim: true })}`}.` : s.a < -1e-12 ? `It slows at ${T`${num(s.dec, 3, { trim: true })} [m s^-2]`}.` : s.a > 1e-12 ? `It speeds up at ${T`${num(s.a, 3, { trim: true })} [m s^-2]`}.` : 'It moves at a steady speed.',
       body: s.notes.map((x) => `<p>${x}</p>`).join(''),
       real: true,
     };

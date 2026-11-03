@@ -53,7 +53,7 @@
 .m-var  { font-style: italic; }
 .m-num  { font-style: normal; font-variant-numeric: tabular-nums; }
 .m-fn   { font-style: normal; }
-.m-unit { font-style: normal; }
+.m-unit { font-style: normal; white-space: nowrap; }
 .m-txt  { font-style: normal; font-family: var(--font); font-size: 0.94em; }
 
 /* Implicit multiplication. Thin, not a word space: 2a is one product. */
