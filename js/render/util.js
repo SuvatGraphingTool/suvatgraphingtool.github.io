@@ -15,7 +15,20 @@ export function fitCanvas(canvas) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = cssVar('--surface', '#131210');
   ctx.fillRect(0, 0, w, h);
+  // a library stage's view (js/render/kitview.js): the twelve's camera read
+  // as a pan and zoom of the stage's own layout; the stage draws as before
+  const v = canvas._view;
+  if (v) { ctx.translate(v.tx, v.ty); ctx.scale(v.s, v.s); }
+  ctx._dpr = dpr;
   return { ctx, w, h };
+}
+
+/** Step out of a library stage's pan and zoom, back to the canvas's own
+    pixels: for what belongs to the screen, not the place — a graph panel, a
+    key, a caption — drawn after the scene so it neither zooms nor pans. */
+export function unview(ctx) {
+  const dpr = ctx._dpr || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 export function cssVar(name, fallback) {
@@ -269,6 +282,7 @@ export function markRadius(scale) {
 
    Everything is inside the caller's clip, so nothing can escape the disc. */
 function panels(ctx, x, y, R, P) {
+  const a0 = ctx.globalAlpha;   // the caller's own alpha, kept: a faded ball stays faded
   const TILT = -0.45;                       // towards the light, up and left
   const pent = (cx, cy, r, rot, squashAxis, squash) => {
     ctx.beginPath();
@@ -288,7 +302,7 @@ function panels(ctx, x, y, R, P) {
 
   // the seams first, so the pentagons sit on top of them
   ctx.strokeStyle = P.ballLine;
-  ctx.globalAlpha = 0.34;
+  ctx.globalAlpha = a0 * 0.34;
   ctx.lineWidth = Math.max(0.7, R * 0.055);
   for (let i = 0; i < 5; i++) {
     const a = TILT + (i / 5) * Math.PI * 2 + Math.PI / 5;
@@ -297,7 +311,7 @@ function panels(ctx, x, y, R, P) {
     ctx.lineTo(x + Math.cos(a) * R * 1.02, y + Math.sin(a) * R * 1.02);
     ctx.stroke();
   }
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = a0;
 
   const CX = x - R * 0.08, CY = y - R * 0.08;   // the face we are looking at
   ctx.fillStyle = P.ballLine;
@@ -316,6 +330,25 @@ function panels(ctx, x, y, R, P) {
 }
 
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+/** A token colour at some opacity — '#B45309' → 'rgba(180,83,9,0.3)'. */
+export function withAlpha(c, a) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(c).trim());
+  if (!m) return c;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+/* THE THEME'S AREA FILL: the series' own hue, strongest under the line and
+   fading to almost nothing at the axis — the soft wash under the charts in
+   the theme. Used for the area a graph is ABOUT (displacement under v–t),
+   so it still means something; it is not decoration. */
+export function fade(ctx, color, yTop, yBottom, top = 0.30, bottom = 0.03) {
+  const g = ctx.createLinearGradient(0, yTop, 0, yBottom);
+  g.addColorStop(0, withAlpha(color, top));
+  g.addColorStop(1, withAlpha(color, bottom));
+  return g;
+}
 
 // Every number on a canvas goes through here, and through js/notation.js from
 // there — so a negative value on an axis is −3, with a minus sign, and a huge
@@ -411,12 +444,15 @@ const MIN_SIZE = 13;
 const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 export function labels() {
-  const q = [];
+  const q = [], held = [];
   return {
     add(text, x, y, o = {}) { q.push({ text, x, y, o, pri: o.pri ?? 0 }); },
+    /** Keep labels off a drawn thing — a figure, a post — as if it were a
+        label already placed: { x, y, w, h }, top-left and size. */
+    reserve(box) { held.push(box); },
     draw(ctx, w, h) {
       q.sort((a, b) => b.pri - a.pri);
-      const placed = [];
+      const placed = [...held];
       for (const it of q) {
         const o = it.o;
         const size = Math.max(MIN_SIZE, o.size ?? MIN_SIZE);
@@ -460,7 +496,10 @@ export function labels() {
         // back to what they name; only low-priority chrome is still dropped.
         let leader = null;
         if (y === null) {
-          if (it.pri < 6) continue;
+          // A label that capped how far it may move is not sent further than
+          // that by the fallback either: it is dropped, not flung across the
+          // canvas on a leader.
+          if (it.pri < 6 || o.maxPush != null) continue;
           for (const step of [100, 130, 160, 190]) {
             const cy = it.y + bias * step;
             const box = { x: left(ax), y: cy - bh / 2, w: tw + 10, h: bh };
@@ -501,4 +540,30 @@ export function labels() {
       q.length = 0;
     },
   };
+}
+
+/** A measured length or speed for a ruler or a tag: three significant
+    figures, as a paper answers (60.107 → 60.1, 0.04567 → 0.0457). */
+export function sig3(x) {
+  if (!isFinite(x) || x === 0) return num(x || 0, 0);
+  const dp = Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x))));
+  return num(x, dp);
+}
+
+/** Where the app's readouts sit over the stage, in canvas pixels, for
+    labels().reserve and for keeping key art clear: the left column of
+    `rows` boxes (a kit's hud(...).left.length) and the clock top right.
+    Measured from css/app.css (.hud-l, .hud-r): 218 × 64 boxes every 72 px
+    on a laptop, 182 × 55 every 63 px under 520 px wide, 16 px in. The clock
+    has the Resolve button beside it on every stage: 256 px together, or
+    stacked under 520 px (css/shell.css). */
+/** Whether the clock and the Resolve button stack: the viewport's width decides,
+    as css/shell.css does — not the canvas's, which the options column narrows. */
+const stacked = () => (typeof matchMedia === 'function' ? matchMedia('(max-width: 520px)').matches : false);
+export function hudBoxes(w, rows = 3) {
+  const phone = w < 520, bw = phone ? 182 : 218, step = phone ? 63 : 72;
+  return [
+    { x: 0, y: 0, w: 16 + bw + 8, h: 16 + step * Math.max(1, rows) },
+    stacked() ? { x: w - 148, y: 0, w: 148, h: 136 } : { x: w - 280, y: 0, w: 280, h: 88 },
+  ];
 }

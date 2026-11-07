@@ -34,6 +34,7 @@
 //   [m s^-2]             a unit — upright, never italic
 //   "at the top"         prose inside an equation — upright
 //   °                    degrees, set tight against the number
+//   vec(i)  vec r        a vector, in bold italic: 𝒊, 𝒓
 //
 //   Interpolate NUMBERS into the templates, not prose: the source is parsed,
 //   so `${num(x)}` is read as a number and typeset like one.
@@ -96,7 +97,7 @@ export function num(x, dp = 2, { trim = false } = {}) {
   if (Math.abs(x) < 1e-12) x = 0;
   if (typeof x !== 'number' || Number.isNaN(x)) return '—';
   if (!isFinite(x)) return x < 0 ? '−∞' : '∞';
-  if (x !== 0 && (Math.abs(x) >= 1e5 || Math.abs(x) < 1e-4)) return standardForm(x, 3);
+  if (x !== 0 && (Math.abs(x) >= 1e5 || Math.abs(x) < 1e-4)) return standardForm(x, 3, trim);
   const body = trim ? String(Number(x.toFixed(dp))) : x.toFixed(dp);
   return body.replace('-', '−');
 }
@@ -107,12 +108,38 @@ export function signed(x, dp = 2, opts) {
   return s.startsWith('−') ? `(${s})` : s;
 }
 
-function standardForm(x, sig) {
-  const [m, e] = x.toExponential(sig).split('e');
+/**
+ * A source expression put in brackets when it has a + or − at its top level,
+ * so it can go into a product, or after a minus, as it stands:
+ * `20 - V` → `(20 - V)`, while `V`, `2V` and `(V - 5)/2` are left alone.
+ * Substitutions built from pieces use it, so no piece is ever a bracket short.
+ */
+export function paren(src) {
+  let depth = 0;
+  for (const c of String(src)) {
+    if (c === '(' || c === '{') depth++;
+    else if (c === ')' || c === '}') depth--;
+    else if (depth === 0 && (c === '+' || c === '-' || c === '−')) return `(${src})`;
+  }
+  return String(src);
+}
+
+function standardForm(x, sig, trim = false) {
+  let [m, e] = x.toExponential(sig).split('e');
+  if (trim) m = m.replace(/\.?0+$/, '');
   return `${m.replace('-', '−')} × 10${toSuper(String(Number(e)))}`;
 }
 
 const toSuper = (s) => [...s].map((c) => SUPERS[c] ?? c).join('');
+// Unicode's mathematical bold italic letters, for a vector where there is no
+// HTML: 𝒊, 𝒋, 𝒓 — bold and italic, as the HTML sets a vector. Anything else is
+// left as it is.
+const toBold = (s) => [...s].map((c) => {
+  const n = c.charCodeAt(0);
+  if (n >= 97 && n <= 122) return String.fromCodePoint(0x1D482 + n - 97);
+  if (n >= 65 && n <= 90) return String.fromCodePoint(0x1D468 + n - 65);
+  return c;
+}).join('');
 const toSub = (s) => [...s].map((c) => SUBS[c] ?? c).join('');
 
 /* ── the public renderers ───────────────────────────────────────────── */
@@ -139,6 +166,40 @@ export function mathHTML(src) {
 /** Unicode only — canvas labels and aria text, where HTML cannot reach. */
 export function mathText(src) {
   return cached(textCache, src, (x) => renderText(parse(x)));
+}
+
+/**
+ * Typeset HTML read back as words, with its maths as T`` would write it:
+ * what a chat reply copies to the clipboard. A superscript stays a
+ * superscript (v², not v2), a fraction gets its slash and the brackets its
+ * bar made redundant, a radical its brackets. Buttons, inputs, drawings and
+ * anything hidden from a screen reader are not part of the words. DOM only,
+ * at the moment of copying; nothing else here touches a document.
+ */
+export function plainOf(root) {
+  const SKIP = 'button, input, select, textarea, canvas, svg, script, style, .ask-acts, .sr-only, [aria-hidden="true"]';
+  const BLOCK = /^(P|DIV|UL|OL|H[1-6]|TABLE|TR|FIGURE|FIGCAPTION|SECTION|BLOCKQUOTE|PRE|DL|DT|DD)$/;
+  // Anything with a sign in it needs its brackets back once it has no bar.
+  const grp = (s) => { const t = s.trim(); return /.[+−=]/.test(t) ? `(${t})` : t; };
+  const walk = (n) => {
+    if (n.nodeType === 3) return n.nodeValue;
+    if (n.nodeType !== 1 || n.matches(SKIP)) return '';
+    const inner = () => [...n.childNodes].map(walk).join('');
+    const c = n.classList;
+    if (c.contains('m-frac')) { const [a, b] = [...n.children].map(walk); return `${grp(a ?? '')}${SOLIDUS}${grp(b ?? '')}`; }
+    if (c.contains('m-sqrt')) return `√(${walk(n.querySelector('.m-rad') || n).trim()})`;
+    if (c.contains('m-sp')) return THIN;
+    if (c.contains('m-op') && !c.contains('m-un') && !c.contains('m-comma')) return ` ${inner().trim()} `;
+    if (c.contains('m-vec')) return toBold(inner());
+    if (n.tagName === 'SUP') return toSuper(inner());
+    if (n.tagName === 'SUB') return toSub(inner());
+    if (n.tagName === 'BR') return '\n';
+    if (n.tagName === 'LI') return `\n• ${inner().trim()}\n`;
+    if (n.tagName === 'TD' || n.tagName === 'TH') return `${inner().trim()}\t`;
+    const t = inner();
+    return BLOCK.test(n.tagName) ? `\n${t}\n` : t;
+  };
+  return walk(root).replace(/ {2,}/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 /** Tagged templates: M`...` for HTML, T`...` for Unicode. */
@@ -212,6 +273,7 @@ function lex(src) {
       const w = m[0]; i += w.length;
       if (w === 'sqrt') out.push({ k: 'sqrt' });
       else if (w === 'abs') out.push({ k: 'abs' });
+      else if (w === 'vec') out.push({ k: 'vec' });
       else if (w === 'inf') out.push({ k: 'num', v: '∞' });
       else if (GREEK[w]) out.push({ k: 'name', v: GREEK[w], greek: true });
       else if (FUNCS.has(w)) out.push({ k: 'fn', v: w });
@@ -337,7 +399,7 @@ function product(p) {
   return row(items);
 }
 
-const startsFactor = (t) => ['num', 'name', 'fn', 'sqrt', 'abs', 'unit', 'text'].includes(t.k)
+const startsFactor = (t) => ['num', 'name', 'fn', 'sqrt', 'abs', 'vec', 'unit', 'text'].includes(t.k)
   || (t.k === 'open');
 
 function power(p) {
@@ -375,6 +437,11 @@ function atom(p) {
       const inner = power(p);
       return { k: 'abs', body: inner.k === 'group' && inner.paren ? inner.body : inner };
     }
+    case 'vec': {
+      // A vector is set in bold — i, j, r, v — and its brackets go, like a radical's.
+      const inner = power(p);
+      return { k: 'vec', body: inner.k === 'group' && inner.paren ? inner.body : inner };
+    }
     case 'fn': {
       let exp = null;
       const nx = peek(p);
@@ -406,15 +473,16 @@ const bare = (n) => (n.k === 'group' && n.paren ? n.body : n);
 function renderHTML(n) {
   switch (n.k) {
     case 'row': {
-      let out = '';
+      // pieces, so a vector can be held to what multiplies it: 28𝒊 and
+      // (2 + 3t)𝒊 never break across a line between the two
+      const parts = [];
       n.items.forEach((it, i) => {
         const prev = n.items[i - 1];
-        if (i > 0 && it.k !== 'op' && prev.k !== 'op' && gapNeeded(prev, it)) {
-          out += '<span class="m-sp"></span>';
-        }
-        out += renderHTML(it);
+        const gap = i > 0 && it.k !== 'op' && prev.k !== 'op' && gapNeeded(prev, it) ? '<span class="m-sp"></span>' : '';
+        if (it.k === 'vec' && i > 0 && prev.k !== 'op') parts.push(`<span class="m-nb">${parts.pop()}${gap}${renderHTML(it)}</span>`);
+        else parts.push(gap + renderHTML(it));
       });
-      return out;
+      return parts.join('');
     }
     case 'op': {
       const cls = ['m-op'];
@@ -451,6 +519,8 @@ function renderHTML(n) {
         + `<span class="m-sp"></span>${renderHTML(n.arg)}`;
     case 'abs':
       return `<span class="m-bar">|</span>${renderHTML(n.body)}<span class="m-bar">|</span>`;
+    case 'vec':
+      return `<b class="m-vec">${renderHTML(n.body)}</b>`;
     case 'sqrt':
       return `<span class="m-sqrt"><span class="m-radix">√</span>`
         + `<span class="m-rad">${renderHTML(bare(n.body))}</span></span>`;
@@ -486,7 +556,8 @@ function renderText(n) {
         if (i > 0) {
           if (it.k === 'op') out += (it.unary || it.comma) ? '' : ' ';
           else if (prev.k === 'op') out += prev.unary ? '' : ' ';
-          else out += gapNeeded(prev, it) ? THIN : '';
+          // beside a word a thin gap reads as none on a canvas: a word gets a word space
+          else out += prev.k === 'text' || it.k === 'text' ? ' ' : gapNeeded(prev, it) ? THIN : '';
         }
         out += renderText(it);
       });
@@ -503,6 +574,7 @@ function renderText(n) {
     case 'deg': return `${renderText(n.base)}°`;
     case 'fn':  return `${n.name}${n.exp ? toSuper(renderText(parse(n.exp))) : ''}${THIN}${renderText(n.arg)}`;
     case 'abs': return `|${renderText(n.body)}|`;
+    case 'vec': return toBold(renderText(n.body));
     // Without a bar to draw, the radicand keeps its brackets.
     case 'sqrt': return `√(${renderText(bare(n.body))})`;
     case 'frac': return `${wrap(n.num)}${SOLIDUS}${wrap(n.den)}`;

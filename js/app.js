@@ -4,21 +4,29 @@
 // else beyond what the chosen situation genuinely needs. Launch stays disabled
 // until the engine can actually determine the motion, and says why not.
 
+import { kitView, kitViewDone } from './render/kitview.js';
 import { solveLaunch } from './core/solve.js';
 import { trajectory } from './core/trajectory.js';
-import { flight, timeAbove, heightForTime, timeAtSpeed } from './core/projectile.js';
+import { flight, timeAbove, lineFacts, heightForTime, timeAtSpeed } from './core/projectile.js';
 import { descent, solveDescent, descentWorking, resolveDescent } from './core/descent.js';
 import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
-import { recommend, paceNote } from './core/pace.js';
-import { SCENARIOS, GROUPS, GRAVITY, byId } from './scenarios.js';
+import { recommend, paceNote, lapseNote } from './core/pace.js';
+import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
+import { composeSensibly, heightSensibly, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
+import { figureOf, belowOf, placeOf } from './compose/registry.js';
+import { reveal } from './compose/reveal.js';
+import { LIBRARY } from './library.js';
+import { KITS } from './kits/index.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
+import { resolveKit } from './kitresolve.js';
 import * as scene from './render/scene.js';
 import * as exhibit from './render/exhibit.js';
 import * as panes from './render/panes.js';
 import { descentPanes, PRE } from './render/drop.js';
 import * as range from './render/range.js';
 import * as roadStage from './render/road.js';
+import { FIGURES } from './render/figures.js';
 import { siteFor } from './world/world.js';
 import { nearestBranch } from './render/backdrops.js';
 import { dropToneCache } from './render/world2d.js';
@@ -26,9 +34,22 @@ import { drawGraph, graphSpecs } from './render/graphs.js';
 import { fmt, palette, clamp } from './render/util.js';
 import { M, T, num } from './notation.js';
 import { toApp } from './core/question.js';
-import { readoutHTML } from './ai/readout.js';
+import { createAsk } from './ai/ask.js';
+import { createBoard } from './board/board.js';
+import { boardStore, boardChanged, initBoards } from './board/boards.js';
+import { readoutHTML, solutionHTML, resultsHTML, esc } from './ai/readout.js';
+import { withChosenG, gStated, loadG, saveG } from './ai/gchoice.js';
+import { walk, stepOf, labelOf, ownScene, sceneOf } from './parts/parts.js';
+import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML, askHTML, answerHTML } from './parts/strip.js';
+import { answerOf } from './parts/parts.js';
+import { fromReader, boxesOf } from './parts/answers.js';
+import { initShell } from './shell.js';
+import { initAccount } from './account.js';
 
 const $ = (id) => document.getElementById(id);
+
+// For testing: a picked scenario opens with its `example` numbers in the boxes. false restores empty boxes.
+const PREFILL = true;
 
 /**
  * A number the way a student writes one.
@@ -102,6 +123,8 @@ const state = {
   // the only thing running. See the pre-roll note in js/render/drop.js.
   pre: null,
   layout: 4,                     // how many panes, for a scenario that has them
+  // (Superseded on 1 Nov: launch() now sets the recommended rate every time; the
+  // user asked for it. The note below is why it was once fixed at 0.75x.)
   // 0.75x, AND IT STAYS THERE. Every fresh flight used to be handed a rate
   // worked out from its own duration — `recommend(tMax)` — so a short flight
   // opened at 0.16x and a long one at real time, and the number under the
@@ -122,6 +145,7 @@ const state = {
 };
 
 const cam = scene.createCamera();
+let board = null;                // the whiteboard, made once the page is up — see the end of this file
 /* ── the window, for the scenarios that watch themselves in one ──────────
    A parachute drop is four views of one motion rather than one view with the
    graphs in a sidebar — see js/render/panes.js. The window keeps its own
@@ -133,6 +157,9 @@ let scenario = null, solved = null, traj = null, second = null, ghost = null, di
 
 /** Does this scenario replace the single view with the pane window? */
 const windowed = () => !!scenario?.descent;
+/** A library scenario's kit — its engine, stage, graphs and working, wired
+    once (js/kits/, design/components.md) — or null for the original twelve. */
+const kit = () => (scenario?.kit ? KITS[scenario.kit] : null);
 
 /* ── step 1 · scenario ──────────────────────────────────────────────── */
 function buildScenarioScreen() {
@@ -150,9 +177,100 @@ function buildScenarioScreen() {
       <div class="pgrid-row">${cards}</div></div>`;
   }).join('');
   for (const b of $('pgrid').querySelectorAll('.pcard')) {
-    b.addEventListener('click', () => chooseScenario(b.dataset.id));
+    b.addEventListener('click', () => chooseScenario(b.dataset.id, { example: true }));
   }
+  wireSpotlight();
+  buildLibrary();
 }
+
+/* ── the Past-paper library ──────────────────────────────────────────────
+   Scenarios built for exam questions the twelve above could not set up —
+   each its own situation, with its own engine and stage, and each naming the
+   papers it came from. The search box searches these and nothing else: the
+   name, what it is for, the boards and papers, and the words a question in
+   that family tends to use. See js/library.js. */
+function buildLibrary() {
+  const grid = $('lib-grid');
+  if (!grid) return;
+  grid.innerHTML = LIBRARY.map((s) => `
+    <button class="pcard" data-id="${s.id}">
+      ${thumb(s)}
+      <b>${s.name}</b>
+      ${s.sub ? `<span class="pc-sub">${s.sub}</span>` : ''}
+      <p class="pc-note">${s.note}</p>
+      <p class="pc-src">${s.sources.map((x) => `<span>${x.board} ${x.paper} · ${x.session} · Q${x.q}${x.part ? `, ${x.part}` : ''}</span>`).join('')}</p>
+    </button>`).join('');
+  for (const b of grid.querySelectorAll('.pcard')) {
+    b.addEventListener('click', () => chooseScenario(b.dataset.id, { example: true }));
+  }
+  $('lib-count').textContent = `${LIBRARY.length} ${LIBRARY.length === 1 ? 'scenario' : 'scenarios'}`;
+  const box = $('lib-q');
+  if (box.dataset.wired) return;
+  box.dataset.wired = '1';
+  box.addEventListener('input', () => filterLibrary(box.value));
+}
+/* What a student might type for a paper: the board's full name, and the
+   session the way each board's own files and students write it — June 2017,
+   J17 and s17 (CIE's summer code) are the same sitting. */
+const BOARD_NAMES = {
+  CIE: 'Cambridge International CAIE', AQA: 'AQA', Edexcel: 'Pearson Edexcel',
+  OCR: 'OCR', 'OCR A': 'OCR', 'OCR MEI': 'OCR MEI', WJEC: 'WJEC Eduqas',
+};
+const MONTHS = { Jan: ['January', 'J', 'w'], 'May/Jun': ['June', 'J', 's'], Jun: ['June', 'J', 's'],
+                 'Oct/Nov': ['November', 'N', 'w'], Nov: ['November', 'N', 'w'], 'Feb/Mar': ['March', 'M', 'm'], Oct: ['October', 'O', 'w'] };
+function paperWords(x) {
+  const m = /^(.*)\s(\d{4})$/.exec(x.session) || [];
+  const [month, letter, cie] = MONTHS[m[1]] || [];
+  const yy = m[2] ? m[2].slice(2) : '';
+  return [x.board, BOARD_NAMES[x.board] || '', x.paper, x.paper.replace(/\//g, ' '), 'paper', x.session, `Q${x.q}`, `question ${x.q}`,
+    month ? `${month} ${m[2]} ${letter}${yy} ${cie}${yy}` : ''].join(' ');
+}
+/* A word and its endings are the same word here: collide, collides,
+   colliding and collision all find the scenario that collides. */
+const stem = (w) => w.toLowerCase().replace(/[^a-z0-9/]/g, '')
+  .replace(/sions?$/, 'de').replace(/(ions|ion|ings|ing|ed|es|s)$/, '').replace(/e$/, '');
+/* Words that say nothing about which scenario: dropped from the search and
+   from what it searches, before stemming — so "is" never becomes an "i". */
+const STOP = new Set(['and', 'is', 'the', 'a', 'an', 'of', 'to', 'in', 'at', 'it', 'its', 'on', 'for', 'with', 'by', 'from', 'when', 'what', 'or']);
+// "3i + 4j", "-i + 3j", "due-east": a vector is its letters, a hyphen a space
+const searchWords = (x) => x.replace(/\d*\.?\d+\s*([ij])\b/gi, ' $1 ').split(/[\s\-−+]+/)
+  .filter((w) => w && !STOP.has(w.toLowerCase())).map(stem).filter(Boolean);
+function filterLibrary(q) {
+  // a single letter (the i and j of vectors) has to be a whole word, not the
+  // start of every word with an i in front
+  const words = searchWords(q);
+  let shown = 0;
+  for (const b of $('lib-grid').querySelectorAll('.pcard')) {
+    const s = LIBRARY.find((x) => x.id === b.dataset.id);
+    const hay = searchWords([s.name, s.sub, s.note, ...s.sources.map(paperWords), ...(s.tags || [])].join(' '));
+    const hit = words.every((w) => hay.some((h) => (w.length === 1 ? h === w : h.startsWith(w))));
+    b.hidden = !hit;
+    if (hit) shown++;
+  }
+  $('lib-none').hidden = shown > 0;
+}
+
+/* The spotlight on the cards: the pointer, in each card's own pixels, so
+   the light lands where the pointer is on every card at once — the card
+   under it washes, its neighbours catch it on their nearest edge. See
+   .pcard::before/::after in css/app.css. */
+function wireSpotlight() {
+  const grid = $('pgrid');
+  if (grid.dataset.spot) return;           // the grid can be rebuilt; wire it once
+  grid.dataset.spot = '1';
+  const cards = () => grid.querySelectorAll('.pcard');
+  grid.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    for (const c of cards()) {
+      const r = c.getBoundingClientRect();
+      c.style.setProperty('--gx', `${(e.clientX - r.left).toFixed(1)}px`);
+      c.style.setProperty('--gy', `${(e.clientY - r.top).toFixed(1)}px`);
+      c.style.setProperty('--gon', '1');
+    }
+  });
+  grid.addEventListener('pointerleave', () => { for (const c of cards()) c.style.setProperty('--gon', '0'); });
+}
+
 
 /**
  * A small sketch of the situation, drawn from its own numbers.
@@ -164,6 +282,7 @@ function buildScenarioScreen() {
  * what you are choosing between.
  */
 function thumb(s) {
+  if (s.kit) return KITS[s.kit].thumb(s);
   if (s.descent) return descentThumb(s);
   if (s.road) return roadThumb(s);
   const g = s.params.g || 9.81;
@@ -233,7 +352,7 @@ function thumb(s) {
  * what tells this card apart from Dropped at a glance.
  *
  * Drawn from the scenario's own illustrative numbers, like every other card.
- * Nothing here is pre-filled into the boxes.
+ * The boxes take the scenario's `example` instead, and only while PREFILL is on.
  */
 /* A road card: the road, A and B, and where the vehicle is at equal steps of
    time — the gaps widen because it is speeding up, which is the scenario. */
@@ -296,20 +415,34 @@ function aimFor(s) {
   return (Math.atan2(t.y - (s.params.h || 0), t.x) * 180) / Math.PI;
 }
 
-function chooseScenario(id) {
+function chooseScenario(id, { example = false } = {}) {
   scenario = byId(id);
   state.id = id;
   state.given = {};
-  // The scenario picks the SITUATION, never the numbers. Every box starts
-  // empty; the only thing it fixes is that a dropped object starts at rest,
-  // which is what "dropped" means.
+  // The scenario picks the SITUATION. Every box starts empty unless PREFILL
+  // is on and the pick came from a card (`example`), when the scenario's own
+  // `example` numbers go in — see applyExample. A reading from Ask Suvat or
+  // the whiteboard brings its own numbers and never asks for these. The one
+  // thing always fixed is that a dropped object starts at rest, which is what
+  // "dropped" means.
   if (scenario.noAngle) state.given.u = 0;
   state.theta = undefined;
   state.h = undefined;
   state.descent = {};
   state.mark = undefined;            // the point a road question times it at
+  state.atTime = undefined;          // or the time it asks about
+  state.nth = undefined;             // or a distance in one second: { n, s }
+  state.fromRest = false;            // the stretch it times began after a start from rest
+  state.who = 'lorry';               // and what it is that moves along the road
+  state.kit = {};                    // a library scenario's own boxes
+  state.runs = null; state.part = -1; state.stopAt = null;   // a question in parts, see js/parts/
+  state.readerParts = null;          // the parts Ask Suvat read, when they replace the scenario's own
+  renderParts();
   state.markers = JSON.parse(JSON.stringify(scenario.markers || {}));
-  $('ask-at').hidden = !!scenario.road;
+  if (PREFILL && example && !scenario.exhibit) applyExample(scenario.example);
+  $('ask-at').hidden = false;
+  // by speed only where the projectile engine can find the instants: elsewhere, by time
+  $('at-v').closest('.askat-row').hidden = !!(scenario.road || scenario.kit || scenario.descent);
   state.firedBefore = false; ghost = null;
   state.aimed = true;                  // the hunter starts pointing at it
   // A NEW SCENARIO IS A NEW PLACE, so the view starts framed on it. Launching
@@ -326,6 +459,8 @@ function chooseScenario(id) {
   scene.fitView(cam);
   requestAnimationFrame(() => { scene.fitView(cam); dirty = true; });
   $('chosen').textContent = scenario.name;
+  // the canvas says what it shows: a train, two particles, a projectile
+  $('scene').setAttribute('aria-label', scenario.kit ? `${scenario.name}: ${scenario.place}` : 'Projectile motion');
   buildValuesScreen();
   // An exhibit opens on the experiment itself, not on a form. The gate is
   // `exhibit` rather than `intro`, because Monkey vs Hunter no longer has an
@@ -337,8 +472,7 @@ function chooseScenario(id) {
     recompute();
     if (traj) { state.launched = true; state.firedBefore = false; state.t = 0; state.playing = false; }
     buildLive();
-    go('flight');
-    if (scenario.intro) openIntro();
+    if (!stayPut) { go('flight'); if (scenario.intro) openIntro(); }
   } else {
     // buildLive() runs for EVERY scenario now, not only the exhibits. It is
     // the one place that decides which stage controls this situation can
@@ -346,8 +480,32 @@ function chooseScenario(id) {
     // on the way out of one of those left that answer in place for whatever
     // was picked next.
     buildLive();
-    go('values');
+    if (!stayPut) go('values');
   }
+}
+/* A READING STAYS IN THE CHAT. Ask Suvat's answer is shown where the question
+   was asked, and the stage waits for "Show me the flight" — so picking the
+   scenario for a reading sets it up without going to its screen. Going there
+   and then back to the chat was a flash of the values screen on every
+   answer. Set only while applyReading runs. */
+let stayPut = false;
+
+/**
+ * A scenario's `example`, put in the boxes (PREFILL only). A library entry's
+ * is its kit's boxes, keyed as they are; a hand-built one's says which of the
+ * five it gives, and the angle, height, parachute setup or road point. The
+ * boxes read state as they are built, so this is all it takes to show them.
+ */
+function applyExample(ex) {
+  if (!ex) return;
+  if (scenario.kit) { state.kit = { ...ex }; return; }
+  Object.assign(state.given, ex.given || {});
+  if (scenario.noAngle) state.given.u = 0;
+  if (ex.theta != null) state.theta = ex.theta;
+  if (ex.h != null) state.h = ex.h;
+  if (ex.descent) state.descent = { ...ex.descent };
+  if (ex.mark != null) state.mark = ex.mark;
+  if (ex.who) state.who = ex.who;
 }
 
 /** Fill in the scenario's own starting numbers, so the stage has something to show. */
@@ -388,6 +546,7 @@ function closeIntro() { $('intro').hidden = true; }
    Or, for the parachute, four numbers that are not three of the five — see
    buildDescentScreen below for why it gets a screen of its own. */
 function buildValuesScreen() {
+  if (kit()) return buildKitScreen();
   if (scenario?.descent) return buildDescentScreen();
   $('suvat').hidden = false;
   valuesVoice(scenario.road ? 'road' : false);
@@ -518,10 +677,13 @@ function valuesVoice(descentMode) {
     };
     VOICE.was = { h: VOICE.el.h.innerHTML, sub: VOICE.el.sub.innerHTML };
   }
-  VOICE.el.h.innerHTML = descentMode ? 'How is the jump set up?' : VOICE.was.h;
+  VOICE.el.h.innerHTML = descentMode === true ? 'How is the jump set up?' : VOICE.was.h;
   if (descentMode === 'road') {
+    // the lorry's words, unless what is moving is not a vehicle
+    const fig = FIGURES[state.who] || FIGURES.lorry;
+    const whose = state.who === 'runner' ? 'runner' : state.who === 'cyclist' ? 'cyclist' : 'vehicle';
     VOICE.el.sub.innerHTML = 'Any three of the five give you the other two. Here <b>a</b> is the '
-      + 'vehicle\u2019s own acceleration, not g — and braking is a negative one.';
+      + `${whose}\u2019s own acceleration, not g — and towards A is negative, so ${fig.brakes ? 'braking' : 'slowing down'} on the way to B is a negative one.`;
     return;
   }
   VOICE.el.sub.innerHTML = descentMode
@@ -541,7 +703,7 @@ function valuesVoice(descentMode) {
    settles to. The engine works out all five for each phase from those, and
    the ending card shows them as three rows of five.
 
-   Nothing is pre-filled, as everywhere else. The hints carry the real
+   Nothing is pre-filled unless PREFILL is on. The hints carry the real
    magnitudes instead, because a student who has never seen the question has
    no idea whether a canopy pulls 2 m s⁻² or 200. */
 const DESCENT_ROWS = [
@@ -611,14 +773,27 @@ function buildDescentScreen() {
 function buildRoadExtras() {
   $('mode-say').innerHTML = '';
   const mid = state.mark === 'mid';
-  $('extra').innerHTML = `<div class="xrow" data-x="mark"><label for="x-mark">A point to time it at, from A (m)</label>
+  $('extra').innerHTML = `<div class="xrow wide choice" data-x="who"><span class="xlabel" id="x-who-l">What is moving</span>
+    <div class="chips" role="group" aria-labelledby="x-who-l">${Object.entries(FIGURES).map(([k, f]) =>
+      `<button class="chip" data-who="${k}" aria-pressed="${(state.who || 'lorry') === k}">${f.label}</button>`).join('')}</div>
+    <p class="xhint">Whatever the question names. The physics is the same for all of them; the stage draws that one.</p></div>
+    <div class="xrow" data-x="mark"><label for="x-mark">A point to time it at, from A (m)</label>
     <input id="x-mark" type="text" inputmode="decimal" autocomplete="off"
            value="${mid || state.mark == null ? '' : fmt(state.mark, 2)}" placeholder="—">
     <div class="chips"><button class="chip" id="x-mid" aria-pressed="${mid}">The mid-point of AB</button></div>
     <p class="xhint">${OPTIONAL_HINT} The engine works out when it gets there.</p></div>`;
+  for (const b of $('extra').querySelectorAll('[data-who]')) {
+    b.addEventListener('click', () => {
+      state.who = b.dataset.who;
+      for (const x of $('extra').querySelectorAll('[data-who]')) x.setAttribute('aria-pressed', String(x === b));
+      valuesVoice('road');
+      recompute();
+    });
+  }
   $('x-mark').addEventListener('input', (e) => {
     const v = parseValue(e.target.value);
     state.mark = v !== undefined && isFinite(v) ? v : undefined;
+    if (state.mark != null) state.atTime = undefined;
     $('x-mid').setAttribute('aria-pressed', 'false');
     recompute();
   });
@@ -631,6 +806,266 @@ function buildRoadExtras() {
   });
   recompute();
 }
+
+/* ── a library scenario's own boxes ──────────────────────────────────────
+   Its kit says which numbers the situation needs (js/kits/), grouped into
+   columns when there are two objects. Unless PREFILL puts the entry's
+   example in, nothing is pre-filled: a box marked optional says in its hint
+   what blank means. g is a box of its own with the three values papers use
+   one press away, because the answer depends on which one the paper said. */
+function buildKitScreen() {
+  const K = kit();
+  $('suvat').innerHTML = '';
+  $('suvat').hidden = true;
+  $('guard').hidden = true;
+  $('mode-say').innerHTML = '';
+  valuesVoice(false);
+  VOICE.el.h.innerHTML = K.voice.h;
+  VOICE.el.sub.innerHTML = K.voice.sub;
+
+  const val = (k) => state.kit[k];
+  const box = (f) => {
+    const id = `k-${f.key.replace('.', '-')}`;
+    if (f.type === 'choice') {
+      // a choice with a default shows it pressed: what the engine assumes is on screen
+      return `<div class="xrow wide choice${f.full ? ' full' : ''}" data-x="${f.key}"><span class="xlabel" id="${id}-l">${f.label}</span>
+        <div class="chips" role="group" aria-labelledby="${id}-l"${f.hint ? ` aria-describedby="${id}-h"` : ''} data-choice="${f.key}">${f.options.map((o) =>
+          `<button class="chip" data-v="${o.v}" aria-pressed="${(val(f.key) ?? f.default) === o.v}">${o.label}</button>`).join('')}</div>
+        ${f.hint ? `<p class="xhint" id="${id}-h">${f.hint}</p>` : ''}</div>`;
+    }
+    // the column's name is part of the box's name: two boxes both called
+    // "Height it starts from" are told apart by whose they are; a box in a
+    // row may say its own (f.aria), and its hint is read with it
+    const whose = f.col && K.cols?.[f.col] ? `${K.cols[f.col]}: ` : '';
+    const plain = (x) => x.replace(/<[^>]+>/g, '');
+    return `<div class="xrow${f.narrow ? ' narrow' : ''}" data-x="${f.key}"><label for="${id}">${f.label}</label>
+      <input id="${id}" type="text" inputmode="decimal" autocomplete="off" data-k="${f.key}"
+             aria-label="${f.aria ? plain(f.aria) : `${whose}${plain(f.label)}`}"${f.hint ? ` aria-describedby="${id}-h"` : ''}
+             value="${val(f.key) ?? ''}" placeholder="${f.placeholder ?? (f.optional ? '0' : '—')}">
+      ${f.hint ? `<p class="xhint" id="${id}-h" data-say="${f.say || ''}">${f.hint}</p>` : ''}</div>`;
+  };
+  const colNames = Object.entries(K.cols || {});
+  const cols = colNames.map(([c, name]) => `
+    <fieldset class="kcol" data-col="${c}"><legend>${name}</legend>
+      ${K.fields.filter((f) => f.col === c).map(box).join('')}</fieldset>`).join('');
+  // Rows below the columns, each a group of its own across the full width.
+  // A kit whose boxes depend on its choices (how many stages) gives them as a
+  // function of what is chosen so far.
+  const kRows = typeof K.rows === 'function' ? K.rows(state.kit) : (K.rows || []);
+  const rows = kRows.map((r) => `
+    <fieldset class="krow"><legend>${r.title}</legend>
+      <div class="krow-in">${r.fields.map(box).join('')}</div>
+      ${r.hint ? `<p class="xhint">${r.hint}</p>` : ''}</fieldset>`).join('');
+  const g = state.kit.g;
+  $('extra').innerHTML = `<div class="kcols" style="--kc: ${colNames.length}">${cols}</div>${rows}`
+    + (K.g ? `<div class="xrow wide" data-x="g"><label for="k-g">Acceleration due to gravity, g (m s⁻²)</label>
+      <input id="k-g" type="text" inputmode="decimal" autocomplete="off" data-k="g" value="${g ?? ''}" placeholder="—">
+      <div class="chips" id="k-g-chips" role="group" aria-label="The value papers use">${K.g.map((x) =>
+        `<button class="chip" data-g="${x}" aria-pressed="${g === x}">${x}</button>`).join('')}</div>
+      <p class="xhint">Use the value the paper gives: answers depend on it.</p></div>` : '');
+
+  const fieldOf = (key) => [...K.fields, ...kRows.flatMap((r) => r.fields)].find((x) => x.key === key);
+  const sayDir = (inp) => {
+    const hint = inp.parentElement.querySelector('.xhint');
+    if (!hint || hint.dataset.say !== 'dir' || hint.dataset.bad === 'true') return;
+    const f = fieldOf(inp.dataset.k);
+    const v = state.kit[inp.dataset.k];
+    hint.innerHTML = v === undefined ? f.hint : `<b>${K.dir(v)}</b> — ${f.hint}`;
+  };
+  for (const inp of $('extra').querySelectorAll('input[data-k]')) {
+    inp.addEventListener('input', (e) => {
+      const v = parseValue(e.target.value);
+      if (v !== undefined && isFinite(v)) state.kit[e.target.dataset.k] = v;
+      else delete state.kit[e.target.dataset.k];
+      // A box it cannot read says so, rather than being taken as blank:
+      // "5 min" and "6.3 km" are what the hints invite people to convert.
+      const hint = e.target.parentElement.querySelector('.xhint');
+      if (hint) {
+        if (!hint.dataset.was) hint.dataset.was = hint.innerHTML;
+        const bad = Number.isNaN(v);
+        hint.dataset.bad = String(bad);
+        if (bad) hint.innerHTML = 'That is not a number it can read. Type the number alone, in metres and seconds — 300, not 5 min.';
+        else if (hint.dataset.say !== 'dir') hint.innerHTML = hint.dataset.was;
+      }
+      if (e.target.dataset.k === 'g' && $('k-g-chips')) {
+        for (const c of $('k-g-chips').children) c.setAttribute('aria-pressed', String(parseFloat(c.dataset.g) === state.kit.g));
+      }
+      sayDir(e.target);
+      recompute();
+    });
+    sayDir(inp);
+  }
+  // A choice is one of its chips, or none: press the pressed one to clear it.
+  // A choice whose values name boxes (the number to find) locks the box it
+  // names and says so, rather than leaving it asking to be filled in.
+  // Every naming choice at once: pressing any other chip never unlocks the
+  // box that one of them has locked.
+  const markFound = () => {
+    const locked = new Set([...K.fields, ...kRows.flatMap((r) => r.fields)].filter((f) => f.type === 'choice' && f.names).map((f) => state.kit[f.key]).filter(Boolean));
+    for (const inp of $('extra').querySelectorAll('input[data-k]')) {
+      const f = fieldOf(inp.dataset.k);
+      const isIt = locked.has(inp.dataset.k);
+      inp.readOnly = !!isIt;
+      inp.dataset.found = String(!!isIt);
+      if (isIt) { inp.value = ''; delete state.kit[inp.dataset.k]; }
+      inp.placeholder = isIt ? 'to find' : (f?.placeholder ?? (f?.optional ? '0' : '—'));
+    }
+  };
+  for (const group of $('extra').querySelectorAll('[data-choice]')) {
+    for (const c of group.children) {
+      c.addEventListener('click', () => {
+        const key = group.dataset.choice;
+        const on = state.kit[key] !== c.dataset.v;
+        if (on) state.kit[key] = c.dataset.v; else delete state.kit[key];
+        // a choice that changes which boxes there are draws the screen again,
+        // keeping everything typed, and the focus where it was
+        if (fieldOf(key)?.rebuild) {
+          buildKitScreen();
+          $('extra').querySelector(`[data-choice="${key}"] [data-v="${c.dataset.v}"]`)?.focus();
+          return;
+        }
+        const cur = state.kit[key] ?? fieldOf(key)?.default;
+        for (const x of group.children) x.setAttribute('aria-pressed', String(x.dataset.v === cur));
+        markFound();
+        recompute();
+      });
+    }
+    markFound();
+  }
+  for (const c of ($('k-g-chips')?.children || [])) {
+    c.addEventListener('click', () => {
+      state.kit.g = parseFloat(c.dataset.g);
+      $('k-g').value = c.dataset.g;
+      for (const x of $('k-g-chips').children) x.setAttribute('aria-pressed', String(x === c));
+      recompute();
+    });
+  }
+  recompute();
+}
+
+/** A library scenario, solved by its own engine through its kit. It answers
+    in the shape solveLaunch does, so the message, the transport and the HUD
+    carry on without knowing which engine replied. */
+function recomputeKit() {
+  const K = kit();
+  solved = K.solve(K.read(state.kit));
+  const msg = $('solve-msg'), btn = $('launch');
+  if (!solved.ok) {
+    if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
+    btn.disabled = true; btn.textContent = K.verb;
+    traj = null; second = null; state.verdict = null; state.markers = {};
+    state.runs = null; renderParts();
+    refreshSteps(); dirty = true; return;
+  }
+  if (!working()) {
+    msg.dataset.ok = 'true';
+    msg.innerHTML = `Ready. The rest comes out as:  ${solved.derived.join('  ·  ')}`;
+    showDerived(solved);
+  }
+  traj = solved.f;
+  second = null; state.verdict = null; state.caught = null; state.markers = {};
+  btn.disabled = false;
+  btn.textContent = K.verb;
+  // A QUESTION IN PARTS: every part solved by this same engine, each with the
+  // boxes it adds (js/parts/parts.js). The stage starts on the whole motion.
+  const base = solved, boxes = { ...state.kit };
+  // a library scenario's own parts are its paper's, numbers and all: once the
+  // values are no longer the paper's, they would say what is no longer true
+  const parts = state.readerParts || (paperValues(scenario, boxes) ? scenario.parts : null);
+  state.runs = parts?.length ? walk((b) => (sameKitBoxes(b, boxes) ? base : K.solve(K.read(b))), boxes, parts) : null;
+  state.part = -1; state.stopAt = null;
+  renderParts();
+  syncRate(); refreshSteps(); dirty = true;
+}
+
+/** Are these the values of the scenario's paper (its `example`)? Blank boxes and its own set the same. A scenario with no example has nothing to differ from. */
+function paperValues(scenario, boxes) {
+  const ex = scenario?.example;
+  if (!ex || scenario.group !== 'library') return true;
+  // compared as numbers where they are numbers: 15.0 is 15
+  const val = (x) => (x == null || x === '' ? '' : x !== true && x !== false && isFinite(Number(x)) ? String(Number(x)) : String(x));
+  const keys = new Set([...Object.keys(ex), ...Object.keys(boxes).filter((k) => val(boxes[k]) !== '')]);
+  return [...keys].every((k) => (k === 'g' && ex.g == null) || val(ex[k]) === val(boxes[k]) || (ex[k] == null && val(boxes[k]) === ''));
+}
+
+const sameKitBoxes = (a, b) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);
+
+/** The part strip and the clock's ticks, for the motion on the stage. */
+function renderParts() {
+  // a scene with no parts (a composed one may have none) has no strip at all
+  const on = !!(state.runs?.some(Boolean) && traj && solved?.ok);
+  $('parts').hidden = !on; $('pticks').hidden = !on;
+  if (!on) return;
+  const parts = state.runs.map((r, i) => r?.part ?? (state.readerParts || scenario.parts)[i]);
+  $('parts').innerHTML = stripHTML(parts, state.runs, state.part, stepsNow(), sceneLinks());
+  $('pticks').innerHTML = ticksHTML(state.runs, partSolved(), state.part);
+}
+/** What the parts are answered from: a kit's solution, or a launch's with its flight as `f`. */
+const partSolved = () => (kit() ? solved : state.runs?.find(Boolean)?.solved);
+/** The working panel's steps for the motion on the stage. */
+function stepsNow() {
+  return kit() ? kit().working(solved, state.t)
+    : scenario?.descent ? descentWorking(traj, state.t)
+    : scenario?.road ? roadWorking(solved)
+    : buildWorking(traj, state.t);
+}
+/** One of the twelve's answers, as its parts read it: the solution, the flight, and the time above a line it has one. */
+function twelveSolved() {
+  const line = scenario?.dragLine ? state.markers?.heightLine : null;
+  return { ...solved, f: traj, ...(line != null && traj ? { above: { line, ...timeAbove(traj, line) } } : {}) };
+}
+/** The original twelve, with parts read by Ask Suvat: one motion, so every part shares it. */
+function originalParts() {
+  state.part = -1; state.stopAt = null;
+  const one = traj && solved?.ok ? twelveSolved() : null;
+  state.runs = state.readerParts && one ? walk(() => one, {}, state.readerParts) : null;
+  renderParts();
+}
+
+/**
+ * Show part k: its motion on the stage (solved again if the part added to the
+ * boxes), the clock at its moment, its ring on the graphs, its step lit in
+ * the working. With `play`, the motion runs on to that moment and stops —
+ * from the start if the part's motion is a new one, or the moment is behind.
+ * k = −1 is the whole motion again.
+ */
+function showPart(k, { play = false } = {}) {
+  if (!state.runs) return;
+  hideDone(); closeResolve(); state.pre = null;
+  const run = k >= 0 ? state.runs[k] : state.runs.find(Boolean);
+  if (!run?.solved?.ok) return;
+  const fresh = !!kit() && solved !== run.solved;
+  if (fresh) { solved = run.solved; traj = solved.f; }
+  state.part = k;
+  if (k < 0) { state.stopAt = null; state.playing = false; setPlayIcon(false); state.t = 0; }
+  else {
+    const t = run.moment.t;
+    if (play && t > 0) {
+      if (fresh || state.t >= t - 1e-9) state.t = 0;
+      state.stopAt = t; state.playing = true; setPlayIcon(true);
+    } else { state.stopAt = null; state.playing = false; setPlayIcon(false); state.t = t; }
+  }
+  if (fresh) cam.fit = true;
+  syncRate(); renderParts(); dirty = true;
+  // the working panel, if it is open, scrolls its lit step into view
+  requestAnimationFrame(() => document.querySelector('#working .step[data-part="on"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  // a sketch is answered by the stage's own graphs: open them, the one it asks for in view
+  // (`graph: 'g-a'` on a part; the velocity–time one when it does not say)
+  if (run.part.kind === 'graph') {
+    openGraphs();
+    requestAnimationFrame(() => $(run.part.graph || 'g-v')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  }
+}
+$('parts').addEventListener('click', (e) => {
+  const s = e.target.closest('button[data-scene]');
+  if (s) { openPart(parseInt(s.dataset.scene.slice(5), 10)); return; }
+  const b = e.target.closest('button[data-part]');
+  if (b) showPart(parseInt(b.dataset.part, 10), { play: b.dataset.play === 'true' });
+});
+$('pticks').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-part]');
+  if (b) showPart(parseInt(b.dataset.part, 10));
+});
 
 /* ── solve ──────────────────────────────────────────────────────────── */
 /** The angle that points the launch straight at the draggable target. */
@@ -654,6 +1089,11 @@ function showDerived(r) {
 }
 
 function recompute() {
+  recomputeOne();
+  if (!kit()) originalParts();
+}
+function recomputeOne() {
+  if (kit()) return recomputeKit();
   if (scenario?.descent) return recomputeDescent();
   if (scenario?.road) return recomputeRoad();
   const k = { ...state.given, theta: state.theta, h: state.h };
@@ -758,11 +1198,12 @@ function recompute() {
  */
 function recomputeRoad() {
   const g = state.given;
-  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark });
+  const fig = FIGURES[state.who] || FIGURES.lorry;
+  solved = solveRoad({ s: g.s, u: g.u, v: g.v, a: g.g, t: g.t, mark: state.mark, at: state.atTime, nth: state.nth?.n, sNth: state.nth?.s, fromRest: state.fromRest, who: fig.noun, brakes: fig.brakes, turns: !!fig.turns });
   const msg = $('solve-msg'), btn = $('launch');
   if (!solved.ok) {
     if (!working()) { msg.dataset.ok = 'false'; msg.innerHTML = solved.reason; $('notes').innerHTML = ''; }
-    btn.disabled = true; btn.textContent = 'Drive';
+    btn.disabled = true; btn.textContent = fig.verb;
     traj = null; second = null; state.verdict = null; state.markers = {};
     refreshSteps(); applyGuard(); dirty = true; return;
   }
@@ -777,7 +1218,7 @@ function recomputeRoad() {
   // What the stage marks: the point, and the time the engine found for it.
   state.markers = solved.moment ? { mark: { s: solved.moment.s, t: solved.moment.t, mid: solved.moment.mid } } : {};
   btn.disabled = false;
-  btn.textContent = 'Drive';
+  btn.textContent = fig.verb;
   syncRate(); refreshSteps(); applyGuard(); dirty = true;
 }
 
@@ -1080,12 +1521,26 @@ function buildLive() {
   // a canopy does not bounce either — so the setting is not offered on any of
   // the three. It used to be an inline checkbox in the stage bar; it is a
   // block in the options panel now, and the same reason applies to it there.
-  $('bounce-wrap').hidden = ex || !!scenario?.descent || !!scenario?.road;
+  const K = kit();
+  $('bounce-wrap').hidden = ex || !!scenario?.descent || !!scenario?.road || !!K?.hides.bounce;
   // A level road has no height, no greatest height and no components to
-  // resolve, so those three of the seven are not offered there.
-  for (const k of ['components', 'apex', 'ruler', 'range']) {
+  // resolve, so those three of the seven are not offered there. A kit names
+  // the ones its own stage has nothing to say about.
+  for (const { key: k } of SHOWS) {
     const box = $('shows').querySelector(`input[data-k="${k}"]`);
-    if (box) box.closest('.ck').hidden = !!scenario?.road;
+    const road = ['components', 'apex', 'ruler', 'range'].includes(k) && !!scenario?.road;
+    if (box) box.closest('.ck').hidden = road || !!K?.hides.shows.includes(k);
+  }
+  if (!wd) {
+    const box = $('extras').querySelector('input[data-k="energy"]');
+    const off = !!K?.hides.extras.includes('energy');
+    if (box) {
+      box.closest('.ck').hidden = off;
+      // switched off for a kit that has nothing to say about energy, and back
+      // on again for the next scenario that does, if it was on before
+      if (off && box.checked) { box.checked = false; state.extras.energy = false; state.energyWas = true; }
+      if (!off && state.energyWas) { box.checked = true; state.extras.energy = true; state.energyWas = false; }
+    }
   }
   if (!spec) return;
   for (const [k, o] of Object.entries(spec)) {
@@ -1506,20 +1961,55 @@ function wireLineBoxes() {
     state.markers.heightLine = r.height;
     hb.value = fmt(r.height, 2);
     say(hint, false, `A line at ${fmt(r.height, 2)} m gives exactly that.`);
+    showAbove();                     // and the line's own hint says it too
     dirty = true;
   });
 
   showAbove();
 }
 
-/** Say how long the current line is cleared for, under the height box. */
+/** Say how long the current line is cleared for, under the height box, and
+    the times it is AT the line, which a paper asks for as often. */
 function showAbove() {
   const hint = $('x-line-hint');
   if (!hint || !traj || state.markers?.heightLine == null) return;
-  const r = timeAbove(traj, state.markers.heightLine);
-  say(hint, false, r.above > 1e-9
-    ? `It is above that for ${fmt(r.above, 2)} s. A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.`
-    : 'It never gets that high. A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.');
+  const r = lineFacts(traj, state.markers.heightLine);       // js/core: rule 4
+  const ts = (x) => M`t = ${num(x, 2)} [s]`;
+  const secs = (x) => M`${num(x, 2)} [s]`;
+  let at;
+  if (r.above <= 1e-9) {
+    at = r.atTop ? `That is its greatest height: it just reaches it, at ${ts(r.tTop)}, and is never above it.`
+      : r.atStart ? 'It starts on it, and only goes down from there.'
+      : traj.bounces > 0 ? 'It never gets that high before it first bounces.'
+      : 'It never gets that high.';
+  } else if (traj.bounces > 0) {
+    // timeAbove follows the first arc; a bounce crosses the line again
+    at = `Before its first bounce it is above that for ${secs(r.above)}.`;
+  } else if (r.noGravity) {
+    // with nothing to bring it down, "how long above" has no end
+    at = r.t1 > 1e-9 ? `It passes it at ${ts(r.t1)} and, with no gravity, never comes back down.`
+      : r.atStart ? (traj.uy > 1e-9 ? 'It starts on it and rises away from it: with no gravity it never comes back down.'
+        : 'It starts on it and, with no gravity, keeps level with it.')
+      : 'With no gravity it never comes back down: it stays above it.';
+  } else if (r.crosses === 2 && r.t1 > 1e-9) {
+    at = `It passes it at ${ts(r.t1)} going up and ${ts(r.t2)} coming down, so it is above it for ${secs(r.above)}.`;
+  } else if (r.crosses === 2) {
+    at = r.lands ? `It starts on it and comes back down to it when it lands, at ${ts(r.t2)}.`
+      : `It starts on it, and comes back down through it at ${ts(r.t2)}: above it for ${secs(r.above)}.`;
+  } else if (r.crosses === 1 && r.t1 < 1e-9) {
+    at = r.lands ? `It is above it until it lands, at ${ts(r.t2)}.`
+      : `It starts above it and passes it at ${ts(r.t2)} on the way down: above it for ${secs(r.above)}.`;
+  } else if (r.crosses === 1) {
+    at = `It passes it at ${ts(r.t1)} on the way up.`;
+  } else {
+    at = `It is above that for ${secs(r.above)}.`;
+  }
+  // a paper launching from a height measures the line from the start, the
+  // box from the ground: say both
+  const rel = !(Math.abs(traj.params.h || 0) > 1e-9) ? ''
+    : r.atStart ? ' The line is measured from the ground: it is at the height it starts from.'
+    : ` The line is measured from the ground: that is ${M`${num(Math.abs(r.rel), 2, { trim: true })} [m]`} ${r.rel > 0 ? 'above' : 'below'} where it starts.`;
+  say(hint, false, `${at}${rel} A fraction works too — <b>7/2</b> is the same as <b>3.5</b>.`);
 }
 
 /** Keep the boxes honest when the line is dragged rather than typed. */
@@ -1554,8 +2044,18 @@ function say(el, bad, html) {
 function launch() {
   if (!traj) return;
   closeIntro();
-  go('flight');                 // so there is a stage to blur behind the card
-  openPace();
+  // ONE PRESS, AND IT FLIES. The redesign took the speed card out of the way:
+  // Launch used to stop at "How fast should it go?" every time, a decision
+  // with a good default asked before the thing you came for. The flight runs
+  // at once; the speed is a press away in the transport bar, with the same
+  // recommendation pin, and the pane layout is in the Display panel.
+  // EVERY LAUNCH STARTS AT THE RECOMMENDED SPEED (the user, 1 Nov): a fresh set
+  // of values is a fresh flight, played at the pace its own length calls for.
+  // A speed chosen on the slider holds for the replays of that flight only.
+  state.rate = recommend(traj.tMax) / 100;
+  state.rateTouched = false;
+  syncRate();
+  runFlight();
 }
 
 function openPace() {
@@ -1595,16 +2095,21 @@ function closePace() { $('pace').hidden = true; }
  */
 function syncRate() {
   const value = Math.round(state.rate * 100);
-  const shown = `${num(state.rate, 2)}×`;
+  // A time-lapse kit plays its motion at a multiple of real time; the
+  // setting shown is what actually happens, so 0.75× of a 20× lapse is 15×.
+  const lapse = kit()?.lapse?.(traj) ?? 1;
+  const shown = lapse > 1 ? `${num(state.rate * lapse, 1, { trim: true })}× real time` : `${num(state.rate, 2)}×`;
   $('pace-rate').value = String(value);
   $('pace-val').textContent = shown;
   // Not while it is being dragged: writing to a slider under the thumb is how
   // a drag turns jumpy. Same guard syncLive already uses.
   const bar = $('bar-rate');
   if (document.activeElement !== bar) bar.value = String(value);
-  $('bar-rate-val').textContent = shown;
+  // the bar has room for the number only; the card says what it is a multiple of
+  $('bar-rate-val').textContent = lapse > 1 ? `${num(state.rate * lapse, 1, { trim: true })}×` : shown;
 
-  const tMax = traj?.tMax;
+  // what the student watches, which a time-lapse kit shortens
+  const tMax = traj?.tMax / lapse;
   const note = $('pace-note'), use = $('pace-use');
   const pins = [$('pace-pin'), $('bar-rate-pin')];
   if (!(tMax > 0)) {
@@ -1616,9 +2121,20 @@ function syncRate() {
 
   const best = recommend(tMax);
   const r = paceNote(value, tMax);
-  note.textContent = r.text;
-  note.dataset.ok = String(r.ok);
-  use.hidden = r.ok;
+  // A time-lapse is not a flight that "really lasts" what is watched, so it
+  // says its own two numbers rather than borrowing the flights' sentence.
+  const rr = lapse > 1 ? lapseNote(value, traj.tMax, lapse) : r;
+  note.textContent = rr.text;
+  // and the ends of the scale say what they are on this one
+  for (const host of [$('pace'), $('speed-pop')]) {
+    const scale = host.querySelectorAll('.pace-scale span, .pop-scale span');
+    if (scale.length === 3) {
+      scale[1].textContent = lapse > 1 ? `${num(lapse / 2, 1, { trim: true })}×` : '0.5×';
+      scale[2].textContent = lapse > 1 ? `${num(lapse, 0)}× real time` : 'real time';
+    }
+  }
+  note.dataset.ok = String(rr.ok);
+  use.hidden = rr.ok;
   // The bar has no room for the sentence, so it says the same verdict the
   // only way a bar can: the pin is where the flight asked for, and the
   // readout goes off-colour when the setting is nowhere near it.
@@ -1663,7 +2179,7 @@ function syncPanes() {
   const sig = JSON.stringify(solved.params);
   if (sig === paneSig) return;
   paneSig = sig;
-  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; } });
+  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; }, click: () => openResolve(state.t) });
   panes.setLayout(win, state.layout);
 }
 
@@ -1681,7 +2197,8 @@ function runFlight() {
   closePace();
   closeIntro();
   closeResolve();
-  if (state.firedBefore) ghost = traj.path(260);
+  // a motion with no path (one of the older engines) simply leaves no ghost
+  if (state.firedBefore) ghost = typeof traj.path === 'function' ? traj.path(260) : null;
   state.firedBefore = true; state.launched = true;
   state.overview = false;               // every run starts from the panes
   state.t = 0; state.playing = true;
@@ -1728,6 +2245,9 @@ function go(step) {
   if (step !== 'flight') { hideDone(); closeAskAt(); }
   state.step = step;
   $('app').dataset.step = step;
+  // The whiteboard draws only while it is on screen.
+  $('board-top').setAttribute('aria-pressed', String(step === 'board'));
+  if (step === 'board') board?.show(); else board?.hide();
   $('options-btn').hidden = step !== 'flight';
   refreshSteps();
   dirty = true;
@@ -1792,18 +2312,13 @@ function setPlayIcon(on) {
    instant the question chose. */
 function openResolve(t) {
   if (!traj || state.step !== 'flight') return;
-  // NOT IN THE WINDOW. The card resolves the instant you pointed at on the
-  // diagram, and in the window the gesture on every pane is pan and zoom —
-  // there is nothing to point at. What it was for is on screen instead: the
-  // three graphs carry the velocity, the height and the acceleration at the
-  // cursor, with axes to read them off.
-  if (windowed()) return;
-  // NOR ON THE ROAD. The card resolves a velocity into its two components,
-  // and a vehicle on a level road has only one.
-  if (scenario?.road) return;
+  // EVERY STAGE. The road, the window and each kit's stage open it too: a
+  // motion along one line resolves to its s, v and a with the way it is
+  // going, two objects to a block each — js/kitresolve.js reads it all off
+  // the engine's motion.
   hideDone(); closeAskAt();
   state.t = clamp(t ?? state.t, 0, traj.tMax);
-  state.playing = false; setPlayIcon(false);
+  state.playing = false; setPlayIcon(false); state.pre = null;   // the window's pre-roll ends: the clock is on
   state.resolve = true; state.hover = null;
   dirty = true;
 }
@@ -1816,17 +2331,24 @@ function closeResolve() {
   dirty = true;
 }
 
+/** The card for this instant, from whichever engine the stage runs on. */
+function resolveNow() {
+  if (scenario?.descent) return resolveDescent(traj, state.t);
+  if (kit() || scenario?.road) return resolveKit(kit(), solved, traj, state.t);
+  return resolveAt(traj, state.t);
+}
+
 function renderResolve(R) {
   const box = $('resolve');
   $('canvas-wrap').dataset.resolve = R ? 'on' : 'off';
   if (!R) { box.hidden = true; return; }
 
-  $('res-title').innerHTML = `At ${M`t = ${fmt(R.t, 2)} [s]`}`;
+  $('res-title').innerHTML = R.tUnit ? `At ${M`t = ${fmt(R.t, 2)}`} ${R.tUnit}` : `At ${M`t = ${fmt(R.t, 2)} [s]`}`;
 
   const row = (q, part) => `
-    <div class="rrow" data-part="${part}">
+    <div class="rrow" data-part="${part}"${q.hue ? ` data-hue="${q.hue}"` : ''}>
       <div class="rrow-top"><span class="rrow-n">${q.name}</span>
-        <b class="rrow-v">${fmt(q.value, 2)}<small>${q.unit}</small></b></div>
+        <b class="rrow-v">${fmt(q.value, q.dp ?? 2)}<small>${q.unit}</small></b></div>
       <div class="rrow-f">${q.formula}${q.sub ? ` = ${q.sub}` : ''}</div>
       <div class="rrow-note">${q.note}</div>
     </div>`;
@@ -1836,9 +2358,13 @@ function renderResolve(R) {
       <div class="rb-h">${b.name}</div>
       ${R.vertical ? row(b.y, 'y') : row(b.x, 'x') + row(b.y, 'y') + row(b.r, 'r')}
     </div>`;
-  $('res-blocks').innerHTML = block(R.velocity) + block(R.displacement);
+  $('res-blocks').innerHTML = R.blocks
+    // a kit's card (js/kitresolve.js): its blocks, each with its own rows
+    ? R.blocks.map((b) => `<div class="rblock" data-hue="${b.hue}">
+        <div class="rb-h">${b.name}</div>${b.rows.map((q) => row(q, q.part || '')).join('')}</div>`).join('')
+    : block(R.velocity) + block(R.displacement);
 
-  $('res-note').textContent = R.phase
+  $('res-note').textContent = R.blocks ? R.note : R.phase
     // A descent's card has to say which PHASE this instant belongs to, because
     // u and a change twice on the way down and the formulas above quote the
     // phase's own. The engine says it; this prints it.
@@ -1879,13 +2405,15 @@ const AT_T_HINT = '';
 const AT_V_HINT = '';
 
 function openAskAt() {
-  if (!traj || state.step !== 'flight' || windowed() || scenario?.road) return;
+  if (!traj || state.step !== 'flight') return;
   hideDone(); closeResolve();
   state.playing = false; setPlayIcon(false);
   // It opens on the instant already on screen, so Resolve it always resolves
   // something — and the student can see which instant they are editing.
   state.askT = clamp(state.t, 0, traj.tMax);
   $('at-t').value = fmt(state.askT, 2);
+  // the time in the question's own unit: × U⁄g in letters, h in hours
+  document.querySelector('label[for="at-t"] span').innerHTML = kit()?.resolveUnits?.(traj)?.[3] || 's';
   $('at-v').value = '';
   $('at-picks').innerHTML = '';
   say($('at-t-hint'), false, atTimeSay(state.askT));
@@ -1906,7 +2434,7 @@ function closeAskAt() {
 
 /** What the object is doing at an instant the student has just named. */
 function atTimeSay(t) {
-  if (!traj) return AT_T_HINT;
+  if (!traj || kit() || scenario?.road || scenario?.descent) return AT_T_HINT;
   const v = traj.vel(t), p = traj.pos(t);
   return `${M`${fmt(Math.hypot(v.x, v.y), 2)} [m s^-1]`}, `
     + `${M`${fmt(p.y, 2)} [m]`} up`;
@@ -1953,8 +2481,9 @@ function wireAskAt() {
       // Say what was done rather than rewriting the box under the cursor.
       const held = clamp(v, 0, traj.tMax);
       state.askT = held;
-      say(hint, true, `The flight runs from ${M`t = 0`} to ${M`t = ${fmt(traj.tMax, 2)}`} s, `
-        + `so ${M`${fmt(held, 2)}`} s is what gets used.`);
+      const tu = kit()?.resolveUnits?.(traj)?.[3] || 's';
+      say(hint, true, `The flight runs from ${M`t = 0`} to ${M`t = ${fmt(traj.tMax, 2)}`} ${tu}, `
+        + `so ${M`${fmt(held, 2)}`} ${tu} is what gets used.`);
       return;
     }
     state.askT = v;
@@ -2007,15 +2536,30 @@ function renderHud() {
   // Falling back to siteFor meant the range and the monkey were both captioned
   // "A goal kick from the west goal line".
   const site = siteFor(state.id);
-  $('place').textContent = scenario?.place || site.place;
-  $('place-note').textContent = scenario?.plate ? '' : (site.note || '');
+  // The stadium's own caption ("The centre spot" and its note) is gone: the
+  // picture says where it is. A scenario that happens elsewhere still names it.
+  // the road's caption follows what it stands on: a track has no road
+  const ground = scenario?.road ? (FIGURES[state.who] || FIGURES.lorry).ground : null;
+  $('place').textContent = ground === 'rail' ? 'A straight, level railway from A to B'
+    : ground === 'track' ? 'A straight, level running track from A to B'
+    : scenario?.place || '';
+  $('place-note').textContent = '';
   // In the window there is no corner for a readout to sit in, and the clock
   // is in the transport where all four panes share it.
   if (windowed()) { $('hud-left').innerHTML = ''; $('hud-right').innerHTML = ''; return; }
-  const p = traj.pos(state.t), v = traj.vel(state.t);
   const b = (k, val, unit, hue) =>
     `<div class="hbox"${hue ? ` data-hue="${hue}"` : ''}><div class="hbox-k">${k}</div>
      <div class="hbox-v">${val}<small>${unit}</small></div></div>`;
+  // A kit says what its stage reads out.
+  if (kit()) {
+    const r = kit().hud(traj, state.t, { rate: state.rate });
+    $('hud-left').innerHTML = r.left.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
+    $('hud-right').innerHTML = r.right.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
+    return;
+  }
+  // AFTER the kit's turn: a kit's motion need not have a pos() — two
+  // trains, two particles — and asking for one first threw every frame.
+  const p = traj.pos(state.t), v = traj.vel(state.t);
   // In a straight line the horizontal distance is always zero, so show the
   // signed displacement along the line instead — that is the s being solved.
   if (scenario?.road) {
@@ -2097,7 +2641,11 @@ function showDone() {
 }
 
 function title(r) {
-  if (r.mode === 'road') return r.params.a < 0 ? 'It braked from A to B' : 'It reached B';
+  if (r.mode === 'road') {
+    const fig = FIGURES[state.who] || FIGURES.lorry;
+    // braked all the way only if it never stopped and came back
+    return r.params.a < 0 && r.params.u > 0 && r.params.v >= 0 ? `It ${fig.brakes ? 'braked' : 'slowed down'} from A to B` : 'It reached B';
+  }
   if (traj?.bounces > 0) return 'It finished bouncing';
   if (r.mode === '1d' && Math.abs(r.params.u) < 1e-9) return 'It hit the ground';
   if (r.mode === '1d' && r.params.h <= 1e-9) return 'It came back down';
@@ -2118,9 +2666,33 @@ function showEnding() {
   // three rows of five, so it brings its own card. It is gated on the solve
   // rather than on `second`.
   if (scenario?.descent && solved?.ok && state.step === 'flight') return showDescentDone();
+  if (kit() && solved?.ok && state.step === 'flight') return showKitDone();
   if (!(scenario?.ending && second && solved?.ok && state.step === 'flight')) return showDone();
   if (scenario.ending.kind === 'monkey') return showMonkeyDone();
   return showRangeDone();
+}
+
+/**
+ * A library scenario's ending: what its kit makes of the engine's answer,
+ * and the scenario's own account of what the model leaves out.
+ */
+function showKitDone() {
+  const e = scenario.ending || {};
+  const r = kit().ending(solved, e);
+  // What the model leaves out belongs to a run that met. A run that did not
+  // has nothing in it the collision caveats are about, so they are not shown.
+  $('exdone-real-h').closest('.ex-real').hidden = r.real === false;
+  // innerHTML: a unit is wrapped so the eyebrow's capitals leave it alone
+  $('exdone-eyebrow').innerHTML = r.eyebrow;
+  $('exdone-title').textContent = r.title;
+  $('exdone-body').innerHTML = r.body;
+  $('exdone-real-h').textContent = e.realTitle || '';
+  $('exdone-real-lead').textContent = e.realLead || '';
+  $('exdone-why').innerHTML = (e.why || []).map(([k, v]) => `<li><b>${k}</b> — ${v}</li>`).join('');
+  $('exdone-caveat').textContent = e.caveat || '';
+  $('exdone-close').textContent = e.close || 'See the diagram';
+  $('exdone-all').hidden = true;
+  $('exdone').hidden = false;
 }
 
 /**
@@ -2138,6 +2710,7 @@ function showEnding() {
  * boundaries is not an approximation of the curve — it is the curve.
  */
 function showDescentDone() {
+  $('exdone-real-h').closest('.ex-real').hidden = false;
   const e = scenario.ending, p = solved.params, ph = solved.phases;
   const land = solved.vLanding;
 
@@ -2250,6 +2823,7 @@ function vtSketch(ph, r, p) {
  * scenario's own paragraphs the run has earned.
  */
 function showMonkeyDone() {
+  $('exdone-real-h').closest('.ex-real').hidden = false;
   const e = scenario.ending, v = state.verdict;
   if (!v) return showDone();
   const head = e[v.kind] || e.caught;
@@ -2299,6 +2873,7 @@ function showMonkeyDone() {
  * spin or a round Earth, because it did not.
  */
 function showRangeDone() {
+  $('exdone-real-h').closest('.ex-real').hidden = false;
   const e = scenario.ending;
   const p = solved.params;
   const tF = traj.tFlight ?? traj.tMax;
@@ -2344,10 +2919,13 @@ function renderWorking() {
   }
   // A descent's working is its three phases, each one solved on its own, and
   // it comes from the engine that solved them. See descentWorking().
-  for (const s of (scenario?.descent ? descentWorking(traj, state.t)
-                   : scenario?.road ? roadWorking(solved)
-                   : buildWorking(traj, state.t))) {
-    parts.push(`<div class="step"><div class="step-h">${s.title}</div>` +
+  const run = state.part >= 0 ? state.runs?.[state.part] : null;
+  const steps = stepsNow();
+  // a part on show heads the working, and lights the step that answers it
+  const lit = run ? stepOf(run.part, steps) : -1;
+  if (run) parts.push(workingCardHTML(run));
+  for (const [i, s] of steps.entries()) {
+    parts.push(`<div class="step"${i === lit ? ' data-part="on"' : ''}><div class="step-h">${s.title}</div>` +
       s.rows.map((r) => `<div class="eq"><div class="eq-f">${r.f}</div><div class="eq-s">${r.s}</div>${r.r ? `<div class="eq-r">${r.r}</div>` : ''}</div>`).join('') +
       (s.note ? `<div class="step-n">${s.note}</div>` : '') + '</div>');
   }
@@ -2363,14 +2941,19 @@ function draw() {
   // on the way in.
   if (state.step !== 'flight' || !traj) { syncPanes(); dirty = false; return; }
   syncPanes();
-  const R = state.resolve
-    ? (scenario?.descent ? resolveDescent(traj, state.t) : resolveAt(traj, state.t))
-    : null;
-  const opts = { traj, second, ghost, t: state.t, show: state.show, fired: state.launched,
+  const R = state.resolve ? resolveNow() : null;
+  // Resolve open on a library stage: its arrows on, split into components
+  // where the stage draws them (dashed across, solid up), so the card's
+  // numbers are pointed at on the picture as well.
+  const show = R && (kit() || scenario?.road) ? { ...state.show, velocity: true, components: true } : state.show;
+  const opts = { traj, second, ghost, t: state.t, show, fired: state.launched,
                  verdict: state.verdict, overview: state.overview,
                  hoverMark: state.hoverMark,
                  markers: state.markers || {}, scenario, secondLabel: scenario.second?.label,
-                 resolve: R, hover: state.hover };
+                 who: state.who,
+                 resolve: R, hover: state.hover,
+                 // the part on show, so a stage can mark what it asks for
+                 askPart: state.part >= 0 ? state.runs?.[state.part]?.part || null : null };
   /* ── which renderer, and why there are two ────────────────────────────
      `plate` hands a scenario to js/render/exhibit.js instead of to the
      side-on view: the strobe photograph, with its own dark plate, its own
@@ -2398,14 +2981,19 @@ function draw() {
     // rule 1 — and it reads zero for the whole of the pre-roll because the
     // pre-roll is outside the clock and nothing in it has been measured.
     $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
-  } else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
-  else if (scenario?.stage === 'road') roadStage.render($('scene'), cam, opts);
+  } else if (kit()) { kitView($('scene'), cam); kit().render($('scene'), cam, opts); kitViewDone($('scene')); }
+  else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
+  // the road maps nothing to the pointer: no map left from the last stage,
+  // so a click on it is a click on the motion (js/render/scene.js)
+  else if (scenario?.stage === 'road') { cam._map = null; roadStage.render($('scene'), cam, opts); }
   else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
   else scene.render($('scene'), cam, opts);
 
   if (state.extras.graphs) {
     const P = palette();
-    for (const spec of graphSpecs(traj, state.t, P)) drawGraph($(spec.canvas), spec);
+    const specs = kit() ? kit().graphs(traj, state.t, P) : graphSpecs(traj, state.t, P);
+    if (state.part >= 0) markGraphs(specs, state.runs?.[state.part], P.mark);
+    for (const spec of specs) drawGraph($(spec.canvas), spec);
   }
   renderHud(); renderWorking(); renderResolve(R);
   $('scrub').value = traj.tMax ? state.t / traj.tMax : 0;
@@ -2431,14 +3019,26 @@ function frame(now) {
     if (state.pre >= PRE.total) { state.pre = null; state.t = 0; }
     dirty = true;
   } else if (state.step === 'flight' && state.playing && traj) {
-    state.t += dt * state.rate;
+    // A kit whose motion lasts minutes plays it as a time-lapse, said on the
+    // stage (js/kits/journey.js); every other scenario plays at state.rate.
+    state.t += dt * state.rate * (kit()?.lapse?.(traj) ?? 1);
+    // "Show me part (b)" stops at part (b)'s moment, not at the end
+    if (state.stopAt != null && state.t >= state.stopAt) {
+      state.t = state.stopAt; state.stopAt = null; state.playing = false; setPlayIcon(false);
+      renderParts();
+    }
     const tStop = Math.max(traj.tMax, scenario?.exhibit && second ? second.tMax : 0);
     if (state.t >= tStop) {
       state.t = tStop; state.playing = false; setPlayIcon(false);
-      showEnding();                     // only ever on a flight that ran its course
+      // a kit whose landing plays on after the motion stops (a composed
+      // scene's splash) opens the ending once it has, not over it
+      const settle = kit()?.settle;
+      if (settle) setTimeout(() => { if (!state.playing && state.t >= tStop) showEnding(); }, settle * 1000);
+      else showEnding();                // only ever on a flight that ran its course
     }
     dirty = true;
   }
+  if (kit()?.busy?.()) dirty = true;    // and keeps drawing while it does
   // The angle figure travels too, on its own screen, and it is the only thing
   // on that screen that moves — so it is asked every frame rather than being
   // hung off `dirty`, which belongs to the canvas.
@@ -2454,8 +3054,11 @@ function frame(now) {
     }
     dirty = true;
   }
-  if (dirty) draw();
+  // ONE BAD FRAME MUST NOT STOP THE CLOCK. The next frame is asked for
+  // first, so a throw in draw() is one frame lost, not a stage that never
+  // draws again — which is how a library kit left the next scenario black.
   requestAnimationFrame(frame);
+  if (dirty) draw();
 }
 
 /* ── options ────────────────────────────────────────────────────────── */
@@ -2479,9 +3082,12 @@ function buildOptions() {
 /* ── chrome ─────────────────────────────────────────────────────────── */
 function applyTheme(mode) {
   document.documentElement.dataset.theme = mode;
-  $('theme-btn').textContent = mode === 'dark' ? 'Light' : 'Dark';
+  $('theme-label').textContent = mode === 'dark' ? 'Light' : 'Dark';
+  $('theme-btn').setAttribute('aria-label', `Switch to ${mode === 'dark' ? 'light' : 'dark'}`);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', mode === 'dark' ? '#08090A' : '#FBFBFC');
   try { localStorage.setItem('suvat-theme', mode); } catch {}
   dropToneCache();
+  board?.redraw();
   dirty = true;
 }
 
@@ -2542,7 +3148,7 @@ $('scrub').addEventListener('input', (e) => {
   hideDone();
   // Naming an instant ends the staging: the student has asked to be at a
   // time, and every time there is belongs to the flight.
-  state.pre = null;
+  state.pre = null; state.stopAt = null;
   state.playing = false; setPlayIcon(false);
   state.t = parseFloat(e.target.value) * traj.tMax; dirty = true;
 });
@@ -2583,8 +3189,15 @@ for (const b of $('lay-row').children) {
     dirty = true;
   });
 }
-$('theme-btn').addEventListener('click', () =>
-  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+// The new theme spreads out from the button that asked for it — a View
+// Transition where there is one (js/shell.js sets where it starts), an
+// instant swap where there is not or where motion is reduced.
+$('theme-btn').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (document.startViewTransition && !calm) document.startViewTransition(() => applyTheme(next));
+  else applyTheme(next);
+});
 $('options-btn').addEventListener('click', () => {
   state.options = !state.options;
   $('options-btn').setAttribute('aria-pressed', String(state.options));
@@ -2708,7 +3321,7 @@ if (lay === '1' || lay === '2' || lay === '4') state.layout = parseInt(lay, 10);
 
 let saved = null;
 try { saved = localStorage.getItem('suvat-theme'); } catch {}
-applyTheme(saved || 'light');
+applyTheme(saved || 'dark');      // the redesign is night-first
 buildScenarioScreen();
 buildOptions();
 go('scenario');
@@ -2724,13 +3337,13 @@ document.fonts?.ready.then(() => { dirty = true; });
 
 // ASK FOR THE MATHS FACE BEFORE AN EQUATION NEEDS IT. A webfont is fetched
 // when something that uses it is first painted, and the first thing on this
-// site to use Source Serif 4 upright is a formula — so without this, the first
+// site to use Merriweather upright is a formula — so without this, the first
 // equation a student sees appears in the system serif and swaps a moment
 // later. The five box symbols are italic and were pulling the italic subset in
 // on their own; the upright one had nothing to trigger it until the solve
 // message appeared. The sample string names the subsets wanted: latin for the
 // letters, digits and the real minus sign, greek for theta.
-for (const face of ['560 1em "Source Serif 4"', 'italic 560 1em "Source Serif 4"']) {
+for (const face of ['560 1em "Merriweather"', 'italic 560 1em "Merriweather"']) {
   document.fonts?.load(face, 'vuat 0123456789 θ −').catch(() => {});
 }
 
@@ -2741,11 +3354,120 @@ for (const face of ['560 1em "Source Serif 4"', 'italic 560 1em "Source Serif 4"
    exactly the route a typed question takes: chooseScenario, the five, and
    recompute, where solveLaunch works out the rest or says what is missing.
    Nothing on this route calculates a flight that the engine did not. */
-function applyReading(x) {
+/** The words the student typed for the reading on show — '' for a photo, or none known. */
+let heard = '';
+/** Whose g the reading took, when a paper's rubric gave it: 'Edexcel' (9.8), or ''. */
+let gFrom = '';
+/** The question last read, as the reader gave it — to read again with another g. */
+let lastRead = null;
+function applyReading(x, opts) {
+  const raw = x;
+  // the student's g, where the question gives none: the one just picked in the
+  // reply, else the last one they chose (js/ai/gchoice.js)
+  if (!opts?.part) { x = withChosenG(x, opts?.g ?? loadG()); lastRead = { raw, opts: { ...opts, g: undefined } }; }
+  if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? opts.words : '';
+  if (!opts?.part) gFrom = typeof x?.gFrom === 'string' ? x.gFrom.slice(0, 20) : '';
+  stayPut = true;
+  let r;
+  try { r = readInto(x, opts); } finally { stayPut = false; }
+  if (r?.ok && !opts?.part) r.gAsk = gAskOf(raw);
+  return r;
+}
+/**
+ * Whether the reply asks which g: only when the motion uses g — the engine's
+ * kit offers a g, or it is one of the twelve but the road — and the question
+ * did not state one. Then: the g it was worked with, and where that came from.
+ */
+function gAskOf(raw) {
+  if (!traj || !solved?.ok || gStated(raw)) return null;
+  const uses = kit() ? !!kit().g : !scenario?.road;
+  if (!uses) return null;
+  const g = kit() ? state.kit.g : state.given.g;
+  return typeof g === 'number' && g > 0 ? { g, from: gFrom } : null;
+}
+/** "Which g?" answered in the reply: remembered, and the question read again with it. */
+function gravity(g) {
+  if (!lastRead || !(g > 0)) return null;
+  saveG(g);
+  return applyReading(lastRead.raw, { ...lastRead.opts, g });
+}
+
+/* A QUESTION WHOSE PARTS NEED SET-UPS OF THEIR OWN. "(b) The stone is now
+   thrown up from the same tower": part (b) is another motion, so it is
+   another scenario, with its own values. A part that carries a `scene` (what
+   it changes, or a whole reading) or a composer's `recipe` is set aside; the
+   question's first set-up opens, and the chat and the strip offer "Next:
+   part (b)", which opens that part's own. One mechanism for the twelve, the
+   library and the composer. Each scene is read and solved by the same route
+   as any reading — nothing here calculates. */
+let chain = { main: null, list: [], at: -1, order: [], here: [] };
+function readInto(x, opts = {}) {
+  if (opts.part || !Array.isArray(x?.parts) || !x.parts.some(ownScene)) {
+    if (!opts.part) chain = { main: null, list: [], at: -1, order: [], here: [] };
+    return readOne(x, opts);
+  }
+  chain = { main: null, list: [], at: -1, order: [], here: [] };
+  const all = x.parts.filter((p) => p && typeof p === 'object');
+  let main = { ...x, parts: all.filter((p) => !ownScene(p)) };
+  let list = all.filter(ownScene).map((p) => ({ label: labelOf(p), asks: String(p.asks ?? ''), x: sceneOf(x, p) }));
+  // every part a set-up of its own: the first one is the question's
+  if (!main.parts.length) { const first = list.shift(); main = { ...first.x, summary: x.summary }; }
+  // each later part read and solved in its own scene first, for the reply;
+  // then the first set-up, last, so it is the one on the stage
+  list = list.map((c) => {
+    const r = readOne(c.x, { ...opts, solve: false });
+    return { ...c, html: r.ok ? (solved?.ok && state.runs ? replyHTML(state.runs) : '<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> Open it and fill in what is missing.</div>')
+      : `<div class="ro-engine" data-ok="false">${esc(r.error || '')}</div>` };
+  });
+  chain = { main, list, at: -1, order: all.map(labelOf), here: main.parts.map(labelOf) };
+  const r = readOne(main, opts);
+  if (r.ok) {
+    r.html += list.map((c, i) => `<div class="ro-scene"><p class="ro-eyebrow">Part (${esc(c.label)}), with a set-up of its own</p>${c.html}`
+      + `<button type="button" class="ghost sm ask-scene" data-id="part:${i}">${i ? 'Then' : 'Next'}: part (${esc(c.label)})</button></div>`).join('');
+  }
+  renderParts();
+  return r;
+}
+/** "Next: part (b)": that part's own set-up on the stage; −1 is the question's first. */
+function openPart(i) {
+  const c = i < 0 ? { x: chain.main } : chain.list[i];
+  if (!c?.x) return;
+  applyReading(c.x, { part: true });
+  chain.at = i;
+  renderParts();
+  if (traj) showFlight(); else go('values');
+}
+/** The strip's view of the other set-ups: every label in order, where each one is, and the next. */
+function sceneLinks() {
+  if (!chain.list.length) return null;
+  const where = {};
+  for (const l of chain.here) where[l] = -1;
+  chain.list.forEach((c, i) => { where[c.label] = i; });
+  const n = chain.at + 1;
+  return {
+    order: chain.order.filter((l) => l in where),
+    elsewhere: Object.fromEntries(Object.entries(where).filter(([, i]) => i !== chain.at).map(([l, i]) => [l, `part:${i}`])),
+    next: n < chain.list.length ? { label: chain.list[n].label, id: `part:${n}` } : null,
+  };
+}
+function readOne(x, { graph = true, solve = false } = {}) {
+  // what moves is what is drawn: a diver, a parcel, a skateboarder launched
+  // as one of the twelve or From a height becomes a composed scene with that
+  // figure in that place, on the same engine (js/compose/recipe.js)
+  // common sense: a launch with no numbers to go on is composed, where any
+  // value the engine cannot run without gets a sensible one (js/compose/sense.js)
+  const blank = x && x.understood !== false && ['dropped', 'down', 'platform', 'platform-angle', 'platform-down', 'up', 'arc'].includes(x.scenario)
+    && !['u', 'v', 's', 't'].some((k) => typeof x[k] === 'number') && !(x.scenario === 'dropped' && x.h > 0);
+  const drawn = fromReading(x) || (blank ? fromReading(x, { always: true }) : null);
+  if (drawn) return applyComposed(drawn, { graph });
+  if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
+  if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph });
   const r = toApp(x);
   if (!r.ok) return r;
   chooseScenario(r.id);
   closeIntro();
+  // a question in parts: each part answered by the engine, on the stage and here
+  state.readerParts = fromReader(r.id, x.parts);
   Object.assign(state.given, r.given);
   if (r.theta !== undefined && !scenario.lockAngle && !scenario.noAngle && !scenario.aimAtTarget) {
     state.theta = r.theta;
@@ -2754,20 +3476,323 @@ function applyReading(x) {
   if (r.markers.heightLine != null && state.markers) state.markers.heightLine = r.markers.heightLine;
   if (r.markers.target && state.markers) state.markers.target = r.markers.target;
   if (scenario.descent) state.descent = { ...r.descent };
-  if (scenario.road) state.mark = r.mark;
+  if (scenario.road) { state.mark = r.mark; state.atTime = r.at; state.nth = r.nth; state.fromRest = !!r.fromRest; state.who = r.who || 'lorry'; }
   buildValuesScreen();              // which recomputes
-  // The answer is shown where the question was asked; the flight waits for
-  // the student to ask for it.
-  go('scenario');
+  // The answer is shown in the chat, where the question was asked (js/ai/
+  // ask.js opens it); the flight waits for the student to ask for it.
+  refreshSteps();
   // A line to stay above is a question about it, and the engine answers it
   // here the same way it does under the line's own box (showAbove).
   const above = traj && scenario.dragLine && state.markers?.heightLine != null
     ? { line: state.markers.heightLine, ...timeAbove(traj, state.markers.heightLine) } : null;
-  return { ok: true, runnable: !!traj, html: readoutHTML(r, { name: scenario.name, solved, above }) };
+  let html = readoutHTML(r, { name: scenario.name, solved, above, flight: !scenario.road && !scenario.descent ? traj : null });
+  if (state.runs) html += replyHTML(state.runs);
+  else if (traj && solved?.ok) html += askedHTML(r.id, x, twelveSolved());
+  // SOLVE: the engine's own working, the same steps the working panel shows.
+  if (solve && traj && solved?.ok) {
+    const steps = scenario.road ? roadWorking(solved)
+      : scenario.descent ? descentWorking(traj, traj.tMax)
+      : buildWorking(traj, traj.tMax);
+    html += solutionHTML(steps, { moment: solved.moment });
+  }
+  // GRAPH: the reply offers the flight; the flight and its graphs are drawn
+  // on the stage, not in the chat. Off, the reply is words only, like any chat.
+  return { ok: true, runnable: !!traj, html };
 }
+/**
+ * A question the reader matched to a Past-paper library scenario: its boxes
+ * filled with what the question gives (only boxes that scenario has), its
+ * parts read, and the reply the engine's answer to each part.
+ */
+function applyLibrary(x, { graph = true } = {}) {
+  const s = byId(x.library);
+  if (!s?.kit) return { ok: false, error: 'That reads as an exam question the Past-paper library has no scenario for yet. Pick the closest one and type the numbers in.' };
+  // "show me one": the reader picks the scenario, and its own exam numbers and
+  // parts fill it — known to run, where numbers made up in the chat might not
+  if (x.example === true && s.example) x = { ...x, boxes: s.example, parts: undefined };
+  // From a height, short of a value: common sense, said in the summary (js/compose/sense.js)
+  x = heightSensibly(x, state.kit?.g ?? 9.81);
+  chooseScenario(s.id);
+  closeIntro();
+  const fields = boxesOf(KITS[s.kit], s.example);
+  const keys = new Set([...fields.map((f) => f.key), ...Object.keys(s.example || {}), 'g']);
+  // a choice takes only one of its own options: a word the scenario does not
+  // offer ("meeting" for what to find) would otherwise reach the engine as a key
+  const choice = new Map(fields.filter((f) => f.type === 'choice').map((f) => [f.key, new Set(f.options.map((o) => String(o.v)))]));
+  state.kit = {};
+  for (const [k, v] of Object.entries(x.boxes && typeof x.boxes === 'object' ? x.boxes : {})) {
+    if (!keys.has(k) || v == null) continue;
+    if (choice.has(k)) { if (choice.get(k).has(String(v))) state.kit[k] = String(v); }
+    else if (typeof v === 'number' && isFinite(v)) state.kit[k] = v;
+    else if (typeof v === 'string' && /^-?[\d.]+(\/[\d.]+)?$/.test(v.trim())) state.kit[k] = /\//.test(v) ? v.trim() : Number(v);
+  }
+  // A question that never names g happens on Earth, as it does for the twelve:
+  // the reader leaves g out (it is told to), so the box takes the paper's usual 9.81.
+  const gAssumed = state.kit.g == null;
+  if (gAssumed) state.kit.g = 9.81;
+  // The parts are the student's question's own. A question that asked nothing
+  // in parts gets none — never the paper's (a)(b)(c), an example's included:
+  // the user, 1 Nov, "only … when the questions explicitly states".
+  state.readerParts = fromReader(s.id, x.parts, [...keys]) ?? [];
+  buildValuesScreen();              // which recomputes, and solves each part
+  refreshSteps();
+  const head = `<p class="ro-eyebrow">Read as, from the Past-paper library</p><h3 class="ro-name">${esc(s.name)}</h3>`
+    + (typeof x.summary === 'string' && x.summary ? `<p class="ro-sum">${esc(x.summary)}</p>` : '');
+  const body = solved?.ok
+    ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
+    : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved?.reason || ''} Just tell me here, or press “Add the missing values”.</div>`;
+  return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example, !!KITS[s.kit].g) + body };
+}
+/**
+ * What Ask Suvat read into a library scenario's boxes, listed the way the
+ * twelve's reply lists them: each value and where it came from — the
+ * question, or an assumption (Earth's g; a jump's angle when none was given).
+ */
+// gAssumed only where the engine uses g (its kit offers a g): a lift or a road has none to assume
+function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = true) {
+  const plain = (h) => String(h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const angleAssumed = /No angle was given/.test(summary || '');
+  const atRest = /No speed was given/.test(summary || '');
+  const heightAssumed = /No height was given/.test(summary || '');
+  const rows = [];
+  for (const f of fields) {
+    const v = state.kit[f.key];
+    if (v == null || v === '') continue;
+    // how the stage shows it — a sign convention, where to stop, what to draw — is not a value the question gave
+    if (SHOWING.test(f.key)) continue;
+    let shown, fromWords = false;
+    if (f.type === 'choice') {
+      // a choice stays in words: "A diving board"
+      const o = f.options.find((q) => String(q.v) === String(v));
+      if (!o) continue;
+      // a stage's "It: speeds up" says which stage
+      const stage = /^It$/i.test(plain(f.label)) && /^k(\d+)$/.exec(f.key)?.[1];
+      shown = `${esc(stage ? `Stage ${stage}` : plain(f.label))}: <b>${esc(plain(o.label))}</b>`;
+    } else {
+      const n = typeof v === 'number' ? v : Number(v);
+      if (!isFinite(n)) { shown = `${esc(plain(f.label))}: ${esc(String(v))}`; }
+      else {
+        shown = quantityHTML(f, n);
+        // a number the student never typed was read from their words: "dropped" is u = 0
+        fromWords = !!heard && !saidIn(heard, n);
+      }
+    }
+    const how = f.key === 'g' && gFrom === 'choice' ? 'your choice'
+      : f.key === 'g' && gFrom ? `assumed · ${esc(gFrom)}’s value`
+      : f.key === 'g' && gAssumed ? 'assumed · on Earth'
+      : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given'
+      : f.key === 'u' && atRest ? 'assumed · no speed was given'
+      : f.key === 'h' && heightAssumed ? 'assumed · no height was given'
+      // "surprise me": the numbers are the paper's, not anything the student said
+      : example ? 'from the paper'
+      : fromWords ? 'read from the wording' : 'in the question';
+    rows.push(`<li class="ro-row" data-how="${how.startsWith('assumed') ? 'assumed' : 'given'}">
+      <span class="ro-val">${shown}</span><span class="ro-how">${how}</span></li>`);
+  }
+  // g, which no kit lists among its boxes: Earth's, assumed; a paper's rubric's; or read
+  const g = state.kit.g;
+  if (usesG && !fields.some((f) => f.key === 'g') && (gAssumed || (typeof g === 'number' && g > 0))) {
+    const how = gFrom === 'choice' ? 'your choice' : gFrom ? `assumed · ${esc(gFrom)}’s value` : gAssumed ? 'assumed · on Earth' : example ? 'from the paper' : 'in the question';
+    rows.push(`<li class="ro-row" data-how="${gFrom && gFrom !== 'choice' ? 'assumed' : gAssumed && !gFrom ? 'assumed' : 'given'}"><span class="ro-val">${M`g = ${num(gAssumed ? 9.81 : g, 2, { trim: true })} [m s^-2]`}</span><span class="ro-how">${how}</span></li>`);
+  }
+  return rows.length ? `<ul class="ro-list">${rows.join('')}</ul>` : '';
+}
+/**
+ * What a question with no parts asks — "how far does he land", "how high does
+ * it go after" — answered plainly, one line each, from the engine's answer
+ * (js/parts/answers.js finds where it is). Never a part strip: the question
+ * was not set in parts. Nothing the engine did not find is said.
+ */
+function askedHTML(id, x, solvedLike) {
+  if (!solvedLike?.ok || state.runs?.some(Boolean)) return '';
+  const raw = Array.isArray(x.asked) ? x.asked
+    : Array.isArray(x.asks) ? x.asks.filter((a) => typeof a === 'string').map((a) => ({ asks: a })) : [];
+  const ps = raw.length ? fromReader(id, raw.slice(0, 4).map((p, i) => ({ ...p, label: String.fromCharCode(97 + i) }))) || [] : [];
+  const rows = ps.map((p) => {
+    // "does it clear", "whether he reaches it": yes or no, which a number alone does not say
+    if (/^\s*(whether|does|do|did|is|are|was|can|could|will|would)\b/i.test(p.ask || '') && !/\b(how|what|when|where|which)\b/i.test(p.ask || '')) return '';
+    // of two answers the question's words cannot tell apart, the one they both come to:
+    // from the ground, the greatest height above it and above the launch are one
+    if (!p.find && p.either) {
+      // (one with no value here — the time from when B sets off, when both set off together — does not count)
+      const all = p.either.map((q) => ({ q, a: answerOf(q, solvedLike) })).filter(({ a }) => a.ok);
+      const same = all.every(({ a }) => a.values.length === all[0].a.values.length
+        && a.values.every((v, i) => Math.abs(v - all[0].a.values[i]) <= 1e-6 * Math.max(1, Math.abs(v))));
+      if (!all.length || !same) return '';
+      p = { ...all[0].q, label: p.label, ask: p.ask, prose: true };
+    }
+    if (!p.find) return '';
+    const a = answerOf(p, solvedLike);
+    return a.ok ? `<li>${askHTML(p).replace(/^./, (c) => c.toUpperCase())}: ${answerHTML({ part: p, answer: a })}</li>` : '';
+  }).filter(Boolean);
+  return rows.length ? `<ul class="ro-res ro-asked" aria-label="What the question asks">${rows.join('')}</ul>` : '';
+}
+// the boxes that say how the stage shows the motion, not what the question gave
+const SHOWING = /^(axis|stop|n|where|who|pick|flag|find|units)$|\.fig$/;
+/** Whether a number is among the ones typed: 20 in "a 20 m cliff", not in "dropped". */
+function saidIn(words, n) {
+  const want = String(+Math.abs(n).toFixed(6));
+  return (String(words).replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?|\.\d+/g) || []).some((x) => String(+x) === want);
+}
+// the quantities every paper writes the same way, set as maths; any other box —
+// a rebound speed w, a height to ask about y, a whole time T — is said in its own
+// words, never as a bare letter the student was not given
+const QUANTITY = new Set(['h', 'u', 'v', 's', 't', 'a', 'g', 'theta']);
+/** One value read into a box, set as maths: "h = 20 m", "θ = 90°", "u_A = 6 m s⁻¹" — the unit is the box's own. */
+function quantityHTML(f, n) {
+  // a box's `given` is its name in the reply's list, where its label is a question for the values screen
+  const plain = String(f.given ?? f.label ?? '').replace(/<[^>]+>/g, '');
+  const unit = (/\(([^()]*)\)\s*$/.exec(plain)?.[1] || '').trim().replace(/⁻¹/g, '^-1').replace(/⁻²/g, '^-2');
+  const val = num(n, 2, { trim: true });
+  // "A.u" is u for A; "a1" is a for stage 1; "tTop" the time to the top
+  // (a start time, t0, is said in words: "Sets off at: 2 s")
+  const m = /^(?:([A-Z])\.)?([A-Za-z]+?)([1-9]?)$/.exec(f.key);
+  // ("R.t1", R's time 1, is said in words: a symbol with two subscripts is no one's)
+  const base = m && !(m[1] && m[3]) && (QUANTITY.has(m[2]) ? m[2] : null);
+  const who = /^([A-Z])\./.exec(f.key)?.[1];
+  // an "i part" says of what: "Initial velocity · i part: 3 m s⁻¹"
+  const of = /^\W*[ij] part\b/.test(plain) && f.col && kit()?.cols?.[f.col];
+  if (!base) return `${who ? `${who} · ` : of ? `${esc(of)} · ` : ''}${esc(plain.replace(/\s*\([^()]*\)\s*$/, '').replace(/^Or:\s*(.)/i, (_, c) => c.toUpperCase()))}: ${unit === '°' ? M`${val}°` : unit ? M`${val} [${unit}]` : M`${val}`}`;
+  const sub = [m[1], m[3]].filter(Boolean).join(',');
+  const sym = sub ? `${base}_${sub}` : base;
+  return unit === '°' ? M`${sym} = ${val}°` : unit ? M`${sym} = ${val} [${unit}]` : M`${sym} = ${val}`;
+}
+/**
+ * A question no scenario fits, composed by the reader from the app's own
+ * pieces (js/compose/): the recipe is checked against the registry and made
+ * into a scenario with the engine's own kit, then read exactly as a library
+ * scenario is — its boxes, its parts, the engine's answer to each.
+ */
+function applyComposed(x, { graph = true } = {}) {
+  // the reader's own word for what moves wins over a ball it put in the recipe
+  const who = figureOf(x.who);
+  if (who.figure && !['ball', 'stone', 'particle'].includes(who.figure) && x.recipe?.objects?.length === 1
+      && ['ball', 'stone', 'particle'].includes(String(x.recipe.objects[0]?.figure).toLowerCase())) {
+    x = { ...x, recipe: { ...x.recipe, objects: [{ ...x.recipe.objects[0], figure: who.figure }] } };
+  }
+  // the surface below, when the reader left it out but the question names one ("a bridge above a road")
+  if (x.recipe?.backdrop && !x.recipe.below) { const b = belowOf(x.recipe.backdrop, `${x.summary || ''} ${x.words || ''}`); if (b) x = { ...x, recipe: { ...x.recipe, below: b } }; }
+  const c = composeSensibly(x.recipe, `${x.words || ''} ${x.summary || ''}`);
+  if (!c.ok) return { ok: false, chat: true, error: 'I can see the idea, but I need a little more to set it up. What moves, where from, and do you know a height or a speed?' };
+  const s = register(c, null);
+  // a part that is another place or another motion has a scene of its own
+  const { main, scenes } = scenesOf(x.parts);
+  scenes.forEach((sc) => { if (sc.c.ok) register(sc.c, [sc.part]); });
+  chooseScenario(s.id);
+  closeIntro();
+  state.kit = { ...c.boxes };
+  state.readerParts = fromReader(s.id, main, Object.keys(c.boxes));
+  buildValuesScreen();              // which recomputes, and solves each part
+  refreshSteps();
+  // each scene of its own: its part answered by its engine, and the way to it
+  let more = scenes.map((sc) => {
+    const label = `(${esc(String(sc.part.label || '').replace(/[^A-Za-z0-9]/g, '').toLowerCase())})`;
+    if (!sc.c.ok) return `<div class="ro-scene"><p class="ro-eyebrow">Part ${label} needs a scene of its own</p><div class="ro-engine" data-ok="false">${esc(sc.c.reason)}</div></div>`;
+    const sid = sc.c.scenario.id, k = KITS[sid], sv = k.solve(k.read(sc.c.boxes));
+    const p = fromReader(sid, [sc.part], Object.keys(sc.c.boxes))?.[0];
+    const body = sv.ok && p ? replyHTML([{ part: p, answer: answerOf(p, sv) }])
+      : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${sv.reason || ''}</div>`;
+    return `<div class="ro-scene"><p class="ro-eyebrow">Part ${label}, in a scene of its own</p><h4 class="ro-name">${esc(sc.c.scenario.name)}</h4>${body}`
+      + `<button type="button" class="ghost sm ask-scene" data-id="${sid}">Show me this scene</button></div>`;
+  }).join('');
+  // what was assumed, and what is drawn as something close to it, said plainly
+  const said = [...(Array.isArray(x.notes) ? x.notes : assumedNotes(x)), ...(s.recipe.notes || [])];
+  more = said.map((n) => `<p class="ro-note">${n}</p>`).join('') + more;
+  const head = `<p class="ro-eyebrow">Drawn for your question</p><h3 class="ro-name">${esc(s.name)}</h3>`
+    + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;
+  const body = solved?.ok
+    ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
+    : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${x.recipe?.engine !== 'pair' && state.kit?.h == null && placeOf(s.recipe).edge
+      ? 'How high up does it start? Just tell me here, like “20 m”, and I’ll run it.'
+      : `${solved?.reason || ''} Just tell me here, or press “Add the missing values”.`}</div>`;
+  // the values it read, each from the question or assumed, as a library reply lists them
+  const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g && !placeOf(s.recipe).g,
+    `${x.summary || ''} ${said.join(' ')}`, false, !!c.kit.g);
+  return { ok: true, runnable: !!traj, composed: !!traj, html: head + given + body + more };
+}
+/** A composed scene, kept with the boxes and parts it was read with. */
+const scenes = new Map();
+function register(c, parts) {
+  if (!byId(c.scenario.id)) COMPOSED.push(c.scenario);
+  KITS[c.scenario.id] = c.kit;
+  scenes.set(c.scenario.id, { boxes: c.boxes, parts });
+  return byId(c.scenario.id);
+}
+/** "Show me this scene": a part's own composed scene, on the stage behind its veil. */
+function showScene(id) {
+  const sc = scenes.get(id);
+  if (!sc || !byId(id)) return;
+  chooseScenario(id);
+  closeIntro();
+  state.kit = { ...sc.boxes };
+  state.readerParts = sc.parts ? fromReader(id, sc.parts, Object.keys(sc.boxes)) : null;
+  buildValuesScreen();
+  refreshSteps();
+  if (traj) showFlight(); else go('values');
+}
+/** Ask Suvat's "Show me the flight": the stage, with the graphs open. */
+/** The graphs against time, shown, and the panel they live in open. */
+function openGraphs() {
+  state.extras.graphs = true;
+  const box = $('extras').querySelector('input[data-k="graphs"]');
+  if (box) box.checked = true;
+  $('graphs-wrap').hidden = false;
+  if (!state.options && !windowed()) $('options-btn').click();   // where the graphs live
+}
+function showFlight() {
+  if (!traj) return;
+  // Graph was on: the stage opens with its graphs showing, as the reply did.
+  openGraphs();
+  if (scenario.exhibit) runFlight();
+  // a scene just composed arrives behind its veil, which names its pieces and
+  // lifts onto the motion (js/compose/reveal.js); once seen, it launches as
+  // any scenario does
+  else if (scenario.composed && !scenario.seen) {
+    scenario.seen = true;
+    closeIntro(); go('flight');
+    reveal($('canvas-wrap'), scenario.recipe).then(() => runFlight());
+  } else launch();
+}
+const ask = createAsk({
+  apply: applyReading,
+  run: showFlight,
+  scene: (id) => (/^part:-?\d+$/.test(id) ? openPart(parseInt(id.slice(5), 10)) : showScene(id)),
+  gravity,
+  edit: () => go('values'),
+  show: go,
+});
+/* ── the whiteboard ──────────────────────────────────────────────────────
+   Its own screen, built from the same pieces — see js/board/board.js. A
+   frame's "Open on the stage" goes the route a chat answer goes: the reading
+   through applyReading, then the flight. */
+board = createBoard({
+  open(x) {
+    const r = applyReading(x, { graph: true });
+    if (r.ok && traj) showFlight(); else go('values');
+  },
+  // the student's two boards: the one on show is kept here, and told to the account
+  store: boardStore,
+  changed: boardChanged,
+});
+initBoards(board);
+$('board-top').addEventListener('click', () => go(state.step === 'board' ? 'scenario' : 'board'));
+$('ask-top').addEventListener('click', () => ask.open());
 
 window.SUVAT = { state, get traj() { return traj; }, get solved() { return solved; },
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
-                 openAskAt, closeAskAt, easeAngle, applyReading,
-                 redraw() { recompute(); draw(); } };
+                 openAskAt, closeAskAt, easeAngle, applyReading, gravity, get board() { return board; },
+                 redraw() { recompute(); draw(); }, showPart,
+                 /** Compose a scene from a recipe, as the reader would: SUVAT.compose({ backdrop, engine, objects, numbers, parts }). */
+                 compose(recipe, parts = recipe?.parts) {
+                   const r = applyComposed({ scenario: 'compose', recipe, parts });
+                   if (r.ok && traj) showFlight(); else if (r.ok) go('values');
+                   return r;
+                 } };
+
+// The redesign's chrome — the sidebar's views, the command menu, the
+// shortcuts, the toasts. It reads state and presses the app's own buttons;
+// it calculates nothing (rule 4).
+initShell(window.SUVAT, { scenarios: SCENARIOS, library: LIBRARY, byId });
+// Signing in, and the chats kept in the account — only once the site has it on.
+initAccount();

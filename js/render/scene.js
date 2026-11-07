@@ -14,7 +14,8 @@
 // placed in section u. Nothing is ever converted twice.
 
 import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar } from './util.js';
-import { timeAbove } from '../core/projectile.js';
+import { timeAbove, lineFacts } from '../core/projectile.js';
+import { T, num } from '../notation.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
 import * as W2 from './world2d.js';
@@ -314,7 +315,6 @@ export function render(canvas, cam, o) {
   if (show.grid) metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 });
   if (show.ruler !== false) W2.heightRuler({ ctx, w, h, sy, py, scale: cam.scale, tn }, L,
     Math.max(f.apexHeight, f.params.h, D.roof.fasciaTop, markers.heightLine ?? 0));
-  landmarkLabels({ ctx, w, h, sy, su, L, tn, span, P, section, uMin: pu(0), uMax: pu(w) });
 
   /* ── height line, fence, target ───────────────────────────────────── */
   if (markers.heightLine != null) {
@@ -348,11 +348,33 @@ export function render(canvas, cam, o) {
             sx(f.pos((bandT.t1 + bandT.t2) / 2).x), Y - 24,
             { color: P.mark, align: 'center', pri: 7, size: 18 });
     }
+    // the times it is AT the line, which papers ask for as often as the time
+    // above it: one to each side, so a straight-up throw's two crossings (one
+    // above the other, at the same x) do not land on each other, each saying
+    // which way it was going. Not after a bounce: timeAbove follows the first
+    // arc only, and the later arcs cross the line again.
+    const ends = bandT && bandT.above > 1e-9 && !(f.bounces > 0)
+      ? [[bandT.t1, 'up', bandT.t1 > 1e-9], [bandT.t2, 'down', bandT.t2 < f.tMax - 1e-9]].filter((e) => e[2]) : [];
 
     stroke(ctx, [{ x: 0, y: Y }, { x: w, y: Y }],
            { color: P.mark, width: grabbed ? 3.6 : 2.8, dash: [10, 7], alpha: grabbed ? 1 : .92 });
+    ends.forEach(([tt, way], i) => {
+      const X = sx(f.pos(tt).x);
+      dot(ctx, X, Y, 4.5, { fill: P.surface, stroke: P.mark, width: 2.2 });
+      // the answer the question asked for: placed before anything else
+      const right = ends.length === 1 ? true : i === 1;
+      L.add(`${way} at ${T`t = ${fmt(tt, 2)} [s]`}`, X + (right ? 12 : -12), Y + 20,
+            { color: P.mark, align: right ? 'left' : 'right', pri: 13, size: 15, weight: 700, maxPush: 40, push: 'down' });
+    });
     const snapped = snapName(markers.heightLine);
-    L.add(`${fmt(markers.heightLine, 1)} m${snapped ? ` — ${snapped}` : ''}`,
+    // from a height, also how far above (or below) the start it is: papers
+    // give the line that way ("19 m above A")
+    const lf = lineFacts(f, markers.heightLine);              // js/core: rule 4
+    const rel = !(Math.abs(f.params.h || 0) > 1e-9) ? ''
+      : lf.atStart ? 'the height it starts from'
+      : `${T`${num(Math.abs(lf.rel), 2, { trim: true })} [m]`} ${lf.rel > 0 ? 'above' : 'below'} the start`;
+    const also = [snapped, rel].filter(Boolean).join(', ');
+    L.add(`${fmt(markers.heightLine, 1)} m${also ? ` — ${also}` : ''}`,
           w - 12, Y, { color: P.mark, align: 'right', pri: 6, size: 17 });
     heightGrip(ctx, 76, Y, P, grabbed);
   }
@@ -479,14 +501,11 @@ export function render(canvas, cam, o) {
   // No scenario has ever set it, so only the ten-equal branch was reachable.
   if (fired && show.ticks) {
     const marks = f.ticks(10);
+    // Filled, in the path's own hue, ringed in the ground colour — the
+    // theme's chart markers. They sit ON the flight, so they are velocity's.
     for (const k of marks) {
       const p = M(k);
-      dot(ctx, p.x, p.y, 3.5, { fill: P.surface, stroke: P.strong, width: 1.8 });
-    }
-    if (marks.length > 2) {
-      const p = M(marks[1]);
-      L.add('equal time steps', p.x, p.y - 20,
-            { color: P.muted, align: 'center', pri: 2, size: 16 });
+      dot(ctx, p.x, p.y, 4.6, { fill: P.vel, stroke: P.surface, width: 2 });
     }
   }
 
@@ -643,12 +662,7 @@ export function render(canvas, cam, o) {
 
   /* ── launch point ─────────────────────────────────────────────────── */
   const lp = M({ x: 0, y: f.params.h });
-  if (f.params.h > 0) {
-    stroke(ctx, [{ x: lp.x, y: lp.y }, { x: lp.x, y: groundY }], { color: P.mark, width: 2.4, dash: [7, 5], alpha: 0.9 });
-    L.add(`${fmt(f.params.h, 1)} m`, lp.x - 10, (lp.y + groundY) / 2, { color: P.mark, align: 'right', pri: 6, size: 16 });
-  }
   dot(ctx, lp.x, lp.y, 3.5, { fill: P.strong });
-  if (!fired) L.add(site.place, lp.x, lp.y - 30, { color: P.muted, align: 'center', pri: 4, size: 15 });
 
   /* ── scale bar and where we are ───────────────────────────────────── */
   // Bottom RIGHT: the range bracket owns the centre of the earth band, and
@@ -659,8 +673,7 @@ export function render(canvas, cam, o) {
   // How wide the frame is, in metres. It used to name the zoom band — Pitch
   // level, Stadium, Wide — which was the name of a button that no longer
   // exists; the width is the part of it that a student can use.
-  L.add(`${fmt(span, span < 20 ? 1 : 0)} m across · 1 unit = 1 m`, w - 12, h - 50,
-        { color: P.strong, align: 'right', pri: 11, size: 13 });
+  L.add('1:1', w - 12, h - 50, { color: P.strong, align: 'right', pri: 11, size: 13 });
 
   L.draw(ctx, w, h);
   cam._map = { sx, sy, px, py, su, pu, u0, ball: { x: p.x, y: p.y } };
@@ -733,9 +746,7 @@ function sayForces(ctx, L, x, y, R, f, t, P) {
     // STILL SPEEDING UP, and the honest reason it will go on doing so. Held
     // back until it is genuinely quick, so a half-metre drop off a bench does
     // not get a lecture.
-    text = sp > 22
-      ? `still speeding up · no air in this model, so it never levels off`
-      : `speeding up by ${fmt(-a, 2)} m s⁻¹ every second`;
+    text = `speeding up by ${fmt(-a, 2)} m s⁻¹ every second`;
     weight = 650; size = 17;
   } else if (phase?.key === 'canopy') {
     // The one case the app can slow a fall down in, and the phase that is
@@ -886,26 +897,6 @@ function metreGrid({ ctx, w, h, su, sy, pu, py, cam, P, L, u0 }) {
   }
 }
 
-/** Heights worth naming — the whole point of putting the flight in a place.
-    "14 m s⁻¹ reaches 10 m" means nothing until 10 m is the back of a stand.
-    But a landmark whose object is not in the cut is a label pointing at
-    nothing, so each one has to find its own geometry on screen first. */
-function landmarkLabels({ ctx, w, h, sy, su, L, tn, span, P, section, uMin, uMax }) {
-  if (span > 620) return;
-  const marks = W2.landmarksIn(section, uMin, uMax);
-  ctx.save();
-  ctx.setLineDash([3, 6]); ctx.lineWidth = 1;
-  ctx.strokeStyle = cssVar('--border', tn.prop);
-  for (const m of marks) {
-    const Y = Math.round(sy(m.y)) + 0.5;
-    if (Y < 24 || Y > h - 86) continue;
-    const anchor = clamp(su(m.u), 96, w - 14);
-    ctx.beginPath(); ctx.moveTo(Math.min(anchor, 70), Y); ctx.lineTo(anchor, Y); ctx.stroke();
-    L.add(m.name, anchor + 6, Y, { color: P.muted, align: 'left', pri: -2, size: 13, maxPush: 0 });
-  }
-  ctx.restore();
-}
-
 const SNAPS = [{ y: D.goal.height, name: 'the crossbar' }, { y: D.roof.fasciaTop, name: 'the roof' },
                { y: D.sides.NS.el[0].y1, name: 'the lower tier' }, { y: D.sides.NS.el[6].y0, name: 'the upper tier front' }];
 function snapName(y) {
@@ -1010,7 +1001,8 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   const pick = (e) => {
     const { markers, scenario, traj, t, fired } = active();
     const m = cam._map;
-    if (!m) return null;
+    // a library stage's view (kitview.js) maps pointer to layout only: nothing on it is picked
+    if (!m || !m.sx) return null;
     const w = toWorld(e);
     if (!w) return null;
     const near = (px, py, r = 26) => Math.hypot(w.sxp - px, w.syp - py) < r;
@@ -1060,6 +1052,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   };
 
   const isResolve = (k) => k === 'ball' || k === 'path';
+  let later = 0, lastUp = -1e9;   // a click, waiting to see it is not a double-click
 
   // The cursor used to say `grab` for the sky, the height line and the target
   // alike, so a draggable handle felt exactly like empty canvas. Now each
@@ -1079,6 +1072,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
 
   canvas.addEventListener('pointerdown', (e) => {
     const got = pick(e);
+    clearTimeout(later);
     down = { x: e.clientX, y: e.clientY, pick: got };
     dragging = got && !isResolve(got.kind) ? got.kind : null;
     if (dragging) { canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; return; }
@@ -1102,8 +1096,16 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     if (e && canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     // A click is a press that did not move. Anything that moved was a pan, and
     // must not open a card nobody asked for.
-    if (clicked && was?.pick && isResolve(was.pick.kind) && e
-        && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 5) onResolve.click?.(was.pick.t);
+    if (!clicked || !was || !e || Math.hypot(e.clientX - was.x, e.clientY - was.y) >= 5) return;
+    // Held a moment, and a second click soon after is a double-click, which
+    // re-frames: neither of its two clicks opens the card.
+    const dbl = e.timeStamp - lastUp < 400;
+    lastUp = e.timeStamp; clearTimeout(later);
+    if (dbl) return;
+    if (was.pick && isResolve(was.pick.kind)) { const tt = was.pick.t; later = setTimeout(() => onResolve.click?.(tt), 280); }
+    // A library stage picks nothing (its view maps layout only), so a click
+    // anywhere on it is a click on the motion: Resolve at the instant shown.
+    else if (!cam._map?.sx) later = setTimeout(() => onResolve.click?.(null), 280);
   };
   canvas.addEventListener('pointerup', (e) => end(e, true));
   canvas.addEventListener('pointercancel', (e) => end(e, false));
@@ -1125,6 +1127,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
       : { scale, cx: cam.cx, cy: cam.cy };
     onChange();
   }, { passive: false });
+  canvas.addEventListener('dblclick', () => clearTimeout(later));
   canvas.addEventListener('dblclick', () => { fitView(cam); onChange(); });
   canvas.style.cursor = 'grab';
 }

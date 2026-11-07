@@ -10,3 +10,4 @@ dev-drive.js
 
 # verification screenshots are reviewed on the PR, so they are not ignored
 !docs/verify/*.png
+.wrangler/

@@ -63,7 +63,7 @@ export function trajectory(p) {
     segments, bounces: segments.length - 1,
     // the first flight's quantities are the ones the working refers to
     ux: first.ux, uy: first.uy, horiz: first.horiz,
-    tFlight: first.tFlight, tApex: first.tApex, apexHeight: first.apexHeight,
+    tFlight: first.tFlight, tApex: first.tApex, apexHeight: first.apexHeight, apexRise: first.apexRise,
     apexInFlight: first.apexInFlight, range: first.range, vLanding: first.vLanding,
     tMax, pos, vel, speed,
     /** Kinetic energy and momentum — the only places mass actually appears. */

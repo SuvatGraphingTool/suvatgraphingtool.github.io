@@ -1,150 +1,162 @@
 /* tokens.css — the design system. Roles only; components never use raw hex.
-   Signal palette: warm near-black, one orange accent for chrome, and three
-   validated hues for the physics. See design/theme.js for the reasoning. */
+
+   THE REDESIGN (1 November 2026, the `redesign` branch). Linear's discipline
+   with SUVAT's warmth: a near-black, near-silent interface in which type and
+   hairlines do the work, and one warm note — the orange of the main logo —
+   spent only on the brand and on Ask Suvat. Everything else is ink on surface.
+
+   Locked before any pixel:
+     · Type     Inter for the interface (tight tracking on display sizes, open
+                leading on body), Merriweather for the maths (css/math.css).
+     · Space    a 4 px base; the steps are 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80.
+     · Radius   6 on a control, 10 on a card, 14 on a surface that floats.
+     · Motion   120 ms for a hover, 200 for a change of state, and a spring
+                for anything that is pressed, toggled or opened.
+     · Colour   chrome is monochrome. Colour means a quantity (rule 2): the
+                physics hues below are the validated set, unchanged — the new
+                grounds are darker and lighter than the old, so every contrast
+                figure in the old notes only went up.
+
+   Contrast (WCAG, measured): dark — ink 18.7, muted 6.1, faint 4.7 on the
+   card; light — ink 18.9, muted 6.2, faint 4.8 on white. The orange text step
+   is 8.1:1 on the dark ground and 4.6:1 on white. */
 
 :root {
-  --font: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font: 'Inter', 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Inter', 'Inter Variable', system-ui, sans-serif;
+  --font-serif: 'Merriweather', Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
 
-  /* Type. 13px floor — nothing on this site is smaller, canvas labels included. */
-  --fs-xs: 13px; --fs-sm: 15px; --fs-base: 17px; --fs-lg: 20px;
-  --fs-xl: 24px; --fs-2xl: 30px; --fs-3xl: 38px; --fs-hero: 44px;
+  /* Type. 13 px floor — nothing on this site is smaller, canvas labels included. */
+  --fs-xs: 13px; --fs-sm: 14px; --fs-base: 15px; --fs-lg: 17px;
+  --fs-xl: 20px; --fs-2xl: 24px; --fs-3xl: 32px; --fs-hero: 56px;
+  --track-hero: -0.035em; --track-h: -0.022em; --track-ui: -0.006em;
+  --lh-body: 1.6; --lh-tight: 1.1;
 
-  /* ── weight ───────────────────────────────────────────────────────────
-     THE SMALL TEXT CARRIES A LITTLE MORE, AND NOTHING ELSE CHANGES. The whole
-     page was moved up a step once — body 400 to 500 — and that was more than
-     was wanted: at 17 px and above, regular is the right weight and the page
-     read heavy. So the three steps below are the ones this site always had,
-     and there is a fourth for the one size that genuinely needed it.
-
-     13 px and 15 px is where a regular weight stops being light and starts
-     being faint: the hints under the boxes, the engine's sentence about what
-     it worked out, the note on a scenario card, the units beside a readout.
-     Those take --w-small. Anything that sets its own weight keeps it, and
-     anything at --fs-base or above is untouched. The list is in css/app.css,
-     right under the body rule, and it is the complete inventory of the two
-     small sizes rather than a sample.
-
-     The maths has its own step again, in css/math.css: a serif at equal
-     nominal weight carries less ink than a sans. */
-  --w-body: 400; --w-small: 500; --w-semi: 600; --w-bold: 700;
+  --w-body: 400; --w-small: 450; --w-semi: 550; --w-bold: 650;
 
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
-  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px; --sp-16: 64px; --sp-20: 80px;
 
-  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-pill: 9999px;
+  --radius: 10px;
+  --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-2xl: 14px; --r-pill: 6px;
 
-  /* dark (default) */
-  --surface: #131210;
-  --card: #1c1a17;
-  --card-hover: #26231f;
-  --input: rgba(255,255,255,0.05);
-  --border: rgba(255,255,255,0.20);
-  --border-soft: rgba(255,255,255,0.10);
-  --hover: rgba(255,255,255,0.06);
+  /* Motion. --spring overshoots by about two per cent and settles: the click
+     of a switch, not a bounce. */
+  --ease: cubic-bezier(.25,.46,.45,.94);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067, 1.077 24.1%, 1.06 27.2%, 1.003 34.2%, 0.989 38.3%, 0.991 46.2%, 1.001 61.5%, 1);
+  --spring-soft: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms; --dur-4: 480ms;
 
-  --ink: #ffffff;
-  --ink-strong: rgba(255,255,255,0.80);
-  /* Raised with the weights, and for the same reason. White at 60% on a near
-     black ground is a legibility choice at paragraph size and a thinning
-     agent at 13 px — the strokes are already about a pixel wide, and taking
-     40% off their contrast takes ink off them exactly as surely as dropping a
-     weight would.
+  --sidebar-w: 248px; --top-h: 52px;
 
-     And the faint one was never passing. The light theme's pair was raised to
-     clear AA on paper months ago; the dark pair was left alone, and the sum
-     here says why it should not have been:
+  /* ── night: the default ─────────────────────────────────────────────── */
+  --surface: #08090A;
+  --sidebar: #0B0C0E;
+  --card: #111214;
+  --card-hover: #16171A;
+  --elev: #18191C;            /* a popover, a dialog: one step above a card */
+  --input: rgba(255,255,255,0.025);
+  --border: rgba(255,255,255,0.09);
+  --border-soft: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.16);
+  --hover: rgba(255,255,255,0.045);
+  --press: rgba(255,255,255,0.07);
+  --highlight: inset 0 1px 0 rgba(255,255,255,0.04);   /* the lit top edge of a raised thing */
+  --frost: rgba(11,12,14,0.72);
 
-       on --surface   muted 0.60 → 7.18:1   now 0.68 → 8.95:1
-                      faint 0.40 → 3.83:1   now 0.50 → 5.32:1
-       on --card      muted 0.60 → 6.92:1   now 0.68 → 8.54:1
-                      faint 0.40 → 3.81:1   now 0.50 → 5.20:1
+  --ink: #F7F8F8;
+  --ink-strong: #D0D3D8;
+  --ink-muted: #8A8F98;
+  --ink-faint: #7C818A;
 
-     3.83:1 is below the 4.5:1 AA wants for text this size, and --ink-faint is
-     on the box units, the landing card's provenance line and the slider's
-     scale. All four clear it now. */
-  --ink-muted: rgba(255,255,255,0.68);
-  --ink-faint: rgba(255,255,255,0.50);
+  /* The one primary control is ink, not colour — white on night. */
+  --primary: #F7F8F8; --primary-hi: #FFFFFF; --on-primary: #08090A;
 
-  --accent: #ea580c;
-  --accent-hi: #f97316;
-  --accent-soft: rgba(234,88,12,0.14);
-  --on-accent: #131210;
+  /* THE WARM NOTE: the main logo's orange. Brand, Ask Suvat, the focus ring. */
+  --brand-1: #F9A86A; --brand-2: #E8722C; --brand-3: #B8461A;
+  --brand: linear-gradient(180deg, var(--brand-1), var(--brand-2) 55%, var(--brand-3));
+  --accent: #F0954F;
+  --accent-hi: #F7B07A;
+  --accent-fill: #E8722C;
+  --accent-soft: rgba(240,149,79,0.12);
+  --ring: rgba(240,149,79,0.55);
+  --on-accent: #1A0D05;
+  --glow: #F0954F;
+  --sunset: linear-gradient(100deg, var(--brand-1), var(--brand-2));
+  --secondary: rgba(255,255,255,0.06); --secondary-hi: rgba(255,255,255,0.10); --on-secondary: #F7F8F8;
+  --sticky: #2A2418; --sticky-edge: #4A3E25;
 
-  /* ── the physics palette ────────────────────────────────────────────
-     Five hues across the spectrum, assigned in this fixed order. Validated
-     all together under protanopia, deuteranopia and tritanopia:
-       worst adjacent pair  magenta <-> cyan   dE 10.3   (floor 8)
-       normal vision        violet  <-> magenta dE 26.4  (floor 15)
-       lightness, chroma and contrast all inside band
-     The order matters — it is what keeps the weakest pair (green/magenta)
-     from ever being neighbours. Re-run the check before changing any of them.
+  /* PHYSICS — the validated set, unchanged (see the notes on the ai branch and
+     design/theme.js). Colour is the quantity, dash is the direction. */
+  --vel:    #FF7E5F;
+  --vel-vec: #FEB47B;
+  --disp:   #5EEAD4;
+  --acc:    #A78BFA;
+  --second: #BBADA6;
+  --mark:   #BEF264;
 
-     Velocity, displacement and acceleration take the three best-separated
-     hues because they appear side by side. Magenta and green go to the second
-     object and to markers, which rarely sit next to each other. */
-  /* Velocity gets TWO shades of the one hue, and the difference is a
-     hierarchy rather than a decoration. The traced trajectory is where the
-     object has been — a long stroke, drawn in --vel. The velocity vector is
-     what it is doing now, one short arrow, and it takes --vel-vec: the shade
-     with more contrast against this theme's background, so it reads as the
-     live quantity sitting on top of its own history. Same hue, so the colour
-     still says "velocity"; different value, so the two never merge. */
-  --vel:    #ea580c;     /* velocity, and the path it has flown — orange */
-  --vel-vec: #fb923c;    /* the vector now — lighter, for a night sky */
-  --disp:   #0891b2;     /* displacement      — cyan    */
-  --acc:    #7c3aed;     /* acceleration      — violet  */
-  --second: #db2777;     /* a second object   — magenta */
-  --mark:   #16a34a;     /* targets, fences, lines — green */
+  --good: #4CC38A; --good-fill: rgba(76,195,138,0.12);
+  --bad:  #FF8A8A; --bad-fill:  rgba(235,87,87,0.12); --bad-line: #EB5757;
 
-  --good: #34d399; --good-fill: rgba(52,211,153,0.15);
-  --bad:  #fb7185; --bad-fill:  rgba(251,113,133,0.15);
+  --grid:       rgba(255,255,255,0.07);
+  --grid-major: rgba(255,255,255,0.15);
+  --axis:       rgba(255,255,255,0.38);
 
-  /* The grid is meant to be READ, not merely sensed. 7% was invisible. */
-  --grid:       rgba(255,255,255,0.13);
-  --grid-major: rgba(255,255,255,0.26);
-  --axis:       rgba(255,255,255,0.45);
-  /* A BOX-SHADOW, for the chrome. The scenery's shadow COLOUR is
-     --scene-shadow: they were both called --shadow, declared in that order,
-     so the colour won and every `box-shadow: var(--shadow)` in app.css
-     resolved to a bare colour — an invalid box-shadow, and therefore no
-     shadow at all on six kinds of card. */
-  --shadow: none;
+  --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-lg: 0 0 0 1px rgba(255,255,255,0.06), 0 16px 48px -8px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.35);
+  --scrim: #000000;
 }
 
 :root[data-theme='light'] {
-  --surface: #f1efea;   /* warm off-white — easier to look at than near-white */
-  --card: #ffffff;
-  --card-hover: #f7f5f1;
-  --input: rgba(26,23,20,0.035);
-  --border: rgba(26,23,20,0.14);
-  --border-soft: rgba(26,23,20,0.07);
-  --hover: rgba(26,23,20,0.045);
+  --surface: #FBFBFC;
+  --sidebar: #F5F5F6;
+  --card: #FFFFFF;
+  --card-hover: #F7F7F8;
+  --elev: #FFFFFF;
+  --input: #FFFFFF;
+  --border: rgba(15,16,17,0.10);
+  --border-soft: rgba(15,16,17,0.07);
+  --border-strong: rgba(15,16,17,0.18);
+  --hover: rgba(15,16,17,0.04);
+  --press: rgba(15,16,17,0.07);
+  --highlight: inset 0 1px 0 rgba(255,255,255,0.6);
+  --frost: rgba(251,251,252,0.78);
 
-  --ink: #1a1714;
-  --ink-strong: rgba(26,23,20,0.75);
-  --ink-muted: rgba(26,23,20,0.62);   /* raised from 0.60 to clear AA on paper */
-  --ink-faint: rgba(26,23,20,0.50);   /* raised from 0.40, which failed at 2.4:1 */
+  --ink: #0F1011;
+  --ink-strong: #2B2D31;
+  --ink-muted: #5C6168;
+  --ink-faint: #6A6F77;
 
-  --accent: #c2410c;
-  --accent-hi: #9a3412;
-  --accent-soft: rgba(194,65,12,0.10);
-  --on-accent: #ffffff;
+  --primary: #0F1011; --primary-hi: #2B2D31; --on-primary: #FFFFFF;
 
-  --vel:    #c2410c;   /* orange. Legibility comes from the path's casing stroke,
-                          not from darkening the hue until it stops being orange. */
-  --vel-vec: #7c2708;  /* the vector now — deeper, for a daylight sky */
-  --disp:   #0891b2;
-  --acc:    #6d28d9;
-  --second: #be185d;
-  --mark:   #15803d;
-  --good: #047857; --good-fill: rgba(52,211,153,0.18);
-  --bad:  #be123c; --bad-fill:  rgba(251,113,133,0.18);
+  --accent: #C2531B;
+  --accent-hi: #9C4114;
+  --accent-fill: #E8722C;
+  --accent-soft: rgba(232,114,44,0.10);
+  --ring: rgba(232,114,44,0.45);
+  --on-accent: #1A0D05;
+  --secondary: rgba(15,16,17,0.05); --secondary-hi: rgba(15,16,17,0.09); --on-secondary: #0F1011;
+  --sticky: #FFF4D6; --sticky-edge: #F0D9A0;
 
-  --grid:       rgba(26,23,20,0.11);
-  --grid-major: rgba(26,23,20,0.22);
-  --axis:       rgba(26,23,20,0.45);
-  --shadow: 0 1px 2px rgba(26,23,20,0.045);
+  --vel:    #B35340;
+  --vel-vec: #8A3A2B;
+  --disp:   #0D9488;
+  --acc:    #6D28D9;
+  --second: #4A3F43;
+  --mark:   #3F6212;
+  --good: #047857; --good-fill: rgba(4,120,87,0.08);
+  --bad:  #C81E2C; --bad-fill:  rgba(200,30,44,0.07); --bad-line: #E63946;
+
+  --grid:       rgba(15,16,17,0.07);
+  --grid-major: rgba(15,16,17,0.15);
+  --axis:       rgba(15,16,17,0.40);
+  --shadow: 0 1px 2px rgba(15,16,17,0.06);
+  --shadow-lg: 0 0 0 1px rgba(15,16,17,0.06), 0 16px 48px -12px rgba(15,16,17,0.18), 0 4px 12px rgba(15,16,17,0.06);
+  --scrim: #0F1011;
 }
+
 
 /* ── two cards that are windows, not diagrams ─────────────────────────
    Seven of the nine scenarios happen at the stadium and share the app's
@@ -240,75 +252,42 @@
 }
 
 /* ── the place the motion happens in ──────────────────────────────────
-   A football stadium and the district round it, at 1 unit = 1 metre.
-
-   TIME OF DAY. Light is a late-afternoon match — the sun low in the west, a
-   warm band along the horizon, long shadows and cool sky-light filling them.
-   Dark is a floodlit night. Both are lit scenes with a key and a fill, not
-   flat fields of grey, because a place with no light in it has no depth.
-
-   THREE VALUE BANDS carry the section drawing, and they are the whole reason
-   a three-tier stand is legible at a glance. A section cuts material, and the
-   three roles sit at least 2:1 apart in value:
-
-     --structure-dark   cut material (poché)
-     --seat             raked seating
-     --interior         the volume behind the cut
-
-   On paper the poché is darkest and the volume behind is lightest. At night
-   that order inverts, and has to: against a near-black sky the darkest
-   possible poché is invisible, so after dark the cut material is the LIGHTEST
-   of the three — it is the edge catching the floodlights — and the unlit
-   volume behind it is the darkest. Same convention, read by another light.
-
-   COLOUR. Scenery may be colourful; it may not be LOUD. Everything here is
-   held under about 35% saturation and away from the five physics hues, and
-   the trajectory carries a casing stroke so it wins over any of it. The hue
-   that used to be kept on the shortest lead was warm orange-red, because a
-   district of orange roofs is a district arguing with the velocity vector.
-   That is no longer a risk: the district has been removed, and the brick,
-   roofing, car-paint, asphalt and park greens it needed went with it. What is
-   left is the bowl, the turf and the sky. */
+/* ── the place the motion happens in ──────────────────────────────────
+   Same roles as before (see the ai branch for the reasoning about value
+   bands); re-lit for the new grounds. Night is a cool floodlit night under a
+   blue-black sky, day is clean, slightly hazy daylight. Scenery stays under
+   about 35% saturation and away from the physics hues. */
 :root {
-  /* night */
-  --sky-top: #05070e; --sky-mid: #0a1020; --sky-bottom: #182440; --haze: #182440;
-  --sun: #ffe9b8; --sun-glow: rgba(255,228,170,0.40);
-  --scene-shadow: rgba(0,0,0,0.42); --sky-fill: #2a3a58;
-  --earth: #1c1c23; --interior: #1a1a23; --terrain: #1f2622;
-  --grass: #3f7a4a; --grass-alt: #2f6239; --runoff: #28472f;
-  --pitchline: rgba(255,255,255,0.80);
-  --concrete: #2e3139; --window: #ffd98a;
-  --glass: rgba(132,163,188,0.26); --metal: #5a616b; --net: rgba(255,255,255,0.30);
-  --seat: #3f4652; --seat-alt: #363d47; --board: #4f5560;
-  --structure: #6d7684; --structure-dark: #5c6572;
-  --roof-top: #3e444e; --roof-under: #1c1f26;
-  --prop: #70757d;
-
-  /* The object is a BALL, so it is drawn as one: lit from above-left, with a
-     seam and a rim. It is not a quantity and so does not take a quantity's
-     hue — a flat disc in velocity orange was the main reason the whole scene
-     read as a single colour. Floodlit at night, daylight by day, but leather
-     either way, so the four tones barely move between the themes. */
+  --sky-top: #05070B; --sky-mid: #0B1018; --sky-bottom: #182131; --haze: #121925;
+  --sun: #E8EEF8; --sun-glow: rgba(160,190,240,0.18);
+  --scene-shadow: rgba(0,0,0,0.5); --sky-fill: #141B27;
+  --earth: #15181D; --interior: #101318; --terrain: #20242A;
+  --grass: #3E5236; --grass-alt: #36482F; --runoff: #2C3A28;
+  --pitchline: rgba(240,244,248,0.78);
+  --concrete: #2A2F37; --window: #E9D9B8;
+  --glass: rgba(190,205,225,0.16); --metal: #4A5160; --net: rgba(240,244,248,0.30);
+  --seat: #2F3540; --seat-alt: #2A2F39; --board: #3D4452;
+  --structure: #8E98A8; --structure-dark: #7A8494;
+  --roof-top: #313744; --roof-under: #14171C;
+  --prop: #7A8494;
   --ball-hi: #fffdf6; --ball: #e9e1cf; --ball-low: #8d8370; --ball-line: #241e17;
-  --flood: #ffeec2; --far-grid: rgba(255,255,255,0.14);
+  --flood: #f4f1e6; --far-grid: rgba(240,244,248,0.10);
   --night: 1;
 }
-
 :root[data-theme='light'] {
-  /* late afternoon */
-  --sky-top: #4a86bd; --sky-mid: #a6c8e2; --sky-bottom: #f0cfa8; --haze: #e7dcc8;
-  --sun: #ffeacb; --sun-glow: rgba(255,206,138,0.50);
-  --scene-shadow: rgba(54,42,30,0.26); --sky-fill: #b9d2e8;
-  --earth: #6e675d; --interior: #b6ad9a; --terrain: #9fae86;
-  --grass: #76a660; --grass-alt: #5e8b4d; --runoff: #567e46;
+  --sky-top: #CFDDEE; --sky-mid: #E4ECF5; --sky-bottom: #F3F1EC; --haze: #E9EEF3;
+  --sun: #FFFDF6; --sun-glow: rgba(255,236,200,0.55);
+  --scene-shadow: rgba(15,16,17,0.18); --sky-fill: #DCE5EF;
+  --earth: #7E7A72; --interior: #E3E6EA; --terrain: #C9C8B4;
+  --grass: #96A574; --grass-alt: #869566; --runoff: #7D8A5E;
   --pitchline: rgba(255,255,255,0.95);
-  --concrete: #b6b0a4; --window: #ffe6ad;
-  --glass: rgba(176,205,224,0.55); --metal: #9ca4ab; --net: rgba(255,255,255,0.78);
-  --seat: #65707f; --seat-alt: #5f6975; --board: #8e887c;
-  --structure: #cbc2b2; --structure-dark: #4a4238;
-  --roof-top: #b4bac1; --roof-under: #7b8086;
-  --prop: #5d564e;
+  --concrete: #D2D5DA; --window: #FFF1D8;
+  --glass: rgba(220,232,245,0.6); --metal: #A3A8B0; --net: rgba(255,255,255,0.80);
+  --seat: #8D939C; --seat-alt: #858B94; --board: #A8ADB5;
+  --structure: #DDE0E4; --structure-dark: #4F5560;
+  --roof-top: #C9CDD3; --roof-under: #8E939B;
+  --prop: #626873;
   --ball-hi: #ffffff; --ball: #ece5d6; --ball-low: #a2957f; --ball-line: #3d352b;
-  --flood: #fff6df; --far-grid: rgba(26,23,20,0.16);
+  --flood: #fff8e8; --far-grid: rgba(15,16,17,0.12);
   --night: 0;
 }

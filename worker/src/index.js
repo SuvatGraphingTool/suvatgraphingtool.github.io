@@ -8,15 +8,19 @@
 // to make sure ONE person cannot drink the day's model quota, and to fail in a
 // way the interface can explain.
 
-import { SYSTEM_PROMPT } from './schema.js';
+import { toPlace } from './place.js';
+import { toComposed, toFigure, namedPlace, answered, fromRest } from './composeplace.js';
+import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt } from './schema.js';
+import { focusFor, libraryIdsIn, idsInHistory } from './focus.js';
 
-const MODELS_DEFAULT = 'gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
+const MODELS_DEFAULT = '@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
 const MAX_IMAGE_BYTES = 1_500_000;      // the client resizes to ~150 KB; this is the backstop
 const MAX_PDF_BYTES = 4_000_000;        // a few pages of a paper
 const MAX_TEXT_CHARS = 2_000;           // a long exam question is ~600
+const MAX_TURNS = 8;                    // the chat the reader is shown: four questions and answers
 const PER_IP_PER_DAY = 40;              // generous for one student, useless for a scraper
 const PER_IP_PER_MINUTE = 6;
-const HEDGE_MS = 3_000;                 // Flash-Lite usually answers in 2–4 s; past this, ask another too
+const HEDGE_MS = 4_500;                 // Gemma usually answers in 2–3.5 s; past this, ask another too
 const COOL_MS = 120_000;                // how long a model that stalled goes to the back of the queue
 
 // Which models stalled lately, and until when to ask them last. It lives as
@@ -58,7 +62,7 @@ export default {
     // Words — typed, or spoken and turned into text by the browser — and at
     // most one attachment: a photo of the question, or the paper as a PDF.
     // Either may come alone.
-    const { imageBase64, mimeType = 'image/jpeg', hint, text } = body || {};
+    const { imageBase64, mimeType = 'image/jpeg', hint, text, history, mode } = body || {};
     const words = typeof text === 'string' ? text.trim() : '';
     const file = typeof imageBase64 === 'string' && imageBase64.length ? imageBase64 : '';
     if (!words && !file) return json({ error: 'Send text, a file, or both.' }, 400, cors);
@@ -81,20 +85,48 @@ export default {
       }, 413, cors);
     }
 
-    if (!env.GEMINI_API_KEY) return json({ error: 'Server is not configured.' }, 500, cors);
+    if (!env.GEMINI_API_KEY && !env.AI) return json({ error: 'Server is not configured.' }, 500, cors);
 
     // ── call the model ────────────────────────────────────────────────────
     const parts = [];
     if (file) parts.push({ inline_data: { mime_type: mimeType, data: file } });
     const say = words || (typeof hint === 'string' ? hint.trim().slice(0, 400) : '');
-    if (say) parts.push({ text: `The student ${file ? 'adds' : 'describes the question'}:\n${say}` });
+    const sent = mimeType === 'application/pdf' ? 'the question paper as a PDF' : 'a photo of the question';
+    parts.push({ text: file
+      ? `The student sends ${sent}${say ? ` and says:\n${say}` : '.'}`
+      : `The student says:\n${say}` });
 
+    // The chat so far: what the student said, and the JSON each answer was.
+    // Text only — a photo is sent once, and what was read from it lives on in
+    // the answer that followed. The last few turns, user and model in pairs.
+    const earlier = (Array.isArray(history) ? history : [])
+      .filter((h) => h && (h.role === 'user' || h.role === 'model') && typeof h.text === 'string' && h.text.trim())
+      .slice(-MAX_TURNS)
+      .map((h) => ({ role: h.role, parts: [{ text: h.text.slice(0, MAX_TEXT_CHARS) }] }));
+    while (earlier.length && earlier[0].role !== 'user') earlier.shift();
+
+    // SEARCH: a written answer from Gemini with Google Search switched on —
+    // see searchAnswer below. Everything else on this route is the reader.
+    if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors);
+
+    // "20 m", in answer to "how high up does it start?": no model needed.
+    const filled = !file && mode !== 'board' ? answered(words, earlier) : null;
+    if (filled) return json({ ok: true, extraction: filled, model: 'none' }, 200, cors);
+
+    // ONLY THE CATALOGUE THIS QUESTION NEEDS (focus.js): a typed or spoken
+    // question carries every library scenario as one line, and in full only
+    // those its words — and the chat so far — point to. A photo or a PDF has
+    // no words to go by, and the board lays out more: they get it all.
+    const said = [...earlier.filter((h) => h.role === 'user').map((h) => h.parts[0].text), say].join('\n');
+    const was = idsInHistory(earlier.filter((h) => h.role === 'model').map((h) => h.parts[0].text));
+    const focus = mode !== 'board' && !file && env.PROMPT_FOCUS !== 'off' ? focusFor(said, was) : null;
     const payload = {
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents: [{ role: 'user', parts }],
+      // BOARD: the same reading, and the layout of a whiteboard built from it.
+      system_instruction: { parts: [{ text: mode === 'board' ? BOARD_PROMPT : focus ? systemPrompt(focus.library, focus.compose) : SYSTEM_PROMPT }] },
+      contents: [...earlier, { role: 'user', parts }],
       generationConfig: {
         temperature: 0,                         // extraction, not writing
-        maxOutputTokens: 1200,
+        maxOutputTokens: mode === 'board' ? 1800 : 1200,
         // JSON, but NOT a responseSchema. Handed the schema, Flash-Lite answered
         // every question with the same four fields and wrote angles into u;
         // given the same fields as a list in the prompt, with examples, it read
@@ -119,8 +151,17 @@ export default {
     // asked when the first is already late, so the quota cost is small.
     const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim()).filter(Boolean)
       .map((m) => { const [name, level] = m.split(':'); return { name, level: level || env.THINKING || 'minimal' }; });
-    const outcome = await race(env, models, payload);
-    if (outcome.ok) return json({ ok: true, extraction: outcome.extraction, model: outcome.model }, 200, cors);
+    let outcome = await race(env, models, payload);
+    // It chose a library scenario it was shown only as a line: ask once more,
+    // with that one in full, so its boxes are read, never guessed.
+    const unseen = focus && outcome.ok ? libraryIdsIn(outcome.extraction).filter((id) => !focus.ids.has(id)) : [];
+    if (unseen.length) {
+      const again = focusFor(said, [...was, ...unseen]);
+      payload.system_instruction = { parts: [{ text: systemPrompt(again.library, again.compose) }] };
+      const second = await race(env, models, payload);
+      if (second.ok) outcome = second;
+    }
+    if (outcome.ok) return json({ ok: true, extraction: fromRest(namedPlace(toComposed(toPlace(toFigure(outcome.extraction, words), words), words), words), words), model: outcome.model }, 200, cors);
     const { last, lastCap, capped, gone } = outcome;
 
     if (lastCap && models.every((m) => capped.has(m.name) || gone.has(m.name))) {
@@ -212,7 +253,7 @@ function race(env, models, payload) {
         last = r;
         console.error('reader attempt failed', m.name, m.level, m.temperature, r.status || r.kind, r.detail || '');
         if (r.status === 429) { capped.add(m.name); lastCap = r; }   // its allowance, not its answer
-        else if (r.status === 404 || r.status === 403) gone.add(m.name);
+        else if (r.status === 404 || r.status === 403 || r.status === 415) gone.add(m.name);
         else if (r.status === 400 && /thinking level/i.test(r.detail || '') && m.level !== 'low') {
           queue.unshift({ ...m, level: 'low' });
         } else if (r.status === 503 && !rebusy.has(m.name)) {
@@ -231,8 +272,68 @@ function race(env, models, payload) {
   });
 }
 
+/**
+ * The Search toggle. Gemini with its google_search tool, so the answer is
+ * grounded in what Google finds, and the pages it used come back as sources.
+ * Only Gemini can do this — Gemma on Cloudflare has no search — so the Gemini
+ * models are tried in turn, and the reply is prose, not the reader's JSON.
+ */
+async function searchAnswer(env, contents, cors) {
+  const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim().split(':')[0])
+    .filter((m) => m && !m.startsWith('@cf/'));
+  if (!env.GEMINI_API_KEY || !models.length) {
+    return json({ error: 'search_unavailable', message: 'Search is not available right now. Switch it off and ask again.' }, 503, cors);
+  }
+  const started = Date.now();
+  let last = null;
+  for (const model of models) {
+    const left = DEADLINE_MS - (Date.now() - started);
+    if (left < 3_000) break;
+    let res;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SEARCH_PROMPT }] },
+          contents,
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 900 },
+        }),
+        signal: AbortSignal.timeout(Math.min(left, 15_000)),
+      });
+    } catch (e) { last = { status: 0, detail: e?.name || 'timeout' }; continue; }
+    if (!res.ok) {
+      last = { status: res.status, detail: googleMessage(await res.text().catch(() => '')) };
+      console.error('search attempt failed', model, res.status, last.detail);
+      continue;
+    }
+    const data = await res.json().catch(() => null);
+    const c = data?.candidates?.[0];
+    const answer = (c?.content?.parts || []).filter((p) => typeof p.text === 'string' && !p.thought)
+      .map((p) => p.text).join('').trim();
+    if (!answer) { last = { status: 200, detail: c?.finishReason || 'empty' }; continue; }
+    const seen = new Set();
+    const sources = (c?.groundingMetadata?.groundingChunks || [])
+      .map((g) => g.web).filter((w) => w?.uri && !seen.has(w.uri) && seen.add(w.uri))
+      .slice(0, 6).map((w) => ({ title: String(w.title || w.uri).slice(0, 120), uri: w.uri }));
+    const queries = (c?.groundingMetadata?.webSearchQueries || []).slice(0, 4);
+    return json({ ok: true, answer: answer.slice(0, 4_000), sources, queries, model }, 200, cors);
+  }
+  const busy = last?.status === 429 || last?.status === 503 || last?.status === 0;
+  return json({
+    error: busy ? 'busy' : 'search_failed',
+    message: last?.status === 429
+      ? 'Search has used up Google\u2019s free allowance for now. Try again later, or switch Search off and Suvat will still read the question.'
+      : busy ? 'Search is busy right now. Try again in a minute, or switch Search off.'
+                  : 'Search did not come back with an answer. Try again, or switch Search off.',
+    upstream: last,
+  }, busy ? 429 : 502, cors);
+}
+
 /** One question to one model: { ok, extraction } or { ok:false, kind, status?, detail? }. */
 async function ask(env, model, payload, ms, cancel) {
+  if (model.startsWith('@cf/')) return askCloudflare(env, model, payload, ms, cancel);
   let res;
   try {
     res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
@@ -263,6 +364,65 @@ async function ask(env, model, payload, ms, cancel) {
              detail: { model, finish: c?.finishReason || data?.promptFeedback?.blockReason || null } };
   }
 }
+/**
+ * The same question to a model on Cloudflare Workers AI — Gemma, run beside
+ * this Worker, so there is no key and no Google queue in the way. It takes
+ * the Gemini payload as it is and says it in Cloudflare's words. It reads
+ * photos but not PDFs: a PDF is a 415, and the race leaves it to Gemini.
+ * The free allowance is 10,000 neurons a day, a few hundred questions.
+ */
+async function askCloudflare(env, model, payload, ms, cancel) {
+  if (!env.AI) return { ok: false, kind: 'error', status: 403, detail: 'no AI binding' };
+  const turns = [];
+  for (const c of payload.contents) {
+    const content = [];
+    for (const p of c.parts) {
+      if (p.inline_data?.mime_type === 'application/pdf') {
+        return { ok: false, kind: 'error', status: 415, detail: 'reads no PDFs' };
+      }
+      if (p.inline_data) {
+        content.push({ type: 'image_url', image_url: { url: `data:${p.inline_data.mime_type};base64,${p.inline_data.data}` } });
+      }
+      if (p.text) content.push({ type: 'text', text: p.text });
+    }
+    turns.push({ role: c.role === 'model' ? 'assistant' : 'user',
+                 content: content.length === 1 && content[0].type === 'text' ? content[0].text : content });
+  }
+  const run = env.AI.run(model, {
+    messages: [
+      { role: 'system', content: payload.system_instruction.parts[0].text },
+      ...turns,
+    ],
+    temperature: payload.generationConfig.temperature,
+    max_completion_tokens: payload.generationConfig.maxOutputTokens,
+    response_format: { type: 'json_object' },
+    // Gemma thinks by default, and thinking is what made it slow: a dozen
+    // seconds and more, and a hello that ran out of tokens before answering.
+    // Reading printed numbers needs none of it — the same call as Gemini's
+    // thinkingLevel "minimal".
+    chat_template_kwargs: { enable_thinking: false },
+  }, { signal: AbortSignal.any([AbortSignal.timeout(ms), cancel]) });
+  let data;
+  try {
+    data = await Promise.race([run, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
+  } catch (e) {
+    const msg = String(e?.message || e);
+    if (/timeout|abort/i.test(msg)) return { ok: false, kind: 'unreachable', detail: `${msg} after ${ms} ms allowed` };
+    // Workers AI says "daily free allocation" when the day's neurons are spent.
+    const status = /allocation|limit|quota|4006/i.test(msg) ? 429 : /not found|5007/i.test(msg) ? 404 : 502;
+    return { ok: false, kind: 'error', status, detail: msg.slice(0, 900) };
+  }
+  // Older models answer in `response`; the newer ones in the OpenAI shape.
+  const raw = data?.response ?? data?.choices?.[0]?.message?.content;
+  if (raw && typeof raw === 'object') return { ok: true, extraction: raw };
+  try {
+    const text = String(raw || '').replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, '');
+    return { ok: true, extraction: JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)) };
+  } catch {
+    return { ok: false, kind: 'unreadable', detail: { model, finish: data?.choices?.[0]?.finish_reason || null } };
+  }
+}
+
 /* ── helpers ──────────────────────────────────────────────────────────── */
 
 function googleMessage(raw) {

@@ -1,0 +1,260 @@
+// height.js — a throw from a height: off a cliff into the sea, or from the
+// top of a tower to the ground below it.
+//
+// NO NEW PHYSICS. The motion is the twelve's own: solveLaunch (js/core/solve.js)
+// works out the launch from whatever three of s, u, v, a, t the paper gives,
+// with the angle and the height, and flight / timeAbove (js/core/projectile.js)
+// say where it is and when it is at a given height. This file only gathers
+// what a question set on a cliff or a tower asks — the greatest height above
+// the sea, the time in the air, the speed it hits the water at, when it is a
+// given height above where it was thrown from — and writes each as working.
+//
+// CONVENTION. Heights are above the sea or the ground, up positive; across
+// is away from the cliff edge; g > 0.
+//
+// THE ENGINE CALCULATES (CLAUDE.md rule 4).
+
+import { solveLaunch } from './solve.js';
+import { timeAbove } from './projectile.js';
+import { snap } from './numeric.js';
+import { M, num } from '../notation.js';
+
+const have = (x) => typeof x === 'number' && isFinite(x);
+const d = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
+const z = (x) => (Math.abs(x) < 1e-9 ? 0 : x);
+
+/** Where it is thrown from, and what is below it. */
+export const PLACES = {
+  cliff:   { word: 'cliff', top: 'the top of the cliff', below: 'the sea', lands: 'hits the sea', foot: 'at the foot of the cliff' },
+  tower:   { word: 'tower', top: 'the top of the tower', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the tower' },
+  bridge:  { word: 'bridge', top: 'the bridge', below: 'the river', lands: 'hits the water', foot: 'just below the bridge' },
+  board:   { word: 'diving board', top: 'the diving board', below: 'the water', lands: 'enters the water', foot: 'below the end of the board' },
+  well:    { word: 'well', top: 'the top of the well', below: 'the water in the well', lands: 'hits the water', foot: 'at the bottom of the well', vertical: true },
+  balloon: { word: 'balloon', top: 'the balloon', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', vertical: true, carried: true, from: 'where it was let go' },
+  // level ground: launched from the ground itself (a height of 0 is allowed),
+  // or from a height above it with nothing drawn under the throw — the
+  // composer's ground, road and hall (js/compose/)
+  ground:  { word: 'start', top: 'where it starts', below: 'the ground', lands: 'lands', foot: 'where it started', level: true },
+  water:   { word: 'start', top: 'where it starts', below: 'the sea', lands: 'hits the sea', foot: 'where it started', level: true },
+  road:    { word: 'start', top: 'where it starts', below: 'the road', lands: 'lands on the road', foot: 'where it started', level: true },
+  track:   { word: 'start', top: 'where it starts', below: 'the track', lands: 'lands by the track', foot: 'where it started', level: true },
+  floor:   { word: 'start', top: 'where it starts', below: 'the floor', lands: 'lands on the floor', foot: 'where it started', level: true },
+  house:   { word: 'house', top: 'the roof', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the house' },
+  tree:    { word: 'tree', top: 'the branch', below: 'the ground', lands: 'hits the ground', foot: 'straight below the branch' },
+  ledge:   { word: 'ledge', top: 'the ledge', below: 'the valley floor', lands: 'hits the valley floor', foot: 'at the foot of the ledge' },
+  quay:    { word: 'quay', top: 'the quayside', below: 'the water', lands: 'hits the water', foot: 'at the foot of the quay' },
+  building: { word: 'building', top: 'the roof', below: 'the street', lands: 'hits the street', foot: 'at the foot of the building' },
+  moon:    { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
+  snow:    { word: 'start', top: 'where it starts', below: 'the snow', lands: 'lands in the snow', foot: 'where it started', level: true },
+  desert:  { word: 'start', top: 'where it starts', below: 'the sand', lands: 'lands on the sand', foot: 'where it started', level: true },
+  pier:    { word: 'pier', top: 'the end of the pier', below: 'the sea', lands: 'hits the sea', foot: 'below the end of the pier' },
+  canyon:  { word: 'canyon', top: 'the rim of the canyon', below: 'the river', lands: 'hits the river', foot: 'at the foot of the canyon wall' },
+  waterfall: { word: 'waterfall', top: 'the top of the waterfall', below: 'the river', lands: 'hits the river', foot: 'at the foot of the waterfall' },
+  lighthouse: { word: 'lighthouse', top: 'the gallery of the lighthouse', below: 'the sea', lands: 'hits the sea', foot: 'at the foot of the lighthouse' },
+  pitch:   { word: 'start', top: 'where it starts', below: 'the pitch', lands: 'lands on the pitch', foot: 'where it started', level: true },
+  golf:    { word: 'start', top: 'where it starts', below: 'the ground', lands: 'lands', foot: 'where it started', level: true },
+  stadium: { word: 'start', top: 'where it starts', below: 'the infield', lands: 'lands on the infield', foot: 'where it started', level: true },
+  ship:    { word: 'ship', top: 'the deck of the ship', below: 'the sea', lands: 'hits the sea', foot: 'at the ship’s side' },
+  dam:     { word: 'dam', top: 'the crest of the dam', below: 'the river', lands: 'hits the river', foot: 'at the foot of the dam' },
+  playground: { word: 'start', top: 'where it starts', below: 'the ground', lands: 'lands', foot: 'where it started', level: true },
+  beach:   { word: 'start', top: 'where it starts', below: 'the beach', lands: 'lands on the beach', foot: 'where it started', level: true },
+  room:    { word: 'start', top: 'where it starts', below: 'the floor', lands: 'lands on the floor', foot: 'where it started', level: true },
+  planet:  { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
+  carpark: { word: 'car park', top: 'the top deck of the car park', below: 'the street', lands: 'hits the street', foot: 'at the foot of the car park' },
+  volcano: { word: 'crater', top: 'the crater', below: 'the plain', lands: 'lands on the plain', foot: 'below the crater' },
+  mineshaft: { word: 'shaft', top: 'the top of the shaft', below: 'the bottom of the shaft', lands: 'reaches the bottom', foot: 'at the foot of the shaft' },
+  highjump: { word: 'start', top: 'where it takes off', below: 'the ground', lands: 'lands on the mat', foot: 'where it took off', level: true },
+  rugby:   { word: 'start', top: 'where it is kicked from', below: 'the pitch', lands: 'lands on the pitch', foot: 'where it was kicked', level: true },
+  quarry:  { word: 'quarry', top: 'the edge of the quarry', below: 'the quarry floor', lands: 'hits the quarry floor', foot: 'at the foot of the quarry face' },
+  court:   { word: 'start', top: 'where it starts', below: 'the court', lands: 'lands on the court', foot: 'where it started', level: true },
+  arena:   { word: 'start', top: 'where it starts', below: 'the floor', lands: 'lands on the floor', foot: 'where it started', level: true },
+  castle:  { word: 'castle', top: 'the battlements', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the castle wall' },
+  runway:  { word: 'start', top: 'where it starts', below: 'the runway', lands: 'lands on the runway', foot: 'where it started', level: true },
+  garden:  { word: 'start', top: 'where it starts', below: 'the lawn', lands: 'lands on the lawn', foot: 'where it started', level: true },
+  farm:    { word: 'start', top: 'where it starts', below: 'the field', lands: 'lands in the field', foot: 'where it started', level: true },
+  cricket: { word: 'start', top: 'where it starts', below: 'the outfield', lands: 'lands on the outfield', foot: 'where it started', level: true },
+  lake:    { word: 'start', top: 'where it starts', below: 'the lake', lands: 'goes into the lake', foot: 'where it started', level: true },
+  island:  { word: 'start', top: 'where it starts', below: 'the sand', lands: 'lands on the sand', foot: 'where it started', level: true },
+  skatepark: { word: 'start', top: 'where it starts', below: 'the concrete', lands: 'lands on the concrete', foot: 'where it started', level: true },
+  circus:  { word: 'start', top: 'where it starts', below: 'the ring', lands: 'lands in the ring', foot: 'where it started', level: true },
+  polar:   { word: 'start', top: 'where it starts', below: 'the sea', lands: 'goes into the sea', foot: 'where it started', level: true },
+  oilrig:  { word: 'rig', top: 'the deck of the rig', below: 'the sea', lands: 'hits the sea', foot: 'at the foot of the rig' },
+  treehouse: { word: 'tree house', top: 'the tree house platform', below: 'the lawn', lands: 'lands on the lawn', foot: 'below the platform' },
+  fairground: { word: 'start', top: 'where it starts', below: 'the ground', lands: 'lands on the grass', foot: 'where it started', level: true },
+  // a dolphin or a fish leaping from the water at the foot of a place
+  pool:    { word: 'start', top: 'where it leaves the water', below: 'the water', lands: 'goes back into the water', foot: 'where it left the water', level: true, from: 'where it left the water' },
+  site:    { word: 'scaffold', top: 'the top of the scaffolding', below: 'the ground', lands: 'hits the ground', foot: 'at the foot of the scaffolding' },
+  mars:    { word: 'start', top: 'where it starts', below: 'the surface', lands: 'lands on the surface', foot: 'where it started', level: true },
+  table:   { word: 'table', top: 'the table top', below: 'the floor', lands: 'hits the floor', foot: 'at the foot of the table', from: 'the table top' },
+  air:     { word: 'point it was let go', top: 'the point it is let go from', below: 'the ground', lands: 'hits the ground', foot: 'straight below where it was let go', from: 'where it was let go' },
+};
+
+/** What it lands on, when the question says it is not the place's own: a
+    cliff with the ground at its foot, a bridge over a road. */
+export const BELOW = {
+  ground: { below: 'the ground', lands: 'hits the ground' },
+  sea:    { below: 'the sea', lands: 'hits the sea' },
+  river:  { below: 'the river', lands: 'hits the water' },
+  road:   { below: 'the road', lands: 'hits the road' },
+  beach:  { below: 'the beach', lands: 'lands on the beach' },
+};
+
+/**
+ * @param k { place, h, u, theta, s, v, t, g, level, below? }
+ *   h      the height of the cliff or tower top above the sea or ground
+ *   s      how far out it lands (thrown at an angle); v the speed it lands at;
+ *          t the time in the air — any of these may stand in for u
+ *   level  a height above where it is thrown from: when is it there?
+ */
+export function solveHeight(k0 = {}) {
+  let k = k0;
+  const fail = (reason) => ({ ok: false, reason, derived: [], notes: [] });
+  // `from` — where it started, in words — when what moves was not thrown (a
+  // diver, a car): "where the diver started", never "where it was thrown from"
+  const place = PLACES[k.place] ? k.place : 'cliff', Pl = { ...PLACES[place], ...(BELOW[k.below] || {}), ...(k.from ? { from: k.from } : {}) };
+  if (!have(k.g)) return fail('Choose the value of g the paper uses.');
+  const sRows = [];
+  // "the splash is heard 3 s later; sound at 340 m/s": the fall, t₁, and the sound
+  // back up, h/c, make the time heard. Straight down: h = ut₁ + ½gt₁² = c(T − t₁)
+  if (have(k.heard) && have(k.cSound) && !have(k.h) && !have(k.t)) {
+    const T = k.heard, c = k.cSound, uu = have(k.u) ? k.u : 0;
+    if (!(T > 0) || !(c > 0)) return fail('The time it is heard after, and the speed of sound, are both positive.');
+    if (have(k.theta) && Math.abs(k.theta + 90) > 1e-9 && !(uu === 0)) return fail('Timed by its sound, it falls straight down: give the angle as −90, or let it go from rest.');
+    // ½g t₁² + (u + c) t₁ − cT = 0, the positive root
+    const t1 = snap((-(uu + c) + Math.sqrt((uu + c) ** 2 + 2 * k.g * c * T)) / k.g);
+    sRows.push({ f: M`h = ut_1 + ½gt_1^2 = c(T - t_1)`, s: M`${d(uu)}t_1 + ½ * ${d(k.g)}t_1^2 = ${d(c)}(${d(T)} - t_1)`, r: M`t_1 = ${d(t1)} [s]` });
+    k = { ...k, t: t1, theta: -90, u: uu };
+  }
+  // "hits the sand at 14 m/s: how tall is the tree": the speed it lands at and the speed it
+  // leaves with give the height, whatever the angle — v² = u² + 2gh
+  if (!have(k.h) && !have(k.t) && !have(k.s) && have(k.v) && have(k.u) && k.v > k.u && k.u >= 0) {
+    const hh = snap((k.v * k.v - k.u * k.u) / (2 * k.g));
+    sRows.push({ f: M`v^2 = u^2 + 2gh`, s: M`${d(k.v)}^2 = ${d(k.u)}^2 + 2 * ${d(k.g)}h`, r: M`h = ${d(hh)} [m]` });
+    k = { ...k, h: hh, theta: have(k.theta) ? k.theta : (k.u === 0 ? -90 : k.theta), v: undefined };
+  }
+  // "lands 50 m from the foot of the cliff: find the height": how far out it
+  // lands and the launch give the time in the air, t = s/(u cos θ), and that the height
+  if (!have(k.h) && !have(k.t) && have(k.s) && k.s > 0 && have(k.u) && k.u > 0 && have(k.theta) && Math.abs(Math.abs(k.theta) - 90) > 1e-9) {
+    const tt = snap(k.s / (k.u * Math.cos(k.theta * Math.PI / 180)));
+    sRows.push({ f: M`t = s/(u cos theta)`, s: M`${d(k.s)}/(${d(k.u)} cos ${d(k.theta)}°)`, r: M`t = ${d(tt)} [s]` });
+    k = { ...k, t: tt };
+  }
+  // the height may be left for the engine when the time in the air is given
+  if (!have(k.h) && !have(k.t)) return fail(`Still needed: how high ${Pl.top} is above ${Pl.below} — or the time it takes to land, to find that height.`);
+  if (have(k.h) && !(k.h > 0) && !(Pl.level && k.h === 0)) return fail(`${Pl.top.replace(/^./, (c) => c.toUpperCase())} is above ${Pl.below}: give its height as a positive number.`);
+  // let go at rest there is no angle to give: it goes straight down
+  if (!have(k.theta) && have(k.u) && k.u === 0) k = { ...k, theta: -90 };
+  if (!have(k.theta)) return fail('Still needed: the angle it is thrown at — 90 straight up, 0 across, −90 straight down.');
+  if (!(k.theta >= -90 && k.theta <= 90)) return fail('The angle is between −90° (straight down) and 90° (straight up).');
+  const steep = Math.abs(Math.abs(k.theta) - 90) < 1e-9;
+  const vertical = steep;
+  // down a well, or let go from a balloon, it moves straight up or down — and
+  // a drop (let go at rest) goes straight down whatever angle it was read with
+  const dropped = have(k.u) && k.u === 0 && !have(k.tTop);
+  if (Pl.vertical && !vertical && !dropped) return fail(`From ${Pl.top} it moves straight up or down: give the angle as 90 (up) or −90 (down)${Pl.carried ? ' — a balloon rising carries it up at its own speed' : ''}.`);
+  if (vertical && have(k.s)) return fail('Thrown straight up or down it lands at the foot: there is no distance out to give.');
+
+  // the time to the top of its path fixes the speed: there the vertical
+  // velocity is zero, so u sin θ = g t
+  let u = k.u;
+  const topRows = [];
+  if (have(k.tTop)) {
+    if (have(k.u)) return fail('Give the speed or the time to the top, not both: the time to the top fixes the speed.');
+    if (!(k.tTop > 0)) return fail('The time to the top is after it is thrown: give it as a positive number.');
+    if (!(k.theta > 0)) return fail('It only has a top to reach if it is thrown upwards: give an angle above the horizontal.');
+    u = snap(k.g * k.tTop / Math.sin(k.theta * Math.PI / 180));
+    topRows.push({ f: M`0 = u sin theta - gt`, s: M`0 = u sin ${d(k.theta)}° - ${d(k.g)} * ${d(k.tTop)}`, r: M`u = ${d(u)} [m s^-1]` });
+  }
+  // the twelve's solver, as the twelve use it: s is how far out it lands
+  // (thrown at an angle), or nothing when it is straight up or down
+  const r = solveLaunch({ u, v: k.v, t: k.t, s: k.s, g: k.g, theta: k.theta, h: k.h });
+  // the twelve's solver speaks of the ground; here it is the place's own
+  if (!r.ok) return fail(String(r.reason).replace(/\bthe ground\b/g, Pl.below).replace(/\bthe launch point\b/g, Pl.from || 'where it was thrown from'));
+  let hh = have(k.h) ? k.h : snap(r.f.params.h);
+  // from level ground a height found from the time is 0 to within rounding
+  if (Pl.level && !have(k.h) && Math.abs(hh) < 1e-6 * Math.max(1, Math.abs(r.f.params.u || 0) * (k.t || 1))) hh = 0;
+  // from level ground, a time in the air the launch it found does not take is
+  // not that launch (above the ground, that shows as a height below it, below)
+  if (Pl.level && !have(k.h) && have(k.t) && Math.abs(r.f.tFlight - k.t) > 1e-6 * Math.max(1, k.t)) {
+    return fail(`Thrown like that it is not back down to ${Pl.below} at ${M`t = ${d(k.t)} [s]`}: check the time, or give the height it starts at.`);
+  }
+  if (have(k0.tTop) && have(k.t) && k0.tTop >= k.t - 1e-9) return fail(`The time to the top, ${M`${d(k0.tTop)} [s]`}, is not before the ${M`${d(k.t)} [s]`} it takes to land: it must reach its top first.`);
+  if (!(hh > 0) && !(Pl.level && hh === 0)) return fail(`Landing then, it would have started at or below ${Pl.below}: that time is too short for a fall from ${Pl.top}.`);
+  k = { ...k, h: hh };
+  const f = r.f;
+  if (!(f.tFlight > 0) || !isFinite(f.tFlight)) return fail(`It never comes down to ${Pl.below}.`);
+  // with no speed across (dropped, or straight up or down) it lands at the foot
+  const straight = vertical || Math.abs(f.ux) < 1e-9;
+
+  // the angle is what makes it vertical, never a value it did not need
+  // and the height is the place itself, never a value it did not need
+  const drop = Math.hypot(f.ux, f.uy) < 1e-9;
+  const notes = r.notes.filter((n) => !(/more than enough/.test(n) && (vertical || drop || /launch height/.test(n))))
+    // the found height is said below, in this scene's own words
+    .filter((n) => have(k0.h) || !/No launch height given/.test(n));
+  if (drop && !vertical) notes.unshift('At no speed the angle does nothing: it is dropped, and falls straight down.');
+  const T = snap(f.tFlight), top = snap(f.apexHeight), out = snap(z(f.range)), vL = snap(Math.abs(f.vLanding));
+  const lines = [];
+  if (f.uy > 1e-9) lines.push(`It rises to ${M`${d(top)} [m]`} above ${Pl.below}, ${M`${d(snap(top - k.h))} [m]`} above ${Pl.from || 'where it was thrown from'}, at ${M`t = ${d(snap(f.tApex))} [s]`}.`);
+  lines.push(`It ${Pl.lands} ${straight ? Pl.foot : `${M`${d(out)} [m]`} out from the ${Pl.word}`} at ${M`t = ${d(T)} [s]`}, at ${M`${d(vL)} [m s^-1]`}.`);
+
+  // when is it a given height above the throw?
+  let level = null;
+  if (have(k.level)) {
+    const L = k.h + k.level;
+    if (L < 0) return fail(`That is below ${Pl.below}: it never gets there.`);
+    const a = timeAbove(f, L);
+    // the very top of its path is one moment, not "never"; the throw itself
+    // (t = 0, at the throw's own height) is not a moment it comes back to
+    const atTop = f.uy > 1e-9 && Math.abs(L - f.apexHeight) <= 1e-6 * Math.max(1, Math.abs(L));
+    let times = atTop ? [f.tApex] : a.crosses === 2 ? [a.t1, a.t2] : a.crosses === 1 ? [a.t2] : [];
+    times = times.map(snap).filter((x) => x > 1e-9);
+    // how far out it is then — a hoop or a target at that height is there; the last is on its way down
+    const xs = times.map((t) => snap(Math.abs(f.ux) * t));
+    level = { rel: k.level, L, times, atTop, xs, xDown: xs.length ? xs[xs.length - 1] : undefined,
+      // how long it is at least that high: from passing it on the way up to passing it on the way down
+      above: times.length === 2 ? snap(times[1] - times[0]) : undefined };
+    const at = Math.abs(k.level) < 1e-12 ? 'back at the height it was thrown from'
+      : `${M`${d(Math.abs(k.level))} [m]`} ${k.level >= 0 ? 'above' : 'below'} ${Pl.from || 'where it was thrown from'}`;
+    lines.push(atTop ? `It is ${at} once, at the top of its path, ${M`t = ${d(times[0])} [s]`}.`
+      : times.length === 2 ? `It is ${at} twice: at ${M`t = ${d(times[0])} [s]`} on the way up and ${M`t = ${d(times[1])} [s]`} on the way down, so above it for ${M`${d(level.above)} [s]`}.`
+        : times.length === 1 ? `It is ${at} once, at ${M`t = ${d(times[0])} [s]`}.`
+          : `It is never ${at}.`);
+  }
+  if (!have(k0.h)) lines.unshift(`Landing after ${M`${d(T)} [s]`}, it started ${M`${d(k.h)} [m]`} above ${Pl.below}.`);
+  if (have(k0.tTop)) lines.unshift(`Stopping rising after ${M`${d(k0.tTop)} [s]`}, it was thrown at ${M`${d(snap(f.params.u))} [m s^-1]`}.`);
+  notes.push(...lines);
+  const found = [...(have(k0.tTop) ? [M`u = ${d(snap(f.params.u))} [m s^-1]`] : []), ...(!have(k0.h) ? [M`h = ${d(k.h)} [m]`] : [])];
+  // the twelve's rearrangements ("t = (v − u)/a → t = 3.5") are said again just
+  // below, to the paper's places and with units: the reply says each once
+  const derived = [...found, ...r.derived.filter((x) => !/→/.test(x)).map((x) => x.replace(/lands on the ground ([\d.]+) m below the launch point/, `${Pl.lands} $1 m below ${Pl.from || 'where it was thrown from'}`)), `${M`t = ${d(T)} [s]`} in the air`,
+    // how far out it lands, when it goes out at all: "how far does he land" is answered
+    ...(Math.abs(out) > 1e-9 ? [`lands ${M`${d(Math.abs(out))} [m]`} out`] : []), `${Pl.lands} at ${M`${d(vL)} [m s^-1]`}`];
+  if (level?.times.length) derived.push(`${M`${d(level.rel)} [m]`} up at ${M`t = ${level.times.map((x) => d(x)).join(', ')} [s]`}${straight ? '' : `, ${M`x = ${level.xs.map((x) => d(x)).join(', ')} [m]`} out`}`);
+  f.place = place; f.Pl = Pl; f.level = level; f.vertical = straight;
+  // a balloon carries on at the speed it gave the stone (rising or falling at
+  // u, unaccelerated): where the basket is at t, for the stage to draw
+  if (Pl.carried) f.carrier = (t) => f.params.h + f.uy * t;
+  return {
+    ok: true, mode: 'height', axis: straight ? 'vertical' : 'plane', place, Pl, f, launch: r, level, vertical: straight, topRows, foundH: !have(k0.h),
+    // the height, worked from the time in the air: s = u_y t − ½gt², and h = −s
+    // (found from the speed it lands at, the one row is the whole of it)
+    hRows: have(k0.h) ? [] : !have(k.t) ? sRows : [...sRows,
+      { f: M`s = u_y t - ½gt^2`, s: M`${d(snap(f.uy))} * ${d(k.t)} - ½ * ${d(k.g)} * ${d(k.t)}^2`, r: M`s = ${d(-k.h)} [m]` },
+      { f: M`h = -s`, s: '', r: M`h = ${d(k.h)} [m]` },
+    ],
+    T, top, out, vL, h: k.h, g: k.g, notes, derived,
+    params: r.params, convention: `Up and away from the ${Pl.word} are positive; heights are above ${Pl.below}.`,
+  };
+}
+
+/** The working that is this scenario's own: when it is at the asked height. */
+export function levelRows(solved) {
+  const { level, f, h, g } = solved;
+  if (!level) return [];
+  const uy = f.uy;
+  const lin = Math.abs(uy) > 1e-9 ? `${uy < 0 ? '-' : ''}${d(Math.abs(uy))}t` : '';
+  const rhs = lin ? `${lin} - ½ * ${d(g)}t^2` : `-½ * ${d(g)}t^2`;
+  return [{ f: M`s = u_y t - ½gt^2`, s: M`${d(level.rel)} = ${rhs}`,
+    r: level.times.length ? M`t = ${level.times.map((x) => d(x)).join(' "or" ')} [s]` : M`"no real root"` }];
+}

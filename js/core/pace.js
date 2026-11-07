@@ -106,3 +106,25 @@ export function paceNote(value, tMax) {
       ? `About ${held} s on screen, for a flight that really lasts ${real}.`
       : `About ${held} s on screen.` };
 }
+
+/* ── a time-lapse, for a motion that lasts minutes ──────────────────────
+   A train between stations takes five minutes, and five minutes of a dot
+   crossing a track is not a demonstration. So such a motion is played at a
+   whole multiple of real time — the smallest of 1, 2, 5, 10, 20… that brings
+   it inside fifteen seconds — and the stage says so beside the clock. Nothing
+   in the physics changes: t is still the motion's own time. */
+export function timeLapse(tMax) {
+  const want = tMax / 15;
+  if (!(want > 1) || !isFinite(want)) return 1;
+  const mag = 10 ** Math.floor(Math.log10(want)), n = want / mag;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+}
+
+/** The pace card's sentence for a time-lapse: the real length, the multiple,
+    and how long it lasts on screen at this setting. */
+export function lapseNote(value, tMax, lapse) {
+  const watch = watchSeconds(value, tMax / lapse);
+  const ok = withinBand(value, tMax / lapse);
+  return { ok, text: `A time-lapse: this journey takes ${num(tMax, 0)} s, so it is shown ${num(lapse, 0)} times faster than real time. `
+    + `At this setting it lasts about ${num(watch, 0)} s on screen${ok ? '.' : ', and the mark on the slider is the speed it is easiest to watch at.'}` };
+}

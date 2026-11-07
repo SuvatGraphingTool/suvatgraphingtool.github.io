@@ -5,18 +5,17 @@
 // solid is vertical, dashed is horizontal. That keeps the rule consistent with
 // the main scene — colour is the quantity, dash is the direction.
 
-import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels } from './util.js';
+import { fitCanvas, palette, stroke, dot, fmt, niceStep, clamp, labels, fade, withAlpha, cssVar } from './util.js';
 
 const PAD = { l: 52, r: 16, t: 28, b: 34 };
+const TAG_MARGIN = 30;            // room right of the plot for each line's letter
 
-export function drawGraph(canvas, spec) {
-  const { ctx, w, h } = fitCanvas(canvas);
-  if (w < 60 || h < 60) return;
-  const P = palette();
-  const L = labels();
-  const { series, tMax, t, title, unit, shade } = spec;
-  const gw = w - PAD.l - PAD.r, gh = h - PAD.t - PAD.b;
-
+/**
+ * The vertical range a graph shows, and its tick step: every series sampled
+ * across the run, a little room either side, and zero always in view. Pure,
+ * so a test can ask whether a graph will carry enough labels to be read.
+ */
+export function yScale(series, tMax) {
   let lo = Infinity, hi = -Infinity;
   for (const s of series) {
     for (let i = 0; i <= 120; i++) {
@@ -26,21 +25,78 @@ export function drawGraph(canvas, spec) {
   }
   if (!isFinite(lo)) { lo = -1; hi = 1; }
   if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
-  const pad = (hi - lo) * 0.14;
-  lo = Math.min(0, lo - pad); hi = Math.max(0, hi + pad);
+  // The step is chosen from the data, before any padding, so padding never
+  // coarsens the scale. Then a little room below, and more above, where the
+  // title is: a line along the top of the data stays clear of it.
+  const span = Math.max(hi, 0) - Math.min(lo, 0);      // what is shown always includes zero
+  const stepY = niceStep(span, 3);
+  lo = Math.min(0, lo - span * 0.14); hi = Math.max(0, hi + span * 0.24);
+  const ticks = [];
+  for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) ticks.push(y);
+  return { lo, hi, stepY, ticks };
+}
+
+/**
+ * Where each object's letter goes: just past the right-hand end of its own
+ * line, in a margin of its own, as a chart labels its lines directly. Where
+ * two lines end close together (or on top of each other) the letters are
+ * spread apart, at least `gap` px, keeping their order, and each one that
+ * had to move is joined to its line's end by a short leader. Pure, so a test
+ * can check every library graph.
+ * @returns [{ tag, color, y0 (the line's end), y (the letter), leader }]
+ */
+export function endTags(series, tMax, Y, yTop, yBot, gap = 18) {
+  const tags = series.filter((s) => s.tag).map((s) => {
+    // a line that stops before the graph's end (its motion is over) is tagged where it stops
+    let tEnd = tMax - tMax * 1e-6, v = s.fn(tEnd);
+    for (let i = 1; i <= 400 && !isFinite(v); i++) { tEnd = tMax * (1 - i / 400) - tMax * 1e-6; v = s.fn(tEnd); }
+    const y0 = Math.min(Math.max(Y(isFinite(v) ? v : 0), yTop), yBot);
+    return { tag: s.tag, color: s.color, y0, y: y0, tEnd: isFinite(v) ? tEnd : tMax };
+  }).sort((a, b) => a.y0 - b.y0);
+  // spread: push down from the top, then back up from the bottom
+  for (let i = 1; i < tags.length; i++) tags[i].y = Math.max(tags[i].y, tags[i - 1].y + gap);
+  if (tags.length && tags[tags.length - 1].y > yBot) {
+    tags[tags.length - 1].y = yBot;
+    for (let i = tags.length - 2; i >= 0; i--) tags[i].y = Math.min(tags[i].y, tags[i + 1].y - gap);
+  }
+  for (const t of tags) { t.y = Math.max(t.y, yTop); t.leader = Math.abs(t.y - t.y0) > 3; }
+  return tags;
+}
+
+export function drawGraph(canvas, spec) {
+  const { ctx, w, h } = fitCanvas(canvas);
+  if (w < 60 || h < 60) return;
+  const P = palette();
+  const L = labels();
+  const { series, tMax, t, title, unit, shade } = spec;
+  // A graph sits on its card, as the theme's charts do, not on the page.
+  ctx.fillStyle = P.card; ctx.fillRect(0, 0, w, h);
+  // a graph whose lines carry letters keeps a margin on the right for them
+  const lettered = series.some((s) => s.tag);
+  // wide enough for the widest letter or word a line carries
+  let tagRoom = TAG_MARGIN;
+  if (lettered) { ctx.save(); ctx.font = `800 15px ${cssVar('--font', 'system-ui, sans-serif')}`; for (const s of series) if (s.tag) tagRoom = Math.max(tagRoom, ctx.measureText(s.tag).width + 18); ctx.restore(); }
+  const gw = w - PAD.l - PAD.r - (lettered ? tagRoom : 0), gh = h - PAD.t - PAD.b;
+
+  const { lo, hi, stepY } = yScale(series, tMax);
 
   const X = (tt) => PAD.l + (tt / (tMax || 1)) * gw;
   const Y = (yy) => PAD.t + gh - ((yy - lo) / (hi - lo)) * gh;
 
-  // gridlines
-  const stepY = niceStep(hi - lo, 3);
-  ctx.save(); ctx.strokeStyle = P.grid; ctx.lineWidth = 1; ctx.beginPath();
+  // gridlines — dotted, both ways, in the theme's chart style
+  const stepT0 = niceStep(tMax, 4);
+  ctx.save(); ctx.strokeStyle = P.grid; ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.beginPath();
   for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) {
     const py = Math.round(Y(y)) + 0.5; ctx.moveTo(PAD.l, py); ctx.lineTo(PAD.l + gw, py);
   }
+  for (let tt = stepT0; tt <= tMax + 1e-9; tt += stepT0) {
+    const px = Math.round(X(tt)) + 0.5; ctx.moveTo(px, PAD.t); ctx.lineTo(px, PAD.t + gh);
+  }
   ctx.stroke(); ctx.restore();
   for (let y = Math.ceil(lo / stepY) * stepY; y <= hi; y += stepY) {
-    L.add(fmt(y, stepY < 1 ? 1 : 0), PAD.l - 7, Y(y), { color: P.faint, align: 'right', pri: 1, bg: false, size: 15 });
+    // clear of the title's box, which starts at the axis: a top tick level
+    // with the title must not lose to it
+    L.add(fmt(y, stepY < 1 ? 1 : 0), PAD.l - 11, Y(y), { color: P.faint, align: 'right', pri: 1, bg: false, size: 15 });
   }
 
   const stepT = niceStep(tMax, 4);
@@ -58,16 +114,88 @@ export function drawGraph(canvas, spec) {
     ctx.save(); ctx.beginPath(); ctx.moveTo(X(0), Y(0));
     for (let i = 0; i <= 90; i++) ctx.lineTo(X((i / 90) * t), Y(s.fn((i / 90) * t)));
     ctx.lineTo(X(t), Y(0)); ctx.closePath();
-    ctx.globalAlpha = 0.16; ctx.fillStyle = s.color; ctx.fill(); ctx.restore();
+    // in the colour of what the area IS, when the graph says (a displacement
+    // under a velocity line), else the line's own
+    ctx.fillStyle = fade(ctx, shade.color || s.color, PAD.t, PAD.t + gh); ctx.fill(); ctx.restore();
   }
 
   for (const s of series) {
-    const pts = [];
-    for (let i = 0; i <= 160; i++) {
-      const tt = (i / 160) * tMax, y = s.fn(tt);
-      if (isFinite(y)) pts.push({ x: X(tt), y: Y(y) });
+    // A series with `breaks` jumps there — an acceleration that changes from
+    // one constant to the next — so it is drawn as separate pieces, with no
+    // line joining the levels: a step graph has no vertical lines in it.
+    const cuts = [0, ...[...(s.breaks || []), ...(s.jumps || [])].filter((b) => b > 1e-9 && b < tMax - 1e-9).sort((p, q) => p - q), tMax];
+    // A series with `jumps` changes value in an instant there — a velocity at
+    // a bounce — and is shown as the papers sketch it: a thin dashed upright
+    // from the value before to the value after, in the neutral axis colour —
+    // it is a jump, not a quantity, and a dashed line in a quantity's hue
+    // would read as a horizontal component (rule 2).
+    for (const j of s.jumps || []) {
+      if (!(j > 1e-9 && j < tMax - 1e-9)) continue;
+      const e = tMax * 1e-6, y0 = s.fn(j - e), y1 = s.fn(j + e);
+      if (isFinite(y0) && isFinite(y1)) stroke(ctx, [{ x: X(j), y: Y(y0) }, { x: X(j), y: Y(y1) }], { color: P.axis, width: 1.4, dash: [3, 4] });
     }
-    stroke(ctx, pts, { color: s.color, width: 2.9, dash: s.dash });
+    for (let k = 0; k < cuts.length - 1; k++) {
+      const a = cuts[k], b = cuts[k + 1], e = (b - a) * 1e-6, pts = [];
+      const n = Math.max(2, Math.ceil(160 * (b - a) / (tMax || 1)));
+      for (let i = 0; i <= n; i++) {
+        const tt = Math.min(b - e, Math.max(a + e, a + (i / n) * (b - a))), y = s.fn(tt);
+        if (isFinite(y)) pts.push({ x: X(tt), y: Y(y) });
+      }
+      stroke(ctx, pts, { color: s.color, width: 2.6, dash: s.dash });
+    }
+    // round markers at equal steps of time, as the theme's charts carry —
+    // lighter on a dashed (horizontal) series, so solid still reads first
+    for (let i = 0; i <= 6; i++) {
+      const tt = (i / 6) * tMax, y = s.fn(tt);
+      if (!isFinite(y)) continue;
+      dot(ctx, X(tt), Y(y), 3.4, { fill: s.dash ? withAlpha(s.color, 0.7) : s.color, stroke: P.card, width: 1.6 });
+    }
+  }
+
+  // A LINE PER OBJECT, when there is more than one, carries its letter at
+  // its own end, drawn here rather than queued, so nothing can move it off.
+  if (lettered) {
+    const xe = PAD.l + gw;
+    // lines that stop well before the end are tagged at their own ends, apart from the margin's spread
+    // (so they never push a margin tag off its line), and spread among themselves where two meet
+    const all = endTags(series, tMax, Y, PAD.t + 6, PAD.t + gh), isEarly = (tg) => X(tg.tEnd) < xe - 30;
+    const earlyTags = new Set(all.filter(isEarly).map((tg) => tg.tag));
+    const margin = endTags(series.filter((s) => !earlyTags.has(s.tag)), tMax, Y, PAD.t + 6, PAD.t + gh);
+    const early = all.filter(isEarly).sort((p, q) => p.y0 - q.y0);
+    for (let i = 0; i < early.length; i++) {
+      early[i].y0 = Math.max(early[i].y0, PAD.t + 34);
+      for (let j = 0; j < i; j++) if (Math.abs(X(early[i].tEnd) - X(early[j].tEnd)) < 50 && Math.abs(early[i].y0 - early[j].y0) < 18) early[i].y0 = early[j].y0 + 18;
+    }
+    for (const tg of [...margin, ...early]) {
+      // a line that stopped well before the end (its motion is over) carries its tag at its own end,
+      // rather than out in the margin by another line's end
+      const xs = X(tg.tEnd), early = xs < xe - 30;
+      if (tg.leader && !early) stroke(ctx, [{ x: xe + 2, y: tg.y0 }, { x: xe + 9, y: tg.y }], { color: tg.color, width: 1.2 });
+      ctx.save();
+      ctx.font = `800 15px ${cssVar('--font', 'system-ui, sans-serif')}`;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.strokeStyle = P.card; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+      // beside its end ring, to the right where its line no longer runs; never up in the title's band
+      const tx = early ? xs + 11 : xe + 11, ty = early ? Math.max(tg.y0, PAD.t + 34) : tg.y;
+      if (early) { const tw = ctx.measureText(tg.tag).width; L.reserve({ x: tx - 3, y: ty - 10, w: tw + 6, h: 20 }); }
+      ctx.strokeText(tg.tag, tx, ty);
+      ctx.fillStyle = tg.color; ctx.fillText(tg.tag, tx, ty);
+      ctx.restore();
+    }
+  }
+  // a note the graph cannot be read without (a sign convention) says so with `notePri`
+  if (spec.note) L.add(spec.note, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: spec.notePri ?? 4, size: 14 });
+  // EVENTS the engine found — where two lines cross, say — as a ring on the
+  // line at that instant, drawn once the cursor has reached it.
+  for (const p of spec.points || []) {
+    if (!(t >= p.t - 1e-9) || !isFinite(p.y)) continue;
+    dot(ctx, X(p.t), Y(p.y), 6.5, { stroke: p.color, width: 2.4 });
+    // a label goes below-left of its ring, or where `dx`, `dy` say (a
+    // positive dx puts it to the right)
+    if (p.label) {
+      const dx = p.dx ?? -12;
+      L.add(p.label, X(p.t) + dx, Y(p.y) + (p.dy ?? 16), { color: p.color, align: dx < 0 ? 'right' : 'left', pri: p.pri ?? 6, size: 14, weight: 700, maxPush: 20 });
+    }
   }
 
   // time cursor
@@ -79,7 +207,9 @@ export function drawGraph(canvas, spec) {
   }
 
   L.add(title, PAD.l, 14, { color: P.ink, pri: 9, weight: 600, size: 17 });
-  L.add(unit, w - 12, 14, { color: P.faint, align: 'right', pri: 8, bg: false, size: 15 });
+  // with letters, the unit moves into their margin; and it has a halo, as
+  // the title has, so the time cursor passing behind it never strikes it out
+  L.add(unit, lettered ? w - 3 : w - 12, 14, { color: P.faint, align: 'right', pri: 8, size: 15 });
   if (shade) L.add(shade.label, PAD.l + gw - 4, PAD.t + 10, { color: P.muted, align: 'right', pri: 5, size: 15 });
   L.draw(ctx, w, h);
 }

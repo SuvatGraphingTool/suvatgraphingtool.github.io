@@ -1,0 +1,154 @@
+// kits/height.js — a throw from a height (a cliff over the sea, a tower on
+// level ground), wired for the app. The engine is the twelve's own, gathered
+// by js/core/height.js; the stage is js/render/heights.js; the working is the
+// twelve's buildWorking plus the asked-height rows. This file only says which
+// boxes to show, reads them, and lays out what the engine answered (rule 4).
+
+import { solveHeight, levelRows, PLACES } from '../core/height.js';
+import { buildWorking } from '../working.js';
+import * as stage from '../render/heights.js';
+import { M, T, num } from '../notation.js';
+
+const tr = (x, p) => num(x, p ?? (x !== 0 && Math.abs(x) < 1 ? 4 : 3), { trim: true });
+
+const FIELDS = [
+  { key: 'h', col: 'place', label: 'Height it starts at (m)', placeholder: '—', hint: 'Above what it lands on. Blank, with the time in the air, and it is found.' },
+  { key: 'theta', col: 'throw', label: `Angle ${M`theta`} (°)`, placeholder: '—', hint: '90 straight up, 0 across, −90 straight down.' },
+  { key: 'u', col: 'throw', label: `Speed ${M`u`} (m s⁻¹)`, placeholder: '—', hint: 'Or leave it blank and give one below.' },
+];
+
+export const height = {
+  id: 'height',
+  verb: 'Throw it',
+  voice: {
+    h: 'From how high, and how?',
+    sub: 'A stone thrown from a height — a cliff over the sea, a tower, a bridge, a diving board, down a well, from a balloon — to what is below. '
+      + 'Give the height and the angle, and the speed — or, instead of the speed, how fast it lands, how far out, or how long it takes.',
+  },
+  fields: FIELDS,
+  cols: { place: 'Where from', throw: 'The throw' },
+  rows: [
+    { title: 'Where it is thrown from', fields: [
+      { key: 'place', type: 'choice', label: 'It is', default: 'cliff', hint: 'Each place is drawn as it is. Down a well, or let go from a balloon, it moves straight up or down: from a rising balloon, angle 90 and the balloon\u2019s speed.',
+        options: [{ v: 'cliff', label: 'A cliff over the sea' }, { v: 'tower', label: 'A tower' }, { v: 'bridge', label: 'A bridge over a river' },
+          { v: 'board', label: 'A diving board' }, { v: 'well', label: 'Down a well' }, { v: 'balloon', label: 'A rising balloon' }] },
+    ] },
+    { title: 'Or, in place of the speed', fields: [
+      { key: 'v', label: 'Speed it lands at (m s⁻¹)', aria: 'In place of the speed: the speed it lands at (m s⁻¹)', placeholder: '—', hint: 'How fast it hits what is below.' },
+      { key: 's', label: 'How far out it lands (m)', aria: 'In place of the speed: how far out it lands (m)', placeholder: '—', hint: 'Thrown at an angle only.' },
+      { key: 't', label: 'Time in the air (s)', aria: 'In place of the speed: the time in the air (s)', placeholder: '—', hint: 'From the throw to landing. With the speed, it can find the height instead.' },
+      { key: 'tTop', label: 'Time to the top (s)', aria: 'In place of the speed: the time to the top of its path (s)', placeholder: '—', hint: 'When it stops rising: that fixes the speed.' },
+    ] },
+    { title: 'What the paper asks', fields: [
+      { key: 'level', label: 'When is it this high above the throw? (m)', given: 'Height asked about, above the throw (m)', aria: 'When is it this height above where it was thrown from (m)', placeholder: '—', hint: 'Negative for below it.' },
+    ] },
+    { title: 'Heard, not seen: a splash timed by its sound', fields: [
+      { key: 'heard', label: 'Splash heard after (s)', aria: 'The splash is heard this long after it is let go (s)', placeholder: '—', hint: 'The fall and the sound coming back up, together. In place of the time in the air.' },
+      { key: 'cSound', label: 'Speed of sound (m s⁻¹)', aria: 'The speed of sound (m s⁻¹)', placeholder: '—', hint: 'As the paper gives it: 340, 330 …' },
+    ] },
+  ],
+  g: [9.8, 9.81, 10],
+  hides: { shows: ['ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
+
+  /** Resolve: a throw straight up or down is one line, its a the engine's g. */
+  resolveG: true,
+  read(vals) {
+    return { place: vals.place, h: vals.h, theta: vals.theta, u: vals.u, v: vals.v, s: vals.s, t: vals.t, tTop: vals.tTop, level: vals.level, heard: vals.heard, cSound: vals.cSound, g: vals.g };
+  },
+  solve: solveHeight,
+  working: (solved, t) => {
+    if (!solved?.ok) return [];
+    // the twelve's working speaks of the ground and the launch point: here it
+    // is the place's own (the sea, the river, the water in the well)
+    const Pl = solved.Pl || PLACES[solved.place], from = Pl.from || 'where it was thrown from';
+    const say = (x) => (typeof x === 'string' ? x.replace(/\bthe launch point\b/g, from).replace(/\bthe ground\b/g, Pl.below) : x);
+    const out = buildWorking(solved.f, t).map((sec) => ({ ...sec, title: say(sec.title), note: say(sec.note),
+      rows: sec.rows.map((r) => ({ ...r, f: say(r.f), s: say(r.s), r: say(r.r) })) }));
+    // the height found from the time in the air is worked here, and the time
+    // of flight is not then worked back from it
+    const kept = solved.foundH ? out.filter((x) => !/time of flight/i.test(String(x.title))) : out.slice();
+    if (solved.foundH) kept.push({ title: `The height, from the time in the air`, rows: solved.hRows,
+      note: `Measured from where it was thrown, up positive, it ends ${M`${tr(solved.h)} [m]`} below that point: so it started that high above ${(solved.Pl || PLACES[solved.place]).below}.` });
+    out.length = 0; out.push(...kept);
+    if (solved.topRows.length) out.unshift({ title: 'The speed, from the time to the top', rows: solved.topRows,
+      note: `At the top of its path it has stopped rising: the vertical part of its velocity is zero.` });
+    const rows = levelRows(solved);
+    if (rows.length) out.push({ title: `When it is ${M`${tr(Math.abs(solved.level.rel))} [m]`} ${solved.level.rel >= 0 ? 'above' : 'below'} the throw`, rows,
+      note: `Measured from ${Pl.from || 'where it was thrown from'}, up positive: ${M`s`} is that height. ${solved.level.atTop ? 'It is there once, at the top of its path.'
+        : solved.level.times.length === 2 ? 'The two roots are on the way up and on the way down.' : solved.level.times.length === 1 ? 'Only one root is a moment of its flight.' : 'No root is a moment of its flight: it is never there.'}` });
+    return out;
+  },
+  render: stage.render,
+
+  hud(f, t) {
+    const r = f.pos(t), v = f.vel(t), below = (f.Pl || PLACES[f.place]).below;
+    return {
+      left: [
+        { k: `Height above ${below}`, v: num(r.y, 2), unit: 'm', hue: 'disp' },
+        ...(f.vertical ? [] : [{ k: 'Out from the edge', v: num(r.x, 2), unit: 'm', hue: 'disp' }]),
+        { k: 'Vertical velocity', v: num(v.y, 2), unit: 'm s⁻¹', hue: 'vel' },
+        ...(f.vertical ? [] : [{ k: 'Speed', v: num(Math.hypot(v.x, v.y), 2), unit: 'm s⁻¹', hue: 'vel' }]),
+      ],
+      right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
+    };
+  },
+
+  /* Vertical solid; across dashed, and only when it moves across (rule 2).
+     The moments at the asked height are ringed on the height line. */
+  graphs(f, t, P) {
+    const tMax = f.tMax, across = !f.vertical;
+    const two = (fx, fy, c) => [
+      ...(across ? [{ label: 'across', tag: T`x`, fn: fx, color: c, dash: [6, 4] }] : []),
+      { label: 'up', tag: across ? T`y` : undefined, fn: fy, color: c, dash: null },
+    ];
+    const rings = (f.level?.times || []).map((tc) => ({ t: tc, y: f.pos(tc).y, color: P.mark }));
+    return [
+      { canvas: 'g-s', title: across ? 'Displacement–time' : 'Height–time', unit: 'm', tMax, t, points: rings,
+        series: two((tt) => f.pos(tt).x, (tt) => f.pos(tt).y, P.disp) },
+      { canvas: 'g-v', title: 'Velocity–time', unit: 'm s⁻¹', tMax, t,
+        series: two((tt) => f.vel(tt).x, (tt) => f.vel(tt).y, P.vel) },
+      { canvas: 'g-a', title: 'Acceleration–time', unit: 'm s⁻²', tMax, t,
+        series: two(() => 0, () => -f.params.g, P.acc) },
+    ];
+  },
+
+  /** The card's sketch: a cliff over the sea and the arc off its edge. */
+  thumb(s) {
+    const r = solveHeight(s.params);
+    if (!r.ok) return '<svg viewBox="0 0 120 60" aria-hidden="true"></svg>';
+    const f = r.f, n = 30, pts = [];
+    for (let i = 0; i <= n; i++) pts.push(f.pos((i / n) * f.tMax));
+    const xm = Math.max(...pts.map((p) => p.x), 1), ym = Math.max(...pts.map((p) => p.y), f.params.h);
+    const k = Math.min(70 / xm, 46 / ym), X = (x) => 42 + x * k, Y = (y) => 54 - y * k;
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)} ${Y(p.y).toFixed(1)}`).join(' ');
+    return `<svg viewBox="0 0 120 60" aria-hidden="true">
+      <rect x="0" y="54" width="120" height="6" fill="#6f8796" opacity="0.55"/>
+      <path d="M0 ${Y(f.params.h).toFixed(1)} L42 ${Y(f.params.h).toFixed(1)} L38 54 L0 54 Z" fill="#8b8073" opacity="0.85"/>
+      <path d="${d}" fill="none" stroke="var(--vel)" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>`;
+  },
+
+  ending(solved) {
+    const { Pl, T: tt, vL, out, top, h, vertical } = solved;
+    const title = `${Pl.lands.replace(/^./, (c) => c.toUpperCase())} ${vertical ? Pl.foot : `${tr(out)} m out`}, at ${tr(vL)} m s⁻¹.`;
+    const cell = (x) => `<b>${tr(x)}</b>`;
+    const table = `
+      <div class="ph-tab" role="table" aria-label="The throw, from the top to where it lands">
+        <div class="ph-head" role="row">
+          <span role="columnheader">From</span><span role="columnheader">${M`u`}</span><span role="columnheader">${M`H_max`}</span>
+          <span role="columnheader">${M`t`}</span><span role="columnheader">lands at</span><span role="columnheader">out</span>
+        </div>
+        <div class="ph-row" role="row" data-key="first">
+          <span class="ph-name" role="cell"><b>${M`${tr(h)} [m]`}</b><em>${Pl.top}</em></span>
+          <span role="cell">${cell(solved.f.params.u)}</span><span role="cell">${cell(top)}</span><span role="cell">${cell(tt)}</span>
+          <span role="cell">${cell(vL)}</span><span role="cell">${vertical ? '<b>—</b>' : cell(out)}</span></div>
+        <p class="ph-units">${M`u`} and the landing speed in ${M`[m s^-1]`}; ${M`H_max`} above ${Pl.below}, in ${M`[m]`}; ${M`t`} in ${M`[s]`} in the air.</p>
+      </div>`;
+    return {
+      eyebrow: `From <span class="u">${tr(h)}</span> <span class="u">m</span> above ${Pl.below}`,
+      title,
+      body: `${solved.notes.map((x) => `<p>${x}</p>`).join('')}${table}`,
+      real: true,
+    };
+  },
+};

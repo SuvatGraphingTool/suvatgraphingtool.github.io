@@ -32,7 +32,7 @@ body {
    with no weight and it belongs here. */
 :is(
   .navstep, .steps li span, .tbtn, .ghost, .ghost.sm, .tbtn.sm, .pgblurb,
-  .pc-sub, .pc-note, .s-name, .s-unit, .xhint, .notes, .xrow label,
+  .pc-sub, .pc-note, .s-name, .s-unit, .xhint, .notes, .xrow label, .xrow .xlabel,
   .chip, .solve, .hint, .seg button, .hbox-k, .done-conv, .d-name,
   .d-unit, .dx, .done-note, .mode-say, .angle-say, .guard,
   .pace-pin::after, .pace-note, .pace-use, .pace-scale, .lv, .ph-head,
@@ -60,12 +60,19 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
   align-items: center; gap: var(--sp-6); padding: 0 var(--sp-6);
 }
 .brand {
+  display: inline-flex; align-items: center; gap: 8px;
   font-size: var(--fs-lg); font-weight: var(--w-bold); letter-spacing: 0.09em;
   color: var(--accent); justify-self: start;
-  /* Instrument Sans stops at 700, so the extra weight comes from the
-     glyph edge rather than another cut of the face. */
-  -webkit-text-stroke: 0.7px currentColor;
-  paint-order: stroke fill;
+  /* Montserrat has an 800, so the weight comes from the face itself. */
+  font-weight: 800;
+}
+/* The wordmark is the one place the sunset is painted as a gradient: coral
+   into peach, the theme's two warm notes. Light needs the deeper end of it —
+   peach on cream is 1.6:1 — so by day it runs from the deep coral to the
+   coral, and the solid --accent above is the fallback either way. */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .brand-word { background: var(--sunset); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  :root[data-theme='light'] .brand-word { background-image: linear-gradient(100deg, var(--accent-hi), var(--accent-fill)); }
 }
 
 .steps { display: flex; gap: var(--sp-2); list-style: none; margin: 0; padding: 0;
@@ -113,8 +120,14 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
   height: 40px; padding: 0 var(--sp-4); border-radius: var(--r-pill);
   border: 1px solid var(--border); font-size: var(--fs-sm); color: var(--ink-strong);
   transition: background 120ms;
+  /* A button label is one line. Montserrat sets wider than the faces before
+     it, and in a crowded header "Ask Suvat" broke onto two. */
+  white-space: nowrap;
 }
 .tbtn:hover, .ghost:hover { background: var(--hover); }
+/* The theme's secondary button: filled tan, no outline, dark text. */
+.ghost { background: var(--secondary); border-color: transparent; color: var(--on-secondary); font-weight: var(--w-semi); }
+.ghost:hover { background: var(--secondary-hi); }
 .tbtn[aria-pressed='true'] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 /* The stage bar is a row of 34 px controls, and .tbtn is 40 — so the two
    buttons that live in it take the small size too. */
@@ -125,6 +138,13 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .app[data-step='scenario'] #screen-scenario,
 .app[data-step='values']   #screen-values { display: block; }
 .app[data-step='flight']   #screen-flight { display: block; overflow: hidden; }
+.app[data-step='board']    #screen-board  { display: block; overflow: hidden; }
+/* The horizon: a low sun's warmth along the top of the two reading screens,
+   and only those — the flight screen is canvas, which paints its own ground,
+   and a gradient behind it would show at the edges. */
+#screen-scenario, #screen-values {
+  background: radial-gradient(130% 55% at 50% -8%, color-mix(in srgb, var(--accent-fill) 11%, transparent), transparent 72%);
+}
 
 .centre { max-width: 980px; margin: 0 auto; padding: var(--sp-10) var(--sp-6) var(--sp-12); }
 .centre.narrow { max-width: 620px; }
@@ -138,12 +158,44 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .pgblurb { font-size: var(--fs-sm); color: var(--ink-muted); margin: 0 0 var(--sp-4); max-width: 62ch; line-height: 1.5; }
 .pgrid-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: var(--sp-3); }
 .pcard {
-  text-align: left; background: var(--card); border: 1px solid var(--border-soft);
-  border-radius: var(--r-xl); padding: var(--sp-4); box-shadow: var(--shadow);
+  text-align: left; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: var(--sp-5); box-shadow: var(--shadow);
   transition: border-color 120ms, transform 120ms;
   display: flex; flex-direction: column;
 }
 .pcard:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+/* ── the spotlight ──────────────────────────────────────────────────────
+   Every card on the first screen catches a light that follows the pointer:
+   a soft wash across the card and a brighter arc along the border nearest
+   the pointer, so the cards beside the one you are on glow at their near
+   edges too. One colour — the site's orange, --glow, which the scenario
+   palettes do not redefine — never a shifting hue. --gx/--gy are the
+   pointer in each card's own pixels, set in js/app.js; --gon fades it in
+   while the pointer is over the grid.
+
+   `isolation` makes a stacking context, so the wash (z-index −1) paints
+   above the card's background and below its text and picture. */
+.pcard { position: relative; isolation: isolate; --gx: -999px; --gy: -999px; --gon: 0; }
+.pcard::before, .pcard::after {
+  content: ''; position: absolute; pointer-events: none; border-radius: inherit;
+  opacity: var(--gon); transition: opacity 240ms ease;
+}
+.pcard::after {                       /* the wash */
+  inset: 0; z-index: -1;
+  /* weaker, by request: a hint of warmth, not a lamp */
+  background: radial-gradient(220px circle at var(--gx) var(--gy),
+              color-mix(in srgb, var(--glow) 6%, transparent), transparent 70%);
+}
+.pcard::before {                      /* the arc on the border */
+  inset: -1px; padding: 1.5px;
+  background: radial-gradient(150px circle at calc(var(--gx) + 1px) calc(var(--gy) + 1px),
+              color-mix(in srgb, var(--glow) 55%, transparent), color-mix(in srgb, var(--glow) 18%, transparent) 45%, transparent 75%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+@media (hover: none) { .pcard::before, .pcard::after { display: none; } }
 .pcard svg { display: block; width: 100%; height: auto; margin-bottom: var(--sp-3); }
 .pcard b { display: block; font-size: var(--fs-base); font-weight: var(--w-semi); }
 .pc-sub { display: block; font-size: var(--fs-xs); color: var(--accent); margin-top: 2px; }
@@ -200,7 +252,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 
 .extra { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-5); }
 .xrow { background: var(--card); border: 1px solid var(--border-soft); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); box-shadow: var(--shadow); }
-.xrow label { display: block; font-size: var(--fs-xs); color: var(--ink-muted); margin-bottom: var(--sp-2); }
+.xrow label, .xrow .xlabel { display: block; font-size: var(--fs-xs); color: var(--ink-muted); margin-bottom: var(--sp-2); }
 .xrow input[type='number'], .xrow input[type='text'] {
   width: 100%; height: 40px; border-radius: var(--r-md); background: var(--input);
   border: 1px solid var(--border); color: var(--ink); font-size: var(--fs-base);
@@ -245,7 +297,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .chips { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .chip { height: 36px; padding: 0 var(--sp-3); border-radius: var(--r-pill); border: 1px solid var(--border); font-size: var(--fs-xs); color: var(--ink-strong); }
 .chip:hover { background: var(--hover); }
-.chip[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: var(--w-semi); }
+.chip[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hi); font-weight: var(--w-semi); }
 
 .solve { font-size: var(--fs-sm); line-height: 1.5; margin-bottom: var(--sp-5); }
 .solve[data-ok='false'] { color: var(--bad); }
@@ -255,9 +307,12 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .actions { display: flex; gap: var(--sp-3); }
 .fire {
   flex: 1; height: 56px; border-radius: var(--r-pill);
-  background: var(--accent); color: var(--on-accent);
+  background: var(--accent-fill); color: var(--on-accent);
   font-size: var(--fs-lg); font-weight: var(--w-bold);
 }
+/* The one big button is the sun itself: coral into peach. The ink on it is
+   4.8:1 at the coral end and 6.9:1 at the peach. */
+.fire:not(.sm):not(:disabled) { background: var(--sunset); box-shadow: var(--shadow); }
 .fire:hover { opacity: .92; }
 .fire:disabled { background: var(--border-soft); color: var(--ink-faint); cursor: not-allowed; }
 .hint { font-size: var(--fs-xs); color: var(--ink-muted); margin: var(--sp-3) 0 0; text-align: center; }
@@ -367,7 +422,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .hud-l { left: var(--sp-4); flex-direction: column; }
 .hud-r { right: var(--sp-4); }
 .hbox {
-  background: var(--card); border: 1px solid var(--border-soft); border-radius: var(--r-lg);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
   padding: var(--sp-2) var(--sp-4); box-shadow: var(--shadow); min-width: 140px;
 }
 .hbox-k { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.3; white-space: nowrap; }
@@ -484,7 +539,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .done-card {
   width: min(760px, 100%); background: var(--card);
   border: 1px solid var(--border-soft); border-radius: var(--r-xl);
-  box-shadow: 0 18px 48px rgba(0,0,0,.18); padding: var(--sp-6);
+  box-shadow: var(--shadow-lg); padding: var(--sp-6);
   animation: done-rise 300ms cubic-bezier(.2,.8,.25,1) both;
 }
 @keyframes done-rise { from { transform: translateY(14px) scale(.985); } to { transform: none; } }
@@ -562,7 +617,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 
    Both selectors are needed: `.intro` carries the heavier treatment and is
    declared after this block, so a bare `.pace` would lose on source order. */
-.intro.pace { background: color-mix(in srgb, #0e0e0c 34%, transparent);
+.intro.pace { background: color-mix(in srgb, var(--scrim) 34%, transparent);
               backdrop-filter: blur(4px) saturate(.95); }
 .pace-card { width: min(420px, 100%); }
 .pace-row { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-1); }
@@ -720,7 +775,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 @media (min-width: 620px) { .ex-why { grid-template-columns: 1fr 1fr; } }
 .ex-why li { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; padding-left: var(--sp-4); position: relative; }
 .ex-why li::before { content: ''; position: absolute; left: 0; top: .55em; width: 5px; height: 5px;
-                     border-radius: 50%; background: var(--accent); opacity: .7; }
+                     border-radius: 50%; background: var(--accent-fill); }
 .ex-why li b { color: var(--ink-strong); font-weight: 650; }
 #exdone .done-acts { position: sticky; bottom: 0; margin: 0; padding: var(--sp-4) 0;
                      background: var(--card); box-shadow: 0 -10px 16px -10px var(--card); }
@@ -734,9 +789,115 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .transport { display: flex; align-items: center; gap: var(--sp-4); padding-top: var(--sp-3); }
 .play { width: 48px; height: 48px; flex: none; border-radius: var(--r-pill); background: var(--card); border: 1px solid var(--border); color: var(--ink); display: grid; place-items: center; box-shadow: var(--shadow); }
 .play[data-playing='true'] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
-:root[data-theme='light'] .play[data-playing='true'] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+:root[data-theme='light'] .play[data-playing='true'] { background: var(--accent-fill); color: var(--on-accent); border-color: var(--accent-fill); }
 .play svg { width: 16px; height: 16px; }
 .transport input[type='range'] { flex: 1; }
+
+/* ── a question in parts — js/parts/strip.js ────────────────────────────
+   One card over the transport: the parts as a stepper, the one on show with
+   its answer, and the button that plays on to the next. The part on show is
+   --mark everywhere it appears: its chip, its letter, its tick on the clock,
+   its ring on the graphs and its step in the working. */
+.scrub-wrap { flex: 1; min-width: 0; position: relative; }
+.pticks { position: absolute; left: 12px; right: 12px; top: 0; height: 0; pointer-events: none; }
+.ptick {
+  position: absolute; left: calc(var(--f) * 100%); top: -30px; transform: translateX(-50%);
+  height: 24px; padding: 0 7px; border-radius: var(--r-pill); white-space: nowrap;
+  font: var(--w-semi) 13px/22px var(--font-serif); color: var(--ink-strong);
+  background: var(--card); border: 1.5px solid var(--mark); pointer-events: auto; cursor: pointer;
+  box-shadow: var(--shadow); transition: background 120ms, color 120ms;
+}
+.ptick:hover { background: var(--hover); }
+/* the stem runs down to a notch on the track, so the thumb stops on the notch, not under the pill */
+.ptick::after { content: ''; position: absolute; left: 50%; top: 100%; width: 2px; height: 16px; margin-left: -1px; background: var(--mark); border-radius: 1px; }
+.ptick[aria-pressed='true'] { background: var(--mark); color: var(--surface); }
+.pband { position: absolute; top: 12px; height: 4px; left: calc(var(--a) * 100%); width: calc((var(--b) - var(--a)) * 100%); background: var(--mark); opacity: .55; border-radius: 2px; }
+.pstrip {
+  position: relative; container: pstrip / inline-size;
+  margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-5);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow);
+}
+.pstrip[hidden] { display: none; }
+.pin { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-5); align-items: center; }
+.pstrip:not([hidden]) + .transport { padding-top: var(--sp-8); }
+/* the parts as a stepper: round chips on a line, the ones already shown dotted */
+.pchips { position: relative; display: flex; gap: 10px; }
+.pchips::before { content: ''; position: absolute; left: 18px; right: 18px; top: 50%; height: 2px; margin-top: -1px; background: var(--border); }
+.pchip {
+  position: relative; width: 38px; height: 38px; padding: 0; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--ink-strong);
+  font: italic var(--w-semi) var(--fs-sm) var(--font-serif); cursor: pointer;
+  transition: background 120ms, border-color 120ms, transform 120ms;
+}
+.pchip.wide { width: auto; min-width: 38px; padding: 0 10px; border-radius: var(--r-pill); }
+.pchip:hover:not(:disabled) { border-color: var(--mark); }
+.pchip:active:not(:disabled) { transform: scale(.94); }
+.pchip[aria-pressed='true'] { background: var(--mark); color: var(--surface); border-color: var(--mark); box-shadow: 0 0 0 4px color-mix(in srgb, var(--mark) 20%, transparent); }
+.pchip[data-done='true']::after { content: ''; position: absolute; right: 1px; top: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--mark); border: 1.5px solid var(--card); }
+.pchip[data-none='true'] { border-style: dashed; }
+/* a part with a set-up of its own: its chip opens that set-up */
+.pchip.other { border-style: dashed; color: var(--ink-muted); background: transparent; }
+.pchip:disabled { cursor: not-allowed; color: var(--ink-muted); text-decoration: line-through; opacity: .75; border-style: dashed; }
+.pnow { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--sp-5); align-items: center; }
+.pnow > * { grid-column: 1; animation: part-in 260ms ease-out; }
+.pnow > .pans { grid-column: 2; grid-row: 1 / span 4; align-self: center; }
+@keyframes part-in { from { transform: translateY(5px); } }
+@media (prefers-reduced-motion: reduce) { .pnow > * { animation: none; } }
+.pask { margin: 0; font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.45; }
+.plab { font-family: var(--font-serif); font-style: italic; color: var(--mark); margin-right: 2px; }
+.pans {
+  margin: 0; font-size: var(--fs-xl); font-weight: var(--w-semi); color: var(--ink-strong); line-height: 1.25;
+  padding: 6px var(--sp-4); border-radius: var(--r-lg); white-space: nowrap;
+  background: color-mix(in srgb, var(--mark) 12%, var(--card)); border-left: 3px solid var(--mark);
+}
+.pand { font-size: var(--fs-sm); color: var(--ink-muted); font-weight: var(--w-body); }
+.pans-none, .pans-say { font-size: var(--fs-sm); color: var(--ink-muted); font-weight: var(--w-body); white-space: normal; }
+.pans:has(.pans-none, .pans-say) { background: none; border-left-color: var(--border); max-width: 30ch; }
+.plean { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; }
+.plean-i { display: inline-block; width: 1.2em; color: var(--mark); font-weight: var(--w-bold); }
+.plean .m { color: var(--ink-strong); }
+.pfrom { margin: 0 0 6px; display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); font-weight: var(--w-semi); color: var(--ink-muted); }
+.pfrom .ai-orb.sm { width: 22px; height: 22px; }
+.pout { margin: 6px 0 0; font-size: var(--fs-xs); color: var(--ink-faint); line-height: 1.5; }
+/* the intro: every part on one line each, like the paper */
+.plist { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
+.plist li { font-size: var(--fs-xs); color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist li b { font-family: var(--font-serif); font-style: italic; color: var(--ink-strong); margin-right: 4px; }
+/* the working opens over the stage, never pushing it down */
+.pwork { margin-top: 6px; }
+.pwork summary { font-size: var(--fs-xs); color: var(--ink-muted); cursor: pointer; width: fit-content; }
+.pwork summary:hover { color: var(--ink-strong); }
+.pwork-body {
+  position: absolute; z-index: 5; left: 0; right: 0; bottom: calc(100% + 8px);
+  max-height: min(320px, 45vh); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow-lg);
+  padding: var(--sp-2) var(--sp-4);
+}
+.prow { padding: var(--sp-2) 0; border-top: 1px solid var(--border-soft); overflow-x: auto; }
+.prow:first-child { border-top: 0; }
+.prow .eq-f, .prow .eq-s { font-size: var(--fs-sm); }
+.prow .m-sub, .prow .m-sup { font-size: max(13px, .8em); }
+.pgo .pnext { flex: none; padding: 0 var(--sp-5); }
+@media (max-width: 680px) { .pstrip { padding: var(--sp-3); } }
+/* a narrow strip — a phone, or the stage beside the Display panel — stacks:
+   the chips and the next button on one row, the part under them */
+@container pstrip (max-width: 620px) {
+  .pin { grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-3); }
+  .pchips { overflow-x: auto; }
+  .pnow { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr); }
+  .pnow > .pans { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 4px; }
+  .pgo { grid-column: 2; grid-row: 1; }
+  .pgo .pnext { min-height: 44px; padding: 0 var(--sp-4); }
+}
+@container pstrip (max-width: 360px) { .plist { display: none; } }
+/* the part on show heads the working panel, and its step is lit */
+.pcardw { border-left: 3px solid var(--mark); background: color-mix(in srgb, var(--mark) 10%, var(--card)); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4); }
+.pcardw-h { margin: 0; font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.45; }
+.pcardw-h b { font-family: var(--font-serif); font-style: italic; color: var(--mark); }
+.pcardw .pans { font-size: var(--fs-base); background: none; border: 0; padding: 0; margin-top: 4px; white-space: normal; }
+.step[data-part='on'] { position: relative; }
+.step[data-part='on']::before { content: ''; position: absolute; left: -12px; top: 0; bottom: 0; width: 3px; border-radius: 2px; background: var(--mark); }
+.step[data-part='on'] .eq { border-color: var(--mark); box-shadow: 0 0 0 3px color-mix(in srgb, var(--mark) 18%, transparent); }
 /* One clock for four panes. It carries typeset maths, so it is filled with
    innerHTML — see CLAUDE.md rule 1 — and it is given a fixed width in figures
    so the Replay button beside it does not shuffle as the seconds tick. */
@@ -747,16 +908,16 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 
 input[type='range'] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: none; cursor: pointer; display: block; margin: 0; }
 input[type='range']::-webkit-slider-runnable-track { height: 4px; background: var(--border); border-radius: 2px; }
-input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin-top: -10px; background: var(--accent); border-radius: 50%; border: none; }
+input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin-top: -10px; background: var(--accent-fill); border-radius: 50%; border: none; }
 input[type='range']::-moz-range-track { height: 4px; background: var(--border); border-radius: 2px; }
-input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: var(--accent); border-radius: 50%; border: none; }
+input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: var(--accent-fill); border-radius: 50%; border: none; }
 
 .ck { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--ink-strong); cursor: pointer; padding: var(--sp-2) 0; }
 .ck.inline { padding: 0; }
 .ck input { position: absolute; opacity: 0; pointer-events: none; }
 .ck .box-ck { width: 20px; height: 20px; flex: none; border: 1.5px solid var(--ink-faint); border-radius: 5px; display: grid; place-items: center; }
 .ck .box-ck::after { content: ''; width: 9px; height: 5px; border-left: 2px solid var(--on-accent); border-bottom: 2px solid var(--on-accent); transform: rotate(-45deg) translateY(-1px) scale(0); transition: transform 120ms; }
-.ck input:checked + .box-ck { background: var(--accent); border-color: var(--accent); }
+.ck input:checked + .box-ck { background: var(--accent-fill); border-color: var(--accent-fill); }
 .ck input:checked + .box-ck::after { transform: rotate(-45deg) translateY(-1px) scale(1); }
 /* In the options panel there is a column to work with rather than a strip of
    the stage bar, so the slider gets its own row and a line underneath saying
@@ -774,7 +935,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .otitle:first-child { margin-top: 0; }
 .checks { display: flex; flex-direction: column; gap: var(--sp-1); }
 .graphs { display: grid; gap: var(--sp-3); }
-.gcell { position: relative; height: 185px; background: var(--card); border: 1px solid var(--border-soft); border-radius: var(--r-lg); overflow: hidden; }
+.gcell { position: relative; height: 185px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); overflow: hidden; box-shadow: var(--shadow); }
 .gcell canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .step { margin-bottom: var(--sp-5); }
 .step-h { font-size: var(--fs-sm); font-weight: var(--w-semi); margin-bottom: var(--sp-2); }
@@ -792,6 +953,18 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   .main[data-options='on'] { grid-template-columns: minmax(0, 1fr); }
   .main[data-options='on'] .opts { display: block; position: fixed; top: 64px; right: 0; bottom: 0; width: 340px; background: var(--surface); z-index: 10; box-shadow: -8px 0 24px rgba(0,0,0,.14); }
 }
+/* CENTRING IS A WIDE-SCREEN LUXURY. The three-column header centres the
+   steps by giving the sides equal width, but an `auto` middle column will
+   not shrink — once the sides are narrower than the buttons in them, the
+   steps run straight over the wordmark and the buttons. Back to the row,
+   which has room for all three and simply lets the steps give way.
+   It was 860px in Oxanium; Montserrat is wider, and on the flight screen
+   (three buttons on the right) the overlap began at about 1060px. */
+@media (max-width: 1100px) {
+  .top { display: flex; }
+  .brand, .steps, .top-right { justify-self: auto; }
+  .steps { margin: 0 auto; }
+}
 @media (max-width: 860px) {
   body { overflow: auto; }
   .done-card { padding: var(--sp-4); }
@@ -802,14 +975,6 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   /* `.navstep span` loses to `.steps li span` on specificity, so the numerals
      never hid and the three chips stayed full width on a phone. Matched here. */
   .steps li span { display: none; }
-  /* CENTRING IS A WIDE-SCREEN LUXURY. The three-column header centres the
-     steps by giving the sides equal width, but an `auto` middle column will
-     not shrink — below about 860px the sides collapse to nothing and the
-     steps run straight over the wordmark and the buttons. Back to the row,
-     which has room for all three and simply lets the steps give way. */
-  .top { display: flex; }
-  .brand, .steps, .top-right { justify-self: auto; }
-  .top-right { margin-left: auto; }
   .suvat { grid-template-columns: repeat(2, 1fr); }
   .main { height: auto; }
   .stage { grid-template-rows: auto 56vh auto; padding: 0 var(--sp-4) var(--sp-4); }
@@ -844,7 +1009,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .res-card {
   display: flex; flex-direction: column; min-height: 0; max-height: 100%;
   background: var(--card); border: 1px solid var(--border-soft);
-  border-radius: var(--r-xl); box-shadow: 0 14px 36px rgba(0,0,0,.16);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-lg);
   padding: var(--sp-4);
 }
 .res-eyebrow { flex: none; font-size: var(--fs-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-weight: var(--w-bold); margin: 0 0 1px; }
@@ -917,15 +1082,15 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .intro {
   position: absolute; inset: 0; z-index: 6; display: grid; place-items: center;
   padding: var(--sp-4); overflow-y: auto;
-  background: color-mix(in srgb, #0e0e0c 52%, transparent);
+  background: color-mix(in srgb, var(--scrim) 52%, transparent);
   backdrop-filter: blur(9px) saturate(.85);
   animation: intro-in 200ms ease-out both;
 }
 @keyframes intro-in { from { opacity: 0; } to { opacity: 1; } }
 .intro-card {
   width: min(560px, 100%); background: var(--card);
-  border: 1px solid var(--border-soft); border-radius: var(--r-xl);
-  box-shadow: 0 24px 60px rgba(0,0,0,.34); padding: var(--sp-6);
+  border: 1px solid var(--border); border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg); padding: var(--sp-6);
   animation: intro-rise 280ms cubic-bezier(.2,.8,.25,1) both;
 }
 @keyframes intro-rise { from { transform: translateY(12px) scale(.985); } to { transform: none; } }
@@ -951,41 +1116,40 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 @media (max-width: 860px) { .intro-card { padding: var(--sp-4); } }
 
 /* ── Ask Suvat ───────────────────────────────────────────────────────────
-   The AI's mark is an orange glass orb with a sparkle in it. Orange is the
-   site's accent already; the glass is a radial body, a highlight across the
-   top and a slow sheen, so it reads as the one thing on the page that is
-   not a control you already know. The chat box is the first thing on the
-   first screen, above the cards it can choose between. */
+   The AI's mark is the Spark (the #spark symbol in index.html): a four-pointed
+   star whose curved arms are trajectories, peach deepening to orange, with a
+   small gold spark riding beside it. Where it stands for the AI as a speaker
+   (the chat, the board's dock) it sits on a dark tile, like an app icon, with
+   an orange glow behind it; inside a button it stands bare. */
 .ai-orb {
   position: relative; flex: none; display: grid; place-items: center;
-  width: 40px; height: 40px; border-radius: 50%; overflow: hidden; color: #fff;
-  background: radial-gradient(120% 120% at 30% 18%, #fed7aa 0%, #fb923c 30%, #ea580c 60%, #9a3412 100%);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -6px 12px rgba(124,45,18,.5),
-              0 4px 14px rgba(234,88,12,.42);
+  width: 40px; height: 40px; border-radius: 28%; overflow: hidden;
+  background: radial-gradient(90% 90% at 45% 55%, #3a1a0e 0%, #140d0a 62%, #0b0909 100%);
+  border: 1px solid rgba(255, 214, 186, .14);
+  box-shadow: 0 4px 14px rgba(236, 95, 23, .28);
 }
-.ai-orb::before {                         /* the glass: a highlight across the top */
-  content: ''; position: absolute; top: 4%; left: 15%; width: 70%; height: 44%; border-radius: 50%;
-  background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,0));
+.ai-orb::before {                         /* the glow behind the star, breathing slowly */
+  content: ''; position: absolute; inset: 12%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(249, 140, 60, .55), rgba(249, 140, 60, 0) 70%);
+  animation: ai-glow 3.2s ease-in-out infinite;
 }
-.ai-orb::after {                          /* and a sheen that goes round it, slowly */
-  content: ''; position: absolute; inset: -30%;
-  background: conic-gradient(from 0deg, transparent 0 70%, rgba(255,255,255,.35) 80%, transparent 90%);
-  animation: ai-sheen 5s linear infinite;
-}
-.ai-orb svg { position: relative; z-index: 1; width: 58%; height: 58%;
-              filter: drop-shadow(0 1px 1.5px rgba(124,45,18,.55)); }
+.ai-orb svg { position: relative; z-index: 1; width: 74%; height: 74%;
+              filter: drop-shadow(0 0 3px rgba(249, 140, 60, .6)); }
 .ai-orb.sm { width: 32px; height: 32px; }
-.ai-orb.xs { width: 22px; height: 22px; box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -3px 6px rgba(124,45,18,.5); }
-@keyframes ai-sheen { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .ai-orb::after { animation: none; opacity: 0; } }
+.ai-orb.xs { width: 22px; height: 22px; border: none; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
+.ai-orb.xs::before { display: none; }
+.ai-orb.xs svg { width: 100%; height: 100%; }
+@keyframes ai-glow { 50% { transform: scale(1.18); opacity: .7; } }
+@media (prefers-reduced-motion: reduce) { .ai-orb::before { animation: none; } }
 
+.brand-spark { width: 26px; height: 26px; flex: none; filter: drop-shadow(0 0 4px rgba(249, 140, 60, .55)); }
 .ai-top { display: inline-flex; align-items: center; gap: var(--sp-2); }
 
 .ask { margin: 0 0 var(--sp-10); }
 .ask-box {
   display: flex; align-items: flex-end; gap: var(--sp-3);
   padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-3);
-  background: var(--card); border: 1px solid var(--border); border-radius: 26px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
   box-shadow: var(--shadow);
   transition: border-color 160ms, box-shadow 160ms;
 }
@@ -1003,13 +1167,13 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-field textarea::placeholder { color: var(--ink-faint); }
 .ask-tools { display: flex; align-items: center; gap: var(--sp-1); }
 .ask-tool, .ask-send {
-  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-muted);
+  width: 40px; height: 40px; border-radius: var(--r-md); display: grid; place-items: center; color: var(--ink-muted);
 }
 .ask-tool:hover { background: var(--hover); color: var(--ink); }
 .ask-tool svg, .ask-send svg { width: 22px; height: 22px; }
 .ask-tool:focus-visible, .ask-send:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.ask-mic[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); }
-.ask-send { background: var(--accent); color: var(--on-accent); margin-left: var(--sp-1); }
+.ask-mic[aria-pressed='true'] { background: var(--accent-fill); color: var(--on-accent); }
+.ask-send { background: var(--accent-fill); color: var(--on-accent); margin-left: var(--sp-1); }
 .ask-send:hover { background: var(--accent-hi); }
 .ask-send:disabled { background: var(--border-soft); color: var(--ink-faint); cursor: not-allowed; }
 .ask-att {
@@ -1024,8 +1188,13 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-att-x:hover { background: var(--hover); color: var(--ink); }
 .ask-fine { font-size: var(--fs-xs); color: var(--ink-faint); margin: var(--sp-2) 0 0 var(--sp-4); }
 
-/* the conversation: your question, and Suvat's answer under it */
-.ask-thread { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+/* the conversation: every message, oldest at the top. It scrolls inside
+   itself, so a long chat does not push the scenario cards off the page. */
+.ask-thread { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4);
+              max-height: min(62vh, 640px); overflow-y: auto; overscroll-behavior: contain;
+              padding-right: var(--sp-1); }
+.ask-shot { display: block; max-width: min(240px, 100%); max-height: 200px; border-radius: var(--r-md);
+            margin-bottom: var(--sp-2); object-fit: contain; background: var(--card); }
 .ask-msg { display: flex; gap: var(--sp-3); align-items: flex-start; }
 .ask-mine { justify-content: flex-end; }
 .ask-bubble { min-width: 0; max-width: min(640px, 100%); border-radius: var(--r-xl); padding: var(--sp-3) var(--sp-4);
@@ -1033,11 +1202,11 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-bubble p { margin: 0; }
 .ask-mine .ask-bubble { background: var(--accent-soft); color: var(--ink); border-bottom-right-radius: var(--r-sm); }
 .ask-mine .ask-bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
-.ask-chip { display: inline-block; font-size: var(--fs-xs); color: var(--accent); font-weight: var(--w-semi); margin-bottom: 2px; }
-.ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border-soft); border-top-left-radius: var(--r-sm); }
+.ask-chip { display: inline-block; font-size: var(--fs-xs); color: var(--accent-hi); font-weight: var(--w-semi); margin-bottom: 2px; }
+.ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-top-left-radius: var(--r-sm); }
 .ask-reply[data-busy='true'] .ai-orb::after { animation-duration: 1.2s; }
 .ask-dots { display: inline-flex; gap: 5px; padding: 6px 0; }
-.ask-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: ask-dot 1s ease-in-out infinite; }
+.ask-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-fill); animation: ask-dot 1s ease-in-out infinite; }
 .ask-dots span:nth-child(2) { animation-delay: .15s; }
 .ask-dots span:nth-child(3) { animation-delay: .3s; }
 .ask-wait { margin: 2px 0 0; color: var(--ink-muted); font-size: 14px; }
@@ -1062,7 +1231,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ro-engine[data-ok='false'] { background: var(--bad-fill); color: var(--ink); }
 
 @media (max-width: 560px) {
-  .ask-box { flex-wrap: wrap; border-radius: 22px; }
+  .ask-box { flex-wrap: wrap; }
   .ask-box > .ai-orb { display: none; }
   .ask-field { flex-basis: 100%; }
   .ask-tools { margin-left: auto; }
@@ -1072,3 +1241,52 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 
 /* the one-press vertical throw, under the angle slider on Time above a line */
 .theta-up { justify-self: start; margin-top: var(--sp-2); }
+
+/* ── the Past-paper library ──────────────────────────────────────────────
+   Below the twelve, in the same card grid, with a search box of its own and
+   the papers each one was built from under its note. */
+.library { margin-top: var(--sp-12); padding-top: var(--sp-8); border-top: 1px solid var(--border-soft); }
+.lib-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
+.lib-count { font-size: var(--fs-xs); color: var(--ink-muted); white-space: nowrap; padding-top: 2px; }
+.lib-search {
+  display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-5);
+  height: 44px; padding: 0 var(--sp-4); border-radius: var(--r-pill);
+  background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.lib-search:focus-within { border-color: var(--accent); }
+.lib-search svg { width: 18px; height: 18px; flex: none; color: var(--ink-muted); }
+.lib-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--ink); font-size: var(--fs-sm); }
+.lib-search input:focus { outline: none; }
+.lib-none { font-size: var(--fs-sm); color: var(--ink-muted); }
+.pc-src { font-size: var(--fs-xs); color: var(--ink-strong); line-height: 1.45; margin: var(--sp-3) 0 0; padding-top: var(--sp-2); border-top: 1px solid var(--border-soft); font-variant-numeric: tabular-nums; }
+.pc-src span { display: block; }
+.pcard[hidden] { display: none; }
+
+/* A library scenario's boxes, one column per object. */
+.kcols { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(var(--kc, 2), minmax(0, 1fr)); gap: var(--sp-3); }
+.krow { grid-column: 1 / -1; margin: 0; padding: 0; border: 0; min-width: 0; }
+.krow legend { font-size: var(--fs-xs); letter-spacing: 0.09em; text-transform: uppercase; font-weight: var(--w-bold); color: var(--ink-strong); margin-bottom: var(--sp-2); padding: 0; }
+.krow-in { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--sp-3); }
+.krow > .xhint { margin-top: var(--sp-2); }
+.kcol { margin: 0; padding: 0; border: 0; display: grid; gap: var(--sp-3); align-content: start; min-width: 0; }
+.kcol legend { font-size: var(--fs-xs); letter-spacing: 0.09em; text-transform: uppercase; font-weight: var(--w-bold); color: var(--ink-strong); margin-bottom: var(--sp-2); padding: 0; }
+.kcol[data-col='B'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--second); vertical-align: -1px; }
+.kcol[data-col='A'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--ink-strong); vertical-align: -1px; }
+.ph-row[data-key='second'] { border-left: 3px solid var(--second); }
+@media (max-width: 760px) { .kcols { grid-template-columns: repeat(min(var(--kc, 2), 2), minmax(0, 1fr)); } }
+@media (max-width: 560px) { .kcols { grid-template-columns: minmax(0, 1fr); } }
+.ph-row[data-key='first'] { border-left: 3px solid var(--ink-strong); }
+.ph-row[data-key='stage'] { border-left: 3px solid var(--border); }
+/* a narrow box beside a group of chips, rather than a card of its own */
+.krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr) 200px; }
+.krow-in > .xrow.wide.choice { grid-column: auto; }
+.krow-in > .xrow.wide.choice.full { grid-column: 1 / -1; }
+@media (max-width: 560px) { .krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr); } }
+
+/* The second row of boxes in a kit's columns starts level: every hint keeps
+   the room of two lines, so a short one does not pull its column up. */
+.kcol .xhint { min-height: calc(2 * 1.45em); }
+.done-eyebrow .u { text-transform: none; }
+/* a box whose number the engine is finding */
+.xrow input[data-found='true'] { border-style: dashed; background: transparent; }
+.xrow input[data-found='true']::placeholder { color: var(--accent); font-weight: var(--w-semi); }

@@ -16,7 +16,7 @@ export function esc(s) {
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-const HOW = { given: 'in the question', worked: 'worked out', assumed: 'assumed' };
+const HOW = { given: 'in the question', worked: 'worked out', assumed: 'assumed', chosen: 'your choice', paper: 'assumed · Edexcel’s value' };
 
 /** One value, as maths. */
 function valueHTML(it) {
@@ -26,8 +26,10 @@ function valueHTML(it) {
     case 'u': return M`u = ${num(x, 2, { trim: true })} [m s^-1]`;
     case 'v': return M`v = ${num(x, 2, { trim: true })} [m s^-1]`;
     case 't': return M`t = ${num(x, 2, { trim: true })} [s]`;
-    case 'g': return M`a = ${num(x, 2, { trim: true })} [m s^-2]`;
+    case 'g': return M`g = ${num(x, 2, { trim: true })} [m s^-2]`;
     case 'a': return M`a = ${num(x, 2, { trim: true })} [m s^-2]`;
+    case 'nth': return `${M`${num(x, 2, { trim: true })} [m]`} in second ${it.n}`;
+    case 'at': return `asks about ${M`t = ${num(x, 2, { trim: true })} [s]`}`;
     case 'mark': return it.mid ? 'times it at the mid-point' : `times it at ${M`${num(x, 2, { trim: true })} [m]`} from the start`;
     case 'h': return M`h = ${num(x, 2, { trim: true })} [m]`;
     case 'theta': return M`theta = ${num(x, 1, { trim: true })}°`;
@@ -50,7 +52,7 @@ function fromHTML(it) {
   if (it.rise != null) return `from a greatest height of ${M`${num(it.rise, 2, { trim: true })} [m]`} above the launch`;
   if (it.vertical) return 'thrown straight up';
   if (it.k === 'line') return 'how long it spends above it';
-  if (it.how === 'assumed' && it.k === 'g') return 'the question does not say';
+  if (it.how === 'assumed' && it.k === 'g') return 'on Earth';
   if (it.how === 'assumed' && it.k === 'h') return 'it starts on the ground';
   return '';
 }
@@ -60,8 +62,9 @@ function fromHTML(it) {
  * @param o.name   the scenario's name, from js/scenarios.js
  * @param o.solved the engine's answer for those values, or null
  * @param o.above  the engine's timeAbove() for a line, with `line`, or null
+ * @param o.flight the engine's flight (js/core/projectile.js), for a launch: what it found is said
  */
-export function readoutHTML(reading, { name, solved, above } = {}) {
+export function readoutHTML(reading, { name, solved, above, flight } = {}) {
   const rows = reading.items.map((it) => {
     const from = fromHTML(it);
     return `<li class="ro-row" data-how="${it.how}">
@@ -77,8 +80,11 @@ export function readoutHTML(reading, { name, solved, above } = {}) {
 
   let engine = '';
   if (solved?.ok) {
-    const rest = Array.isArray(solved.derived) && solved.derived.length
-      ? solved.derived.join('  ·  ') : 'nothing else was needed.';
+    const said = flightHTML(flight);
+    // with the flight said in a sentence, the rearrangements that found it
+    // ("t = (v − u)/a → t = 4.08") would say t twice, the second without its unit
+    const rows = (Array.isArray(solved.derived) ? solved.derived : []).filter((x) => !(said && /→/.test(x)));
+    const rest = rows.length || said ? resultsHTML([...rows, ...(said ? [said.replace(/^./, (c) => c.toUpperCase())] : [])]) : 'nothing else was needed.';
     let line = '';
     if (above) {
       const L = M`${num(above.line, 2, { trim: true })} [m]`;
@@ -91,7 +97,7 @@ export function readoutHTML(reading, { name, solved, above } = {}) {
     }
     engine = `<div class="ro-engine" data-ok="true"><b>The engine works out the rest:</b> ${rest}${line}</div>`;
   } else if (solved) {
-    engine = `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved.reason || ''}</div>`;
+    engine = `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved.reason || ''} Just tell me here, or press “Add the missing values”.</div>`;
   }
 
   return `<p class="ro-eyebrow">Read as</p>
@@ -99,4 +105,68 @@ export function readoutHTML(reading, { name, solved, above } = {}) {
     ${reading.summary ? `<p class="ro-sum">${esc(reading.summary)}</p>` : ''}
     <ul class="ro-list">${rows}</ul>
     ${asks}${unsure}${notes}${engine}`;
+}
+
+/** What the engine found, one result to a line: a list, so a phone wraps each on its own. */
+export function resultsHTML(list) {
+  const rows = (list || []).filter(Boolean);
+  // each line a sentence of its own: "It hits the water…"
+  return rows.length ? `<ul class="ro-res">${rows.map((x) => `<li>${String(x).replace(/^[a-z]/, (c) => c.toUpperCase())}</li>`).join('')}</ul>` : '';
+}
+
+/** The flight, as the engine found it: in the air for how long, where and how fast it lands,
+    how high it gets. Every number is the engine's (rule 4); none is said that it did not find. */
+function flightHTML(f) {
+  if (!f || !(f.tFlight > 0) || !isFinite(f.tFlight)) return '';
+  const n = (x) => num(x, 2, { trim: true });
+  const out = Math.abs(f.range) > 1e-9 ? ` and lands ${M`${n(f.range)} [m]`} out` : '';
+  const at = isFinite(f.vLanding) ? `${out ? ',' : ' and lands'} at ${M`${n(f.vLanding)} [m s^-1]`}` : '';
+  const top = f.apexRise > 1e-9 && isFinite(f.apexHeight) ? ` At its highest it is ${M`${n(f.apexHeight)} [m]`} above the ground.` : '';
+  return `it is in the air for ${M`t = ${n(f.tFlight)} [s]`}${out}${at}.${top}`;
+}
+
+/* ── Solve: the engine's own working, as a numbered solution ─────────────
+   Every title, formula, substitution and result here comes from js/core/ or
+   js/working.js — the same steps the working panel shows — so the chat
+   claims nothing the engine did not compute (rule 4), and every piece of it
+   is already typeset (rule 1). This only lays them out. */
+export function solutionHTML(steps, { moment } = {}) {
+  const shown = (steps || []).filter((st) => !st.skip && st.rows?.length);
+  if (!shown.length) return '';
+  const items = shown.map((st) => `<li><div class="ro-step-h">${st.title}</div>${
+    st.rows.map((r) => `<div class="ro-step-row"><div>${r.f}</div><div>${r.s}</div>${
+      r.r ? `<div class="ro-step-r">${r.r}</div>` : ''}</div>`).join('')}${
+    st.note ? `<div class="ro-step-n">${st.note}</div>` : ''}</li>`).join('');
+  return `<p class="ro-answer-h">Worked solution</p><ol class="ro-steps">${items}</ol>${
+    moment?.text ? `<p class="ro-sum">${moment.text}</p>` : ''}`;
+}
+
+/* ── Search: the model's own prose, made safe and set properly ───────────
+   The one reply the model writes itself. Escaped first — it is somebody
+   else's text going into innerHTML — then the habits rule 1 forbids are
+   turned into what this site prints (v^2 → v², sqrt → √, * → ×, a hyphen
+   before a number → a minus sign), and the lightest markdown is honoured:
+   paragraphs, bullets and bold. */
+/** One line of the model's prose, escaped and tidied: no ^2, no sqrt, no hyphen for a minus. */
+export const tidyProse = (s) => esc(s)
+    .replace(/\bm\/s(\^2|²)/g, 'm s⁻²').replace(/\bm\/s\b/g, 'm s⁻¹')
+    .replace(/\^\(?-1\)?/g, '⁻¹').replace(/\^\(?-2\)?/g, '⁻²').replace(/\^2\b/g, '²').replace(/\^3\b/g, '³')
+    .replace(/\bsqrt\s*\(/g, '√(').replace(/ \* /g, ' × ').replace(/ \/ /g, ' ÷ ').replace(/&lt;=/g, '≤').replace(/&gt;=/g, '≥')
+    .replace(/(^|[\s(=])-(\d)/g, '$1−$2')
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+export function proseHTML(text) {
+  const tidy = tidyProse;
+  const blocks = String(text || '').trim().split(/\n\s*\n/);
+  return blocks.map((b) => {
+    const lines = b.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length && lines.every((l) => /^[-*•]\s+/.test(l))) {
+      return `<ul>${lines.map((l) => `<li>${tidy(l.replace(/^[-*•]\s+/, ''))}</li>`).join('')}</ul>`;
+    }
+    return `<p>${tidy(lines.join(' '))}</p>`;
+  }).join('');
+}
+export function sourcesHTML(sources) {
+  const ok = (sources || []).filter((s) => /^https?:\/\//.test(s.uri));
+  if (!ok.length) return '';
+  return `<ul class="ro-src">${ok.map((s) => `<li><a href="${esc(s.uri)}" target="_blank" rel="noopener noreferrer">${esc(s.title || s.uri)}</a></li>`).join('')}</ul>`;
 }

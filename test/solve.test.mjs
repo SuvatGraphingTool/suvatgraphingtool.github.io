@@ -339,5 +339,14 @@ group('The threshold is three, and three is enough', () => {
   ok(three.spare.length === 0, 'and with exactly three, nothing is spare to close over');
 });
 
+group('Greatest height given: reached once, at the top, never "twice at 2.86 s and 2.86 s"', () => {
+  // M1 J11 Q1: rises to a greatest height of 40 m; s = 40 and v = 0 fix it.
+  const r = solveLaunch({ s: 40, v: 0, g: 9.8, theta: 90 });
+  ok(r.ok && Math.abs(r.params.u - 28) < 1e-9, 'u = 28 from the greatest height');
+  ok(r.moment && !/twice/.test(r.moment.text) && /reaches s = 40 m after 2.86 s/.test(r.moment.text), 'the top is reached once');
+  const q = solveLaunch({ s: 33.6, u: 28, g: 9.8, theta: 90 });
+  ok(/twice: at 1.71 s going up, and 4 s coming down/.test(q.moment.text), 'a level below the top is passed twice: 1.71 s and 4 s');
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

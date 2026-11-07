@@ -24,8 +24,24 @@ import { solveDescent, descentWorking, resolveDescent } from '../js/core/descent
 import { descentPanes, plotSpec, PRE_SAY } from '../js/render/drop.js';
 import { SCENARIOS, GROUPS } from '../js/scenarios.js';
 import { toApp } from '../js/core/question.js';
-import { readoutHTML } from '../js/ai/readout.js';
+import { readoutHTML, solutionHTML, proseHTML } from '../js/ai/readout.js';
+import { trajectory } from '../js/core/trajectory.js';
 import { solveRoad, roadWorking } from '../js/core/road.js';
+import { readBlueprint, solveBoard } from '../js/board/blueprint.js';
+import { solvePair, pairWorking } from '../js/core/pair.js';
+import { solveJourney, journeyWorking } from '../js/core/journey.js';
+import { solveOvertake, overtakeWorking } from '../js/core/overtake.js';
+import { solvePlane, planeWorking } from '../js/core/plane.js';
+import { solveTarget, targetWorking } from '../js/core/target.js';
+import { solveHeight } from '../js/core/height.js';
+import { solveCatch } from '../js/core/catch.js';
+import { solveTrip } from '../js/core/trip.js';
+import { solveTwoPlane } from '../js/core/twoplane.js';
+import { solveBounce, bounceWorking } from '../js/core/bounce.js';
+import { KITS } from '../js/kits/index.js';
+import { resolveKit } from '../js/kitresolve.js';
+import { LIBRARY } from '../js/library.js';
+import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
 
 let pass = 0, fail = 0;
 
@@ -232,6 +248,723 @@ group('Whatever the engine says back on screen two', () => {
 });
 
 
+group('The Past-paper library: over the wall, everything it says', () => {
+  const K = KITS.target;
+  const INPUTS = [
+    { g: 9.8, u: 28, d: 40, H: 20, kind: 'point', find: 'theta' },
+    { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130, pick: 'flat' },
+    { g: 9.8, d: 38.4, H: 3, kind: 'face', find: 'time', T: 2.4 },
+    { g: 9.8, h0: 2, d: 20, H: 0.75, kind: 'point', find: 'apex', top: 3 },
+    { g: 9.8, d: 20, H: 2, kind: 'point', find: 'apex', top: 5 },
+    { g: 9.8, h0: 2.4, ux: 30, uy: -1.4, tAt: 0.4, H: 0.9, kind: 'net' },
+    { g: 9.8, h0: 5, ux: 14, uy: 0, H: 2, d: 5, kind: 'wall' },
+    { g: 9.8, h0: 5, ux: 14, uy: 0, H: 2, kind: 'wall' }, { g: 9.8, u: 2, theta: 10, H: 3, kind: 'net' },
+    { g: 9.8, u: 20, theta: 30, d: 50, H: 3, kind: 'face' }, { g: 9.8, u: 20, d: 30, H: 9.3833, find: 'theta' },
+    { g: 9.8, u: 35, d: 100, H: 20, kind: 'tree', find: 'theta', flag: 130 }, { g: 9.8, u: 20, theta: 30, d: 30, H: 6, kind: 'net', flag: 50 },
+    { g: 9.8, theta: 30, d: 40, H: 20, find: 'u', kind: 'wall' },
+    { g: 9.8, theta: -20, u: 12, h0: 10, d: 5, H: 4, kind: 'tree' },
+    { g: 10, u: 20, theta: 30, d: 30, H: 6, kind: 'net' },
+    { g: 9.81, u: 10, theta: 30, d: 30, H: 6, kind: 'point', flag: 5 },
+    { g: 9.8, u: 10, theta: 45 },
+    { g: 9.8, u: 10, d: 40, H: 20, find: 'theta' }, { g: 9.8, theta: 30, d: 40, H: 30, find: 'u' },
+    { g: 9.8, u: 5, d: 40, H: 2, find: 'theta' }, {}, { g: 9.8, u: 10, theta: 45, ux: 3 },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveTarget(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    for (const st of targetWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: from a cliff or a tower, everything it says', () => {
+  const K = KITS.height;
+  const INPUTS = [
+    { place: 'tower', h: 49, u: 14.7, theta: 90, g: 9.8 }, { place: 'tower', h: 17.5, v: 28, theta: 90, g: 9.8, level: 19 },
+    { place: 'cliff', h: 25, s: 100, theta: 45, g: 9.8 }, { place: 'cliff', h: 40, u: 15, theta: 0, g: 9.81, level: -10 },
+    { place: 'cliff', h: 40, u: 15, theta: -30, g: 10 }, { place: 'tower', h: 30, u: 0, theta: -90, g: 9.8, level: 5 },
+    { place: 'cliff', h: 60, t: 5, theta: 20, g: 9.8 }, { g: 9.8, h: 0, u: 5, theta: 0 }, {},
+    { place: 'tower', theta: 90, tTop: 2.5, t: 7, g: 9.8 }, { place: 'cliff', h: 10, theta: 35, tTop: 1.5, g: 9.8, level: 3 },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveHeight(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.ok) {
+      for (const st of K.working(r, r.f.tMax / 2)) {
+        check('title', st.title, bag);
+        for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+        if (st.note) check('note', st.note, bag);
+      }
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 100, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: thrown, chased and caught, everything it says', () => {
+  const K = KITS.catcher;
+  const INPUTS = [
+    { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2 }, find: 'a' }, { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { t0: 0.2, a: 6.34 } },
+    { g: 9.8, h: 1.8, u: 14, theta: 60, yc: 0.3, c: { a: 8 }, find: 't0' }, { g: 10, h: 0, u: 20, theta: 45, yc: 1, c: { a: 2, t0: 0.5 }, find: 'u' },
+    { g: 9.81, h: 2, u: 10, theta: 30, yc: 0.5, c: { t0: 0, u: 1, a: 1 } }, { g: 9.8, u: 14, theta: 60, yc: 30, find: 'a' }, {},
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveCatch(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); } if (st.note) check('note', st.note, bag); }
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: there and back, everything it says', () => {
+  const K = KITS.trip;
+  const INPUTS = [
+    { segs: [{ who: 'car', v: 15, t: 6 }, { who: 'car', v: 15, t: 11 }, { who: 'car', v: 0, t: 2 }, { who: 'foot', u: -2, v: -2, t: 20 }, { who: 'foot', u: 0, v: 0 }, { who: 'foot', u: 5, v: 5 }], T: 60, back: 4 },
+    { segs: [{ v: 4, t: 2 }, { v: 4, t: 3 }, { v: 0, t: 2 }, { u: -3, v: -3, t: 4 }] }, { segs: [{ v: 2.5, t: 0.4 }, { v: -1, t: 1.4 }] },
+    { segs: [{ v: 5, t: 2 }, { u: 0, v: 0 }], T: 1 }, {},
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveTrip(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); } if (st.note) check('note', st.note, bag); }
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: a parachute jump, everything it says', () => {
+  const K = KITS.jump;
+  const bag = [];
+  let said = 0;
+  for (const k of [{ g: 10, D: 550, t1: 3, a2: 12, t2: 2 }, { g: 9.8, T: 60, v1: 40, a2: 10, v2: 5 }, { g: 9.81, D: 1000, t1: 4, a2: 8, v2: 6 }, { g: 10, D: 10, t1: 3, a2: 12, t2: 2 }, { g: 10, t1: 3 }, { g: 10, t1: 3, a2: 12, t2: 2 }, { g: 10, a2: 12 }, {}]) {
+    const r = K.solve(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); } if (st.note) check('note', st.note, bag); }
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 30, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two ships, everything it says', () => {
+  const K = KITS.twoplane;
+  const bag = [];
+  let said = 0;
+  for (const k of [{ units: 'km', A: { r0: { x: 2, y: -8 }, v: { x: -4, y: 8 } }, B: { r0: { x: 18, y: 12 }, v: { x: -6, y: -8 } }, at: { due: 'W', apart: 5 } },
+    { units: 'km', A: { r0: { x: 9, y: 10 }, v: { x: 9, y: -2 } }, B: { r0: { x: 1, y: 4 }, v: { x: 4, y: 8 } }, at: { apart: 10, due: 'NE' } },
+    { units: 'm', A: { r0: { x: 20, y: -17 }, v: { x: -6, y: 7 } }, B: { r0: { x: -8, y: 9 }, w: { x: 1, y: 2 } }, find: 'p', at: { due: 'SW', bOfA: true, dueT: 4 } },
+    { units: 'm', A: { v: { x: 0, y: 3 } }, B: { r0: { x: 5, y: 0 }, v: { x: 0, y: 0 } }, at: { due: 'W', apart: 2 } }, {}]) {
+    const r = K.solve(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); } if (st.note) check('note', st.note, bag); }
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 30, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: three models, everything it says', () => {
+  const K = KITS.models;
+  const bag = [];
+  for (const k of [{ u: 25, D: 48, a: 6, limit: 13, react: 0.2 }, { u: 30, D: 100, a: 4, limit: 20, react: 0.5 }, { u: 25, D: 10, a: 6, limit: 13, react: 0.2 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: off the bench, everything it says', () => {
+  const K = KITS.bench;
+  const bag = [];
+  for (const k of [{ look: 'foil', g: 9.81, d: 0.5, tGap: 0.14, drop: 0.08 }, { g: 9.81, d: 0.5, tGap: 0.14, drop: 0.0961 }, { g: 9.81, d: 0.5, u: 3 }, { look: 'table', g: 9.8, H: 0.8, R: 1.2 },
+    { look: 'table', g: 9.8, H: 0.8, u: 2 }, { g: 9.81, u: 1, H: 0.1, d: 2 }, { g: 9.81, d: 0.5 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: over the wall in a letter, everything it says', () => {
+  const K = KITS.clears;
+  const bag = [];
+  for (const k of [{ g: 9.8, P: 1, Q: 0.5, beyond: 3, u: 54.6 }, { g: 9.8, P: 1, Q: 0.5, beyond: 3, a: 70.2 }, { g: 9.81, P: 2, Q: 0.7, beyond: 1.3, u: 30 }, { g: 9.8, P: 1, Q: 0.5, beyond: 3 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: stage by stage, everything it says', () => {
+  const K = KITS.chain;
+  const bag = [];
+  for (const k of [{ stages: [{ u: 20, v: 12, s: 640 }, { s: 1820, t: 70 }] }, { stages: [{ u: 18, a: 0, t: 0.5 }, { v: 0 }], S: 38 }, { stages: [{ u: 0, a: 1.5, t: 4 }, { a: 0, t: 6 }, { v: 0, s: 10 }] },
+    { stages: [{ u: 4, a: -2, t: 5 }] }, { stages: [{ u: 20, v: 12, s: 640, t: 30 }] }, { stages: [{ u: 5 }, { a: 0 }] }, { stages: [{ u: 0, a: 1, t: 4 }, { a: 0 }], T: 3 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: do they collide, everything it says', () => {
+  const K = KITS.collide;
+  const bag = [];
+  for (const k of [{ A: { u: { x: 4, y: 2 }, a: { x: -0.4 } }, B: { r0: { x: 11.2 }, u: { x: 0.4, y: 0.6 }, a: { y: 0.2 } }, at: 10 },
+    { A: { u: { x: 4, y: 2 }, a: { x: -0.4 } }, B: { r0: { x: 11 }, u: { x: 0.4, y: 0.6 }, a: { y: 0.2 } } }, { A: { u: { x: 2 } }, B: { r0: { x: 10 }, a: { x: -1 } } },
+    { A: { r0: { x: -3, y: 1 }, u: { y: -2 } }, B: { a: { x: 1, y: -1 } } }, { A: { u: { x: 1 } }, B: { u: { x: 1 } } }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: known from two moments, everything it says', () => {
+  const K = KITS.snapshots;
+  const bag = [];
+  for (const k of [{ u: { x: 2, y: -3 }, at2: { kind: 'r', t: 2, v: { x: 7, y: -10 } }, a2: { x: 4, y: 8.8 }, ask: { dir: 'NE', t: 3 } },
+    { u: { x: -1, y: 4 }, tu: 1, at2: { kind: 'v', t: 4, v: { x: 5, y: -8 } }, ask: { t: 3.5 } }, { a: { x: 1.5, y: -2 }, at2: { kind: 'r', t: 2, v: { x: 7, y: -10 } }, ask: { dir: 'SE' } },
+    { u: { x: 1 }, a: { x: 1 }, ask: { dir: 'W' } }, { u: { x: 1 }, a: { x: 1 }, at2: { kind: 'v', t: 2, v: { x: 3 } } }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: the displacement–time graph, everything it says', () => {
+  const K = KITS.xtgraph;
+  const bag = [];
+  for (const k of [{ x0: 5, speed: 4, pts: [{ x: 5 }, { t: 3, x: 0 }, { t: 5, x: 0 }, { t: 7, x: -8 }, { t: 10, x: 4 }], tail: { c0: -96, c1: 20, c2: -1, speed: 4 }, ask: { ts: [2, 8, 9] } },
+    { x0: 0, pts: [{ t: 2, x: 4 }, { t: 4, x: 0 }], ask: { ts: [2, 3] } }, { x0: 0, pts: [{ t: 2, x: 4 }], tail: { c0: 0, c1: 1, c2: 0 } },
+    { x0: 0, speed: 2, pts: [{ t: 2, x: 4 }, { x: 4 }, { t: 6, x: 0 }], tail: { c0: 0, c1: 0, c2: 0 } }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two robots, everything it says', () => {
+  const K = KITS.robots;
+  const bag = [];
+  for (const k of [{ R: { r0: { x: -2, y: 1 }, r1: { x: 9, y: 23 }, t1: 11 }, S: { r0: { x: 25, y: 25 }, v: { x: -1, y: -1 } }, side: 50 },
+    { R: { r0: { x: 0, y: 0 }, v: { x: 1, y: 0 } }, S: { r0: { x: -5, y: 0 }, v: { x: -1, y: 0 } } }, { R: { r0: { x: 0, y: 0 }, v: { x: 1, y: 1 } }, S: { r0: { x: 3, y: 0 }, v: { x: 1, y: 1 } } },
+    { R: { r0: { x: 20, y: 0 }, v: { x: 1, y: 0 } }, S: { r0: { x: -20, y: 10 }, v: { x: 2, y: 0 } } }, { R: { r0: { x: 30, y: 0 }, v: { x: 1 } }, S: { r0: {}, v: {} } }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two thrown up in letters, everything it says', () => {
+  const K = KITS.letters;
+  const bag = [];
+  for (const k of [{ k: 0.5 }, { k: 0.5, U: 14, g: 9.8 }, { k: 1, when: 'after', c: 0.5 }, { k: 0.25 }, { k: 0 }, { k: 2, when: 'after', c: 1.5, U: 10, g: 10 }, { k: 1, when: 'after', c: 2 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two trains, everything it says', () => {
+  const K = KITS.twotrains;
+  const bag = [];
+  const A = { stages: [{ kind: 'up', t: 30, a: 2 / 3 }, { kind: 'hold', t: 120 }, { kind: 'down', t: 30, v: 0 }] };
+  for (const k of [{ A, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] }, ask: { t: 96 } }, { A, B: { stages: [{ kind: 'up', t: 60 }, { kind: 'hold', t: 60 }, { kind: 'down', t: 60, v: 0 }] }, ask: { t: 40 } },
+    { A: { stages: [{ kind: 'up', t: 30, a: 1 }, { kind: 'down', t: 30, v: 0 }] }, B: { stages: [{ kind: 'up', t: 90 }, { kind: 'down', t: 90, v: 0 }] } }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: past the posts, everything it says', () => {
+  const K = KITS.posts;
+  const bag = [];
+  for (const k of [{ gaps: [{ s: 76, t: 4 }, { s: 219, t: 6 }] }, { gaps: [{ s: 76, t: 4 }], u: 12 }, { gaps: [{ s: 76, t: 4 }], a: 3.5 }, { gaps: [{ s: 100, t: 4 }, { s: 60, t: 4 }] },
+    { gaps: [{ s: 76, t: 4 }, { s: 219, t: 6 }, { s: 100, t: 2 }] }, { gaps: [{ s: 10, t: 4 }, { s: 1, t: 6 }] }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: the velocity–time graph, everything it says', () => {
+  const K = KITS.vtgraph;
+  const bag = [];
+  for (const k of [{ v0: 0, pts: [{ t: 4, v: -2 }, { t: 6, v: 2 }, { t: 11, v: 2 }, { t: 13, v: -4 }, { t: 16, v: -4 }, { t: 20, v: 0 }], ask: { t: 12 } },
+    { v0: 2, pts: [{ t: 4, v: 2 }] }, { v0: 0, pts: [{ t: 4, v: 4 }, { t: 8, v: -4 }], ask: { s: 3 } }, { v0: 0, pts: [{ t: 4, v: 2 }, { t: 3, v: 0 }] }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: falling past two marks, everything it says', () => {
+  const K = KITS.marks;
+  const bag = [];
+  for (const k of [{ mode: 'letters', k: 3 }, { mode: 'letters', k: 1.5 }, { g: 9.8, h: 2, t: 0.2 }, { g: 9.8, vM: 5, vN: 8, H: 10 }, { g: 9.81, vN: 12, t: 0.5 },
+    { g: 9.8, vM: 5, vN: 4 }, { mode: 'letters', k: 1 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: thrown towards each other, everything it says', () => {
+  const K = KITS.towards;
+  const bag = [];
+  for (const k of [{ g: 9.8, A: { u: 24.5, theta: 30 }, B: { u: 24.5, theta: 30, t0: 1 }, range: true }, { g: 9.8, A: { u: 20, theta: 40 }, B: { u: 15, theta: 50 }, D: 30 },
+    { g: 9.8, A: { u: 10, theta: 45 }, B: { u: 10, theta: 45 }, D: 100 }, { g: 9.8, A: { u: 10, theta: 45, h: 2 }, B: { u: 12, theta: 30, h: 1, t0: 0.5 }, D: 12 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: under the ceiling, everything it says', () => {
+  const K = KITS.ceiling;
+  const bag = [];
+  for (const k of [{ g: 9.8, h: 0.9, top: 10.9 }, { g: 9.8, h: 0.9, u: 14, C: 11.5 }, { g: 9.8, h: 0.9, u: 16, C: 11.5 }, { g: 9.8, u: 14, C: 10 }, { g: 9.8, u: 14, top: 10 }, {}]) {
+    const r = K.solve(k);
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: up a rough slope, everything it says', () => {
+  const K = KITS.rough, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ u: 12, alpha: 10, mu: 0.4, m: 0.8, g: 10 }, { u: 6, alpha: 30, mu: 0.2 }, { u: 5, alpha: 30, mu: 0, m: 2 }, { u: 5, alpha: 1, mu: 0 },
+    { u: 5, alpha: 45, mu: 1, m: 1 }, { u: -3, alpha: 10, mu: 0.2 }, { u: 5, alpha: 95, mu: 0.2 }, { u: 5, alpha: 10, mu: -1 }, { u: 5, alpha: 10, mu: 0.2, m: 0 }, {}]) {
+    const r = K.solve({ g: 9.8, ...k });
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tTop * 0.5, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: down the slope and across the flat, everything it says', () => {
+  const K = KITS.runout, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ alpha: 30, L: 3, m: 0.5, F2: 1, vAsk: 2.5, g: 10 }, { look: 'ramp', alpha: 20, u: 10, vB: 8, dB: 5, m: 10 }, { alpha: 20, mu1: 0.2, L: 10, mu2: 0.3 },
+    { alpha: 20, u: 5, mu1: 0.6, L: 2, mu2: 0.3 }, { alpha: 10, mu1: 0.5, L: 3, mu2: 0.2 }, { alpha: 30, L: 3 }, { alpha: 30, L: 3, mu2: 0.2, vAsk: 99 }, { alpha: 95 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tB, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: dropped, or slid down a ramp, everything it says', () => {
+  const K = KITS.dropramp, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  for (const k of [{ h: 2.5, thetaV: 60, mu: 0.2, m: 2 }, { h: 2.5, theta: 30 }, { h: 2.5, theta: 10, mu: 0.3 }, { h: 2.5, theta: 30, thetaV: 60 }, { h: 2.5 }, { h: 10, theta: 45, mu: 0.5, m: 5 }, { h: -1, theta: 30 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: with and without air resistance, everything it says', () => {
+  const K = KITS.airdrag, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  for (const k of [{ h: 15, m: 0.5, R: 0.9 }, { h: 15, a: 8 }, { h: 15, m: 0.5, v: 15.5 }, { h: 15, v: 15.5 }, { h: 15, m: 0.5, R: 5 }, { h: 15, v: 20 }, { h: 15, R: 0.9 }, { h: 15, m: 0.5, R: 0 }, { h: 40, u: 3, m: 2, R: 4 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: up a rough slope, timed, everything it says', () => {
+  const K = KITS.slopegates, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  for (const k of [{ theta: 3 }, {}, { theta: 10 }, { t2: 3 }, { theta: 0.5 }, { d1: 1, t1: 1, d2: 3, t2: 1 }, { d1: 1, t1: 1, d2: 3, t2: 1, theta: 5 }, { d1: 0 }, { t1: -1 }]) {
+    const r = K.solve(K.read({ d1: 0.8, t1: 0.6, d2: 0.8, t2: 1, g: 10, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two travellers, one bicycle, everything it says', () => {
+  const K = KITS.bicycle, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  const base = { 'A.ride': 20, 'A.rideT': 1, 'A.walk': 5, 'B.walk': 4, 'B.ride': 15 };
+  for (const k of [{}, { 'A.rideT': null, 'A.rideD': 20 }, { 'B.walk': 25 }, { 'A.walk': 15 }, { 'B.walk': 20 }, { 'A.ride': -3 }, { 'A.rideD': 20 }, { 'A.rideT': null }, { 'B.ride': 30, 'A.walk': 6.5 }]) {
+    const r = K.solve(K.read({ ...base, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: down the slope and straight down, everything it says', () => {
+  const K = KITS.slopedrop, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  for (const k of [{ u: 4.9, a: 4.9 }, { u: 4.9, theta: 30 }, { u: 5, theta: 30, w: 1 }, { u: 0, a: 4.9 }, { u: 5, theta: 30, w: 3 }, { u: 5, a: 12 }, { u: 5, a: 4.9, theta: 40 }, { u: 5 }, { u: -2, a: 3 }, { u: 3, theta: 89 }]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: a change of course, everything it says', () => {
+  const K = KITS.course, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  const base = { units: 'km', t0: 1200, 'r0.x': 16, 'r0.y': 5, 'v1.x': -2.5, 'v1.y': 6, tHit: 1500, tc: 1400, sp2: 5, dir2: 'N', due: 'E', T: 1600 };
+  for (const k of [{}, { due: 'NE' }, { due: 'W' }, { sp2: null, dir2: null, 'v2.x': -3, 'v2.y': -1 }, { t0: null, tHit: 3, tc: 2, T: 4 }, { tHit: null, 'R.x': 2, 'R.y': -4 }, { tc: 1600 }, { tc: 1475 }, { units: 'm' }, { dir2: 'SW' }, { 'v1.x': 0, 'v1.y': 0 }, { 'r0.x': 0, 'r0.y': 0, sp2: null, dir2: null, 'v2.x': 5, 'v2.y': 0 }, { t0: 2200, tHit: null, 'R.x': 8.5, 'R.y': 23, tc: 2300, sp2: 0.5, T: null }, { 'r0.x': 10, 'r0.y': 0, 'v1.x': -1, 'v1.y': 0, tHit: null, 'R.x': 0, 'R.y': 0, tc: null, sp2: null, dir2: null, t0: null, T: null }]) {
+    const r = K.solve(K.read({ ...base, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: the last stretch of a fall, everything it says', () => {
+  const K = KITS.lastfall, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ p: 35, dv: 10, g: 10 }, { p: 25, tau: 1 }, { p: 20, k: 2 }, { p: 35, dv: 10, u: 5 }, { p: 5, tau: 3 }, { p: 35, dv: 10, tau: 1 }, { look: 'cliff', p: 12, dv: 4 }, { p: 1, dv: 0.001 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMid, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: into the water, everything it says', () => {
+  const K = KITS.tank, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ h: 5, D: 4, m: 3, aL: 5.5, g: 10 }, { h: 5, D: 4, m: 3, R: 13.5 }, { h: 2, D: 6, m: 0.5, R: 8 }, { h: 0, u: 3, D: 2, aL: -1 }, { h: 1, D: 2, m: 2, R: 19.6 },
+    { look: 'lab', h: 0.5, D: 0.8, m: 0.05, R: 0.3 }, { h: 5, D: 4, m: 3, R: 13.5, aL: 5.5 }, { h: 5, D: 4, R: 13.5 }, { h: 5, D: 4, m: 3, aL: 12 }, { h: 0, D: 4, m: 3, aL: 5 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMid, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: up the hill and down it, everything it says', () => {
+  const K = KITS.drive, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  for (const k of [{ m: 1250, D: 1200, R: 350, sinA: 0.05, s: 100, g: 10 }, { way: 'up', look: 'lorry', m: 12000, R: 7500, h: 25, s: 500, u: 24, v: 16 }, { way: 'up', m: 12000, D: 9660, h: 25, s: 500, u: 24, v: 16 },
+    { way: 'down', m: 900, D: 400, alpha: 6, s: 80, u: 5 }, { m: 1250, D: 500, R: 350, sinA: 0.05, s: 100 }, { way: 'up', m: 1000, D: 300, R: 200, alpha: 5, s: 200, u: 10 },
+    { m: 1250, R: 350, sinA: 0.05, s: 100, v: 10 }, { m: 1250, D: 1200, sinA: 1.2, s: 100 }, { way: 'up', m: 100, R: 900, h: 5, s: 50, u: 2, v: 10 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMid, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: pulled by a rope, everything it says', () => {
+  const K = KITS.rope, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ m: 30, mu: 0.2, theta: 20, T: 150, v: 12 }, { m: 78, mu: 0.25, tanA: 5 / 12, a: 0.5, v: 3 }, { m: 2, mu: 0.6, alpha: 20, T: 18, v: 1 },
+    { m: 10, mu: 0.3, T: 60, v: 4 }, { m: 30, mu: 0.2, theta: 80, T: 400, v: 12 }, { m: 30, mu: 0.2, T: 50, v: 12 }, { m: 30, mu: 0, T: 150, v: 12 }, { m: 30, mu: 0.2, T: 150 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tRel / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: the lift, its cable and its floor, everything it says', () => {
+  const K = KITS.cable, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ a1: 2, V: 3, t3: 2.5, D: 27, M: 120, m: 80 }, { a1: 2, V: 3, t3: 2.5, D: 27, M: 120 }, { a1: 1, t1: 3, t2: 4, a3: 1.5, M: 500, m: 60 },
+    { a1: 2, V: 3, t3: 0.2, D: 27, M: 120, m: 80 }, { a1: 2, V: 3, t3: 2.5, D: 27 }, { a1: 2, V: 3, t3: 2.5, D: 27, M: 120, m: -5 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: down a rough slope, everything it says', () => {
+  const K = KITS.slide, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ look: 'slipway', alpha: 15, s: 50, v: 12.6, m: 800 }, { look: 'roof', alpha: 30, mu: 0.4, s: 3 }, { look: 'plane', alpha: 30, s: 2.7, t: 3, m: 0.8 },
+    { alpha: 30, mu: 0, t: 2, m: 1 }, { alpha: 30, mu: 0.6, s: 3 }, { alpha: 10, s: 5, t: 1 }, { alpha: 30, mu: 0.2, s: 3, t: 2 }, { alpha: 30, s: 3 }, { alpha: 95, mu: 0.1, s: 2 }, { alpha: 30, mu: -1, s: 2 }, {}]) {
+    const r = K.solve(K.read({ g: 9.8, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: into soft ground, everything it says', () => {
+  const K = KITS.sink, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000' };
+  const bag = [];
+  for (const k of [{ h: 1.5, H: 25.6, m: 0.6, depth: 0.025 }, { h: 17.5, vL: 28, y: 19, m: 4, R: 5000 }, { h: 0, u: 10, m: 1, R: 100 }, { h: 5, u: 0, y: -5, m: 1, R: 100 },
+    { h: 5, u: 10, y: 0, m: 1, R: 100 }, { h: 5, u: 10, y: -2, m: 1, R: 100 }, { h: 2, u: 5, y: 40, m: 1, R: 20 }, { h: 1, H: 0, depth: 0.1 }, { h: 10, vL: -14, m: 1, R: 100 },
+    { h: 1, u: 1, m: 1, R: 9.81 }, { h: 2, u: 5, m: 1, R: 5 }, { h: 1.5, u: 5, H: 2, m: 1, R: 100 }, {}]) {
+    const r = K.solve({ g: 9.8, ...k });
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tLand * 0.5, r.f.tLand + r.f.tSink * 0.5, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) { check('graph', `${gr.title} ${gr.unit}`, bag); if (gr.note) check('graph note', gr.note, bag); }
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('What Ask Suvat says it read, and what the engine made of it', () => {
   const READINGS = [
     { scenario: 'platform-angle', h: 25, s: 100, g: 9.8, angle: { degrees: 45 }, asks: ['speed of projection'] },
@@ -293,6 +1026,269 @@ group('Along a straight road: everything the engine says, and the working', () =
   }
   ok(said > 25, `the sweep reaches the road's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing on the road is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two in one vertical line, everything it says', () => {
+  const K = KITS.pair;
+  const INPUTS = [
+    { A: { h: 0, u: 20 }, B: { h: 40, u: 0, t0: 1 }, g: 10 },
+    { A: { h: 0, u: 12 }, B: { h: 0, u: 20, t0: 2 }, g: 10 },
+    { A: { h: 0, u: 30 }, B: { h: 15, u: 0 }, g: 10 },
+    { A: { h: 0, u: 20 }, B: { h: 3, u: 0, t0: 5 }, g: 9.8 },       // reached while held
+    { A: { h: 0, u: 5 }, B: { h: 40, u: 0, t0: 3 }, g: 10 },        // never together
+    { A: { h: 0, u: 5 }, B: { h: 2, u: 30 }, g: 9.81 },             // never meet
+    { A: { h: 0, u: 5 }, B: { h: 2, u: 9 }, g: 0 },                 // no gravity
+    { A: { h: 2.5, u: -4.5 }, B: { h: 0, u: 14.7, t0: 0.25 }, g: 9.81 },
+    { A: { h: 0, u: 20 }, B: { h: 0, u: 20 }, g: 10 },              // refused
+    { A: { h: 0, u: 10 }, B: { h: 20, u: 0 }, g: 10 },              // level only on the ground
+    { A: { h: 10, u: 0, t0: 5 }, B: { h: 0, u: 5 }, g: 10 },        // one lands while the other is held up
+    { A: { h: 5, u: 0, t0: 10 }, B: { h: 20, u: 0 }, g: 10 },       // a negative root rejected
+    { A: { h: 0, u: 5 }, B: { h: 20, u: 5 }, g: 0 },                // nothing lands
+    { A: { h: 0, u: 4 }, B: {}, g: 9.8 },                           // missing
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solvePair(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.moment) { said++; check('moment', r.moment.text, bag); }
+    for (const st of pairWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of K.fields) check('box', `${f.label} ${f.hint}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  for (const s of LIBRARY) check('card', `${s.name} ${s.sub} ${s.note}`, bag);
+  ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: a journey in stages, everything it says', () => {
+  const K = KITS.journey;
+  const INPUTS = [
+    { a1: 0.5, a3: 0.25, T: 300, D: 6300, at: { t: 250, s: 3150, v: 10 } },
+    { V: 25, T: 700, D: 15000, rel: { kind: 't3=k*t1', k: 4 }, at: { t: 572 } },
+    { V: 25, T: 180, D: 3300, rel: { kind: 'a3=k*a1', k: 2 } },
+    { a1: 0.3, t1: 80, a3: 0.5, D: 4800 },
+    { t1: 60, t3: 30, T: 270, D: 4500, at: { s: 2250, v: 5 } },
+    { V: 15, a3: 2.5, D: 885, rel: { kind: 't1=k*t2', k: 1 / 3 } },
+    { V: 22, t1: 30, T: 120, D: 2145 },
+    { V: 30, a1: 0.5, a3: 0.25, T: 300, D: 6300 },
+    { a1: 1, a3: 1, T: 20, D: 100, at: { v: 10 } },
+    { V: 30, a1: 0.5, a3: 0.25, T: 300, D: 6000 },
+    { a1: 0.5, a3: 0.25, T: 100, D: 6300 },
+    { V: 10, T: 20 },
+    { a1: 0.5, a3: 0.25, T: 300, D: 6300, at: { t: 400, s: 9000, v: 40 } },
+    // in stages, starting and ending at speed
+    { u: 20, stages: [{ kind: 'hold', t: 25 }, { kind: 'down', v: 8, a: 0.4 }, { kind: 'hold', t: 60 }, { kind: 'up', v: 20 }], D: 1960, at: { t: 100, s: 1000, v: 10 } },
+    { u: 0, stages: [{ kind: 'up', v: 5, t: 4 }, { kind: 'hold', t: 60 }, { kind: 'down', t: 20 }], T: 84, D: 400, at: { t: 64, s: 400, v: 4.5 } },
+    { u: 10, stages: [{ kind: 'up', a: 0.5, t: 20 }, { kind: 'down', v: 0, a: 1 }], at: { t: 30 } },
+    { u: 0, stages: [{ kind: 'up', a: 2 }, { kind: 'hold', t: 10 }, { kind: 'up', a: 1, t: 5 }, { kind: 'down', v: 0, a: 3 }], D: 500 },
+    { u: 0, stages: [{ kind: 'up', t: 10 }, { kind: 'down', v: 0, t: 30 }], D: 400, rel: { kind: 'a', x: 1, y: 2, k: 3 } },
+    { u: 5, stages: [{ kind: 'down', v: 8, t: 4 }] },
+    { stages: [{ kind: 'up' }, { kind: 'hold' }] },
+    { u: 0, stages: [{ kind: 'up', v: 10, t: 5 }, { kind: 'hold', t: 1 }], rel: { kind: 't', x: 1, y: 1, k: 2 } },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveJourney(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    for (const st of journeyWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  const vals = { n: '4', k1: 'up', k2: 'hold', k3: 'down', k4: 'up' };
+  for (const f of [...K.fields, ...K.rows(vals).flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${f.aria || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const r of K.rows(vals)) check('row', `${r.title} ${r.hint || ''}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: two on one road, everything it says', () => {
+  const K = KITS.lanes;
+  const INPUTS = [
+    { A: { u: 20, V: 8, tau: 30 }, B: { u: 12 } },
+    { A: { a: 22 / 30, V: 22 }, B: { t0: 10 }, find: 'B.a', line: 990 },
+    { A: { a: 0.8, V: 4 }, B: { a: 1 }, find: 'B.tau', line: 100 },
+    { A: { V: 4, tau: 5 }, B: { a: 1 }, find: 'B.V', line: 100 },
+    { A: { u: 10 }, B: { t0: 5, a: 2 } },
+    { A: { u: 30, a: -2, V: 10 }, B: { u: 15, x0: -50 } },
+    { A: { u: 20 }, B: { u: 10 } },
+    { A: { u: 10 }, B: { u: 2, a: 0.5, t0: 3 }, find: 'B.V', line: 400 },
+    { A: { u: 10 }, B: { a: 1 }, find: 'B.a', at: 20 },
+    { A: { u: 10, a: 1, V: 20, tau: 10 }, B: { u: 5 } },
+    { A: { u: 10 }, B: { a: 1 }, find: 'B.a' },
+    { A: { u: 0 }, B: { u: 5 } },
+    { A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 975, where: 'rail' },
+    { A: { u: 25, ends: true }, B: { u: 20, hold: 25, ends: true }, find: 'A.hold', line: 800 },
+    { A: { u: 40, hold: 2, ends: true }, B: { u: 30, hold: 25, ends: true }, line: 975 },
+    { A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.V', line: 975 },
+    { A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.a', line: 975 },
+    { A: { u: 40, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.hold', line: 2000 },
+    { A: { u: 20, a: -1, V: 0 }, B: { u: 10 }, find: 'A.hold', line: 300 },
+    { A: { u: 40, a: -1, ends: true }, B: { u: 30, hold: 25, ends: true }, find: 'A.V', line: 975 },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveOvertake(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    for (const st of overtakeWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: moving in a plane, everything it says', () => {
+  const K = KITS.plane;
+  const INPUTS = [
+    { u: { x: -1, y: 3 }, a: { x: 0.1, y: -0.2 }, at: { due: 'E', moving: 'SE', t: 5 } },
+    { r0: { x: 13.6, y: 0 }, u: { x: 6, y: 2.4 }, a: { x: -0.8, y: 0.1 }, at: { moving: 'NW', due: 'NE' } },
+    { u: { x: -2, y: 2 }, a: { x: 4, y: -5 }, at: { t: 2, y: -4.5, x: 3, speed: 5 } },
+    { vT: { x: 6, y: 0 }, T: 4, a: { x: 3, y: -2 }, at: { t: 0 } },
+    { u: { x: 1, y: 0 }, a: { x: 0, y: 1 }, at: { moving: 'W', due: 'S', speed: 0.5 } },
+    { u: { x: 1, y: 1 } }, { a: { x: 1, y: 0 } },
+    { u: { x: 0, y: 0 }, a: { x: 3, y: -3 }, at: { moving: 'SE', due: 'NW' } },
+    { u: { x: 2, y: -2 }, a: { x: -1, y: 1 }, at: { moving: 'NW', due: 'SE' } },
+    { u: { x: 3, y: 4 }, a: { x: 0, y: 0 }, at: { speed: 5, x: 0 } },
+    { u: { x: -1, y: 2 }, a: { x: 1, y: 0 }, at: { par: { x: 1, y: 1 } } },
+    { r0: { x: 5, y: 0 }, u: { x: 1, y: 0 }, a: { x: 0, y: 0 }, at: { due: 'E', speed: 2 } },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solvePlane(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    for (const st of planeWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 100, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('The Past-paper library: a ball that bounces, everything it says', () => {
+  const K = KITS.bounce;
+  const INPUTS = [
+    { start: 'drop', h: 2, H: 1.5, g: 9.8, axis: 'down', y: 1 },
+    { start: 'down', h: 2.5, U: 24, w: 10, y: 1, stop: 'y', g: 9.8 },
+    { start: 'down', h: 2.5, V: 25, w: 10, y: 1, stop: 'y', g: 9.8, axis: 'down' },
+    { start: 'up', h: 10, U: 5, e: 0.5, n: 4, y: 3, g: 9.8 },
+    { start: 'up', h: 0, U: 9.8, w: 4.9, g: 9.8, n: 3, y: 4.9 },
+    { start: 'drop', V: 14, e: 1 / 3, g: 10, n: 6 },
+    { start: 'down', h: 2, U: 5, V: 7.2, w: 3, g: 9.81 },
+    { start: 'drop', h: 2, H: 3, g: 9.8 }, { start: 'down', U: 5, V: 4, w: 2, g: 9.8 },
+    { start: 'down', h: 20, V: 5, w: 2, g: 9.8 }, { start: 'drop', h: 2, w: 3, g: 9.8, y: 1, stop: 'y' },
+    { start: 'drop', h: 2, H: 1.5, g: 9.8, y: 3 }, { start: 'drop', h: 2, g: 9.8 },
+  ];
+  const bag = [];
+  let said = 0;
+  for (const k of INPUTS) {
+    const r = solveBounce(k);
+    for (const x of r.derived || []) { said++; check('derived', x, bag); }
+    for (const x of r.notes || []) { said++; check('note', x, bag); }
+    if (r.reason) { said++; check('reason', r.reason, bag); }
+    if (r.moment) { said++; check('moment', r.moment.text, bag); }
+    if (r.convention) check('convention', r.convention, bag);
+    for (const x of r.extras || []) check('extra', `${x.label} ${x.unit}`, bag);
+    for (const st of bounceWorking(r)) {
+      check('title', st.title, bag);
+      for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      if (st.note) check('note', st.note, bag);
+    }
+    if (r.ok) {
+      const e = K.ending(r);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+        const h = K.hud(r.f, t);
+        for (const b of [...h.left, ...h.right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      }
+    }
+  }
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
+group('What Ask Suvat\'s Solve switch shows: the engine\'s working, laid out', () => {
+  const bag = [];
+  let rows = 0;
+  const add = (steps, moment) => {
+    const h = solutionHTML(steps, { moment });
+    rows += (h.match(/ro-step-row/g) || []).length;
+    check('solution', h, bag);
+  };
+  for (const [k, o] of [[{ u: 25, theta: 45, g: 9.81 }, {}], [{ u: 28, theta: 45, h: 25, g: 9.8 }, {}],
+                        [{ g: 9.81, h: 80 }, { noAngle: true }], [{ u: 14, g: 9.81, h: 0 }, { lockAngle: true, theta: 90 }]]) {
+    const r = solveLaunch(o.lockAngle ? { ...k, theta: o.theta } : k, o);
+    if (r.ok) add(buildWorking(trajectory(r.params), trajectory(r.params).tMax), r.moment);
+  }
+  const road = solveRoad({ s: 240, v: 34, t: 10, mark: 'mid' });
+  add(roadWorking(road), road.moment);
+  const chute = solveDescent({ h: 100, g: 9.81, tOpen: 3, aChute: 25, vTerm: 6 });
+  if (chute.ok) add(descentWorking(chute.f, chute.f.tMax), null);
+  ok(rows > 15, `the sweep reaches every row of the worked solutions (${rows})`);
+  ok(bag.length === 0, 'nothing in a worked solution is written as code', bag.join('\n         '));
+  // and the model's own prose, from Search, comes out set as maths
+  const said = proseHTML('So v^2 = u^2 + 2as, and t = sqrt(2h / g) * 1 when h <= 5 and a = -9.81.');
+  ok(!/\^|sqrt|\*|<=| \/ | -9/.test(said.replace(/<[^>]+>/g, '')), 'a search answer has its code-maths set properly');
 });
 
 group('The parachute, which is the one motion with three accelerations', () => {
@@ -477,6 +1473,155 @@ group('The scenarios say it in words, or they say it properly', () => {
   for (const g of GROUPS) look(`group ${g.id}`, g);
   ok(bag.length === 0, 'no programmer\'s maths anywhere in the scenario prose',
      bag.join('\n         '));
+});
+
+group('The whiteboard: every frame it builds, for every kind of board', () => {
+  // The frames are HTML strings (js/board/frames.js), so the sweep reads
+  // them exactly as the board puts them up — given, answered and worked,
+  // for each scenario the reader can name, and with values missing.
+  const bag = [];
+  let frames = 0;
+  const BOARDS = [
+    { scenario: 'arc', u: 20, angleDegrees: 35, h: 0 },
+    { scenario: 'arc', u: 35, ratioFn: 'tan', ratioNum: 3, ratioDen: 4, h: 0,
+      others: [{ label: 'B', scenario: 'arc', u: 35, angleDegrees: 53.13 }] },
+    { scenario: 'platform', h: 30, u: 12 },
+    { scenario: 'platform-angle', h: 25, angleDegrees: 45, s: 100, g: 9.8 },
+    { scenario: 'platform-down', h: 25, u: 10, angleDegrees: 30, belowHorizontal: true },
+    { scenario: 'dropped', h: 45 },
+    { scenario: 'up', u: 14 },
+    { scenario: 'down', h: 45, u: 5 },
+    { scenario: 'time-above', u: 19.6, angleDegrees: 90, heightLine: 14.7 },
+    { scenario: 'parachute', h: 1200, tOpen: 4, aChute: 20, vTerm: 5 },
+    { scenario: 'bullet', u: 300, h: 1.5 },
+    { scenario: 'monkey', u: 22, h: 1.5, targetX: 10, targetY: 9 },
+    { scenario: 'monkey', u: 4, h: 1.5, targetX: 30, targetY: 9 },
+    { scenario: 'road', u: 25, v: 0, s: 40 },
+    { scenario: 'road', v: 34, t: 10, s: 240, atMidpoint: true },
+    { scenario: 'arc', u: 20 },                       // not enough: it says what is missing
+    { scenario: 'road', u: 20 },
+  ];
+  for (const b of BOARDS) {
+    const bp = readBlueprint({ understood: true, confidence: 'high', summary: 'A test.', title: 'Test',
+                               notes: ['Ignore air resistance. Use v^2 = u^2 + 2as and take a = -9.81.'], ...b });
+    const board = solveBoard(bp);
+    board.objects.forEach((o, i) => {
+      for (const [name, h] of [['given', givenHTML(o, i, new Set(['u']))], ['answers', answersHTML(o)], ['working', workingHTML(o)]]) {
+        frames++; check(`board ${b.scenario} ${name}`, h, bag);
+      }
+    });
+    for (const n of bp.notes) { frames++; check(`board ${b.scenario} note`, noteHTML(n), bag); }
+  }
+  ok(frames > 60, `the sweep reaches every frame the board builds (${frames})`);
+  ok(bag.length === 0, 'nothing on the whiteboard is written as code', bag.join('\n         '));
+});
+
+{
+  const { walk } = await import('../js/parts/parts.js');
+  const { stripHTML, workingCardHTML } = await import('../js/parts/strip.js');
+  group('A question in parts: every strip and every part card, swept', () => {
+    const bag = [];
+    let n = 0;
+    for (const s of LIBRARY.filter((x) => x.parts)) {
+      const K = KITS[s.kit];
+      const runs = walk((b) => K.solve(K.read(b)), s.example, s.parts);
+      runs.forEach((r, k) => {
+        if (!r?.solved?.ok) return;
+        n++;
+        check(`parts ${s.id} (${r.part.label})`, stripHTML(s.parts, runs, k, K.working(r.solved, r.moment.t)), bag);
+        check(`parts ${s.id} (${r.part.label}) card`, workingCardHTML(r), bag);
+      });
+      check(`parts ${s.id}`, stripHTML(s.parts, runs, -1, []), bag);
+    }
+    ok(n > 60, `the sweep reaches every part (${n})`);
+    ok(bag.length === 0, 'nothing in a part is written as code', bag.join('\n         '));
+  });
+}
+
+/* ── the composer: a scene Ask Suvat put together from the app's pieces ──
+   Everything it can show — the engine kit's words in each place's own, the
+   readouts it renames, the ending it rewrites, the veil's steps and every
+   refusal — swept like the rest. */
+{
+  const { compose, check: checkRecipe, fromReading } = await import('../js/compose/recipe.js');
+  const { steps } = await import('../js/compose/reveal.js');
+  group('The composer: every place, every refusal, everything it says', () => {
+    const bag = [];
+    let said = 0;
+    const base = { engine: 'projectile', objects: [{ figure: 'car' }] };
+    const RECIPES = [
+      { ...base, backdrop: 'cliff', numbers: { h: 40, u: 15, theta: 0 } },
+      { ...base, backdrop: 'bridge', objects: [{ figure: 'cyclist' }], numbers: { h: 12, u: 7, theta: -10, level: -5 } },
+      { ...base, backdrop: 'house', objects: [{ figure: 'ball' }], numbers: { h: 8, u: 10, theta: 30, level: 2 } },
+      { ...base, backdrop: 'ground', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 20, theta: 35 } },
+      { ...base, backdrop: 'road', objects: [{ figure: 'motorcycle' }], numbers: { h: 0, u: 20, theta: 25, g: 9.8 } },
+      { ...base, backdrop: 'sea', objects: [{ figure: 'ball' }], numbers: { h: 0, u: 12, theta: 50 } },
+      { ...base, backdrop: 'hall', objects: [{ figure: 'ball' }], numbers: { h: 1.5, u: 9, theta: 60 } },
+      { ...base, backdrop: 'orchard', objects: [{ figure: 'ball' }], numbers: { h: 4, u: 0, theta: 0 } },
+      { ...base, backdrop: 'tower', objects: [{ figure: 'stone' }], numbers: { u: 15, theta: 90, t: 6 } },
+      { ...base, backdrop: 'ground', objects: [{ figure: 'ball' }], numbers: { u: 10, theta: 90, t: 1.5 } },
+      { ...base, backdrop: 'board', objects: [{ figure: 'diver' }], numbers: { h: 10, u: 7, theta: 90 } },
+      { ...base, backdrop: 'cliff', below: 'ground', objects: [{ figure: 'ball' }], numbers: { h: 50, u: 8, theta: 90 } },
+      { ...base, backdrop: 'table', objects: [{ figure: 'coin' }], numbers: { h: 0.8, u: 2, theta: 0 } },
+      { ...base, backdrop: 'well', objects: [{ figure: 'bucket' }], numbers: { h: 20, u: 0, theta: -90 } },
+      { ...base, backdrop: 'ground', objects: [{ figure: 'rocket' }], numbers: { h: 0, u: 40, theta: 80 } },
+      { ...base, backdrop: 'bridge', below: 'road', objects: [{ figure: 'stone' }], numbers: { h: 12, u: 5, theta: 0 } },
+      { ...base, backdrop: 'air', objects: [{ figure: 'parcel' }], numbers: { h: 80, u: 0, theta: -90 } },
+      { ...base, backdrop: 'air', objects: [{ figure: 'parcel' }], numbers: { u: 0, theta: -90 } },
+      { ...base, backdrop: 'road', objects: [{ figure: 'skateboarder' }], numbers: { h: 2, u: 4, theta: 0 } },
+      { ...base, backdrop: 'ground', objects: [{ figure: 'rocket' }], numbers: { h: 0, u: 30, theta: 80 } },
+      { engine: 'pair', backdrop: 'tower', objects: [{ figure: 'ball' }, { figure: 'stone' }], numbers: { 'A.h': 0, 'A.u': 20, 'B.h': 40, 'B.u': 0, 'B.t0': 1, g: 10 } },
+      { engine: 'twin', backdrop: 'cliff', objects: [{ figure: 'car' }, { figure: 'stone' }], numbers: { h: 40, 'A.u': 15, 'A.theta': 0, 'B.u': 0, 'B.theta': -90, 'B.t0': 1 } },
+      { engine: 'twin', backdrop: 'tower', objects: [{ figure: 'ball' }, { figure: 'ball' }], numbers: { h: 30, 'A.u': 20, 'A.theta': 30, 'B.u': 20, 'B.theta': 60 } },
+      { engine: 'pair', backdrop: 'house', objects: [{ figure: 'ball' }, { figure: 'ball' }], numbers: { 'A.h': 8, 'A.u': -3, 'B.h': 0, 'B.u': 12 } },
+      { engine: 'bounce', backdrop: 'house', objects: [{ figure: 'ball' }], numbers: { start: 'drop', h: 6, e: 0.7, n: 3 } },
+      { engine: 'bounce', backdrop: 'hall', objects: [{ figure: 'ball' }], numbers: { start: 'up', h: 1.2, U: 5, e: '1/2', n: 2, y: 1 } },
+    ];
+    for (const R of RECIPES) {
+      const c = compose(R);
+      if (!c.ok) { said++; check('refused', c.reason, bag); continue; }
+      const K = c.kit, r = K.solve(K.read(c.boxes));
+      check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+      for (const x of steps(c.scenario.recipe)) { said++; check('veil', x.say, bag); }
+      for (const x of [...(r.derived || []), ...(r.notes || []), r.reason]) if (x) { said++; check('engine', x, bag); }
+      if (!r.ok) continue;
+      for (const st of K.working(r, r.f.tMax / 2)) {
+        check('title', st.title, bag);
+        for (const row of st.rows) { said++; for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+        if (st.note) check('note', st.note, bag);
+      }
+      const e = K.ending(r, c.scenario.ending);
+      for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
+      for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
+      for (const x of c.scenario.ending.why.flat()) { said++; check('why', x, bag); }
+    }
+    const no = { ...base, backdrop: 'cliff', numbers: { h: 40 } };
+    for (const R of [{ ...no, backdrop: 'atlantis' }, { ...no, engine: 'warp' }, { ...no, objects: [{ figure: 'ship' }] }, { ...no, numbers: { h: -150000 } },
+      { ...no, numbers: { mass: 3 } }, { ...no, numbers: { h: 'x' } }, { ...no, numbers: { theta: 120 } }, { ...no, objects: [] }, { ...no, engine: 'plane' },
+      { ...no, backdrop: 'ground', numbers: { h: 0, u: 5, theta: -20 } }, { ...no, backdrop: 'orchard', numbers: { h: 3 } }]) { said++; check('refusal', checkRecipe(R).reason, bag); }
+    for (const x of [
+      { understood: true, scenario: 'library', library: 'from-a-height', summary: 'A person jumps off a 10 m board.', boxes: { place: 'board', h: 10, u: 7, theta: 90 }, who: 'person', assumed: ['angle'] },
+      { understood: true, scenario: 'dropped', h: 80, summary: 'A parcel is dropped from a helicopter.', who: 'parcel' },
+      { understood: true, scenario: 'up', h: 0, u: 30, who: 'rocket' },
+    ]) for (const n of fromReading(x).notes) { said++; check('reply note', n, bag); }
+    ok(said > 150, `the sweep reaches the composer's own words (${said} lines)`);
+    ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+  });
+}
+
+group('Resolve on a library stage: every card it can show', () => {
+  const bag = []; let said = 0;
+  for (const e of LIBRARY) {
+    const K = KITS[e.kit], r = K.solve(K.read(e.example || {}));
+    if (!r.ok) continue;
+    for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
+      const R = resolveKit(K, r, r.f, t);
+      check('resolve', `${R.note} ${R.tUnit || ''}`, bag);
+      for (const b of R.blocks) for (const q of b.rows) { said++; check('resolve', `${b.name} ${q.name} ${q.unit} ${q.formula} = ${q.sub} ${q.note}`, bag); }
+    }
+  }
+  ok(said > 300, `the sweep reaches every row (${said})`);
+  ok(bag.length === 0, 'nothing on the card is written as code', bag.join('\n         '));
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

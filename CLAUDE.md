@@ -68,11 +68,23 @@ js/core/solve.js        what the student knows -> the motion, or a reason why no
 js/core/projectile.js   the idealised projectile model
 js/core/descent.js      a parachute drop: three phases, each one of them SUVAT
 js/core/road.js         a vehicle along a straight road: the five, with no gravity in them
+js/core/stages.js       a motion in stages along one line, and when two such motions meet
+js/core/pair.js         two particles in one vertical line, set off at different times
+js/core/journey.js      a journey in three stages, rest to rest: the trapezium and its area
+js/core/overtake.js     two on one road: when they are level, or the one number that makes them
+js/core/plane.js        a particle in a plane with a constant acceleration vector, in i and j
+js/core/target.js       a projectile that has to pass one point: over a wall, a net, a tree, or through a target
+js/core/numeric.js      snap and fractions, shared by every engine
+js/library.js           the Past-paper library: new scenarios, each naming its papers
+js/kits/                a library scenario's pieces wired for the app — see design/components.md
 js/core/question.js     exam question -> engine parameters
+js/board/               the whiteboard: describe a motion, get a board of the app's own pieces
+js/compose/             the composer: Ask Suvat's recipes, checked against the registry of pieces, and the reveal
 js/render/              the scene, the graphs, canvas helpers
 js/world/               the stadium — and nothing outside it
 worker/                 Cloudflare Worker for reading a photo of a question
-design/                 tokens, notation, scenario research, preset list
+design/                 tokens, notation, scenario research, preset list,
+                        components.md (the library's reusable pieces), library/catalogue.md
 ```
 
 ## Tests
@@ -85,4 +97,11 @@ node test/pace.test.mjs         # how fast a flight should be played back
 node test/scenarios.test.mjs    # the scenarios, as data
 node test/preload.test.mjs      # the modulepreload hints match the real graph
 node test/notation.test.mjs     # that no computer maths reaches a student
+node test/blueprint.test.mjs    # the whiteboard: the model lays out, the engine calculates
+node test/compose.test.mjs      # the composer: recipes held to the registry, played by the engine's kit
+node test/library.test.mjs      # the Past-paper library: each scenario against its mark schemes
+node test/chats.test.mjs       # Ask Suvat's chats, kept in this browser
+node test/account.test.mjs     # accounts: sign-in, sessions, chats kept per account (site/)
+node test/sense.test.mjs       # common sense: everyday sentences always run, and what is assumed is said
+node test/focus.test.mjs       # the reader sends each question only the catalogue it needs (worker/src/focus.js)
 ```

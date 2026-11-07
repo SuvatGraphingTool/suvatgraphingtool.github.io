@@ -660,8 +660,11 @@ function crossingTimes(lineInfo, f, params) {
   const disc = f.uy * f.uy + 2 * g * -sWorld;
   if (disc < 0) return [vals.t];
   const r = Math.sqrt(disc);
+  // At the top the two roots are one (the discriminant is zero), and the
+  // greatest height is reached once, not "twice, at 2.86 s and 2.86 s".
   const roots = [(f.uy - r) / g, (f.uy + r) / g]
     .filter((t) => t > EPS && t <= f.tMax + 1e-9)
-    .sort((a, b) => a - b);
+    .sort((a, b) => a - b)
+    .filter((t, i, all) => i === 0 || t - all[i - 1] > 1e-6);
   return roots.length ? roots : [vals.t];
 }

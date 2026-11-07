@@ -10,6 +10,29 @@
 
 const DEG = 180 / Math.PI;
 
+// The road's travellers, as the keys of FIGURES in js/render/figures.js. The
+// one the question names first wins ("a car … a motorcycle leaves later" is
+// the car's question); a person is a runner only when nothing else is named.
+const TRAVELLERS = [
+  ['motorcycle', /\b(motor ?cycl(e|ist)|motorbike|motor bike|moped|scooter)s?\b/],
+  ['cyclist', /\b(cyclist|bicycle|bike|cycles|cycling)s?\b/],
+  ['train', /\b(train|locomotive|tram)s?\b/],
+  ['runner', /\b(runner|running|sprinter|athlete|jogger)s?\b/],
+  ['lorry', /\b(lorry|lorries|truck|van|bus)s?\b/],
+  ['car', /\b(car)s?\b/],
+];
+const PEOPLE = /\b(girl|boy|man|woman|person|child|student)s?\b/;
+/** The traveller a piece of text names first, or undefined. */
+export function travellerIn(text) {
+  const said = String(text || '').toLowerCase();
+  let best, at = Infinity;
+  for (const [k, re] of TRAVELLERS) {
+    const m = re.exec(said);
+    if (m && m.index < at) { best = k; at = m.index; }
+  }
+  return best || (PEOPLE.test(said) ? 'runner' : undefined);
+}
+
 /* ── Angles ──────────────────────────────────────────────────────────────
    Papers give angles as trig ratios far more often than as degrees:
    sin α = 3/5, cos α = 4/5, tan α = 3/4, tan α = 7/24. Accept either. */
@@ -252,8 +275,17 @@ export function toApp(x) {
     let mark;
     if (x.atMidpoint === true) { mark = 'mid'; put('mark', null, 'given', { mid: true }); }
     else if (isNum(x.atDisplacement)) { mark = x.atDisplacement; put('mark', mark, 'given'); }
+    // "its distance from O after 6 s": a time the question asks about
+    const at = isNum(x.atTime) && x.atTime > 0 && mark == null ? x.atTime : undefined;
+    if (at != null) put('at', at, 'given');
+    // "50 m during the fifth second": the distance in one second, not the five's s and t
+    const nth = isNum(x.nthSecond) && Number.isInteger(x.nthSecond) && x.nthSecond >= 1 && isNum(x.sInSecond) ? { n: x.nthSecond, s: x.sInSecond } : undefined;
+    if (nth) { delete given.s; delete given.t; for (let i = items.length - 1; i >= 0; i--) if (['s', 't'].includes(items[i].k)) items.splice(i, 1); put('nth', nth.s, 'given', { n: nth.n }); }
+    // What is moving, so the stage can draw it: the reader's own word for it,
+    // or the first traveller its summary names. Lorry when it names none.
+    const who = travellerIn(`${typeof x.object === 'string' ? x.object : ''} ${typeof x.summary === 'string' ? x.summary : ''}`);
     return {
-      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, items, notes,
+      ok: true, id, given, theta: undefined, h: undefined, markers: {}, descent: {}, mark, at, nth, fromRest: x.fromRest === true && isNum(x.u) && x.u > 0, who, items, notes,
       asks: Array.isArray(x.asks) ? x.asks.filter((q) => typeof q === 'string').slice(0, 6) : [],
       summary: typeof x.summary === 'string' ? x.summary : '',
       confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium',
@@ -261,7 +293,8 @@ export function toApp(x) {
   }
 
   // g — stated, or the 9.81 every scenario seeds.
-  if (isNum(x.g) && x.g > 0) { given.g = x.g; put('g', x.g, 'given'); }
+  // (a g the student chose, or a paper's rubric's, is said as such: js/ai/gchoice.js, worker/src/place.js)
+  if (isNum(x.g) && x.g > 0) { given.g = x.g; put('g', x.g, x.gFrom === 'choice' ? 'chosen' : x.gFrom === 'Edexcel' ? 'paper' : 'given'); }
   else { given.g = DEFAULT_G; put('g', DEFAULT_G, 'assumed'); }
 
   // h — measured from the ground. The ground scenarios start on it.

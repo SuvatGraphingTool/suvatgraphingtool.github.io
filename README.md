@@ -2,7 +2,16 @@
 
 An interactive projectile-motion playground for A-level physics and maths.
 
-**Live:** https://suvatgraphingtool.github.io/
+## Where it lives
+
+| | Address | What's on it | Built from |
+|---|---|---|---|
+| **The site** | https://suvatgraphingtool.github.io/ | Everything: the redesign, **Ask Suvat**, the Past-paper library, the whiteboard and the composer | `main`, via GitHub Pages |
+| **Redesign** | https://suvat-redesign.suvatgraphingtool.workers.dev | The same, plus sign-in and chats kept in an account | the `redesign` branch, via `scripts/deploy-redesign.sh` |
+
+Accounts need the small API in `site/`, and GitHub Pages serves files only, so
+sign-in stays hidden on `github.io`: chats and whiteboards are kept in the
+browser there.
 
 We use the SUVAT equations constantly but rarely *see* the thing they describe.
 This is the projectile, the elapsed time, the acceleration and the velocity, all
@@ -38,6 +47,12 @@ time cursor with the animation. The area under each curve is shaded live, so
 **Solver** — enter any three of s, u, v, a, t. It picks the equation that omits
 what you don't know, rearranges it, substitutes, and shows every step. Where a
 ± root or a quadratic gives two answers, it says so instead of quietly choosing.
+
+**Ask Suvat** (AI version only) — a chat box on the first screen. The AI only
+*reads* the question: it picks the scenario and the values given, and the
+engine works out everything else, the same way it does for a typed question.
+The model runs behind a Cloudflare Worker in [`worker/`](worker/), which holds
+the key.
 
 **Reference** — the five equations, when each applies, and the projectile
 results derived from them.

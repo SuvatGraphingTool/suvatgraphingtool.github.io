@@ -78,6 +78,7 @@ export function flight({ u, theta, h, g }) {
     tFlight, tMax: bounded, infinite: !isFinite(tFlight),
     tApex: apexInFlight ? tApex : (uy > 0 ? tApex : 0),
     apexHeight: Math.max(h, apexHeight),
+    apexRise: Math.max(h, apexHeight) - h,   // the same top, measured from the launch
     apexInFlight,
     range,
     vLanding,
@@ -189,6 +190,21 @@ export function timeAbove(f, L) {
   // Below the launch point: it is already above the line when the clock starts.
   const t2 = Math.min(tEnd, (uy + Math.sqrt(uy * uy + 2 * g * (h - L))) / g);
   return { above: t2, t1: 0, t2, crosses: 1 };
+}
+
+/**
+ * Everything the screen says about a height line, computed here (rule 4):
+ * the interval above it, how far it is above the launch point (`rel`),
+ * whether it is exactly the greatest height (`atTop`, reached once at
+ * `tTop`), whether the interval ends at the landing (`lands`), and whether
+ * the flight has gravity in it at all.
+ */
+export function lineFacts(f, L) {
+  const r = timeAbove(f, L);
+  const top = f.apexHeight, h = f.params.h || 0;
+  const atTop = f.tApex > 0 && f.params.g > 1e-9 && Math.abs(L - top) <= 1e-6 * Math.max(1, Math.abs(top));
+  return { ...r, rel: L - h, atStart: Math.abs(L - h) < 1e-9, atTop, tTop: f.tApex,
+           lands: r.above > 1e-9 && r.t2 >= f.tMax - 1e-9, noGravity: !(f.params.g > 1e-9) };
 }
 
 /**

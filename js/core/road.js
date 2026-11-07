@@ -19,6 +19,7 @@
 
 import { solve as solveFive, NAMES, UNITS } from './suvat.js';
 import { M, num, signed } from '../notation.js';
+import { snap } from './numeric.js';
 
 const FIVE = ['s', 'u', 'v', 'a', 't'];
 // Which three to lean on when more than three are given: the ones a road
@@ -108,11 +109,27 @@ export function timeToReach(f, s1) {
 
 /**
  * Any three of the five, and optionally a point to time it at.
- * @param k  { s, u, v, a, t, mark }  mark: metres from A, or 'mid'
+ * @param k  { s, u, v, a, t, mark, at }  mark: metres from A, or 'mid'; at: a time
+ *           from A the question asks about, other than t ("its distance from O after 6 s")
  * @returns the shape of solveLaunch: { ok, reason?, mode, params, f, derived,
  *          notes, five, extras, moment, convention, steps, ... }
  */
-export function solveRoad(k = {}) {
+export function solveRoad(k0 = {}) {
+  let k = k0;
+  // "50 m during the fifth second": s(n) − s(n − 1) = u + a(n − ½). With u (or a)
+  // that is a, and the motion is the five to t = n
+  let nthRows = null;
+  if (have(k.nth) && k.nth >= 1 && Number.isInteger(k.nth) && have(k.sNth)) {
+    const n = k.nth, hn = n - 0.5;
+    if (have(k.u) === have(k.a)) {
+      return { ok: false, reason: `A distance in one second fixes one more number: give the speed it starts with, or its acceleration — not ${have(k.u) ? 'both' : 'neither'}.`, derived: [], notes: [], given: [], used: [], spare: [], clash: [] };
+    }
+    const uu = have(k.u) ? k.u : snap(k.sNth - k.a * hn), aa = have(k.a) ? k.a : snap((k.sNth - k.u) / hn);
+    nthRows = [
+      { f: M`s_${n} - s_${n - 1} = u + a(n - ½)`, s: have(k.u) ? M`${d(k.sNth)} = ${d(uu)} + a(${n} - ½)` : M`${d(k.sNth)} = u + ${sb(aa)}(${n} - ½)`, r: have(k.u) ? eqv('a', aa) : eqv('u', uu) },
+    ];
+    k = { u: uu, a: aa, t: n, mark: k.mark, at: k.at, who: k.who, brakes: k.brakes, turns: k.turns };
+  }
   const given = FIVE.filter((x) => have(k[x]));
   const fail = (reason) => ({ ok: false, reason, derived: [], notes: [], given, used: [], spare: [], clash: [] });
 
@@ -126,7 +143,14 @@ export function solveRoad(k = {}) {
   const use = PREFER.filter((x) => given.includes(x)).slice(0, 3);
   const known = Object.fromEntries(use.map((x) => [x, k[x]]));
   const r = solveFive(known);
-  if (!r.ok) return fail('Those three do not fix the motion. Try a different three of the five.');
+  if (!r.ok) {
+    // braking that stops it short of the distance: it never gets there
+    if (have(known.u) && have(known.a) && have(known.s) && known.u * known.a < 0 && known.u ** 2 + 2 * known.a * known.s < 0) {
+      const stop = -(known.u ** 2) / (2 * known.a);
+      return fail(`It stops before it has gone ${M`${d(Math.abs(known.s))} [m]`}: from ${M`v^2 = u^2 + 2as`} with ${M`v = 0`}, it comes to rest after ${M`s = ${d(Math.abs(stop))} [m]`}.`);
+    }
+    return fail('Those three do not fix the motion. Try a different three of the five.');
+  }
   const V = r.values;
 
   if (!(V.t > EPS)) {
@@ -149,11 +173,26 @@ export function solveRoad(k = {}) {
     notes.push(`${spare.length === 1 ? 'One value was' : 'Some values were'} more than enough — `
       + 'the rest already fixed the motion, and it agrees with them.');
   }
-  if (V.a < -EPS) notes.push('The acceleration is negative, so it is slowing down: braking.');
+  // Slowing down only when the acceleration is against the velocity: from
+  // rest, a negative a speeds it up the other way. A runner slows; a vehicle
+  // (or a bicycle) brakes. `who` and `brakes` say which (js/render/figures.js).
+  const who = k.who || 'lorry', brakes = k.brakes !== false, turns = k.turns === true;
+  const slow = brakes ? 'slowing down: braking' : 'slowing down';
+  if (V.a < -EPS && V.u > EPS) notes.push(`The acceleration is negative, so it is ${slow}.`);
+  else if (V.a > EPS && V.u < -EPS) notes.push(`It starts out moving away from B, and the acceleration is towards B, so it is ${slow}.`);
+  else if (Math.abs(V.a) > EPS && Math.abs(V.u) <= EPS) {
+    notes.push(`It starts from rest and speeds up towards ${V.a > 0 ? 'B' : 'A'}.`);
+  }
   const tStop = Math.abs(V.a) > EPS ? -V.u / V.a : NaN;
+  // when it is at rest, if it ever is, and the distance it travels counting the way back
+  const sAt = (t) => snap(V.u * t + 0.5 * V.a * t * t);
+  const stop = tStop > EPS && tStop <= V.t + 1e-6 ? { t: snap(tStop), s: sAt(tStop) } : null;
+  const path = stop && tStop < V.t - 1e-6 ? snap(Math.abs(stop.s) + Math.abs(V.s - stop.s)) : snap(Math.abs(V.s));
   if (tStop > EPS && tStop < V.t - 1e-6) {
-    notes.push(`It comes to rest after ${M`t = ${d(tStop)} [s]`} and then moves back the way it came. `
-      + 'The equations allow it; a lorry braking does not.');
+    // a lorry or a train does not turn round on its own (it would have to
+    // reverse); a runner or a cyclist simply turns and goes back
+    notes.push(`It comes to rest after ${M`t = ${d(tStop)} [s]`} and then moves back the way it came.`
+      + (turns ? '' : ` The equations allow it; a ${who} ${brakes ? 'braking' : 'slowing down'} does not.`));
   }
 
   // The point the question asked about.
@@ -169,8 +208,22 @@ export function solveRoad(k = {}) {
     } else notes.push(q.reason);
   }
 
+  // A time the question asks about: where it is and how fast then, with the
+  // same acceleration — past its own t too, as the equations allow
+  if (moment == null && have(k.at) && k.at > EPS) {
+    const T = k.at, uu = V.u, aa = V.a;
+    const sT = snap(uu * T + 0.5 * aa * T * T), vT = snap(uu + aa * T);
+    moment = { t: T, s: sT, v: vT, byTime: true,
+      text: `At ${M`t = ${d(T)} [s]`} it is ${M`${d(Math.abs(sT))} [m]`} ${sT < 0 ? 'behind' : 'from'} the start, moving at ${M`${d(vT)} [m s^-1]`}.` };
+    markStep = { t: T, v: vT, rows: [
+      { f: M`s = ut + ½at^2`, s: M`${d(uu)} * ${d(T)} + ½ * ${sb(aa)} * ${d(T)}^2`, r: eqv('s', sT) },
+      { f: M`v = u + at`, s: M`${d(uu)} + ${sb(aa)} * ${d(T)}`, r: eqv('v', vT) },
+    ] };
+  }
+
   const derived = r.steps.map((st) => eqv(st.target, st.value));
-  if (moment) derived.push(`to ${moment.mid ? 'the mid-point' : 'that point'}, ${M`t = ${d(moment.t)} [s]`}`);
+  if (moment?.byTime) derived.push(moment.text);
+  else if (moment) derived.push(`to ${moment.mid ? 'the mid-point' : 'that point'}, ${M`t = ${d(moment.t)} [s]`}`);
 
   const five = {};
   for (const x of FIVE) {
@@ -185,8 +238,20 @@ export function solveRoad(k = {}) {
                   { key: 'vMark', label: moment.mid ? 'speed at the mid-point' : 'speed there', value: moment.v, unit: 'm s⁻¹' }] : []),
   ].filter((x) => isFinite(x.value));
 
+  if (nthRows) derived.unshift(`${M`${d(k0.sNth)} [m]`} in second ${k0.nth}: ${nthRows[0].r}`);
+  // "she starts from rest … passes two flags": the stretch between them is the five, and how far
+  // (and how long) it took from rest to reach the first, at the same acceleration, is v² = 2as
+  let before = null;
+  if (k0.fromRest && V.u > EPS && V.a > EPS) {
+    before = { s: snap(V.u * V.u / (2 * V.a)), t: snap(V.u / V.a) };
+    before.rows = [
+      { f: M`v^2 = u^2 + 2as`, s: M`${d(V.u)}^2 = 0^2 + 2 * ${d(V.a)}s`, r: eqv('s', before.s) },
+      { f: M`v = u + at`, s: M`${d(V.u)} = 0 + ${d(V.a)}t`, r: eqv('t', before.t) },
+    ];
+    derived.push(`From rest to the first point: ${before.rows[0].r}, ${before.rows[1].r}`);
+  }
   return {
-    ok: true, mode: 'road', axis: 'along', params: f.params, f,
+    ok: true, mode: 'road', axis: 'along', params: f.params, f, nthRows, nth: nthRows ? k0.nth : undefined, stop, path, before,
     derived, notes, five, extras, moment, answer: null, steps: r.steps, markStep,
     given, used: use, spare, clash: [], filled: {}, altTheta: null, assumedH: false,
     convention: 'Taking the direction from A towards B as positive.',
@@ -198,22 +263,32 @@ export function solveRoad(k = {}) {
    leaves out what nobody asked about, the rearrangement, and the numbers. */
 export function roadWorking(solved) {
   if (!solved?.ok) return [];
-  const out = [{
+  const out = solved.nthRows ? [{
+    title: `The distance in second ${solved.nth}`,
+    rows: solved.nthRows,
+    note: `In second ${solved.nth} it goes from ${M`t = ${solved.nth - 1}`} to ${M`t = ${solved.nth}`}: the distance then is ${M`s(n) - s(n - 1)`}, which comes to ${M`u + a(n - ½)`}.`,
+  }] : [];
+  out.push({
     title: 'Three of the five',
     rows: solved.used.map((x) => ({ f: NAMES[x].replace(/^./, (c) => c.toUpperCase()), s: eqv(x, solved.params[x]) })),
     note: 'Three is enough: each equation leaves one of the five out, so there is always one with a single unknown.',
-  }];
+  });
   for (const st of solved.steps) {
     out.push({
       title: `${NAMES[st.target].replace(/^./, (c) => c.toUpperCase())}, from ${st.formula}`,
       rows: [{ f: st.rearranged, s: st.substitution, r: eqv(st.target, st.value) }],
     });
   }
+  if (solved.before) {
+    out.push({ title: 'From rest to the first point', rows: solved.before.rows,
+      note: 'It started from rest with the same acceleration, so the speed it has at the first point took this long, and this far, to reach.' });
+  }
   if (solved.markStep) {
     out.push({
-      title: solved.moment.mid ? 'To the mid-point of AB' : 'To that point',
+      title: solved.moment.byTime ? 'At the time asked about' : solved.moment.mid ? 'To the mid-point of AB' : 'To that point',
       rows: solved.markStep.rows,
-      note: Math.abs(solved.params.a) > EPS
+      note: solved.moment.byTime ? 'The same acceleration all the way: past the end of the motion too, the equations still say where it is.'
+        : Math.abs(solved.params.a) > EPS
         ? 'A quadratic in t has two roots. The one wanted is the first positive one: the other is before it set off, or after it stopped being watched.'
         : 'No acceleration, so it covers equal distances in equal times.',
     });
