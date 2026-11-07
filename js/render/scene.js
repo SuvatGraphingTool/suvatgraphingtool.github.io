@@ -13,7 +13,7 @@
 // axis label the student reads is in flight x; every piece of scenery is
 // placed in section u. Nothing is ever converted twice.
 
-import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar } from './util.js';
+import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar, moverAt, movers } from './util.js';
 import { timeAbove, lineFacts } from '../core/projectile.js';
 import { T, num } from '../notation.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
@@ -1002,15 +1002,11 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   const pick = (e) => {
     const { markers, scenario, traj, t, fired } = active();
     const m = cam._map;
-    // a library stage's view (kitview.js) maps pointer to layout only: nothing on it
-    // is picked, unless the stage has said where its object is
+    // a library stage draws in its own pixels, so what moves on it says where it is
+    // (js/render/util.js noteMover): the same Resolve on it, at the instant on screen
     if (!m || !m.sx) {
-      if (!m?.objects || !traj || !fired) return null;
-      const r = canvas.getBoundingClientRect(), x = m.px(e.clientX - r.left), y = -m.py(e.clientY - r.top);
-      const i = m.objects.findIndex((b) => Math.hypot(x - b.x, y - b.y) < 36);
-      if (i < 0) return null;
-      cam._hot = i;
-      return { kind: 'ball', t };
+      const r = canvas.getBoundingClientRect();
+      return fired && moverAt(e.clientX - r.left, e.clientY - r.top) ? { kind: 'ball', t, stage: true } : null;
     }
     const w = toWorld(e);
     if (!w) return null;
@@ -1080,18 +1076,20 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     canvas.style.cursor = CURSOR[k] || 'grab';
     const hv = isResolve(got?.kind) ? got.t : null;
     if (hv !== hovering) { hovering = hv; onResolve.hover?.(hv); }
+    // where the pointer is, for a library stage: what moves may come under it as it plays
+    { const r = canvas.getBoundingClientRect(); cam._pointer = { x: e.clientX - r.left, y: e.clientY - r.top }; onChange(); }
     onResolve.mark?.(isResolve(k) ? null : k);
   });
 
-  // A stage that cannot say where its object is (a library kit, the road): a
-  // click anywhere on it resolves, so a resting pointer says so.
+  // A stage that has said nothing of where its object is: a click anywhere on it
+  // resolves, so a resting pointer says so.
   let tip = null, tipDue = 0;
   const hideTip = () => { clearTimeout(tipDue); if (tip) tip.hidden = true; };
   canvas.addEventListener('pointerleave', hideTip);
   canvas.addEventListener('pointermove', (e) => {
     hideTip();
     const { traj, fired, resolving } = active(), m = cam._map;
-    if (e.pointerType !== 'mouse' || drag || dragging || !traj || !fired || resolving || m?.sx || m?.objects) return;
+    if (e.pointerType !== 'mouse' || drag || dragging || !traj || !fired || resolving || m?.sx || movers.list.length) return;
     canvas.style.cursor = 'pointer';
     tipDue = setTimeout(() => {
       if (!tip) { tip = document.createElement('div'); tip.className = 'stage-tip'; tip.textContent = 'click to resolve'; canvas.parentElement.append(tip); }
@@ -1101,6 +1099,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     }, 250);
   });
 
+  canvas.addEventListener('pointerleave', () => { cam._pointer = null; onChange(); });
   canvas.addEventListener('pointerdown', (e) => {
     hideTip();
     const got = pick(e);

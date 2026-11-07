@@ -83,7 +83,8 @@ export const EXTRACTION_SCHEMA = {
       description: 'What the question asks for, each a short phrase: "time of flight", "speed on landing".',
     },
     below: { type: 'string', description: 'WHAT IT LANDS ON, when the question says: "sea", "ground", "water", "river", "road", "beach", "floor". A cliff with the ground at its foot is "ground".' },
-    who: { type: 'string', description: 'WHAT MOVES, in the question\'s own word: "diver", "stone", "ball", "car", "cyclist", "parcel", "skateboarder", "rocket", "particle". Always present for a motion question.' },
+    who: { type: 'string', description: 'WHAT MOVES, as the plain word the question uses: "laptop", "glass", "piano", "diver", "ball", "car". "particle" only when the question says particle or point mass. Always present for a motion question.' },
+    sender: { type: 'object', description: 'WHO SENDS IT OFF, when the question names them: {"who":"girl","verb":"throw"}, verb one of push, throw, kick, drop, knock. Left out when no one is named.' },
     note: { type: 'string', description: 'Only if something is ambiguous or unreadable. Otherwise omit.' },
   },
   required: ['understood', 'confidence', 'scenario', 'summary'],
@@ -129,9 +130,11 @@ WHAT YOU DO
    compose        none of these draws it, but the app's pieces can: a car driven off a cliff,
                   a cyclist off a bridge, a ball from a house roof — return a recipe (below)
    other          anything else about motion that none of these fit
-2. Return the values that are GIVEN, and who: WHAT MOVES, in the question's own word — a
-   diver, a person, a stone, a ball, a car, a parcel, a skateboarder, a rocket. The app draws
-   exactly that, so never leave it out and never turn a person into a ball. Say what it
+2. Return the values that are GIVEN, and who: WHAT MOVES, as the plain word the question
+   uses — a laptop, a glass, a piano, a diver, a ball, a car. The app can draw ANY object, so
+   never leave it out, and never turn it into a ball or a particle: "particle" only when the
+   question says particle or point mass. Name in sender whoever the question says sends it
+   off, as {"who","verb"} (push, throw, kick, drop or knock). Say what it
    lands on in below when the question says ("hits the ground at the bottom of the cliff":
    below "ground") — a cliff is not always over the sea, nor a bridge over a river.
 
@@ -229,7 +232,8 @@ bounce when no place is named; when the question names where (a tower, a buildin
 house, a hall, a tree), compose them with that backdrop so the student sees it.
   title    a short heading, two to six words: "A car off a cliff"
   backdrop one backdrop name; engine one engine name
-  objects  one object per thing that moves: {"figure": a figure name, "name": "the car"}
+  objects  one object per thing that moves: {"figure": a figure name, "name": "the car"}, or for
+           anything else the plain word for it, {"figure": "laptop"}: the app draws it
   numbers  the GIVEN values only, keyed by the engine's numbers below; leave out what is asked.
            A word box takes one of its words: "start":"drop"
   effects  optional

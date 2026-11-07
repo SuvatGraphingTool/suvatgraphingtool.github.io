@@ -68,7 +68,8 @@ group('Refused, with a reason a student can read', () => {
   const no = (r, re, label) => { const x = check(r); ok(!x.ok && re.test(x.reason), `${label}: “${x.reason}”`); };
   no({ ...CAR, backdrop: 'atlantis' }, /no backdrop called “atlantis”/, 'an unknown backdrop');
   no({ ...CAR, engine: 'warp' }, /no engine called/, 'an unknown engine');
-  ok(check({ ...CAR, objects: [{ figure: 'dragon' }] }).recipe.notes[0] === 'Drawn as a particle: there is no dragon figure yet.', 'a thing with no figure: the closest, said so');
+  ok(check({ ...CAR, objects: [{ figure: 'dragon' }] }).recipe.objects[0].thing === 'dragon' && !check({ ...CAR, objects: [{ figure: 'dragon' }] }).recipe.notes.length, 'a thing with no figure is drawn as itself, and no note says otherwise');
+  ok(check({ ...CAR, objects: [{ figure: 'body' }] }).recipe.notes[0] === 'Drawn as a particle: there is no body figure yet.', 'an exam’s word for “it”: the closest, said so');
   no({ ...CAR, objects: [{ figure: 'ship' }] }, /from above/, 'a ship side on');
   no({ ...CAR, objects: [] }, /moves 1 thing/, 'nothing that moves');
   no({ ...CAR, objects: [{ figure: 'car' }, { figure: 'lorry' }] }, /moves 1 thing/, 'two things for a one-thing engine');
@@ -178,7 +179,7 @@ group('What moves is what is drawn', () => {
   const f = (w) => figureOf(w);
   ok(f('diver').figure === 'diver' && f('a person').figure === 'diver' && f('she').figure === 'diver', 'a diver, a person, she: a person');
   ok(f('skateboarder').figure === 'skateboarder' && f('parcel').figure === 'parcel' && f('football').figure === 'football' && f('pebble').figure === 'stone', 'skateboarder, parcel, football, pebble');
-  ok(!f('missile').exact && f('missile').figure === 'particle' && f('rocket').figure === 'rocket', 'a missile has no figure yet: the closest, and not exact; a rocket has its own');
+  ok(f('missile').figure === 'thing' && f('rocket').figure === 'rocket' && f('projectile').figure === 'particle' && !f('projectile').exact, 'a missile is named, not a dot; a rocket has its own; a projectile is the exam’s word for it');
   ok(f('').figure === null, 'nothing named: nothing assumed');
   // the user's own question, as the Worker hands it on
   const d = fromReading({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'A person jumps off a 10 m diving board at 7 m/s.',
@@ -193,7 +194,7 @@ group('What moves is what is drawn', () => {
   const sk = fromReading({ understood: true, scenario: 'platform', h: 2, u: 4, who: 'skateboarder' });
   ok(sk.recipe.objects[0].figure === 'skateboarder' && compose(sk.recipe).scenario.name === 'A skateboarder off a wall', 'a skateboarder off a 2 m wall');
   const r = fromReading({ understood: true, scenario: 'up', h: 0, u: 30, who: 'missile', parts: [{ label: 'a', asks: 'top', answer: 'top' }] });
-  ok(/no missile figure yet/.test(r.notes.join(' ')) && r.parts[0].answer === 'height1', 'a missile drawn as a particle, said; the twelve’s answer key renamed');
+  ok(r.recipe.objects[0].figure === 'missile' && !/no missile figure yet/.test(r.notes.join(' ')) && r.parts[0].answer === 'height1', 'a missile goes by its own name; the twelve’s answer key renamed');
 });
 
 console.log('\nThe Worker reads a jump with no angle as straight up, and says so');
@@ -436,11 +437,8 @@ group('Batches 16–17: a court, an arena, a castle; the new props and the rifle
 
 group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);
-  ok(s[0] === 'Placing a cliff' && s.includes('Laying out the sea') && s.includes('Bringing in a car') && s.includes('Adding a splash'), s.join(' / '));
-  ok(steps(check({ ...CAR, backdrop: 'road', numbers: { h: 3, u: 6, theta: 0 } }).recipe).some((x) => x.say === 'Adding dust'), 'a road gets dust, not a splash');
-  const told = steps(check({ ...CAR, numbers: { h: 40, u: 15, theta: 30 } }).recipe).map((x) => x.say);
-  ok(told.includes('Setting the height to 40 m') && told.includes('Setting the launch speed to 15 m s⁻¹') && told.includes('Setting the angle to 30°'), 'it says the numbers it really uses');
-  ok(!steps(check({ ...CAR, numbers: { h: 40, u: 15, theta: 0 } }).recipe).some((x) => /angle/.test(x.say)), 'and no angle when there is none');
+  ok(s[0] === 'Building the cliff…' && s.includes('Laying out the sea…') && s.includes('Drawing the car…') && s.includes('Working out the motion…'), s.join(' / '));
+  ok(!steps(check({ ...CAR, backdrop: 'road', numbers: { h: 3, u: 6, theta: 0 } }).recipe).some((x) => /sea/.test(x.say)), 'a road says nothing of a sea');
 });
 
 console.log('\nThe reader’s list of pieces is current');

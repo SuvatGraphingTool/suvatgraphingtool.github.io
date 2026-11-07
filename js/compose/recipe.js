@@ -21,7 +21,8 @@
 // only says which engine, with which boxes.
 
 import { sensible } from './sense.js';
-import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, CARRIERS, LAUNCHERS, figureOf, belowOf, placeOf, placeIn, carrierIn, launcherIn } from './registry.js';
+import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, CARRIERS, LAUNCHERS, figureOf, belowOf, placeOf, placeIn, carrierIn, launcherIn, pieceOf, ownWord, senderIn } from './registry.js';
+import { thingName, materialOf, landingFor, floats, shownName } from './things.js';
 import { toApp } from '../core/question.js';
 import { KITS } from '../kits/index.js';
 import { GRAVITY } from '../scenarios.js';
@@ -83,32 +84,39 @@ export function check(raw) {
     // the question's own word for it, drawn as itself or as the closest figure
     // there is — and then the reply says so
     // a registry name as it is (tennisBall), else the question's word
-    let figure = FIGURES[o.figure] ? o.figure : word(o.figure);
-    if (!FIGURES[figure]) {
+    let figure = FIGURES[o.figure] && o.figure !== 'thing' ? o.figure : word(o.figure), thing = null;
+    if (figure === 'thing') {
+      // a recipe made here, read back from a saved chat: the object it names
+      thing = thingName(o.thing);
+      if (!thing) figure = 'particle';
+    } else if (!FIGURES[figure]) {
       const m = figureOf(figure);
-      if (!m.figure) return no(`The recipe does not say what moves. The figures are: ${listOf(FIGURES)}.`);
+      if (!m.figure) return no(`The recipe does not say what moves. The figures are: ${listOf(FIGURES).replace(', thing', '')}.`);
       if (!m.exact) notes.push(nearest(m));
       figure = m.figure;
+      thing = m.thing ?? null;
     }
-    const F = FIGURES[figure];
-    if (B.only && !B.only.includes(figure)) {
+    const F = pieceOf({ figure, thing });
+    // an object is never refused: whatever a place or an engine can hold, it can hold this
+    if (!thing && B.only && !B.only.includes(figure)) {
       const can = B.only.map((k) => FIGURES[k].label);
       return no(`From ${B.at} only ${can.slice(0, -1).join(', ')} or ${can[can.length - 1]} can fall: not ${F.label}.`);
     }
-    if (E.figures && !E.figures.includes(figure)) {
+    if (!thing && E.figures && !E.figures.includes(figure)) {
       const can = E.figures.map((k) => FIGURES[k].label);
       return no(`${Up(E.label)} is for ${can.slice(0, -1).join(', ')} or ${can[can.length - 1]}: not ${F.label}.`);
     }
     if (!F.views.includes(E.view)) {
       return no(`${Up(F.label)} is drawn ${F.views.includes('plan') ? 'from above' : 'side on'}, and ${E.label.toLowerCase()} is seen ${E.view === 'plan' ? 'from above' : 'side on'}.`);
     }
-    objects.push({ figure, name: clip(o.name, 30) });
+    // (the object's own name, never the model's "the ball" for it)
+    objects.push({ figure, ...(thing ? { thing } : {}), name: thing && /\b(?:ball|stone|particle|object)\b/i.test(String(o.name ?? '')) ? '' : clip(o.name, 30) });
   }
   // unnamed, they are told apart: "the first ball", "the second ball" — or,
   // two different things, by what they are: "the car", "the stone"
-  const same = new Set(objects.map((o) => o.figure)).size < objects.length;
+  const same = new Set(objects.map((o) => o.thing || o.figure)).size < objects.length;
   objects.forEach((o, i) => {
-    const noun = FIGURES[o.figure].label.replace(/^an? /, '');
+    const noun = pieceOf(o).label.replace(/^an? /, '');
     if (!o.name) o.name = same ? `the ${['first', 'second'][i]} ${noun}` : `the ${noun}`;
   });
 
@@ -180,7 +188,10 @@ export function check(raw) {
   // (a place's own: a crater on the Moon); a rocket trails smoke as it flies
   // (or what it is: a water balloon bursts, a dropped phone cracks — on dry ground;
   // leaves on a forest floor, sand in a desert, mud on a building site)
-  const dry = !['sea', 'river', 'pool', 'well'].includes(B.below), own = dry && objects.map((o) => FIGURES[o.figure].lands).find(Boolean);
+  const dry = !['sea', 'river', 'pool', 'well'].includes(B.below);
+  // an object past the figures: what it is made of says what landing does (js/compose/things.js)
+  const thingAt = objects.find((o) => o.thing), material = thingAt ? materialOf(thingAt.thing) : null;
+  const own = dry && objects.map((o) => pieceOf(o).lands).find(Boolean);
   // a ball kicked on a football pitch goes in the goal: its net bulges
   const goalward = backdrop === 'pitch' && objects.some((o) => ['football', 'ball'].includes(o.figure)) ? 'net' : null;
   // a long jumper lands in the stadium's sand pit
@@ -188,13 +199,15 @@ export function check(raw) {
   // off a trampoline with heights from its mat, it comes down on the mat: no dust
   const mat = /trampolin/i.test(String(raw.launcher ?? '')) && !(numbers.h > 0);
   const lands = mat ? null : MOMENTS[engine] || own || goalward || pit || B.lands || LANDS_WITH[B.below];
-  if (!effects.length && lands) effects.push(lands);
+  const asked = effects.length > 0;
+  // (a bounce or a meeting keeps its own moment; water always wins, and a place's own soft ground takes the fall)
+  if (!effects.length && lands) effects.push(thingAt && !MOMENTS[engine] ? landingFor(material, lands) : lands);
   if (objects.some((o) => o.figure === 'rocket' || o.figure === 'firework') && !effects.includes('smoke') && !(raw.effects || []).length) effects.push('smoke');
   // with nothing asked: a vehicle down on dry ground skids and smokes as it
   // brakes; something heavy that goes into water sinks, bubbles coming up
   if (!(raw.effects || []).length && MOMENTS[engine] == null) {
     if (dry && objects.some((o) => WHEELS.includes(o.figure)) && !effects.includes('skid')) effects.push('skid');
-    if (!dry && objects.some((o) => SINKS.includes(o.figure)) && !effects.includes('bubbles')) effects.push('bubbles');
+    if (!dry && objects.some((o) => SINKS.includes(o.figure) || (o.thing && !floats(material))) && !effects.includes('bubbles')) effects.push('bubbles');
   }
   // the moment it leaves: a leap from dry level ground kicks up dust; leaving a branch shakes leaves down
   if (!(raw.effects || []).length && engine === 'projectile') {
@@ -237,12 +250,20 @@ export function check(raw) {
   if (!launcher && engine === 'projectile' && backdrop !== 'air' && objects.some((o) => o.figure === 'water')) launcher = 'hose';
   // (a title that says thrown or off for something let go from rest is the reader's slip: the app's own is used)
   const slip = numbers.u === 0 && numbers.h > 0 && /\b(?:off|thrown|launched)\b/i.test(String(raw.title ?? ''));
-  return { ok: true, recipe: { title: slip ? undefined : clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), ...(launcher ? { launcher } : {}), engine, objects, numbers, effects, notes } };
+  // who sends it off, when the question names them (drawing only): never for a launch that
+  // already has its launcher or its carrier, which are the sender and are drawn
+  const sender = raw.sender && typeof raw.sender === 'object' && !launcher && backdrop !== 'air' && engine === 'projectile'
+    ? (raw.sender.kind === 'person' ? { kind: 'person', word: clip(raw.sender.word ?? 'person', 30), verb: ['push', 'throw', 'kick', 'drop', 'knock'].includes(raw.sender.verb) ? raw.sender.verb : 'throw' }
+      : senderIn('', { who: raw.sender.word ?? raw.sender.who, verb: raw.sender.verb })) : null;
+  // (`autoLanding`: the landing the place would make by itself, kept so a material the
+  // catalogue or a drawing says later can still decide it: js/compose/things.js settleEffects)
+  const autoLanding = raw.autoLanding ?? (thingAt && !asked && !MOMENTS[engine] && lands ? lands : null);
+  return { ok: true, recipe: { title: slip ? undefined : clip(raw.title, 60), backdrop, ...(below ? { below } : {}), ...(carrier ? { carrier } : {}), ...(carrierWord ? { carrierWord } : {}), ...(launcher ? { launcher } : {}), engine, objects, numbers, effects, notes, ...(typeof raw.at === 'string' && raw.at ? { at: clip(raw.at, 30) } : {}), ...(sender ? { sender } : {}), ...(autoLanding ? { autoLanding } : {}) } };
 }
 
 /** "A car off a cliff" — a title for a recipe that brought none. */
 export function titleOf(r) {
-  const F = FIGURES[r.objects[0].figure], B = BACKDROPS[r.backdrop];
+  const F = pieceOf(r.objects[0]), B0 = BACKDROPS[r.backdrop], B = r.at && B0.at ? { ...B0, at: r.at } : B0;
   if (r.title) return Up(r.title);
   const what = Up(F.label);
   const where = B.on || `${{ hall: 'in', sea: F.swims ? 'from' : 'over', forest: 'in' }[r.backdrop] || 'on'} ${B.label.toLowerCase().replace(/^an? /, 'a ')}`;
@@ -254,6 +275,11 @@ export function titleOf(r) {
     if (B.edge && r.numbers.h === 0 && F.swims) return `${what} leaping from the water below ${B.at.replace(/^the (?:top|rim|edge|end|deck|crest|gallery) of /, '')}`;
     // let go from rest it falls, never 'thrown': dropped from the hand, falling from a height
     const rest = r.numbers.u === 0 && r.numbers.h > 0;
+    // who sent it says how it went: "A person pushed off a cliff", "A vase knocked off a table"
+    const sentHow = r.sender && { push: 'pushed', knock: 'knocked', kick: 'kicked', drop: 'dropped', throw: F.verb || 'thrown' }[r.sender.verb];
+    if (B.edge && sentHow) return `${what} ${sentHow} ${sentHow === 'dropped' ? 'from' : 'off'} ${B.at}`;
+    // an object says what happened to it: "A glass dropped from a rooftop"
+    if (B.edge && F.thing) return rest ? `${what} dropped from ${B.at}` : `${what} ${F.thrown ? 'thrown off' : 'off'} ${B.at}`;
     if (B.edge) return rest ? `${what} falling from ${B.at}` : `${what} off ${B.at}`;
     // from a height with no edge of its own, it is a wall that is drawn
     // (a place that draws a ledge of its own says so)
@@ -273,7 +299,7 @@ export function titleOf(r) {
   const by = B.edge ? `by ${B.at}` : where;
   if (r.engine === 'pair') return `Two on one line ${by}: when do they meet?`;
   if (r.engine === 'twin') {
-    const two = r.objects.map((o) => FIGURES[o.figure].label);
+    const two = r.objects.map((o) => pieceOf(o).label);
     const plural = { person: 'people', lorry: 'lorries', bus: 'buses', ball: 'balls', marble: 'marbles', box: 'boxes' };
     const many = (l) => { const n = l.replace(/^an? /, ''); return plural[n] || `${n}s`; };
     const what2 = two[0] === two[1] ? `Two ${many(two[0])}` : `${Up(two[0])} and ${two[1]}`;
@@ -287,7 +313,7 @@ export function titleOf(r) {
 function idOf(r) {
   // what it is let go from is part of the scene (only when there is one, so
   // every other recipe keeps the id it had)
-  const s = JSON.stringify([r.title, r.backdrop, r.engine, r.objects, r.numbers, ...(r.carrier ? [r.carrier, r.carrierWord ?? null] : []), ...(r.launcher ? [r.launcher] : [])]);
+  const s = JSON.stringify([r.title, r.backdrop, r.engine, r.objects, r.numbers, ...(r.carrier ? [r.carrier, r.carrierWord ?? null] : []), ...(r.launcher ? [r.launcher] : []), ...(r.sender ? [r.sender.word, r.sender.verb] : [])]);
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
   return `composed-${(h >>> 0).toString(36)}`;
@@ -302,7 +328,7 @@ export function compose(raw) {
   if (!c.ok) return c;
   const r = c.recipe, E = ENGINES[r.engine], B = placeOf(r), base = KITS[E.kit];
   const id = idOf(r), name = titleOf(r);
-  const who = r.objects.map((o) => FIGURES[o.figure].label).join(' and ');
+  const who = r.objects.map((o) => pieceOf(o).label).join(' and ');
   const what = r.backdrop === 'air' ? `open sky high above fields, ${carrierName(r)} ${r.carrier === 'cloud' ? 'it falls from' : 'letting it go'}` : B.what;
   // on Earth unless the question says otherwise — the reader leaves g out
   // then — at the app's own Earth value, as the twelve are
@@ -321,7 +347,7 @@ export function compose(raw) {
     rows: (base.rows || []).filter((row) => !(row.fields || []).some((f) => f.key === 'place')),
     read: (vals) => ({ ...base.read({ ...Object.fromEntries(Object.entries(vals).map(([k, v]) => [k, frac(v)])), place: boxes.place ?? vals.place }),
       // a thing that is not thrown started somewhere, it was not thrown from it
-      ...(r.engine === 'projectile' && !FIGURES[r.objects[0].figure].thrown ? { from: ['diver', 'skateboarder'].includes(r.objects[0].figure) ? 'where they started' : 'where it started' } : {}),
+      ...(r.engine === 'projectile' && !pieceOf(r.objects[0]).thrown ? { from: ['diver', 'skateboarder'].includes(r.objects[0].figure) ? 'where they started' : 'where it started' } : {}),
       // two from one place: each named as the question names it
       ...(r.engine === 'twin' ? (({ A, B }) => ({ A: { ...A, name: r.objects[0].name }, B: { ...B, name: r.objects[1].name } }))(base.read(vals)) : {}),
       // the surface below in the engine's words: a cliff over the ground hits the ground
@@ -439,8 +465,11 @@ export function mend(raw) {
       ...keys.map((k) => without([k])), ...pairs.map((p) => without(p)),
       { ...r, effects: undefined }, { ...r, launcher: undefined }, { ...r, carrier: undefined }, { ...r, below: undefined },
       ...(count ? [{ ...r, objects: named.slice(0, 1) }, { ...r, objects: [named[0], named[0]] }] : [{ ...r, objects: Array(lo).fill({ figure: 'ball' }) }]),
-      { ...r, objects: (r.objects || [{}]).map((o) => ({ ...(o && typeof o === 'object' ? o : {}), figure: 'ball' })) },
-      { ...r, objects: (r.objects || [{}]).map((o) => ({ ...(o && typeof o === 'object' ? o : {}), figure: 'particle' })) },
+      // (an object the app can draw is never swapped for a ball to get past a rule: nothing refuses one)
+      ...(firstFigure === 'thing' || figureOf(firstFigure).figure === 'thing' ? [] : [
+        { ...r, objects: (r.objects || [{}]).map((o) => ({ ...(o && typeof o === 'object' ? o : {}), figure: 'ball' })) },
+        { ...r, objects: (r.objects || [{}]).map((o) => ({ ...(o && typeof o === 'object' ? o : {}), figure: 'particle' })) },
+      ]),
       { ...r, backdrop: 'ground', below: undefined },
       { ...r, engine: 'projectile', backdrop: BACKDROPS[word(r.backdrop)] ? r.backdrop : 'ground', objects: (r.objects || [{ figure: 'ball' }]).slice(0, 1) },
       { ...r, numbers: {} },
@@ -543,6 +572,8 @@ const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] != null).
  */
 export function fromReading(x, { always = false } = {}) {
   if (!x || typeof x !== 'object' || x.understood === false) return null;
+  // the student's own word for it wins over the model's ball: "laptop thrown off a table"
+  x = ownWord(x);
   // "a hammer thrower releases…": an athlete's hammer, not a claw hammer
   let m = figureOf(x.who);
   if (m.figure === 'hammer' && /\bhammer throw|\bathletics hammer/i.test(`${x.summary || ''} ${x.words || ''}`)) m = figureOf('hammer thrower');
@@ -567,8 +598,13 @@ export function fromReading(x, { always = false } = {}) {
   const elsewhere = fromHeight && HEIGHT_PLACES[x.boxes.place] && !TWELVE_PLACES[x.boxes.place];
   // fired from a cannon, off a ramp, flung from a catapult: drawn with it, so composed
   const sent = LAUNCHES.includes(x.scenario) && !!launcherIn(words);
-  if (!always && small && !under && !own && !lifted && !elsewhere && !sent) return null;
+  // someone named who sends it off is in the scene: the twelve have no one to draw (js/compose/things.js)
+  const sentBy = (fromHeight || LAUNCHES.includes(x.scenario)) && !!x.sender && !(x.sender.kind === 'person' && fromHeight);
+  if (!always && small && !under && !own && !lifted && !elsewhere && !sent && !sentBy) return null;
   const figure = m.figure || 'ball';
+  // (an object is named to the recipe by its own word; check() makes it the object)
+  const asObject = figure === 'thing' ? m.thing : figure;
+  const P0 = pieceOf({ figure, thing: m.thing });
   let backdrop, numbers, keys;
   if (fromHeight) {
     // a place only the composer draws, named in the words, wins over From a height's
@@ -602,7 +638,7 @@ export function fromReading(x, { always = false } = {}) {
   const launcher = backdrop !== 'air' ? launcherIn(words)?.launcher : null;
   // a release height a hand can reach is the thrower's hand above the
   // ground, not a wall: a hammer, a shot, a basketball from 2 m
-  const fromHand = FIGURES[figure].thrown && figure !== 'golfBall' && numbers.h > 0 && numbers.h <= (figure === 'tennisBall' ? 3.4 : 2.6);
+  const fromHand = P0.thrown && figure !== 'golfBall' && numbers.h > 0 && numbers.h <= (figure === 'tennisBall' ? 3.4 : 2.6);
   if (backdrop === 'ground' && fromHand && !launcher && figure !== 'bullet') notes.push(`${figure === 'tennisBall' ? 'Struck' : 'Let go'} ${num(numbers.h, 2, { trim: true })} m above the ground, ${{ tennisBall: 'by the racquet', baseball: 'by the bat', cricketBall: 'by the bat' }[figure] || 'from the thrower’s hand'}.`);
   else if (backdrop === 'ground' && numbers.h > 0 && !/\b(wall|ledge)\b/i.test(words)) notes.push(`The question names no place, so it is drawn off a wall ${num(numbers.h, 2, { trim: true })} m high: only the height matters to the motion.`);
   notes.push(...assumedNotes(x));
@@ -619,6 +655,6 @@ export function fromReading(x, { always = false } = {}) {
   const asked = Array.isArray(x.asked) ? { asked: x.asked.map(rekey) } : Array.isArray(x.asks) ? { asks: x.asks } : {};
   return {
     understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary, parts, notes, ...asked,
-    recipe: { backdrop, ...(under ? { below: under } : {}), ...(carrier ? { carrier } : {}), ...(launcher ? { launcher } : {}), ...(at && backdrop === own ? { title: `${Up(FIGURES[figure].label)} ${numbers.u === 0 && numbers.h > 0 ? 'falling from' : 'off'} ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), engine: 'projectile', objects: [{ figure, name: m.exact ? `the ${m.word.replace(/^(an?|the) /, '')}` : undefined }], numbers },
+    recipe: { backdrop, ...(under ? { below: under } : {}), ...(carrier ? { carrier } : {}), ...(launcher ? { launcher } : {}), ...(at && backdrop === own ? { title: `${Up(P0.label)} ${numbers.u === 0 && numbers.h > 0 ? (P0.thing ? 'dropped from' : 'falling from') : (P0.thing && P0.thrown && numbers.u > 0 ? 'thrown off' : 'off')} ${/^[aeiou]/.test(at) ? 'an' : 'a'} ${at}` } : {}), ...(x.sender ? { sender: x.sender } : {}), engine: 'projectile', objects: [{ figure: asObject, name: m.exact ? `the ${shownName(m.word).replace(/^(an?|the) /, '')}` : undefined }], numbers },
   };
 }

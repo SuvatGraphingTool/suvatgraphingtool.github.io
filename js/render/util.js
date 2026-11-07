@@ -3,6 +3,51 @@
 import { num } from '../notation.js';
 import { D } from '../world/dims.js';
 
+/* ── what moves on this frame ──────────────────────────────────────────
+   Hovering over what moves offers Resolve. On one of the twelve the camera says
+   where it is; a library stage lays itself out in its own pixels, so its pieces
+   say so as they draw. A stage may report exactly (`strong`: noteMover), and the
+   velocity arrow every stage draws from a moving thing reports its start for any
+   that has not. Read in the canvas's own pixels, through whatever pan and zoom is
+   on. No physics: this is where things were drawn. */
+export const movers = { list: [], vel: null, tip: null };
+export function clearMovers() { movers.list.length = 0; movers.vel = null; movers.tip = null; }
+/** Note a moving thing at (x, y), radius r px, in the context's current coordinates. */
+export function noteMover(ctx, x, y, r = 22, { strong = false, label = null } = {}) {
+  const dpr = ctx._dpr || 1;
+  const m = ctx.getTransform?.();
+  if (!m || !isFinite(x) || !isFinite(y)) return;
+  const scale = Math.hypot(m.a, m.b) / dpr;
+  movers.list.push({ x: (m.a * x + m.c * y + m.e) / dpr, y: (m.b * x + m.d * y + m.f) / dpr, r: r * scale, strong, label });
+}
+/** The moving thing under the pointer, or null: exact reports first. */
+export function moverAt(x, y) {
+  const strong = movers.list.filter((q) => q.strong), list = strong.length ? strong : movers.list;
+  let best = null;
+  for (const q of list) {
+    const d = Math.hypot(x - q.x, y - q.y);
+    if (d < Math.max(q.r, 14) && (!best || d < best.d)) best = { ...q, d };
+  }
+  return best;
+}
+
+/** The ring and the words the twelve show on what is under the pointer, on a stage
+    that has reported what moves: "click to resolve". In the canvas's own pixels. */
+export function markMover(canvas, q) {
+  if (!q) return;
+  const ctx = canvas.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2), P = palette();
+  ctx.save(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const r = Math.max(19, q.r + 3);
+  ctx.strokeStyle = withAlpha(P.card, 0.55); ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = P.vel; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.font = '600 15px Inter, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const text = 'click to resolve', w = canvas.getBoundingClientRect().width, half = ctx.measureText(text).width / 2 + 4;
+  const tx = Math.max(half, Math.min(w - half, q.x)), ty = q.y - r - 16 > 12 ? q.y - r - 16 : q.y + r + 16;
+  ctx.lineWidth = 4; ctx.strokeStyle = withAlpha(P.surface, 0.8); ctx.lineJoin = 'round'; ctx.strokeText(text, tx, ty);
+  ctx.fillStyle = P.vel; ctx.fillText(text, tx, ty);
+  ctx.restore();
+}
+
 export function fitCanvas(canvas) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const r = canvas.getBoundingClientRect();
@@ -83,6 +128,7 @@ export function palette() {
    @param ring   hue of the magnifier ring, or null for no ring
    @param fired  before launch the ring is lighter — nothing is moving yet */
 export function ballSprite(ctx, x, y, r, { ring = null, fired = true } = {}) {
+  noteMover(ctx, x, y, Math.max(16, r + 4));
   const P = palette();
 
   if (r < 5 && ring) {
@@ -395,6 +441,14 @@ export function stroke(ctx, pts, { color, width = 2, dash = null, alpha = 1 } = 
 export function arrow(ctx, x0, y0, x1, y1,
                       { color, width = 2.4, head = 11, dash = null, casing = true, alpha = 1 } = {}) {
   const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy);
+  // a velocity arrow starts on what is moving: a stage that says nothing else is still heard
+  // (a second part drawn head to tail from the last one starts on nothing)
+  movers.vel ??= [cssVar('--vel-vec', '#fb923c'), cssVar('--vel', '#ea580c'), cssVar('--second', '#db2777')];
+  if (movers.vel.includes(color)) {
+    const tail = movers.tip && Math.hypot(movers.tip[0] - x0, movers.tip[1] - y0) < 1;
+    if (!tail) noteMover(ctx, x0, y0, 26);
+    movers.tip = [x1, y1];
+  }
   if (len < 2) return;
   const ux = dx / len, uy = dy / len, hl = Math.min(head, len * 0.5);
   // the head, as a path, so the casing and the fill can share it

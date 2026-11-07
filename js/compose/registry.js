@@ -19,6 +19,8 @@
 //              wired through that engine's kit (js/kits/): the same boxes,
 //              working, readouts and graphs
 
+import { thingName, thingIn, headOf, article, isGeneric, isPerson, sizeOfWord, BIG_M, shownName, senderWords, isSelfWord, materialOf, personMoved } from './things.js';
+
 /** Where it happens. `place` is the engine's word for it (js/core/height.js
     PLACES); `below` is what it lands on; `edge` says the place has a top
     something is launched from, so it needs a height, and `at` names that
@@ -171,7 +173,19 @@ export const FIGURES = {
   goat:     { label: 'a goat', m: 1.2, min: 46, views: ['side'], animal: true },
   dolphin:  { label: 'a dolphin', m: 2.5, min: 64, views: ['side'], swims: true },
   fish:     { label: 'a fish', m: 0.7, min: 40, views: ['side'], swims: true },
+  // anything else a question throws (js/compose/things.js): the recipe's object
+  // says what it is, as `thing`, and pieceOf() says how it is drawn. Not offered
+  // to the reader: it names the object in its own word
+  thing:    { label: 'an object', m: 0.3, min: 34, views: ['side'], thrown: true, unlisted: true },
 };
+/** An object past the hand-built figures, as a figure: its label, size and whether a person can throw it. */
+export function thingPiece(name, { m = sizeOfWord(name) } = {}) {
+  const shown = shownName(name);
+  const big = m >= BIG_M;
+  return { label: `${article(shown)} ${shown}`, m, min: big ? 64 : 34, views: ['side'], thrown: !big, thing: true };
+}
+/** What a recipe's object is, as a figure: its own entry, or the object it names. */
+export const pieceOf = (o) => (o?.figure === 'thing' ? thingPiece(o.thing || 'object') : FIGURES[o?.figure]);
 
 /** What it is let go from, high in the air (backdrop `air` only): drawn at
     the point it is let go, moving with it across if it moves (a plane keeps
@@ -235,6 +249,15 @@ export const EFFECTS = {
   rustle: { label: 'falling leaves', what: 'where it leaves a branch: leaves shaken down' },
   shockwave: { label: 'a shockwave of dust', what: 'something heavy landing on a hard surface: a ring of dust and cracks' },
   chalk:  { label: 'a ball mark', what: 'a tennis ball landing on a court: its mark left, and a puff of chalk when it lands on a line' },
+  // what an object's material does on landing (js/compose/things.js): the app
+  // picks these itself, so the reader is not told of them. Drawing only: it rests
+  // or breaks on the stage, the engine's numbers do not change, no rebound is claimed
+  shatter: { label: 'a shatter', what: 'glass or china breaking: shards fly and settle, the pieces left where they fall', auto: true },
+  squish: { label: 'a squash and a ring', what: 'rubber landing: it squashes, a ring spreads, and it rests', auto: true },
+  clang:  { label: 'a clang and sparks', what: 'metal landing: it rings and throws sparks', auto: true },
+  thud:   { label: 'a thud and dust', what: 'something heavy landing: dust, and a mark in the ground', auto: true },
+  splinters: { label: 'splinters', what: 'wood landing: slivers thrown off it', auto: true },
+  flutter: { label: 'a soft landing', what: 'paper or cloth settling: scraps drift down as it comes to rest', auto: true },
 };
 
 /** How it moves. `kit` is the library kit whose engine, boxes, working,
@@ -409,7 +432,7 @@ export const placeOf = (r) => ({ ...BACKDROPS[r.backdrop], below: r.below || BAC
    becomes a figure — exactly, or the closest one there is, saying so — so
    what moves is what is drawn, everywhere; never a silent ball. */
 const WORDS = [
-  [/\b(diver|divers|person|people|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|trampolinist|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager|astronaut|spaceman|spacewoman|cosmonaut|human cannonball|trapeze artist)\b/, 'diver'],
+  [/\b(diver|divers|person|people|humans?(?! cannonball)|man|woman|boy|girl|child|student|athlete|(?<!ski )jumper|swimmer|gymnast|trampolinist|stunt ?(man|woman|person)|he|she|someone|acrobat|teenager|astronaut|spaceman|spacewoman|cosmonaut|human cannonball|trapeze artist)\b/, 'diver'],
   [/\b(skateboard(er)?|skater)\b/, 'skateboarder'],
   [/\b(parcel|package|box|crate|packet|supplies|aid)\b/, 'parcel'],
   [/\b(sandbag|sand ?bag|sack|bag of (sand|flour)|ballast)\b/, 'sandbag'], [/\b(bucket|pail)\b/, 'bucket'],
@@ -444,9 +467,7 @@ const WORDS = [
 const NEAREST = [
   [/\b(crossbow bolt|spear)\b/, 'arrow'],
   [/\b(surfer|bmx)\b/, 'diver'],
-  [/\b(missile|projectile|shell|stick|bag|helmet|bomb|nut|clam|mussel|prey|mouse)\b/, 'particle'],
-  [/\b(fox|leopard|cheetah|lion|tiger)\b/, 'cat'], 
-  [/\b(animal|bat|insect|bee)\b/, 'particle'],
+  [/\b(fox|leopard|cheetah|lion|tiger)\b/, 'cat'],
 ];
 /**
  * What moves, found in a question's own words when the reader left it out:
@@ -459,6 +480,10 @@ export function whoIn(text) {
   const person = WORDS[0][0], hits = [];
   // a human cannonball is a person, never the cannonball
   if (/\bhuman cannonball\b/.test(t)) return 'human cannonball';
+  // what the sentence throws, by its shape, when the app has no figure of it:
+  // "a glass is dropped off a rooftop", "someone throws a watermelon"
+  const named = namedThing(t);
+  if (named) return named;
   for (const [re, f] of [...WORDS.slice(1), ...NEAREST]) { const m = t.match(re); if (m) hits.push({ at: m.index, word: m[1] || m[0], f }); }
   // "a bird drops a fish", "a plane releases a package": what is let go
   // moves, not what lets it go
@@ -478,10 +503,124 @@ export function whoIn(text) {
 export function figureOf(who) {
   const word = String(who ?? '').toLowerCase().replace(/[^a-z \-]/g, ' ').replace(/\s+/g, ' ').trim();
   if (!word) return { figure: null, exact: false, word };
-  if (FIGURES[word]) return { figure: word, exact: true, word };
-  for (const [re, f] of WORDS) if (re.test(word)) return { figure: f, exact: true, word };
-  for (const [re, f] of NEAREST) if (re.test(word)) return { figure: f, exact: false, word };
-  return { figure: 'particle', exact: false, word };
+  if (word !== 'thing' && Object.hasOwn(FIGURES, word)) return { figure: word, exact: true, word };
+  // the head of the phrase decides: a car battery is a battery, an apple pie a pie
+  const name = thingName(word) || word, head = headOf(name), end = word.indexOf(head) + head.length;
+  const about = (re) => { const m = word.match(re); return m && (!word.includes(head) || m.index + m[0].length >= end || re.test(head)); };
+  for (const [re, f] of WORDS) if (about(re)) return { figure: f, exact: true, word };
+  for (const [re, f] of NEAREST) if (about(re)) return { figure: f, exact: false, word };
+  // an exam's word for "it", and someone the app has no word for: as they were
+  if (isGeneric(name) || !name) return { figure: 'particle', exact: false, word };
+  if (isPerson(name)) return { figure: 'diver', exact: false, word };
+  return { figure: 'thing', exact: true, word: name, thing: name };
+}
+/**
+ * The object a sentence names, when it is something past the hand-built figures
+ * and the exam's words for "it": null for a ball, a stone, a particle, a person.
+ */
+export function namedThing(text) {
+  const name = thingIn(text);
+  return name && figureOf(name).figure === 'thing' ? name : null;
+}
+
+/* ── who or what sends it off ───────────────────────────────────────────
+   Everything named in the question appears in the scene (js/compose/things.js).
+   A sender is a person, an animal or vehicle the app has drawn by hand, or an
+   object with a picture; never the wind, never what is only a launcher or a
+   carrier, which have their own art. */
+/**
+ * @param word  who, in the question's word
+ * @returns {{ kind: 'person' | 'figure' | 'thing', figure?, thing? }|null}
+ */
+export function senderKind(word) {
+  const w = String(word ?? '').trim();
+  if (!w || isSelfWord(w)) return w && /^(?:he|she|they)$/i.test(w) ? { kind: 'person' } : null;
+  const low = w.toLowerCase();
+  if (Object.values(CARRIERS).some((C) => C.words.test(low)) || Object.values(LAUNCHERS).some((L) => L.words.test(low))) return null;
+  if (/\b(?:wind|gust|gravity|force|hand|hands|air|explosion|blast|impulse|wave|water|current|weight|tension|machine)\b/.test(low)) return null;
+  // someone named: "Ali throws a ball" (only a name is capitalised in the middle of what they typed)
+  if (/^[A-Z][a-z]+$/.test(w) && !isPerson(low) && !FIGURES[low] && figureOf(low).figure === 'thing' && !materialOf(low)) return { kind: 'person' };
+  const m = figureOf(low);
+  if (m.figure === 'diver' || isPerson(thingName(low))) return { kind: 'person' };
+  if (m.figure === 'thing') return materialOf(m.thing) === 'animal' || /\b(?:robot|tractor|digger|bulldozer|crane)\b/.test(low) ? { kind: 'thing', thing: m.thing } : null;
+  const F = FIGURES[m.figure];
+  if (m.exact && (F?.animal || ['car', 'lorry', 'tractor', 'bus', 'motorcycle', 'horse', 'bird', 'robot', 'monsterTruck', 'train'].includes(m.figure))) return { kind: 'figure', figure: m.figure };
+  return null;
+}
+/** Who a sentence, or the model's own `sender`, says sends it off, or null. */
+export function senderIn(text, said) {
+  const own = senderWords(text);
+  const a = own && senderKind(own.word);
+  if (a) return { ...a, word: own.word.toLowerCase(), verb: own.verb };
+  if (said && typeof said === 'object') {
+    const b = senderKind(said.who);
+    const verb = ['push', 'throw', 'kick', 'drop', 'knock'].includes(said.verb) ? said.verb : 'throw';
+    if (b) return { ...b, word: String(said.who).toLowerCase(), verb };
+  }
+  return null;
+}
+
+/* ── the student's own word for what moves ──────────────────────────────
+   The user, 7 Nov: "laptop thrown off a table" drew the table with a plain ball.
+   The model writes figure "ball" or "particle" for anything it has no figure
+   name for, and may leave `who` out. As a place the student names is the place
+   drawn (worker/src/composeplace.js namedPlace), what they name is what moves:
+   their words over the model's generic figure. A ball they call a ball stays a
+   ball, and a particle a particle. Nothing else in the reading is touched. */
+const GENERAL = new Set(['ball', 'stone', 'particle']);
+const GENERAL_WORD = /\b(?:ball|stone|particle|object|body|projectile)\b/i;
+/** A sentence with the model's general word replaced by the object's own. */
+const respell = (s, name) => s
+  .replace(/\b(an?)\s+(?:small\s+|heavy\s+)?(?:ball|stone|particle|object|body|projectile)\b/i, (m, a) => `${/^A/.test(a) ? article(name).replace(/^a/, 'A') : article(name)} ${name}`)
+  .replace(/\bthe\s+(?:ball|stone|particle|object|body|projectile)\b/gi, (m) => `${m[0] === 'T' ? 'The' : 'the'} ${name}`);
+export function ownWord(x, words = '') {
+  if (!x || typeof x !== 'object' || x.understood === false) return x;
+  // their words first; a photo with none has only the model's summary to go by
+  const said = String(words || x.words || '').trim() || String(x.summary || '');
+  let out = x;
+  // who sends it off, in their words or the model's
+  const sender = senderIn(said, x.sender ?? x.recipe?.sender);
+  if (sender) {
+    out = { ...out, sender };
+    if (out.recipe && typeof out.recipe === 'object') out.recipe = { ...out.recipe, sender };
+  }
+  // the model's own who, when it has named the object but drawn a ball
+  const whoSaid = figureOf(x.who);
+  const name = namedThing(said) || (whoSaid.figure === 'thing' ? whoSaid.thing : null);
+  if (!name) {
+    // a person is what moves, and the model drew a ball: "a human pushed off a cliff"
+    const person = personMoved(said), objs = out.recipe?.objects;
+    if (person && (!x.who || GENERAL.has(whoSaid.figure))) {
+      out = { ...out, who: person };
+      if (objs?.length === 1 && GENERAL.has(String(objs[0]?.figure).toLowerCase())) out.recipe = { ...out.recipe, objects: [{ figure: 'diver' }], title: undefined };
+    }
+    return out;
+  }
+  // the model has already named something more exact than a ball: that stands
+  if (x.who && !GENERAL.has(whoSaid.figure) && whoSaid.figure !== 'thing') return out;
+  out = { ...out, who: name };
+  // the place in their word, for the title: "A piano dropped from a crane", not "from scaffolding"
+  const atWord = placeIn(said)?.word;
+  if (atWord && out.recipe && typeof out.recipe === 'object' && placeIn(said)?.backdrop === String(out.recipe.backdrop).toLowerCase() && !/^(?:table|house|moon|mars|snow|desert|beach)$/.test(atWord)) out.recipe = { ...out.recipe, at: `${article(atWord)} ${atWord}` };
+  if (typeof x.summary === 'string' && GENERAL_WORD.test(x.summary)) out.summary = respell(x.summary, name);
+  const objects = out.recipe?.objects;
+  if (Array.isArray(objects) && objects.length) {
+    // two general objects, and the words also name a ball: the ball stays
+    const mixed = objects.length > 1 && /\b(?:ball|stone|particle)\b/i.test(said);
+    let first = true;
+    const next = objects.map((o) => {
+      const f = String((o && typeof o === 'object' ? o.figure : o) ?? '').toLowerCase();
+      if (!GENERAL.has(f) && f !== '') return o;
+      if (mixed && !first) return o;
+      first = false;
+      return { ...(o && typeof o === 'object' ? o : {}), figure: name, name: undefined };
+    });
+    const title = typeof out.recipe.title === 'string' && GENERAL_WORD.test(out.recipe.title) ? undefined : out.recipe.title;
+    out.recipe = { ...out.recipe, objects: next, title };
+  } else if (out.recipe && typeof out.recipe === 'object') {
+    out.recipe = { ...out.recipe, objects: [{ figure: name }] };
+  }
+  return out;
 }
 
 /* ── places only the composer draws ─────────────────────────────────────

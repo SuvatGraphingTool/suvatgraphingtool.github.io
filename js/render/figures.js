@@ -37,7 +37,7 @@
 // surfaces a figure stands on — a road, a railway track, a running track —
 // so two parallel tracks are two calls to rails().
 
-import { stroke, dot, ballSprite, withAlpha, cssVar } from './util.js';
+import { stroke, dot, ballSprite, withAlpha, cssVar, noteMover } from './util.js';
 import { env, rng, softShadow, tarmac, railBed } from './scenery.js';
 
 const TAU = Math.PI * 2;
@@ -588,7 +588,7 @@ export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still =
  * and a stance read on a phone.
  */
 export const THROWER_MIN = 50;
-export function thrower(g, X, Y, H, P, { dir = 1, pose = 0, aim = 45, ring = null, suit = false } = {}) {
+export function thrower(g, X, Y, H, P, { dir = 1, pose = 0, aim = 45, ring = null, suit = false, both = false, bend = 0 } = {}) {
   H = Math.max(THROWER_MIN * 0.8, H);
   const u = Math.max(0, Math.min(1, pose)), e = u * u * (3 - 2 * u);
   const E = env();
@@ -610,13 +610,17 @@ export function thrower(g, X, Y, H, P, { dir = 1, pose = 0, aim = 45, ring = nul
     const farLeg = legOf(back, 1), nearLeg = legOf(front, 1);
     // the throwing arm (near): from behind and high to along the aim
     const a0 = Math.PI * 1.15, a1 = -(aim * Math.PI) / 180;      // angle from +x, y down
-    const ang = a0 + (a1 - a0 + (a1 < a0 - Math.PI ? 2 * Math.PI : 0)) * e;
-    const EL = { x: SH.x + Math.cos(ang - 0.35 * (1 - e)) * upper, y: SH.y + Math.sin(ang - 0.35 * (1 - e)) * upper };
-    const HA = { x: EL.x + Math.cos(ang) * fore, y: EL.y + Math.sin(ang) * fore };
+    // (a push: both arms out along the aim, the elbows a little bent until it goes)
+    const ang = both ? a1 : a0 + (a1 - a0 + (a1 < a0 - Math.PI ? 2 * Math.PI : 0)) * e;
+    const EL = both ? { x: SH.x + Math.cos(ang + bend) * upper, y: SH.y + Math.sin(ang + bend) * upper }
+      : { x: SH.x + Math.cos(ang - 0.35 * (1 - e)) * upper, y: SH.y + Math.sin(ang - 0.35 * (1 - e)) * upper };
+    const HA = both ? { x: EL.x + Math.cos(ang - bend) * fore, y: EL.y + Math.sin(ang - bend) * fore }
+      : { x: EL.x + Math.cos(ang) * fore, y: EL.y + Math.sin(ang) * fore };
     // the other arm out in front for balance, dropping as the throw comes through
-    const bal = 0.15 + e * 1.1;
+    const bal = both ? ang + bend + 0.08 : 0.15 + e * 1.1;
     const EL2 = { x: SH.x + Math.cos(bal) * upper, y: SH.y + Math.sin(bal) * upper };
-    const HA2 = { x: EL2.x + Math.cos(bal + 0.5) * fore, y: EL2.y + Math.sin(bal + 0.5) * fore };
+    const HA2 = both ? { x: EL2.x + Math.cos(ang - bend + 0.08) * fore, y: EL2.y + Math.sin(ang - bend + 0.08) * fore }
+      : { x: EL2.x + Math.cos(bal + 0.5) * fore, y: EL2.y + Math.sin(bal + 0.5) * fore };
     limb(g, farLeg, skinFar, lw); limb(g, farLeg.slice(0, 2), withAlpha(shorts, 0.85), lw * 1.15);
     limb(g, [SH, EL2, HA2], skinFar, lw * 0.8);
     if (suit) {
@@ -715,6 +719,7 @@ export function ball(g, X, Y, L, P, { dir = 1, ring = null } = {}) {
 /** A particle: a plain bead, L across, centred on (X, Y) — the "particle P"
     of a paper, which has no shape to speak of. */
 export function particle(g, X, Y, L, P, { ring = null } = {}) {
+  noteMover(g, X, Y, Math.max(16, L * 0.7));
   dot(g, X, Y, Math.max(3, L / 2), { fill: P.ink, stroke: ring || P.surface, width: ring ? 2.4 : 1.6 });
 }
 
@@ -762,6 +767,7 @@ export function phaseFor(kind, L, px, { cars = 1 } = {}) {
 
 /** Any figure by name: drawFigure(g, 'cyclist', X, Y, L, P, opts). */
 export function drawFigure(g, kind, X, Y, L, P, opts = {}) {
+  noteMover(g, X, Y - L * 0.25, Math.max(16, L * 0.55));
   const k = FIGURES[kind] || (kind === 'ball' ? { draw: ball } : kind === 'particle' ? { draw: particle } : FIGURES.lorry);
   k.draw(g, X, Y, L, P, opts);
 }
@@ -1043,6 +1049,7 @@ export function surface(g, ground, x0, x1, Y, P) {
  */
 export const DIVER_FEET = 0.49;
 export function diver(g, cx, cy, H, P, { tuck = 0, arms = 0, spin = 0, dir = 1, ring = null, stand = false, feet = null, swing = null, space = false, keeper = false } = {}) {
+  noteMover(g, cx, cy, Math.max(16, H * 0.55));
   // in a spacesuit (`space`) the limbs are the suit's white, the head a helmet with its gold visor
   const E = env(), skin = space ? (E.night ? '#d4d6da' : '#eef0f3') : E.night ? '#b08a74' : '#d9a988', skinFar = space ? (E.night ? '#9a9da3' : '#c3c6cc') : E.night ? '#7d6253' : '#b5876a';
   const suit = ring || (E.night ? '#3f5e74' : '#2f5d7c'), suitHi = E.night ? '#557891' : '#3f7398', cap = E.night ? '#c9b8a8' : '#f2ece4';
@@ -1208,6 +1215,7 @@ export function highJumper(g, cx, cy, H, P, { u = 0, pk = 0.5, rest = 0, stand =
  */
 export const SKATE_FEET = 0.44;
 export function skateboarder(g, cx, cy, H, P, { spin = 0, dir = 1, phase = 0, ring = null } = {}) {
+  noteMover(g, cx, cy, Math.max(16, H * 0.55));
   const E = env();
   g.save();
   g.translate(cx, cy); g.rotate(spin * dir);
@@ -1239,6 +1247,7 @@ export function skateboarder(g, cx, cy, H, P, { spin = 0, dir = 1, phase = 0, ri
  * label. No text on it.
  */
 export function parcel(g, cx, cy, L, P, { spin = 0 } = {}) {
+  noteMover(g, cx, cy, Math.max(16, L * 0.6));
   const E = env(), w = L, h = L * 0.72;
   g.save();
   g.translate(cx, cy); g.rotate(spin);

@@ -26,13 +26,13 @@ export function catalogue() {
     'backdrops (where it happens):',
     ...Object.entries(BACKDROPS).map(([k, B]) => `  ${k} — ${B.what}${B.edge ? '; it is launched from its top, so it needs h' : ''}`),
     'figures (what moves):',
-    ...Object.entries(FIGURES).map(([k, F]) => `  ${k} — ${F.label}${F.thrown ? ', thrown by a person' : ''}${F.views.includes('side') ? '' : ' (seen from above only)'}`),
+    ...Object.entries(FIGURES).filter(([, F]) => !F.unlisted).map(([k, F]) => `  ${k} — ${F.label}${F.thrown ? ', thrown by a person' : ''}${F.views.includes('side') ? '' : ' (seen from above only)'}`),
     'carriers (backdrop air only, as "carrier": what it is let go from; balloon if left out):',
     `  ${Object.entries(CARRIERS).map(([k, C]) => `${k} — ${C.label}`).join('; ')}`,
     'launchers (engine projectile, from a place, as "launcher": what sends it off instead of a person; left out if none is named):',
     `  ${Object.entries(LAUNCHERS).map(([k, C]) => `${k} — ${C.label}`).join('; ')}`,
     'effects (optional; the app picks one from what it lands on):',
-    ...Object.entries(EFFECTS).map(([k, X]) => `  ${k} — ${X.label}, ${X.what}`),
+    ...Object.entries(EFFECTS).filter(([, X]) => !X.auto).map(([k, X]) => `  ${k} — ${X.label}, ${X.what}`),
     'engines (how it moves):',
     ...ready.map(([k, E]) => {
       const s = compose({ engine: k, ...sample[k] });

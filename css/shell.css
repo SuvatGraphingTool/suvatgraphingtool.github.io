@@ -973,9 +973,9 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 
 /* ── the composer's reveal — js/compose/reveal.js ──────────────────────
    "Creating your scene", in the redesign's own materials: a neutral blur
-   of the stage, the frosted card every floating thing here uses, ink type
-   with a quiet light passing through it, and progress in ink, not coral.
-   The Spark keeps its warm glow — it is the AI's mark. */
+   of the stage, ink type
+   with a quiet light passing through it: no box, only the Spark and one line.
+   The Spark stands alone: no tile, no glow. */
 .cr-snap, :root:not([data-theme='light']) .cr-snap {
   background: radial-gradient(70% 60% at 30% 25%, color-mix(in srgb, var(--accent-fill) 10%, transparent), transparent 70%),
               linear-gradient(180deg, var(--card), var(--surface));

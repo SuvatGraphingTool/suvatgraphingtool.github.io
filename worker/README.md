@@ -140,3 +140,19 @@ degrees from a ratio, a launch speed from a range — is computed in
 `js/core/question.js` against `js/core/projectile.js`, both under test. Language
 models make arithmetic slips, and a student revising from a confidently wrong
 number is worse off than one who got no help at all.
+
+---
+
+## Drawings — `POST /draw`
+
+When a question names something with no hand-built figure and no curated icon, the page
+asks for a drawing (`src/draw.js`). It takes `{ name }`, lower-case letters, spaces and
+hyphens, 30 characters; nothing else reaches the model. A drawing is kept for good in the
+D1 database `suvat-accounts` (tables `drawings` and `draw_log`, in `site/schema.sql`), so
+every student shares it for no further AI call. At most 25 new ones a day and 5 an hour
+from one address. Blocked names, refusals and failed drawings are cached too, and the page
+falls back to the object's name on a shape. `DRAW_MODELS` in `wrangler.toml` says who draws.
+
+Before the first deploy with this route, apply the tables to the remote database:
+
+    npx wrangler d1 execute suvat-accounts --remote --file site/schema.sql

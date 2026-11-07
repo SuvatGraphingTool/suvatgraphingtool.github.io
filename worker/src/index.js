@@ -9,9 +9,10 @@
 // way the interface can explain.
 
 import { toPlace } from './place.js';
-import { toComposed, toFigure, namedPlace, answered, fromRest } from './composeplace.js';
+import { toComposed, toFigure, namedPlace, answered, fromRest, ownWord } from './composeplace.js';
 import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt } from './schema.js';
 import { focusFor, libraryIdsIn, idsInHistory } from './focus.js';
+import { draw } from './draw.js';
 
 const MODELS_DEFAULT = '@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
 const MAX_IMAGE_BYTES = 1_500_000;      // the client resizes to ~150 KB; this is the backstop
@@ -41,6 +42,8 @@ export default {
     if (!allowedOrigin(origin, env)) return json({ error: 'Not allowed from this origin.' }, 403, cors);
 
     const url = new URL(request.url);
+    // a drawing of an object, made once and shared: its own limits, its own clock
+    if (url.pathname === '/draw') return draw(request, env, cors, { race, ctx });
     if (url.pathname !== '/extract') return json({ error: 'Not found' }, 404, cors);
 
     // ── rate limit ────────────────────────────────────────────────────────
@@ -161,7 +164,7 @@ export default {
       const second = await race(env, models, payload);
       if (second.ok) outcome = second;
     }
-    if (outcome.ok) return json({ ok: true, extraction: fromRest(namedPlace(toComposed(toPlace(toFigure(outcome.extraction, words), words), words), words), words), model: outcome.model }, 200, cors);
+    if (outcome.ok) return json({ ok: true, extraction: fromRest(namedPlace(toComposed(toPlace(toFigure(ownWord(outcome.extraction, words), words), words), words), words), words), model: outcome.model }, 200, cors);
     const { last, lastCap, capped, gone } = outcome;
 
     if (lastCap && models.every((m) => capped.has(m.name) || gone.has(m.name))) {
@@ -208,8 +211,9 @@ export default {
  * Ask the models in turn, overlapping a slow one with the next, and settle on
  * the first readable answer. Every request still running is then cancelled.
  * A model that cannot think at the level asked is asked once more at "low".
+ * The reader's own clock unless a caller has more time to give (a drawing does).
  */
-function race(env, models, payload) {
+function race(env, models, payload, { hedgeMs = HEDGE_MS, deadlineMs = DEADLINE_MS } = {}) {
   const now = Date.now();
   const warm = (m) => (cooling.get(m.name) || 0) <= now;
   const queue = [...models.filter(warm), ...models.filter((m) => !warm(m))]
@@ -232,7 +236,7 @@ function race(env, models, payload) {
     };
     const fail = () => finish({ ok: false, last, lastCap, capped, gone });
     let hedge = null;
-    const deadline = setTimeout(fail, DEADLINE_MS);
+    const deadline = setTimeout(fail, deadlineMs);
 
     function next() {
       clearTimeout(hedge);
@@ -240,7 +244,7 @@ function race(env, models, payload) {
       const m = queue.shift();
       if (!m) { if (!inFlight) fail(); return; }
       if (capped.has(m.name) || gone.has(m.name)) return next();
-      const left = DEADLINE_MS - (Date.now() - started);
+      const left = deadlineMs - (Date.now() - started);
       if (left < 3_000) { if (!inFlight) fail(); return; }
       inFlight++; running.add(m.name);
       const generationConfig = { ...payload.generationConfig, temperature: m.temperature,
@@ -266,7 +270,7 @@ function race(env, models, payload) {
         next();
       });
       // Still waiting after HEDGE_MS? Ask the next one as well.
-      if (inFlight < MAX_IN_FLIGHT) hedge = setTimeout(next, HEDGE_MS);
+      if (inFlight < MAX_IN_FLIGHT) hedge = setTimeout(next, hedgeMs);
     }
     next();
   });
