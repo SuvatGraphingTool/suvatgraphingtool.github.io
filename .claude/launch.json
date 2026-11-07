@@ -27,6 +27,15 @@
         "4191"
       ],
       "port": 4191
+    },
+    {
+      "name": "suvat-redesign",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "/home/tr/Projects/SUVAT-new/.claude/worktrees/redesign/dev-server.mjs",
+        "4188"
+      ],
+      "port": 4188
     }
   ]
 }
