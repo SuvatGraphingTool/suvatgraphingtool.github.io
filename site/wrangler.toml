@@ -18,6 +18,8 @@ database_name = "suvat-accounts"
 database_id = "8634cd8a-b2ba-4e5c-819d-954165fd2dd4"
 
 [vars]
+# The site's pages on another address (GitHub Pages), which may call this API.
+PAGES = "https://suvatgraphingtool.github.io"
 # Google sign-in: the Client ID from Google Cloud Console (not a secret).
 # The secret is set by the owner, never written here:
 #   npx wrangler secret put GOOGLE_CLIENT_SECRET --name suvat-redesign
