@@ -2,19 +2,21 @@
 //
 // Ask Suvat has put a scene together. Rather than cut to it, the stage opens
 // behind a veil: the scene blurred and shimmering, the Spark (Ask Suvat's mark)
-// large and glowing in the middle, and under it ONE line that says what is being
-// made: "Building the table…", "Drawing the laptop…", "Standing the second person
-// at the edge…", "Working out the motion…". Then the veil lifts from the top down,
-// the way an image generator resolves its picture, and the motion plays.
+// large in the middle, and under it ONE line that says what is being made:
+// "Building the table…", "Drawing the laptop…", "Setting the height to 40 m…",
+// "Working out the motion…", with time to read each, at most thirty seconds in all.
+// Then the veil lifts from the top down, the way an image generator resolves its
+// picture, and the motion plays.
 //
 // THE LINE IS TRUE. Each line names a piece the recipe really has (js/compose/
 // registry.js), and a line with real work behind it stays up until that work is
-// done: the icon's load, the drawing from the Worker, the engine's solve. Nothing
-// is on a timer pretending to be work, and past the student's deadline the scene
-// goes on without what has not come (js/compose/pictures.js). With everything to
-// hand it is as short as it ever was: nothing pads it. Reduced motion: a short fade.
+// done: the icon's load, the drawing from the Worker, the engine's solve. Every
+// line names something the scene really has, and past the student's deadline the
+// scene goes on without what has not come (js/compose/pictures.js). Reduced motion:
+// a short fade.
 
-import { placeOf, pieceOf } from './registry.js';
+import { placeOf, pieceOf, EFFECTS } from './registry.js';
+import { num } from '../notation.js';
 import { prepare, ready, namesIn, DEADLINE_MS } from './pictures.js';
 
 /** The Spark, Ask Suvat's mark: the one `#spark` symbol in index.html. */
@@ -22,6 +24,7 @@ const SPARK = '<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="
 const BELOW = { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the pool', well: 'the water in the well', ground: 'the ground', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const bare = (s) => String(s).replace(/^(an?|the) /i, '');
+const value = (v) => num(v, Number.isInteger(v) ? 0 : 2);
 
 /**
  * What the veil says, line by line, from the recipe: [{ say, work? }], where
@@ -31,7 +34,7 @@ const bare = (s) => String(s).replace(/^(an?|the) /i, '');
  * @param o.prepared  the promise that says the recipe's pictures are in, or the deadline has passed
  */
 export function steps(R, { solve = null, prepared = null } = {}) {
-  const B = placeOf(R), out = [];
+  const B = placeOf(R), out = [], n = R.numbers || {};
   const place = bare(B.label.toLowerCase());
   out.push({ say: `Building the ${place}…` });
   const below = BELOW[B.below];
@@ -51,7 +54,12 @@ export function steps(R, { solve = null, prepared = null } = {}) {
     const where = B.edge ? 'at the edge' : 'beside it';
     out.push({ say: `Standing the ${who} ${where}…`, ...(S.kind === 'thing' && pending.has(S.thing) ? { work: () => Promise.race([ready(S.thing), prepared ?? Promise.resolve()]) } : {}) });
   }
+  if (n.h) out.push({ say: `Setting the height to ${value(n.h)} m…` });
+  if (n.u != null) out.push({ say: `Setting the launch speed to ${value(n.u)} m s⁻¹…` });
+  if (n.theta) out.push({ say: `Setting the angle to ${value(n.theta)}°…` });
   out.push({ say: 'Working out the motion…', ...(solve ? { work: async () => { solve(); } } : {}) });
+  out.push({ say: 'Drawing its path…' });
+  for (const e of R.effects || []) if (EFFECTS[e]) out.push({ say: `Adding ${EFFECTS[e].label}…` });
   return out;
 }
 
@@ -63,7 +71,7 @@ export function steps(R, { solve = null, prepared = null } = {}) {
  * @param o.solve  the engine's own solve
  * @returns Promise that resolves as the veil starts to lift (play then)
  */
-export function reveal(wrap, R, { per = 420, until = Date.now() + DEADLINE_MS, solve = null } = {}) {
+export function reveal(wrap, R, { per = 1800, until = Date.now() + DEADLINE_MS, solve = null } = {}) {
   wrap.querySelector('.cmp-reveal')?.remove();
   const quiet = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const prepared = prepare(R, { until });
@@ -101,9 +109,9 @@ export function reveal(wrap, R, { per = 420, until = Date.now() + DEADLINE_MS, s
   requestAnimationFrame(() => el.classList.add('is-on'));
   const say = (text) => { const s = document.createElement('span'); s.textContent = text; step.replaceChildren(s); };
   const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
-  // long enough to read when nothing is waited for, as it always was; a line with
-  // real work behind it stays for as long as that work takes, and no longer
-  const dwell = (quiet ? 500 : Math.max(2200, list.length * per)) / list.length;
+  // time to read each line, at most thirty seconds in all (the user, 7 Nov); a line
+  // with real work behind it stays for as long as that work takes, up to the deadline
+  const dwell = (quiet ? 500 : Math.min(30_000, Math.max(9000, list.length * per))) / list.length;
   // the scene sharpens as the lines go by (css/compose.css)
   el.style.setProperty('--total', `${dwell * list.length}ms`);
 
