@@ -9,7 +9,7 @@
 // way the interface can explain.
 
 import { toPlace } from './place.js';
-import { toComposed, toFigure, namedPlace } from './composeplace.js';
+import { toComposed, toFigure, namedPlace, answered } from './composeplace.js';
 import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt } from './schema.js';
 import { focusFor, libraryIdsIn, idsInHistory } from './focus.js';
 
@@ -108,6 +108,10 @@ export default {
     // SEARCH: a written answer from Gemini with Google Search switched on —
     // see searchAnswer below. Everything else on this route is the reader.
     if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors);
+
+    // "20 m", in answer to "how high up does it start?": no model needed.
+    const filled = !file && mode !== 'board' ? answered(words, earlier) : null;
+    if (filled) return json({ ok: true, extraction: filled, model: 'none' }, 200, cors);
 
     // ONLY THE CATALOGUE THIS QUESTION NEEDS (focus.js): a typed or spoken
     // question carries every library scenario as one line, and in full only

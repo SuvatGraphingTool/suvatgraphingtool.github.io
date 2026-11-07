@@ -14,7 +14,8 @@ import { systemPrompt, SYSTEM_PROMPT } from '../worker/src/schema.js';
 import { LIBRARY_IDS } from '../worker/src/library.js';
 import reader from '../worker/src/index.js';
 import { check } from '../js/compose/recipe.js';
-import { namedPlace } from '../worker/src/composeplace.js';
+import { namedPlace, answered } from '../worker/src/composeplace.js';
+import { composeKindly, compose } from '../js/compose/recipe.js';
 
 let pass = 0, fail = 0;
 function ok(cond, label) {
@@ -167,6 +168,34 @@ console.log('\nThe place the student names is the place drawn');
   ok(focusFor(said).compose.split('\n').some((l) => /^ {2}city — .*rooftop/.test(l)), 'the model is shown the city in full when the question says rooftop');
   const live = await read({ text: said }, () => ball('cliff'));
   ok(live.data.extraction.recipe.backdrop === 'city', 'through the Worker, end to end: the city');
+}
+
+/* The user, 7 Nov: "the AI should see what we need first, not straight up give us a NO". */
+console.log('\nNever a flat no');
+{
+  const P = { engine: 'projectile', backdrop: 'city', objects: [{ figure: 'ball' }] };
+  ok(!compose({ ...P, numbers: { h: 0, u: 0, theta: -90 } }).ok && composeKindly({ ...P, numbers: { h: 0, u: 0, theta: -90 } }).ok, 'off a rooftop with the height written as 0: set up, not refused');
+  ok(composeKindly({ ...P, numbers: { h: 0, u: 0, theta: -90 } }).boxes.h == null, 'and the height is blank, to be asked for, never 0');
+  ok(composeKindly({ ...P, numbers: { h: 0, u: 7, theta: -90 } }).boxes.u === 7, 'what it did give is kept');
+  ok(composeKindly({ ...P, numbers: { h: -20 } }).boxes.h === 20, 'a height written as a depth is that height');
+  const BROKEN = {
+    'a value that is not a number': { ...P, numbers: { h: 'high', u: 5 } }, 'a value the engine has no use for': { ...P, numbers: { h: 20, mass: 3 } },
+    'an angle out of range': { ...P, numbers: { h: 20, u: 5, theta: 200 } }, 'no engine': { backdrop: 'city', objects: [{ figure: 'ball' }], numbers: { h: 20 } },
+    'an engine that does not exist': { ...P, engine: 'teleport', numbers: { h: 20 } }, 'nothing that moves': { engine: 'projectile', backdrop: 'city', numbers: { h: 20 } },
+    'a place that does not exist': { ...P, backdrop: 'atlantis', numbers: { h: 20 } }, 'an effect that does not exist': { ...P, numbers: { h: 20 }, effects: ['fireworks'] },
+    'three things for an engine of two': { engine: 'pair', backdrop: 'tower', objects: [{ figure: 'ball' }, { figure: 'ball' }, { figure: 'ball' }], numbers: { 'A.h': 10 } },
+    'an empty recipe': {}, 'no recipe at all': null,
+  };
+  for (const [what, r] of Object.entries(BROKEN)) ok(composeKindly(r).ok, `${what}: still a scene`);
+
+  const asked = [{ role: 'user', parts: [{ text: 'a ball dropped off a rooftop' }] },
+    { role: 'model', parts: [{ text: JSON.stringify({ understood: true, scenario: 'compose', summary: 'A ball.', recipe: { ...P, numbers: { h: 0, u: 0 } } }) }] }];
+  for (const said of ['20 m', '20', 'about 20 metres', "it's 20 m high", 'h = 20']) ok(answered(said, asked)?.recipe.numbers.h === 20, `"${said}" fills in the height, with no model`);
+  for (const said of ['20 m/s', 'what about 20 m/s?', 'make it a tennis ball', '0 m']) ok(answered(said, asked) === null, `"${said}" is not a height: it goes to the model`);
+  const have = [asked[0], { role: 'model', parts: [{ text: JSON.stringify({ understood: true, scenario: 'compose', recipe: { ...P, numbers: { h: 30 } } }) }] }];
+  ok(answered('20 m', have) === null, 'a reading that has its height goes to the model');
+  const chat = await read({ text: '20 m', history: [{ role: 'user', text: 'a ball dropped off a rooftop' }, { role: 'model', text: asked[1].parts[0].text }] }, () => { throw new Error('asked the model'); });
+  ok(chat.prompts.length === 0 && chat.data.extraction.recipe.numbers.h === 20, 'through the Worker: answered without one AI call');
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

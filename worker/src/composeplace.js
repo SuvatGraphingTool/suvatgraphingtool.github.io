@@ -102,6 +102,29 @@ export function namedPlace(x, words = '') {
   return { ...x, recipe: { ...x.recipe, backdrop } };
 }
 
+/* ── "20 m": the answer to what Suvat just asked ─────────────────────────
+   A reading short of its height says "how high up does it start?". The answer
+   needs no model: the height goes into the reading the chat is already on, so
+   it runs at once and costs none of the day's allowance. Only a bare height, and
+   only when the last reading lacks one; anything else goes to the model. */
+const JUST_A_HEIGHT = /^(?:(?:it(?:'?s| is)|about|around|roughly|say|from|the height is|height(?: is)?|h\s*=)\s+)*(\d+(?:\.\d+)?)\s*(?:m|metres?|meters?)?(?:\s+(?:high|tall|up|above the ground))?\s*\.?$/i;
+export function answered(words, earlier = []) {
+  const m = JUST_A_HEIGHT.exec(String(words || '').trim());
+  if (!m || !(Number(m[1]) > 0)) return null;
+  const last = [...earlier].reverse().find((h) => h.role === 'model');
+  let x;
+  try { x = JSON.parse(last?.parts?.[0]?.text); } catch { return null; }
+  if (!x?.understood) return null;
+  const h = Number(m[1]);
+  const empty = (v) => v == null || v === 0;
+  if (x.scenario === 'compose' && x.recipe && BACKDROPS[x.recipe.backdrop]?.edge && (!x.recipe.engine || x.recipe.engine === 'projectile') && empty(x.recipe.numbers?.h)) {
+    return { ...x, recipe: { ...x.recipe, numbers: { ...x.recipe.numbers, h } } };
+  }
+  if (x.scenario === 'library' && x.library === 'from-a-height' && x.boxes && empty(x.boxes.h)) return { ...x, boxes: { ...x.boxes, h } };
+  if (['dropped', 'down', 'platform', 'platform-angle', 'platform-down'].includes(x.scenario) && empty(x.h)) return { ...x, h };
+  return null;
+}
+
 /* ── what moves, and a jump with no angle ────────────────────────────────
    The app draws what moves (js/compose/registry.js figureOf — the same list
    here, so a person is a person in both). This makes sure the reading says

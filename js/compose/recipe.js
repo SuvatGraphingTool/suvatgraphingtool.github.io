@@ -403,10 +403,63 @@ export function scenesOf(parts) {
   for (const p of Array.isArray(parts) ? parts : []) {
     if (p && typeof p === 'object' && p.recipe && typeof p.recipe === 'object') {
       const { recipe, ...part } = p;
-      scenes.push({ part, c: compose(recipe) });
+      scenes.push({ part, c: composeKindly(recipe) });
     } else main.push(p);
   }
   return { main, scenes };
+}
+
+/* ── never a flat no ─────────────────────────────────────────────────────
+   The user, 7 Nov: "the AI should see what we need first, not straight up
+   give us a NO" — "a ball dropped off a rooftop" was refused because the model
+   wrote a height of 0 for one the question never gave. check() stays strict:
+   it is what proves a recipe sound. mend() makes the most of what the model
+   wrote, using check() as its guide so every rule it holds is covered: a value
+   check() objects to is left blank, for the reply to ask for; a thing the place
+   or the engine cannot draw becomes the nearest it can, and says so. */
+export function mend(raw) {
+  const clean = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  let r = { ...clean, numbers: { ...(clean.numbers && typeof clean.numbers === 'object' ? clean.numbers : {}) } };
+  const notes = [];
+  // a height written as a depth is still that height
+  for (const k of ['h', 'A.h', 'B.h']) if (isNum(r.numbers[k]) && r.numbers[k] < 0) r.numbers[k] = -r.numbers[k];
+  const reasonOf = (x) => { const c = check(x); return c.ok ? null : c.reason; };
+  const without = (keys) => { const n = { ...r.numbers }; for (const k of keys) delete n[k]; return { ...r, numbers: n }; };
+  const named = Array.isArray(clean.objects) ? clean.objects : [];
+  const firstFigure = named[0] && typeof named[0] === 'object' ? named[0].figure : named[0];
+  for (let pass = 0; pass < 16; pass++) {
+    const why = reasonOf(r);
+    if (why === null) break;
+    const keys = Object.keys(r.numbers);
+    const pairs = keys.flatMap((a, i) => keys.slice(i + 1).map((b) => [a, b]));
+    const E = ENGINES[word(r.engine)], count = named.length;
+    const lo = E?.objects?.[0] ?? 1;
+    const tries = [
+      ...keys.map((k) => without([k])), ...pairs.map((p) => without(p)),
+      { ...r, effects: undefined }, { ...r, launcher: undefined }, { ...r, carrier: undefined }, { ...r, below: undefined },
+      ...(count ? [{ ...r, objects: named.slice(0, 1) }, { ...r, objects: [named[0], named[0]] }] : [{ ...r, objects: Array(lo).fill({ figure: 'ball' }) }]),
+      { ...r, objects: (r.objects || [{}]).map((o) => ({ ...(o && typeof o === 'object' ? o : {}), figure: 'ball' })) },
+      { ...r, objects: (r.objects || [{}]).map((o) => ({ ...(o && typeof o === 'object' ? o : {}), figure: 'particle' })) },
+      { ...r, backdrop: 'ground', below: undefined },
+      { ...r, engine: 'projectile', backdrop: BACKDROPS[word(r.backdrop)] ? r.backdrop : 'ground', objects: (r.objects || [{ figure: 'ball' }]).slice(0, 1) },
+      { ...r, numbers: {} },
+    ];
+    const next = tries.find((t) => reasonOf(t) === null) || tries.find((t) => reasonOf(t) !== why);
+    if (!next) break;
+    r = next;
+  }
+  const said = r.objects?.[0] && typeof r.objects[0] === 'object' ? r.objects[0].figure : null;
+  if (firstFigure && said && word(firstFigure) !== said && FIGURES[word(firstFigure)]) notes.push(`Drawn as ${FIGURES[said].label} here: ${FIGURES[word(firstFigure)].label} does not fit this scene.`);
+  return { recipe: r, notes };
+}
+/** compose(), never refusing what it can make sense of. */
+export function composeKindly(raw) {
+  const first = compose(raw);
+  if (first.ok) return first;
+  const { recipe, notes } = mend(raw);
+  const c = compose(recipe);
+  if (c.ok && notes.length && c.scenario?.recipe) c.scenario.recipe.notes = [...(c.scenario.recipe.notes || []), ...notes];
+  return c;
 }
 
 /** "Drawn as a particle: there is no rocket figure yet." */

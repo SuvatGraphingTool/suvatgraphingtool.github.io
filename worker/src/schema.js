@@ -219,7 +219,9 @@ scenario "compose" and a recipe. A plain ball or stone with no place named stays
 twelve; a stone thrown from a cliff, tower or bridge by a person is the library's
 from-a-height. Compose only when those do not draw what the question describes. The backdrop
 is the place the question names, never another: a rooftop or an office block is city, the roof
-of a house is house, and a cliff only when it says a cliff. A diving
+of a house is house, and a cliff only when it says a cliff. A number the question does not give
+is LEFT OUT of numbers, never written as 0: the app asks the student for it. Set the scene up
+with what you have; never answer that it cannot be done because a value is missing. A diving
 board, a well and a balloon are From a height's places (board, well, balloon), never a
 backdrop to compose: anything launched from one is library from-a-height.
 Two on one vertical line, and a ball that bounces, are the library's pair-vertical and

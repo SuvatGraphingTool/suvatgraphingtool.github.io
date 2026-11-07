@@ -13,7 +13,7 @@ import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
-import { compose, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
+import { composeKindly, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
 import { figureOf, belowOf, placeOf } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
@@ -3534,7 +3534,7 @@ function applyLibrary(x, { graph = true } = {}) {
     + (typeof x.summary === 'string' && x.summary ? `<p class="ro-sum">${esc(x.summary)}</p>` : '');
   const body = solved?.ok
     ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
-    : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
+    : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved?.reason || ''} Just tell me here, or press “Add the missing values”.</div>`;
   return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example, !!KITS[s.kit].g) + body };
 }
 /**
@@ -3664,8 +3664,8 @@ function applyComposed(x, { graph = true } = {}) {
   }
   // the surface below, when the reader left it out but the question names one ("a bridge above a road")
   if (x.recipe?.backdrop && !x.recipe.below) { const b = belowOf(x.recipe.backdrop, `${x.summary || ''} ${x.words || ''}`); if (b) x = { ...x, recipe: { ...x.recipe, below: b } }; }
-  const c = compose(x.recipe);
-  if (!c.ok) return { ok: false, error: `Suvat could not put that scene together: ${c.reason}` };
+  const c = composeKindly(x.recipe);
+  if (!c.ok) return { ok: false, chat: true, error: 'I can see the idea, but I need a little more to set it up. What moves, where from, and do you know a height or a speed?' };
   const s = register(c, null);
   // a part that is another place or another motion has a scene of its own
   const { main, scenes } = scenesOf(x.parts);
@@ -3694,7 +3694,9 @@ function applyComposed(x, { graph = true } = {}) {
     + `<p class="ro-sum">${esc(typeof x.summary === 'string' && x.summary ? x.summary : s.sub)}</p>`;
   const body = solved?.ok
     ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
-    : `<div class="ro-engine" data-ok="false"><b>Not enough to run it yet.</b> ${solved?.reason || ''} Check the values and fill in what is missing.</div>`;
+    : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${x.recipe?.engine !== 'pair' && state.kit?.h == null && placeOf(s.recipe).edge
+      ? 'How high up does it start? Just tell me here, like “20 m”, and I’ll run it.'
+      : `${solved?.reason || ''} Just tell me here, or press “Add the missing values”.`}</div>`;
   // the values it read, each from the question or assumed, as a library reply lists them
   const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g && !placeOf(s.recipe).g,
     `${x.summary || ''} ${said.join(' ')}`, false, !!c.kit.g);

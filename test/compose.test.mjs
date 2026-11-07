@@ -170,7 +170,7 @@ group('A part in a scene of its own', () => {
   const p = fromReader(c.scenario.id, [scenes[0].part], Object.keys(c.boxes))[0];
   near(answerOf(p, sv).values[0], 6 * Math.sqrt(6 / 9.8), 1e-9, '(c) the cyclist lands 6 √(2h / g) out');
   COMPOSED.length = 0;
-  ok(!scenes[1].c.ok && /no backdrop called/.test(scenes[1].c.reason), '(d) refused with its reason, the rest still stand');
+  ok(scenes[1].c.ok, '(d), a place that does not exist, is still a scene: never a flat no (the user, 7 Nov)');
   ok(scenesOf(undefined).main.length === 0 && scenesOf([null]).main.length === 1, 'no parts, or a broken one, does not throw');
 });
 
