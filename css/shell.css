@@ -322,12 +322,20 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
   font-size: var(--fs-xs); font-weight: 500; color: var(--ink-muted);
 }
 .hero-chip .ai-orb.xs { width: 16px; height: 16px; }
+/* the sayings share one cell, so the page never moves as they change (js/shell.js) */
 .hero-h {
+  display: grid; justify-items: center;
   margin: 0 0 var(--sp-5); font-size: clamp(40px, 6.4vw, var(--fs-hero)); line-height: 1.04;
   letter-spacing: var(--track-hero); font-weight: 600;
+}
+.hero-say {
+  grid-area: 1 / 1; padding-bottom: .08em;
   background: linear-gradient(180deg, var(--ink) 30%, color-mix(in srgb, var(--ink) 62%, transparent));
   -webkit-background-clip: text; background-clip: text; color: transparent;
+  opacity: 0; transform: translateY(.18em); filter: blur(8px);
+  transition: opacity 900ms var(--ease), transform 900ms var(--ease), filter 900ms var(--ease);
 }
+.hero-say.is-on { opacity: 1; transform: none; filter: none; }
 .hero-sub { max-width: 54ch; margin: 0 auto; font-size: var(--fs-lg); line-height: 1.6; color: var(--ink-muted); text-wrap: balance; }
 
 .ask-hero {
@@ -734,7 +742,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 
 /* Suvat: its mark and name, the words full width beside it */
 #screen-chat .ask-reply { display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 14px; align-items: start; }
-#screen-chat .ask-reply > .ai-orb.sm { width: 28px; height: 28px; border-radius: 8px; }
+#screen-chat .ask-reply > .ai-orb.sm { width: 28px; height: 28px; }
 .ask-main { min-width: 0; }
 .ask-name { margin: 0; height: 28px; display: flex; align-items: center; font-size: var(--fs-sm); font-weight: var(--w-semi); color: var(--ink-strong); }
 #screen-chat .ask-reply .ask-bubble { max-width: none; padding: 2px 0 0; background: none; border: none; box-shadow: none; }
@@ -771,7 +779,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 /* a new chat: the greeting, and questions to start from */
 .chat-hello { margin: auto; padding: var(--sp-12) 0 var(--sp-8); display: flex; flex-direction: column; align-items: center; text-align: center; }
 .chat-hello[hidden] { display: none; }
-.ai-orb.lg { width: 56px; height: 56px; border-radius: 16px; margin-bottom: var(--sp-5); }
+.ai-orb.lg { width: 56px; height: 56px; margin-bottom: var(--sp-5); }
 .chat-hello-h { margin: 0; font-size: clamp(24px, 3.4vw, var(--fs-3xl)); font-weight: 600; letter-spacing: var(--track-h); color: var(--ink); text-wrap: balance; }
 .chat-hello-sub { margin: var(--sp-2) 0 0; font-size: var(--fs-base); color: var(--ink-muted); text-wrap: balance; }
 .chat-sugs { width: min(640px, 100%); margin-top: var(--sp-8); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
@@ -980,7 +988,6 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .cr-card { padding: 0; gap: var(--sp-4); transition: transform var(--dur-4) var(--spring-soft), opacity var(--dur-3) var(--ease); }
 .cr-mark { width: 64px; height: 64px; }
 .cr-orb { width: 64px; height: 64px; }
-.cr-glow { inset: -36px; opacity: .55; }
 .cr-step, :root:not([data-theme='light']) .cr-step {
   color: var(--ink); font-size: 18px; font-weight: 500; height: auto; min-height: 1.5em; white-space: normal; overflow: visible; text-wrap: balance;
   text-shadow: 0 0 6px var(--surface), 0 0 16px var(--surface);

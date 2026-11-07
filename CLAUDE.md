@@ -4,6 +4,24 @@ An interactive projectile-motion playground for A-level physics and maths.
 No build step, no dependencies: HTML, CSS and ES modules. `node dev-server.mjs`,
 then http://localhost:4173.
 
+## Where work goes — every session, new ones included
+
+**All work happens on the dev site**: the `redesign` branch, live at
+https://suvat-redesign.suvatgraphingtool.workers.dev. Work in or from
+`.claude/worktrees/redesign`, and put a change live with
+`git pull --ff-only && scripts/deploy-redesign.sh`.
+
+**Leave `main` alone.** It is the live site for students
+(https://suvatgraphingtool.github.io), and nothing goes onto it, or onto `ai`,
+until the user says so. If this session opened on another branch, the work still
+goes to `redesign`.
+
+The two sites share a backend. `site/` (accounts) and `worker/` (the question
+reader) serve the live site too, so deploying either changes it even with `main`
+untouched: keep them compatible, and tell the user first.
+
+## The four rules
+
 Read these four before editing anything. They are the rules the codebase is
 already keeping, and breaking one of them is a regression even when the tests
 are silent.

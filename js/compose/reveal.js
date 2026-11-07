@@ -58,7 +58,7 @@ export function reveal(wrap, R, { per = 1800 } = {}) {
     <div class="cr-blur"></div>
     <div class="cr-shimmer" aria-hidden="true"></div>
     <div class="cr-card">
-      <span class="cr-mark" aria-hidden="true"><span class="cr-glow"></span><span class="ai-orb cr-orb">${SPARK}</span></span>
+      <span class="cr-mark" aria-hidden="true"><span class="ai-orb cr-orb">${SPARK}</span></span>
       <p class="cr-step"><span>${esc(list[0].say)}</span></p>
     </div>`;
   wrap.append(el);

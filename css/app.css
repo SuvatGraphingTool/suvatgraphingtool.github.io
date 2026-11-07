@@ -1118,31 +1118,17 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 /* ── Ask Suvat ───────────────────────────────────────────────────────────
    The AI's mark is the Spark (the #spark symbol in index.html): a four-pointed
    star whose curved arms are trajectories, peach deepening to orange, with a
-   small gold spark riding beside it. Where it stands for the AI as a speaker
-   (the chat, the board's dock) it sits on a dark tile, like an app icon, with
-   an orange glow behind it; inside a button it stands bare. */
-.ai-orb {
-  position: relative; flex: none; display: grid; place-items: center;
-  width: 40px; height: 40px; border-radius: 28%; overflow: hidden;
-  background: radial-gradient(90% 90% at 45% 55%, #3a1a0e 0%, #140d0a 62%, #0b0909 100%);
-  border: 1px solid rgba(255, 214, 186, .14);
-  box-shadow: 0 4px 14px rgba(236, 95, 23, .28);
-}
-.ai-orb::before {                         /* the glow behind the star, breathing slowly */
-  content: ''; position: absolute; inset: 12%; border-radius: 50%;
-  background: radial-gradient(circle, rgba(249, 140, 60, .55), rgba(249, 140, 60, 0) 70%);
-  animation: ai-glow 3.2s ease-in-out infinite;
-}
-.ai-orb svg { position: relative; z-index: 1; width: 74%; height: 74%;
-              filter: drop-shadow(0 0 3px rgba(249, 140, 60, .6)); }
+   small gold spark riding beside it. It stands alone everywhere: no tile, no
+   glow, nothing behind it (the user, 7 Nov). --spark-* keep it visible on the
+   light theme. */
+:root { --spark-top: #FFE4C8; --spark-edge: #FFEADB; --spark-seam: #FFF4EA; --spark-gold: #FFE28A; }
+:root[data-theme='light'] { --spark-top: #F9A86A; --spark-edge: #C2541A; --spark-seam: #FFF4EA; --spark-gold: #E08A1E; }
+.ai-orb { position: relative; flex: none; display: grid; place-items: center; width: 40px; height: 40px; overflow: visible; background: none; }
+.ai-orb svg { width: 100%; height: 100%; }
 .ai-orb.sm { width: 32px; height: 32px; }
-.ai-orb.xs { width: 22px; height: 22px; border: none; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
-.ai-orb.xs::before { display: none; }
-.ai-orb.xs svg { width: 100%; height: 100%; }
-@keyframes ai-glow { 50% { transform: scale(1.18); opacity: .7; } }
-@media (prefers-reduced-motion: reduce) { .ai-orb::before { animation: none; } }
+.ai-orb.xs { width: 22px; height: 22px; }
 
-.brand-spark { width: 26px; height: 26px; flex: none; filter: drop-shadow(0 0 4px rgba(249, 140, 60, .55)); }
+.brand-spark { width: 26px; height: 26px; flex: none; }
 .ai-top { display: inline-flex; align-items: center; gap: var(--sp-2); }
 
 .ask { margin: 0 0 var(--sp-10); }
@@ -1204,7 +1190,6 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-mine .ask-bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ask-chip { display: inline-block; font-size: var(--fs-xs); color: var(--accent-hi); font-weight: var(--w-semi); margin-bottom: 2px; }
 .ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-top-left-radius: var(--r-sm); }
-.ask-reply[data-busy='true'] .ai-orb::after { animation-duration: 1.2s; }
 .ask-dots { display: inline-flex; gap: 5px; padding: 6px 0; }
 .ask-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-fill); animation: ask-dot 1s ease-in-out infinite; }
 .ask-dots span:nth-child(2) { animation-delay: .15s; }

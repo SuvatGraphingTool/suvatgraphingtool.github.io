@@ -20,9 +20,30 @@ const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
    motion, the first one large. Ids that are missing are simply skipped. */
 const FEATURED = ['arc', 'platform-angle', 'parachute', 'monkey', 'road'];
 
+/** The headline's sayings, one fading into the next. It rests on the first when motion is unwelcome. */
+const SAYINGS = ['Visualise anything.', 'Watch the maths move.', 'See every step.', 'Snap it. See it fly.', 'Every number, worked out.'];
+function heroSayings(view) {
+  const h = $('hero-h');
+  if (!h || calm()) return;
+  // only the first is the heading's text: a screen reader is not read a slideshow
+  const says = [h.firstElementChild, ...SAYINGS.slice(1).map((t) => {
+    const el = document.createElement('span');
+    el.className = 'hero-say'; el.setAttribute('aria-hidden', 'true'); el.textContent = t;
+    return h.appendChild(el);
+  })];
+  let i = 0;
+  setInterval(() => {
+    if (document.hidden || view() !== 'home') return;
+    says[i].classList.remove('is-on');
+    i = (i + 1) % says.length;
+    says[i].classList.add('is-on');
+  }, 3600);
+}
+
 export function initShell(SUVAT, { scenarios, library, byId }) {
   const app = $('app');
   const view = () => app.dataset.view || 'home';
+  heroSayings(view);
 
   /* ── views of the first screen ──────────────────────────────────────── */
   function setView(v, { focus = false } = {}) {

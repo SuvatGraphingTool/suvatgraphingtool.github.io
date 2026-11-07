@@ -56,7 +56,7 @@ real sites and they decide later which parts, if any, go back to `ai`.
    current-step dot. Nothing else.
 3. **Logos.** The main logo is the orange tile with a white arc ending in a ball
    (`#logo` symbol, also the favicon). The Spark (`#spark`) is the AI's mark,
-   used for Ask Suvat only. The wordmark is **SUVAT**, in capitals (the user, 1 Nov; before that it was
+   used for Ask Suvat only, always the star alone: no tile, no glow, a transparent backdrop (the user, 7 Nov). The wordmark is **SUVAT**, in capitals (the user, 1 Nov; before that it was
    "suvat", and before that "suvat ai"). The tab reads "<where you are> | SUVAT",
    e.g. "Whiteboard | SUVAT", set in js/shell.js crumbs().
 4. **Type over decoration.** Big headings tight (−0.03 em), body open (1.6).
