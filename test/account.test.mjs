@@ -249,5 +249,49 @@ await group('Signing out, and deleting the account, leave nothing behind', async
   ok(left('users') === 0 && left('chats') === 0 && left('sessions') === 0, 'no row of it is left: account, chats, sessions');
 });
 
+await group('The pages on GitHub Pages: a key, not a cookie', async () => {
+  const PAGE = 'https://pages.example', n = 'n'.repeat(43);
+  const e2 = { ...env, PAGES: PAGE };
+  const call = (path, { method = 'GET', from, key, body, cookie } = {}) => site.fetch(new Request(ORIGIN + path, {
+    method, redirect: 'manual', body: body && JSON.stringify(body),
+    headers: { ...(from ? { Origin: from } : {}), ...(key ? { Authorization: `Bearer ${key}` } : {}), ...(cookie ? { Cookie: cookie } : {}) },
+  }), e2);
+  const start = async (to = PAGE, nonce = n) => {
+    const r = await call(`/api/auth/google?to=${encodeURIComponent(to)}&n=${nonce}`);
+    return { r, cookie: (r.headers.get('Set-Cookie') || '').split(';')[0], state: new URL(r.headers.get('Location') || 'x:/').searchParams.get('state') };
+  };
+  const pre = await call('/api/me', { method: 'OPTIONS', from: PAGE });
+  ok(pre.status === 204 && pre.headers.get('Access-Control-Allow-Origin') === PAGE && !pre.headers.has('Access-Control-Allow-Credentials'), 'the page may call the API, and no cookie crosses');
+  const evil = await call('/api/me', { method: 'OPTIONS', from: 'https://evil.example' });
+  ok(evil.status === 403 && !evil.headers.has('Access-Control-Allow-Origin'), 'another site may not');
+  ok((await start('https://evil.example')).r.status === 400, 'Google never returns to a site not on the list');
+  ok((await start(PAGE, 'short')).r.status === 400, 'a return with no proper nonce is refused');
+  const { cookie, state } = await start();
+  google = { iss: 'https://accounts.google.com', aud: env.GOOGLE_CLIENT_ID, exp: Date.now() / 1000 + 60, sub: 'pages-sub', email: 'pages@school.example', name: 'Pat' };
+  const back = await call(`/api/auth/google/callback?code=c&state=${state}`, { cookie });
+  const at = back.headers.get('Location'), m = at.match(/^https:\/\/pages\.example\/#signin=([\w-]{43})\.(n{43})$/);
+  ok(!!m, 'Google returns to the page, with the code after the # and the nonce beside it');
+  ok(!back.headers.getSetCookie().some((c) => c.startsWith('__Host-suvat_s')), 'no session cookie is set for it');
+  ok((await call('/api/auth/exchange', { method: 'POST', from: 'https://evil.example', body: { code: m[1] } })).status === 403, 'another site cannot spend the code');
+  ok((await call('/api/auth/exchange', { method: 'POST', from: ORIGIN, body: { code: m[1] } })).status === 403, 'nor can the site\'s own address: it has its cookie');
+  const got = await (await call('/api/auth/exchange', { method: 'POST', from: PAGE, body: { code: m[1] } })).json();
+  ok(/^[\w-]{43}$/.test(got.token || ''), 'the page swaps the code for its key');
+  ok((await call('/api/auth/exchange', { method: 'POST', from: PAGE, body: { code: m[1] } })).status === 400, 'the code works once');
+  const me = await (await call('/api/me', { from: PAGE, key: got.token })).json();
+  ok(me.user?.email === 'pages@school.example' && me.user.name === 'Pat', 'the key says who is signed in');
+  ok(me.providers.google && !me.providers.email, 'an emailed link is not offered on a page it would not return to');
+  ok((await call('/api/auth/email', { method: 'POST', from: PAGE, body: { email: 'x@y.example' } })).status === 404, 'nor can one be asked for');
+  ok((await call('/api/chats/kept', { method: 'PUT', from: 'https://evil.example', key: got.token, body: chat('kept', 5) })).status === 403, 'a change from another site is refused, key or no key');
+  const put = await call('/api/chats/kept', { method: 'PUT', from: PAGE, key: got.token, body: chat('kept', 5) });
+  const list = await (await call('/api/chats', { from: PAGE, key: got.token })).json();
+  ok(put.status === 200 && list.chats.some((c) => c.id === 'kept'), 'a chat is kept with the key alone');
+  ok((await (await call('/api/me', { from: PAGE, key: 'x'.repeat(43) })).json()).user === null, 'a made-up key is no one');
+  await call('/api/auth/signout', { method: 'POST', from: PAGE, key: got.token });
+  ok((await (await call('/api/me', { from: PAGE, key: got.token })).json()).user === null, 'signing out ends the key');
+  const expired = await start();
+  const stale = await call(`/api/auth/google/callback?error=access_denied&state=${expired.state}`, { cookie: expired.cookie });
+  ok(stale.headers.get('Location') === `${PAGE}/?signin=cancelled`, 'cancelling returns to the page, and says so');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

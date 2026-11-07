@@ -9,9 +9,9 @@ An interactive projectile-motion playground for A-level physics and maths.
 | **The site** | https://suvatgraphingtool.github.io/ | Everything: the redesign, **Ask Suvat**, the Past-paper library, the whiteboard and the composer | `main`, via GitHub Pages |
 | **Redesign** | https://suvat-redesign.suvatgraphingtool.workers.dev | The same, plus sign-in and chats kept in an account | the `redesign` branch, via `scripts/deploy-redesign.sh` |
 
-Accounts need the small API in `site/`, and GitHub Pages serves files only, so
-sign-in stays hidden on `github.io`: chats and whiteboards are kept in the
-browser there.
+Accounts run on the API in `site/`, which is deployed with the Redesign address.
+GitHub Pages serves files only, so `github.io` calls that API across addresses,
+with a sign-in key instead of a cookie.
 
 We use the SUVAT equations constantly but rarely *see* the thing they describe.
 This is the projectile, the elapsed time, the acceleration and the velocity, all

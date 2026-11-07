@@ -20,12 +20,20 @@
 // Kept: a name, an email and the chats — nothing else. No passwords. Sessions
 // and links are kept only as hashes. A change is accepted only from the site's
 // own pages (its Origin), so no other site can act for a signed-in student.
+//
+// The site is also served from GitHub Pages, which has files only. Those pages
+// (env.PAGES) call this API across addresses: another site's cookie is what
+// browsers block, so there the session is a key sent as "Authorization: Bearer",
+// kept by js/account.js. Google comes back here, as registered, and hands the
+// page a code that works once, for a minute:
+//   POST   /api/auth/exchange {code}     the code → the key
 
 const COOKIE = '__Host-suvat_s';
 const OAUTH = '__Host-suvat_o';
 const DAY = 86_400;
 const SESSION_DAYS = 60;
 const LINK_MINUTES = 15;
+const CODE_MS = 60_000;
 const CHAT_MAX_BYTES = 400_000;
 const BOARD_MAX_BYTES = 1_000_000;
 const CHATS_MAX = 300;          // (not exported: a Worker's module may export only handlers)
@@ -35,14 +43,31 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
-    try { return await api(req, env, url); }
-    catch (e) { console.error('api', e?.stack || e); return json({ error: 'server', message: 'Something went wrong. Try again.' }, 500); }
+    const page = isPage(env, req.headers.get('Origin'));
+    if (req.method === 'OPTIONS') return page ? cors(new Response(null, { status: 204 }), req) : json({ error: 'origin' }, 403);
+    let res;
+    try { res = await api(req, env, url); }
+    catch (e) { console.error('api', e?.stack || e); res = json({ error: 'server', message: 'Something went wrong. Try again.' }, 500); }
+    return page ? cors(res, req) : res;
   },
 };
 
+/** The site's pages on another address. No cookies cross: no credentials are allowed. */
+const pages = (env) => String(env.PAGES || '').split(',').map((s) => s.trim()).filter(Boolean);
+const isPage = (env, origin) => !!origin && pages(env).includes(origin);
+function cors(res, req) {
+  res.headers.set('Access-Control-Allow-Origin', req.headers.get('Origin'));
+  res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.headers.set('Access-Control-Max-Age', '86400');
+  res.headers.append('Vary', 'Origin');
+  return res;
+}
+
 async function api(req, env, url) {
   const path = url.pathname, m = req.method;
-  if (m !== 'GET' && m !== 'HEAD' && req.headers.get('Origin') !== url.origin) {
+  const origin = req.headers.get('Origin');
+  if (m !== 'GET' && m !== 'HEAD' && origin !== url.origin && !isPage(env, origin)) {
     return json({ error: 'origin' }, 403);
   }
   if (path === '/api/me' && m === 'GET') return me(req, env);
@@ -51,6 +76,7 @@ async function api(req, env, url) {
   if (path === '/api/auth/email' && m === 'POST') return emailSend(req, env, url);
   if (path === '/api/auth/email/verify' && m === 'GET') return emailPage(url);
   if (path === '/api/auth/email/verify' && m === 'POST') return emailVerify(req, env);
+  if (path === '/api/auth/exchange' && m === 'POST') return exchange(req, env);
   if (path === '/api/auth/signout' && m === 'POST') return signOut(req, env);
 
   const user = await whoIs(req, env);
@@ -94,10 +120,18 @@ function providers(env) {
 }
 async function me(req, env) {
   const user = await whoIs(req, env);
-  return json({ user: user && { name: user.name || '', email: user.email || '' }, providers: providers(env) });
+  const ways = providers(env);
+  // an emailed link signs in on this address, which is no use to a page on another
+  if (isPage(env, req.headers.get('Origin'))) ways.email = false;
+  return json({ user: user && { name: user.name || '', email: user.email || '' }, providers: ways });
+}
+/** The session's token: the page's key, or the site's own cookie. */
+function sessionToken(req) {
+  const bearer = (req.headers.get('Authorization') || '').match(/^Bearer ([\w-]{43})$/);
+  return bearer ? bearer[1] : cookie(req, COOKIE);
 }
 async function whoIs(req, env) {
-  const token = cookie(req, COOKIE);
+  const token = sessionToken(req);
   if (!token || !/^[\w-]{43}$/.test(token)) return null;
   const now = Date.now();
   const row = await env.DB.prepare('SELECT u.id, u.email, u.name, s.expires FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.hash = ?')
@@ -105,14 +139,26 @@ async function whoIs(req, env) {
   if (!row || row.expires < now) return null;
   return row;
 }
-async function startSession(env, userId) {
+async function newSession(env, userId) {
   const token = rand();
   await env.DB.prepare('INSERT INTO sessions (hash, user_id, expires) VALUES (?, ?, ?)')
     .bind(await sha(token), userId, Date.now() + SESSION_DAYS * DAY * 1000).run();
-  return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * DAY}`;
+  return token;
+}
+async function startSession(env, userId) {
+  return `${COOKIE}=${await newSession(env, userId)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * DAY}`;
+}
+/** A page on another address swaps the code Google's return gave it for its key. */
+async function exchange(req, env) {
+  if (!isPage(env, req.headers.get('Origin'))) return json({ error: 'origin' }, 403);
+  const code = String((await req.json().catch(() => ({})))?.code || '');
+  if (!/^[\w-]{43}$/.test(code)) return json({ error: 'code' }, 400);
+  const row = await env.DB.prepare('DELETE FROM login_tokens WHERE hash = ? RETURNING email, expires').bind(await sha(code)).first();
+  if (!row || row.expires < Date.now()) return json({ error: 'code' }, 400);
+  return json({ ok: true, token: await newSession(env, await account(env, { email: row.email })) });
 }
 async function signOut(req, env) {
-  const token = cookie(req, COOKIE);
+  const token = sessionToken(req);
   if (token) await env.DB.prepare('DELETE FROM sessions WHERE hash = ?').bind(await sha(token)).run();
   return json({ ok: true }, 200, { 'Set-Cookie': clear(COOKIE) });
 }
@@ -135,6 +181,12 @@ async function account(env, { email, name = null, sub = null }) {
 async function googleStart(env, url) {
   if (!providers(env).google) return json({ error: 'not-set-up' }, 404);
   const state = rand(), verifier = rand();
+  // Which page to return to: only one of the site's, so this redirects nowhere
+  // else. Its nonce comes back with the code, so a code in a link someone else
+  // sent cannot sign a student in to the sender's account.
+  const to = pages(env).indexOf(url.searchParams.get('to'));
+  const nonce = url.searchParams.get('n') || '';
+  if (url.searchParams.has('to') && (to < 0 || !/^[\w-]{43}$/.test(nonce))) return json({ error: 'to' }, 400);
   const q = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: `${url.origin}/api/auth/google/callback`,
@@ -146,11 +198,12 @@ async function googleStart(env, url) {
     prompt: 'select_account',
   });
   return go(`https://accounts.google.com/o/oauth2/v2/auth?${q}`,
-    `${OAUTH}=${state}.${verifier}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
+    `${OAUTH}=${state}.${verifier}${to < 0 ? '' : `.${to}.${nonce}`}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
 }
 async function googleBack(req, env, url) {
-  const [state, verifier] = (cookie(req, OAUTH) || '').split('.');
-  const out = (how, set) => { const r = go(`/?signin=${how}`, clear(OAUTH)); if (set) r.headers.append('Set-Cookie', set); return r; };
+  const [state, verifier, to, nonce] = (cookie(req, OAUTH) || '').split('.');
+  const page = to === undefined ? '' : pages(env)[Number(to)] ?? '';
+  const out = (how, set) => { const r = go(`${page}/?signin=${how}`, clear(OAUTH)); if (set) r.headers.append('Set-Cookie', set); return r; };
   if (!providers(env).google) return out('failed');
   if (url.searchParams.get('error')) return out('cancelled');
   if (!state || !verifier || url.searchParams.get('state') !== state) return out('failed');
@@ -175,12 +228,17 @@ async function googleBack(req, env, url) {
       || claims.aud !== env.GOOGLE_CLIENT_ID || !(claims.exp * 1000 > Date.now())
       || !claims.sub || !claims.email || claims.email_verified === false) return out('failed');
   const id = await account(env, { email: String(claims.email).toLowerCase(), name: claims.name ? String(claims.name).slice(0, 80) : null, sub: String(claims.sub) });
+  if (page) {
+    const code = rand(), email = String(claims.email).toLowerCase();
+    await env.DB.prepare('INSERT INTO login_tokens (hash, email, expires) VALUES (?, ?, ?)').bind(await sha(code), email, Date.now() + CODE_MS).run();
+    return go(`${page}/#signin=${code}.${nonce}`, clear(OAUTH));   // after the #, so it reaches no server's log
+  }
   return out('ok', await startSession(env, id));
 }
 
 /* ── an emailed link ──────────────────────────────────────────────────── */
 async function emailSend(req, env, url) {
-  if (!providers(env).email) return json({ error: 'not-set-up', message: 'Email sign-in is not switched on yet.' }, 404);
+  if (!providers(env).email || isPage(env, req.headers.get('Origin'))) return json({ error: 'not-set-up', message: 'Email sign-in is not switched on yet.' }, 404);
   const body = await req.json().catch(() => ({}));
   const email = String(body?.email || '').trim().toLowerCase();
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

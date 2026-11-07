@@ -9,12 +9,21 @@
 //
 // Nothing shows until the site says sign-in is switched on: on the dev
 // server, or before a key is set, there is no /api/me and the page is as it was.
+//
+// GitHub Pages has files only, so there the API is on the Worker's address and
+// the session is a key kept here and sent with each call (site/src/index.js).
 
 import { loadChats, putChats, clearChats, onChats } from './ai/chats.js';
 import { getBoards, putBoard, clearBoards, onBoards, SLOTS } from './board/boards.js';
 
 const $ = (id) => document.getElementById(id);
 const PENDING = 'suvat-chats-del-v1';   // deletions the account has not heard of yet
+const KEY = 'suvat-session-v1', NONCE = 'suvat-signin-nonce-v1';
+const API = globalThis.location?.hostname.endsWith('.github.io') ? 'https://suvat-redesign.suvatgraphingtool.workers.dev' : '';
+const store = {
+  get(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+  set(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch { /* storage shut */ } },
+};
 const SAYS = {
   failed: 'Signing in did not work. Try again.',
   cancelled: 'Signing in was cancelled.',
@@ -54,14 +63,28 @@ export function initAccount() {
     history.replaceState(history.state, '', location.pathname + (q.size ? `?${q}` : '') + location.hash);
   }
 
-  api('GET', '/api/me').then((d) => {
+  // back from Google on another address: the code, and the nonce this browser sent
+  const back = API && location.hash.match(/^#signin=([\w-]{43})\.([\w-]{43})$/);
+  if (back) history.replaceState(history.state, '', location.pathname + location.search);
+  const arrived = back ? (async () => {
+    const mine = store.get(NONCE);
+    store.set(NONCE, '');
+    if (back[2] !== mine) return 'failed';
+    const r = await api('POST', '/api/auth/exchange', { code: back[1] });
+    if (!r?.token) return 'failed';
+    store.set(KEY, r.token);
+    return '';
+  })() : Promise.resolve(said);
+
+  arrived.then((word) => api('GET', '/api/me').then((d) => {
     if (!d || !d.providers) return;                         // no accounts on this site
     user = d.user; ways = d.providers;
+    if (!user) store.set(KEY, '');                          // a key that has run out
     if (!user && !ways.google && !ways.email) return;       // sign-in not switched on yet
     paint();
     if (user) sync();
-    if (said && SAYS[said]) open(SAYS[said]);
-  });
+    if (word && SAYS[word]) open(SAYS[word]);
+  }));
 
   /* ── the sidebar's button, the dialog and the chat list's note ───────── */
   function paint() {
@@ -91,6 +114,11 @@ export function initAccount() {
     m.textContent = msg; m.hidden = !msg; m.dataset.good = String(good);
   }
 
+  if (API) $('acct-google').addEventListener('click', () => {
+    const n = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 43);
+    store.set(NONCE, n);
+    $('acct-google').href = `${API}/api/auth/google?to=${encodeURIComponent(location.origin)}&n=${n}`;
+  });
   btn.addEventListener('click', () => open());
   $('cl-signin').addEventListener('click', () => open());
   $('acct-x').addEventListener('click', () => dlg.close());
@@ -119,6 +147,7 @@ export function initAccount() {
   });
   /** Signed out: the chats were the account's, so this browser forgets them. */
   function leave() {
+    store.set(KEY, '');
     clearChats();
     clearBoards();
     try { localStorage.removeItem(PENDING); } catch { /* storage shut */ }
@@ -184,12 +213,13 @@ export function initAccount() {
   }
 }
 
-/** The API, on the site's own address. null when there is none, or no answer. */
+/** The API. null when there is none, or no answer. */
 async function api(method, path, body) {
   try {
-    const res = await fetch(path, {
-      method, credentials: 'same-origin',
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+    const key = API && store.get(KEY);
+    const res = await fetch(API + path, {
+      method, credentials: API ? 'omit' : 'same-origin',
+      headers: { ...(key ? { Authorization: `Bearer ${key}` } : {}), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!(res.headers.get('Content-Type') || '').includes('application/json')) return null;
