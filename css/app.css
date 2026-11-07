@@ -1290,3 +1290,10 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 /* a box whose number the engine is finding */
 .xrow input[data-found='true'] { border-style: dashed; background: transparent; }
 .xrow input[data-found='true']::placeholder { color: var(--accent); font-weight: var(--w-semi); }
+
+/* a stage that cannot say where its object is: what a click on it does (js/render/scene.js) */
+.stage-tip {
+  position: absolute; z-index: 20; transform: translate(-50%, -34px); pointer-events: none; white-space: nowrap;
+  font-size: 15px; font-weight: 600; color: var(--vel); text-shadow: 0 0 4px var(--surface), 0 0 10px var(--surface);
+}
+.stage-tip[hidden] { display: none; }

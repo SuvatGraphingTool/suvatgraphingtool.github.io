@@ -1001,8 +1001,16 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   const pick = (e) => {
     const { markers, scenario, traj, t, fired } = active();
     const m = cam._map;
-    // a library stage's view (kitview.js) maps pointer to layout only: nothing on it is picked
-    if (!m || !m.sx) return null;
+    // a library stage's view (kitview.js) maps pointer to layout only: nothing on it
+    // is picked, unless the stage has said where its object is
+    if (!m || !m.sx) {
+      if (!m?.objects || !traj || !fired) return null;
+      const r = canvas.getBoundingClientRect(), x = m.px(e.clientX - r.left), y = -m.py(e.clientY - r.top);
+      const i = m.objects.findIndex((b) => Math.hypot(x - b.x, y - b.y) < 36);
+      if (i < 0) return null;
+      cam._hot = i;
+      return { kind: 'ball', t };
+    }
     const w = toWorld(e);
     if (!w) return null;
     const near = (px, py, r = 26) => Math.hypot(w.sxp - px, w.syp - py) < r;
@@ -1070,7 +1078,26 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     onResolve.mark?.(isResolve(k) ? null : k);
   });
 
+  // A stage that cannot say where its object is (a library kit, the road): a
+  // click anywhere on it resolves, so a resting pointer says so.
+  let tip = null, tipDue = 0;
+  const hideTip = () => { clearTimeout(tipDue); if (tip) tip.hidden = true; };
+  canvas.addEventListener('pointerleave', hideTip);
+  canvas.addEventListener('pointermove', (e) => {
+    hideTip();
+    const { traj, fired, resolving } = active(), m = cam._map;
+    if (e.pointerType !== 'mouse' || drag || dragging || !traj || !fired || resolving || m?.sx || m?.objects) return;
+    canvas.style.cursor = 'pointer';
+    tipDue = setTimeout(() => {
+      if (!tip) { tip = document.createElement('div'); tip.className = 'stage-tip'; tip.textContent = 'click to resolve'; canvas.parentElement.append(tip); }
+      const r = canvas.parentElement.getBoundingClientRect();
+      tip.style.left = `${e.clientX - r.left}px`; tip.style.top = `${e.clientY - r.top}px`;
+      tip.hidden = false;
+    }, 250);
+  });
+
   canvas.addEventListener('pointerdown', (e) => {
+    hideTip();
     const got = pick(e);
     clearTimeout(later);
     down = { x: e.clientX, y: e.clientY, pick: got };

@@ -34,6 +34,7 @@
   radial-gradient(80% 70% at 25% 30%, rgba(255,190,150,.55), transparent 70%),
   radial-gradient(70% 60% at 80% 75%, rgba(120,160,180,.45), transparent 70%),
   linear-gradient(180deg, #f6d9c8, #cfdde3); }
+.is-on .cr-snap { filter: blur(7px) saturate(1.2) brightness(1.02); transition: filter var(--total) linear; }
 :root:not([data-theme='light']) .cr-snap { background:
   radial-gradient(80% 70% at 25% 30%, rgba(150,80,60,.5), transparent 70%),
   radial-gradient(70% 60% at 80% 75%, rgba(50,80,95,.5), transparent 70%),
@@ -57,14 +58,10 @@
 @keyframes cr-sweep { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
 @keyframes cr-grain { 33% { transform: translate(1px, 2px); } 66% { transform: translate(-2px, 1px); } }
 
-/* the card in the middle: the orb, what it is doing, the pieces ticked off */
+/* in the middle: the orb, and one line of what it is doing */
 .cr-card {
   position: relative; display: grid; justify-items: center; gap: var(--sp-2);
   padding: var(--sp-5) var(--sp-6); max-width: min(420px, 88%); text-align: center;
-  border-radius: 22px; background: rgba(255,255,255,.42);
-  border: 1px solid rgba(255,255,255,.7);
-  box-shadow: 0 18px 48px rgba(120,60,40,.18), inset 0 1px 0 rgba(255,255,255,.8);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   transform: translateY(6px) scale(.98); transition: transform 420ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease;
 }
 .is-on .cr-card { transform: none; }
@@ -85,33 +82,14 @@
 @keyframes cr-glow { 50% { transform: scale(1.16); opacity: .75; } }
 @keyframes cr-breathe { 50% { transform: scale(1.05); box-shadow: 0 14px 44px rgba(236,95,23,.65), 0 0 0 6px rgba(249,140,60,.14); } }
 @keyframes cr-sway { 25% { transform: rotate(-7deg) scale(1.03); } 75% { transform: rotate(7deg) scale(1.03); } }
-.cr-title {
-  margin: var(--sp-1) 0 0; font-size: var(--fs-lg); font-weight: var(--w-semi); color: #3a2a26;
-  background: linear-gradient(90deg, #3a2a26 0%, #3a2a26 40%, #d0694f 50%, #3a2a26 60%, #3a2a26 100%);
-  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  animation: cr-text 2.2s linear infinite;
-}
-@keyframes cr-text { from { background-position: 100% 0; } to { background-position: -150% 0; } }
 .cr-step { margin: 0; height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-size: var(--fs-sm); color: #6b5148; }
 .cr-step span { display: inline-block; animation: cr-up 320ms cubic-bezier(.2,.8,.2,1); }
 @keyframes cr-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.cr-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: var(--sp-1) 0 0; padding: 0; list-style: none; }
-.cr-chips li {
-  font-size: var(--fs-xs); padding: 3px 10px; border-radius: 99px; color: #8a6d63;
-  background: rgba(255,255,255,.5); border: 1px dashed rgba(138,109,99,.45);
-  transition: background 240ms, color 240ms, border-color 240ms, transform 320ms cubic-bezier(.34,1.56,.64,1);
-}
-.cr-chips li.is-in { color: #fff; background: #d0694f; border: 1px solid #d0694f; transform: scale(1.06); }
-.cr-bar { width: 220px; max-width: 100%; height: 4px; border-radius: 99px; background: rgba(138,109,99,.18); overflow: hidden; margin-top: var(--sp-2); }
-.cr-bar i { display: block; height: 100%; background: linear-gradient(90deg, #feb47b, #ff7e5f); transform: scaleX(0); transform-origin: left; transition: transform 380ms ease; }
 
-:root:not([data-theme='light']) .cr-card { background: rgba(30,27,33,.6); border-color: rgba(255,255,255,.12); }
-:root:not([data-theme='light']) .cr-title { background-image: linear-gradient(90deg, #f3e6df 0%, #f3e6df 40%, #ffb08f 50%, #f3e6df 60%, #f3e6df 100%); }
 :root:not([data-theme='light']) .cr-step { color: #d6c3ba; }
-:root:not([data-theme='light']) .cr-chips li { color: #d6c3ba; background: rgba(255,255,255,.06); }
 :root:not([data-theme='light']) .cr-blur { background: rgba(20,17,22,.25); }
 
 @media (prefers-reduced-motion: reduce) {
-  .cr-shimmer, .cr-orb, .cr-orb svg, .cr-glow, .cr-title, .cr-step span { animation: none; }
+  .cr-shimmer, .cr-orb, .cr-orb svg, .cr-glow, .cr-step span { animation: none; }
   .cmp-reveal.is-lifting { transition: opacity 240ms ease; }
 }

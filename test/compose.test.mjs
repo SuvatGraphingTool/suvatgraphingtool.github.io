@@ -438,6 +438,9 @@ group('The veil names only the recipe’s own pieces', () => {
   const c = check(CAR).recipe, s = steps(c).map((x) => x.say);
   ok(s[0] === 'Placing a cliff' && s.includes('Laying out the sea') && s.includes('Bringing in a car') && s.includes('Adding a splash'), s.join(' / '));
   ok(steps(check({ ...CAR, backdrop: 'road', numbers: { h: 3, u: 6, theta: 0 } }).recipe).some((x) => x.say === 'Adding dust'), 'a road gets dust, not a splash');
+  const told = steps(check({ ...CAR, numbers: { h: 40, u: 15, theta: 30 } }).recipe).map((x) => x.say);
+  ok(told.includes('Setting the height to 40 m') && told.includes('Setting the launch speed to 15 m s⁻¹') && told.includes('Setting the angle to 30°'), 'it says the numbers it really uses');
+  ok(!steps(check({ ...CAR, numbers: { h: 40, u: 15, theta: 0 } }).recipe).some((x) => /angle/.test(x.say)), 'and no angle when there is none');
 });
 
 console.log('\nThe reader’s list of pieces is current');
