@@ -20,6 +20,8 @@
  * the frame.
  */
 import { MONKEY_H } from '../core/intercept.js';
+import { palette } from './util.js';
+import { thrower, throwerHand } from './figures.js';
 
 export const EXTENT = {
   warehouse: { x0: -4.5, x1: 9, yTop: 2.4 },   // room at the left for the rig
@@ -33,7 +35,7 @@ export const EXTENT = {
   // be, which is what made the monkey's 1.7 m fall a smudge. The highest
   // branch is 12.6 m and the fit already lifts the ceiling to the monkey
   // plus 1.6, so this only has to hold the low ones.
-  plain:     { x0: -1.5, x1: 13, yTop: 10.5 },
+  plain:     { x0: -1.5, x1: 18.6, yTop: 15.2 },
 };
 
 /* ── shared marks ──────────────────────────────────────────────────────── */
@@ -206,29 +208,11 @@ function hunter(g, S, o, PLATE) {
     g.restore();
   }
 
-  const hip = gy - m(0.95), head = m(0.115);
-  g.save();
-  g.strokeStyle = '#0d1016'; g.lineWidth = Math.max(2, m(0.11)); g.lineCap = 'round';
-  g.beginPath();
-  g.moveTo(X0 - m(0.24), gy); g.lineTo(X0, hip); g.lineTo(X0 + m(0.22), gy);
-  g.moveTo(X0, hip); g.lineTo(X0, gy - m(1.5));
-  g.stroke();
-  g.fillStyle = '#0d1016';
-  g.beginPath(); g.arc(X0, gy - m(1.5) - head, head, 0, Math.PI * 2); g.fill();
-  // the launcher along the aim
-  const sx0 = X0, sy0 = gy - m(1.38), Lb = m(1.05);
-  g.strokeStyle = '#0d1016'; g.lineWidth = Math.max(2.2, m(0.09));
-  g.beginPath();
-  g.moveTo(sx0 - Math.cos(a) * m(0.28), sy0 - Math.sin(a) * m(0.28));
-  g.lineTo(sx0 + Math.cos(a) * Lb, sy0 + Math.sin(a) * Lb); g.stroke();
-  g.lineWidth = Math.max(1.6, m(0.07));
-  g.beginPath(); g.moveTo(X0, gy - m(1.3));
-  g.lineTo(sx0 + Math.cos(a) * m(0.62), sy0 + Math.sin(a) * m(0.62)); g.stroke();
-  // a thin rim light so the silhouette does not vanish into the sand
-  g.strokeStyle = 'rgba(232,180,128,0.45)'; g.lineWidth = Math.max(0.8, m(0.035));
-  g.beginPath(); g.moveTo(X0 - head * 0.6, gy - m(1.5) - head * 1.2);
-  g.lineTo(X0 - head * 0.9, gy - m(0.9)); g.stroke();
-  g.restore();
+  // THE HAND IS AT THE MUZZLE: the figure is sized so that what it holds out is
+  // where the engine launches from, and it stands on the datum.
+  const aim = o.theta || 0;
+  const H = Math.min(m(2.6), Math.max(m(1.3), m(o.launchY) / (throwerHand(100, aim).y / 100)));
+  thrower(g, X0 - throwerHand(H, aim).x, gy, H, palette(), { dir: 1, pose: 1, aim, ring: '#5d6b3c' });
 }
 
 /* ══ the plain ══════════════════════════════════════════════════════════
@@ -252,7 +236,10 @@ function hunter(g, S, o, PLATE) {
    is not a compromise — it is the right background for a diagram, and it is
    what the rest of the site already uses.
 
-   The branch stays because the monkey has to be holding something. */
+   The grid stays. What came back, on 7 Nov, is one tree: the monkey can hang
+   from any of its branches, so they all have to be seen, and limbs on a trunk
+   are not sticks in mid-air. It is painted once into a layer, so a moving
+   camera only copies it, and it is kept quiet, so the line still reads. */
 
 const PLAIN = {
   grid: 'rgba(24,36,20,0.10)', gridMajor: 'rgba(24,36,20,0.20)',
@@ -261,7 +248,7 @@ const PLAIN = {
 };
 
 /** Where the branches hang from. Kept so a monkey has somewhere to be. */
-export const TREE = { x: 16.4 };
+export const TREE = { x: 16.4, top: 14 };
 
 /** Where a monkey can hang. World metres, and the one list the drag reads. */
 export const BRANCHES = [
@@ -273,6 +260,16 @@ export const BRANCHES = [
   { x: 13.0, y: 7.9 },
   { x: 12.6, y: 4.3 },
 ];
+
+/** The height of the wood a monkey holds: its raised hand, above its centre. */
+export const gripY = (b) => b.y + MONKEY_H * 0.55;
+
+/** The height of a branch's limb at x: level at the grip, falling to the trunk. */
+export function limbY(b, x) {
+  const L = TREE.x - b.x, s = x - b.x;
+  if (s <= 0) return gripY(b) - s * 0.05;           // rising a little to its tip
+  return gripY(b) - Math.min(1.4, 0.22 * L) * (s / L) ** 1.5;
+}
 
 /** The branch nearest a dragged point — this is what the drag snaps to. */
 export function nearestBranch(x, y) {
@@ -321,67 +318,107 @@ export function plainBack(g, S, box, o) {
   g.lineTo(box.x + box.w, Math.round(gy) + 0.5); g.stroke();
   g.restore();
 
-  if (markers?.target) branch(g, S, markers.target);
+  // the grass: a strip under the datum, and still outside the model
+  g.fillStyle = 'rgba(92,122,64,0.22)';
+  g.fillRect(box.x, gy + 1, box.w, Math.max(0, box.y + box.h - gy - 1));
+
+  if (markers?.target) {
+    tree(g, S);
+    perches(g, S, markers.target, PLATE, o.hoverMark);
+    if (box.w > 620) {
+      g.save();
+      g.font = '600 13px Inter, system-ui, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+      g.fillStyle = PLATE.inkMid;
+      g.fillText('Drag the monkey to any branch, or click one', box.x + 12, box.y + box.h - 12);
+      g.restore();
+    }
+  }
   hunter(g, S, o, PLATE);
 }
 
-/* ── the branch ─────────────────────────────────────────────────────────
-   ONE, AND THE MONKEY HANGS FROM IT. Seven were drawn at once — the one in
-   use solid and the other six faint — so that dragging between them had
-   somewhere visible to land. On a blank grid that came out as six grey sticks
-   floating in mid-air with nothing holding them up, which is worse than not
-   drawing them: a branch with no tree reads as a mistake, six of them read as
-   six mistakes. The drag still snaps between all seven; the picture shows the
-   one the monkey is actually holding.
+/* ── the tree ─────────────────────────────────────────────────────────────
+   One trunk, a limb to every branch in BRANCHES and a small crown. A limb holds
+   its monkey at the height of the grip, not at the marker: the marker is the
+   monkey's centre, and wood drawn there runs through the animal's chest.
 
-   It sits at the HEIGHT OF THE GRIP, not at the marker. The marker is the
-   monkey's centre — it is what the physics tracks and what the aim points at
-   — and a branch drawn there runs straight through the animal's chest. The
-   raised hand is MONKEY_H * 0.6 above the centre, so that is where the wood
-   goes, and the monkey hangs under it. */
-function branch(g, S, target) {
-  const m = (v) => Math.max(0.5, S.m(v));
-  const mx = (v) => Math.max(0.5, S.mx(v));
-  const b = nearestBranch(target.x, target.y);
-  const yGrip = b.y + MONKEY_H * 0.55;
+   Painted once for a scale into a layer of its own; a pan only copies it. */
+const AREA = { x0: 5.8, x1: 18.6, y0: -0.2, y1: 16 };
+const CROWN = [[16.4, 14.5, 1.3], [15.1, 14.1, 1.05], [17.5, 14, 0.95], [15.9, 13.3, 0.85], [17, 13, 0.75], [14.3, 13.9, 0.7]];
+let layer = null;
 
-  // A TAPERED LIMB, NOT A RULE. Two strokes of constant width came out as a
-  // log the thickness of the monkey running half the frame; a branch is thick
-  // where it leaves the tree and thin at the tip, and almost all of what
-  // makes a shape read as wood is that change.
-  // It runs OFF THE RIGHT EDGE. Stopping it at a fixed reach left a log cut
-  // off at both ends floating in the middle of the grid; carried past the
-  // frame, the thick end is attached to a tree you simply cannot see, which
-  // is all the explanation a branch needs.
-  const tipX = b.x - 1.0, rootX = S.xHi + 1;
-  const yAt = (k) => yGrip + 0.5 * Math.min(1, (k * (S.xHi + 1 - (b.x - 1.0))) / 9) ** 2;
-  // Half-thickness in metres, and it must not grow without limit as the frame
-  // widens: `k` is a fraction of a reach that is now the whole viewport.
-  const span = Math.max(4, rootX - tipX);
-  const wAt = (k) => 0.045 + 0.13 * Math.min(1, (k * span) / 7) ** 2;
-  const N = 12;
+function tree(g, S) {
+  const k = (globalThis.devicePixelRatio || 1);
+  const w = (AREA.x1 - AREA.x0) * S.sx, h = (AREA.y1 - AREA.y0) * S.sy;
+  const q = Math.min(k, 3600 / Math.max(w, h));     // zoomed far in, a softer layer, not a huge one
+  const key = `${S.sx.toFixed(3)},${S.sy.toFixed(3)},${q.toFixed(3)}`;
+  if (layer?.key !== key) {
+    const cv = document.createElement('canvas');
+    cv.width = Math.ceil(w * q); cv.height = Math.ceil(h * q);
+    const c = cv.getContext('2d');
+    c.scale(q, q);
+    paintTree(c, { X: (x) => (x - AREA.x0) * S.sx, Y: (y) => (AREA.y1 - y) * S.sy, sx: S.sx, sy: S.sy });
+    layer = { key, cv };
+  }
+  g.drawImage(layer.cv, S.X(AREA.x0), S.Y(AREA.y1), w, h);
+}
+
+function paintTree(g, M) {
+  const shape = (pts) => { g.beginPath(); pts.forEach(([x, y]) => g.lineTo(M.X(x), M.Y(y))); g.closePath(); };
+  const leaves = (x, y, r, a = 0.6) => {
+    for (const [dx, dy, s, c] of [[0, 0, 1, '74,103,58'], [-0.55, -0.2, 0.68, '62,90,50'], [0.55, -0.18, 0.72, '84,114,64'], [-0.2, 0.5, 0.62, '92,122,68'], [0.3, 0.42, 0.55, '74,103,58']]) {
+      g.fillStyle = `rgba(${c},${a})`;
+      g.beginPath();
+      g.ellipse(M.X(x + dx * r), M.Y(y + dy * r), r * s * M.sx, r * s * M.sy, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  };
+  for (const [x, y, r] of CROWN) leaves(x, y, r, 0.5);
+
+  const half = (y) => 0.2 + 0.32 * (1 - y / TREE.top) + 0.5 * Math.exp(-y / 0.45);
+  const N = 16, side = [];
+  for (let i = 0; i <= N; i++) { const y = (TREE.top * i) / N; side.push([y, half(y)]); }
+  shape([...side.map(([y, w]) => [TREE.x - w, y]), ...side.reverse().map(([y, w]) => [TREE.x + w, y])]);
+  const bark = g.createLinearGradient(M.X(TREE.x - 0.7), 0, M.X(TREE.x + 0.7), 0);
+  bark.addColorStop(0, PLAIN.bark); bark.addColorStop(1, PLAIN.barkDark);
+  g.fillStyle = bark; g.fill();
+  g.strokeStyle = PLAIN.barkDark; g.lineWidth = 1; g.stroke();
+  // the grain, following the trunk
+  g.strokeStyle = 'rgba(40,26,14,0.3)'; g.lineWidth = 1;
+  for (const f of [-0.55, -0.15, 0.25, 0.6]) {
+    g.beginPath();
+    for (let i = 1; i < N; i++) { const y = (TREE.top * i) / N; g.lineTo(M.X(TREE.x + f * half(y)), M.Y(y)); }
+    g.stroke();
+  }
+
+  // the limbs, thin at the tip and thick where they leave the trunk
+  for (const b of BRANCHES) {
+    const tip = b.x - 0.9, N2 = 14, at = [];
+    for (let i = 0; i <= N2; i++) {
+      const u = i / N2, x = tip + (TREE.x - tip) * u;
+      at.push([x, limbY(b, x), 0.045 + 0.15 * u ** 1.2]);
+    }
+    shape([...at.map(([x, y, w]) => [x, y + w]), ...[...at].reverse().map(([x, y, w]) => [x, y - w])]);
+    g.fillStyle = PLAIN.bark; g.fill();
+    g.strokeStyle = PLAIN.barkDark; g.lineWidth = 0.9; g.stroke();
+    g.beginPath();
+    at.forEach(([x, y, w]) => g.lineTo(M.X(x), M.Y(y - w * 0.45)));
+    g.strokeStyle = 'rgba(40,26,14,0.26)'; g.lineWidth = 1.2; g.lineCap = 'round'; g.stroke();
+    leaves(tip - 0.1, limbY(b, tip) + 0.14, 0.36);
+    const mid = b.x + (TREE.x - b.x) * 0.5;
+    leaves(mid, limbY(b, mid) + 0.42, 0.34, 0.5);
+  }
+}
+
+/** A mark on every branch the monkey is not on, so a student can see where it can go. */
+function perches(g, S, target, PL, hover) {
+  const lit = hover === 'target' || hover === 'perch';
+  const r = Math.max(6, S.m(0.2)) * (lit ? 1.25 : 1);
   g.save();
-  g.beginPath();
-  for (let i = 0; i <= N; i++) {
-    const k = i / N, x = tipX + (rootX - tipX) * k;
-    g.lineTo(S.X(x), S.Y(yAt(k) + wAt(k)));
+  for (const b of BRANCHES) {
+    if (b.x === target.x && b.y === target.y) continue;
+    g.beginPath(); g.arc(S.X(b.x), S.Y(gripY(b)), r, 0, Math.PI * 2);
+    g.fillStyle = lit ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.7)'; g.fill();
+    g.strokeStyle = lit ? PL.ink : PLAIN.barkDark; g.lineWidth = lit ? 2 : 1.4; g.stroke();
   }
-  for (let i = N; i >= 0; i--) {
-    const k = i / N, x = tipX + (rootX - tipX) * k;
-    g.lineTo(S.X(x), S.Y(yAt(k) - wAt(k)));
-  }
-  g.closePath();
-  g.fillStyle = PLAIN.bark; g.fill();
-  g.strokeStyle = PLAIN.barkDark; g.lineWidth = Math.max(0.8, mx(0.035)); g.stroke();
-
-  // the shaded underside — the only modelling it gets, and all it needs
-  g.beginPath();
-  for (let i = 0; i <= N; i++) {
-    const k = i / N, x = tipX + (rootX - tipX) * k;
-    g.lineTo(S.X(x), S.Y(yAt(k) - wAt(k) * 0.45));
-  }
-  g.strokeStyle = 'rgba(40,26,14,0.26)';
-  g.lineWidth = Math.max(1, mx(0.055)); g.lineCap = 'round';
-  g.stroke();
   g.restore();
 }

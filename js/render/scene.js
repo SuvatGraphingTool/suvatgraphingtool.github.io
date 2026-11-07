@@ -19,6 +19,7 @@ import { T, num } from '../notation.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
 import * as W2 from './world2d.js';
+import { BRANCHES, gripY } from './backdrops.js';
 
 export function createCamera() { return { cx: 0, cy: 0, scale: 8, fit: true, touched: false }; }
 
@@ -1021,6 +1022,10 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
       if (near(m.sx(b.x), m.sy(b.y))) return { kind: 'ball', t };
     }
     if (scenario?.dragTarget && markers?.target && near(m.sx(markers.target.x), m.sy(markers.target.y))) return { kind: 'target' };
+    // any other branch of the tree: a press there brings the monkey to it
+    if (scenario?.branches && markers?.target) {
+      for (const b of BRANCHES) if (near(m.sx(b.x), m.sy(gripY(b) - 0.25), 24)) return { kind: 'perch', to: { x: b.x, y: b.y } };
+    }
     // THE AIM LINE IS A HANDLE. It is the thing the scenario is about, it is
     // already drawn across the frame, and until now the only way to move it
     // was a slider in the bar above — so the one direct manipulation the
@@ -1066,7 +1071,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   // alike, so a draggable handle felt exactly like empty canvas. Now each
   // kind gets the cursor that describes what it does, and the kind is passed
   // out so the renderer can light the handle up as well.
-  const CURSOR = { ball: 'pointer', path: 'pointer', heightLine: 'ns-resize',
+  const CURSOR = { ball: 'pointer', path: 'pointer', perch: 'pointer', heightLine: 'ns-resize',
                    target: 'move', obstacle: 'move', aimLine: 'crosshair' };
   canvas.addEventListener('pointermove', (e) => {
     if (drag || dragging) return;
@@ -1102,6 +1107,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     clearTimeout(later);
     down = { x: e.clientX, y: e.clientY, pick: got };
     dragging = got && !isResolve(got.kind) ? got.kind : null;
+    if (dragging === 'perch') { onMarkerMove?.('target', got.to); dragging = 'target'; }   // and it can be carried on from there
     if (dragging) { canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; return; }
     drag = true; lx = e.clientX; ly = e.clientY;
     canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing';

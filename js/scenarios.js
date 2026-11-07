@@ -201,7 +201,7 @@ export const SCENARIOS = [
     // pitch". An exhibit has no site in js/world/world.js, so siteFor() falls
     // through to the goal kick — see renderHud, whose comment says exactly
     // this and then had its two `place` strings removed from under it.
-    place: 'A branch, a throw, and nothing else in the way',
+    place: 'A tree, a throw, and nothing else in the way',
     // The hunter throws a banana, and says so here rather than leaving the
     // renderer to infer it from the sand.
     projectile: 'banana',
@@ -212,7 +212,7 @@ export const SCENARIOS = [
     // The monkey hangs from a BRANCH, and this is one of them — see BRANCHES
     // in js/render/backdrops.js, which is the one list both the tree and the
     // drag read. A marker in mid-air would be a monkey holding nothing.
-    markers: { target: { x: 10.1, y: 9.4 } }, dragTarget: true, aimAtTarget: true,
+    markers: { target: { x: 9.3, y: 9.2 } }, dragTarget: true, aimAtTarget: true,
     branches: true,
     // Live, on the scene. Three preset buttons were a menu; this is a toy.
     live: { u: { min: 4, max: 60, step: 0.5, label: 'speed', unit: 'm s⁻¹' },

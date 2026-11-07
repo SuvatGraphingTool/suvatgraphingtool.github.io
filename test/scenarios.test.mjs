@@ -8,6 +8,7 @@ import { valueAt } from '../js/render/plot.js';
 import { solveRoad, timeToReach, roadWorking } from '../js/core/road.js';
 import { graphSpecs } from '../js/render/graphs.js';
 import * as FIG from '../js/render/figures.js';
+import { BRANCHES, TREE, EXTENT, nearestBranch, gripY, limbY } from '../js/render/backdrops.js';
 
 let pass = 0, fail = 0;
 const near = (a, e, tol, label) => Math.abs(a - e) <= tol
@@ -37,6 +38,35 @@ group('Fired and dropped — they land together, whatever the muzzle speed', () 
   ok(f.range > 60, 'the fired bullet really does travel downrange');
   // and with no height there is nothing to drop
   ok(s.second.from({ u: 120, theta: 0, h: 0, g: 9.81 }, null) === null, 'no height, no second bullet');
+});
+
+group('Monkey vs Hunter — every branch of the tree', () => {
+  const s = byId('monkey');
+  ok(BRANCHES.length === 7, 'seven branches');
+  const has = (m) => s.markers.target.x === m.x && s.markers.target.y === m.y;
+  ok(BRANCHES.some(has), 'it starts on one of them');
+  for (const b of BRANCHES) {
+    const near = nearestBranch(b.x, b.y);
+    ok(near === b, `(${b.x}, ${b.y}): pressing on it picks it, no branch is unreachable`);
+    ok(Math.abs(limbY(b, b.x) - gripY(b)) < 1e-9, 'its limb is at the height of the grip');
+    ok(limbY(b, TREE.x) > 0 && limbY(b, TREE.x) < TREE.top, 'and that limb joins the trunk');
+    // the point of the scenario, from this branch
+    const h = 1.5, g = 9.81, u = 22, theta = (Math.atan2(b.y - h, b.x) * 180) / Math.PI;
+    const banana = flight({ u, theta, h, g });
+    const monkey = build(s, { u, theta, h, g }, { target: { x: b.x, y: b.y } });
+    const tMeet = b.x / (u * Math.cos((theta * Math.PI) / 180));
+    const q = banana.pos(tMeet), k = monkey.pos(tMeet);
+    ok(q.y > 0 && Math.hypot(q.x - k.x, q.y - k.y) < 1e-6, 'aimed straight at it, the banana meets it');
+  }
+  // limbs that cross would be a tangle, not a tree
+  for (let i = 0; i < BRANCHES.length; i++) for (let j = i + 1; j < BRANCHES.length; j++) {
+    const [a, c] = [BRANCHES[i], BRANCHES[j]];
+    const [hi, lo] = gripY(a) > gripY(c) ? [a, c] : [c, a];
+    let clear = true;
+    for (let x = Math.max(a.x, c.x); x <= TREE.x; x += 0.1) if (limbY(hi, x) <= limbY(lo, x)) clear = false;
+    ok(clear, `the limbs to (${a.x}, ${a.y}) and (${c.x}, ${c.y}) do not cross`);
+  }
+  ok(BRANCHES.every((b) => gripY(b) + 1 < EXTENT.plain.yTop && TREE.x < EXTENT.plain.x1), 'the whole tree is in the frame');
 });
 
 group('Monkey vs Hunter — aimed straight at it, it cannot miss', () => {
