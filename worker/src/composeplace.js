@@ -61,6 +61,47 @@ export function toComposed(x, words = '') {
   return out;
 }
 
+/* ── the place the student named wins ───────────────────────────────────
+   The user, 7 Nov: "a ball dropped off a rooftop, and it's showing me a
+   cliff". A composed recipe's backdrop is the model's choice, and nothing held
+   it to the question: a rooftop drawn as a cliff, or refused outright when the
+   model wrote "rooftop", which no backdrop is called. So the student's own
+   words decide: a place they name is the place drawn. Their words only — a
+   summary is the model's, and repeats its mistake — unless they sent a photo
+   and typed none. Nothing else in the recipe is touched. */
+const NAMED = [
+  [/\bcliffs?\b/, 'cliff'], [/\bbridge\b/, 'bridge'],
+  [/\b(?:tower|church|steeple)\b/, 'tower'], [/\b(?:building|office)\b/, 'city'],
+  [/\b(?:house|bungalow|cottage)\b|\broof\b(?! of (?:a |the |an )?(?:\w+ )?(?:car|van|bus|lorry|truck|train|tent|shed))/, 'house'],
+  [/\b(?:tree|branch|orchard)\b/, 'orchard'], [/\bmountain\b/, 'mountain'],
+  [/\b(?:harbou?r|quay)\b/, 'harbour'], [/\b(?:sports hall|school hall|gym(?:nasium)?)\b/, 'hall'],
+];
+// one is as good as another for "off a rooftop": each is a roof to stand on
+const BUILDINGS = new Set(['city', 'house', 'tower']);
+/** The backdrops a text names, best first. */
+export function backdropsNamed(text) {
+  const t = String(text || '').toLowerCase();
+  const out = [];
+  const own = placeIn(t)?.backdrop;
+  if (own) out.push(own);
+  for (const [re, b] of NAMED) if (re.test(t) && !out.includes(b)) out.push(b);
+  return out.filter((b) => BACKDROPS[b]);
+}
+export function namedPlace(x, words = '') {
+  if (!x || !x.understood || x.scenario !== 'compose' || !x.recipe || typeof x.recipe !== 'object') return x;
+  const had = String(x.recipe.backdrop || '').toLowerCase().trim();
+  const said = String(words).trim() || String(x.summary || '');
+  const named = backdropsNamed(said);
+  const known = !!BACKDROPS[had];
+  // the model's choice stands if the words name it too ("along the road to the bridge")
+  const nameIt = known && new RegExp(`\\b${had}\\b`, 'i').test(said);
+  if (known && (!named.length || nameIt || named.includes(had) || (BUILDINGS.has(had) && named.some((b) => BUILDINGS.has(b))))) return x;
+  // the model's own word for a place, when it is no backdrop's name: "rooftop", "skyscraper"
+  const backdrop = named[0] || (!known && backdropsNamed(`off a ${had}`)[0]);
+  if (!backdrop || backdrop === had) return x;
+  return { ...x, recipe: { ...x.recipe, backdrop } };
+}
+
 /* ── what moves, and a jump with no angle ────────────────────────────────
    The app draws what moves (js/compose/registry.js figureOf — the same list
    here, so a person is a person in both). This makes sure the reading says
@@ -70,7 +111,7 @@ export function toComposed(x, words = '') {
    "upwards" or "vertically" IS given: straight up, and nothing assumed.
    Nothing is calculated: an angle the question did not give is set to the
    one it means, and said. */
-import { figureOf, whoIn, ENGINES } from '../../js/compose/registry.js';
+import { figureOf, whoIn, ENGINES, BACKDROPS, placeIn } from '../../js/compose/registry.js';
 
 const JUMP = /\b(jump|jumps|jumped|jumping|leaps?|leapt|springs|sprang)\b/i;
 const UP = /\b(straight up|upwards?|vertically( up(wards)?)?|directly up)\b/i;

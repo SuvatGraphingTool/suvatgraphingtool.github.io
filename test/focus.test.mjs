@@ -13,6 +13,8 @@ import { focusFor, libraryIdsIn, idsInHistory, termsOf } from '../worker/src/foc
 import { systemPrompt, SYSTEM_PROMPT } from '../worker/src/schema.js';
 import { LIBRARY_IDS } from '../worker/src/library.js';
 import reader from '../worker/src/index.js';
+import { check } from '../js/compose/recipe.js';
+import { namedPlace } from '../worker/src/composeplace.js';
 
 let pass = 0, fail = 0;
 function ok(cond, label) {
@@ -127,6 +129,44 @@ console.log('\nThe Worker, end to end');
 
   const photo = await read({ imageBase64: 'AAAA', mimeType: 'image/jpeg', text: 'two robots' }, robots);
   ok(photo.prompts[0] === SYSTEM_PROMPT, 'a photo gets the whole catalogue, as before');
+}
+
+/* The user, 7 Nov: "a ball dropped off a rooftop, and it's showing me a cliff". */
+console.log('\nThe place the student names is the place drawn');
+{
+  const ball = (backdrop, numbers = { h: 20, u: 0, theta: -90 }) => ({ understood: true, scenario: 'compose', summary: 'A ball is dropped.',
+    recipe: { backdrop, engine: 'projectile', objects: [{ figure: 'ball' }], numbers } });
+  const drawn = (words, backdrop = 'cliff', numbers) => namedPlace(ball(backdrop, numbers), words).recipe.backdrop;
+  const SAID = [
+    ['a ball dropped off a rooftop', 'city'], ['a ball is dropped from a 20 m rooftop', 'city'],
+    ['a ball dropped off a skyscraper', 'city'], ['a stone falls from the top of a building', 'city'],
+    ['a ball dropped from the roof of a house', 'house'], ['a ball dropped off a roof', 'house'],
+    ['a ball dropped from a balcony', 'house'], ['a ball dropped out of a window', 'house'],
+    ['a ball dropped from a tower', 'tower'], ['a stone dropped off a bridge', 'bridge'],
+    ['an apple falls from a tree', 'orchard'], ['a rock falls off a mountain', 'mountain'],
+    ['a ball dropped from a lighthouse', 'lighthouse'], ['a ball dropped off a pier', 'pier'],
+    ['a stone thrown from a castle wall', 'castle'], ['a ball dropped off a multi-storey car park', 'carpark'],
+  ];
+  for (const [words, want] of SAID) {
+    const r = namedPlace(ball('cliff'), words).recipe;
+    ok(r.backdrop === want && check(r).ok, `"${words}", the model says cliff: drawn as ${r.backdrop}, and it runs`);
+  }
+  ok(drawn('a ball dropped off a rooftop', 'rooftop') === 'city', 'the model writes "rooftop", which no backdrop is called: the city, not a refusal');
+  ok(drawn('a ball dropped from 20 m', 'rooftop') === 'city', 'and with the place only in its own word');
+  ok(drawn('a ball dropped off a rooftop', 'cliff', { u: 0, theta: -90 }) === 'city', 'with no height given it is still not a cliff');
+  ok(drawn('a stone thrown off a cliff') === 'cliff', 'a cliff the student names stays a cliff');
+  ok(drawn('a ball thrown from a cliff towards a tower', 'tower') === 'tower', 'two places named: the one the model chose of them stands');
+  ok(drawn('a ball dropped off a rooftop', 'house') === 'house', 'a house is a fair rooftop: left alone');
+  ok(drawn('a car drives along a road towards a bridge', 'road') === 'road', 'a road the student named stands, with a bridge ahead');
+  ok(drawn('a box slides off the roof of a car', 'road') === 'road', "a car's roof is no house");
+  ok(drawn('a ball is launched at 20 m/s', 'ground') === 'ground', "no place named: the model's choice stands");
+  const photo = namedPlace({ ...ball('cliff'), summary: 'A ball dropped off a rooftop.' }, '');
+  ok(photo.recipe.backdrop === 'city', 'a photo, with no words typed: its summary says where');
+
+  const said = 'a ball dropped off a rooftop';
+  ok(focusFor(said).compose.split('\n').some((l) => /^ {2}city — .*rooftop/.test(l)), 'the model is shown the city in full when the question says rooftop');
+  const live = await read({ text: said }, () => ball('cliff'));
+  ok(live.data.extraction.recipe.backdrop === 'city', 'through the Worker, end to end: the city');
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

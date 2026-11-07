@@ -41,7 +41,7 @@ export const BACKDROPS = {
   mountain: { label: 'Mountains', what: 'a rock ledge high above a valley, snow-capped peaks beyond', place: 'ledge', below: 'ground', edge: true, at: 'a ledge' },
   forest:  { label: 'A forest', what: 'woodland: trees thinning into mist over a forest floor; from a height, a platform among the trunks', place: 'ground', below: 'ground', art: true, high: 'a platform in a forest', lands: 'leaves' },
   harbour: { label: 'A harbour', what: 'a stone quay over the harbour water, boats at their moorings, a lighthouse across the bay', place: 'quay', below: 'sea', edge: true, at: 'a quay' },
-  city:    { label: 'A city', what: 'the roof of an office block among the city’s towers, the street below', place: 'building', below: 'road', edge: true, at: 'a building' },
+  city:    { label: 'A city', what: 'a rooftop: the roof of an office block among the city’s towers, the street below', place: 'building', below: 'road', edge: true, at: 'a building' },
   moon:    { label: 'The Moon', what: 'the Moon’s grey cratered plain under a black sky, the Earth overhead; g is 1.62 there', place: 'moon', below: 'surface', art: true, g: 1.62, on: 'on the Moon', lands: 'crater', high: 'a ledge on the Moon' },
   snow:    { label: 'Snow', what: 'a snowfield under snowy peaks and pines; from a height, a snow-capped rock ledge', place: 'snow', below: 'snow', art: true, on: 'in the snow', lands: 'snow', high: 'a snowy ledge' },
   desert:  { label: 'A desert', what: 'sand dunes under a hot hazy sky; from a height, a sandstone outcrop', place: 'desert', below: 'sand', art: true, on: 'in the desert', lands: 'sand', high: 'a sandstone outcrop' },

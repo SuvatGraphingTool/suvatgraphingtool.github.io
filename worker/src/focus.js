@@ -20,6 +20,8 @@
 
 import { LIBRARY_GUIDE } from './library.js';
 import { COMPOSE_GUIDE } from './compose.js';
+import { backdropsNamed } from './composeplace.js';
+import { figureOf, whoIn } from '../../js/compose/registry.js';
 
 /** How many library scenarios go in full, beyond those always sent. */
 export const IN_FULL = 6;
@@ -93,14 +95,16 @@ const PIECES = [];
 const PIECE_DF = new Map();
 for (const s of PIECES) for (const it of s.items) for (const t of it.terms) PIECE_DF.set(t, (PIECE_DF.get(t) || 0) + 1);
 
-function composeFor(q) {
+function composeFor(q, text) {
+  // what the app's own lists say the question names: "rooftop" is the city, "a pane of glass" a figure
+  const said = new Set([...backdropsNamed(text), figureOf(whoIn(text)).figure]);
   const out = [];
   for (const s of PIECES) {
     out.push(s.head);
     const named = [];
     for (const it of s.items) {
       // in full when the question names it, or uses a word only a few pieces have ("truck", "kayak")
-      const hit = [...q].some((t) => it.own.has(t) || (it.terms.has(t) && (PIECE_DF.get(t) || 0) <= 2));
+      const hit = said.has(it.name) || [...q].some((t) => it.own.has(t) || (it.terms.has(t) && (PIECE_DF.get(t) || 0) <= 2));
       if (hit) out.push(it.line); else named.push(it.name);
     }
     if (named.length) out.push(`  also: ${named.join(', ')}`);
@@ -125,7 +129,7 @@ export function focusFor(text, keep = []) {
     + 'In full, the ones this question most likely needs — their boxes, shape and answers:\n'
     + `${full}\n`
     + 'If the one that fits is not among those in full, still return scenario "library" with its id and boxes {}: the app will show you its boxes.';
-  return { library, compose: composeFor(q), ids };
+  return { library, compose: composeFor(q, text), ids };
 }
 
 /** An index line: the id and what it is, cut at a word near 110 characters. */
