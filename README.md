@@ -2,17 +2,16 @@
 
 An interactive projectile-motion playground for A-level physics and maths.
 
-## Two sites
+## Where it lives
 
 | | Address | What's on it | Built from |
 |---|---|---|---|
-| **AI version** | https://suvat-ai.suvatgraphingtool.workers.dev | Everything, plus **Ask Suvat** — type, photograph, attach or say a question and it picks the scenario and fills in the values | the `ai` branch, via `scripts/deploy-ai.sh` |
-| **Original** | https://suvatgraphingtool.github.io/ | The playground without Ask Suvat | `main`, via GitHub Pages |
+| **The site** | https://suvatgraphingtool.github.io/ | Everything: the redesign, **Ask Suvat**, the Past-paper library, the whiteboard and the composer | `main`, via GitHub Pages |
+| **Redesign** | https://suvat-redesign.suvatgraphingtool.workers.dev | The same, plus sign-in and chats kept in an account | the `redesign` branch, via `scripts/deploy-redesign.sh` |
 
-**From now on every change goes to the AI version only** — the `ai` branch,
-deployed with `scripts/deploy-ai.sh`. The original site is changed only when
-that is asked for explicitly; when something on the AI version is ready for it,
-`ai` is merged into `main`.
+Accounts need the small API in `site/`, and GitHub Pages serves files only, so
+sign-in stays hidden on `github.io`: chats and whiteboards are kept in the
+browser there.
 
 We use the SUVAT equations constantly but rarely *see* the thing they describe.
 This is the projectile, the elapsed time, the acceleration and the velocity, all
