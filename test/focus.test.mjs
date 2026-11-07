@@ -14,7 +14,7 @@ import { systemPrompt, SYSTEM_PROMPT } from '../worker/src/schema.js';
 import { LIBRARY_IDS } from '../worker/src/library.js';
 import reader from '../worker/src/index.js';
 import { check } from '../js/compose/recipe.js';
-import { namedPlace, answered } from '../worker/src/composeplace.js';
+import { namedPlace, answered, fromRest } from '../worker/src/composeplace.js';
 import { composeKindly, compose } from '../js/compose/recipe.js';
 
 let pass = 0, fail = 0;
@@ -22,6 +22,7 @@ function ok(cond, label) {
   if (cond) { pass++; console.log(`  ok   ${label}`); }
   else { fail++; console.log(`  FAIL ${label}`); }
 }
+function near(a, b, tol, label) { ok(Math.abs(a - b) <= tol, `${label} (${a})`); }
 function group(name, fn) { console.log(`\n${name}`); fn(); }
 
 // question (our wording) → the library scenario that fits
@@ -196,6 +197,25 @@ console.log('\nNever a flat no');
   ok(answered('20 m', have) === null, 'a reading that has its height goes to the model');
   const chat = await read({ text: '20 m', history: [{ role: 'user', text: 'a ball dropped off a rooftop' }, { role: 'model', text: asked[1].parts[0].text }] }, () => { throw new Error('asked the model'); });
   ok(chat.prompts.length === 0 && chat.data.extraction.recipe.numbers.h === 20, 'through the Worker: answered without one AI call');
+}
+
+/* The user, 7 Nov: "a book dropped off a shelf … still needed: the angle" — "its just dropped buddy". */
+console.log('\nDropped means dropped');
+{
+  const book = (numbers) => ({ understood: true, scenario: 'compose', summary: 'A book off a shelf.', recipe: { engine: 'projectile', backdrop: 'table', objects: [{ figure: 'book' }], numbers } });
+  const runs = (r) => { const c = composeKindly(r.recipe); const s = c.kit.solve(c.kit.read(c.boxes)); return s; };
+  const shelf = fromRest(book({ h: 9 }), 'can you show a book dropped off a shelf, shelf is 9 meters high');
+  ok(shelf.recipe.numbers.u === 0 && shelf.recipe.numbers.theta === -90, 'a speed of 0, straight down, with no angle asked for');
+  const s = runs(shelf);
+  ok(s.ok, 'and it runs');
+  near(s.T, Math.sqrt(2 * 9 / 9.81), 1e-2, 'landing in √(2h/g) = 1.35 s');
+  ok(fromRest(book({ h: 9 }), 'its just dropped buddy').recipe.numbers.u === 0, '"its just dropped buddy" is heard');
+  ok(runs(book({ h: 9, u: 0 })).ok, 'the engine: at rest there is no angle to ask for');
+  ok(fromRest(book({ h: 9 }), 'a book is thrown off a shelf').recipe.numbers.u == null, 'thrown is not dropped: its speed is asked for');
+  ok(fromRest(book({ h: 9, u: 4 }), 'a book falls off a shelf at 4 m/s').recipe.numbers.u === 4, 'a speed it was given stands');
+  ok(fromRest(book({ h: 9, s: 3 }), 'a book falls and lands 3 m out').recipe.numbers.u == null, 'one that lands out from the foot was not just let go');
+  const height = fromRest({ understood: true, scenario: 'library', library: 'from-a-height', summary: 'A stone is dropped.', boxes: { h: 20 } }, 'a stone is dropped down a well');
+  ok(height.boxes.u === 0 && height.boxes.theta === -90, 'From a height too');
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

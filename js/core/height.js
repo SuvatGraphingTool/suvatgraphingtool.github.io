@@ -142,6 +142,8 @@ export function solveHeight(k0 = {}) {
   // the height may be left for the engine when the time in the air is given
   if (!have(k.h) && !have(k.t)) return fail(`Still needed: how high ${Pl.top} is above ${Pl.below} — or the time it takes to land, to find that height.`);
   if (have(k.h) && !(k.h > 0) && !(Pl.level && k.h === 0)) return fail(`${Pl.top.replace(/^./, (c) => c.toUpperCase())} is above ${Pl.below}: give its height as a positive number.`);
+  // let go at rest there is no angle to give: it goes straight down
+  if (!have(k.theta) && have(k.u) && k.u === 0) k = { ...k, theta: -90 };
   if (!have(k.theta)) return fail('Still needed: the angle it is thrown at — 90 straight up, 0 across, −90 straight down.');
   if (!(k.theta >= -90 && k.theta <= 90)) return fail('The angle is between −90° (straight down) and 90° (straight up).');
   const steep = Math.abs(Math.abs(k.theta) - 90) < 1e-9;

@@ -9,7 +9,7 @@
 // way the interface can explain.
 
 import { toPlace } from './place.js';
-import { toComposed, toFigure, namedPlace, answered } from './composeplace.js';
+import { toComposed, toFigure, namedPlace, answered, fromRest } from './composeplace.js';
 import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt } from './schema.js';
 import { focusFor, libraryIdsIn, idsInHistory } from './focus.js';
 
@@ -161,7 +161,7 @@ export default {
       const second = await race(env, models, payload);
       if (second.ok) outcome = second;
     }
-    if (outcome.ok) return json({ ok: true, extraction: namedPlace(toComposed(toPlace(toFigure(outcome.extraction, words), words), words), words), model: outcome.model }, 200, cors);
+    if (outcome.ok) return json({ ok: true, extraction: fromRest(namedPlace(toComposed(toPlace(toFigure(outcome.extraction, words), words), words), words), words), model: outcome.model }, 200, cors);
     const { last, lastCap, capped, gone } = outcome;
 
     if (lastCap && models.every((m) => capped.has(m.name) || gone.has(m.name))) {

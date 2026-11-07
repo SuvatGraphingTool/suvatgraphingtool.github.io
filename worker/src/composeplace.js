@@ -102,6 +102,25 @@ export function namedPlace(x, words = '') {
   return { ...x, recipe: { ...x.recipe, backdrop } };
 }
 
+/* ── dropped means dropped ───────────────────────────────────────────────
+   The user, 7 Nov: "a book dropped off a shelf … still needed: the angle" —
+   "its just dropped buddy". Let go, it starts from rest and goes straight down:
+   a speed of 0 and no angle to ask for, whatever the model left out. Not if
+   anything in the question sends it off, or says how far out it lands. */
+const LET_GO = /\b(?:dropp(?:ed|ing)|drops?|falls?|fell|falling|let go|lets go|released?|from rest|slips?|slipped)\b/i;
+const SENT = /\b(?:thrown?|throws?|throwing|kick(?:s|ed)?|launch\w*|fired?|struck|projected|pushed|rolls?|rolled|slides?|slid|shot|hit)\b/i;
+export function fromRest(x, words = '') {
+  if (!x || !x.understood) return x;
+  const text = `${words} ${x.summary || ''}`;
+  if (!LET_GO.test(text) || SENT.test(text)) return x;
+  const still = (n) => !n || ((n.u == null || n.u === 0) && n.theta == null && n.s == null);
+  if (x.scenario === 'compose' && x.recipe && (!x.recipe.engine || x.recipe.engine === 'projectile') && still(x.recipe.numbers)) {
+    return { ...x, recipe: { ...x.recipe, numbers: { ...x.recipe.numbers, u: 0, theta: -90 } } };
+  }
+  if (x.scenario === 'library' && x.library === 'from-a-height' && still(x.boxes)) return { ...x, boxes: { ...x.boxes, u: 0, theta: -90 } };
+  return x;
+}
+
 /* ── "20 m": the answer to what Suvat just asked ─────────────────────────
    A reading short of its height says "how high up does it start?". The answer
    needs no model: the height goes into the reading the chat is already on, so
