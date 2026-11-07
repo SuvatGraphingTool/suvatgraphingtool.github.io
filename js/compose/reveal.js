@@ -2,34 +2,40 @@
 //
 // Ask Suvat has put a scene together from the app's pieces. Rather than cut
 // to it, the stage opens behind a veil: the scene blurred and shimmering,
-// the Spark (Ask Suvat's mark) large and glowing in the middle, and a line
-// that names each piece as it goes in — "Placing a sea cliff", "Bringing in
-// a car", "Adding a splash" — the
-// recipe's own pieces, in order, each ticked off below it. Then the veil
-// lifts from the top down, the way an image generator resolves its picture,
-// and the motion plays.
+// the Spark (Ask Suvat's mark) large and glowing in the middle, and one line
+// under it that names each piece as it goes in — "Placing a sea cliff",
+// "Bringing in a car", "Setting the angle to 30°" — the recipe's own pieces, in
+// order, with time to read each, at most thirty seconds in all. The scene
+// sharpens as they go in. Then the veil lifts from the top down, the way an
+// image generator resolves its picture, and the motion plays.
 //
 // The pieces named are the ones the recipe really used (js/compose/
 // registry.js); the veil claims nothing else. Reduced motion: a short fade.
 
 import { FIGURES, EFFECTS, placeOf } from './registry.js';
+import { num } from '../notation.js';
 
 /** The Spark, Ask Suvat's mark: the one `#spark` symbol in index.html. */
 const SPARK = '<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><use href="#spark"/></svg>';
 const BELOW = { surface: 'the surface', sea: 'the sea', river: 'the river', pool: 'the pool', well: 'the water in the well', ground: 'the ground', beach: 'the beach', road: 'the road', rails: 'the track', floor: 'the floor', snow: 'the snow', sand: 'the sand' };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-/** What the veil says, step by step: [{ say, chip }], from the recipe. */
+const say = (v) => num(v, Number.isInteger(v) ? 0 : 2);
+
+/** What the veil says, step by step: [{ say }], from the recipe. */
 export function steps(R) {
-  const B = placeOf(R), out = [];
-  const bare = (s) => s.replace(/^(an?|the) /i, '');
-  out.push({ say: `Placing ${B.label.toLowerCase()}`, chip: bare(B.label.toLowerCase()) });
+  const B = placeOf(R), out = [], n = R.numbers || {};
+  out.push({ say: `Placing ${B.label.toLowerCase()}` });
   const below = BELOW[B.below];
-  if (below && !B.label.toLowerCase().includes(B.below)) out.push({ say: `Laying out ${below}`, chip: bare(below) });
-  for (const o of R.objects) out.push({ say: `Bringing in ${FIGURES[o.figure].label}`, chip: bare(FIGURES[o.figure].label) });
-  out.push({ say: 'Working out the motion', chip: 'the motion' });
-  for (const e of R.effects) out.push({ say: `Adding ${EFFECTS[e].label}`, chip: bare(EFFECTS[e].label) });
-  out.push({ say: 'Scaling it to the numbers', chip: null });
+  if (below && !B.label.toLowerCase().includes(B.below)) out.push({ say: `Laying out ${below}` });
+  for (const o of R.objects) out.push({ say: `Bringing in ${FIGURES[o.figure].label}` });
+  if (n.h) out.push({ say: `Setting the height to ${say(n.h)} m` });
+  if (n.u != null) out.push({ say: `Setting the launch speed to ${say(n.u)} m s⁻¹` });
+  if (n.theta) out.push({ say: `Setting the angle to ${say(n.theta)}°` });
+  out.push({ say: 'Working out the motion' });
+  out.push({ say: 'Drawing its path' });
+  for (const e of R.effects) out.push({ say: `Adding ${EFFECTS[e].label}` });
+  out.push({ say: 'Scaling it to the numbers' });
   return out;
 }
 
@@ -39,7 +45,7 @@ export function steps(R) {
  * @param R     the checked recipe
  * @returns Promise that resolves as the veil starts to lift (play then)
  */
-export function reveal(wrap, R, { per = 420 } = {}) {
+export function reveal(wrap, R, { per = 1800 } = {}) {
   wrap.querySelector('.cmp-reveal')?.remove();
   const quiet = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const list = steps(R);
@@ -53,10 +59,7 @@ export function reveal(wrap, R, { per = 420 } = {}) {
     <div class="cr-shimmer" aria-hidden="true"></div>
     <div class="cr-card">
       <span class="cr-mark" aria-hidden="true"><span class="cr-glow"></span><span class="ai-orb cr-orb">${SPARK}</span></span>
-      <p class="cr-title">Creating your scene</p>
       <p class="cr-step"><span>${esc(list[0].say)}</span></p>
-      <ul class="cr-chips" aria-hidden="true">${list.filter((s) => s.chip).map((s) => `<li>${esc(s.chip)}</li>`).join('')}</ul>
-      <div class="cr-bar" aria-hidden="true"><i></i></div>
     </div>`;
   wrap.append(el);
   // the veil is the scene itself, blurred: a copy of the stage's canvas,
@@ -77,13 +80,13 @@ export function reveal(wrap, R, { per = 420 } = {}) {
   };
   copy();
   const copier = setInterval(copy, 160);
-  const step = el.querySelector('.cr-step'), chips = [...el.querySelectorAll('.cr-chips li')], bar = el.querySelector('.cr-bar i');
-  const total = quiet ? 500 : Math.max(2200, list.length * per);
+  const step = el.querySelector('.cr-step');
+  const total = quiet ? 500 : Math.min(30_000, Math.max(9000, list.length * per));
   el.style.setProperty('--total', `${total}ms`);
   requestAnimationFrame(() => el.classList.add('is-on'));
 
   return new Promise((done) => {
-    let i = 0, c = 0;
+    let i = 0;
     const next = () => {
       i++;
       if (i < list.length) {
@@ -91,16 +94,11 @@ export function reveal(wrap, R, { per = 420 } = {}) {
         s.textContent = list[i].say;
         step.replaceChildren(s);
       }
-      // a chip ticks as the step after it begins
-      const ch = list[i - 1]?.chip ? chips[c++] : null;
-      ch?.classList.add('is-in');
-      bar.style.transform = `scaleX(${Math.min(1, i / list.length)})`;
       if (i < list.length) setTimeout(next, total / list.length);
       else lift();
     };
     const lift = () => {
       clearInterval(copier); copy();
-      chips.forEach((x) => x.classList.add('is-in'));
       el.classList.add('is-lifting');
       done();
       setTimeout(() => el.remove(), quiet ? 250 : 1300);

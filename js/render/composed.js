@@ -76,7 +76,7 @@ export const settling = () => [clock, ...clocks].some((c) => c.at != null && per
 export function render(canvas, cam, o) {
   const { traj: f, recipe: R } = o;
   if (!f || !R) return null;
-  if (R.engine === 'projectile' || R.engine === 'twin') return launch(canvas, o);
+  if (R.engine === 'projectile' || R.engine === 'twin') return launch(canvas, { ...o, cam });
   if (R.engine === 'pair' || R.engine === 'bounce') return column(canvas, o);
   return null;
 }
@@ -554,6 +554,8 @@ function launch(canvas, o) {
   const Lp = small ? 0 : size(k, piece);
   const aloft = m.going && t > 0 && !landed;
   // thrown from a volcano, a rock flies red-hot, glowing as it goes
+  // where each object is, in the layout the pointer is mapped to (js/render/scene.js)
+  if (o.cam?._map) (o.cam._map.objects ||= []).push({ x: bx, y: by });
   if (R.backdrop === 'volcano' && small && !(landed && age > life * 0.6)) { const gR = 16, hg = g.createRadialGradient(bx, by, 0, bx, by, gR); hg.addColorStop(0, 'rgba(255,236,160,0.75)'); hg.addColorStop(0.5, 'rgba(200,40,60,0.35)'); hg.addColorStop(1, 'rgba(200,40,60,0)'); g.fillStyle = hg; g.beginPath(); g.arc(bx, by, gR, 0, Math.PI * 2); g.fill(); }
   if (small) {
     const R0 = clamp(k * piece.m * 0.5, 5.5, 9);
@@ -842,6 +844,11 @@ function launch(canvas, o) {
   // what stands in front of the motion: the place's own front layer (the high jump's near upright)
   if (placed && PLACE_ART[R.backdrop]?.front) PLACE_ART[R.backdrop].front(g, placed);
 
+  const hot = o.cam?._map?.objects?.[o.cam._hot ?? 0];
+  if (fired && o.hover && !o.resolve && hot) {
+    dot(g, hot.x, hot.y, 22, { stroke: P.vel, width: 2.6 });
+    L.add('click to resolve', hot.x, hot.y - 38, { color: P.vel, align: 'center', pri: 9, size: 15, weight: 600 });
+  }
   L.draw(g, w, h);
   return null;
 }

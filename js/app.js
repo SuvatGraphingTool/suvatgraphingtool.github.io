@@ -3238,7 +3238,7 @@ addEventListener('resize', () => {
   dirty = true;
 });
 const pickScene = () => ({ markers: state.markers, scenario, traj, t: state.t,
-                           fired: state.launched });
+                           fired: state.launched, resolving: state.resolve });
 const resolveHooks = {
   // The INSTANT under the pointer, or null — not a bare yes/no. The ring and
   // the highlight have to land where the pointer actually is.
