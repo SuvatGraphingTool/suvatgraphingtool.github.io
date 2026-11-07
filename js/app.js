@@ -13,7 +13,7 @@ import { solveRoad, roadWorking } from './core/road.js';
 import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
-import { composeKindly, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
+import { composeSensibly, heightSensibly, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
 import { figureOf, belowOf, placeOf } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { LIBRARY } from './library.js';
@@ -3454,7 +3454,11 @@ function readOne(x, { graph = true, solve = false } = {}) {
   // what moves is what is drawn: a diver, a parcel, a skateboarder launched
   // as one of the twelve or From a height becomes a composed scene with that
   // figure in that place, on the same engine (js/compose/recipe.js)
-  const drawn = fromReading(x);
+  // common sense: a launch with no numbers to go on is composed, where any
+  // value the engine cannot run without gets a sensible one (js/compose/sense.js)
+  const blank = x && x.understood !== false && ['dropped', 'down', 'platform', 'platform-angle', 'platform-down', 'up', 'arc'].includes(x.scenario)
+    && !['u', 'v', 's', 't'].some((k) => typeof x[k] === 'number') && !(x.scenario === 'dropped' && x.h > 0);
+  const drawn = fromReading(x) || (blank ? fromReading(x, { always: true }) : null);
   if (drawn) return applyComposed(drawn, { graph });
   if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
   if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph });
@@ -3506,6 +3510,8 @@ function applyLibrary(x, { graph = true } = {}) {
   // "show me one": the reader picks the scenario, and its own exam numbers and
   // parts fill it — known to run, where numbers made up in the chat might not
   if (x.example === true && s.example) x = { ...x, boxes: s.example, parts: undefined };
+  // From a height, short of a value: common sense, said in the summary (js/compose/sense.js)
+  x = heightSensibly(x, state.kit?.g ?? 9.81);
   chooseScenario(s.id);
   closeIntro();
   const fields = boxesOf(KITS[s.kit], s.example);
@@ -3547,6 +3553,7 @@ function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = t
   const plain = (h) => String(h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
   const angleAssumed = /No angle was given/.test(summary || '');
   const atRest = /No speed was given/.test(summary || '');
+  const heightAssumed = /No height was given/.test(summary || '');
   const rows = [];
   for (const f of fields) {
     const v = state.kit[f.key];
@@ -3575,6 +3582,7 @@ function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = t
       : f.key === 'g' && gAssumed ? 'assumed · on Earth'
       : f.key === 'theta' && angleAssumed ? 'assumed · no angle was given'
       : f.key === 'u' && atRest ? 'assumed · no speed was given'
+      : f.key === 'h' && heightAssumed ? 'assumed · no height was given'
       // "surprise me": the numbers are the paper's, not anything the student said
       : example ? 'from the paper'
       : fromWords ? 'read from the wording' : 'in the question';
@@ -3664,7 +3672,7 @@ function applyComposed(x, { graph = true } = {}) {
   }
   // the surface below, when the reader left it out but the question names one ("a bridge above a road")
   if (x.recipe?.backdrop && !x.recipe.below) { const b = belowOf(x.recipe.backdrop, `${x.summary || ''} ${x.words || ''}`); if (b) x = { ...x, recipe: { ...x.recipe, below: b } }; }
-  const c = composeKindly(x.recipe);
+  const c = composeSensibly(x.recipe, `${x.words || ''} ${x.summary || ''}`);
   if (!c.ok) return { ok: false, chat: true, error: 'I can see the idea, but I need a little more to set it up. What moves, where from, and do you know a height or a speed?' };
   const s = register(c, null);
   // a part that is another place or another motion has a scene of its own

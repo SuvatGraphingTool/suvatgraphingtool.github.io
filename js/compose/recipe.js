@@ -20,6 +20,7 @@
 // Nothing here calculates (CLAUDE.md rule 4). The engine solves; this file
 // only says which engine, with which boxes.
 
+import { sensible } from './sense.js';
 import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, CARRIERS, LAUNCHERS, figureOf, belowOf, placeOf, placeIn, carrierIn, launcherIn } from './registry.js';
 import { toApp } from '../core/question.js';
 import { KITS } from '../kits/index.js';
@@ -462,6 +463,37 @@ export function composeKindly(raw) {
   return c;
 }
 
+/**
+ * composeKindly(), then common sense (js/compose/sense.js): what the engine
+ * cannot run without gets a sensible value, and the scene's notes say so.
+ * @param text  the question's words
+ */
+export function composeSensibly(raw, text = '') {
+  const c = composeKindly(raw);
+  if (!c.ok || c.scenario?.recipe?.engine !== 'projectile') return c;
+  const r = c.scenario.recipe, B = placeOf(r), g = c.boxes.g;
+  const runs = (n) => { const b = { ...c.boxes, ...n, g }; return !!c.kit.solve(c.kit.read(b))?.ok; };
+  const got = sensible({ numbers: { ...r.numbers }, place: r.backdrop, edge: !!B.edge, text, runs });
+  if (!got || !Object.keys(got.numbers).some((k) => got.numbers[k] !== r.numbers[k])) return c;
+  const next = compose({ ...r, numbers: got.numbers });
+  if (!next.ok) return c;
+  next.scenario.recipe.notes = [...(next.scenario.recipe.notes || []), ...got.notes];
+  return next;
+}
+
+/**
+ * From a height, short of a value: the same common sense, said in its summary.
+ * @returns the reading, with its boxes filled in where the engine needs them
+ */
+export function heightSensibly(x, g = 9.81) {
+  if (x?.library !== 'from-a-height' || !x.boxes || x.example === true) return x;
+  const K = KITS.height, place = x.boxes.place || 'cliff';
+  const got = sensible({ numbers: { ...x.boxes }, place, edge: true, text: `${x.words || ''} ${x.summary || ''}`,
+    runs: (n) => !!K.solve(K.read({ place, ...n, g: n.g ?? g }))?.ok });
+  if (!got || got.numbers === x.boxes) return x;
+  return { ...x, boxes: got.numbers, summary: [x.summary, ...got.notes].filter(Boolean).join(' ') };
+}
+
 /** "Drawn as a particle: there is no rocket figure yet." */
 function nearest(m) {
   return `Drawn as ${FIGURES[m.figure].label}: there is no ${clip(m.word, 30)} figure yet.`;
@@ -509,7 +541,7 @@ const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] != null).
  * @returns a compose reading { scenario: 'compose', recipe, parts, notes, … },
  *          or null to leave the reading as it was
  */
-export function fromReading(x) {
+export function fromReading(x, { always = false } = {}) {
   if (!x || typeof x !== 'object' || x.understood === false) return null;
   // "a hammer thrower releases…": an athlete's hammer, not a claw hammer
   let m = figureOf(x.who);
@@ -535,7 +567,7 @@ export function fromReading(x) {
   const elsewhere = fromHeight && HEIGHT_PLACES[x.boxes.place] && !TWELVE_PLACES[x.boxes.place];
   // fired from a cannon, off a ramp, flung from a catapult: drawn with it, so composed
   const sent = LAUNCHES.includes(x.scenario) && !!launcherIn(words);
-  if (small && !under && !own && !lifted && !elsewhere && !sent) return null;
+  if (!always && small && !under && !own && !lifted && !elsewhere && !sent) return null;
   const figure = m.figure || 'ball';
   let backdrop, numbers, keys;
   if (fromHeight) {

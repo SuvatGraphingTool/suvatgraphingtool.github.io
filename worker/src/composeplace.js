@@ -87,7 +87,15 @@ export function backdropsNamed(text) {
   for (const [re, b] of NAMED) if (re.test(t) && !out.includes(b)) out.push(b);
   return out.filter((b) => BACKDROPS[b]);
 }
+// From a height's own places, for what the student named
+const HEIGHT_PLACE = { cliff: 'cliff', tower: 'tower', city: 'tower', house: 'tower', bridge: 'bridge' };
 export function namedPlace(x, words = '') {
+  if (x?.understood && x.scenario === 'library' && x.library === 'from-a-height' && x.boxes && typeof x.boxes === 'object') {
+    const said = backdropsNamed(String(words).trim() || x.summary).map((b) => HEIGHT_PLACE[b]).filter(Boolean);
+    const had = x.boxes.place;
+    if (said.length && !said.includes(had) && !['well', 'board', 'balloon'].includes(had)) return { ...x, boxes: { ...x.boxes, place: said[0] } };
+    return x;
+  }
   if (!x || !x.understood || x.scenario !== 'compose' || !x.recipe || typeof x.recipe !== 'object') return x;
   const had = String(x.recipe.backdrop || '').toLowerCase().trim();
   const said = String(words).trim() || String(x.summary || '');
