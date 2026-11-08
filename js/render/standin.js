@@ -13,6 +13,8 @@
 // numbers do not change (rule 4). This file holds the state and no art, so the figures
 // can ask it without importing what draws: js/compose/standins.js makes the art.
 
+import { lang, translateText } from '../i18n.js';
+
 /**
  * Stages the first figure does not suit.
  *   only   the figures that can be what moves: the rest are people standing by
@@ -74,5 +76,9 @@ export function standIn(kind, g, x, y, size, o = {}) {
 /** A stage's words, in the question's: "Mass of ski-board (kg)". Keeps a capital where the sentence has one. */
 export function ownWords(text) {
   if (!said || typeof text !== 'string') return text;
-  return text.replace(said.re, (m) => (/^[A-Z]/.test(m) ? said.to[0].toUpperCase() + said.to.slice(1) : said.to));
+  const own = text.replace(said.re, (m) => (/^[A-Z]/.test(m) ? said.to[0].toUpperCase() + said.to.slice(1) : said.to));
+  if (lang() !== 'ar' || own === text) return own;
+  // In Arabic, the whole line in Arabic or the paper's: never half of each (js/i18n.js)
+  const ar = translateText(own);
+  return /[A-Za-z]/.test(ar) ? text : ar;
 }
