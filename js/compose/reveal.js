@@ -4,7 +4,7 @@
 // behind a veil: the scene blurred and shimmering, the Spark (Ask Suvat's mark)
 // large in the middle, and under it ONE line that says what is being made:
 // "Building the table…", "Drawing the laptop…", "Setting the height to 40 m…",
-// "Working out the motion…", with time to read each, at most thirty seconds in all.
+// "Working out the motion…", with time to read each, at most twenty seconds in all.
 // Then the veil lifts from the top down, the way an image generator resolves its
 // picture, and the motion plays.
 //
@@ -109,9 +109,9 @@ export function reveal(wrap, R, { per = 1800, until = Date.now() + DEADLINE_MS, 
   requestAnimationFrame(() => el.classList.add('is-on'));
   const say = (text) => { const s = document.createElement('span'); s.textContent = text; step.replaceChildren(s); };
   const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
-  // time to read each line, at most thirty seconds in all (the user, 7 Nov); a line
+  // time to read each line, at most twenty seconds in all (the user, 8 Nov); a line
   // with real work behind it stays for as long as that work takes, up to the deadline
-  const dwell = (quiet ? 500 : Math.min(30_000, Math.max(9000, list.length * per))) / list.length;
+  const dwell = (quiet ? 500 : Math.min(20_000, Math.max(9000, list.length * per))) / list.length;
   // the scene sharpens as the lines go by (css/compose.css)
   el.style.setProperty('--total', `${dwell * list.length}ms`);
 

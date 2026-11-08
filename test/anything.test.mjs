@@ -195,7 +195,7 @@ await group('POST /draw, with a fake model and a fake database', async () => {
   const user = race.calls[0].payload.contents.map((c) => c.parts.map((p) => p.text).join(' ')).join(' ');
   ok(user === 'Draw: sprocket gizmo', `only the normalised name reaches the model: ${user}`);
   ok(race.calls[0].payload.system_instruction.parts[0].text === DRAW_PROMPT && !/COMPOSING A SCENE/.test(DRAW_PROMPT), 'with its own small prompt, not the reader’s');
-  ok(race.calls[0].payload.generationConfig.thinkingConfig.thinkingLevel === 'high' && race.calls[0].options.deadlineMs >= 20_000 && race.calls[0].options.deadlineMs < DEADLINE_MS, 'room to think, inside the page’s deadline');
+  ok(race.calls[0].payload.generationConfig.thinkingConfig.thinkingLevel === 'high' && race.calls[0].options.deadlineMs >= 15_000 && race.calls[0].options.deadlineMs < DEADLINE_MS, 'room to think, inside the page’s deadline');
   ok(/gemini/.test(race.calls[0].models[0].name), 'Gemini first');
   r = await ask(env, 'sprocket gizmo', race);
   ok(r.status === 'ok' && r.cached && race.calls.length === 1, 'a cached name costs no model call');

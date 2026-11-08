@@ -71,7 +71,9 @@
 .cr-orb svg { animation: cr-sway 3.6s ease-in-out infinite; }
 @keyframes cr-breathe { 50% { transform: scale(1.05); } }
 @keyframes cr-sway { 25% { transform: rotate(-7deg) scale(1.03); } 75% { transform: rotate(7deg) scale(1.03); } }
-.cr-step { margin: 0; height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-size: var(--fs-sm); color: #6b5148; }
+.cr-step { margin: 0; height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  /* the user, 8 Nov: the clean face Gemini uses */
+  font-family: 'Google Sans Flex', var(--font); font-weight: 450; letter-spacing: .01em; font-size: var(--fs-base); color: #6b5148; }
 .cr-step span { display: inline-block; animation: cr-up 320ms cubic-bezier(.2,.8,.2,1); }
 @keyframes cr-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 

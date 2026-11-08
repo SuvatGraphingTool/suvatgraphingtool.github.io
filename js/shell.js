@@ -21,7 +21,7 @@ const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const FEATURED = ['arc', 'platform-angle', 'parachute', 'monkey', 'road'];
 
 /** The headline's sayings, one fading into the next. It rests on the first when motion is unwelcome. */
-const SAYINGS = ['Visualise anything.', 'Watch the maths move.', 'See every step.', 'Snap it. See it fly.', 'Every number, worked out.'];
+const SAYINGS = ['Visualize anything.', 'See the maths move.', 'Fun experiments!'];
 function heroSayings(view) {
   const h = $('hero-h');
   if (!h || calm()) return;

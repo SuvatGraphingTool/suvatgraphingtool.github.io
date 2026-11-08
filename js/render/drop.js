@@ -36,7 +36,7 @@
 // NOTHING HERE COMPUTES ANY PHYSICS. Every number drawn or printed comes off
 // the engine's phases, its at(), pos(), speed() and accel(). CLAUDE.md rule 4.
 
-import { fitCanvas, palette, stroke, arrow, parachutist, fmt, clamp, labels, cssVar } from './util.js';
+import { fitCanvas, palette, stroke, arrow, parachutist, fmt, clamp, labels, cssVar, markMover } from './util.js';
 import { line, quad, createPlotView, panPlot, zoomPlot, drawPlot } from './plot.js';
 import { D } from '../world/dims.js';
 import { M, T, num } from '../notation.js';
@@ -457,6 +457,12 @@ export function drawJump(canvas, view, o) {
     }
   }
   parachutist(ctx, px, stand, sS, f, t, P);
+  // the jumper offers Resolve like any moving thing: the pointer and the words on
+  // hover, in this pane's own pixels (js/render/panes.js)
+  const mover = o.pre == null ? { x: px, y: stand, r: Math.max(26, D.prop.person.h * sS) } : null;
+  canvas._mover = mover;
+  const over = canvas._pointer;
+  if (mover && over && Math.hypot(over.x - mover.x, over.y - mover.y) < mover.r) markMover(canvas, mover);
 
   if (o.pre != null) {
     // The one line of text the pre-roll is allowed, and it names itself as

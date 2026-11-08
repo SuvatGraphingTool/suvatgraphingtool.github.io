@@ -240,7 +240,15 @@ function attach(win, p, hooks) {
     canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing';
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!drag) return;
+    if (!drag) {
+      // what moves in this pane, if it draws one, offers Resolve (js/render/drop.js)
+      const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, m = canvas._mover;
+      const on = !!m && Math.hypot(x - m.x, y - m.y) < m.r;
+      canvas._pointer = { x, y };
+      canvas.style.cursor = on ? 'pointer' : 'grab';
+      if (on !== canvas._onMover) { canvas._onMover = on; hooks.change?.(); }
+      return;
+    }
     const [w, h] = size();
     p.nav.pan(v(), e.clientX - lx, e.clientY - ly, w, h);
     lx = e.clientX; ly = e.clientY;

@@ -14,7 +14,7 @@ import { READER } from '../ai/capture.js';
 import { thingName, headOf, materialOf, isMaterial, isBlocked, isBigWord, settleEffects, normaliseName, sizeOfWord, shownName, BIG_M } from './things.js';
 
 /** The student asks; the scene shows within this, drawing or no drawing. */
-export const DEADLINE_MS = 30_000;
+export const DEADLINE_MS = 20_000;   // the user, 8 Nov: twenty seconds at most
 /** By the reader's full address, not a path on this site: it works on github.io and on workers.dev alike. */
 export const DRAW_URL = READER.replace(/\/extract$/, '/draw');
 const STORE = 'suvat-drawing-v1:';

@@ -367,6 +367,7 @@ export function render(canvas, cam, o) {
   }
 
   const sxL = (x) => left.ox + x * s, pxL = (X) => (X - left.ox) / s;
-  cam._map = { sx: sxL, sy, px: pxL, py, su: sxL, pu: pxL, u0: 0, ball: { x: (right || left).ox + pF.x * s, y: sy(pF.y) } };
+  // both rounds offer Resolve where they are drawn (scene.js pick)
+  cam._map = { sx: sxL, sy, px: pxL, py, su: sxL, pu: pxL, u0: 0, ball: { x: (right || left).ox + pF.x * s, y: sy(pF.y) }, ball2: second ? { x: left.ox + second.pos(t2).x * s + DX, y: sy(second.pos(t2).y) } : null };
   return { sx: sxL, sy };
 }

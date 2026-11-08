@@ -1014,8 +1014,10 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
 
     // The object comes first: it is what the eye is already on.
     if (traj && fired) {
-      const b = traj.pos(t);
-      if (near(m.sx(b.x), m.sy(b.y))) return { kind: 'ball', t };
+      // where it was really drawn: a stage with a scale of its own (the bullet's
+      // range) says so, and a second round is as much the object as the first
+      const b = traj.pos(t), at = m.ball || { x: m.sx(b.x), y: m.sy(b.y) };
+      if (near(at.x, at.y) || (m.ball2 && near(m.ball2.x, m.ball2.y))) return { kind: 'ball', t };
     }
     if (scenario?.dragTarget && markers?.target && near(m.sx(markers.target.x), m.sy(markers.target.y))) return { kind: 'target' };
     // any other branch of the tree: a press there brings the monkey to it
