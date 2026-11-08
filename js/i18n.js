@@ -20,8 +20,8 @@
 //
 // The DOM is translated by localize(): the strings js/app.js and the shell
 // already write, matched whole against the dictionary. It never enters `.m`
-// (an equation), [translate="no"] (what the student typed, chat titles), or a
-// form field's value.
+// (an equation), [translate="no"], what the student typed, a chat's title, what
+// the model wrote, or a form field's value.
 
 const KEY = 'suvat-lang';
 export const LRI = '⁦', PDI = '⁩';
@@ -86,7 +86,21 @@ function fill(template, params) {
  */
 export function t(key, params) {
   const s = DICT ? (DICT.get(norm(key)) ?? key) : key;
-  return params ? fill(s, params) : s;
+  const out = params ? fill(s, params) : s;
+  return DICT && ARABIC.test(out) ? isolateRuns(out) : out;
+}
+
+/**
+ * Isolate each number, with its unit, inside Arabic text. Left to the bidi
+ * algorithm, "45 m" after an Arabic word comes out as "m 45". Text the app did
+ * not write (a summary from the model, a question the student typed) has only
+ * this to protect it; what is already isolated is left alone.
+ */
+const RUN = /[−-]?\d[\d.,]*(?:\s?(?:m\s?s⁻[¹²]|m\/s²?|km\s?h⁻¹|km\/h|kg|km|cm|m|s|N)(?![A-Za-z\u0600-\u06FF])|°|%)?/g;
+export function isolateRuns(s) {
+  return String(s).split(/(\u2066[^\u2069]*\u2069)/)
+    .map((seg, i) => (i % 2 ? seg : seg.replace(RUN, (m) => `${LRI}${m.replace(/[.,]$/, '')}${PDI}${/[.,]$/.test(m) ? m.slice(-1) : ''}`)))
+    .join('');
 }
 
 const CACHE = new Map();
@@ -114,11 +128,18 @@ export function translateText(text) {
       break;
     }
   }
+  // A summary the model wrote in Arabic with the app's own English sentence
+  // after it ("No height was given…"): translate sentence by sentence.
+  if (out === undefined && /[.!?؟]\s/.test(key)) {
+    const parts = key.split(/(?<=[.!?؟])\s+/);
+    const done = parts.map((x) => translateText(x));
+    if (done.some((x, i) => x !== parts[i])) out = done.join(' ');
+  }
   if (out === undefined) out = text;
   else {
     // keep the spaces it came with, so inline text still sits apart
     const lead = text.match(/^\s*/)[0], tail = text.match(/\s*$/)[0];
-    out = lead + out + tail;
+    out = lead + (ARABIC.test(out) ? isolateRuns(out) : out) + tail;
   }
   if (CACHE.size > 4000) CACHE.clear();
   CACHE.set(text, out);
@@ -129,22 +150,39 @@ export function translateText(text) {
 
 const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip', 'aria-description'];
 
+// An equation, and code: never entered.
+const LEAVE = '.m,[translate="no"],script,style,code';
+// What the student typed and what the model wrote: not ours to translate, but
+// a number in it must still read the right way round.
+const THEIRS = '.ask-bubble p,.cl-open,.ro-prose,.ro-sum';
+
 function skipped(el) {
-  return !el || !!el.closest?.('.m,[translate="no"],script,style,textarea,code');
+  return !el || !!el.closest?.(`${LEAVE},textarea`);
 }
 
 function doText(node) {
   const v = node.nodeValue;
-  if (!v || !/[A-Za-z0-9]/.test(v) || /^\s*\u2066/.test(v)) return;   // nothing to say, or already isolated
+  if (!v || !/[A-Za-z0-9]/.test(v) || /^\s*\u2066[^\u2069]*\u2069\s*$/.test(v)) return;   // nothing to say, or already isolated
   if (skipped(node.parentElement)) return;
-  const out = translateText(v);
   const parent = node.parentElement;
+  if (parent?.closest(THEIRS) && !translatable(v)) {
+    if (ARABIC.test(v)) { const iso = isolateRuns(v); if (iso !== v) node.nodeValue = iso; }
+    return;
+  }
+  const out = translateText(v);
   if (out !== v) {
     node.nodeValue = out;
     if (parent?.hasAttribute('data-i18n-en')) { parent.removeAttribute('data-i18n-en'); parent.removeAttribute('dir'); }
     return;
   }
-  if (ARABIC.test(v) || !/\S/.test(v)) return;
+  if (!/\S/.test(v)) return;
+  if (ARABIC.test(v)) { const iso = isolateRuns(v); if (iso !== v) node.nodeValue = iso; return; }
+  // A whole English sentence not translated yet reads as English, from the left.
+  if (parent && !parent.hasAttribute('dir') && (v.trim().match(/[A-Za-z’'-]+/g) || []).length >= 3 && !ARABIC.test(textOutsideMaths(parent))) {
+    parent.setAttribute('dir', 'ltr'); parent.setAttribute('data-i18n-en', '');
+    return;
+  }
+  if (parent?.hasAttribute('data-i18n-en')) return;
   // Left in English, or a bare number: never let the right-to-left page
   // scramble it. A sentence broken up by inline elements ("you do <em>not</em>
   // need") turns its whole parent left to right, so its pieces keep their
@@ -157,6 +195,9 @@ function doText(node) {
   node.nodeValue = `${lead}${LRI}${v.trim()}${PDI}${tail}`;
 }
 
+/** A sentence the app itself wrote, inside a reply ("No height was given…"). */
+const translatable = (v) => translateText(v) !== v;
+
 function textOutsideMaths(el) {
   let s = '';
   for (const n of el.childNodes) {
@@ -167,7 +208,7 @@ function textOutsideMaths(el) {
 }
 
 function doAttrs(el) {
-  if (el.closest?.('.m,[translate="no"]')) return;
+  if (el.closest?.(LEAVE)) return;
   for (const a of ATTRS) {
     const v = el.getAttribute?.(a);
     if (!v || !/[A-Za-z]/.test(v)) continue;
@@ -185,7 +226,7 @@ export function localize(root = document.body) {
   const w = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
     acceptNode: (n) => {
       if (n.nodeType !== 1) return NodeFilter.FILTER_ACCEPT;
-      if (n.matches?.('.m,[translate="no"],script,style,code')) return NodeFilter.FILTER_REJECT;
+      if (n.matches?.(LEAVE)) return NodeFilter.FILTER_REJECT;
       // a text box: its placeholder and label are ours, what is typed in it is not
       if (n.matches?.('textarea')) { doAttrs(n); return NodeFilter.FILTER_REJECT; }
       return NodeFilter.FILTER_ACCEPT;
@@ -238,7 +279,7 @@ function observe() {
       else for (const n of m.addedNodes) localize(n);
     }
   });
-  mo.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+  mo.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
   // the tab title: "السبورة | SUVAT"
   const title = document.querySelector('title');
   if (title) {

@@ -34,6 +34,9 @@
 /* a box a number is typed into: digits read left to right */
 [dir="rtl"] input[type="number"], [dir="rtl"] input[inputmode="decimal"], [dir="rtl"] input[inputmode="numeric"] { direction: ltr; text-align: right; }
 
+/* words nobody here wrote — the student's, the model's — take their direction from themselves */
+[dir="rtl"] .ask-bubble p, [dir="rtl"] .cl-t, [dir="rtl"] .ro-prose, [dir="rtl"] .ro-sum { unicode-bidi: plaintext; }
+
 /* ── what does ──────────────────────────────────────────────────────── */
 /* chevrons and arrows that mean "next" or "back" point the reading way */
 [dir="rtl"] .crumb-sep,
@@ -51,6 +54,7 @@
 [dir="rtl"] .chat-list { right: auto; left: var(--sp-6); }
 [dir="rtl"] .speed-pop { right: auto; left: 0; }
 [dir="rtl"] .done-back { left: auto; right: var(--sp-4); }
+[dir="rtl"] .step-sub { padding: 0 38px 8px 8px; }
 /* a switch is on towards the reading start */
 [dir="rtl"] .box-ck { transform: scaleX(-1); }
 /* the time and speed sliders keep the stage's direction: time runs the way x does */

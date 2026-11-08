@@ -78,7 +78,9 @@ index.html              one screen; the scenario picker is a dropdown
 css/tokens.css          design system — colours, type, spacing
 css/app.css             laptop-first three-column layout
 css/math.css            how a typeset equation looks
+css/rtl.css             Arabic mode only: the face, and what mirrors and what does not
 js/notation.js          maths set as maths — the source notation and its output
+js/i18n.js              the language: lang(), t(), the switch; js/i18n/ar.js, loaded only in Arabic (design/arabic-glossary.md)
 js/scenarios.js         the scenarios, as data
 js/working.js           the working out, with real numbers substituted
 js/core/suvat.js        the five equations and a solver that shows its working
@@ -124,4 +126,5 @@ node test/chats.test.mjs       # Ask Suvat's chats, kept in this browser
 node test/account.test.mjs     # accounts: sign-in, sessions, chats kept per account (site/)
 node test/sense.test.mjs       # common sense: everyday sentences always run, and what is assumed is said
 node test/focus.test.mjs       # the reader sends each question only the catalogue it needs (worker/src/focus.js)
+node test/i18n.test.mjs        # Arabic mode: the dictionary, templates, maths left to right, the toggle, the reader told the language
 ```

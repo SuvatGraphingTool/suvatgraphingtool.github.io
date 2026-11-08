@@ -380,7 +380,7 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
     const other = lang() === 'ar' ? 'en' : 'ar';
     $('lang-label').textContent = other === 'ar' ? 'العربية' : 'English';
     $('lang-label').lang = other;
-    lb.setAttribute('aria-label', other === 'ar' ? 'التبديل إلى العربية' : 'Switch to English');
+    lb.setAttribute('aria-label', other === 'ar' ? 'التبديل إلى العربية' : 'التبديل إلى الإنجليزية');
     lb.addEventListener('click', () => setLang(other));
   }
 
