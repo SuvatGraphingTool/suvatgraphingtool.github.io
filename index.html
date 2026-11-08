@@ -331,11 +331,22 @@
     <button class="side-search" id="cmdk-open" aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></svg><span>Search…</span><kbd class="kbd" data-mod>K</kbd></button>
     <nav class="side-nav" id="side-nav" aria-label="Main">
       <span class="nav-ind" id="nav-ind" aria-hidden="true"></span>
-      <button class="nav-i" id="ask-top" data-nav="home"><span class="ai-orb xs" aria-hidden="true"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#spark"/></svg></span><span class="nav-t">Ask Suvat</span><kbd class="kbd">G H</kbd></button>
+      <button class="nav-i" id="ask-top" data-nav="home"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span class="nav-t">Home</span><kbd class="kbd">G H</kbd></button>
       <button class="nav-i" id="nav-scenarios" data-nav="scenarios"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19C6 10 10 6 18 5"/><circle cx="18.5" cy="5" r="2" fill="currentColor" stroke="none"/><path d="M3 21h18"/></svg><span class="nav-t">Scenarios</span><kbd class="kbd">G S</kbd></button>
       <button class="nav-i" id="nav-library" data-nav="library"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14z"/></svg><span class="nav-t">Past papers</span><span class="nav-count" id="nav-lib-count"></span></button>
       <button class="nav-i" id="board-top" data-nav="board" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="4.5" rx="1.4"/><rect x="13.5" y="11" width="7" height="9.5" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/></svg><span class="nav-t">Whiteboard</span><kbd class="kbd">G W</kbd></button>
     </nav>
+
+    <!-- The chats kept in this browser, and in the account when signed in
+         (js/ai/chats.js, js/account.js): a dropdown, open by default, newest first. -->
+    <section class="side-chats" id="chat-list" aria-label="Your chats">
+      <button type="button" class="side-chats-h" id="chat-hist" aria-expanded="true" aria-controls="chat-list-body"><span>Chats</span><svg class="side-chats-c" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="side-chats-body" id="chat-list-body">
+        <nav class="cs-list" id="chat-list-ul" aria-label="Chats, newest first"></nav>
+        <p class="cl-none" id="chat-list-none" hidden>No chats yet. Ask a question and it is kept here.</p>
+        <p class="cl-note"><span id="cl-note-t">Kept in this browser only.</span> <button type="button" class="cl-signin" id="cl-signin" hidden>Sign in to keep them everywhere</button></p>
+      </div>
+    </section>
 
     <div class="side-sec">
       <p class="side-label">This question</p>
@@ -396,7 +407,6 @@
            to the foot of the chat screen below (#chat-dock) and back again
            when the chat is left. One element, so one set of listeners. -->
       <div class="ask-col" id="ask-slot">
-        <button type="button" class="ask-resume" id="ask-resume" hidden><span class="ai-orb xs" aria-hidden="true"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#spark"/></svg></span><span id="ask-resume-t">Back to your chat</span></button>
         <div class="ask-composer" id="ask-composer">
         <form class="pbox" id="ask-form" data-listening="false" data-drop="false" data-busy="false">
           <div class="ask-att" id="ask-att" hidden>
@@ -886,11 +896,10 @@
   <main class="screen" id="screen-chat" aria-label="Ask Suvat" data-hist="open" data-drawer="closed">
     <div class="chat-main">
       <div class="chat-bar">
-        <button type="button" class="chat-btn" id="chat-back"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Scenarios</button>
+        <button type="button" class="chat-btn" id="chat-back"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Home</button>
         <p class="chat-title"><span class="ai-orb xs" aria-hidden="true"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#spark"/></svg></span>Ask Suvat</p>
         <div class="chat-end">
           <button type="button" class="chat-btn chat-ic" id="chat-new" aria-label="New chat" title="New chat"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-          <button type="button" class="chat-btn chat-ic" id="chat-hist" aria-label="Your chats" title="Your chats" aria-expanded="true" aria-controls="chat-list"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M15 4v16"/></svg></button>
         </div>
       </div>
       <div class="chat-scroll" id="chat-scroll">
@@ -912,24 +921,6 @@
       </div>
       <div class="chat-dock chat-col" id="chat-dock"></div>
     </div>
-    <div class="chat-scrim" id="chat-scrim" aria-hidden="true"></div>
-    <!-- The chats kept in this browser, and in the account when signed in
-         (js/ai/chats.js, js/account.js): newest first, grouped by day. -->
-    <aside class="chat-side" id="chat-list" aria-label="Your chats">
-      <div class="cs-head">
-        <h2 class="cs-h">Chats</h2>
-        <button type="button" class="chat-btn chat-ic cs-close" id="chat-side-x" aria-label="Close your chats" title="Close"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-      </div>
-      <button type="button" class="cs-new" id="chat-side-new"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>New chat</button>
-      <label class="cs-search">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <span class="sr-only">Search your chats</span>
-        <input type="search" id="chat-q" placeholder="Search chats" autocomplete="off" spellcheck="false">
-      </label>
-      <nav class="cs-list" id="chat-list-ul" aria-label="Chats, newest first"></nav>
-      <p class="cl-none" id="chat-list-none" hidden>No chats yet. Ask a question and it is kept here.</p>
-      <p class="cl-note"><span id="cl-note-t">Kept in this browser only.</span> <button type="button" class="cl-signin" id="cl-signin" hidden>Sign in to keep them everywhere</button></p>
-    </aside>
   </main>
 
   </div><!-- /.shell -->

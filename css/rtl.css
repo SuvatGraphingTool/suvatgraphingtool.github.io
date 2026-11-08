@@ -63,5 +63,4 @@
 @media (max-width: 900px) {
   [dir="rtl"] .side { inset: 0 0 0 auto; transform: translateX(102%); }
   [dir="rtl"] .app[data-side='open'] .side { transform: none; }
-  [dir="rtl"] .chat-side { inset: 0 auto 0 0; transform: translateX(-102%); }
 }

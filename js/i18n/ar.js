@@ -17,6 +17,8 @@ const L = (s) => `⁦${s}⁩`;
 export default {
   /* ── the shell ────────────────────────────────────────────────────── */
   'Ask Suvat': 'اسأل Suvat',
+  'Home': 'الرئيسية',
+  'Chat': 'محادثة',
   'Scenarios': 'المواقف',
   'Past papers': 'أسئلة الامتحانات',
   'Whiteboard': 'السبورة',

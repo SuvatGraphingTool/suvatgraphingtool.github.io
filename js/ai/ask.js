@@ -18,7 +18,7 @@ import { prepareImage, readQuestion, readText, READER } from './capture.js';
 import { esc, proseHTML, sourcesHTML } from './readout.js';
 import { typeOut } from './typewriter.js';
 import { gAskHTML, parseG } from './gchoice.js';
-import { loadChats, getChat, saveChat, deleteChat, newChatRecord, titleOf, dayGroup, thumbOf, onChats } from './chats.js';
+import { loadChats, getChat, saveChat, deleteChat, newChatRecord, titleOf, nameFrom, thumbOf, onChats } from './chats.js';
 import { plainOf } from '../notation.js';
 
 const $ = (id) => document.getElementById(id);
@@ -63,11 +63,6 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   function dock() {
     const slot = inChat() ? $('chat-dock') : $('ask-slot');
     if (composer.parentNode !== slot) slot.append(composer);
-    // Back to the chat on show, or — with none on show — to the chats kept.
-    const kept = !thread.childElementCount && loadChats().length > 0;
-    $('ask-resume').hidden = inChat() || (!thread.childElementCount && !kept);
-    $('ask-resume-t').textContent = kept ? 'Your chats' : 'Back to your chat';
-    if (!inChat()) drawer(false);
   }
   new MutationObserver(dock).observe(app, { attributes: true, attributeFilter: ['data-step'] });
 
@@ -111,11 +106,17 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
       greeting, and the box waits at its foot. */
   function newChat() {
     clearThread();
-    closeList();
     renderList();
     if (!inChat()) openChat({ instant: true });
     dock();
     text.focus({ preventScroll: true });
+  }
+  /** Home: the first screen, and a new question. The chat on show stays in the list. */
+  function goHome() {
+    clearThread();
+    renderList();
+    show('scenario');
+    requestAnimationFrame(focus);
   }
   function focus() { text.focus(); text.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
 
@@ -283,6 +284,8 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     if (busy || (!text.value.trim() && !att)) return;
     stopMic();
     const words = text.value.trim(), a = att;
+    // from the first screen a question is a new chat, whatever was last on show
+    if (!inChat() && thread.childElementCount) clearThread();
     openChat();
     echo(words, a);
     text.value = ''; detach();
@@ -322,6 +325,11 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     if (stopped) { reply('<p class="ro-sum">Stopped.</p>'); return; }
 
     if (!res?.ok) { reply(`<p class="ro-bad">${esc(res?.message || 'Could not read that.')}</p>`); return; }
+    // the chat's name: what its first question is about, as the reader read it
+    if (chat && chat.turns.filter((t) => t.who === 'me').length === 1) {
+      const named = nameFrom(res.extraction);
+      if (named) { chat.title = named; keep(); renderList(); }
+    }
 
     // SEARCH: the model's own answer, grounded in the web, with its sources.
     if (searching) {
@@ -414,96 +422,48 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   }
 
   /* ── the chats kept ─────────────────────────────────────────────────────
-     Every chat is kept in this browser as it is had (js/ai/chats.js), and
-     listed in a panel on the right of the chat, as the big assistants list
-     theirs: a new chat, a search by title, and the chats under the day they
-     were last had. One opened reads back as it was, and its newest reading
-     is set up again, so "Show me the flight" shows that flight.
-     Wide, the panel stays open unless it is put away (remembered here);
-     under 900 px it is a drawer from the bar, over a scrim. */
-  const screen = $('screen-chat'), side = $('chat-list'), listBtn = $('chat-hist');
-  const listEl = $('chat-list-ul'), none = $('chat-list-none'), search = $('chat-q');
-  const narrow = matchMedia('(max-width: 900px)');
-  const SIDE_KEY = 'suvat-chat-side';
-  let sideOpen = true;
-  try { sideOpen = localStorage.getItem(SIDE_KEY) !== 'closed'; } catch { /* storage shut: open */ }
-
-  const shown = () => (narrow.matches ? screen.dataset.drawer === 'open' : sideOpen);
-  function paintSide() {
-    screen.dataset.hist = sideOpen ? 'open' : 'closed';
-    const on = shown();
-    listBtn.setAttribute('aria-expanded', String(on));
-    const say = on ? 'Hide your chats' : 'Show your chats';
-    listBtn.setAttribute('aria-label', say); listBtn.title = say;
-    side.inert = !on;
+     Every chat is kept as it is had (js/ai/chats.js). The sidebar's "Chats"
+     lists them, newest first, open unless it is put away (remembered here), as
+     the assistants do. One opened reads back as it was, and its newest reading
+     is set up again, so "Show me the flight" shows that flight. */
+  const listBtn = $('chat-hist'), listBody = $('chat-list-body');
+  const listEl = $('chat-list-ul'), none = $('chat-list-none');
+  const LIST_KEY = 'suvat-chats-list';
+  let listOpen = true;
+  try { listOpen = localStorage.getItem(LIST_KEY) !== 'closed'; } catch { /* storage shut: open */ }
+  function paintList() {
+    listBtn.setAttribute('aria-expanded', String(listOpen));
+    listBody.hidden = !listOpen;
   }
-  function setSide(open) {
-    sideOpen = open;
-    try { localStorage.setItem(SIDE_KEY, open ? 'open' : 'closed'); } catch { /* storage shut */ }
-    paintSide();
-  }
-  /** The phone's drawer, opened or closed. Closing it gives the focus back to the bar. */
-  function drawer(open) {
-    if ((screen.dataset.drawer === 'open') === open) return;
-    const had = side.contains(document.activeElement);
-    screen.dataset.drawer = open ? 'open' : 'closed';
-    paintSide();
-    if (open) focusList();
-    else if (had) listBtn.focus({ preventScroll: true });
-  }
-  function focusList() {
-    requestAnimationFrame(() => (listEl.querySelector('[aria-current] .cl-open') || listEl.querySelector('.cl-open') || search)
-      .focus({ preventScroll: true }));
-  }
-  /** "Your chats": the panel, shown wherever it is. */
-  function openList() {
-    renderList();
-    if (narrow.matches) drawer(true);
-    else { if (!sideOpen) setSide(true); focusList(); }
-  }
-  function closeList() { drawer(false); }
-  narrow.addEventListener('change', () => { screen.dataset.drawer = 'closed'; paintSide(); });
 
   const BIN = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>';
   /** The list, drawn again from what is kept: after every save or delete, a
       sync from the account, a search, or another chat put on show. */
   function renderList() {
     const all = loadChats();
-    const term = search.value.trim().toLowerCase();
-    const found = term ? all.filter((c) => (c.title || 'A chat').toLowerCase().includes(term)) : all;
     const was = document.activeElement?.closest?.('.cl-row')?.dataset.id;
     const wasX = document.activeElement?.classList?.contains('cl-x');
-    const groups = new Map();
-    for (const c of found) {
-      const g = dayGroup(c.updated);
-      if (!groups.has(g)) groups.set(g, []);
-      groups.get(g).push(c);
-    }
-    listEl.replaceChildren(...[...groups].map(([g, cs]) => {
-      const sec = document.createElement('section');
-      sec.className = 'cs-group';
-      sec.innerHTML = `<h3 class="cs-g">${esc(g)}</h3><ul class="cl-ul"></ul>`;
-      sec.lastElementChild.append(...cs.map((c) => {
-        const li = document.createElement('li');
-        li.className = 'cl-row';
-        li.dataset.id = c.id;
-        if (c.id === chat?.id) li.setAttribute('aria-current', 'true');
-        const t = esc(c.title || 'A chat');
-        li.innerHTML = `<button type="button" class="cl-open" data-id="${esc(c.id)}" title="${t}"><span class="cl-t">${t}</span></button>`
-          + `<button type="button" class="cl-x" data-id="${esc(c.id)}" aria-label="Delete “${t}”" title="Delete this chat">${BIN}</button>`;
-        return li;
-      }));
-      return sec;
+    const ul = document.createElement('ul');
+    ul.className = 'cl-ul';
+    ul.append(...all.map((c) => {
+      const li = document.createElement('li');
+      li.className = 'cl-row';
+      li.dataset.id = c.id;
+      if (c.id === chat?.id) li.setAttribute('aria-current', 'true');
+      const t = esc(c.title || 'A chat');
+      li.innerHTML = `<button type="button" class="cl-open" data-id="${esc(c.id)}" title="${t}"><span class="cl-t">${t}</span></button>`
+        + `<button type="button" class="cl-x" data-id="${esc(c.id)}" aria-label="Delete “${t}”" title="Delete this chat">${BIN}</button>`;
+      return li;
     }));
-    none.textContent = all.length ? 'No chats match that.' : 'No chats yet. Ask a question and it is kept here.';
-    none.hidden = found.length > 0;
+    listEl.replaceChildren(ul);
+    none.hidden = all.length > 0;
     // a row that had the focus keeps it, drawn again
     if (was) listEl.querySelector(`.cl-row[data-id="${CSS.escape(was)}"] ${wasX ? '.cl-x' : '.cl-open'}`)?.focus({ preventScroll: true });
   }
 
   function openKept(id) {
     const c = getChat(id);
-    closeList();
+    $('side-scrim')?.click();          // on a phone, the menu it was chosen from closes
     if (!c || c.id === chat?.id) { if (c && !inChat()) openChat({ instant: true }); return; }
     clearThread();
     chat = c;
@@ -532,15 +492,9 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     follow(true);
   }
   listBtn.addEventListener('click', () => {
-    if (narrow.matches) drawer(screen.dataset.drawer !== 'open');
-    else setSide(!sideOpen);
-  });
-  $('chat-side-x').addEventListener('click', closeList);
-  $('chat-scrim').addEventListener('click', closeList);
-  $('chat-side-new').addEventListener('click', newChat);
-  search.addEventListener('input', renderList);
-  search.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && search.value) { e.preventDefault(); e.stopPropagation(); search.value = ''; renderList(); }
+    listOpen = !listOpen;
+    try { localStorage.setItem(LIST_KEY, listOpen ? 'open' : 'closed'); } catch { /* storage shut */ }
+    paintList();
   });
   listEl.addEventListener('click', (e) => {
     const x = e.target.closest('.cl-x');
@@ -552,17 +506,11 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
       if (id === chat?.id) clearThread();
       deleteChat(id);                  // heard by onChats below, which draws the list again
       const left = [...listEl.querySelectorAll('.cl-row')];
-      (left[Math.min(at, left.length - 1)]?.querySelector('.cl-open') || search).focus({ preventScroll: true });
+      (left[Math.min(at, left.length - 1)]?.querySelector('.cl-open') || listBtn).focus({ preventScroll: true });
       return;
     }
     const o = e.target.closest('.cl-open');
     if (o) openKept(o.dataset.id);
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && screen.dataset.drawer === 'open') { e.stopPropagation(); closeList(); }
-  });
-  document.addEventListener('pointerdown', (e) => {
-    if (screen.dataset.drawer === 'open' && !side.contains(e.target) && !listBtn.contains(e.target)) closeList();
   });
   // every chat kept or deleted, here or by the account's sync, redraws the list
   onChats(() => renderList());
@@ -661,11 +609,7 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     $('ask-view').showModal?.();
   });
   $('ask-view-x').addEventListener('click', () => $('ask-view').close());
-  $('ask-resume').addEventListener('click', () => {
-    if (thread.childElementCount) { openChat(); return; }
-    openChat({ instant: true }); openList();
-  });
-  $('chat-back').addEventListener('click', () => show('scenario'));
+  $('chat-back').addEventListener('click', goHome);
   $('chat-new').addEventListener('click', newChat);
   $('ask-view').addEventListener('click', (e) => { if (e.target === $('ask-view')) $('ask-view').close(); });
   // A picture pasted or dropped on the box is a picture added.
@@ -681,17 +625,15 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
   });
   sync();
   dock();
-  paintSide();
+  paintList();
   renderList();
-  // the account brought chats from another device: "Your chats" may be offered
-  // now, and the panel lists them
+  // the account brought chats from another device: the list shows them
   document.addEventListener('suvat:chats', () => { dock(); renderList(); });
 
   return {
-    /** The top bar's "Ask Suvat": the chat if there is one, else the box. */
+    /** "Home": the first screen and an empty box; the chat stays in the list. */
     open() {
-      if (thread.childElementCount) { openChat(); text.focus({ preventScroll: true }); }
-      else { show('scenario'); requestAnimationFrame(focus); }
+      goHome();
     },
   };
 }

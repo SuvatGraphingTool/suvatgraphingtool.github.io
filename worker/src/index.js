@@ -165,7 +165,7 @@ export default {
       const second = await race(env, models, payload);
       if (second.ok) outcome = second;
     }
-    if (outcome.ok) return json({ ok: true, extraction: fromRest(namedPlace(toComposed(toPlace(toFigure(ownWord(outcome.extraction, words), words), words), words), words), words), model: outcome.model }, 200, cors);
+    if (outcome.ok) return json({ ok: true, extraction: { ...fromRest(namedPlace(toComposed(toPlace(toFigure(ownWord(outcome.extraction, words), words), words), words), words), words), ...(outcome.extraction?.title ? { title: outcome.extraction.title } : {}) }, model: outcome.model }, 200, cors);
     const { last, lastCap, capped, gone } = outcome;
 
     if (lastCap && models.every((m) => capped.has(m.name) || gone.has(m.name))) {

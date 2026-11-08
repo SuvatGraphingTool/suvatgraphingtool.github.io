@@ -30,6 +30,7 @@ export const EXTRACTION_SCHEMA = {
     },
     confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
     scenario: { type: 'string', enum: SCENARIO_IDS },
+    title: { type: 'string', description: 'The name of this chat: 2 to 5 words on what the question is about.' },
     summary: { type: 'string', description: 'One short sentence describing the situation, in plain English.' },
 
     // ── the five, as given ──────────────────────────────────────────────
@@ -198,6 +199,8 @@ RULES
   five sentences. Explain in words — write no equations and no symbols such as ^ or sqrt,
   because the app sets the maths itself.
 - Set confidence to low if values are unclear, handwritten, or partly cut off.
+- Set title to the name of this chat: 2 to 5 words on what the question is about, in the
+  student's language, with no full stop: "Ball off a rooftop", "Two trains meeting".
 - If the question or the photo shows its exam board or paper ("Edexcel", "Pearson", "M1", "OCR",
   "AQA"), set paper to it, as "Edexcel M1". The app takes g from the paper's rules.
 

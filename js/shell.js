@@ -60,7 +60,7 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
   $('nav-library').addEventListener('click', () => setView('library', { focus: true }));
   // app.js opens the box (or the chat) on these; the view is ours
   $('ask-top').addEventListener('click', () => { app.dataset.view = 'home'; closeSide(); sync(); });
-  $('brand').addEventListener('click', () => { app.dataset.view = 'home'; closeSide(); sync(); });
+  $('brand').addEventListener('click', () => $('ask-top').click());
   $('board-top').addEventListener('click', closeSide);
   document.addEventListener('click', (e) => {
     const g = e.target.closest('[data-goto]');
@@ -114,11 +114,11 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
   const SEP = '<svg class="crumb-sep" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function crumbs() {
     const st = SUVAT.state.step, s = byId(SUVAT.state.id);
-    const home = { home: 'Ask Suvat', scenarios: 'Scenarios', library: 'Past papers', board: 'Whiteboard' };
+    const home = { home: 'Home', scenarios: 'Scenarios', library: 'Past papers', board: 'Whiteboard' };
     let parts;
     if (st === 'scenario') parts = [crumb(home[view()], '', true)];
     else if (st === 'board') parts = [crumb('Whiteboard', '', true)];
-    else if (st === 'chat') parts = [crumb('Ask Suvat', 'home'), crumb('Conversation', '', true)];
+    else if (st === 'chat') parts = [crumb('Home', 'home'), crumb('Conversation', '', true)];
     else {
       const root = navFor();
       parts = [crumb(home[root], root)];
@@ -127,7 +127,7 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
     }
     $('crumbs').innerHTML = parts.join(SEP);
     // the tab says where you are, then the name: "Whiteboard | SUVAT"
-    const here = st === 'scenario' ? home[view()] : st === 'board' ? 'Whiteboard' : st === 'chat' ? 'Ask Suvat'
+    const here = st === 'scenario' ? home[view()] : st === 'board' ? 'Whiteboard' : st === 'chat' ? 'Chat'
       : s ? s.name.replace(/<[^>]+>/g, '') : home[navFor()];
     document.title = here ? `${here} | SUVAT` : 'SUVAT';
   }
@@ -238,7 +238,7 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
       );
     }
     list.push(
-      { g: 'Go to', t: 'Ask Suvat', i: 'ask', k: 'G H', run: press('ask-top') },
+      { g: 'Go to', t: 'Home', i: 'ask', k: 'G H', run: press('ask-top') },
       { g: 'Go to', t: 'Scenarios', i: 'scen', k: 'G S', run: () => setView('scenarios') },
       { g: 'Go to', t: 'Past papers', i: 'lib', k: 'G P', run: () => setView('library', { focus: true }) },
       { g: 'Go to', t: 'Whiteboard', i: 'board', k: 'G W', run: () => { if (SUVAT.state.step !== 'board') $('board-top').click(); } },
@@ -352,7 +352,7 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
 
   /* ── the shortcuts sheet ────────────────────────────────────────────── */
   const KEYS = [
-    ['Anywhere', [[`${MAC ? '⌘' : 'Ctrl'} K`, 'Search or jump to'], ['/', 'Search'], ['G then H', 'Ask Suvat'], ['G then S', 'Scenarios'],
+    ['Anywhere', [[`${MAC ? '⌘' : 'Ctrl'} K`, 'Search or jump to'], ['/', 'Search'], ['G then H', 'Home'], ['G then S', 'Scenarios'],
       ['G then P', 'Past papers'], ['G then W', 'Whiteboard'], ['T', 'Switch theme'], ['?', 'This sheet']]],
     ['Values', [['Enter', 'Launch']]],
     ['Whiteboard', [['V', 'Move the board'], ['P', 'Pen'], ['H', 'Highlighter'], ['A', 'Arrow'], ['E', 'Eraser'],

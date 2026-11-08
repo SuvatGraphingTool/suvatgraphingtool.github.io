@@ -101,6 +101,22 @@ export function titleOf(words, att) {
   return `${(at > TITLE_MAX / 2 ? cut.slice(0, at) : cut).replace(/[,;:.\s]+$/, '')}…`;
 }
 
+/**
+ * A chat's name from how its first question was read: the reader's own short
+ * title, a scene's title, or the first sentence of its summary. null if none
+ * reads as a name, and the first words asked stand.
+ */
+export function nameFrom(x) {
+  if (!x || typeof x !== 'object') return null;
+  const clean = (s) => String(s || '').replace(/\s+/g, ' ').replace(/^["“']+|["”'.,;:!]+$/g, '').replace(/^(?:An? example|Example):\s*/i, '').trim();
+  const title = clean(x.title) || clean(x.recipe?.title);
+  const said = title || clean(String(x.summary || '').split(/(?<=[.!?؟])\s/)[0]);
+  if (!said || said.length < 3) return null;
+  if (said.length <= TITLE_MAX) return said[0].toUpperCase() + said.slice(1);
+  const cut = said.slice(0, TITLE_MAX), at = cut.lastIndexOf(' ');
+  return `${(at > TITLE_MAX / 2 ? cut.slice(0, at) : cut).replace(/[,;:.\s]+$/, '')}…`;
+}
+
 /** When a chat was last had, as the list says it: "just now", "5 min ago", "yesterday", "3 Nov". */
 export function whenOf(t, now = Date.now()) {
   const s = Math.max(0, (now - t) / 1000);
