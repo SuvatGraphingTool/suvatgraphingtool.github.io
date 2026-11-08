@@ -82,7 +82,7 @@ async function walkFlight(p, label) {
   await grab(p, `${label} · reply`);
   await p.evaluate(() => { try { window.SUVAT.go('values'); } catch {} });
   await settle(p); await grab(p, `${label} · values`);
-  const ran = await p.evaluate(() => { try { const S = window.SUVAT; S.go('flight'); S.launch(); return !!S.traj; } catch (e) { return String(e); } });
+  const ran = await p.evaluate(() => { try { const S = window.SUVAT; S.go('flight'); S.launch(); S.runFlight(); return !!S.traj; } catch (e) { return String(e); } });
   if (ran !== true) { await grab(p, `${label} · no flight`); return; }
   await settle(p, 300);
   await p.evaluate(() => { const S = window.SUVAT; if (S.state.extras) { S.state.extras.graphs = true; S.state.extras.working = true; S.state.extras.energy = true; } });

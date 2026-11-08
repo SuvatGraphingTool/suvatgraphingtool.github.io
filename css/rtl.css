@@ -92,6 +92,8 @@
 [dir="rtl"] .acct-x { left: var(--sp-3); right: auto; }
 [dir="rtl"] .acct-msg { margin: 0 0 var(--sp-4) var(--sp-8); }
 [dir="rtl"] .step-sub { padding: 0 38px 8px 8px; }
+/* on a phone Resolve and the time stack at the stage's right, clear of the readouts, as in English */
+@media (max-width: 680px) { [dir="rtl"] .canvas-wrap:not([data-panes='on']) .hud-r { align-items: flex-start; } }
 /* a word CSS itself writes */
 [dir="rtl"] .pace-pin::after { content: 'الأنسب'; letter-spacing: 0; }
 /* the back arrow of the privacy page */
