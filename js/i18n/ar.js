@@ -608,6 +608,26 @@ export default {
   'No angle was given, so it is taken as {how}. Change it on the values screen to try another.':
     'لم تُذكر الزاوية، فاعتُبرت {how}. غيّرها في شاشة القيم لتجرّب غيرها.',
 
+  'where it starts': 'نقطة البداية',
+  'straight up': 'رأسيًا لأعلى',
+  'straight down': 'رأسيًا لأسفل',
+  'launched at 45°': `قذفًا بزاوية ${L('45°')}`,
+  'the house': 'البيت', 'the rooftop': 'سطح المبنى', 'the board': 'لوح القفز', 'the crane': 'الرافعة', 'the ladder': 'السلّم',
+  'the shelf': 'الرف', 'the tree': 'الشجرة', 'the wall': 'الجدار', 'the window': 'النافذة',
+
+  /* the reply for a composed scene (js/app.js) */
+  'Drawn for your question': 'رُسم لسؤالك',
+  'read from the wording': 'مفهومة من نص السؤال',
+  'from the paper': 'من ورقة الامتحان',
+  'no height was given': 'لم يُذكر الارتفاع',
+  'no angle was given': 'لم تُذكر الزاوية',
+  'no speed was given': 'لم تُذكر السرعة',
+  'in the air': 'في الهواء',
+  'Lands': 'يهبط على بُعد',
+  'out': 'من نقطة القذف',
+  'Hits the ground at': 'يصطدم بالأرض بسرعة',
+  'Hits the floor at': 'يصطدم بالأرضية بسرعة',
+
   /* places and things, as the lines above name them */
   'cliff': 'الجرف', 'tower': 'البرج', 'bridge': 'الجسر', 'roof': 'السطح', 'table': 'الطاولة', 'well': 'البئر',
   'balloon': 'المنطاد', 'building': 'المبنى', 'house': 'البيت', 'platform': 'المنصة', 'window': 'النافذة',
@@ -616,4 +636,17 @@ export default {
   'the sea': 'البحر', 'the river': 'النهر', 'the road': 'الطريق', 'the water': 'الماء',
   'the cliff': 'الجرف', 'the tower': 'البرج', 'the bridge': 'الجسر', 'the roof': 'السطح', 'the table': 'الطاولة',
   'the well': 'البئر', 'the building': 'المبنى', 'the balloon': 'المنطاد', 'the drop': 'السقوط',
+};
+
+/**
+ * The drawing screen names whatever the question throws: a boot, a laptop, a
+ * watermelon. A name with no Arabic yet does not leave the line half English:
+ * the line says the same thing without the name.
+ */
+export const GENERIC = {
+  'Building the {place}…': 'نبني المكان…',
+  'Laying out {below}…': 'نجهّز ما تحته…',
+  'Drawing the {name}…': 'نرسم الجسم…',
+  'Standing the {who} {where}…': 'نضع الشخص في مكانه…',
+  'Adding {effect}…': 'نضيف اللمسات الأخيرة…',
 };

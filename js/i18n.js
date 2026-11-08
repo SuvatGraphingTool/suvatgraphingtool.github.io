@@ -37,18 +37,22 @@ function chosen() {
 
 let LANG = typeof document === 'undefined' ? 'en' : chosen();
 let DICT = null;           // English phrase → Arabic phrase
-let PATTERNS = [];         // [regex, arabic template, names]
+let PATTERNS = [];         // [regex, arabic template, names, key]
+let GENERIC = {};          // a patterned line said without its name, when the name has no Arabic
 
 export const lang = () => LANG;
 export const isAr = () => LANG === 'ar';
 
 /** Install a dictionary (the page does it from js/i18n/ar.js; tests do it directly). */
-export function useDictionary(code, dict) {
+export function useDictionary(code, dict, generic = {}) {
   LANG = code;
+  GENERIC = generic;
   DICT = code === 'en' ? null : new Map(Object.entries(dict || {}).map(([k, v]) => [norm(k), v]));
   PATTERNS = [];
   if (DICT) {
-    for (const [k, v] of DICT) {
+    // a line with only a generic form is still a pattern, with nothing to fill
+    const lines = [...DICT, ...Object.entries(generic).filter(([k]) => !DICT.has(k)).map(([k]) => [k, null])];
+    for (const [k, v] of lines) {
       if (!/\{\w+\}/.test(k)) continue;
       const names = [];
       const re = k.split(/(\{\w+\})/).map((part) => {
@@ -56,7 +60,7 @@ export function useDictionary(code, dict) {
         if (m) { names.push(m[1]); return '(.+?)'; }
         return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       }).join('');
-      PATTERNS.push([new RegExp(`^${re}$`), v, names]);
+      PATTERNS.push([new RegExp(`^${re}$`), v, names, k]);
     }
   }
   CACHE.clear();
@@ -116,12 +120,16 @@ export function translateText(text) {
   if (CACHE.has(text)) return CACHE.get(text);
   let out = DICT.get(key);
   if (out === undefined) {
-    for (const [re, v, names] of PATTERNS) {
+    for (const [re, v, names, k] of PATTERNS) {
       const m = key.match(re);
       if (!m) continue;
-      // A slot holding words with no Arabic yet: leave the whole line English
-      // rather than half of each.
-      if (m.slice(1).some((x) => /[A-Za-z]{2,}/.test(x) && translateText(x) === x)) continue;
+      // A slot holding words with no Arabic yet: say the line without them if it
+      // can be said (the drawing screen), and otherwise leave the whole line
+      // English, rather than half of each.
+      if (v === null || m.slice(1).some((x) => /[A-Za-z]{2,}/.test(x) && translateText(x) === x)) {
+        if (GENERIC[k]) { out = GENERIC[k]; break; }
+        continue;
+      }
       const params = {};
       names.forEach((n, i) => { params[n] = m[i + 1]; });
       out = fill(v, params);
@@ -326,8 +334,8 @@ export const ready = (async () => {
   const de = document.documentElement;
   de.lang = 'ar'; de.dir = 'rtl';
   try {
-    const { default: AR } = await import('./i18n/ar.js');
-    useDictionary('ar', AR);
+    const { default: AR, GENERIC: said } = await import('./i18n/ar.js');
+    useDictionary('ar', AR, said);
   } catch (e) {
     console.warn('Arabic dictionary failed to load', e);
     de.classList.remove('i18n-wait');

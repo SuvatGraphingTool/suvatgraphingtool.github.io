@@ -8,7 +8,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import AR from '../js/i18n/ar.js';
+import AR, { GENERIC } from '../js/i18n/ar.js';
 import { t, lang, useDictionary, translateText, isolateRuns, ltr, LRI, PDI } from '../js/i18n.js';
 import { readText } from '../js/ai/capture.js';
 import { readoutHTML } from '../js/ai/readout.js';
@@ -75,7 +75,7 @@ console.log('\nEnglish is the default, and pays nothing');
   ok(/import\('\.\/i18n\/ar\.js'\)/.test(app) && !/^import .*ar\.js/m.test(app), 'the dictionary is fetched lazily');
 }
 
-useDictionary('ar', AR);
+useDictionary('ar', AR, GENERIC);
 
 console.log('\nTemplates, in Arabic');
 {
@@ -86,7 +86,10 @@ console.log('\nTemplates, in Arabic');
   ok(ARABIC.test(launch) && launch.includes('25.0') && launch.includes(`${LRI}`), 'a pattern finds its number, and isolates it');
   const known = translateText('2 of 5 known');
   ok(known.startsWith(LRI) && known.includes('2') && ARABIC.test(known), 'the number goes where Arabic puts it');
-  ok(!translateText('Building the wibble…').match(ARABIC), 'a slot with no Arabic leaves the whole line English, never half of each');
+  ok(!ARABIC.test(translateText('wibble · wobble')), 'a slot with no Arabic leaves the whole line English, never half of each');
+  const named = translateText('Drawing the wibble…');
+  ok(ARABIC.test(named) && !/wibble/.test(named), 'the drawing screen says the line without a name it has no Arabic for');
+  ok(ARABIC.test(translateText('Standing the person at the edge…')) && ARABIC.test(translateText('Adding a squash and a ring…')), 'every line of it, in full');
   ok(ARABIC.test(translateText('Building the cliff…')), 'and a slot it knows is translated');
   ok(translateText('  Search…  ').startsWith('  ') && translateText('  Search…  ').endsWith('  '), 'the spaces around a piece are kept');
   const mixed = translateText('كرة تسقط من برج. No speed was given, so I’ve used 5 m s⁻¹. Tell me the real one and I’ll run it again.');
