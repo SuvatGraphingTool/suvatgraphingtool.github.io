@@ -158,6 +158,7 @@ let board = null;                // the whiteboard, made once the page is up —
 const win = panes.createWindow(4);
 let paneSig = null;                 // the solve the panes were last built from
 let scenario = null, solved = null, traj = null, second = null, ghost = null, dirty = true;
+let veiled = null;                   // a composed scene's arrival still under way: one at a time, and only its own launch
 
 /** Does this scenario replace the single view with the pane window? */
 const windowed = () => !!scenario?.descent;
@@ -423,6 +424,10 @@ function chooseScenario(id, { example = false } = {}) {
   scenario = byId(id);
   state.id = id;
   state.given = {};
+  // another scenario: the last one's speed card and veil are not this one's
+  closePace();
+  veiled = null;
+  $('canvas-wrap').querySelector('.cmp-reveal')?.remove();
   // a new scenario starts with the Display panel put away (the user, 8 Nov)
   if (state.options) $('options-btn').click();
   // The scenario picks the SITUATION. Every box starts empty unless PREFILL
@@ -1037,12 +1042,13 @@ function originalParts() {
  */
 function showPart(k, { play = false } = {}) {
   if (!state.runs) return;
-  hideDone(); closeResolve(); state.pre = null;
+  hideDone(); closeResolve(); closePace(); state.pre = null;
   const run = k >= 0 ? state.runs[k] : state.runs.find(Boolean);
   if (!run?.solved?.ok) return;
   const fresh = !!kit() && solved !== run.solved;
   if (fresh) { solved = run.solved; traj = solved.f; }
   state.part = k;
+  if (k >= 0) state.launched = true;    // the part's moment is shown on the motion, launched or not
   if (k < 0) { state.stopAt = null; state.playing = false; setPlayIcon(false); state.t = 0; }
   else {
     const t = run.moment.t;
@@ -2049,7 +2055,9 @@ function say(el, bad, html) {
    a wall. */
 function launch() {
   if (!traj) return;
-  closeIntro();
+  closeIntro(); hideDone(); closeResolve();
+  // nothing runs on behind the card, and a part's stop is not this flight's
+  state.playing = false; setPlayIcon(false); state.stopAt = null;
   // EVERY LAUNCH STOPS AT "How fast should it go?" (the user, 8 Nov: "that screen
   // before launching … a rule for every scenario"), set to the speed this flight
   // calls for, so Enter and it flies. Replays go straight off.
@@ -2206,7 +2214,7 @@ function runFlight() {
   if (state.firedBefore) ghost = typeof traj.path === 'function' ? traj.path(260) : null;
   state.firedBefore = true; state.launched = true;
   state.overview = false;               // every run starts from the panes
-  state.t = 0; state.playing = true;
+  state.t = 0; state.playing = true; state.stopAt = null;
   // THE AIRCRAFT, THE DOOR AND THE STEP OUT, none of which is inside t. See
   // the pre-roll note in js/render/drop.js for why it is outside the clock.
   state.pre = windowed() ? 0 : null;
@@ -2247,7 +2255,9 @@ function go(step) {
   if (state.step === 'flight' && step !== 'flight' && state.playing) {
     state.playing = false; setPlayIcon(false);
   }
-  if (step !== 'flight') { hideDone(); closeAskAt(); }
+  // (the speed card too: left open, it went on answering Enter and Escape from
+  // every other screen, the chat's box included)
+  if (step !== 'flight') { hideDone(); closeAskAt(); closePace(); }
   state.step = step;
   $('app').dataset.step = step;
   // The whiteboard draws only while it is on screen.
@@ -2291,7 +2301,8 @@ function refreshSteps() {
 
 function togglePlay() {
   if (!traj) return;
-  hideDone(); closeResolve();
+  hideDone(); closeResolve(); closePace();
+  state.launched = true;      // Play is as good a way to start it as Launch
   // THE BULLET IS STARTED BY ITS STRING. Play trips the rig the same way a
   // pull does; play after the landing re-arms it and waits for the next pull.
   if (scenario?.stage === 'range') {
@@ -3139,7 +3150,8 @@ $('pace-use').addEventListener('click', () => {
 $('intro-values').addEventListener('click', () => { closeIntro(); go('values'); });
 $('play').addEventListener('click', togglePlay);
 const replay = () => {
-  hideDone(); closeResolve();
+  hideDone(); closeResolve(); closePace();
+  state.launched = true; state.stopAt = null;
   if (armRange()) return;
   state.t = 0; state.pre = windowed() ? 0 : null;
   state.playing = true; setPlayIcon(true); dirty = true;
@@ -3160,7 +3172,8 @@ $('exdone-all').addEventListener('click', () => {
 });
 $('scrub').addEventListener('input', (e) => {
   if (!traj) return;
-  hideDone();
+  hideDone(); closePace();
+  state.launched = true;      // an instant named is an instant shown
   // Naming an instant ends the staging: the student has asked to be at a
   // time, and every time there is belongs to the flight.
   state.pre = null; state.stopAt = null;
@@ -3223,9 +3236,19 @@ $('options-btn').addEventListener('click', () => {
 document.addEventListener('keydown', (e) => {
   // The speed card first, and above the input guard: its slider IS an input,
   // and Enter on a slider means nothing, so it can mean "go".
-  if (!$('pace').hidden) {
-    if (e.key === 'Enter') { e.preventDefault(); runFlight(); }
+  // Only for a key meant for it: the command menu's box has its own Enter.
+  if (!$('pace').hidden && (e.target === document.body || e.target.closest?.('#pace'))) {
+    // a button in the card answers Enter as itself ("Back to the values" goes back),
+    // and a key held down from the screen before is not a second decision
+    if (e.key === 'Enter') { if (!e.repeat && !e.target.closest('button')) { e.preventDefault(); runFlight(); } }
     else if (e.key === 'Escape') { closePace(); go('values'); }
+    // the arrows are the speed, wherever in the card the focus has got to
+    else if (/^Arrow/.test(e.key) && e.target !== $('pace-rate')) {
+      e.preventDefault();
+      const r = $('pace-rate');
+      if (/Right|Up/.test(e.key)) r.stepUp(); else r.stepDown();
+      r.focus(); r.dispatchEvent(new Event('input', { bubbles: true }));
+    }
     return;
   }
   // The question card owns Escape while it is open; its own inputs handle
@@ -3236,7 +3259,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
-  if (state.step === 'values' && e.key === 'Enter' && !$('launch').disabled) { launch(); return; }
+  if (state.step === 'values' && e.key === 'Enter' && !e.repeat && !$('launch').disabled) { launch(); return; }
   if (state.step !== 'flight') return;
   if (e.key === 'Escape') { if (state.resolve) closeResolve(); else hideDone(); return; }
   if (e.key === 'r' || e.key === 'R') {
@@ -3244,8 +3267,8 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-  else if (e.key === 'ArrowRight') { hideDone(); state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.min(traj.tMax, state.t + traj.tMax / 60); dirty = true; }
-  else if (e.key === 'ArrowLeft')  { hideDone(); state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.max(0, state.t - traj.tMax / 60); dirty = true; }
+  else if (e.key === 'ArrowRight') { hideDone(); state.launched = true; state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.min(traj.tMax, state.t + traj.tMax / 60); dirty = true; }
+  else if (e.key === 'ArrowLeft')  { hideDone(); state.launched = true; state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.max(0, state.t - traj.tMax / 60); dirty = true; }
 });
 
 addEventListener('resize', () => {
@@ -3776,6 +3799,9 @@ function showFlight() {
   if (!traj) return;
   // Graph was on: the stage opens with its graphs showing, as the reply did.
   openGraphs();
+  // ALREADY ON ITS WAY: back to it, never a second launch. Two launches from one
+  // arrival put the speed card over a flight already running.
+  if (veiled?.s === scenario) { if (state.step !== 'flight') go('flight'); return; }
   if (scenario.exhibit) launch();
   // a scene just composed arrives behind its veil, which names its pieces and
   // lifts onto the motion (js/compose/reveal.js); once seen, it launches as
@@ -3784,10 +3810,14 @@ function showFlight() {
     scenario.seen = true;
     closeIntro(); go('flight');
     // "Working out the motion" is the engine, working it out
-    reveal($('canvas-wrap'), scenario.recipe, { until: showBy(), solve: () => { const K = kit(); if (K) K.solve(K.read(state.kit)); } }).then(() => launch());
+    const me = veiled = { s: scenario };
+    // (only if the student is still here for it: nobody is pulled back to a stage they left)
+    reveal($('canvas-wrap'), scenario.recipe, { until: showBy(), solve: () => { const K = kit(); if (K) K.solve(K.read(state.kit)); } })
+      .then(() => { if (veiled !== me) return; veiled = null; if (state.step === 'flight') launch(); });
   } else if (scenario.composed) {
     // (a drawing that came too late for the last run is taken here, between runs)
-    prepare(scenario.recipe, { until: showBy() }).then(() => launch());
+    const me = veiled = { s: scenario }, from = state.step;
+    prepare(scenario.recipe, { until: showBy() }).then(() => { if (veiled !== me) return; veiled = null; if (state.step === from) launch(); });
   } else launch();
 }
 const ask = createAsk({
