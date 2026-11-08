@@ -97,7 +97,7 @@ export function readoutHTML(reading, { name, solved, above, flight } = {}) {
     }
     engine = `<div class="ro-engine" data-ok="true"><b>The engine works out the rest:</b> ${rest}${line}</div>`;
   } else if (solved) {
-    engine = `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved.reason || ''} Just tell me here, or press “Add the missing values”.</div>`;
+    engine = `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved.reason || ''} Just tell me here, or say “use your own”.</div>`;
   }
 
   return `<p class="ro-eyebrow">Read as</p>

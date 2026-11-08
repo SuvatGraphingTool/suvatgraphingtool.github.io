@@ -125,6 +125,7 @@ node test/library.test.mjs      # the Past-paper library: each scenario against 
 node test/chats.test.mjs       # Ask Suvat's chats, kept in this browser
 node test/account.test.mjs     # accounts: sign-in, sessions, chats kept per account (site/)
 node test/sense.test.mjs       # common sense: everyday sentences always run, and what is assumed is said
+node test/tracks.test.mjs      # every moving thing leaves a trajectory, and all of it resolves
 node test/focus.test.mjs       # the reader sends each question only the catalogue it needs (worker/src/focus.js)
 node test/i18n.test.mjs        # Arabic mode: the dictionary, templates, maths left to right, the toggle, the reader told the language
 ```

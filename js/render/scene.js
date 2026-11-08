@@ -14,6 +14,7 @@
 // placed in section u. Nothing is ever converted twice.
 
 import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar, moverAt, movers } from './util.js';
+import { trackAt } from './tracks.js';
 import { timeAbove, lineFacts } from '../core/projectile.js';
 import { T, num } from '../notation.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
@@ -1002,6 +1003,12 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   const pick = (e) => {
     const { markers, scenario, traj, t, fired } = active();
     const m = cam._map;
+    // anywhere on the trajectory it has flown: Resolve at that moment (js/render/tracks.js)
+    if (fired && canvas._tracks?.motion === traj) {
+      const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+      const on = !moverAt(x, y) && trackAt(canvas, x, y);
+      if (on) return { kind: 'ball', t: on.t, stage: true };
+    }
     // a library stage draws in its own pixels, so what moves on it says where it is
     // (js/render/util.js noteMover): the same Resolve on it, at the instant on screen
     if (!m || !m.sx) {

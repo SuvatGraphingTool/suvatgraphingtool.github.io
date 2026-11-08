@@ -205,6 +205,8 @@ RULES
   "AQA"), set paper to it, as "Edexcel M1". The app takes g from the paper's rules.
 
 THE PAST-PAPER LIBRARY
+Check this list FIRST: if one of these IS the situation the student describes, use it, and set
+who to their own word for what moves, even if a composed scene could also draw it.
 Exam situations the twelve above cannot set up: two objects, a bounce, stages, i and j
 vectors, graphs to read, answers in letters. When one fits, return scenario "library",
 library: its id, and boxes: each GIVEN value keyed exactly as its boxes say. Choice boxes

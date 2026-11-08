@@ -493,13 +493,14 @@ export function composeKindly(raw) {
 }
 
 /**
- * composeKindly(), then common sense (js/compose/sense.js): what the engine
- * cannot run without gets a sensible value, and the scene's notes say so.
+ * composeKindly(), then, when the student has handed it over (`assume`), common
+ * sense (js/compose/sense.js): what the engine cannot run without gets a sensible
+ * value, and the scene's notes say so.
  * @param text  the question's words
  */
-export function composeSensibly(raw, text = '') {
+export function composeSensibly(raw, text = '', { assume = true } = {}) {
   const c = composeKindly(raw);
-  if (!c.ok || c.scenario?.recipe?.engine !== 'projectile') return c;
+  if (!assume || !c.ok || c.scenario?.recipe?.engine !== 'projectile') return c;
   const r = c.scenario.recipe, B = placeOf(r), g = c.boxes.g;
   const runs = (n) => { const b = { ...c.boxes, ...n, g }; return !!c.kit.solve(c.kit.read(b))?.ok; };
   const got = sensible({ numbers: { ...r.numbers }, place: r.backdrop, edge: !!B.edge, text, runs });

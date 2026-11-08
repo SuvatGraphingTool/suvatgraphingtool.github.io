@@ -20,6 +20,7 @@ import { typeOut } from './typewriter.js';
 import { gAskHTML, parseG } from './gchoice.js';
 import { loadChats, getChat, saveChat, deleteChat, newChatRecord, titleOf, nameFrom, thumbOf, onChats } from './chats.js';
 import { plainOf } from '../notation.js';
+import { wantsOwn, saysNumber } from '../compose/sense.js';
 
 const $ = (id) => document.getElementById(id);
 const PDF_MAX = 4_000_000;          // the Worker's own limit, checked here first
@@ -286,6 +287,11 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     const words = text.value.trim(), a = att;
     // from the first screen a question is a new chat, whatever was last on show
     if (!inChat() && thread.childElementCount) clearThread();
+    // "I don't know", "you pick": handed over, with nothing to read and no AI call
+    if (chat?.last && !a && !saysNumber(words) && wantsOwn(words)) {
+      openChat(); echo(words, null); text.value = ''; detach(); sync();
+      if (useOwn()) return;
+    }
     openChat();
     echo(words, a);
     text.value = ''; detach();
@@ -345,8 +351,13 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     // wording ("dropped" is u = 0); a photo's numbers are in the photo, so none
     // (a follow-up — "same but g = 9.8" — keeps the numbers typed before it; after a photo, none can be told)
     const said = history.filter((h) => h.role === 'user').map((h) => h.text);
-    const opts = { graph: modes.graph, solve: modes.solve, asked, words: a || said.some((t) => t.startsWith('[sent ')) ? null : said.join('\n') };
+    const opts = { graph: modes.graph, solve: modes.solve, asked, assume: wantsOwn(said.join('\n')), words: a || said.some((t) => t.startsWith('[sent ')) ? null : said.join('\n') };
     const r = apply(res.extraction, opts);
+    // not one number to go on: it offers, rather than assumes or lists
+    if (r.ok && !r.runnable && !a && !said.some((t) => saysNumber(t))) {
+      r.noNumbers = true;
+      r.html = r.html.replace(/<div class="ro-engine" data-ok="false">[\s\S]*?<\/div>/, '<div class="ro-engine" data-ok="false"><b>I can set this up.</b> Would you like to give the numbers, or shall I use my own?</div>');
+    }
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
     if (chat) chat.last = { extraction: res.extraction, opts };
     reading(r);
@@ -354,6 +365,20 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     // opens on it straight away, behind its veil (js/compose/reveal.js), and
     // the reply stays in the chat to come back to.
     if (r.composed && r.runnable) setTimeout(run, 700);
+  }
+
+  /** The student handed it over: the reading on show, with sensible values for what
+      it lacks, and no call to the reader. */
+  function useOwn() {
+    if (!chat?.last) return false;
+    const opts = { ...chat.last.opts, assume: true };
+    const r = apply(chat.last.extraction, opts);
+    if (!r.ok) return false;
+    chat.last = { ...chat.last, opts };
+    for (const old of thread.querySelectorAll('.ask-acts')) old.remove();
+    reading(r);
+    if (r.composed && r.runnable) setTimeout(run, 700);
+    return true;
   }
 
   /** A reading's reply: what the engine made of it, and its buttons, wired.
@@ -366,17 +391,28 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     // longer hang on the Graph switch, which only decides whether the graphs open.
     // Which g? Asked here, beside the flight, only when the motion uses g and the
     // question gave none (js/ai/gchoice.js); never before a question is asked.
-    const acts = r.runnable || modes.graph
+    // Short of a value it never sends the student off to a form: it asks here, and
+    // handing it over is one press, or a few words, away (the user, 8 Nov).
+    const acts = r.runnable
       ? `<div class="ask-acts">${gAskHTML(r.gAsk)}
-        <button type="button" class="fire sm ask-run"${r.runnable ? '' : ' disabled'}>${r.composed ? 'Show me the scene' : 'Show me the flight'}</button>
-        <button type="button" class="ghost sm ask-edit">${r.runnable ? 'Check the values' : 'Add the missing values'}</button>
+        <button type="button" class="fire sm ask-run">${r.composed ? 'Show me the scene' : 'Show me the flight'}</button>
+        <button type="button" class="ghost sm ask-edit">Check the values</button>
       </div>`
-      : '';
+      : `<div class="ask-acts">
+        ${r.noNumbers ? '<button type="button" class="ghost sm ask-give">I’ll give the numbers</button>' : ''}
+        <button type="button" class="fire sm ask-own">Use your own values</button>
+      </div>`;
     // The box keeps the focus, as in any chat: the next question is the
     // likelier next thing than the flight.
     const wireScenes = (el) => { for (const b of el.querySelectorAll('.ask-scene')) { b.disabled = false; b.addEventListener('click', () => scene?.(b.dataset.id)); } };
     const html = `<div class="ask-body">${r.html}</div>`;
     const wire = (node) => {
+      node.querySelector('.ask-own')?.addEventListener('click', useOwn);
+      node.querySelector('.ask-give')?.addEventListener('click', () => {
+        for (const old of thread.querySelectorAll('.ask-acts')) old.remove();
+        reply(`<p>Go ahead. ${r.need || 'Tell me the values you have.'} Say “use your own” for any you don’t know.</p>`);
+        text.focus({ preventScroll: true });
+      });
       node.querySelector('.ask-run')?.addEventListener('click', run);
       node.querySelector('.ask-edit')?.addEventListener('click', edit);
       wireScenes(node);

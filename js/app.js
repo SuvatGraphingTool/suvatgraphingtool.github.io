@@ -18,6 +18,7 @@ import { figureOf, belowOf, placeOf, ownWord } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { prepare, DEADLINE_MS } from './compose/pictures.js';
 import { clearMovers, moverAt, markMover } from './render/util.js';
+import { recordTracks, trackAt, drawTracks, OWN_PATH } from './render/tracks.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
@@ -421,6 +422,8 @@ function chooseScenario(id, { example = false } = {}) {
   scenario = byId(id);
   state.id = id;
   state.given = {};
+  // a new scenario starts with the Display panel put away (the user, 8 Nov)
+  if (state.options) $('options-btn').click();
   // The scenario picks the SITUATION. Every box starts empty unless PREFILL
   // is on and the pick came from a card (`example`), when the scenario's own
   // `example` numbers go in — see applyExample. A reading from Ask Suvat or
@@ -2046,18 +2049,17 @@ function say(el, bad, html) {
 function launch() {
   if (!traj) return;
   closeIntro();
-  // ONE PRESS, AND IT FLIES. The redesign took the speed card out of the way:
-  // Launch used to stop at "How fast should it go?" every time, a decision
-  // with a good default asked before the thing you came for. The flight runs
-  // at once; the speed is a press away in the transport bar, with the same
-  // recommendation pin, and the pane layout is in the Display panel.
+  // EVERY LAUNCH STOPS AT "How fast should it go?" (the user, 8 Nov: "that screen
+  // before launching … a rule for every scenario"), set to the speed this flight
+  // calls for, so Enter and it flies. Replays go straight off.
   // EVERY LAUNCH STARTS AT THE RECOMMENDED SPEED (the user, 1 Nov): a fresh set
   // of values is a fresh flight, played at the pace its own length calls for.
   // A speed chosen on the slider holds for the replays of that flight only.
   state.rate = recommend(traj.tMax) / 100;
   state.rateTouched = false;
   syncRate();
-  runFlight();
+  if (state.step !== 'flight') go('flight');
+  openPace();
 }
 
 function openPace() {
@@ -2181,7 +2183,7 @@ function syncPanes() {
   const sig = JSON.stringify(solved.params);
   if (sig === paneSig) return;
   paneSig = sig;
-  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; }, click: () => openResolve(state.t) });
+  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; }, click: (t) => openResolve(t ?? state.t) });
   panes.setLayout(win, state.layout);
 }
 
@@ -2993,8 +2995,12 @@ function draw() {
   else scene.render($('scene'), cam, opts);
   // on a stage in its own pixels, what is under the pointer is what it said it drew:
   // the ring and the words the twelve show, Resolve on a click (js/render/scene.js)
-  if (!windowed() && !cam._map?.sx && state.launched && !state.resolve && cam._pointer) {
-    markMover($('scene'), moverAt(cam._pointer.x, cam._pointer.y));
+  // and everywhere it has been is its trajectory: drawn, and on offer too (js/render/tracks.js)
+  if (!windowed() && (!cam._map?.sx || scenario?.stage === 'range') && state.launched) {
+    const c = $('scene');
+    recordTracks(c, traj, state.t);
+    if (!OWN_PATH.has(state.id)) drawTracks(c);
+    if (!state.resolve && cam._pointer) markMover(c, moverAt(cam._pointer.x, cam._pointer.y) || trackAt(c, cam._pointer.x, cam._pointer.y));
   }
 
   if (state.extras.graphs) {
@@ -3466,7 +3472,7 @@ function sceneLinks() {
     next: n < chain.list.length ? { label: chain.list[n].label, id: `part:${n}` } : null,
   };
 }
-function readOne(x, { graph = true, solve = false } = {}) {
+function readOne(x, { graph = true, solve = false, assume = false } = {}) {
   // what moves is what is drawn: a diver, a parcel, a skateboarder launched
   // as one of the twelve or From a height becomes a composed scene with that
   // figure in that place, on the same engine (js/compose/recipe.js)
@@ -3475,9 +3481,9 @@ function readOne(x, { graph = true, solve = false } = {}) {
   const blank = x && x.understood !== false && ['dropped', 'down', 'platform', 'platform-angle', 'platform-down', 'up', 'arc'].includes(x.scenario)
     && !['u', 'v', 's', 't'].some((k) => typeof x[k] === 'number') && !(x.scenario === 'dropped' && x.h > 0);
   const drawn = fromReading(x) || (blank ? fromReading(x, { always: true }) : null);
-  if (drawn) return applyComposed(drawn, { graph });
-  if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
-  if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph });
+  if (drawn) return applyComposed(drawn, { graph, assume });
+  if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph, assume });
+  if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph, assume });
   const r = toApp(x);
   if (!r.ok) return r;
   chooseScenario(r.id);
@@ -3520,14 +3526,21 @@ function readOne(x, { graph = true, solve = false } = {}) {
  * filled with what the question gives (only boxes that scenario has), its
  * parts read, and the reply the engine's answer to each part.
  */
-function applyLibrary(x, { graph = true } = {}) {
+function applyLibrary(x, { graph = true, assume = false } = {}) {
   const s = byId(x.library);
   if (!s?.kit) return { ok: false, error: 'That reads as an exam question the Past-paper library has no scenario for yet. Pick the closest one and type the numbers in.' };
   // "show me one": the reader picks the scenario, and its own exam numbers and
   // parts fill it — known to run, where numbers made up in the chat might not
   if (x.example === true && s.example) x = { ...x, boxes: s.example, parts: undefined };
   // From a height, short of a value: common sense, said in the summary (js/compose/sense.js)
-  x = heightSensibly(x, state.kit?.g ?? 9.81);
+  if (assume) {
+    x = heightSensibly(x, state.kit?.g ?? 9.81);
+    // any other scenario, handed over: the paper's own numbers fill what was not given
+    const K = KITS[s.kit];
+      if (x.library !== 'from-a-height' && s.example && !K.solve(K.read({ g: 9.81, ...(x.boxes || {}) }))?.ok) {
+      x = { ...x, boxes: { ...s.example, ...(x.boxes || {}) }, summary: [x.summary, 'I’ve filled in what was missing with the paper’s own numbers. Tell me the real ones and I’ll run it again.'].filter(Boolean).join(' ') };
+    }
+  }
   chooseScenario(s.id);
   closeIntro();
   const fields = boxesOf(KITS[s.kit], s.example);
@@ -3556,8 +3569,8 @@ function applyLibrary(x, { graph = true } = {}) {
     + (typeof x.summary === 'string' && x.summary ? `<p class="ro-sum">${esc(x.summary)}</p>` : '');
   const body = solved?.ok
     ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
-    : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved?.reason || ''} Just tell me here, or press “Add the missing values”.</div>`;
-  return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example, !!KITS[s.kit].g) + body };
+    : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved?.reason || ''} Just tell me here, or say “use your own”.</div>`;
+  return { ok: true, runnable: !!traj, need: solved?.ok ? '' : solved?.reason || '', html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example, !!KITS[s.kit].g) + body };
 }
 /**
  * What Ask Suvat read into a library scenario's boxes, listed the way the
@@ -3679,7 +3692,7 @@ function quantityHTML(f, n) {
  * into a scenario with the engine's own kit, then read exactly as a library
  * scenario is — its boxes, its parts, the engine's answer to each.
  */
-function applyComposed(x, { graph = true } = {}) {
+function applyComposed(x, { graph = true, assume = false } = {}) {
   // the reader's own word for what moves wins over a ball it put in the recipe
   const who = figureOf(x.who);
   if (who.figure && !['ball', 'stone', 'particle'].includes(who.figure) && x.recipe?.objects?.length === 1
@@ -3688,7 +3701,7 @@ function applyComposed(x, { graph = true } = {}) {
   }
   // the surface below, when the reader left it out but the question names one ("a bridge above a road")
   if (x.recipe?.backdrop && !x.recipe.below) { const b = belowOf(x.recipe.backdrop, `${x.summary || ''} ${x.words || ''}`); if (b) x = { ...x, recipe: { ...x.recipe, below: b } }; }
-  const c = composeSensibly(x.recipe, `${x.words || ''} ${x.summary || ''}`);
+  const c = composeSensibly(x.recipe, `${x.words || ''} ${x.summary || ''}`, { assume });
   if (!c.ok) return { ok: false, chat: true, error: 'I can see the idea, but I need a little more to set it up. What moves, where from, and do you know a height or a speed?' };
   const s = register(c, null);
   // its picture starts on its way now, so the veil has as little as possible to wait for;
@@ -3722,12 +3735,12 @@ function applyComposed(x, { graph = true } = {}) {
   const body = solved?.ok
     ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${x.recipe?.engine !== 'pair' && state.kit?.h == null && placeOf(s.recipe).edge
-      ? 'How high up does it start? Just tell me here, like “20 m”, and I’ll run it.'
-      : `${solved?.reason || ''} Just tell me here, or press “Add the missing values”.`}</div>`;
+      ? 'How high up does it start? Just tell me here, like “20 m”, or say “use your own”.'
+      : `${solved?.reason || ''} Just tell me here, or say “use your own”.`}</div>`;
   // the values it read, each from the question or assumed, as a library reply lists them
   const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g && !placeOf(s.recipe).g,
     `${x.summary || ''} ${said.join(' ')}`, false, !!c.kit.g);
-  return { ok: true, runnable: !!traj, composed: !!traj, html: head + given + body + more };
+  return { ok: true, runnable: !!traj, composed: !!traj, need: solved?.ok ? '' : solved?.reason || '', html: head + given + body + more };
 }
 /** A composed scene, kept with the boxes and parts it was read with. */
 const scenes = new Map();
@@ -3756,14 +3769,12 @@ function openGraphs() {
   const box = $('extras').querySelector('input[data-k="graphs"]');
   if (box) box.checked = true;
   $('graphs-wrap').hidden = false;
-  // where the graphs live (not on a phone, where that panel would cover the scene just asked for)
-  if (!state.options && !windowed() && !matchMedia('(max-width: 560px)').matches) $('options-btn').click();
 }
 function showFlight() {
   if (!traj) return;
   // Graph was on: the stage opens with its graphs showing, as the reply did.
   openGraphs();
-  if (scenario.exhibit) runFlight();
+  if (scenario.exhibit) launch();
   // a scene just composed arrives behind its veil, which names its pieces and
   // lifts onto the motion (js/compose/reveal.js); once seen, it launches as
   // any scenario does
@@ -3771,7 +3782,7 @@ function showFlight() {
     scenario.seen = true;
     closeIntro(); go('flight');
     // "Working out the motion" is the engine, working it out
-    reveal($('canvas-wrap'), scenario.recipe, { until: showBy(), solve: () => { const K = kit(); if (K) K.solve(K.read(state.kit)); } }).then(() => runFlight());
+    reveal($('canvas-wrap'), scenario.recipe, { until: showBy(), solve: () => { const K = kit(); if (K) K.solve(K.read(state.kit)); } }).then(() => launch());
   } else if (scenario.composed) {
     // (a drawing that came too late for the last run is taken here, between runs)
     prepare(scenario.recipe, { until: showBy() }).then(() => launch());

@@ -13,12 +13,12 @@ import { D } from '../world/dims.js';
 export const movers = { list: [], vel: null, tip: null };
 export function clearMovers() { movers.list.length = 0; movers.vel = null; movers.tip = null; }
 /** Note a moving thing at (x, y), radius r px, in the context's current coordinates. */
-export function noteMover(ctx, x, y, r = 22, { strong = false, label = null } = {}) {
+export function noteMover(ctx, x, y, r = 22, { strong = false, label = null, arrow = false } = {}) {
   const dpr = ctx._dpr || 1;
   const m = ctx.getTransform?.();
   if (!m || !isFinite(x) || !isFinite(y)) return;
   const scale = Math.hypot(m.a, m.b) / dpr;
-  movers.list.push({ x: (m.a * x + m.c * y + m.e) / dpr, y: (m.b * x + m.d * y + m.f) / dpr, r: r * scale, strong, label });
+  movers.list.push({ x: (m.a * x + m.c * y + m.e) / dpr, y: (m.b * x + m.d * y + m.f) / dpr, r: r * scale, strong, label, arrow });
 }
 /** The moving thing under the pointer, or null: exact reports first. */
 export function moverAt(x, y) {
@@ -76,8 +76,17 @@ export function unview(ctx) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
+// asked for many times a frame, and only a change of theme or language changes the
+// answers: kept until then, so a frame never forces the browser to recompute style
+const VARS = new Map();
+if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.documentElement?.nodeType) {
+  new MutationObserver(() => VARS.clear()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'lang', 'dir', 'class', 'style'] });
+}
 export function cssVar(name, fallback) {
-  return (getComputedStyle(document.documentElement).getPropertyValue(name) || fallback).trim();
+  if (VARS.has(name)) return VARS.get(name) || fallback;
+  const v = (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim();
+  VARS.set(name, v);
+  return v || fallback;
 }
 
 export function palette() {
@@ -446,7 +455,7 @@ export function arrow(ctx, x0, y0, x1, y1,
   movers.vel ??= [cssVar('--vel-vec', '#fb923c'), cssVar('--vel', '#ea580c'), cssVar('--second', '#db2777')];
   if (movers.vel.includes(color)) {
     const tail = movers.tip && Math.hypot(movers.tip[0] - x0, movers.tip[1] - y0) < 1;
-    if (!tail) noteMover(ctx, x0, y0, 26);
+    if (!tail) noteMover(ctx, x0, y0, 26, { arrow: true });
     movers.tip = [x1, y1];
   }
   if (len < 2) return;
