@@ -225,8 +225,8 @@ function lookup(key, split = true) {
   }
   // A label with a reading the notation has already set: "A −15.0 م/ث"
   if (out == null) {
-    const r = key.match(/^(.*?[A-Za-z’)]) ([^A-Za-z]*[\u0600-\u06FF\d][^A-Za-z]*)$/);
-    if (r) { const w = lookup(r[1]); if (w) out = `${w} ${r[2]}`; }
+    const r = key.match(/^(.*?[A-Za-z’)]) ([^A-Za-z]*[\u0600-\u06FF\d][^A-Za-z]*?)(?: (m s⁻[¹²]|km h⁻¹|m|s|km|kg|N))?$/);
+    if (r) { const w = lookup(r[1]); if (w) out = `${w} ${r[2]}${r[3] ? ` ${UNIT_ALONE[r[3]]}` : ''}`; }
   }
   // The name of what moves where the sentence says "It": "The kettle hits the water…"
   if (out == null) {

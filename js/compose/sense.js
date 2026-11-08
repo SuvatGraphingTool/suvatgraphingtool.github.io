@@ -19,7 +19,7 @@ import { num } from '../notation.js';
  * or want it to complete the rest, whenever you want". Until they say so, it asks.
  */
 const OWN = /\b(?:i\s*(?:do\s*not|don'?t|dont)\s*(?:know|have)|dunno|no idea|not sure|idk|you\s+(?:pick|choose|decide)|your\s+(?:own|choice|call)|ur\s+own|use\s+(?:your|ur|whatever|any)|whatever(?:\s+values?)?(?:\s+you)?|make\s+(?:it|them|some|one)\s+up|any\s+values?|(?:complete|fill(?:\s+in)?|finish|do)\s+(?:it|the\s+rest|them)|surprise\s+me|up\s+to\s+you)\b|لا\s*أعرف|ما\s*أعرف|لا\s*أدري|من\s*عندك|اختر\s*أنت|أكمل\s*الباقي|على\s*راحتك/i;
-export const wantsOwn = (text) => OWN.test(readArabic(String(text || '')));
+export const wantsOwn = (text) => OWN.test(String(text || '')) || OWN.test(readArabic(String(text || '')));
 /** Whether the words give any number at all, in either set of digits. */
 export const saysNumber = (text) => /[0-9٠-٩]/.test(String(text || ''));
 
