@@ -14,7 +14,7 @@ import { movers, palette } from './util.js';
 /* Stages whose own drawing already shows the path, so a second line would only
    double it. Found by measuring what each stage draws (test/tracks.test.mjs); a
    new stage not listed simply gets the line. */
-export const OWN_PATH = new Set(['road', 'over-the-wall', 'bounce', 'in-the-air-over-a-wall', 'from-the-bridge', 'higher-than-far', 'change-of-course', 'into-soft-ground', 'back-off-the-boards', 'down-the-ice', 'over-the-rock', 'from-a-height', 'catch-it', 'two-in-a-plane', 'off-the-bench', 'wall-in-a-letter', 'do-they-collide', 'two-moments', 'thrown-towards']);
+export const OWN_PATH = new Set(['road', 'over-the-wall', 'bounce', 'in-the-air-over-a-wall', 'from-the-bridge', 'higher-than-far', 'change-of-course', 'into-soft-ground', 'back-off-the-boards', 'down-the-ice', 'over-the-rock', 'from-a-height', 'catch-it', 'two-in-a-plane', 'off-the-bench', 'wall-in-a-letter', 'do-they-collide', 'two-moments', 'thrown-towards', 'vectors-ij', 'pushed-by-a-force']);
 
 const NEAR = 11;           // px either side of the line that still counts as on it
 const GAP = 140;           // px between frames that means a jump, not a motion
@@ -26,28 +26,68 @@ export const moving = (T) => T.lines.filter((l) => l.length > 2);
 /** Forget the trajectory: a new motion, or a stage laid out afresh at a new size. */
 export function resetTracks(canvas) { canvas._tracks = null; }
 
-const toPlace = (c, q) => { const v = c._view; return v ? { x: (q.x - v.tx) / v.s, y: (q.y - v.ty) / v.s } : { x: q.x, y: q.y }; };
-const toScreen = (c, p) => { const v = c._view; return v ? { x: p.x * v.s + v.tx, y: p.y * v.s + v.ty } : { x: p.x, y: p.y }; };
+/* A POINT IS KEPT WHERE IT IS IN THE PLACE, so the line stays on the place through a
+   pan and a zoom (`_view`) and through a stage whose own camera moves as the motion
+   runs (`_frame`, the road that scrolls with the car, the plane that widens: the stage
+   says it each frame). A stage's frame is { s, x, y }: screen = place × s + (x, y). */
+// (`_shown`: the view the stage was just drawn with, which the stage has handed back)
+const toPlace = (c, q) => {
+  const v = c._view || c._shown, f = c._frame;
+  const x = v ? (q.x - v.tx) / v.s : q.x, y = v ? (q.y - v.ty) / v.s : q.y;
+  return f ? { x: (x - f.x) / f.s, y: (y - f.y) / f.s } : { x, y };
+};
+const toScreen = (c, p) => {
+  const v = c._view || c._shown, f = c._frame;
+  const x = f ? p.x * f.s + f.x : p.x, y = f ? p.y * f.s + f.y : p.y;
+  return v ? { x: x * v.s + v.tx, y: y * v.s + v.ty } : { x, y };
+};
 
-/** Keep where what moves was drawn on this frame, at clock time t. */
-export function recordTracks(canvas, motion, t) {
+/**
+ * The moments still to be drawn, unseen, to keep the line whole, a few a frame: the
+ * stage is laid out afresh at a new size (the Display panel opening, a window turned)
+ * and the points are in the old layout, or the student has scrubbed ahead of where the
+ * first run has got to, and a straight line across the gap would not be its path. The
+ * app draws the stage at each of them and records it, before the frame it shows.
+ * @returns the times, or null
+ */
+export function tracksToFill(canvas, motion, t, tMax, n = 6) {
   let T = canvas._tracks;
-  if (!T || T.motion !== motion || T.size !== key(canvas)) T = canvas._tracks = { motion, size: key(canvas), lines: [], last: -1 };
+  const size = key(canvas);
+  if (!T || T.motion !== motion) T = canvas._tracks = { motion, size, lines: [], last: -1, fill: null };
+  else if (T.size !== size) T = canvas._tracks = { motion, size, lines: [], last: -1, fill: T.fill || T.last > 0 ? { to: T.fill?.to ?? T.last } : null };
+  if (!(tMax > 0)) return null;
+  if (!T.fill && t - Math.max(T.last, 0) > tMax / 60) T.fill = { to: t };
+  if (!T.fill) return null;
+  const step = tMax / 120, out = [];
+  for (let u = Math.max(T.last, -step) + step; out.length < n; u += step) {
+    if (u >= T.fill.to) { out.push(T.fill.to); break; }
+    out.push(u);
+  }
+  return out;
+}
+
+/** Keep where what moves was drawn on this frame, at clock time t. `filling`: a moment tracksToFill asked for. */
+export function recordTracks(canvas, motion, t, filling = false) {
+  let T = canvas._tracks;
+  if (!T || T.motion !== motion || T.size !== key(canvas)) T = canvas._tracks = { motion, size: key(canvas), lines: [], last: -1, fill: null };
+  if (T.fill && !filling) return;
+  if (filling && t >= T.fill.to) T.fill = null;
   // a replay or a scrub back goes over what is already known
   if (!(t > T.last)) return;
   // what the stage says moves; an arrow's tail only for a stage that says nothing else
   const own = movers.list.filter((q) => !q.arrow), strong = own.filter((q) => q.strong);
   const list = strong.length ? strong : own.length ? own : movers.list;
+  const unit = canvas._frame?.s || 1;       // how many px a unit of the place is, for the two px tests below
   // each followed by where it was last, never by its place in the list: arrows and
   // objects come and go as the motion runs
   const free = new Set(T.lines);
   for (const q of list) {
     const p = toPlace(canvas, q);
-    let line = null, near = GAP;
+    let line = null, near = GAP / unit;
     for (const l of free) { const e = l.at(-1), d = Math.hypot(e.x - p.x, e.y - p.y); if (d < near) { near = d; line = l; } }
     if (!line) { T.lines.push([{ ...p, t }]); continue; }
     free.delete(line);
-    if (near < 1.5) line.at(-1).t = t; else line.push({ ...p, t });
+    if (near < 1.5 / unit) line.at(-1).t = t; else line.push({ ...p, t });
   }
   T.last = t;
 }

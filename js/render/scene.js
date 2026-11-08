@@ -1001,7 +1001,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
 
   /** What is under the pointer: the object, a draggable handle, or the arc. */
   const pick = (e) => {
-    const { markers, scenario, traj, t, fired } = active();
+    const { markers, scenario, traj, t, fired, flown = 0 } = active();
     const m = cam._map;
     // anywhere on the trajectory it has flown: Resolve at that moment (js/render/tracks.js)
     if (fired && canvas._tracks?.motion === traj) {
@@ -1045,28 +1045,34 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     // handle on this scenario is a handle that never exists. Dragging re-solves
     // and rebuilds the flight, exactly as the angle slider does, so there is
     // nothing to protect mid-playback either.
+    // Past the muzzle, what has been flown comes first: on a fast shot the arc lies
+    // along the line all the way, and it must still answer as every trajectory does.
+    const arcAt = () => {
+      // (as far as it has ever got: Resolve moves the clock back, and the rest is still its path)
+      const to = Math.max(t, flown);
+      if (!traj || !fired || !(to > 1e-6)) return null;
+      let best = null;
+      for (const q of traj.path(170, to)) {
+        const dd = Math.hypot(w.sxp - m.sx(q.x), w.syp - m.sy(q.y));
+        if (dd < 15 && (!best || dd < best.d)) best = { d: dd, t: q.t };
+      }
+      return best;
+    };
     if (scenario?.aimAtTarget && traj) {
       const o = { x: m.sx(0), y: m.sy(traj.params.h) };
       const dx = w.sxp - o.x, dy = w.syp - o.y;
       const a = -(traj.params.theta || 0) * Math.PI / 180;
       const along = dx * Math.cos(a) + dy * Math.sin(a);
       const off = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a));
-      if (along > 24 && off < 16) return { kind: 'aimLine' };
+      if (along > 24 && off < 16 && !(along > 90 && arcAt())) return { kind: 'aimLine' };
     }
     if (markers?.obstacle && near(m.sx(markers.obstacle.x), m.sy(markers.obstacle.height))) return { kind: 'obstacle' };
     if (scenario?.dragLine && markers?.heightLine != null && Math.abs(w.syp - m.sy(markers.heightLine)) < 18) return { kind: 'heightLine' };
 
     // Anywhere on the arc already flown gives the same card at that instant —
     // catching a ball mid-flight is a reaction test, and this is not one.
-    if (traj && fired && t > 1e-6) {
-      let best = null;
-      for (const q of traj.path(170, t)) {
-        const dd = Math.hypot(w.sxp - m.sx(q.x), w.syp - m.sy(q.y));
-        if (dd < 15 && (!best || dd < best.d)) best = { d: dd, t: q.t };
-      }
-      if (best) return { kind: 'path', t: best.t };
-    }
-    return null;
+    const best = arcAt();
+    return best ? { kind: 'path', t: best.t } : null;
   };
 
   const isResolve = (k) => k === 'ball' || k === 'path';

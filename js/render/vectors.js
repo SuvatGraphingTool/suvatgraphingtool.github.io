@@ -95,6 +95,7 @@ export function drawPlane(canvas, o, look = {}) {
   const near = frameOf(focus), far = tAsk < f.tMax - 1e-9 ? frameOf(whole) : near;
   const s = clamp((t - tAsk) / Math.max(1e-9, f.tMax - tAsk), 0, 1), ease = s * s * (3 - 2 * s);
   const F = blendPlan(near.F, far.F, ease), sp = near.sp + (far.sp - near.sp) * ease;
+  canvas._frame = { s: F.k, x: F.ox, y: F.oy };   // the view widens as it runs: the trajectory stays on the place (js/render/tracks.js)
   const { X, Y } = F;
   const px = (p) => ({ x: X(p.x), y: Y(p.y) });
 

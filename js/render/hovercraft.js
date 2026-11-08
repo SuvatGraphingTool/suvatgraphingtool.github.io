@@ -15,7 +15,7 @@
 
 import { drawPlane } from './vectors.js';
 import { env, rng, softShadow } from './scenery.js';
-import { arrow, withAlpha } from './util.js';
+import { arrow, withAlpha, noteMover } from './util.js';
 import { T } from '../notation.js';
 import { vsrc } from '../core/plane.js';
 
@@ -192,6 +192,7 @@ export function render(canvas, cam, o) {
     bodyR: 22, compass: false,
     ground: (g, w, h, { avoid, keep }) => frozenLake(g, 0, 0, w, h, { avoid, keep }),
     body(g, x, y, s) {
+      noteMover(g, x, y, 28, { strong: true });
       const L = s.phone ? 36 : 46;
       // the force, from the craft along its nose: ink, the same however it moves
       if (an > 1e-9) {

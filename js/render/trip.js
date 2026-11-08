@@ -316,6 +316,7 @@ export function render(canvas, cam, o) {
   const px = f.pos(t), pv = f.vel(t);
   const cx = (xHi - xLo) + 2 * pad <= 2 * half ? (xLo + xHi) / 2 : clamp(px, xLo - pad + half, xHi + pad - half);
   const R = (x) => w / 2 + (x - cx) * k;
+  canvas._frame = { s: 1, x: w / 2 - cx * k, y: 0 };   // the road scrolls: the trajectory stays on it (js/render/tracks.js)
   const wl = cx - half - 1, wr = cx + half + 1;          // the metres in view
 
   skyscape(g, 0, 0, w, Yp, { far: 'skyline', seed: 33, farHeight: Math.min(150, Yp * 0.55), clouds: 4 });

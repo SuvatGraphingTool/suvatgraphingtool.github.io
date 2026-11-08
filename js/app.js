@@ -18,7 +18,7 @@ import { figureOf, belowOf, placeOf, ownWord } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { prepare, DEADLINE_MS } from './compose/pictures.js';
 import { clearMovers, moverAt, markMover } from './render/util.js';
-import { recordTracks, trackAt, drawTracks, OWN_PATH } from './render/tracks.js';
+import { recordTracks, trackAt, drawTracks, tracksToFill, resetTracks, OWN_PATH } from './render/tracks.js';
 import { setStandIn, ownWords } from './render/standin.js';
 import { standInFor } from './compose/standins.js';
 import { LIBRARY } from './library.js';
@@ -426,8 +426,10 @@ function chooseScenario(id, { example = false } = {}) {
   scenario = byId(id);
   state.id = id;
   state.given = {};
-  // another scenario: the last one's speed card, veil and stand-in are not this one's
-  closePace();
+  // another scenario: the last one's speed card, veil and stand-in are not this one's,
+  // nor its clock: it has not flown, and starts at the start
+  closePace(); hideDone(); closeResolve();
+  state.t = 0; state.playing = false; state.launched = false; state.pre = null; setPlayIcon(false);
   setStandIn(null);
   veiled = null;
   $('canvas-wrap').querySelector('.cmp-reveal')?.remove();
@@ -2213,6 +2215,7 @@ function runFlight() {
   closePace();
   closeIntro();
   closeResolve();
+  resetTracks($('scene'));              // a launch is a first run: its trajectory is drawn as it flies. A replay keeps it.
   // a motion with no path (one of the older engines) simply leaves no ghost
   if (state.firedBefore) ghost = typeof traj.path === 'function' ? traj.path(260) : null;
   state.firedBefore = true; state.launched = true;
@@ -2952,6 +2955,11 @@ function renderWorking() {
 }
 
 /* ── loop ───────────────────────────────────────────────────────────── */
+/** Whether this stage keeps a trajectory: one in its own pixels, or the bullet's, once launched. */
+/** How far this motion has ever got: all of that is its trajectory, wherever the clock is now. */
+let flown = { motion: null, t: 0 };
+const refilling = () => !!$('scene')._tracks?.fill;
+const tracksHere = () => !windowed() && (!cam._map?.sx || scenario?.stage === 'range') && state.launched;
 function draw() {
   // syncPanes BEFORE the early return as well as after it. With no flight to
   // draw there is nothing for a window to be a window onto, and leaving four
@@ -2961,6 +2969,10 @@ function draw() {
   if (state.step !== 'flight' || !traj) { syncPanes(); dirty = false; return; }
   syncPanes();
   clearMovers();
+  // new numbers can make the motion shorter than the clock already says
+  if (!second && state.t > traj.tMax) state.t = traj.tMax;
+  if (flown.motion !== traj) flown = { motion: traj, t: 0 };
+  if (state.launched && state.t > flown.t) flown.t = state.t;
   const R = state.resolve ? resolveNow() : null;
   // Resolve open on a library stage: its arrows on, split into components
   // where the stage draws them (dashed across, solid up), so the card's
@@ -3001,17 +3013,31 @@ function draw() {
     // rule 1 — and it reads zero for the whole of the pre-roll because the
     // pre-roll is outside the clock and nothing in it has been measured.
     $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
-  } else if (kit()) { kitView($('scene'), cam); kit().render($('scene'), cam, opts); kitViewDone($('scene')); }
-  else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
-  // the road maps nothing to the pointer: no map left from the last stage,
-  // so a click on it is a click on the motion (js/render/scene.js)
-  else if (scenario?.stage === 'road') { cam._map = null; roadStage.render($('scene'), cam, opts); }
-  else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
-  else scene.render($('scene'), cam, opts);
+  } else {
+    const paint = (o) => {
+      $('scene')._frame = null;
+      if (kit()) { kitView($('scene'), cam); kit().render($('scene'), cam, o); kitViewDone($('scene')); }
+      else if (scenario?.stage === 'range') range.render($('scene'), cam, o);
+      // the road maps nothing to the pointer: no map left from the last stage,
+      // so a click on it is a click on the motion (js/render/scene.js)
+      else if (scenario?.stage === 'road') { cam._map = null; roadStage.render($('scene'), cam, o); }
+      else if (scenario?.plate) exhibit.render($('scene'), cam, o);
+      else scene.render($('scene'), cam, o);
+    };
+    // the trajectory, kept whole across a new layout or a scrub ahead (js/render/tracks.js):
+    // these are painted over by the frame that follows, and never seen
+    if (tracksHere()) {
+      for (const t of tracksToFill($('scene'), traj, state.t, traj.tMax) || []) {
+        clearMovers(); paint({ ...opts, t }); recordTracks($('scene'), traj, t, true);
+      }
+      clearMovers();
+    }
+    paint(opts);
+  }
   // on a stage in its own pixels, what is under the pointer is what it said it drew:
   // the ring and the words the twelve show, Resolve on a click (js/render/scene.js)
   // and everywhere it has been is its trajectory: drawn, and on offer too (js/render/tracks.js)
-  if (!windowed() && (!cam._map?.sx || scenario?.stage === 'range') && state.launched) {
+  if (tracksHere()) {
     const c = $('scene');
     recordTracks(c, traj, state.t);
     if (!OWN_PATH.has(state.id)) drawTracks(c);
@@ -3030,7 +3056,7 @@ function draw() {
   // at, and dims the moment a pan or a zoom takes you off it — so it reads as
   // the way back rather than as a mode you are in.
   $('fit-btn').setAttribute('aria-pressed', String(!cam.touched));
-  dirty = false;
+  dirty = refilling();
 }
 
 let last = performance.now();
@@ -3278,7 +3304,7 @@ addEventListener('resize', () => {
   if (!cam.touched) cam.fit = true;
   dirty = true;
 });
-const pickScene = () => ({ markers: state.markers, scenario, traj, t: state.t,
+const pickScene = () => ({ markers: state.markers, scenario, traj, t: state.t, flown: flown.motion === traj ? flown.t : 0,
                            fired: state.launched, resolving: state.resolve });
 const resolveHooks = {
   // The INSTANT under the pointer, or null — not a bare yes/no. The ring and
