@@ -27,6 +27,23 @@
   a { color: var(--ink-strong); text-underline-offset: 2px; }
   a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 </style>
+<!-- Arabic mode (js/i18n.js): the same choice as the app's, fetched only when it is on. -->
+<script>
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get('lang');
+    var l = q === 'ar' || q === 'en' ? q : localStorage.getItem('suvat-lang');
+    if (l !== 'ar') return;
+    var d = document.documentElement, h = document.head;
+    d.lang = 'ar'; d.dir = 'rtl'; d.classList.add('i18n-wait');
+    var add = function (rel, href) { var k = document.createElement('link'); k.rel = rel; k.href = href; h.appendChild(k); };
+    add('stylesheet', 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+    add('stylesheet', './css/rtl.css');
+    var s = document.createElement('script'); s.type = 'module'; s.src = './js/i18n.js'; h.appendChild(s);
+    setTimeout(function () { d.classList.remove('i18n-wait'); }, 2500);
+  } catch (e) { /* English it is */ }
+})();
+</script>
 </head>
 <body>
 <main>

@@ -48,7 +48,7 @@ export const cable = {
     const e = lift.ending(s), n = (x) => num(x, 3, { trim: true });
     // the forces stage by stage, a line each
     const NAME = { up: 'Speeding up', hold: 'At a steady speed', down: 'Slowing down' };
-    const table = s.f.cable.map((st) => `<p>${NAME[st.kind]}: ${M`a = ${n(st.a)} [m s^-2]`}${st.T != null ? `, ${M`T = ${n(st.T)} [N]`}` : ''}${s.f.m ? `, ${M`R = ${n(st.R)} [N]`}` : ''}.</p>`).join('');
+    const table = s.f.cable.map((st) => `<p>${NAME[st.kind]}: ${M`a = ${n(st.a)} [m s^-2]`}${st.T != null ? `, ${M`Ten = ${n(st.T)} [N]`}` : ''}${s.f.m ? `, ${M`R = ${n(st.R)} [N]`}` : ''}.</p>`).join('');
     const title = s.T1 == null ? `The floor pushes ${n(s.R1)} N speeding up, ${n(s.R3)} N slowing down.`
       : `Tension ${n(s.T1)} N speeding up${s.R3 != null ? `; the floor pushes ${n(s.R3)} N slowing down` : `, ${n(s.T3)} N slowing down`}.`;
     return { ...e, title, body: `${table}${e.body || ''}` };

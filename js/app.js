@@ -47,6 +47,7 @@ import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML, askHTML, 
 import { answerOf } from './parts/parts.js';
 import { fromReader, boxesOf } from './parts/answers.js';
 import { initShell } from './shell.js';
+import { readArabic } from './compose/arabicwords.js';
 import { initAccount } from './account.js';
 
 const $ = (id) => document.getElementById(id);
@@ -3385,7 +3386,8 @@ function applyReading(x, opts) {
   // the student's g, where the question gives none: the one just picked in the
   // reply, else the last one they chose (js/ai/gchoice.js)
   if (!opts?.part) { x = withChosenG(x, opts?.g ?? loadG()); lastRead = { raw, opts: { ...opts, g: undefined } }; }
-  if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? opts.words : '';
+  // Arabic words reach the reading stages as the English they read (js/compose/arabicwords.js)
+  if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? readArabic(opts.words) : '';
   // the student's own word for what moves wins over the model's ball (js/compose/registry.js)
   if (!opts?.part) x = ownWord(x, heard);
   if (!opts?.part) gFrom = typeof x?.gFrom === 'string' ? x.gFrom.slice(0, 20) : '';

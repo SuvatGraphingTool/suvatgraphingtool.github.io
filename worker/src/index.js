@@ -9,6 +9,7 @@
 // way the interface can explain.
 
 import { toPlace } from './place.js';
+import { readArabic } from '../../js/compose/arabicwords.js';
 import { toComposed, toFigure, namedPlace, answered, fromRest, ownWord } from './composeplace.js';
 import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt, inLang } from './schema.js';
 import { focusFor, libraryIdsIn, idsInHistory } from './focus.js';
@@ -114,14 +115,14 @@ export default {
     if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors, lang);
 
     // "20 m", in answer to "how high up does it start?": no model needed.
-    const filled = !file && mode !== 'board' ? answered(words, earlier) : null;
+    const filled = !file && mode !== 'board' ? answered(readArabic(words), earlier) : null;
     if (filled) return json({ ok: true, extraction: filled, model: 'none' }, 200, cors);
 
     // ONLY THE CATALOGUE THIS QUESTION NEEDS (focus.js): a typed or spoken
     // question carries every library scenario as one line, and in full only
     // those its words — and the chat so far — point to. A photo or a PDF has
     // no words to go by, and the board lays out more: they get it all.
-    const said = [...earlier.filter((h) => h.role === 'user').map((h) => h.parts[0].text), say].join('\n');
+    const said = readArabic([...earlier.filter((h) => h.role === 'user').map((h) => h.parts[0].text), say].join('\n'));
     const was = idsInHistory(earlier.filter((h) => h.role === 'model').map((h) => h.parts[0].text));
     const focus = mode !== 'board' && !file && env.PROMPT_FOCUS !== 'off' ? focusFor(said, was) : null;
     const payload = {
@@ -165,7 +166,9 @@ export default {
       const second = await race(env, models, payload);
       if (second.ok) outcome = second;
     }
-    if (outcome.ok) return json({ ok: true, extraction: { ...fromRest(namedPlace(toComposed(toPlace(toFigure(ownWord(outcome.extraction, words), words), words), words), words), words), ...(outcome.extraction?.title ? { title: outcome.extraction.title } : {}) }, model: outcome.model }, 200, cors);
+    // An Arabic question reaches these stages as the English they read (js/compose/arabicwords.js).
+    const read = readArabic(words);
+    if (outcome.ok) return json({ ok: true, extraction: { ...fromRest(namedPlace(toComposed(toPlace(toFigure(ownWord(outcome.extraction, read), read), read), read), read), read), ...(outcome.extraction?.title ? { title: outcome.extraction.title } : {}) }, model: outcome.model }, 200, cors);
     const { last, lastCap, capped, gone } = outcome;
 
     if (lastCap && models.every((m) => capped.has(m.name) || gone.has(m.name))) {

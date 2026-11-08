@@ -6,6 +6,7 @@
 // every symbol and number goes through js/notation.js, so each sink is
 // innerHTML (rule 1). Nothing is calculated (rule 4).
 
+import { translateText } from '../i18n.js';
 import { M, num, mathHTML } from '../notation.js';
 import { tag, leansOn, stepOf } from './parts.js';
 import { tidyProse } from '../ai/readout.js';
@@ -14,7 +15,7 @@ import { SPARK } from '../ai/ask.js';
 const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
 /** A part's question: prose, with any maths in it written between $ signs and set by the notation module.
     A part read from a student's question (`prose`) is their words, escaped and tidied. */
-export const askHTML = (p) => p.prose ? tidyProse(p.ask) : String(p.ask ?? '').split('$').map((x, i) => (i % 2 ? mathHTML(x) : esc(x))).join('');
+export const askHTML = (p) => p.prose ? tidyProse(p.ask) : String(translateText(p.ask ?? '')).split('$').map((x, i) => (i % 2 ? mathHTML(x) : esc(x))).join('');
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /** One answer, typeset: `t = 3.50 s`, two of them joined by "and". */

@@ -17,6 +17,7 @@
 import { prepareImage, readQuestion, readText, READER } from './capture.js';
 import { esc, proseHTML, sourcesHTML } from './readout.js';
 import { typeOut } from './typewriter.js';
+import { localizeHTML } from '../i18n.js';
 import { gAskHTML, parseG } from './gchoice.js';
 import { loadChats, getChat, saveChat, deleteChat, newChatRecord, titleOf, nameFrom, thumbOf, onChats } from './chats.js';
 import { plainOf } from '../notation.js';
@@ -240,7 +241,8 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     if (!r) { r = document.createElement('div'); r.className = 'ask-msg ask-reply'; thread.append(r); }
     if (thinking) current = r; else current = null;
     r.dataset.busy = String(thinking);
-    r.innerHTML = replyHTML(`${html}${acts || ''}`);
+    // (in Arabic, turned before it is written out: the typewriter hands out letters, not words)
+    r.innerHTML = replyHTML(localizeHTML(`${html}${acts || ''}`));
     before?.(r);
     if (!thinking) {
       typing?.finish();

@@ -43,6 +43,87 @@
 //   is design/notation.md. test/notation.test.mjs proves that nothing the app
 //   can put on screen still contains programmer's maths.
 
+import { lang, translateText } from './i18n.js';
+
+/* ── Arabic mode: the one table ─────────────────────────────────────────
+   In Arabic mode every symbol, unit and function name is Arabic, and only the
+   digits stay. Change a symbol here, in one line, and it changes everywhere,
+   on the page and on the canvas. The reasoning is in design/arabic-glossary.md.
+   A value is a letter, or [letter, subscript]: u is ع with a 0 below it. */
+export const ARABIC = {
+  vars: {
+    v: 'ع', u: ['ع', '0'], U: ['ع', '0'], V: ['ع', 'م'],
+    t: 'ز', T: ['ز', 'ك'], Ten: 'ش',
+    s: 'ف', a: 'ت', g: 'جـ', h: 'ل', H: 'ح',
+    x: 'س', y: 'ص', m: 'ك', F: 'ق', R: 'ر', r: 'ر', W: 'و', w: 'و', I: 'دف', J: 'دف',
+    i: 'سٓ', j: 'صٓ',
+    b: 'ب', c: 'حـ', d: 'د', e: 'ي', k: 'خ', n: 'ن', p: 'غ', q: 'غ', f: 'ق', l: 'ل', z: 'ظ', o: 'و',
+    // points and particles, as a geometry book letters them
+    A: 'أ', B: 'ب', C: 'جـ', D: 'د', E: 'هـ', G: 'ز', K: 'ك', L: 'ل', M: 'م', N: 'ن',
+    O: 'و', P: 'ن', Q: 'غ', S: 'ض', X: 'خ', Y: 'ي', Z: 'ظ',
+  },
+  greek: { θ: 'هـ', Θ: 'هـ', α: 'أ', β: 'ب', γ: 'جـ', δ: 'د', ε: 'ي', η: 'ن', λ: 'ل', μ: 'مـ', ν: 'ن', π: 'ط', ρ: 'ر', σ: 'س', Σ: 'مج', τ: ['ز', 'ط'], φ: 'ف', Φ: 'ف', ω: 'و', Ω: 'و', Δ: 'Δ' },
+  words: { from: 'من', speed: 'السرعة', sum: 'مج', canopy: 'المظلة' },
+  // a word and the name after it, which Arabic says the other way round
+  pairs: { 'vertical speed': 'السرعة الرأسية', 'horizontal speed': 'السرعة الأفقية', 'Vertical speed': 'السرعة الرأسية', 'Horizontal speed': 'السرعة الأفقية' },            // whole names that are words
+  subs: { max: 'أقصى', min: 'أدنى', flight: 'طيران', tot: 'كلي', k: 'ك' },
+  fns: { sin: 'جا', cos: 'جتا', tan: 'ظا', sec: 'قا', cosec: 'قتا', cot: 'ظتا', arcsin: 'جا⁻¹', arccos: 'جتا⁻¹', arctan: 'ظا⁻¹', ln: 'لو', log: 'لو', exp: 'أس' },
+  units: {
+    m: 'م', s: 'ث', h: 'س', km: 'كم', cm: 'سم', mm: 'ملم', kg: 'كجم', g: 'جم', N: 'نيوتن', J: 'جول', W: 'واط',
+    'm s^-1': 'م/ث', 'm s⁻¹': 'م/ث', 'm/s': 'م/ث', 'm s^-2': 'م/ث²', 'm s⁻²': 'م/ث²', 'm/s²': 'م/ث²',
+    'km h^-1': 'كم/س', 'km h⁻¹': 'كم/س', 'km/h': 'كم/س', 'N s': 'نيوتن·ث', 'kg m s^-1': 'كجم·م/ث', 'min': 'د', '°': '°', '%': '%',
+  },
+  ops: { '→': '←', ',': '،' },
+};
+
+const ar = () => lang() === 'ar';
+const NOJOIN = '\u200C';   // two letters of an equation are two symbols, not a word
+const CAP_RUN = /^[A-Z]{2,}$/;
+
+/** The symbols of one name, as [letter, subscript] pairs. */
+function arName(v, greek) {
+  if (greek) { const g = ARABIC.greek[v] ?? v; return [Array.isArray(g) ? g : [g, null]]; }
+  if (ARABIC.words[v]) return [[ARABIC.words[v], null, true]];
+  const one = (c) => { const e = ARABIC.vars[c]; return e === undefined ? null : Array.isArray(e) ? e : [e, null]; };
+  if (ARABIC.vars[v] !== undefined) return [one(v)];
+  return [...v].map((c) => (/[0-9]/.test(c) ? [c, null] : one(c) ?? [c, null]));
+}
+const arUnit = (u) => ARABIC.units[u.trim()] ?? ARABIC.units[u.trim().replace(/\s+/g, ' ')] ?? u;
+
+function arVarHTML(v, greek) {
+  const list = arName(v, greek);
+  if (list[0]?.[2]) return `<span class="m-txt">${esc(list[0][0])}</span>`;
+  const glue = CAP_RUN.test(v) ? '' : '<span class="m-sp"></span>';
+  return list.map(([b, sub]) => `<i class="m-var">${esc(b)}${NOJOIN}</i>${sub != null ? `<sub class="m-sub">${arSubHTML(sub)}</sub>` : ''}`).join(glue);
+}
+function arVarText(v, greek) {
+  const list = arName(v, greek);
+  if (list[0]?.[2]) return list[0][0];
+  return list.map(([b, sub]) => b + (sub != null ? arSubText(sub) : '')).join(CAP_RUN.test(v) ? NOJOIN : THIN);
+}
+// A subscript: digits stay digits, a word is a word, and a letter is the table's.
+const subWord = (x) => ARABIC.subs[x] ?? (/^[A-Za-z]$/.test(x) ? ([].concat(ARABIC.vars[x] ?? x))[0] : null);
+function arSubHTML(x) {
+  const w = subWord(x);
+  if (w) return `<span class="m-txt">${esc(w)}</span>`;
+  if (/^[0-9]+$/.test(x)) return `<span class="m-num">${esc(x)}</span>`;
+  if (/^[\u0600-\u06FF]+$/.test(x)) return `<span class="m-txt">${esc(x)}</span>`;
+  return renderHTML(parse(x));
+}
+function arSubText(x) {
+  const w = subWord(x);
+  if (w) return (w.length > 2 ? THIN : NOJOIN) + w;      // a word beside a letter would read as one word
+  if (/^[0-9]+$/.test(x)) return toSub(x);
+  if (/^[\u0600-\u06FF]+$/.test(x)) return NOJOIN + x;
+  return renderText(parse(x));
+}
+// u_y: ع with 0 and ص below it, side by side
+const ownSub = (n) => {
+  if (n.k !== 'var') return null;
+  const e = n.greek ? ARABIC.greek[n.v] : ARABIC.vars[n.v];
+  return Array.isArray(e) ? e : null;
+};
+
 /* ── glyphs ─────────────────────────────────────────────────────────── */
 
 const GREEK = {
@@ -149,11 +230,12 @@ const toSub = (s) => [...s].map((c) => SUBS[c] ?? c).join('');
 // grown: it pays for the formulae, which repeat, and forgets the substitutions.
 const CACHE_MAX = 600;
 function cached(store, src, make) {
-  const hit = store.get(src);
+  const key = ar() ? `\u0000${src}` : src;   // the same source, set in each language
+  const hit = store.get(key);
   if (hit !== undefined) return hit;
   if (store.size > CACHE_MAX) store.clear();
   const out = make(src);
-  store.set(src, out);
+  store.set(key, out);
   return out;
 }
 const htmlCache = new Map(), textCache = new Map();
@@ -470,7 +552,20 @@ const bare = (n) => (n.k === 'group' && n.paren ? n.body : n);
 
 /* ── HTML ───────────────────────────────────────────────────────────── */
 
-function renderHTML(n) {
+// "vertical" speed, in Arabic one phrase: السرعة الرأسية
+function arPairs(n) {
+  if (!ar() || n.k !== 'row') return n;
+  const items = [];
+  for (let i = 0; i < n.items.length; i++) {
+    const a = n.items[i], b = n.items[i + 1];
+    const said = a.k === 'text' && b?.k === 'var' ? ARABIC.pairs[`${a.v} ${b.v}`] : null;
+    if (said) { items.push({ k: 'text', v: said }); i++; } else items.push(a);
+  }
+  return items.length === n.items.length ? n : { ...n, items };
+}
+
+function renderHTML(n0) {
+  const n = arPairs(n0);
   switch (n.k) {
     case 'row': {
       // pieces, so a vector can be held to what multiplies it: 28𝒊 and
@@ -491,30 +586,38 @@ function renderHTML(n) {
       if (n.rel) cls.push('m-rel');
       if (n.comma) cls.push('m-comma');
       if (n.lead) cls.push('m-lead');
-      return `<span class="${cls.join(' ')}">${esc(n.v)}</span>`;
+      return `<span class="${cls.join(' ')}">${esc(ar() ? ARABIC.ops[n.v] ?? n.v : n.v)}</span>`;
     }
     case 'num':
       return n.exp
         ? `<span class="m-num">${esc(n.v)}</span><span class="m-op m-mul">×</span><span class="m-num">10</span><sup class="m-sup">${esc(n.exp.replace('-', '−'))}</sup>`
         : `<span class="m-num">${esc(n.v)}</span>`;
     case 'var':
-      return `<i class="m-var">${esc(n.v)}</i>`;
+      if (ar()) return arVarHTML(n.v, n.greek);
+      return `<i class="m-var">${esc(n.v === 'Ten' ? 'T' : n.v)}</i>`;
     case 'unit':
-      return `<span class="m-unit">${unitHTML(n.v)}</span>`;
+      return `<span class="m-unit">${ar() ? esc(arUnit(n.v)) : unitHTML(n.v)}</span>`;
     case 'text':
-      return `<span class="m-txt">${esc(n.v)}</span>`;
+      return `<span class="m-txt">${esc(ar() ? translateText(n.v) : n.v)}</span>`;
     case 'group':
       return n.paren
         ? `<span class="m-par">(</span>${renderHTML(n.body)}<span class="m-par">)</span>`
         : renderHTML(n.body);
     case 'pow':
       return `${renderHTML(n.base)}<sup class="m-sup">${renderHTML(parse(n.exp))}</sup>`;
-    case 'idx':
+    case 'idx': {
+      if (ar()) {
+        const own = ownSub(n.base);
+        return own
+          ? `<i class="m-var">${esc(own[0])}${NOJOIN}</i><sub class="m-sub">${arSubHTML(own[1])}<span class="m-sp"></span>${arSubHTML(n.idx)}</sub>`
+          : `${renderHTML(n.base)}<sub class="m-sub">${arSubHTML(n.idx)}</sub>`;
+      }
       return `${renderHTML(n.base)}<sub class="m-sub">${renderHTML(parse(n.idx))}</sub>`;
+    }
     case 'deg':
       return `${renderHTML(n.base)}<span class="m-deg">°</span>`;
     case 'fn':
-      return `<span class="m-fn">${esc(n.name)}</span>`
+      return `<span class="m-fn">${esc(ar() ? ARABIC.fns[n.name] ?? n.name : n.name)}</span>`
         + (n.exp ? `<sup class="m-sup">${renderHTML(parse(n.exp))}</sup>` : '')
         + `<span class="m-sp"></span>${renderHTML(n.arg)}`;
     case 'abs':
@@ -547,7 +650,8 @@ function unitText(body) {
 const THIN = ' ';          // the gap between implicit factors
 const SOLIDUS = '⁄';       // a fraction slash, not a division sign
 
-function renderText(n) {
+function renderText(n0) {
+  const n = arPairs(n0);
   switch (n.k) {
     case 'row': {
       let out = '';
@@ -563,16 +667,22 @@ function renderText(n) {
       });
       return out;
     }
-    case 'op': return n.comma ? ',' : n.v;
+    case 'op': return ar() ? ARABIC.ops[n.v] ?? n.v : n.comma ? ',' : n.v;
     case 'num': return n.exp ? `${n.v} × 10${toSuper(n.exp.replace('-', '−'))}` : n.v;
-    case 'var': return n.v;
-    case 'unit': return unitText(n.v);
-    case 'text': return n.v;
+    case 'var': return ar() ? arVarText(n.v, n.greek) : n.v === 'Ten' ? 'T' : n.v;
+    case 'unit': return ar() ? arUnit(n.v) : unitText(n.v);
+    case 'text': return ar() ? translateText(n.v) : n.v;
     case 'group': return n.paren ? `(${renderText(n.body)})` : renderText(n.body);
     case 'pow': return renderText(n.base) + toSuper(renderText(parse(n.exp)));
-    case 'idx': return renderText(n.base) + toSub(renderText(parse(n.idx)));
+    case 'idx': {
+      if (ar()) {
+        const own = ownSub(n.base);
+        return own ? own[0] + arSubText(own[1]) + arSubText(n.idx) : renderText(n.base) + arSubText(n.idx);
+      }
+      return renderText(n.base) + toSub(renderText(parse(n.idx)));
+    }
     case 'deg': return `${renderText(n.base)}°`;
-    case 'fn':  return `${n.name}${n.exp ? toSuper(renderText(parse(n.exp))) : ''}${THIN}${renderText(n.arg)}`;
+    case 'fn':  return `${ar() ? ARABIC.fns[n.name] ?? n.name : n.name}${n.exp ? toSuper(renderText(parse(n.exp))) : ''}${THIN}${renderText(n.arg)}`;
     case 'abs': return `|${renderText(n.body)}|`;
     case 'vec': return toBold(renderText(n.body));
     // Without a bar to draw, the radicand keeps its brackets.

@@ -43,6 +43,21 @@ import { resolveKit } from '../js/kitresolve.js';
 import { LIBRARY } from '../js/library.js';
 import { givenHTML, answersHTML, workingHTML, noteHTML } from '../js/board/frames.js';
 
+// THE SAME SWEEP, IN ARABIC. Run a second time with SUVAT_LANG=ar (the end of this
+// file does it): everything the app can display, turned Arabic as the page turns
+// it, must hold no Latin letter, no hyphen minus and no computer maths. Only the
+// digits stay. The groups that test the English table sit out.
+const ARABIC_RUN = process.env.SUVAT_LANG === 'ar';
+if (ARABIC_RUN) {
+  const { useDictionary } = await import('../js/i18n.js');
+  const { default: AR, GENERIC } = await import('../js/i18n/ar.js');
+  useDictionary('ar', AR, GENERIC);
+}
+const { localizeHTML } = await import('../js/i18n.js');
+const ENGLISH_ONLY = /^(Unicode output|HTML output|Numbers|Nothing that can hold|The four panes say|The scenarios say)/;
+const latinLeft = new Set();
+if (ARABIC_RUN && process.env.SWEEP_OUT) globalThis.__i18nMissed = new Set();
+
 let pass = 0, fail = 0;
 
 function is(actual, expected, label) {
@@ -53,7 +68,10 @@ function ok(cond, label, detail) {
   if (cond) { pass++; console.log(`  ok   ${label}`); }
   else { fail++; console.log(`  FAIL ${label}${detail ? `\n         ${detail}` : ''}`); }
 }
-function group(name, fn) { console.log(`\n${name}`); fn(); }
+function group(name, fn) {
+  if (ARABIC_RUN && ENGLISH_ONLY.test(name)) return;
+  console.log(`\n${name}`); fn();
+}
 
 /* == 1 · the notation itself ========================================== */
 
@@ -123,6 +141,8 @@ const BANNED = [
   { re: /\bInfinity\b|\bNaN\b|\bundefined\b/, why: 'a raw JavaScript value' },
 ];
 
+const BANNED_AR = [{ re: /[A-Za-z]/, why: 'a Latin letter in Arabic mode' }, ...BANNED];
+
 // The notation module emits markup. Tags become spaces rather than vanishing,
 // so stripping them can never fuse two tokens into a word that reads clean.
 const visible = (html) => String(html)
@@ -131,6 +151,12 @@ const visible = (html) => String(html)
 
 function check(label, html, bag) {
   if (html == null) return;
+  if (ARABIC_RUN) {
+    const said = visible(localizeHTML(html));
+    const bad = BANNED_AR.find((b) => b.re.test(said.replace(/م\/ث|كم\/س/g, '')));
+    if (bad) { latinLeft.add(said.replace(/\s+/g, ' ').trim()); bag.push(`${label}: ${bad.why}\n           ${said.replace(/\s+/g, ' ').trim()}`); }
+    return;
+  }
   const text = visible(html);
   for (const b of BANNED) {
     if (b.re.test(text)) bag.push(`${label}: ${b.why}\n           ${text.replace(/\s+/g, ' ').trim()}`);
@@ -290,7 +316,7 @@ group('The Past-paper library: over the wall, everything it says', () => {
       }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -323,7 +349,7 @@ group('The Past-paper library: from a cliff or a tower, everything it says', () 
       for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 100, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -350,7 +376,7 @@ group('The Past-paper library: thrown, chased and caught, everything it says', (
       for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -377,7 +403,7 @@ group('The Past-paper library: there and back, everything it says', () => {
       for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -399,7 +425,7 @@ group('The Past-paper library: a parachute jump, everything it says', () => {
       for (const t of [0, r.f.tMax / 2, r.f.tMax]) for (const b of [...K.hud(r.f, t).left, ...K.hud(r.f, t).right]) { said++; check('hud', `${b.k} ${b.v} ${b.unit}`, bag); }
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 30, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -423,7 +449,7 @@ group('The Past-paper library: two ships, everything it says', () => {
       for (const x of [e.eyebrow, e.title, e.body]) { said++; check('ending', x, bag); }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 30, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -440,7 +466,7 @@ group('The Past-paper library: three models, everything it says', () => {
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
@@ -456,7 +482,7 @@ group('The Past-paper library: off the bench, everything it says', () => {
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -472,7 +498,7 @@ group('The Past-paper library: over the wall in a letter, everything it says', (
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -489,7 +515,7 @@ group('The Past-paper library: stage by stage, everything it says', () => {
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -507,7 +533,7 @@ group('The Past-paper library: do they collide, everything it says', () => {
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -525,7 +551,7 @@ group('The Past-paper library: known from two moments, everything it says', () =
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -543,7 +569,7 @@ group('The Past-paper library: the displacement–time graph, everything it says
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -561,7 +587,7 @@ group('The Past-paper library: two robots, everything it says', () => {
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -577,7 +603,7 @@ group('The Past-paper library: two thrown up in letters, everything it says', ()
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -595,7 +621,7 @@ group('The Past-paper library: two trains, everything it says', () => {
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -612,7 +638,7 @@ group('The Past-paper library: past the posts, everything it says', () => {
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -629,7 +655,7 @@ group('The Past-paper library: the velocity–time graph, everything it says', (
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -646,7 +672,7 @@ group('The Past-paper library: falling past two marks, everything it says', () =
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -663,7 +689,7 @@ group('The Past-paper library: thrown towards each other, everything it says', (
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -679,7 +705,7 @@ group('The Past-paper library: under the ceiling, everything it says', () => {
       const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -698,7 +724,7 @@ group('The Past-paper library: up a rough slope, everything it says', () => {
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -717,7 +743,7 @@ group('The Past-paper library: down the slope and across the flat, everything it
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -735,7 +761,7 @@ group('The Past-paper library: dropped, or slid down a ramp, everything it says'
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -753,7 +779,7 @@ group('The Past-paper library: with and without air resistance, everything it sa
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -771,7 +797,7 @@ group('The Past-paper library: up a rough slope, timed, everything it says', () 
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -790,7 +816,7 @@ group('The Past-paper library: two travellers, one bicycle, everything it says',
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -808,7 +834,7 @@ group('The Past-paper library: down the slope and straight down, everything it s
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -827,7 +853,7 @@ group('The Past-paper library: a change of course, everything it says', () => {
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -845,7 +871,7 @@ group('The Past-paper library: the last stretch of a fall, everything it says', 
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -864,7 +890,7 @@ group('The Past-paper library: into the water, everything it says', () => {
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -884,7 +910,7 @@ group('The Past-paper library: up the hill and down it, everything it says', () 
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -903,7 +929,7 @@ group('The Past-paper library: pulled by a rope, everything it says', () => {
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -921,7 +947,7 @@ group('The Past-paper library: the lift, its cable and its floor, everything it 
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -940,7 +966,7 @@ group('The Past-paper library: down a rough slope, everything it says', () => {
       for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -960,7 +986,7 @@ group('The Past-paper library: into soft ground, everything it says', () => {
       for (const gr of K.graphs(r.f, r.f.tMax, P)) { check('graph', `${gr.title} ${gr.unit}`, bag); if (gr.note) check('graph note', gr.note, bag); }
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint || ''}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
@@ -1068,7 +1094,7 @@ group('The Past-paper library: two in one vertical line, everything it says', ()
       }
     }
   }
-  for (const f of K.fields) check('box', `${f.label} ${f.hint}`, bag);
+  for (const f of K.fields) check('box', `${f.label}<br>${f.hint}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   for (const s of LIBRARY) check('card', `${s.name} ${s.sub} ${s.note}`, bag);
   ok(said > 60, `the sweep reaches the scenario's own words (${said} lines)`);
@@ -1123,7 +1149,7 @@ group('The Past-paper library: a journey in stages, everything it says', () => {
     }
   }
   const vals = { n: '4', k1: 'up', k2: 'hold', k3: 'down', k4: 'up' };
-  for (const f of [...K.fields, ...K.rows(vals).flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${f.aria || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows(vals).flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${f.aria || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   for (const r of K.rows(vals)) check('row', `${r.title} ${r.hint || ''}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
@@ -1175,7 +1201,7 @@ group('The Past-paper library: two on one road, everything it says', () => {
       }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -1217,7 +1243,7 @@ group('The Past-paper library: moving in a plane, everything it says', () => {
       }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 100, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -1261,7 +1287,7 @@ group('The Past-paper library: a ball that bounces, everything it says', () => {
       }
     }
   }
-  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label} ${f.hint || ''} ${(f.options || []).map((o) => o.label).join(' ')}`, bag);
+  for (const f of [...K.fields, ...K.rows.flatMap((r) => r.fields)]) check('box', `${f.label}<br>${f.hint || ''}<br>${(f.options || []).map((o) => o.label).join('<br>')}`, bag);
   check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
   ok(said > 150, `the sweep reaches the scenario's own words (${said} lines)`);
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
@@ -1616,8 +1642,8 @@ group('Resolve on a library stage: every card it can show', () => {
     if (!r.ok) continue;
     for (const t of [0, r.f.tMax / 2, r.f.tMax]) {
       const R = resolveKit(K, r, r.f, t);
-      check('resolve', `${R.note} ${R.tUnit || ''}`, bag);
-      for (const b of R.blocks) for (const q of b.rows) { said++; check('resolve', `${b.name} ${q.name} ${q.unit} ${q.formula} = ${q.sub} ${q.note}`, bag); }
+      check('resolve', `${R.note}<br>${R.tUnit || ''}`, bag);
+      for (const b of R.blocks) for (const q of b.rows) { said++; check('resolve', `${b.name}<br>${q.name}<br>${q.unit}<br>${q.formula}<br>=<br>${q.sub}<br>${q.note}`, bag); }
     }
   }
   ok(said > 300, `the sweep reaches every row (${said})`);
@@ -1625,4 +1651,14 @@ group('Resolve on a library stage: every card it can show', () => {
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
-process.exit(fail ? 1 : 0);
+if (ARABIC_RUN) {
+  if (process.env.SWEEP_OUT) (await import('node:fs')).writeFileSync(process.env.SWEEP_OUT, [...(globalThis.__i18nMissed || latinLeft)].join('\n'));
+  process.exit(fail ? 1 : 0);
+}
+// and the whole sweep again, in Arabic
+const { spawnSync } = await import('node:child_process');
+const again = spawnSync(process.execPath, [new URL(import.meta.url).pathname], { env: { ...process.env, SUVAT_LANG: 'ar' }, encoding: 'utf8', maxBuffer: 1 << 28 });
+const tail = (again.stdout || '').trim().split('\n');
+for (const l of tail.filter((x) => x.startsWith('  FAIL')).slice(0, 40)) console.log(`arabic${l}`);
+console.log(`In Arabic: ${tail.at(-1)}`);
+process.exit(fail || again.status ? 1 : 0);

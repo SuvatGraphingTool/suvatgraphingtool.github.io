@@ -15,6 +15,7 @@
 //
 // Everything is seeded: the same scene draws the same clouds every frame.
 
+import { lang } from '../i18n.js';
 import { cssVar, withAlpha } from './util.js';
 
 /** The scenery colours for this frame, from the theme. */
@@ -892,7 +893,8 @@ export function compassRose(g, x, y, R, P) {
   g.fillStyle = P.ink; g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fill();
   g.font = `700 15px ${cssVar('--font', 'system-ui, sans-serif')}`; g.textAlign = 'center'; g.textBaseline = 'bottom';
   g.lineWidth = 4; g.strokeStyle = withAlpha(cssVar('--surface', '#131210'), 0.85); g.lineJoin = 'round';
-  g.strokeText('N', x, y - R - 3); g.fillStyle = P.ink; g.fillText('N', x, y - R - 3);
+  const north = lang() === 'ar' ? 'ش' : 'N';   // شمال: the letter on an Arabic compass
+  g.strokeText(north, x, y - R - 3); g.fillStyle = P.ink; g.fillText(north, x, y - R - 3);
   g.restore();
 }
 
