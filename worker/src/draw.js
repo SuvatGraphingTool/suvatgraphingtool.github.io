@@ -17,7 +17,7 @@
 //     bad drawing never appears and is never paid for twice.
 //
 // Time is for quality: the model is given room to think, and the page waits up
-// to thirty seconds from when the student asked. A drawing that finishes after
+// to twenty seconds from when the student asked. A drawing that finishes after
 // the student has gone on is still kept (ctx.waitUntil), for whoever asks next.
 
 import { normaliseName, thingName, isBlocked, isMaterial } from '../../js/compose/things.js';
@@ -28,8 +28,8 @@ export const NEW_PER_HOUR_PER_IP = 5;
 const DAY_MS = 86_400_000, HOUR_MS = 3_600_000;
 // non-lite first: the drawing is the point, and these think
 export const DRAW_MODELS_DEFAULT = 'gemini-3.8-flash:high,gemini-3.6-flash:high,gemini-3.5-flash-lite:low,gemini-3.1-flash-lite:low';
-/** The Worker's own limit for one drawing; the page's deadline is 30 s from when the student asked. */
-export const DRAW_DEADLINE_MS = 28_000;
+/** The Worker's own limit for one drawing; the page's deadline is 20 s from when the student asked. */
+export const DRAW_DEADLINE_MS = 18_000;
 const DRAW_HEDGE_MS = 16_000;
 
 const MUG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="a" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fbfbf8"/><stop offset=".7" stop-color="#e8e6df"/><stop offset="1" stop-color="#c8c6bd"/></linearGradient></defs><path fill="#d3d1c8" d="M22 11h2.5a5.5 5.5 0 0 1 0 11H22v-2.600h2.500a2.900 2.900 0 0 0 0-5.800H22z"/><path fill="url(#a)" d="M5 7.500C5 6.700 5.700 6 6.500 6h15c.8 0 1.500.7 1.500 1.500V24a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"/><ellipse cx="14" cy="7.200" rx="8.400" ry="1.500" fill="#6d4427"/><ellipse cx="14" cy="7.400" rx="7.200" ry="1" fill="#8a5a36"/><path fill="#e8483f" d="M5 15h18v5H5z"/><path fill="#c7342d" d="M20 15h3v5h-3z"/><path fill="#fff" fill-opacity=".7" d="M7.200 9.500h1.600v13.300c0 .4-.4.700-.8.700s-.8-.3-.8-.7z"/></svg>';

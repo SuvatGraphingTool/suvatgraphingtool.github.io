@@ -91,8 +91,9 @@ export default {
 
   /* ── home: Ask Suvat ──────────────────────────────────────────────── */
   'The A-level mechanics playground': 'ملعب الميكانيكا لطلاب A-level',
-  'Visualise anything.': 'تخيّل أي حركة.',
-  'Watch the maths move.': 'شاهد الرياضيات تتحرك.',
+  'Visualize anything.': 'تخيّل أي شيء.',
+  'See the maths move.': 'شاهد الرياضيات تتحرك.',
+  'Fun experiments!': 'تجارب ممتعة!',
   'See every step.': 'شاهد كل خطوة.',
   'Snap it. See it fly.': 'صوّره، وشاهده يطير.',
   'Every number, worked out.': 'كل رقم، محسوب.',
