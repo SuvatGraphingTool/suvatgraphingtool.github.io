@@ -19,6 +19,8 @@ import { reveal } from './compose/reveal.js';
 import { prepare, DEADLINE_MS } from './compose/pictures.js';
 import { clearMovers, moverAt, markMover } from './render/util.js';
 import { recordTracks, trackAt, drawTracks, OWN_PATH } from './render/tracks.js';
+import { setStandIn, ownWords } from './render/standin.js';
+import { standInFor } from './compose/standins.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
@@ -424,8 +426,9 @@ function chooseScenario(id, { example = false } = {}) {
   scenario = byId(id);
   state.id = id;
   state.given = {};
-  // another scenario: the last one's speed card and veil are not this one's
+  // another scenario: the last one's speed card, veil and stand-in are not this one's
   closePace();
+  setStandIn(null);
   veiled = null;
   $('canvas-wrap').querySelector('.cmp-reveal')?.remove();
   // a new scenario starts with the Display panel put away (the user, 8 Nov)
@@ -832,14 +835,14 @@ function buildKitScreen() {
   $('mode-say').innerHTML = '';
   valuesVoice(false);
   VOICE.el.h.innerHTML = K.voice.h;
-  VOICE.el.sub.innerHTML = K.voice.sub;
+  VOICE.el.sub.innerHTML = ownWords(K.voice.sub);
 
   const val = (k) => state.kit[k];
   const box = (f) => {
     const id = `k-${f.key.replace('.', '-')}`;
     if (f.type === 'choice') {
       // a choice with a default shows it pressed: what the engine assumes is on screen
-      return `<div class="xrow wide choice${f.full ? ' full' : ''}" data-x="${f.key}"><span class="xlabel" id="${id}-l">${f.label}</span>
+      return `<div class="xrow wide choice${f.full ? ' full' : ''}" data-x="${f.key}"><span class="xlabel" id="${id}-l">${ownWords(f.label)}</span>
         <div class="chips" role="group" aria-labelledby="${id}-l"${f.hint ? ` aria-describedby="${id}-h"` : ''} data-choice="${f.key}">${f.options.map((o) =>
           `<button class="chip" data-v="${o.v}" aria-pressed="${(val(f.key) ?? f.default) === o.v}">${o.label}</button>`).join('')}</div>
         ${f.hint ? `<p class="xhint" id="${id}-h">${f.hint}</p>` : ''}</div>`;
@@ -849,7 +852,7 @@ function buildKitScreen() {
     // row may say its own (f.aria), and its hint is read with it
     const whose = f.col && K.cols?.[f.col] ? `${K.cols[f.col]}: ` : '';
     const plain = (x) => x.replace(/<[^>]+>/g, '');
-    return `<div class="xrow${f.narrow ? ' narrow' : ''}" data-x="${f.key}"><label for="${id}">${f.label}</label>
+    return `<div class="xrow${f.narrow ? ' narrow' : ''}" data-x="${f.key}"><label for="${id}">${ownWords(f.label)}</label>
       <input id="${id}" type="text" inputmode="decimal" autocomplete="off" data-k="${f.key}"
              aria-label="${f.aria ? plain(f.aria) : `${whose}${plain(f.label)}`}"${f.hint ? ` aria-describedby="${id}-h"` : ''}
              value="${val(f.key) ?? ''}" placeholder="${f.placeholder ?? (f.optional ? '0' : '—')}">
@@ -2558,7 +2561,7 @@ function renderHud() {
   const ground = scenario?.road ? (FIGURES[state.who] || FIGURES.lorry).ground : null;
   $('place').textContent = ground === 'rail' ? 'A straight, level railway from A to B'
     : ground === 'track' ? 'A straight, level running track from A to B'
-    : scenario?.place || '';
+    : ownWords(scenario?.place) || '';
   $('place-note').textContent = '';
   // In the window there is no corner for a readout to sit in, and the clock
   // is in the transport where all four panes share it.
@@ -2569,8 +2572,8 @@ function renderHud() {
   // A kit says what its stage reads out.
   if (kit()) {
     const r = kit().hud(traj, state.t, { rate: state.rate });
-    $('hud-left').innerHTML = r.left.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
-    $('hud-right').innerHTML = r.right.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
+    $('hud-left').innerHTML = r.left.map((x) => b(ownWords(x.k), x.v, x.unit, x.hue)).join('');
+    $('hud-right').innerHTML = r.right.map((x) => b(ownWords(x.k), x.v, x.unit, x.hue)).join('');
     return;
   }
   // AFTER the kit's turn: a kit's motion need not have a pos() — two
@@ -3568,6 +3571,10 @@ function applyLibrary(x, { graph = true, assume = false } = {}) {
   }
   chooseScenario(s.id);
   closeIntro();
+  // what the question says moves is what the stage draws (js/render/standin.js)
+  const stand = standInFor(x.who);
+  setStandIn(stand, s.id);
+  if (stand?.thing) prepare({ objects: [{ figure: 'thing', thing: stand.thing }] }, { until: showBy() }).then(() => { dirty = true; });
   const fields = boxesOf(KITS[s.kit], s.example);
   const keys = new Set([...fields.map((f) => f.key), ...Object.keys(s.example || {}), 'g']);
   // a choice takes only one of its own options: a word the scenario does not
@@ -3604,7 +3611,7 @@ function applyLibrary(x, { graph = true, assume = false } = {}) {
  */
 // gAssumed only where the engine uses g (its kit offers a g): a lift or a road has none to assume
 function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = true) {
-  const plain = (h) => String(h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const plain = (h) => ownWords(String(h)).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
   const angleAssumed = /No angle was given/.test(summary || '');
   const atRest = /No speed was given/.test(summary || '');
   const heightAssumed = /No height was given/.test(summary || '');
@@ -3695,7 +3702,7 @@ const QUANTITY = new Set(['h', 'u', 'v', 's', 't', 'a', 'g', 'theta']);
 /** One value read into a box, set as maths: "h = 20 m", "θ = 90°", "u_A = 6 m s⁻¹" — the unit is the box's own. */
 function quantityHTML(f, n) {
   // a box's `given` is its name in the reply's list, where its label is a question for the values screen
-  const plain = String(f.given ?? f.label ?? '').replace(/<[^>]+>/g, '');
+  const plain = ownWords(String(f.given ?? f.label ?? '')).replace(/<[^>]+>/g, '');
   const unit = (/\(([^()]*)\)\s*$/.exec(plain)?.[1] || '').trim().replace(/⁻¹/g, '^-1').replace(/⁻²/g, '^-2');
   const val = num(n, 2, { trim: true });
   // "A.u" is u for A; "a1" is a for stage 1; "tTop" the time to the top

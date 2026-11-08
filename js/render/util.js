@@ -2,6 +2,7 @@
 
 import { num } from '../notation.js';
 import { D } from '../world/dims.js';
+import { standIn, standInFrame, ownWords } from './standin.js';
 
 /* ── what moves on this frame ──────────────────────────────────────────
    Hovering over what moves offers Resolve. On one of the twelve the camera says
@@ -11,7 +12,7 @@ import { D } from '../world/dims.js';
    that has not. Read in the canvas's own pixels, through whatever pan and zoom is
    on. No physics: this is where things were drawn. */
 export const movers = { list: [], vel: null, tip: null };
-export function clearMovers() { movers.list.length = 0; movers.vel = null; movers.tip = null; }
+export function clearMovers() { movers.list.length = 0; movers.vel = null; movers.tip = null; standInFrame(); }
 /** Note a moving thing at (x, y), radius r px, in the context's current coordinates. */
 export function noteMover(ctx, x, y, r = 22, { strong = false, label = null, arrow = false } = {}) {
   const dpr = ctx._dpr || 1;
@@ -138,6 +139,7 @@ export function palette() {
    @param fired  before launch the ring is lighter — nothing is moving yet */
 export function ballSprite(ctx, x, y, r, { ring = null, fired = true } = {}) {
   noteMover(ctx, x, y, Math.max(16, r + 4));
+  if (standIn('ball', ctx, x, y, r * 2, { r, ring })) return;
   const P = palette();
 
   if (r < 5 && ring) {
@@ -509,7 +511,7 @@ const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && 
 export function labels() {
   const q = [], held = [];
   return {
-    add(text, x, y, o = {}) { q.push({ text, x, y, o, pri: o.pri ?? 0 }); },
+    add(text, x, y, o = {}) { q.push({ text: ownWords(text), x, y, o, pri: o.pri ?? 0 }); },
     /** Keep labels off a drawn thing — a figure, a post — as if it were a
         label already placed: { x, y, w, h }, top-left and size. */
     reserve(box) { held.push(box); },

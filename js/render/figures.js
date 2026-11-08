@@ -38,6 +38,7 @@
 // so two parallel tracks are two calls to rails().
 
 import { stroke, dot, ballSprite, withAlpha, cssVar, noteMover } from './util.js';
+import { standIn } from './standin.js';
 import { env, rng, softShadow, tarmac, railBed } from './scenery.js';
 
 const TAU = Math.PI * 2;
@@ -123,7 +124,9 @@ function limb(g, pts, color, width) {
     on the chassis; wheels in their arches turning with the distance (phase);
     a tail lamp that glows when `brake`. A soft shadow under it. `ring`
     outlines it in a hue when it must be told apart. */
-export function lorry(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, brake = false, airborne = false } = {}) {
+export function lorry(g, X, Y, L, P, o = {}) {
+  if (standIn('lorry', g, X, Y, L, o)) return;
+  const { dir = 1, ring = null, phase = 0, brake = false, airborne = false } = o;
   const H = L * 0.36, cabW = L * 0.26, wr = L * 0.075, E = env();
   if (!airborne) softShadow(g, X - L * 0.5 * dir, Y + 1, L * 0.55, Math.max(2, L * 0.06), 0.9);
   at(g, X, Y, dir, () => {
@@ -201,7 +204,9 @@ export function lorry(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, brake = 
     a headlight at the front and a tail light that glows when `brake` (the
     stage says when it is slowing). A soft shadow under it. `ring` outlines it
     in a hue when it must be told apart. */
-export function car(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, brake = false, paint = null, airborne = false } = {}) {
+export function car(g, X, Y, L, P, o = {}) {
+  if (standIn('car', g, X, Y, L, o)) return;
+  const { dir = 1, ring = null, phase = 0, brake = false, paint = null, airborne = false } = o;
   const H = L * 0.34, wheel = L * 0.1, E = env();
   if (!airborne) softShadow(g, X - L * 0.5 * dir, Y + 1, L * 0.55, L * 0.07, 0.9);
   at(g, X, Y, dir, () => {
@@ -268,7 +273,9 @@ function trainSize(L, cars) {
 const trainWheel = (L, cars) => trainSize(L, cars).wr;
 /** How high a train's roof stands above its rail, px, and its body height. */
 export function trainRoof(L, cars = 1) { const { H, wr } = trainSize(L, cars); return { roof: wr * 1.75 + H, H }; }
-export function train(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, cars = 1, brake = false, panto = null, airborne = false } = {}) {
+export function train(g, X, Y, L, P, o = {}) {
+  if (standIn('train', g, X, Y, L, o)) return;
+  const { dir = 1, ring = null, phase = 0, cars = 1, brake = false, panto = null, airborne = false } = o;
   const { n, gap, c, H, wr } = trainSize(L, cars), E = env();
   const reach = panto ?? H * 0.35;
   if (!airborne) softShadow(g, X - L * 0.5 * dir, Y + 2, L * 0.52, Math.max(3, H * 0.12), 0.8);
@@ -369,7 +376,9 @@ function bikeWheel(g, cx, cy, r, angle) {
   g.fillStyle = '#4a4446'; g.beginPath(); g.arc(cx, cy, Math.max(1.4, r * 0.1), 0, TAU); g.fill();
   g.restore();
 }
-export function cyclist(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, airborne = false } = {}) {
+export function cyclist(g, X, Y, L, P, o = {}) {
+  if (standIn('cyclist', g, X, Y, L, o)) return;
+  const { dir = 1, ring = null, phase = 0, airborne = false } = o;
   const r = L * 0.2, E = env();
   const skin = E.night ? '#b08a74' : '#d9a988', skinFar = E.night ? '#7d6253' : '#b5876a';
   const shirt = ring || (E.night ? '#6c7f9a' : '#5f7392'), shorts = '#2f3340';
@@ -435,7 +444,9 @@ export function cyclist(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, airbor
     screen, a finned engine, a chrome exhaust, a headlamp; the rider tucked
     forward in leathers, boots and gloves, a helmet with a visor's glint.
     `ring` paints the helmet in a second colour to tell B from A. */
-export function motorcycle(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, brake = false, airborne = false } = {}) {
+export function motorcycle(g, X, Y, L, P, o = {}) {
+  if (standIn('motorcycle', g, X, Y, L, o)) return;
+  const { dir = 1, ring = null, phase = 0, brake = false, airborne = false } = o;
   const r = L * 0.19, E = env();
   const paint = E.night ? '#4d6280' : '#3f5578', leather = '#2a2c33', leatherHi = '#4a4d57';
   if (!airborne) softShadow(g, X - L * 0.5 * dir, Y + 1, L * 0.5, Math.max(2, L * 0.05), 0.85);
@@ -503,7 +514,9 @@ export function motorcycle(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, bra
     the ground goes by (FIGURES.runner.cycle is matched to the sweep), so she
     neither skates nor moonwalks. `still` stands her upright, for a runner at
     rest. */
-export function runner(g, X, Y, L, P, { dir = 1, ring = null, phase = 0, still = false, reach = null, airborne = false, lean: leanTo = null } = {}) {
+export function runner(g, X, Y, L, P, o = {}) {
+  if (standIn('runner', g, X, Y, L, o)) return;
+  const { dir = 1, ring = null, phase = 0, still = false, reach = null, airborne = false, lean: leanTo = null } = o;
   const ink = ring || P.strong;
   const thigh = L * 0.25, shin = L * 0.26, upper = L * 0.16, fore = L * 0.15;
   const hx = -L * 0.2;
@@ -666,6 +679,7 @@ export function throwerHand(H, aim = 45) {
 /** A ball in flight, `r` px in radius: the stadium's shaded ball, with a
     ring in `color` round it when there are two to tell apart (A, B). */
 export function ballAt(g, x, y, r, color = null) {
+  if (standIn('ball', g, x, y, r * 2, { r: Math.max(5.5, r), ring: color })) { noteMover(g, x, y, Math.max(16, r + 4)); return; }
   ballSprite(g, x, y, Math.max(5.5, r));
   if (color) { g.save(); g.strokeStyle = color; g.lineWidth = 2.4; g.beginPath(); g.arc(x, y, Math.max(5.5, r) + 3, 0, TAU); g.stroke(); g.restore(); }
 }
@@ -720,6 +734,7 @@ export function ball(g, X, Y, L, P, { dir = 1, ring = null } = {}) {
     of a paper, which has no shape to speak of. */
 export function particle(g, X, Y, L, P, { ring = null } = {}) {
   noteMover(g, X, Y, Math.max(16, L * 0.7));
+  if (standIn('particle', g, X, Y, L, { r: L / 2, ring })) return;
   dot(g, X, Y, Math.max(3, L / 2), { fill: P.ink, stroke: ring || P.surface, width: ring ? 2.4 : 1.6 });
 }
 
@@ -1247,6 +1262,7 @@ export function skateboarder(g, cx, cy, H, P, { spin = 0, dir = 1, phase = 0, ri
  * label. No text on it.
  */
 export function parcel(g, cx, cy, L, P, { spin = 0 } = {}) {
+  if (standIn('parcel', g, cx, cy, L, { r: L / 2 })) return;
   noteMover(g, cx, cy, Math.max(16, L * 0.6));
   const E = env(), w = L, h = L * 0.72;
   g.save();
