@@ -205,6 +205,8 @@ console.log('\nIt reads Arabic questions');
   says('كم يستغرق الحجر حتى يصل إلى الأرض؟', 'how long');
   says('أوجد السرعة عند الهبوط', 'find the speed');
   says('فقط أُسقط', 'just', 'dropped');
+  says('استخدم قيمك', 'use your own');
+  says('لا أعرف', 'i do not know');
   says('بدأ من السكون', 'from rest');
   says('يتسارع ٢٫٥ م/ث²', '2.5 m/s²');
   says('طوله ٥٠ كم وكتلته ٣ كجم', '50 km', '3 kg');

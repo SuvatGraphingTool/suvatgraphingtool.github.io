@@ -33,6 +33,7 @@ const PHRASES = [
   ['السرعه الابتداييه', 'initial speed'], ['سرعه ابتداييه', 'initial speed'], ['سرعه القذف', 'speed of projection'], ['السرعه النهاييه', 'final speed'],
   ['مسار مستقيم', 'straight'], ['كره قدم', 'football'], ['كره سله', 'basketball'], ['كره تنس', 'tennis ball'], ['حوض سباحه', 'pool'], ['لوح قفز', 'diving board'], ['منصه قفز', 'diving board'],
   ['في الثانيه', 'per second'], ['متر في الثانيه', 'm/s'], ['مترا في الثانيه', 'm/s'], ['امتار في الثانيه', 'm/s'],
+  ['استخدم قيمك', 'use your own'], ['استخدم قيمك انت', 'use your own'], ['استخدم ارقامك', 'use your own'], ['اختر انت', 'you pick'], ['اختر لي', 'you pick'], ['لا اعرف', 'i do not know'], ['لا ادري', 'i do not know'], ['ما اعرف', 'i do not know'], ['لست متاكدا', 'not sure'], ['كما تشاء', 'you pick'], ['اكمل الباقي', 'fill in the rest'],
   ['لا زاويه', 'no angle'], ['بلا زاويه', 'no angle'], ['بدون زاويه', 'no angle'], ['فقط', 'just'],
 ].map(([a, e]) => [clean(a), e]).sort((x, y) => y[0].length - x[0].length);
 
