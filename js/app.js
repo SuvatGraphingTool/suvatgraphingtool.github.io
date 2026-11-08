@@ -20,6 +20,7 @@ import { prepare, DEADLINE_MS } from './compose/pictures.js';
 import { clearMovers, moverAt, markMover } from './render/util.js';
 import { recordTracks, trackAt, drawTracks, tracksToFill, resetTracks, OWN_PATH } from './render/tracks.js';
 import { setStandIn, ownWords } from './render/standin.js';
+import { stillFrame, useStill, forgetStill } from './render/still.js';
 import { standInFor } from './compose/standins.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
@@ -2552,6 +2553,11 @@ function wireAskAt() {
 }
 
 /* ── readouts, on the diagram ───────────────────────────────────────── */
+/* WRITTEN ONLY WHEN IT CHANGED. innerHTML rebuilds the boxes, which makes the browser
+   work out style and layout again, every frame, whatever the number did. */
+const written = new WeakMap();
+function setHTML(el, html) { if (written.get(el) !== html) { written.set(el, html); el.innerHTML = html; } }
+function setText(el, text) { if (el.textContent !== text) el.textContent = text; }
 function renderHud() {
   if (!traj) return;
   // An exhibit happens somewhere else and says where in its own `place`.
@@ -2562,21 +2568,21 @@ function renderHud() {
   // picture says where it is. A scenario that happens elsewhere still names it.
   // the road's caption follows what it stands on: a track has no road
   const ground = scenario?.road ? (FIGURES[state.who] || FIGURES.lorry).ground : null;
-  $('place').textContent = ground === 'rail' ? 'A straight, level railway from A to B'
+  setText($('place'), ground === 'rail' ? 'A straight, level railway from A to B'
     : ground === 'track' ? 'A straight, level running track from A to B'
-    : ownWords(scenario?.place) || '';
-  $('place-note').textContent = '';
+    : ownWords(scenario?.place) || '');
+  setText($('place-note'), '');
   // In the window there is no corner for a readout to sit in, and the clock
   // is in the transport where all four panes share it.
-  if (windowed()) { $('hud-left').innerHTML = ''; $('hud-right').innerHTML = ''; return; }
+  if (windowed()) { setHTML($('hud-left'), ''); setHTML($('hud-right'), ''); return; }
   const b = (k, val, unit, hue) =>
     `<div class="hbox"${hue ? ` data-hue="${hue}"` : ''}><div class="hbox-k">${k}</div>
      <div class="hbox-v">${val}<small>${unit}</small></div></div>`;
   // A kit says what its stage reads out.
   if (kit()) {
     const r = kit().hud(traj, state.t, { rate: state.rate });
-    $('hud-left').innerHTML = r.left.map((x) => b(ownWords(x.k), x.v, x.unit, x.hue)).join('');
-    $('hud-right').innerHTML = r.right.map((x) => b(ownWords(x.k), x.v, x.unit, x.hue)).join('');
+    setHTML($('hud-left'), r.left.map((x) => b(ownWords(x.k), x.v, x.unit, x.hue)).join(''));
+    setHTML($('hud-right'), r.right.map((x) => b(ownWords(x.k), x.v, x.unit, x.hue)).join(''));
     return;
   }
   // AFTER the kit's turn: a kit's motion need not have a pos() — two
@@ -2585,14 +2591,14 @@ function renderHud() {
   // In a straight line the horizontal distance is always zero, so show the
   // signed displacement along the line instead — that is the s being solved.
   if (scenario?.road) {
-    $('hud-left').innerHTML = [
+    setHTML($('hud-left'), [
       b('Displacement from A', fmt(p.x, 1), 'm', 'disp'),
       b('Velocity', fmt(v.x, 1), 'm s⁻¹', 'vel'),
       b('Acceleration', fmt(traj.params.a, 2), 'm s⁻²', 'acc'),
       ...(state.extras.energy ? [b('Kinetic energy', fmt(traj.kineticEnergy(state.t), 0), 'J'),
                                  b('Momentum', fmt(traj.momentum(state.t), 1), 'kg m s⁻¹')] : []),
-    ].join('');
-    $('hud-right').innerHTML = b('Time', fmt(state.t, 2), 's');
+    ].join(''));
+    setHTML($('hud-right'), b('Time', fmt(state.t, 2), 's'));
     return;
   }
   const line = solved?.mode === '1d';
@@ -2621,8 +2627,8 @@ function renderHud() {
     left.push(b('Kinetic energy', fmt(traj.kineticEnergy(state.t), 0), 'J'));
     left.push(b('Momentum', fmt(traj.momentum(state.t), 1), 'kg m s⁻¹'));
   }
-  $('hud-left').innerHTML = left.join('');
-  $('hud-right').innerHTML = b('Time', fmt(state.t, 2), 's');
+  setHTML($('hud-left'), left.join(''));
+  setHTML($('hud-right'), b('Time', fmt(state.t, 2), 's'));
 }
 
 /* ── the landing card: the whole of SUVAT, once it has settled ───────── */
@@ -3016,7 +3022,8 @@ function draw() {
   } else {
     const paint = (o) => {
       $('scene')._frame = null;
-      if (kit()) { kitView($('scene'), cam); kit().render($('scene'), cam, o); kitViewDone($('scene')); }
+      // the place, once, as a picture: what the stage draws that does not change (js/render/still.js)
+      if (kit()) stillFrame($('scene'), () => { kitView($('scene'), cam); kit().render($('scene'), cam, o); kitViewDone($('scene')); }, clearMovers);
       else if (scenario?.stage === 'range') range.render($('scene'), cam, o);
       // the road maps nothing to the pointer: no map left from the last stage,
       // so a click on it is a click on the motion (js/render/scene.js)
@@ -3050,12 +3057,16 @@ function draw() {
     if (state.part >= 0) markGraphs(specs, state.runs?.[state.part], P.mark);
     for (const spec of specs) drawGraph($(spec.canvas), spec);
   }
-  renderHud(); renderWorking(); renderResolve(R);
-  $('scrub').value = traj.tMax ? state.t / traj.tMax : 0;
+  renderHud();
+  // the working and the card say the same for the same instant: nothing to rebuild while
+  // what they show has not moved
+  renderWorking(); renderResolve(R);
+  const sv = String(traj.tMax ? state.t / traj.tMax : 0);
+  if ($('scrub').value !== sv) $('scrub').value = sv;
   // The view button lights up while the whole flight IS what you are looking
   // at, and dims the moment a pan or a zoom takes you off it — so it reads as
   // the way back rather than as a mode you are in.
-  $('fit-btn').setAttribute('aria-pressed', String(!cam.touched));
+  if ($('fit-btn').getAttribute('aria-pressed') !== String(!cam.touched)) $('fit-btn').setAttribute('aria-pressed', String(!cam.touched));
   dirty = refilling();
 }
 
@@ -3400,7 +3411,8 @@ requestAnimationFrame(frame);
 // wrong metrics, wrong widths for the collision test that places them, and
 // visibly lighter than the page around it. One more frame once the fonts are
 // in costs nothing and fixes all of it.
-document.fonts?.ready.then(() => { dirty = true; });
+document.fonts?.ready.then(() => { forgetStill($('scene')); dirty = true; });
+document.fonts?.addEventListener?.('loadingdone', () => { forgetStill($('scene')); dirty = true; });
 
 // ASK FOR THE MATHS FACE BEFORE AN EQUATION NEEDS IT. A webfont is fetched
 // when something that uses it is first painted, and the first thing on this
@@ -3882,7 +3894,7 @@ window.SUVAT = { state, get traj() { return traj; }, get solved() { return solve
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
                  openAskAt, closeAskAt, easeAngle, applyReading, gravity, get board() { return board; },
-                 redraw() { recompute(); draw(); }, showPart, showFlight,
+                 redraw() { recompute(); draw(); }, showPart, showFlight, useStill,
                  /** Compose a scene from a recipe, as the reader would: SUVAT.compose({ backdrop, engine, objects, numbers, parts }). */
                  compose(recipe, parts = recipe?.parts) {
                    const r = applyComposed({ scenario: 'compose', recipe, parts });
