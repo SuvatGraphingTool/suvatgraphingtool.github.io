@@ -7,6 +7,7 @@
 // quantity: the colours are the things' own, held away from the physics hues.
 
 import { env } from './scenery.js';
+import { noteMover } from './util.js';
 
 const TAU = Math.PI * 2;
 
@@ -326,6 +327,7 @@ export const PROPS = { football, tennisBall, golfBall, basketball, shot, snowbal
 
 /** Draw a prop by name at (x, y), R px, turned by spin, ringed for B. */
 export function drawProp(g, kind, x, y, R, spin = 0, ring = null, o = {}) {
+  noteMover(g, x, y, Math.max(16, R * 1.3));
   const f = PROPS[kind];
   if (!f) return false;
   f(g, x, y, R, spin, o);

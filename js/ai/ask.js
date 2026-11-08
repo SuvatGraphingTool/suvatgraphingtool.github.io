@@ -288,7 +288,7 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     text.value = ''; detach();
     busy = new AbortController(); sync();
     const my = gen, ctl = busy;
-    const searching = modes.search;
+    const searching = modes.search, asked = Date.now();
     reply(thinkingHTML(searching), { busy: true });
     // Google's free models are sometimes slow to answer. Say so, rather than
     // leave Suvat looking stuck.
@@ -337,7 +337,7 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     // wording ("dropped" is u = 0); a photo's numbers are in the photo, so none
     // (a follow-up — "same but g = 9.8" — keeps the numbers typed before it; after a photo, none can be told)
     const said = history.filter((h) => h.role === 'user').map((h) => h.text);
-    const opts = { graph: modes.graph, solve: modes.solve, words: a || said.some((t) => t.startsWith('[sent ')) ? null : said.join('\n') };
+    const opts = { graph: modes.graph, solve: modes.solve, asked, words: a || said.some((t) => t.startsWith('[sent ')) ? null : said.join('\n') };
     const r = apply(res.extraction, opts);
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
     if (chat) chat.last = { extraction: res.extraction, opts };

@@ -55,3 +55,25 @@ CREATE TABLE IF NOT EXISTS boards (
   data    TEXT,
   PRIMARY KEY (user_id, slot)
 );
+
+-- The objects a model has drawn for the composer (worker/src/draw.js), one a name,
+-- shared by every student: a cached name costs no AI call. status is ok, refused or
+-- failed; only ok has an svg, and it has passed js/compose/svgsafe.js.
+CREATE TABLE IF NOT EXISTS drawings (
+  name     TEXT PRIMARY KEY,
+  svg      TEXT,
+  material TEXT,
+  status   TEXT NOT NULL,
+  created  INTEGER NOT NULL
+);
+
+-- New drawings asked for, to hold them to a very small allowance: 25 a day across
+-- the site, 5 an hour from one address. ip is a hash that changes every day, and a
+-- row is kept for two days. spent is 1 where a model was really asked.
+CREATE TABLE IF NOT EXISTS draw_log (
+  ip    TEXT NOT NULL,
+  at    INTEGER NOT NULL,
+  spent INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS draw_log_at ON draw_log(at);
+CREATE INDEX IF NOT EXISTS draw_log_ip ON draw_log(ip, at);

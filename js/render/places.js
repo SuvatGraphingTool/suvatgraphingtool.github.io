@@ -758,13 +758,20 @@ function site(g, c) {
   // the load hangs over the building, behind where it is launched from,
   // never in the flight's way
   const lw = clamp(1.4 * k, 18, 46);
-  const tx = H0 > 0 ? x0 - clamp(0.35 * H0 * k, 60, 200) * 0.5 : Math.max(20, mx + mw + 12);
-  const ly = H0 > 0 ? Math.max(jy + 14, lerp(jy, top - lw * 0.45 - 30, 0.5)) : lerp(jy, oy, 0.3);
+  // (an object the question drops from the crane hangs on the hook itself, over where it falls from)
+  const hang = c.hang;
+  const tx = hang ? hang.x : H0 > 0 ? x0 - clamp(0.35 * H0 * k, 60, 200) * 0.5 : Math.max(20, mx + mw + 12);
+  const ly = hang ? Math.max(jy + 8, hang.y - 26) : H0 > 0 ? Math.max(jy + 14, lerp(jy, top - lw * 0.45 - 30, 0.5)) : lerp(jy, oy, 0.3);
   g.strokeStyle = withAlpha(n ? '#d8d8dc' : '#2a2a2e', 0.8); g.lineWidth = 1; g.beginPath(); g.moveTo(tx - 2, jy + 2); g.lineTo(tx - 2, ly); g.moveTo(tx + 2, jy + 2); g.lineTo(tx + 2, ly); g.stroke();
   g.fillStyle = n ? '#8a7a40' : '#d9a62a'; g.fillRect(tx - 5, ly, 10, 7);
+  if (hang) {
+    // its slings, until it is let go; after that only the hook, empty
+    if (!(c.now >= 0)) { g.strokeStyle = withAlpha(n ? '#d8d8dc' : '#2a2a2e', 0.85); g.lineWidth = 1.2; g.beginPath(); g.moveTo(tx, ly + 7); g.lineTo(tx - hang.w / 2, hang.y + 3); g.moveTo(tx, ly + 7); g.lineTo(tx + hang.w / 2, hang.y + 3); g.stroke(); }
+  } else {
   g.strokeStyle = withAlpha('#2a2a2e', 0.7); g.beginPath(); g.moveTo(tx, ly + 7); g.lineTo(tx - lw / 2, ly + 18); g.moveTo(tx, ly + 7); g.lineTo(tx + lw / 2, ly + 18); g.stroke();
   g.fillStyle = n ? '#7a4a3a' : '#b45a3c'; g.fillRect(tx - lw / 2, ly + 18, lw, lw * 0.45);
   g.strokeStyle = withAlpha('#000000', 0.3); for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(tx - lw / 2, ly + 18 + lw * 0.15 * i); g.lineTo(tx + lw / 2, ly + 18 + lw * 0.15 * i); g.stroke(); }
+  }
   // the ground: mud and gravel, ruts, a skip and a heap of sand
   const gg = g.createLinearGradient(0, oy, 0, h); gg.addColorStop(0, n ? '#4a4038' : '#8b7458'); gg.addColorStop(1, n ? '#3a322c' : '#6e5a44');
   g.fillStyle = gg; g.fillRect(0, oy, w, h - oy);

@@ -10,6 +10,8 @@
    reads state for the breadcrumb and the step track, and calculates nothing
    (rule 4). */
 
+import { lang, setLang, translateText, takePlace } from './i18n.js';
+
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const plain = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''; };
@@ -20,9 +22,30 @@ const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
    motion, the first one large. Ids that are missing are simply skipped. */
 const FEATURED = ['arc', 'platform-angle', 'parachute', 'monkey', 'road'];
 
+/** The headline's sayings, one fading into the next. It rests on the first when motion is unwelcome. */
+const SAYINGS = ['Visualize anything.', 'See the maths move.', 'Fun experiments!'];
+function heroSayings(view) {
+  const h = $('hero-h');
+  if (!h || calm()) return;
+  // only the first is the heading's text: a screen reader is not read a slideshow
+  const says = [h.firstElementChild, ...SAYINGS.slice(1).map((t) => {
+    const el = document.createElement('span');
+    el.className = 'hero-say'; el.setAttribute('aria-hidden', 'true'); el.textContent = t;
+    return h.appendChild(el);
+  })];
+  let i = 0;
+  setInterval(() => {
+    if (document.hidden || view() !== 'home') return;
+    says[i].classList.remove('is-on');
+    i = (i + 1) % says.length;
+    says[i].classList.add('is-on');
+  }, 3600);
+}
+
 export function initShell(SUVAT, { scenarios, library, byId }) {
   const app = $('app');
   const view = () => app.dataset.view || 'home';
+  heroSayings(view);
 
   /* ── views of the first screen ──────────────────────────────────────── */
   function setView(v, { focus = false } = {}) {
@@ -194,6 +217,7 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
     split: '<circle cx="6" cy="18" r="2"/><path d="M6 16V6h12"/><path d="M6 6l10 10"/>',
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
     keys: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M7 14h10"/>',
+    lang: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>',
   };
   const ic = (k) => k === 'ask'
     ? '<span class="ai-orb xs" aria-hidden="true"><svg viewBox="0 0 48 48"><use href="#spark"/></svg></span>'
@@ -220,6 +244,7 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
       { g: 'Go to', t: 'Whiteboard', i: 'board', k: 'G W', run: () => { if (SUVAT.state.step !== 'board') $('board-top').click(); } },
       { g: 'Settings', t: `Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme`, i: 'theme', k: 'T', run: press('theme-btn') },
       { g: 'Settings', t: 'Keyboard shortcuts', i: 'keys', k: '?', run: () => keys(true) },
+      { g: 'Settings', t: lang() === 'ar' ? 'English' : 'العربية', i: 'lang', words: 'arabic english language عربي لغة', run: press('lang-btn') },
     );
     for (const s of scenarios) list.push({ g: 'Scenarios', t: s.name, sub: s.sub, i: 'scen', words: plain(s.note || ''), run: pickCard(s.id) });
     for (const s of library) {
@@ -233,7 +258,8 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
      in the title is better. Not clever; predictable. */
   function score(c, q) {
     if (!q) return 1;
-    const title = plain(c.t).toLowerCase(), rest = `${plain(c.sub || '')} ${c.words || ''} ${c.g}`.toLowerCase();
+    // in Arabic, a title is found by its Arabic as well as its English
+    const title = (lang() === 'ar' ? `${translateText(plain(c.t))} ${plain(c.t)}` : plain(c.t)).toLowerCase(), rest = `${plain(c.sub || '')} ${c.words || ''} ${c.g}`.toLowerCase();
     let total = 0;
     for (const w of q.toLowerCase().split(/\s+/).filter(Boolean)) {
       const at = title.indexOf(w);
@@ -348,6 +374,16 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
   ks.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); keys(false); } });
   $('keys-btn').addEventListener('click', () => { closeSide(); keys(true); });
 
+  /* ── the language ───────────────────────────────────────────────────── */
+  const lb = $('lang-btn');
+  if (lb) {
+    const other = lang() === 'ar' ? 'en' : 'ar';
+    $('lang-label').textContent = other === 'ar' ? 'العربية' : 'English';
+    $('lang-label').lang = other;
+    lb.setAttribute('aria-label', other === 'ar' ? 'التبديل إلى العربية' : 'التبديل إلى الإنجليزية');
+    lb.addEventListener('click', () => setLang(other));
+  }
+
   /* ── keys ───────────────────────────────────────────────────────────── */
   let gAt = 0;
   document.addEventListener('keydown', (e) => {
@@ -398,6 +434,15 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
     lastErr = Date.now();
     toast('Something went wrong drawing that. Try again, or reload if it sticks.', { tone: 'warn' });
   });
+
+  // Back where the student was before the language changed (js/i18n.js setLang)
+  const was = takePlace();
+  if (was) {
+    if (was.id && (was.step === 'values' || was.step === 'flight')) {
+      document.querySelector(`#pgrid .pcard[data-id="${was.id}"], #lib-grid .pcard[data-id="${was.id}"]`)?.click();
+    } else if (was.step === 'board') $('board-top')?.click();
+    else if (was.view && was.view !== view()) setView(was.view);
+  }
 
   return { toast, setView };
 }

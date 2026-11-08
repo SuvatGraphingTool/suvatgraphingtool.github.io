@@ -158,7 +158,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .pgblurb { font-size: var(--fs-sm); color: var(--ink-muted); margin: 0 0 var(--sp-4); max-width: 62ch; line-height: 1.5; }
 .pgrid-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: var(--sp-3); }
 .pcard {
-  text-align: left; background: var(--card); border: 1px solid var(--border);
+  text-align: start; background: var(--card); border: 1px solid var(--border);
   border-radius: var(--r-xl); padding: var(--sp-5); box-shadow: var(--shadow);
   transition: border-color 120ms, transform 120ms;
   display: flex; flex-direction: column;
@@ -256,7 +256,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .xrow input[type='number'], .xrow input[type='text'] {
   width: 100%; height: 40px; border-radius: var(--r-md); background: var(--input);
   border: 1px solid var(--border); color: var(--ink); font-size: var(--fs-base);
-  font-weight: var(--w-semi); text-align: right; padding: 0 var(--sp-3);
+  font-weight: var(--w-semi); text-align: end; padding: 0 var(--sp-3);
 }
 .xrow input:focus { outline: none; border-color: var(--accent); }
 
@@ -370,7 +370,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
   text-transform: uppercase; white-space: nowrap;
 }
 .pane-corner {
-  margin-left: auto; font-size: var(--fs-xs); font-weight: var(--w-small);
+  margin-inline-start: auto; font-size: var(--fs-xs); font-weight: var(--w-small);
   color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* The button is at the TOP LEFT of the pane, before its own name, because
@@ -427,7 +427,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 }
 .hbox-k { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.3; white-space: nowrap; }
 .hbox-v { font-size: var(--fs-xl); font-weight: var(--w-bold); line-height: 1.2; white-space: nowrap; letter-spacing: -0.02em; }
-.hbox-v small { font-size: var(--fs-xs); font-weight: var(--w-body); color: var(--ink-muted); margin-left: 4px; letter-spacing: 0; }
+.hbox-v small { font-size: var(--fs-xs); font-weight: var(--w-body); color: var(--ink-muted); margin-inline-start: 4px; letter-spacing: 0; }
 /* The button and the readout are the same height whatever either of them
    holds, which is the whole reason this stretches rather than aligning top. */
 .hud-r { align-items: stretch; }
@@ -504,7 +504,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .askat-row input {
   width: 100%; height: 48px; border-radius: var(--r-md); background: var(--input);
   border: 1.5px solid var(--border); color: var(--ink); font-size: var(--fs-xl);
-  font-weight: var(--w-bold); text-align: right; padding: 0 var(--sp-3);
+  font-weight: var(--w-bold); text-align: end; padding: 0 var(--sp-3);
 }
 .askat-row input:focus { outline: none; border-color: var(--accent); }
 .askat-row .xhint { margin: 5px 0 0; font-size: var(--fs-xs); font-weight: var(--w-semi); }
@@ -512,7 +512,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .askat-picks { display: grid; gap: var(--sp-2); }
 .askat-picks:empty { display: none; }
 .askat-pick {
-  width: 100%; text-align: left; border: 1.5px solid var(--border);
+  width: 100%; text-align: start; border: 1.5px solid var(--border);
   border-radius: var(--r-lg); padding: var(--sp-2) var(--sp-3);
   font-size: var(--fs-xs); font-weight: var(--w-semi); color: var(--ink-muted);
   line-height: 1.4;
@@ -565,7 +565,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 
 .done-extra { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--border-soft); }
 .dx { font-size: var(--fs-sm); color: var(--ink-muted); white-space: nowrap; }
-.dx b { color: var(--ink); font-weight: var(--w-bold); font-size: var(--fs-base); margin-left: 6px; }
+.dx b { color: var(--ink); font-weight: var(--w-bold); font-size: var(--fs-base); margin-inline-start: 6px; }
 
 .done-note { font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.55; margin: var(--sp-4) 0 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--accent-soft); }
 .done-note:empty { display: none; }
@@ -622,14 +622,14 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .pace-card { width: min(420px, 100%); }
 .pace-row { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-1); }
 .pace-val { font-size: var(--fs-3xl); font-weight: var(--w-bold); letter-spacing: -0.03em;
-            min-width: 3.4ch; text-align: right; font-variant-numeric: tabular-nums; }
+            min-width: 3.4ch; text-align: end; font-variant-numeric: tabular-nums; }
 .pace-slot { position: relative; flex: 1; }
 .pace-row input[type='range'] { width: 100%; }
 /* The pin marks the speed the flight asked for. It is placed from the
    slider's own geometry in JS — half a thumb in at each end — so it sits
    under the thumb rather than near it. */
 .pace-pin {
-  position: absolute; top: 2px; width: 2px; height: 8px; margin-left: -1px;
+  position: absolute; top: 2px; width: 2px; height: 8px; margin-inline-start: -1px;
   background: var(--ink-faint); border-radius: 1px; pointer-events: none;
 }
 .pace-pin::after {
@@ -657,7 +657,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
    rather than something squeezed in beside the buttons. */
 .rate-live { display: flex; align-items: center; gap: var(--sp-3); padding-top: 4px; }
 .rl-val { font-size: var(--fs-sm); font-weight: var(--w-bold); font-variant-numeric: tabular-nums;
-          min-width: 4.4ch; text-align: right; color: var(--ink); }
+          min-width: 4.4ch; text-align: end; color: var(--ink); }
 /* The card can say why in a sentence; the bar has one number to say it with.
    Off the recommendation by more than the band and the number goes off-colour
    — the pin beside it says which way to go. */
@@ -694,7 +694,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
            line-height: 1.5; margin: var(--sp-3) 0 0; }
 
 .pace-scale { display: flex; justify-content: space-between; margin: 0 0 var(--sp-5);
-              padding-left: calc(3.4ch + var(--sp-4)); font-size: var(--fs-xs); color: var(--ink-faint); }
+              padding-inline-start: calc(3.4ch + var(--sp-4)); font-size: var(--fs-xs); color: var(--ink-faint); }
 
 /* ── live controls, on the scene ────────────────────────────────────────
    Monkey vs Hunter is a toy you play with, and three preset buttons behind a
@@ -705,7 +705,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
       color: var(--ink-muted); cursor: pointer; }
 .lv span { white-space: nowrap; }
 .lv b { color: var(--ink); font-weight: var(--w-bold); font-variant-numeric: tabular-nums;
-        display: inline-block; min-width: 4.4ch; text-align: right; }
+        display: inline-block; min-width: 4.4ch; text-align: end; }
 .lv input[type='range'] { width: 132px; height: 24px; }
 #lv-aim[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
@@ -737,7 +737,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
   font-size: var(--fs-xs); color: var(--ink-muted); padding: 0 var(--sp-2) var(--sp-2);
   border-bottom: 1px solid var(--border-soft);
 }
-.ph-head span + span, .ph-row span + span { text-align: right; }
+.ph-head span + span, .ph-row span + span { text-align: end; }
 .ph-row {
   padding: var(--sp-3) var(--sp-2); border-bottom: 1px solid var(--border-soft);
   font-size: var(--fs-sm); color: var(--ink-strong);
@@ -747,9 +747,9 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .ph-name em { font-style: normal; font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.35; }
 /* Each phase takes the hue of what is acting in it: gravity alone, then the
    canopy pushing back, then nothing. Colour is the quantity, as everywhere. */
-.ph-row[data-key='free']   { border-left: 3px solid var(--acc); }
-.ph-row[data-key='canopy'] { border-left: 3px solid var(--vel); }
-.ph-row[data-key='steady'] { border-left: 3px solid var(--border); }
+.ph-row[data-key='free']   { border-inline-start: 3px solid var(--acc); }
+.ph-row[data-key='canopy'] { border-inline-start: 3px solid var(--vel); }
+.ph-row[data-key='steady'] { border-inline-start: 3px solid var(--border); }
 .ph-sum { border-bottom: 0; background: var(--accent-soft); border-radius: var(--r-lg); margin-top: var(--sp-2); }
 .ph-units { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; margin: var(--sp-3) 0 0; }
 
@@ -765,7 +765,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
   .ph-head { display: none; }
   .ph-row { grid-template-columns: repeat(5, 1fr); }
   .ph-name { grid-column: 1 / -1; }
-  .ph-row span + span { text-align: left; }
+  .ph-row span + span { text-align: start; }
 }
 
 .ex-real { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--border-soft); }
@@ -773,7 +773,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 .ex-lead { font-size: var(--fs-sm); color: var(--ink-muted); line-height: 1.6; margin: 0 0 var(--sp-3); }
 .ex-why { list-style: none; margin: 0 0 var(--sp-3); padding: 0; display: grid; gap: var(--sp-2) var(--sp-5); }
 @media (min-width: 620px) { .ex-why { grid-template-columns: 1fr 1fr; } }
-.ex-why li { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; padding-left: var(--sp-4); position: relative; }
+.ex-why li { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; padding-inline-start: var(--sp-4); position: relative; }
 .ex-why li::before { content: ''; position: absolute; left: 0; top: .55em; width: 5px; height: 5px;
                      border-radius: 50%; background: var(--accent-fill); }
 .ex-why li b { color: var(--ink-strong); font-weight: 650; }
@@ -809,7 +809,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 }
 .ptick:hover { background: var(--hover); }
 /* the stem runs down to a notch on the track, so the thumb stops on the notch, not under the pill */
-.ptick::after { content: ''; position: absolute; left: 50%; top: 100%; width: 2px; height: 16px; margin-left: -1px; background: var(--mark); border-radius: 1px; }
+.ptick::after { content: ''; position: absolute; left: 50%; top: 100%; width: 2px; height: 16px; margin-inline-start: -1px; background: var(--mark); border-radius: 1px; }
 .ptick[aria-pressed='true'] { background: var(--mark); color: var(--surface); }
 .pband { position: absolute; top: 12px; height: 4px; left: calc(var(--a) * 100%); width: calc((var(--b) - var(--a)) * 100%); background: var(--mark); opacity: .55; border-radius: 2px; }
 .pstrip {
@@ -844,15 +844,15 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 @keyframes part-in { from { transform: translateY(5px); } }
 @media (prefers-reduced-motion: reduce) { .pnow > * { animation: none; } }
 .pask { margin: 0; font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.45; }
-.plab { font-family: var(--font-serif); font-style: italic; color: var(--mark); margin-right: 2px; }
+.plab { font-family: var(--font-serif); font-style: italic; color: var(--mark); margin-inline-end: 2px; }
 .pans {
   margin: 0; font-size: var(--fs-xl); font-weight: var(--w-semi); color: var(--ink-strong); line-height: 1.25;
   padding: 6px var(--sp-4); border-radius: var(--r-lg); white-space: nowrap;
-  background: color-mix(in srgb, var(--mark) 12%, var(--card)); border-left: 3px solid var(--mark);
+  background: color-mix(in srgb, var(--mark) 12%, var(--card)); border-inline-start: 3px solid var(--mark);
 }
 .pand { font-size: var(--fs-sm); color: var(--ink-muted); font-weight: var(--w-body); }
 .pans-none, .pans-say { font-size: var(--fs-sm); color: var(--ink-muted); font-weight: var(--w-body); white-space: normal; }
-.pans:has(.pans-none, .pans-say) { background: none; border-left-color: var(--border); max-width: 30ch; }
+.pans:has(.pans-none, .pans-say) { background: none; border-inline-start-color: var(--border); max-width: 30ch; }
 .plean { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.5; }
 .plean-i { display: inline-block; width: 1.2em; color: var(--mark); font-weight: var(--w-bold); }
 .plean .m { color: var(--ink-strong); }
@@ -862,7 +862,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 /* the intro: every part on one line each, like the paper */
 .plist { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
 .plist li { font-size: var(--fs-xs); color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.plist li b { font-family: var(--font-serif); font-style: italic; color: var(--ink-strong); margin-right: 4px; }
+.plist li b { font-family: var(--font-serif); font-style: italic; color: var(--ink-strong); margin-inline-end: 4px; }
 /* the working opens over the stage, never pushing it down */
 .pwork { margin-top: 6px; }
 .pwork summary { font-size: var(--fs-xs); color: var(--ink-muted); cursor: pointer; width: fit-content; }
@@ -891,7 +891,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
 }
 @container pstrip (max-width: 360px) { .plist { display: none; } }
 /* the part on show heads the working panel, and its step is lit */
-.pcardw { border-left: 3px solid var(--mark); background: color-mix(in srgb, var(--mark) 10%, var(--card)); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4); }
+.pcardw { border-inline-start: 3px solid var(--mark); background: color-mix(in srgb, var(--mark) 10%, var(--card)); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4); }
 .pcardw-h { margin: 0; font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.45; }
 .pcardw-h b { font-family: var(--font-serif); font-style: italic; color: var(--mark); }
 .pcardw .pans { font-size: var(--fs-base); background: none; border: 0; padding: 0; margin-top: 4px; white-space: normal; }
@@ -902,7 +902,7 @@ h1, h2 { margin: 0; font-weight: var(--w-semi); letter-spacing: -0.025em; line-h
    innerHTML — see CLAUDE.md rule 1 — and it is given a fixed width in figures
    so the Replay button beside it does not shuffle as the seconds tick. */
 .t-read {
-  flex: none; min-width: 11ch; text-align: right;
+  flex: none; min-width: 11ch; text-align: end;
   font-size: var(--fs-base); font-weight: var(--w-semi); color: var(--ink-strong);
 }
 
@@ -916,7 +916,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ck.inline { padding: 0; }
 .ck input { position: absolute; opacity: 0; pointer-events: none; }
 .ck .box-ck { width: 20px; height: 20px; flex: none; border: 1.5px solid var(--ink-faint); border-radius: 5px; display: grid; place-items: center; }
-.ck .box-ck::after { content: ''; width: 9px; height: 5px; border-left: 2px solid var(--on-accent); border-bottom: 2px solid var(--on-accent); transform: rotate(-45deg) translateY(-1px) scale(0); transition: transform 120ms; }
+.ck .box-ck::after { content: ''; width: 9px; height: 5px; border-inline-start: 2px solid var(--on-accent); border-bottom: 2px solid var(--on-accent); transform: rotate(-45deg) translateY(-1px) scale(0); transition: transform 120ms; }
 .ck input:checked + .box-ck { background: var(--accent-fill); border-color: var(--accent-fill); }
 .ck input:checked + .box-ck::after { transform: rotate(-45deg) translateY(-1px) scale(1); }
 /* In the options panel there is a column to work with rather than a strip of
@@ -930,7 +930,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .osay:empty { display: none; }
 .mini { font-size: var(--fs-xs); color: var(--ink-muted); white-space: nowrap; }
 
-.opts { overflow-y: auto; padding: var(--sp-5) var(--sp-6); border-left: 1px solid var(--border-soft); }
+.opts { overflow-y: auto; padding: var(--sp-5) var(--sp-6); border-inline-start: 1px solid var(--border-soft); }
 .otitle { font-size: var(--fs-sm); font-weight: var(--w-semi); margin: var(--sp-6) 0 var(--sp-3); }
 .otitle:first-child { margin-top: 0; }
 .checks { display: flex; flex-direction: column; gap: var(--sp-1); }
@@ -983,7 +983,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 }
 
 /* ── where the flight starts, named ─────────────────────────────────── */
-.place { margin: 0 0 0 auto; text-align: right; max-width: 42ch; line-height: 1.35; }
+.place { margin: 0 0 0 auto; text-align: end; max-width: 42ch; line-height: 1.35; }
 .place b { display: block; font-size: var(--fs-xs); font-weight: var(--w-semi); color: var(--ink-strong); }
 .place span { font-size: var(--fs-xs); color: var(--ink-faint); }
 .place:empty { display: none; }
@@ -1015,7 +1015,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .res-eyebrow { flex: none; font-size: var(--fs-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-weight: var(--w-bold); margin: 0 0 1px; }
 .res-h { flex: none; font-size: var(--fs-lg); margin: 0 0 var(--sp-2); }
 .res-blocks {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 2px;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-inline-end: 2px;
   /* A card whose last row is sliced looks broken rather than scrollable. */
   scrollbar-width: thin; scrollbar-color: var(--border) transparent;
 }
@@ -1031,17 +1031,17 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 
 /* Colour is the quantity, dash is the direction — the same rule as the
    diagram, so a row and the arrow it names are read the same way. */
-.rrow { padding: 7px 0 7px var(--sp-3); border-left: 3px solid var(--border); }
-.rblock[data-hue='vel'] .rrow { border-left-color: var(--vel); }
-.rblock[data-hue='disp'] .rrow { border-left-color: var(--disp); }
-.rrow[data-part='x'] { border-left-style: dashed; }
-.rrow[data-part='r'] { border-left-width: 5px; }
+.rrow { padding: 7px 0 7px var(--sp-3); border-inline-start: 3px solid var(--border); }
+.rblock[data-hue='vel'] .rrow { border-inline-start-color: var(--vel); }
+.rblock[data-hue='disp'] .rrow { border-inline-start-color: var(--disp); }
+.rrow[data-part='x'] { border-inline-start-style: dashed; }
+.rrow[data-part='r'] { border-inline-start-width: 5px; }
 .rrow + .rrow { border-top: 1px solid var(--border-soft); }
 
 .rrow-top { display: flex; align-items: baseline; gap: var(--sp-2); }
 .rrow-n { font-size: var(--fs-sm); color: var(--ink-strong); line-height: 1.25; }
-.rrow-v { margin-left: auto; font-size: var(--fs-lg); font-weight: var(--w-bold); letter-spacing: -0.02em; white-space: nowrap; line-height: 1.15; }
-.rrow-v small { font-size: var(--fs-xs); font-weight: var(--w-body); color: var(--ink-muted); margin-left: 4px; letter-spacing: 0; }
+.rrow-v { margin-inline-start: auto; font-size: var(--fs-lg); font-weight: var(--w-bold); letter-spacing: -0.02em; white-space: nowrap; line-height: 1.15; }
+.rrow-v small { font-size: var(--fs-xs); font-weight: var(--w-body); color: var(--ink-muted); margin-inline-start: 4px; letter-spacing: 0; }
 .rblock[data-hue='vel'] .rrow-v { color: var(--vel); }
 .rblock[data-hue='disp'] .rrow-v { color: var(--disp); }
 .rrow-f { font-size: var(--fs-xs); color: var(--ink-strong); margin-top: 2px; line-height: 1.35; word-break: break-word; }
@@ -1100,7 +1100,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .intro-body { font-size: var(--fs-sm); color: var(--ink-muted); line-height: 1.6; margin: 0 0 var(--sp-5); }
 .intro-models { display: grid; gap: var(--sp-2); margin-bottom: var(--sp-5); }
 .imodel {
-  display: flex; align-items: baseline; gap: var(--sp-3); width: 100%; text-align: left;
+  display: flex; align-items: baseline; gap: var(--sp-3); width: 100%; text-align: start;
   border: 1px solid var(--border); border-radius: var(--r-lg);
   padding: var(--sp-3) var(--sp-4); transition: border-color 120ms, background 120ms;
 }
@@ -1108,9 +1108,9 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .imodel[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-soft); }
 .imodel b { font-size: var(--fs-base); font-weight: 650; }
 .imodel .im-note { font-size: var(--fs-xs); color: var(--ink-muted); }
-.imodel .im-u { margin-left: auto; font-size: var(--fs-lg); font-weight: var(--w-bold); white-space: nowrap; }
+.imodel .im-u { margin-inline-start: auto; font-size: var(--fs-lg); font-weight: var(--w-bold); white-space: nowrap; }
 .imodel[aria-pressed='true'] .im-u { color: var(--accent); }
-.imodel .im-u small { font-size: var(--fs-xs); font-weight: var(--w-body); color: var(--ink-muted); margin-left: 3px; }
+.imodel .im-u small { font-size: var(--fs-xs); font-weight: var(--w-body); color: var(--ink-muted); margin-inline-start: 3px; }
 .intro-acts { display: flex; gap: var(--sp-3); }
 .intro-acts .ghost { flex: none; }
 @media (max-width: 860px) { .intro-card { padding: var(--sp-4); } }
@@ -1118,31 +1118,17 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 /* ── Ask Suvat ───────────────────────────────────────────────────────────
    The AI's mark is the Spark (the #spark symbol in index.html): a four-pointed
    star whose curved arms are trajectories, peach deepening to orange, with a
-   small gold spark riding beside it. Where it stands for the AI as a speaker
-   (the chat, the board's dock) it sits on a dark tile, like an app icon, with
-   an orange glow behind it; inside a button it stands bare. */
-.ai-orb {
-  position: relative; flex: none; display: grid; place-items: center;
-  width: 40px; height: 40px; border-radius: 28%; overflow: hidden;
-  background: radial-gradient(90% 90% at 45% 55%, #3a1a0e 0%, #140d0a 62%, #0b0909 100%);
-  border: 1px solid rgba(255, 214, 186, .14);
-  box-shadow: 0 4px 14px rgba(236, 95, 23, .28);
-}
-.ai-orb::before {                         /* the glow behind the star, breathing slowly */
-  content: ''; position: absolute; inset: 12%; border-radius: 50%;
-  background: radial-gradient(circle, rgba(249, 140, 60, .55), rgba(249, 140, 60, 0) 70%);
-  animation: ai-glow 3.2s ease-in-out infinite;
-}
-.ai-orb svg { position: relative; z-index: 1; width: 74%; height: 74%;
-              filter: drop-shadow(0 0 3px rgba(249, 140, 60, .6)); }
+   small gold spark riding beside it. It stands alone everywhere: no tile, no
+   glow, nothing behind it (the user, 7 Nov). --spark-* keep it visible on the
+   light theme. */
+:root { --spark-top: #FFE4C8; --spark-edge: #FFEADB; --spark-seam: #FFF4EA; --spark-gold: #FFE28A; }
+:root[data-theme='light'] { --spark-top: #F9A86A; --spark-edge: #C2541A; --spark-seam: #FFF4EA; --spark-gold: #E08A1E; }
+.ai-orb { position: relative; flex: none; display: grid; place-items: center; width: 40px; height: 40px; overflow: visible; background: none; }
+.ai-orb svg { width: 100%; height: 100%; }
 .ai-orb.sm { width: 32px; height: 32px; }
-.ai-orb.xs { width: 22px; height: 22px; border: none; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
-.ai-orb.xs::before { display: none; }
-.ai-orb.xs svg { width: 100%; height: 100%; }
-@keyframes ai-glow { 50% { transform: scale(1.18); opacity: .7; } }
-@media (prefers-reduced-motion: reduce) { .ai-orb::before { animation: none; } }
+.ai-orb.xs { width: 22px; height: 22px; }
 
-.brand-spark { width: 26px; height: 26px; flex: none; filter: drop-shadow(0 0 4px rgba(249, 140, 60, .55)); }
+.brand-spark { width: 26px; height: 26px; flex: none; }
 .ai-top { display: inline-flex; align-items: center; gap: var(--sp-2); }
 
 .ask { margin: 0 0 var(--sp-10); }
@@ -1173,7 +1159,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-tool svg, .ask-send svg { width: 22px; height: 22px; }
 .ask-tool:focus-visible, .ask-send:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ask-mic[aria-pressed='true'] { background: var(--accent-fill); color: var(--on-accent); }
-.ask-send { background: var(--accent-fill); color: var(--on-accent); margin-left: var(--sp-1); }
+.ask-send { background: var(--accent-fill); color: var(--on-accent); margin-inline-start: var(--sp-1); }
 .ask-send:hover { background: var(--accent-hi); }
 .ask-send:disabled { background: var(--border-soft); color: var(--ink-faint); cursor: not-allowed; }
 .ask-att {
@@ -1192,7 +1178,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
    itself, so a long chat does not push the scenario cards off the page. */
 .ask-thread { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4);
               max-height: min(62vh, 640px); overflow-y: auto; overscroll-behavior: contain;
-              padding-right: var(--sp-1); }
+              padding-inline-end: var(--sp-1); }
 .ask-shot { display: block; max-width: min(240px, 100%); max-height: 200px; border-radius: var(--r-md);
             margin-bottom: var(--sp-2); object-fit: contain; background: var(--card); }
 .ask-msg { display: flex; gap: var(--sp-3); align-items: flex-start; }
@@ -1204,7 +1190,6 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .ask-mine .ask-bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ask-chip { display: inline-block; font-size: var(--fs-xs); color: var(--accent-hi); font-weight: var(--w-semi); margin-bottom: 2px; }
 .ask-reply .ask-bubble { flex: 1; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-top-left-radius: var(--r-sm); }
-.ask-reply[data-busy='true'] .ai-orb::after { animation-duration: 1.2s; }
 .ask-dots { display: inline-flex; gap: 5px; padding: 6px 0; }
 .ask-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-fill); animation: ask-dot 1s ease-in-out infinite; }
 .ask-dots span:nth-child(2) { animation-delay: .15s; }
@@ -1234,7 +1219,7 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
   .ask-box { flex-wrap: wrap; }
   .ask-box > .ai-orb { display: none; }
   .ask-field { flex-basis: 100%; }
-  .ask-tools { margin-left: auto; }
+  .ask-tools { margin-inline-start: auto; }
   .ai-top { font-size: 0; gap: 0; padding: 0 8px; }
   .ai-top .ai-orb { font-size: var(--fs-xs); }
 }
@@ -1270,13 +1255,13 @@ input[type='range']::-moz-range-thumb { width: 22px; height: 22px; background: v
 .krow > .xhint { margin-top: var(--sp-2); }
 .kcol { margin: 0; padding: 0; border: 0; display: grid; gap: var(--sp-3); align-content: start; min-width: 0; }
 .kcol legend { font-size: var(--fs-xs); letter-spacing: 0.09em; text-transform: uppercase; font-weight: var(--w-bold); color: var(--ink-strong); margin-bottom: var(--sp-2); padding: 0; }
-.kcol[data-col='B'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--second); vertical-align: -1px; }
-.kcol[data-col='A'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; border: 2px solid var(--ink-strong); vertical-align: -1px; }
-.ph-row[data-key='second'] { border-left: 3px solid var(--second); }
+.kcol[data-col='B'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 8px; border: 2px solid var(--second); vertical-align: -1px; }
+.kcol[data-col='A'] legend::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 8px; border: 2px solid var(--ink-strong); vertical-align: -1px; }
+.ph-row[data-key='second'] { border-inline-start: 3px solid var(--second); }
 @media (max-width: 760px) { .kcols { grid-template-columns: repeat(min(var(--kc, 2), 2), minmax(0, 1fr)); } }
 @media (max-width: 560px) { .kcols { grid-template-columns: minmax(0, 1fr); } }
-.ph-row[data-key='first'] { border-left: 3px solid var(--ink-strong); }
-.ph-row[data-key='stage'] { border-left: 3px solid var(--border); }
+.ph-row[data-key='first'] { border-inline-start: 3px solid var(--ink-strong); }
+.ph-row[data-key='stage'] { border-inline-start: 3px solid var(--border); }
 /* a narrow box beside a group of chips, rather than a card of its own */
 .krow-in:has(> .xrow.narrow) { grid-template-columns: minmax(0, 1fr) 200px; }
 .krow-in > .xrow.wide.choice { grid-column: auto; }

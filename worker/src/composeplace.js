@@ -45,8 +45,9 @@ export function toComposed(x, words = '') {
   for (const k of BOXES[engine]) if (x.boxes[k] != null) numbers[k] = x.boxes[k];
   // what moves, drawn as itself where the engine has it (a tennis ball
   // bounces as a tennis ball), a ball where it does not
-  const said = figureOf(whoIn(text)).figure;
-  const thing = ENGINES[engine].figures.includes(said) ? said : 'ball';
+  const named = figureOf(whoIn(text));
+  // (an object past the figures goes by its own word, and check() makes it the object)
+  const thing = named.figure === 'thing' ? named.thing : ENGINES[engine].figures.includes(named.figure) ? named.figure : 'ball';
   const objects = engine === 'pair' ? [{ figure: thing }, { figure: thing }] : [{ figure: thing }];
   const out = { understood: true, confidence: x.confidence, scenario: 'compose', summary: x.summary,
     recipe: { title: TITLE[engine][backdrop], backdrop, engine, objects, numbers } };
@@ -161,7 +162,8 @@ export function answered(words, earlier = []) {
    "upwards" or "vertically" IS given: straight up, and nothing assumed.
    Nothing is calculated: an angle the question did not give is set to the
    one it means, and said. */
-import { figureOf, whoIn, ENGINES, BACKDROPS, placeIn } from '../../js/compose/registry.js';
+import { figureOf, whoIn, ENGINES, BACKDROPS, placeIn, ownWord } from '../../js/compose/registry.js';
+export { ownWord };
 
 const JUMP = /\b(jump|jumps|jumped|jumping|leaps?|leapt|springs|sprang)\b/i;
 const UP = /\b(straight up|upwards?|vertically( up(wards)?)?|directly up)\b/i;

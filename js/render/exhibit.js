@@ -525,7 +525,7 @@ function drawPane(g, pane, o, prev) {
   const back = BACKS[scenario.backdrop] || warehouseBack;
   // `box` goes through so the aim ray knows how far it has to run to leave
   // the frame; it is a ray along the angle now, not a segment to the marker.
-  back(g, S, box, { t, fired, markers, PLATE: PL, box, scenario,
+  back(g, S, box, { t, fired, markers, PLATE: PL, box, scenario, hoverMark: o.hoverMark,
                     launchY: f.params.h, theta: f.params.theta });
 
   /* ── ground line ──────────────────────────────────────────────────── */

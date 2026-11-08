@@ -8,7 +8,7 @@
 // Everything that moves is read from js/core/apples.js (rule 4).
 
 import { dust, pulse, squash, ageOf } from './effects.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, sig3, hudBoxes } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, sig3, hudBoxes, noteMover } from './util.js';
 import { skyscape, grass, fitSide, env, rng, softShadow } from './scenery.js';
 import { farField, nearGrass, parkTree } from './towards.js';
 import { T, num } from '../notation.js';
@@ -129,6 +129,7 @@ export function render(canvas, cam, o) {
     // the apple's bottom is at its height the whole way down, so it meets the ground, and squashes as it lands
     const cy = Y(yNow) - r * 0.8, sq = squash(age, life);
     apple(g, X(a.x), cy, r, { ring: a.ring, sx: sq.sx, sy: sq.sy });
+    noteMover(g, X(a.x), cy, Math.max(16, r * 1.4));
     L.reserve({ x: X(a.x) - r - 5, y: cy - r * 1.4 - 5, w: 2 * r + 10, h: r * 2.4 + 10 });   // labels keep off each apple
     const v = a.vel(t);
     if (show.velocity !== false && !down && t > 0) {

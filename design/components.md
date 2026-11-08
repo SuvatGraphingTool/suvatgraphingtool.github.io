@@ -1456,3 +1456,31 @@ The floor, `hallCeiling(g, x0, x1, Y, P)` (exported — a slab with beams), the
 kicker (`runner`); the ball up one line and down beside it, its velocity solid;
 the greatest height marked; the moment it meets the ceiling ringed with the
 time and speed. Kit `ceiling`. Used by: `under-the-ceiling`.
+
+
+## Anything a question throws — `js/compose/things.js`
+
+An object past the hand-built figures is never refused and never a dot. `figureOf(word)`
+gives `{ figure: 'thing', thing: name }`; a recipe's object is `{ figure: 'thing', thing }`, and
+`pieceOf(object)` is its figure. The ladder, best first: a hand-built `FIGURES` entry; a curated
+icon (`tools/icon-catalogue.mjs` → `js/compose/icons.json`, fetched only when needed); a drawing
+from the Worker (`POST /draw`, cached for everyone); the object's name on a rounded shape.
+`js/compose/pictures.js` resolves it before the veil lifts; `js/compose/svgsafe.js` holds every
+SVG to one allowlist, on the server and in the browser. To add an icon: a row in `ROWS`, look at
+it at game size on a dark and a light backdrop, and run the tool.
+
+What it is made of says what landing does (`LANDS`): glass and china shatter, soft things burst,
+rubber squashes, metal clangs, stone and heavy things thud, wood splinters, paper and cloth
+flutter, and water always wins (`js/render/landings.js`). Drawing only: the engine's numbers do
+not change, and no rebound is claimed.
+
+**Who sends it off.** Everything named in the question appears in the scene. `senderIn(text)`
+reads a person, an animal or a picture from the student's own words ("pushed by a man", "a dog
+knocks a vase"), `recipe.sender` carries it, and `drawSender` stands them at the launch point
+with a pose for the verb: push, throw, kick, drop or knock. No one is added when no one is named.
+
+**What moves says where it is.** A stage that draws in its own pixels reports each moving thing as
+it draws it, with `noteMover(ctx, x, y, r)` from `js/render/util.js`, so hovering offers Resolve
+on it at its real size and position. The velocity arrow and the common figures report by themselves,
+so a new stage gets this for free; report exactly (`{ strong: true }`) if its mover is unusually
+large or drawn by hand.

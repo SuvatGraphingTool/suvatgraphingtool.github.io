@@ -9,9 +9,10 @@
 // way the interface can explain.
 
 import { toPlace } from './place.js';
-import { toComposed, toFigure, namedPlace, answered, fromRest } from './composeplace.js';
-import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt } from './schema.js';
+import { toComposed, toFigure, namedPlace, answered, fromRest, ownWord } from './composeplace.js';
+import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt, inLang } from './schema.js';
 import { focusFor, libraryIdsIn, idsInHistory } from './focus.js';
+import { draw } from './draw.js';
 
 const MODELS_DEFAULT = '@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash';
 const MAX_IMAGE_BYTES = 1_500_000;      // the client resizes to ~150 KB; this is the backstop
@@ -41,6 +42,8 @@ export default {
     if (!allowedOrigin(origin, env)) return json({ error: 'Not allowed from this origin.' }, 403, cors);
 
     const url = new URL(request.url);
+    // a drawing of an object, made once and shared: its own limits, its own clock
+    if (url.pathname === '/draw') return draw(request, env, cors, { race, ctx });
     if (url.pathname !== '/extract') return json({ error: 'Not found' }, 404, cors);
 
     // ── rate limit ────────────────────────────────────────────────────────
@@ -63,6 +66,7 @@ export default {
     // most one attachment: a photo of the question, or the paper as a PDF.
     // Either may come alone.
     const { imageBase64, mimeType = 'image/jpeg', hint, text, history, mode } = body || {};
+    const lang = body?.lang === 'ar' ? 'ar' : 'en';     // Arabic mode: replies in Arabic, data unchanged
     const words = typeof text === 'string' ? text.trim() : '';
     const file = typeof imageBase64 === 'string' && imageBase64.length ? imageBase64 : '';
     if (!words && !file) return json({ error: 'Send text, a file, or both.' }, 400, cors);
@@ -107,7 +111,7 @@ export default {
 
     // SEARCH: a written answer from Gemini with Google Search switched on —
     // see searchAnswer below. Everything else on this route is the reader.
-    if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors);
+    if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors, lang);
 
     // "20 m", in answer to "how high up does it start?": no model needed.
     const filled = !file && mode !== 'board' ? answered(words, earlier) : null;
@@ -122,7 +126,7 @@ export default {
     const focus = mode !== 'board' && !file && env.PROMPT_FOCUS !== 'off' ? focusFor(said, was) : null;
     const payload = {
       // BOARD: the same reading, and the layout of a whiteboard built from it.
-      system_instruction: { parts: [{ text: mode === 'board' ? BOARD_PROMPT : focus ? systemPrompt(focus.library, focus.compose) : SYSTEM_PROMPT }] },
+      system_instruction: { parts: [{ text: inLang(mode === 'board' ? BOARD_PROMPT : focus ? systemPrompt(focus.library, focus.compose) : SYSTEM_PROMPT, lang) }] },
       contents: [...earlier, { role: 'user', parts }],
       generationConfig: {
         temperature: 0,                         // extraction, not writing
@@ -157,11 +161,11 @@ export default {
     const unseen = focus && outcome.ok ? libraryIdsIn(outcome.extraction).filter((id) => !focus.ids.has(id)) : [];
     if (unseen.length) {
       const again = focusFor(said, [...was, ...unseen]);
-      payload.system_instruction = { parts: [{ text: systemPrompt(again.library, again.compose) }] };
+      payload.system_instruction = { parts: [{ text: inLang(systemPrompt(again.library, again.compose), lang) }] };
       const second = await race(env, models, payload);
       if (second.ok) outcome = second;
     }
-    if (outcome.ok) return json({ ok: true, extraction: fromRest(namedPlace(toComposed(toPlace(toFigure(outcome.extraction, words), words), words), words), words), model: outcome.model }, 200, cors);
+    if (outcome.ok) return json({ ok: true, extraction: fromRest(namedPlace(toComposed(toPlace(toFigure(ownWord(outcome.extraction, words), words), words), words), words), words), model: outcome.model }, 200, cors);
     const { last, lastCap, capped, gone } = outcome;
 
     if (lastCap && models.every((m) => capped.has(m.name) || gone.has(m.name))) {
@@ -208,8 +212,9 @@ export default {
  * Ask the models in turn, overlapping a slow one with the next, and settle on
  * the first readable answer. Every request still running is then cancelled.
  * A model that cannot think at the level asked is asked once more at "low".
+ * The reader's own clock unless a caller has more time to give (a drawing does).
  */
-function race(env, models, payload) {
+function race(env, models, payload, { hedgeMs = HEDGE_MS, deadlineMs = DEADLINE_MS } = {}) {
   const now = Date.now();
   const warm = (m) => (cooling.get(m.name) || 0) <= now;
   const queue = [...models.filter(warm), ...models.filter((m) => !warm(m))]
@@ -232,7 +237,7 @@ function race(env, models, payload) {
     };
     const fail = () => finish({ ok: false, last, lastCap, capped, gone });
     let hedge = null;
-    const deadline = setTimeout(fail, DEADLINE_MS);
+    const deadline = setTimeout(fail, deadlineMs);
 
     function next() {
       clearTimeout(hedge);
@@ -240,7 +245,7 @@ function race(env, models, payload) {
       const m = queue.shift();
       if (!m) { if (!inFlight) fail(); return; }
       if (capped.has(m.name) || gone.has(m.name)) return next();
-      const left = DEADLINE_MS - (Date.now() - started);
+      const left = deadlineMs - (Date.now() - started);
       if (left < 3_000) { if (!inFlight) fail(); return; }
       inFlight++; running.add(m.name);
       const generationConfig = { ...payload.generationConfig, temperature: m.temperature,
@@ -266,7 +271,7 @@ function race(env, models, payload) {
         next();
       });
       // Still waiting after HEDGE_MS? Ask the next one as well.
-      if (inFlight < MAX_IN_FLIGHT) hedge = setTimeout(next, HEDGE_MS);
+      if (inFlight < MAX_IN_FLIGHT) hedge = setTimeout(next, hedgeMs);
     }
     next();
   });
@@ -278,7 +283,7 @@ function race(env, models, payload) {
  * Only Gemini can do this — Gemma on Cloudflare has no search — so the Gemini
  * models are tried in turn, and the reply is prose, not the reader's JSON.
  */
-async function searchAnswer(env, contents, cors) {
+async function searchAnswer(env, contents, cors, lang = 'en') {
   const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim().split(':')[0])
     .filter((m) => m && !m.startsWith('@cf/'));
   if (!env.GEMINI_API_KEY || !models.length) {
@@ -295,7 +300,7 @@ async function searchAnswer(env, contents, cors) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SEARCH_PROMPT }] },
+          system_instruction: { parts: [{ text: inLang(SEARCH_PROMPT, lang) }] },
           contents,
           tools: [{ google_search: {} }],
           generationConfig: { temperature: 0.3, maxOutputTokens: 900 },

@@ -15,6 +15,9 @@ ALLOWED_ORIGINS = "https://suvat-ai.suvatgraphingtool.workers.dev,https://suvat-
 # "off" sends the whole catalogue with every question again.
 PROMPT_FOCUS = "on"
 MODELS = "@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash:low,gemini-3.6-flash"
+# Which models draw an object for POST /draw (src/draw.js), first choice first. The ones
+# that think go first: the drawing is the point, and the page will wait for it.
+DRAW_MODELS = "gemini-3.8-flash:high,gemini-3.6-flash:high,gemini-3.5-flash-lite:low,gemini-3.1-flash-lite:low"
 
 # Per-IP rate limiting. Optional — without it the Worker still works and simply
 # leans on Gemini's own 429. To enable:
@@ -31,3 +34,10 @@ MODELS = "@cf/google/gemma-4-26b-a4b-it,gemini-3.5-flash-lite,gemini-3.1-flash-l
 # A model in MODELS whose name starts "@cf/" is asked through this.
 [ai]
 binding = "AI"
+
+# The site's own database, shared with the accounts Worker (site/): the drawings a
+# model has made, kept for every student (src/draw.js). Tables: site/schema.sql.
+[[d1_databases]]
+binding = "DB"
+database_name = "suvat-accounts"
+database_id = "8634cd8a-b2ba-4e5c-819d-954165fd2dd4"

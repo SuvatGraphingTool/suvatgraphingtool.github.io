@@ -13,12 +13,13 @@
 // axis label the student reads is in flight x; every piece of scenery is
 // placed in section u. Nothing is ever converted twice.
 
-import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar } from './util.js';
+import { fitCanvas, palette, stroke, arrow, dot, ballSprite, parachutist, ballRadius, markRadius, clearance, fmt, niceStep, clamp, labels, cssVar, moverAt, movers } from './util.js';
 import { timeAbove, lineFacts } from '../core/projectile.js';
 import { T, num } from '../notation.js';
 import { slice, siteFor, siteMap, deckProfile } from '../world/world.js';
 import { D } from '../world/dims.js';
 import * as W2 from './world2d.js';
+import { BRANCHES, gripY } from './backdrops.js';
 
 export function createCamera() { return { cx: 0, cy: 0, scale: 8, fit: true, touched: false }; }
 
@@ -1001,15 +1002,11 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   const pick = (e) => {
     const { markers, scenario, traj, t, fired } = active();
     const m = cam._map;
-    // a library stage's view (kitview.js) maps pointer to layout only: nothing on it
-    // is picked, unless the stage has said where its object is
+    // a library stage draws in its own pixels, so what moves on it says where it is
+    // (js/render/util.js noteMover): the same Resolve on it, at the instant on screen
     if (!m || !m.sx) {
-      if (!m?.objects || !traj || !fired) return null;
-      const r = canvas.getBoundingClientRect(), x = m.px(e.clientX - r.left), y = -m.py(e.clientY - r.top);
-      const i = m.objects.findIndex((b) => Math.hypot(x - b.x, y - b.y) < 36);
-      if (i < 0) return null;
-      cam._hot = i;
-      return { kind: 'ball', t };
+      const r = canvas.getBoundingClientRect();
+      return fired && moverAt(e.clientX - r.left, e.clientY - r.top) ? { kind: 'ball', t, stage: true } : null;
     }
     const w = toWorld(e);
     if (!w) return null;
@@ -1017,10 +1014,16 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
 
     // The object comes first: it is what the eye is already on.
     if (traj && fired) {
-      const b = traj.pos(t);
-      if (near(m.sx(b.x), m.sy(b.y))) return { kind: 'ball', t };
+      // where it was really drawn: a stage with a scale of its own (the bullet's
+      // range) says so, and a second round is as much the object as the first
+      const b = traj.pos(t), at = m.ball || { x: m.sx(b.x), y: m.sy(b.y) };
+      if (near(at.x, at.y) || (m.ball2 && near(m.ball2.x, m.ball2.y))) return { kind: 'ball', t };
     }
     if (scenario?.dragTarget && markers?.target && near(m.sx(markers.target.x), m.sy(markers.target.y))) return { kind: 'target' };
+    // any other branch of the tree: a press there brings the monkey to it
+    if (scenario?.branches && markers?.target) {
+      for (const b of BRANCHES) if (near(m.sx(b.x), m.sy(gripY(b) - 0.25), 24)) return { kind: 'perch', to: { x: b.x, y: b.y } };
+    }
     // THE AIM LINE IS A HANDLE. It is the thing the scenario is about, it is
     // already drawn across the frame, and until now the only way to move it
     // was a slider in the bar above — so the one direct manipulation the
@@ -1066,7 +1069,7 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
   // alike, so a draggable handle felt exactly like empty canvas. Now each
   // kind gets the cursor that describes what it does, and the kind is passed
   // out so the renderer can light the handle up as well.
-  const CURSOR = { ball: 'pointer', path: 'pointer', heightLine: 'ns-resize',
+  const CURSOR = { ball: 'pointer', path: 'pointer', perch: 'pointer', heightLine: 'ns-resize',
                    target: 'move', obstacle: 'move', aimLine: 'crosshair' };
   canvas.addEventListener('pointermove', (e) => {
     if (drag || dragging) return;
@@ -1075,18 +1078,20 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     canvas.style.cursor = CURSOR[k] || 'grab';
     const hv = isResolve(got?.kind) ? got.t : null;
     if (hv !== hovering) { hovering = hv; onResolve.hover?.(hv); }
+    // where the pointer is, for a library stage: what moves may come under it as it plays
+    { const r = canvas.getBoundingClientRect(); cam._pointer = { x: e.clientX - r.left, y: e.clientY - r.top }; onChange(); }
     onResolve.mark?.(isResolve(k) ? null : k);
   });
 
-  // A stage that cannot say where its object is (a library kit, the road): a
-  // click anywhere on it resolves, so a resting pointer says so.
+  // A stage that has said nothing of where its object is: a click anywhere on it
+  // resolves, so a resting pointer says so.
   let tip = null, tipDue = 0;
   const hideTip = () => { clearTimeout(tipDue); if (tip) tip.hidden = true; };
   canvas.addEventListener('pointerleave', hideTip);
   canvas.addEventListener('pointermove', (e) => {
     hideTip();
     const { traj, fired, resolving } = active(), m = cam._map;
-    if (e.pointerType !== 'mouse' || drag || dragging || !traj || !fired || resolving || m?.sx || m?.objects) return;
+    if (e.pointerType !== 'mouse' || drag || dragging || !traj || !fired || resolving || m?.sx || movers.list.length) return;
     canvas.style.cursor = 'pointer';
     tipDue = setTimeout(() => {
       if (!tip) { tip = document.createElement('div'); tip.className = 'stage-tip'; tip.textContent = 'click to resolve'; canvas.parentElement.append(tip); }
@@ -1096,12 +1101,14 @@ export function attachControls(canvas, cam, onChange, getScene, onMarkerMove, on
     }, 250);
   });
 
+  canvas.addEventListener('pointerleave', () => { cam._pointer = null; onChange(); });
   canvas.addEventListener('pointerdown', (e) => {
     hideTip();
     const got = pick(e);
     clearTimeout(later);
     down = { x: e.clientX, y: e.clientY, pick: got };
     dragging = got && !isResolve(got.kind) ? got.kind : null;
+    if (dragging === 'perch') { onMarkerMove?.('target', got.to); dragging = 'target'; }   // and it can be carried on from there
     if (dragging) { canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; return; }
     drag = true; lx = e.clientX; ly = e.clientY;
     canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing';

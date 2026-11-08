@@ -64,25 +64,16 @@
   padding: var(--sp-5) var(--sp-6); max-width: min(420px, 88%); text-align: center;
   transform: translateY(6px) scale(.98); transition: transform 420ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease;
 }
-.is-on .cr-card { transform: none; }
-.is-lifting .cr-card { opacity: 0; transform: translateY(-10px) scale(1.03); }
+.is-lifting .cr-card { opacity: 0; }
 .cr-mark { position: relative; width: 92px; height: 92px; display: grid; place-items: center; }
-/* the Spark, large on its dark tile, glowing and breathing while it works */
-.cr-glow {
-  position: absolute; inset: -58px; border-radius: 50%; filter: blur(4px);
-  background: radial-gradient(circle, rgba(255,150,70,.85) 0%, rgba(236,95,23,.4) 38%, rgba(236,95,23,0) 70%);
-  animation: cr-glow 1.8s ease-in-out infinite;
-}
-.cr-orb {
-  width: 92px; height: 92px;
-  box-shadow: 0 10px 34px rgba(236,95,23,.45), 0 0 0 1px rgba(255,214,186,.18);
-  animation: cr-breathe 1.8s ease-in-out infinite;
-}
-.cr-orb svg { width: 72%; height: 72%; filter: drop-shadow(0 0 8px rgba(249,140,60,.85)); animation: cr-sway 3.6s ease-in-out infinite; }
-@keyframes cr-glow { 50% { transform: scale(1.16); opacity: .75; } }
-@keyframes cr-breathe { 50% { transform: scale(1.05); box-shadow: 0 14px 44px rgba(236,95,23,.65), 0 0 0 6px rgba(249,140,60,.14); } }
+/* the Spark, large and alone, breathing while it works */
+.cr-orb { width: 92px; height: 92px; animation: cr-breathe 1.8s ease-in-out infinite; }
+.cr-orb svg { animation: cr-sway 3.6s ease-in-out infinite; }
+@keyframes cr-breathe { 50% { transform: scale(1.05); } }
 @keyframes cr-sway { 25% { transform: rotate(-7deg) scale(1.03); } 75% { transform: rotate(7deg) scale(1.03); } }
-.cr-step { margin: 0; height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-size: var(--fs-sm); color: #6b5148; }
+.cr-step { margin: 0; height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  /* the user, 8 Nov: the clean face Gemini uses */
+  font-family: 'Google Sans Flex', var(--font); font-weight: 450; letter-spacing: .01em; font-size: var(--fs-base); color: #6b5148; }
 .cr-step span { display: inline-block; animation: cr-up 320ms cubic-bezier(.2,.8,.2,1); }
 @keyframes cr-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
@@ -90,6 +81,6 @@
 :root:not([data-theme='light']) .cr-blur { background: rgba(20,17,22,.25); }
 
 @media (prefers-reduced-motion: reduce) {
-  .cr-shimmer, .cr-orb, .cr-orb svg, .cr-glow, .cr-step span { animation: none; }
+  .cr-shimmer, .cr-orb, .cr-orb svg, .cr-step span { animation: none; }
   .cmp-reveal.is-lifting { transition: opacity 240ms ease; }
 }

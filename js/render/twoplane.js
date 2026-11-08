@@ -17,7 +17,7 @@
 
 import { seaFromAbove, skyFromAbove, fitPlanAround, planGrid, compassRose, lighthouseAbove, env } from './scenery.js';
 import { pulse, ageOf, phaseOf } from './effects.js';
-import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, unview, cssVar, hudBoxes as hudOf } from './util.js';
+import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, unview, cssVar, hudBoxes as hudOf, noteMover } from './util.js';
 import { T, num } from '../notation.js';
 
 const ROWS = 5;             // the readouts' left column: the kit's hud(...).left
@@ -112,6 +112,7 @@ export function keepOff(L, pts, pad = 7) {
  * 0 for a ship at rest), the foam drifting with `phase`.
  */
 export function shipTop(g, x, y, s, a, color, P, { wake = 1, phase = 0, part = 'all' } = {}) {
+  if (part !== 'wake') noteMover(g, x, y, Math.max(16, s * 0.55));
   const E = env(), L2 = s / 2, b = s * 0.15;
   const hull = () => {
     g.beginPath(); g.moveTo(L2, 0);

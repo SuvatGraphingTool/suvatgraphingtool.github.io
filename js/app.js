@@ -14,8 +14,10 @@ import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
 import { composeSensibly, heightSensibly, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
-import { figureOf, belowOf, placeOf } from './compose/registry.js';
+import { figureOf, belowOf, placeOf, ownWord } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
+import { prepare, DEADLINE_MS } from './compose/pictures.js';
+import { clearMovers, moverAt, markMover } from './render/util.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
@@ -2941,6 +2943,7 @@ function draw() {
   // on the way in.
   if (state.step !== 'flight' || !traj) { syncPanes(); dirty = false; return; }
   syncPanes();
+  clearMovers();
   const R = state.resolve ? resolveNow() : null;
   // Resolve open on a library stage: its arrows on, split into components
   // where the stage draws them (dashed across, solid up), so the card's
@@ -2988,6 +2991,11 @@ function draw() {
   else if (scenario?.stage === 'road') { cam._map = null; roadStage.render($('scene'), cam, opts); }
   else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
   else scene.render($('scene'), cam, opts);
+  // on a stage in its own pixels, what is under the pointer is what it said it drew:
+  // the ring and the words the twelve show, Resolve on a click (js/render/scene.js)
+  if (!windowed() && !cam._map?.sx && state.launched && !state.resolve && cam._pointer) {
+    markMover($('scene'), moverAt(cam._pointer.x, cam._pointer.y));
+  }
 
   if (state.extras.graphs) {
     const P = palette();
@@ -3360,12 +3368,20 @@ let heard = '';
 let gFrom = '';
 /** The question last read, as the reader gave it — to read again with another g. */
 let lastRead = null;
+/** When the student asked: the scene shows within thirty seconds of it (js/compose/pictures.js). */
+let askedAt = 0;
+// (a moment in hand, for the veil's last line and its lift)
+const showBy = () => (Date.now() - askedAt < DEADLINE_MS ? askedAt : Date.now()) + DEADLINE_MS - 1200;
 function applyReading(x, opts) {
   const raw = x;
+  // (a reading set up again from a saved chat was asked long ago: it starts its own clock)
+  if (!opts?.part) askedAt = typeof opts?.asked === 'number' && Date.now() - opts.asked < DEADLINE_MS ? opts.asked : Date.now();
   // the student's g, where the question gives none: the one just picked in the
   // reply, else the last one they chose (js/ai/gchoice.js)
   if (!opts?.part) { x = withChosenG(x, opts?.g ?? loadG()); lastRead = { raw, opts: { ...opts, g: undefined } }; }
   if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? opts.words : '';
+  // the student's own word for what moves wins over the model's ball (js/compose/registry.js)
+  if (!opts?.part) x = ownWord(x, heard);
   if (!opts?.part) gFrom = typeof x?.gFrom === 'string' ? x.gFrom.slice(0, 20) : '';
   stayPut = true;
   let r;
@@ -3668,13 +3684,16 @@ function applyComposed(x, { graph = true } = {}) {
   const who = figureOf(x.who);
   if (who.figure && !['ball', 'stone', 'particle'].includes(who.figure) && x.recipe?.objects?.length === 1
       && ['ball', 'stone', 'particle'].includes(String(x.recipe.objects[0]?.figure).toLowerCase())) {
-    x = { ...x, recipe: { ...x.recipe, objects: [{ ...x.recipe.objects[0], figure: who.figure }] } };
+    x = { ...x, recipe: { ...x.recipe, objects: [{ ...x.recipe.objects[0], figure: who.figure === 'thing' ? who.thing : who.figure }] } };
   }
   // the surface below, when the reader left it out but the question names one ("a bridge above a road")
   if (x.recipe?.backdrop && !x.recipe.below) { const b = belowOf(x.recipe.backdrop, `${x.summary || ''} ${x.words || ''}`); if (b) x = { ...x, recipe: { ...x.recipe, below: b } }; }
   const c = composeSensibly(x.recipe, `${x.words || ''} ${x.summary || ''}`);
   if (!c.ok) return { ok: false, chat: true, error: 'I can see the idea, but I need a little more to set it up. What moves, where from, and do you know a height or a speed?' };
   const s = register(c, null);
+  // its picture starts on its way now, so the veil has as little as possible to wait for;
+  // the stage is drawn again when it comes (never during a flight: see pictures.js)
+  prepare(s.recipe, { until: showBy() }).then(() => { dirty = true; });
   // a part that is another place or another motion has a scene of its own
   const { main, scenes } = scenesOf(x.parts);
   scenes.forEach((sc) => { if (sc.c.ok) register(sc.c, [sc.part]); });
@@ -3737,7 +3756,8 @@ function openGraphs() {
   const box = $('extras').querySelector('input[data-k="graphs"]');
   if (box) box.checked = true;
   $('graphs-wrap').hidden = false;
-  if (!state.options && !windowed()) $('options-btn').click();   // where the graphs live
+  // where the graphs live (not on a phone, where that panel would cover the scene just asked for)
+  if (!state.options && !windowed() && !matchMedia('(max-width: 560px)').matches) $('options-btn').click();
 }
 function showFlight() {
   if (!traj) return;
@@ -3750,7 +3770,11 @@ function showFlight() {
   else if (scenario.composed && !scenario.seen) {
     scenario.seen = true;
     closeIntro(); go('flight');
-    reveal($('canvas-wrap'), scenario.recipe).then(() => runFlight());
+    // "Working out the motion" is the engine, working it out
+    reveal($('canvas-wrap'), scenario.recipe, { until: showBy(), solve: () => { const K = kit(); if (K) K.solve(K.read(state.kit)); } }).then(() => runFlight());
+  } else if (scenario.composed) {
+    // (a drawing that came too late for the last run is taken here, between runs)
+    prepare(scenario.recipe, { until: showBy() }).then(() => launch());
   } else launch();
 }
 const ask = createAsk({
@@ -3782,7 +3806,7 @@ window.SUVAT = { state, get traj() { return traj; }, get solved() { return solve
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
                  openAskAt, closeAskAt, easeAngle, applyReading, gravity, get board() { return board; },
-                 redraw() { recompute(); draw(); }, showPart,
+                 redraw() { recompute(); draw(); }, showPart, showFlight,
                  /** Compose a scene from a recipe, as the reader would: SUVAT.compose({ backdrop, engine, objects, numbers, parts }). */
                  compose(recipe, parts = recipe?.parts) {
                    const r = applyComposed({ scenario: 'compose', recipe, parts });

@@ -9,6 +9,8 @@ const MAX_EDGE = 1024;
 const QUALITY = 0.82;
 
 /** File or Blob → { base64, mimeType, bytes }, resized and re-encoded. */
+import { lang } from '../i18n.js';
+
 export async function prepareImage(file) {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
@@ -57,6 +59,8 @@ export function readText(endpoint, text, { history, mode, signal } = {}) {
 }
 
 async function post(endpoint, body, signal) {
+  // Arabic mode: the reader replies in Arabic (worker/src/schema.js ARABIC_NOTE); English sends exactly what it always did
+  if (lang() === 'ar') body = { ...body, lang: 'ar' };
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
