@@ -115,3 +115,13 @@ a convention anybody has to remember, it is a test.
 - **Unicode has no subscript `y`.** So subscripted symbols belong in HTML, and
   canvas labels use words instead — "vertical", not `v_y`. They already do, and
   the sweep keeps them honest.
+
+## In Arabic mode
+
+The source does not change, and neither does this file's rule: one module decides
+what a symbol looks like. `ARABIC` at the top of `js/notation.js` is one small table
+of symbols, units and function names, and `design/arabic-glossary.md` says why each
+was chosen. Only the digits stay. An equation reads right to left with each number's
+digits intact, and `test/notation.test.mjs` runs its whole sweep a second time in
+Arabic, failing on any Latin letter, hyphen minus or computer maths. A tension is
+written `Ten` in the source: it sets as T in English, and has its own letter in Arabic.

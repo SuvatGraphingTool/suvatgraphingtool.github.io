@@ -63,9 +63,7 @@ export const ARABIC = {
     O: 'و', P: 'ن', Q: 'غ', S: 'ض', X: 'خ', Y: 'ي', Z: 'ظ',
   },
   greek: { θ: 'هـ', Θ: 'هـ', α: 'أ', β: 'ب', γ: 'جـ', δ: 'د', ε: 'ي', η: 'ن', λ: 'ل', μ: 'مـ', ν: 'ن', π: 'ط', ρ: 'ر', σ: 'س', Σ: 'مج', τ: ['ز', 'ط'], φ: 'ف', Φ: 'ف', ω: 'و', Ω: 'و', Δ: 'Δ' },
-  words: { from: 'من', speed: 'السرعة', sum: 'مج', canopy: 'المظلة' },
-  // a word and the name after it, which Arabic says the other way round
-  pairs: { 'vertical speed': 'السرعة الرأسية', 'horizontal speed': 'السرعة الأفقية', 'Vertical speed': 'السرعة الرأسية', 'Horizontal speed': 'السرعة الأفقية' },            // whole names that are words
+  words: { from: 'من', speed: 'السرعة', sum: 'مج', canopy: 'المظلة' },            // whole names that are words
   subs: { max: 'أقصى', min: 'أدنى', flight: 'طيران', tot: 'كلي', k: 'ك' },
   fns: { sin: 'جا', cos: 'جتا', tan: 'ظا', sec: 'قا', cosec: 'قتا', cot: 'ظتا', arcsin: 'جا⁻¹', arccos: 'جتا⁻¹', arctan: 'ظا⁻¹', ln: 'لو', log: 'لو', exp: 'أس' },
   units: {
@@ -552,20 +550,7 @@ const bare = (n) => (n.k === 'group' && n.paren ? n.body : n);
 
 /* ── HTML ───────────────────────────────────────────────────────────── */
 
-// "vertical" speed, in Arabic one phrase: السرعة الرأسية
-function arPairs(n) {
-  if (!ar() || n.k !== 'row') return n;
-  const items = [];
-  for (let i = 0; i < n.items.length; i++) {
-    const a = n.items[i], b = n.items[i + 1];
-    const said = a.k === 'text' && b?.k === 'var' ? ARABIC.pairs[`${a.v} ${b.v}`] : null;
-    if (said) { items.push({ k: 'text', v: said }); i++; } else items.push(a);
-  }
-  return items.length === n.items.length ? n : { ...n, items };
-}
-
-function renderHTML(n0) {
-  const n = arPairs(n0);
+function renderHTML(n) {
   switch (n.k) {
     case 'row': {
       // pieces, so a vector can be held to what multiplies it: 28𝒊 and
@@ -650,8 +635,7 @@ function unitText(body) {
 const THIN = ' ';          // the gap between implicit factors
 const SOLIDUS = '⁄';       // a fraction slash, not a division sign
 
-function renderText(n0) {
-  const n = arPairs(n0);
+function renderText(n) {
   switch (n.k) {
     case 'row': {
       let out = '';

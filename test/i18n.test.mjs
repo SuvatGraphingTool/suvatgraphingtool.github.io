@@ -157,6 +157,13 @@ console.log('\nThe page keeps to the direction');
   ok(/\[dir="rtl"\] \.m \{ direction: rtl; unicode-bidi: isolate;/.test(css), 'an equation reads right to left, isolated by its class');
   ok(/\.m-num \{ direction: ltr;/.test(css), 'only a number’s digits run left to right');
   ok(/\[dir="rtl"\] canvas \{ direction: ltr; \}/.test(css), 'the stage is never mirrored');
+  // words CSS writes itself never reach a sweep of the page's text
+  const written = [];
+  for (const f of fs.readdirSync(path.join(ROOT, 'css')).filter((x) => x !== 'rtl.css')) {
+    const src = fs.readFileSync(path.join(ROOT, 'css', f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const m of src.matchAll(/([^{}]+)\{[^{}]*content:\s*['"]([^'"]*[A-Za-z][^'"]*)['"]/g)) written.push(m[1].trim());
+  }
+  ok(written.length > 0 && written.every((sel) => css.includes(`[dir="rtl"] ${sel}`)), 'and every word CSS writes has its Arabic', written.join(' | '));
 }
 
 console.log('\nThe toggle persists');

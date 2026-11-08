@@ -80,7 +80,8 @@ css/app.css             laptop-first three-column layout
 css/math.css            how a typeset equation looks
 css/rtl.css             Arabic mode only: the face, and what mirrors and what does not
 js/notation.js          maths set as maths — the source notation and its output
-js/i18n.js              the language: lang(), t(), the switch; js/i18n/ar.js, loaded only in Arabic (design/arabic-glossary.md)
+js/i18n.js              the language: lang(), t(), the switch, the page and canvas turned Arabic; js/i18n/ar.js, loaded only in Arabic (design/arabic-glossary.md)
+js/compose/arabicwords.js  an Arabic question, read for the stages that match English
 js/scenarios.js         the scenarios, as data
 js/working.js           the working out, with real numbers substituted
 js/core/suvat.js        the five equations and a solver that shows its working
@@ -127,5 +128,6 @@ node test/account.test.mjs     # accounts: sign-in, sessions, chats kept per acc
 node test/sense.test.mjs       # common sense: everyday sentences always run, and what is assumed is said
 node test/tracks.test.mjs      # every moving thing leaves a trajectory, and all of it resolves
 node test/focus.test.mjs       # the reader sends each question only the catalogue it needs (worker/src/focus.js)
-node test/i18n.test.mjs        # Arabic mode: the dictionary, templates, maths left to right, the toggle, the reader told the language
+node test/i18n.test.mjs        # Arabic mode: the dictionary, symbols and units, templates, the toggle, the reader told the language and reading Arabic
+# (node test/notation.test.mjs sweeps everything twice, the second time in Arabic. In a browser: tools/verify/arabic-sweep.cjs)
 ```

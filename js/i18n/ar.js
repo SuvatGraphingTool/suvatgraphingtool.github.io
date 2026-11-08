@@ -8703,6 +8703,13 @@ export default {
   "Go ahead. {0} Say “use your own” for any you don’t know.": "تفضل. {0} قل «استخدم قيمك» لأي قيمة لا تعرفها.",
   "I’ve filled in what was missing with the paper’s own numbers. Tell me the real ones and I’ll run it again.": "أكملت الناقص بأرقام ورقة الامتحان نفسها. أخبرني بالأرقام الحقيقية وسأعيد الحل.",
   "How high up does it start? Just tell me here, like “20 m”, or say “use your own”.": "من أي ارتفاع يبدأ؟ أخبرني هنا، مثل «20 م»، أو قل «استخدم قيمك».",
+  "vertical velocity": "السرعة الرأسية",
+  "horizontal velocity": "السرعة الأفقية",
+  "Vertical velocity": "السرعة الرأسية",
+  "vertical acceleration": "التسارع الرأسي",
+  "horizontal acceleration": "التسارع الأفقي",
+  "Vertical acceleration": "التسارع الرأسي",
+  "Horizontal acceleration": "التسارع الأفقي",
 };
 
 /**

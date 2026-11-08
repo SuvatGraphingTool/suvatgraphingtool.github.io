@@ -92,6 +92,11 @@
 [dir="rtl"] .acct-x { left: var(--sp-3); right: auto; }
 [dir="rtl"] .acct-msg { margin: 0 0 var(--sp-4) var(--sp-8); }
 [dir="rtl"] .step-sub { padding: 0 38px 8px 8px; }
+/* a word CSS itself writes */
+[dir="rtl"] .pace-pin::after { content: 'الأنسب'; letter-spacing: 0; }
+/* the back arrow of the privacy page */
+[dir="rtl"] main > .home > [aria-hidden="true"] { display: inline-block; transform: scaleX(-1); }
+[dir="rtl"] main ul { padding-left: 0; padding-right: 20px; }
 /* the time and speed sliders keep the stage's direction: time runs the way x does */
 [dir="rtl"] input[type="range"] { direction: ltr; }
 
