@@ -144,7 +144,7 @@ export function initShell(SUVAT, { scenarios, library, byId }) {
     const known = boxes.filter((i) => i.value.trim() !== '').length;
     $('sub-values').textContent = !s ? 'Any three of five'
       : boxes.length ? `${known} of ${boxes.length} known` : 'Set up';
-    $('sub-flight').textContent = SUVAT.state.launched && SUVAT.traj ? 'Flown — replay any time'
+    $('sub-flight').textContent = SUVAT.traj && (SUVAT.state.firedBefore || (SUVAT.state.launched && SUVAT.state.t > 0)) ? 'Flown — replay any time'
       : SUVAT.traj ? 'Ready to launch' : 'Needs values';
     for (const li of $('steps').children) {
       const b = li.querySelector('.navstep');

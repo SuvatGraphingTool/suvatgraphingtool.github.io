@@ -289,10 +289,11 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     const words = text.value.trim(), a = att;
     // from the first screen a question is a new chat, whatever was last on show
     if (!inChat() && thread.childElementCount) clearThread();
-    // "I don't know", "you pick": handed over, with nothing to read and no AI call
-    if (chat?.last && !a && !saysNumber(words) && wantsOwn(words)) {
-      openChat(); echo(words, null); text.value = ''; detach(); sync();
-      if (useOwn()) return;
+    // "I don't know", "you pick": handed over, with nothing to read and no AI call.
+    // Only while Suvat is waiting for values: with a scene already running, "I don't
+    // know what acceleration means" is a question.
+    if (chat?.last && !chat.last.ran && !a && !saysNumber(words) && words.length < 80 && wantsOwn(words)) {
+      if (handOver(words)) return;
     }
     openChat();
     echo(words, a);
@@ -361,12 +362,23 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
       r.html = r.html.replace(/<div class="ro-engine" data-ok="false">[\s\S]*?<\/div>/, '<div class="ro-engine" data-ok="false"><b>I can set this up.</b> Would you like to give the numbers, or shall I use my own?</div>');
     }
     if (!r.ok) { reply(`<p${r.chat ? '' : ' class="ro-bad"'}>${esc(r.error)}</p>`); return; }
-    if (chat) chat.last = { extraction: res.extraction, opts };
+    if (chat) chat.last = { extraction: res.extraction, opts, ran: !!r.runnable };
     reading(r);
     // A scene composed for this question is what they asked to see: the stage
     // opens on it straight away, behind its veil (js/compose/reveal.js), and
     // the reply stays in the chat to come back to.
-    if (r.composed && r.runnable) setTimeout(run, 700);
+    if (r.composed && r.runnable) runSoon();
+  }
+  /** The stage, in a moment, if the student is still in this chat by then. */
+  function runSoon() { const my = gen; setTimeout(() => { if (gen === my) run(); }, 700); }
+  /** Their words handing it over, then useOwn; nothing is said if there is nothing to hand over. */
+  function handOver(words) {
+    const last = chat.last;
+    openChat(); echo(words, null); text.value = ''; detach(); sync();
+    if (useOwn()) return true;
+    reply('<p>Tell me a number or two and I’ll carry on from there.</p>');
+    chat.last = last;
+    return true;
   }
 
   /** The student handed it over: the reading on show, with sensible values for what
@@ -376,10 +388,10 @@ export function createAsk({ apply, run, edit, show, scene, gravity }) {
     const opts = { ...chat.last.opts, assume: true };
     const r = apply(chat.last.extraction, opts);
     if (!r.ok) return false;
-    chat.last = { ...chat.last, opts };
+    chat.last = { ...chat.last, opts, ran: !!r.runnable };
     for (const old of thread.querySelectorAll('.ask-acts')) old.remove();
     reading(r);
-    if (r.composed && r.runnable) setTimeout(run, 700);
+    if (r.composed && r.runnable) runSoon();
     return true;
   }
 

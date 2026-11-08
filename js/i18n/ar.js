@@ -620,6 +620,7 @@ export default {
   "values": "القيم",
   "crumbs": "مسار التنقل",
   "{0} | SUVAT": "{0} | سوفات",
+  "Tell me a number or two and I’ll carry on from there.": "أعطني رقمًا أو رقمين وسأكمل من هناك.",
   "{0} of {1} known": "{0} من {1} معلومة",
   // a library stage drawing what the question says moves (js/render/standin.js)
   "Mass of {0} (kg)": "كتلة {0} (كجم)",
