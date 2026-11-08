@@ -119,11 +119,14 @@ export function drawTracks(canvas) {
   if (!T) return;
   const g = canvas.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2), P = palette();
   g.save(); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  g.strokeStyle = P.disp || P.ink; g.lineWidth = 2; g.lineJoin = 'round'; g.lineCap = 'round'; g.globalAlpha = 0.72;
+  // as the twelve draw theirs (js/render/scene.js): a casing in the surface colour,
+  // then the path in the velocity hue
+  g.lineJoin = 'round'; g.lineCap = 'round';
   g.beginPath();
   for (const line of moving(T)) {
     line.forEach((p, i) => { const s = toScreen(canvas, p); if (!i) g.moveTo(s.x, s.y); else g.lineTo(s.x, s.y); });
   }
-  g.stroke();
+  g.strokeStyle = P.surface; g.globalAlpha = 0.5; g.lineWidth = 6.2; g.stroke();
+  g.strokeStyle = P.vel; g.globalAlpha = 1; g.lineWidth = 3.4; g.stroke();
   g.restore();
 }

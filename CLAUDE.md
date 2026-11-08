@@ -126,6 +126,8 @@ node test/library.test.mjs      # the Past-paper library: each scenario against 
 node test/chats.test.mjs       # Ask Suvat's chats, kept in this browser
 node test/account.test.mjs     # accounts: sign-in, sessions, chats kept per account (site/)
 node test/sense.test.mjs       # common sense: everyday sentences always run, and what is assumed is said
+node test/standin.test.mjs     # a library scene draws the student's own object, never a bystander's
+node test/still.test.mjs       # the unchanging part of a stage is kept, not repainted
 node test/tracks.test.mjs      # every moving thing leaves a trajectory, and all of it resolves
 node test/focus.test.mjs       # the reader sends each question only the catalogue it needs (worker/src/focus.js)
 node test/i18n.test.mjs        # Arabic mode: the dictionary, symbols and units, templates, the toggle, the reader told the language and reading Arabic

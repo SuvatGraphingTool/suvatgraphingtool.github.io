@@ -3048,7 +3048,7 @@ function draw() {
   if (tracksHere()) {
     const c = $('scene');
     recordTracks(c, traj, state.t);
-    if (!OWN_PATH.has(state.id)) drawTracks(c);
+    if (!OWN_PATH.has(state.id) && !scenario?.composed) drawTracks(c);
     if (!state.resolve && cam._pointer) markMover(c, moverAt(cam._pointer.x, cam._pointer.y) || trackAt(c, cam._pointer.x, cam._pointer.y));
   }
 
