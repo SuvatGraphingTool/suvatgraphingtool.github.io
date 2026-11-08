@@ -1,0 +1,63 @@
+/* rtl.css — Arabic mode, and only Arabic mode: index.html fetches this file
+   when js/i18n.js says the language is Arabic, so English never loads it.
+
+   THE FACE. Inter has no Arabic letters, so it stays first for Latin, digits
+   and symbols, and IBM Plex Sans Arabic sets the Arabic: the same clean,
+   neutral grotesque cut, the same open counters, weights 400–700 to answer
+   Inter's. Arabic sits lower and shorter at a given size, so it is set a
+   touch larger and with more line-height — in Arabic mode only.
+
+   THE DIRECTION. The chrome mirrors (the grid and flex rows follow `dir`);
+   the stage, the graphs and every equation do not. */
+
+:root[lang="ar"] {
+  --font: 'Inter', 'Inter Variable', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Inter', 'Inter Variable', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --lh-body: 1.75;
+  --lh-tight: 1.3;
+  /* Arabic has no letter-spacing to tighten: tracking breaks the joins */
+  --track-hero: 0; --track-h: 0; --track-ui: 0;
+}
+/* Plex Arabic reads about a size smaller than Inter at the same px */
+:root[lang="ar"] body { font-size-adjust: none; }
+:root[lang="ar"] :is(p, li, dt, dd, label, button, small, .nav-t, .crumb, .step-sub, .chip, .pcard, h1, h2, h3, h4) { letter-spacing: 0; }
+
+/* Until the dictionary is in, show nothing rather than English that flips */
+.i18n-wait body { visibility: hidden; }
+
+/* ── what never turns round ─────────────────────────────────────────── */
+/* an equation from js/notation.js: left to right, isolated from the Arabic */
+[dir="rtl"] .m { direction: ltr; unicode-bidi: isolate; }
+/* the stage and the graphs: physics x goes to the right, always */
+[dir="rtl"] canvas { direction: ltr; }
+[dir="rtl"] kbd, [dir="rtl"] .kbd, [dir="rtl"] code { direction: ltr; unicode-bidi: isolate; }
+/* a box a number is typed into: digits read left to right */
+[dir="rtl"] input[type="number"], [dir="rtl"] input[inputmode="decimal"], [dir="rtl"] input[inputmode="numeric"] { direction: ltr; text-align: right; }
+
+/* ── what does ──────────────────────────────────────────────────────── */
+/* chevrons and arrows that mean "next" or "back" point the reading way */
+[dir="rtl"] .crumb-sep,
+[dir="rtl"] [data-flip],
+[dir="rtl"] .ic-next, [dir="rtl"] .ic-back { transform: scaleX(-1); }
+[dir="rtl"] .linkbtn .ic, [dir="rtl"] .bl-go .ic, [dir="rtl"] #back-2 .ic,
+[dir="rtl"] #chat-back svg, [dir="rtl"] .done-back svg { transform: scaleX(-1); }
+[dir="rtl"] .linkbtn:hover .ic, [dir="rtl"] .bento-lib:hover .bl-go .ic { transform: scaleX(-1) translateX(3px); }
+
+/* things placed with left and right: the mirror of css/shell.css and css/ask.css */
+[dir="rtl"] .side .steps li::before { left: auto; right: 17px; }
+[dir="rtl"] .acct-x { right: auto; left: var(--sp-3); }
+[dir="rtl"] .ask-view-x { right: auto; left: 12px; }
+[dir="rtl"] .ro-steps > li::before { left: auto; right: 0; }
+[dir="rtl"] .chat-list { right: auto; left: var(--sp-6); }
+[dir="rtl"] .speed-pop { right: auto; left: 0; }
+[dir="rtl"] .done-back { left: auto; right: var(--sp-4); }
+/* a switch is on towards the reading start */
+[dir="rtl"] .box-ck { transform: scaleX(-1); }
+/* the time and speed sliders keep the stage's direction: time runs the way x does */
+[dir="rtl"] input[type="range"] { direction: ltr; }
+
+@media (max-width: 900px) {
+  [dir="rtl"] .side { inset: 0 0 0 auto; transform: translateX(102%); }
+  [dir="rtl"] .app[data-side='open'] .side { transform: none; }
+  [dir="rtl"] .chat-side { inset: 0 auto 0 0; transform: translateX(-102%); }
+}

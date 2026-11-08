@@ -27,7 +27,7 @@
 .acct-x { position: absolute; top: var(--sp-3); right: var(--sp-3); }
 .acct-pane { display: grid; gap: var(--sp-4); }
 .acct-pane[hidden] { display: none; }
-.acct-h { margin: 0; padding-right: var(--sp-8); font-size: var(--fs-lg); font-weight: 600; color: var(--ink-strong); }
+.acct-h { margin: 0; padding-inline-end: var(--sp-8); font-size: var(--fs-lg); font-weight: 600; color: var(--ink-strong); }
 .acct-sub { margin: 0; font-size: var(--fs-sm); color: var(--ink-muted); line-height: 1.5; }
 .acct-fine { margin: 0; font-size: 13px; color: var(--ink-faint); line-height: 1.5; }
 .acct-msg {
@@ -58,7 +58,7 @@
 .acct-email input:focus-visible, .acct-google:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .acct-email .fire { height: 44px; justify-content: center; }
 
-.acct-who { display: flex; align-items: center; gap: var(--sp-3); padding-right: var(--sp-8); }
+.acct-who { display: flex; align-items: center; gap: var(--sp-3); padding-inline-end: var(--sp-8); }
 .acct-name { margin: 0; font-weight: 600; color: var(--ink-strong); overflow-wrap: anywhere; }
 .acct-mail { margin: 0; font-size: var(--fs-sm); color: var(--ink-muted); overflow-wrap: anywhere; }
 .acct-mail:empty { display: none; }

@@ -10,7 +10,7 @@
 
 import { toPlace } from './place.js';
 import { toComposed, toFigure, namedPlace, answered, fromRest, ownWord } from './composeplace.js';
-import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt } from './schema.js';
+import { SYSTEM_PROMPT, SEARCH_PROMPT, BOARD_PROMPT, systemPrompt, inLang } from './schema.js';
 import { focusFor, libraryIdsIn, idsInHistory } from './focus.js';
 import { draw } from './draw.js';
 
@@ -66,6 +66,7 @@ export default {
     // most one attachment: a photo of the question, or the paper as a PDF.
     // Either may come alone.
     const { imageBase64, mimeType = 'image/jpeg', hint, text, history, mode } = body || {};
+    const lang = body?.lang === 'ar' ? 'ar' : 'en';     // Arabic mode: replies in Arabic, data unchanged
     const words = typeof text === 'string' ? text.trim() : '';
     const file = typeof imageBase64 === 'string' && imageBase64.length ? imageBase64 : '';
     if (!words && !file) return json({ error: 'Send text, a file, or both.' }, 400, cors);
@@ -110,7 +111,7 @@ export default {
 
     // SEARCH: a written answer from Gemini with Google Search switched on —
     // see searchAnswer below. Everything else on this route is the reader.
-    if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors);
+    if (mode === 'search') return searchAnswer(env, [...earlier, { role: 'user', parts }], cors, lang);
 
     // "20 m", in answer to "how high up does it start?": no model needed.
     const filled = !file && mode !== 'board' ? answered(words, earlier) : null;
@@ -125,7 +126,7 @@ export default {
     const focus = mode !== 'board' && !file && env.PROMPT_FOCUS !== 'off' ? focusFor(said, was) : null;
     const payload = {
       // BOARD: the same reading, and the layout of a whiteboard built from it.
-      system_instruction: { parts: [{ text: mode === 'board' ? BOARD_PROMPT : focus ? systemPrompt(focus.library, focus.compose) : SYSTEM_PROMPT }] },
+      system_instruction: { parts: [{ text: inLang(mode === 'board' ? BOARD_PROMPT : focus ? systemPrompt(focus.library, focus.compose) : SYSTEM_PROMPT, lang) }] },
       contents: [...earlier, { role: 'user', parts }],
       generationConfig: {
         temperature: 0,                         // extraction, not writing
@@ -160,7 +161,7 @@ export default {
     const unseen = focus && outcome.ok ? libraryIdsIn(outcome.extraction).filter((id) => !focus.ids.has(id)) : [];
     if (unseen.length) {
       const again = focusFor(said, [...was, ...unseen]);
-      payload.system_instruction = { parts: [{ text: systemPrompt(again.library, again.compose) }] };
+      payload.system_instruction = { parts: [{ text: inLang(systemPrompt(again.library, again.compose), lang) }] };
       const second = await race(env, models, payload);
       if (second.ok) outcome = second;
     }
@@ -282,7 +283,7 @@ function race(env, models, payload, { hedgeMs = HEDGE_MS, deadlineMs = DEADLINE_
  * Only Gemini can do this — Gemma on Cloudflare has no search — so the Gemini
  * models are tried in turn, and the reply is prose, not the reader's JSON.
  */
-async function searchAnswer(env, contents, cors) {
+async function searchAnswer(env, contents, cors, lang = 'en') {
   const models = (env.MODELS || MODELS_DEFAULT).split(',').map((m) => m.trim().split(':')[0])
     .filter((m) => m && !m.startsWith('@cf/'));
   if (!env.GEMINI_API_KEY || !models.length) {
@@ -299,7 +300,7 @@ async function searchAnswer(env, contents, cors) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SEARCH_PROMPT }] },
+          system_instruction: { parts: [{ text: inLang(SEARCH_PROMPT, lang) }] },
           contents,
           tools: [{ google_search: {} }],
           generationConfig: { temperature: 0.3, maxOutputTokens: 900 },
