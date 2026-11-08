@@ -17,6 +17,7 @@
 
 import { lang } from '../i18n.js';
 import { cssVar, withAlpha } from './util.js';
+import { keptPiece } from './still.js';
 
 /** The scenery colours for this frame, from the theme. */
 export function env() {
@@ -231,6 +232,9 @@ export function water(g, x0, x1, Y, y1, o = {}) {
 
 /** A block of stone with courses: (x, y) its top-left, w × h px; lit from the left. */
 export function stone(g, x, y, w, h, o = {}) {
+  keptPiece(g, { x: x - 1, y: y - 1, w: w + 2, h: h + 2 }, `stone|${o.seed ?? 19}|${o.course ?? 12}|${o.color ?? ''}`, (q) => stonesOf(q, x, y, w, h, o));
+}
+function stonesOf(g, x, y, w, h, o) {
   const E = env(), r = rng(o.seed ?? 19), course = o.course ?? 12;
   const base = o.color ?? (E.night ? '#6b6066' : '#bfb2ab');
   const gr = g.createLinearGradient(x, 0, x + w, 0);

@@ -36,20 +36,34 @@ const idOf = (o) => { let i = objects.get(o); if (!i) { i = nextId++; objects.se
 function mix(x) {
   if (typeof x === 'number') h = Math.imul(h ^ ((x * 65536) | 0), 16777619);
   else if (typeof x === 'string') {
+    // by what it says, kept for the next time it is asked: a wall has thousands of colours
     let i = strings.get(x);
-    if (i === undefined) { if (strings.size > 4000) strings.clear(); i = nextId++; strings.set(x, i); }
+    if (i === undefined) {
+      i = 0; for (let c = 0; c < x.length; c++) i = Math.imul(i ^ x.charCodeAt(c), 16777619);
+      if (strings.size > 20000) strings.clear();
+      strings.set(x, i);
+    }
     h = Math.imul(h ^ i, 16777619);
   } else if (x === null || x === undefined || typeof x === 'boolean') h = Math.imul(h ^ (x ? 3 : 5), 16777619);
   else if (Array.isArray(x)) { for (const v of x) mix(v); }
   else if ('a' in x && 'f' in x) { mix(x.a); mix(x.b); mix(x.c); mix(x.d); mix(x.e); mix(x.f); }
   else if (x.addColorStop) h = Math.imul(h ^ 7, 16777619);          // a gradient: its making is in the hash already
-  else h = Math.imul(h ^ idOf(x), 16777619);                        // an image; a Path2D, new each frame, ends the opening
+  else if (x._hash !== undefined) h = Math.imul(h ^ x._hash, 16777619);  // a Path2D: what was drawn into it (below)
+  else h = Math.imul(h ^ idOf(x), 16777619);                        // an image, by which one it is
 }
 
-/** What a stage may leave behind for its next frame: a stroke's end, say. It is part of what the opening looks like. */
-function mixLeftovers(g) {
-  for (const k of ['lineCap', 'lineJoin', 'miterLimit', 'lineWidth', 'font', 'textAlign', 'textBaseline', 'lineDashOffset']) mix(g[k]);
-  mix(g.getLineDash());
+/* A stage may build a Path2D afresh each frame, the same shape every time: it counts as that shape. */
+if (typeof Path2D !== 'undefined') {
+  for (const k of ['moveTo', 'lineTo', 'bezierCurveTo', 'quadraticCurveTo', 'arc', 'arcTo', 'ellipse', 'rect', 'roundRect', 'closePath']) {
+    const f = Path2D.prototype[k];
+    if (!f) continue;
+    Path2D.prototype[k] = function () {
+      const keep = h; h = this._hash ?? 0;
+      for (let i = 0; i < arguments.length; i++) mix(arguments[i]);
+      this._hash = h; h = keep;
+      return f.apply(this, arguments);
+    };
+  }
 }
 
 /* ── one canvas's watch ──────────────────────────────────────────────────────── */
@@ -146,8 +160,11 @@ let enabled = typeof document !== 'undefined';
 /** Turned off, every stage paints in full, the plain way: for comparing the two. */
 export function useStill(on) { enabled = !!on; }
 
-/** Whatever the picture holds may no longer be right (a webfont has arrived). */
-export function forgetStill(canvas) { const W = watchers.get(canvas); if (W) { W.mode = PLAIN; W.last = null; W.held = 0; W.rest = 0; } }
+/** How it is going, for a test: how many painting calls the picture holds, of how many. */
+export function stillState(canvas) { const W = watchers.get(canvas); return W ? { held: W.held, of: W.n, rest: W.rest, breaks: W.breaks } : null; }
+
+/** Whatever the picture holds may no longer be right: a webfont has arrived, or it is another stage. */
+export function forgetStill(canvas) { const W = watchers.get(canvas); if (W) { W.mode = PLAIN; W.last = null; W.held = 0; W.rest = 0; W.breaks = 0; } }
 
 /**
  * Draw a stage, its unchanging opening from the picture.
@@ -173,7 +190,7 @@ export function stillFrame(canvas, render, again = () => {}) {
     g.drawImage(W.snap, 0, 0);
     g.restore();
     W.mode = SHOW;
-    h = 0; mixLeftovers(g);
+    h = 0;
     render();
     W.mode = PLAIN;
     if (!W.broke) return;
@@ -184,11 +201,43 @@ export function stillFrame(canvas, render, again = () => {}) {
     render();
     return;
   }
-  W.mode = WATCH; W.seq = []; h = 0; mixLeftovers(canvas.getContext('2d'));
+  W.mode = WATCH; W.seq = []; h = 0;
   render();
   W.mode = PLAIN;
   if (W.split >= WORTH) { W.held = W.split; W.last = W.seq; return; }
   // identical frames (nothing has moved), or no opening worth keeping
   if (W.split >= 0) { if (++W.breaks > 4) { W.breaks = 0; W.rest = 90; } }
   W.last = W.seq;
+}
+
+/* ── one heavy piece, when what is under it moves ────────────────────────────
+   Water runs on the clock, so a stage with a sea has no opening to keep, and what stands
+   in front of it is repainted every frame: a cliff's strata, a wall's every stone. Such
+   a piece, known to be the same at the same place, is kept on its own. It must lie inside
+   the box it names, and a canvas that is turned draws it the plain way. */
+const pieces = new Map();
+const theme = () => (typeof document !== 'undefined' ? document.documentElement?.dataset?.theme : '');
+/**
+ * @param g     the stage's context
+ * @param box   { x, y, w, h } in its current coordinates, all that the piece can touch
+ * @param key   everything else the piece depends on, as a string
+ * @param draw  draws it on the context it is given
+ */
+export function keptPiece(g, box, key, draw) {
+  const m = g.getTransform?.();
+  if (!enabled || !m || m.b || m.c || g.globalAlpha !== 1 || g.canvas?.id !== 'scene') { draw(g); return; }
+  const x0 = Math.floor(m.a * box.x + m.e) - 1, y0 = Math.floor(m.d * box.y + m.f) - 1;
+  const cw = Math.ceil(m.a * box.w) + 3, ch = Math.ceil(m.d * box.h) + 3;
+  if (!(cw > 0 && ch > 0)) return;
+  const id = `${key}|${theme()}|${m.a},${m.d},${m.e},${m.f}|${box.x},${box.y},${box.w},${box.h}`;
+  let c = pieces.get(id);
+  if (!c) {
+    c = document.createElement('canvas'); c.width = cw; c.height = ch;
+    const o = c.getContext('2d');
+    o.setTransform(m.a, 0, 0, m.d, m.e - x0, m.f - y0);
+    draw(o);
+    if (pieces.size >= 16) pieces.delete(pieces.keys().next().value);
+    pieces.set(id, c);
+  }
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(c, x0, y0); g.restore();
 }

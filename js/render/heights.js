@@ -29,6 +29,7 @@
 // (rule 4). The one exception is the balloon itself, which goes on rising at
 // the speed it let go at — the engine's own vertical launch speed, f.uy.
 
+import { keptPiece } from './still.js';
 import { dust, splash, phaseOf, ageOf } from './effects.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, withAlpha, sig3 } from './util.js';
 import { thrower, THROWER_MIN } from './figures.js';
@@ -257,6 +258,10 @@ function wellFrame(D, rise) {
     edge with tufts along it. The face only leans back from the edge, so a
     stone dropped from the edge falls clear of it. */
 export function seaCliff(g, x0, edge, top, Y, o = {}) {
+  // (a generous box: its turf and its foam both reach past the edge)
+  keptPiece(g, { x: x0 - 40, y: top - 60, w: edge - x0 + 180, h: Y - top + 120 }, `seaCliff|${x0}|${edge}|${top}|${Y}|${JSON.stringify(o)}`, (q) => cliffOf(q, x0, edge, top, Y, o));
+}
+function cliffOf(g, x0, edge, top, Y, o) {
   // o.tones recolours the rock (the Moon's grey, Mars's red); o.cap false
   // leaves the turf off, o.foam false the sea's foot (a cliff over dry land)
   const C = { ...tones(), ...(o.tones || {}) }, E = C.E, turf = o.cap !== false, sea = o.foam !== false, r = rng(o.seed ?? 41), H = Math.max(1, Y - top);

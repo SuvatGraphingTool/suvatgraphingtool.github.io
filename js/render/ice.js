@@ -68,6 +68,7 @@ export function render(canvas, cam, o) {
   const { traj: f, t: tRaw, show = {}, fired = true } = o;
   if (!f || f.kind !== 'ice') return null;
   const { ctx: g, w, h } = fitCanvas(canvas);
+  g.lineCap = 'round';   // (as it is left by the stone's track: the same on the first frame as on the rest)
   const P = palette(), L = labels(), phone = w < 520, E = env();
   const t = fired ? clamp(tRaw, 0, f.tMax) : 0;
   const HB = hudBoxes(w, 3); for (const b of HB) L.reserve(b);

@@ -100,6 +100,8 @@ export function createBoard({ open, store = null, changed = null } = {}) {
      size in screen pixels, which is what the 13 px floor measures. */
   let paintedZ = 1;
   function place() {
+    // whatever else goes wrong, the board stays on the screen
+    if (![cam.x, cam.y, cam.z].every(Number.isFinite)) { Object.assign(cam, { x: 0, y: 0, z: 1 }); fly = null; }
     if (Math.abs(cam.z - paintedZ) > 1e-4) { paintedZ = cam.z; for (const c of clusters) c.dirty = true; wake(); }
     world.style.transform = `translate(${cam.x}px, ${cam.y}px) scale(${cam.z})`;
     const s = 24 * cam.z;
@@ -122,6 +124,7 @@ export function createBoard({ open, store = null, changed = null } = {}) {
     const r = vp.getBoundingClientRect();
     const z = clamp(Math.min(1, (r.width - 32) / box.w), Z_MIN, 1);
     const want = { z, x: (r.width - box.w * z) / 2 - box.x * z, y: 68 - box.y * z };   // under the view tools
+    if (![want.x, want.y, want.z].every(Number.isFinite)) return;
     if (now) { Object.assign(cam, want); fly = null; place(); } else fly = want;
     wake();
   }
@@ -133,6 +136,7 @@ export function createBoard({ open, store = null, changed = null } = {}) {
     const r = vp.getBoundingClientRect();
     const z = clamp(Math.min(1, (r.width - 48) / (x1 - x0), (r.height - 150) / (y1 - y0)), Z_MIN, 1);
     fly = { z, x: (r.width - (x1 - x0) * z) / 2 - x0 * z, y: 24 - y0 * z };
+    if (![fly.x, fly.y, fly.z].every(Number.isFinite)) fly = null;
     wake();
   }
 
@@ -305,7 +309,8 @@ export function createBoard({ open, store = null, changed = null } = {}) {
         f.el.style.left = `${f.x}px`; f.el.style.top = `${f.y}px`;
         if (k.h && (f.kind === 'scene' || f.kind.startsWith('graph'))) { f.h = k.h; f.el.style.height = `${f.h}px`; }
       });
-      if (kept.w) { c.w = kept.w; c.h = kept.h; c.el.style.width = `${c.w}px`; c.el.style.height = `${c.h}px`; }
+      // (a save from an older shape keeps the size the layout has just worked out)
+      if (kept.w > 0 && kept.h > 0) { c.w = kept.w; c.h = kept.h; c.el.style.width = `${c.w}px`; c.el.style.height = `${c.h}px`; }
       c.t = 0; c.playing = false;
       return;
     }
@@ -509,7 +514,10 @@ export function createBoard({ open, store = null, changed = null } = {}) {
   function tick(now) {
     raf = 0;
     if (!active) return;
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    // NEVER BACKWARDS. A frame's timestamp can be older than the clock read when it was
+    // asked for, by seconds after the page has been idle, and e to the power of a large
+    // positive number sent the camera to infinity and the zoom to "NaN%".
+    const dt = clamp((now - last) / 1000, 0, 0.05); last = now;
     let more = false;
     if (fly) {
       const k = 1 - Math.exp(-dt * 9);
@@ -655,7 +663,7 @@ export function createBoard({ open, store = null, changed = null } = {}) {
     }
     sketch.quiet = false;
     if (Array.isArray(data.history)) history.push(...data.history.filter((h) => typeof h?.text === 'string').slice(-HISTORY_MAX));
-    if (data.cam && [data.cam.x, data.cam.y, data.cam.z].every(Number.isFinite)) {
+    if (data.cam && [data.cam.x, data.cam.y, data.cam.z].every(Number.isFinite) && Math.abs(data.cam.x) < 1e7 && Math.abs(data.cam.y) < 1e7) {
       Object.assign(cam, { x: data.cam.x, y: data.cam.y, z: clamp(data.cam.z, Z_MIN, Z_MAX) });
     }
     if (!clusters.length) $('bd-empty').hidden = false;

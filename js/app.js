@@ -429,7 +429,7 @@ function chooseScenario(id, { example = false } = {}) {
   state.given = {};
   // another scenario: the last one's speed card, veil and stand-in are not this one's,
   // nor its clock: it has not flown, and starts at the start
-  closePace(); hideDone(); closeResolve();
+  closePace(); hideDone(); closeResolve(); forgetStill($('scene'));
   state.t = 0; state.playing = false; state.launched = false; state.pre = null; setPlayIcon(false);
   setStandIn(null);
   veiled = null;
@@ -3072,7 +3072,7 @@ function draw() {
 
 let last = performance.now();
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const dt = clamp((now - last) / 1000, 0, 0.05);   // (a frame's timestamp can be older than the clock last read)
   last = now;
   /* ── the staging, and then the clock ──────────────────────────────────
      THE PRE-ROLL RUNS IN REAL SECONDS, not in playback seconds. The speed
