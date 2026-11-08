@@ -8699,6 +8699,10 @@ export default {
   "Would you like to give the numbers, or shall I use my own?": "هل تريد إعطاء الأرقام، أم أستخدم أرقامي؟",
   "Just tell me here, or say “use your own”.": "أخبرني هنا، أو قل «استخدم قيمك».",
   "{why} Just tell me here, or say “use your own”.": "{why} أخبرني هنا، أو قل «استخدم قيمك».",
+  "Tell me the values you have.": "أخبرني بالقيم التي لديك.",
+  "Go ahead. {0} Say “use your own” for any you don’t know.": "تفضل. {0} قل «استخدم قيمك» لأي قيمة لا تعرفها.",
+  "I’ve filled in what was missing with the paper’s own numbers. Tell me the real ones and I’ll run it again.": "أكملت الناقص بأرقام ورقة الامتحان نفسها. أخبرني بالأرقام الحقيقية وسأعيد الحل.",
+  "How high up does it start? Just tell me here, like “20 m”, or say “use your own”.": "من أي ارتفاع يبدأ؟ أخبرني هنا، مثل «20 م»، أو قل «استخدم قيمك».",
 };
 
 /**
