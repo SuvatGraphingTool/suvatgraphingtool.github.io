@@ -2962,6 +2962,7 @@ function renderWorking() {
 
 /* ── loop ───────────────────────────────────────────────────────────── */
 /** Whether this stage keeps a trajectory: one in its own pixels, or the bullet's, once launched. */
+let graphTurn = 0;
 /** How far this motion has ever got: all of that is its trajectory, wherever the clock is now. */
 let flown = { motion: null, t: 0 };
 const refilling = () => !!$('scene')._tracks?.fill;
@@ -3051,7 +3052,9 @@ function draw() {
     if (!state.resolve && cam._pointer) markMover(c, moverAt(cam._pointer.x, cam._pointer.y) || trackAt(c, cam._pointer.x, cam._pointer.y));
   }
 
-  if (state.extras.graphs) {
+  // THE GRAPHS, A LITTLE LESS OFTEN WHILE IT PLAYS: three canvases for a dot moving along
+  // a line, every frame, is not what the eye is on. Exact the moment it stops.
+  if (state.extras.graphs && (!state.playing || (graphTurn = (graphTurn + 1) % 3) === 0)) {
     const P = palette();
     const specs = kit() ? kit().graphs(traj, state.t, P) : graphSpecs(traj, state.t, P);
     if (state.part >= 0) markGraphs(specs, state.runs?.[state.part], P.mark);

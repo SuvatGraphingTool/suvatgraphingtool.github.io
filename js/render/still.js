@@ -156,6 +156,7 @@ function watcher(canvas) {
 
 const watchers = new WeakMap();
 let enabled = typeof document !== 'undefined';
+let resting = false;       // this stage's opening keeps changing: it has water on the clock
 
 /** Turned off, every stage paints in full, the plain way: for comparing the two. */
 export function useStill(on) { enabled = !!on; }
@@ -164,7 +165,7 @@ export function useStill(on) { enabled = !!on; }
 export function stillState(canvas) { const W = watchers.get(canvas); return W ? { held: W.held, of: W.n, rest: W.rest, breaks: W.breaks } : null; }
 
 /** Whatever the picture holds may no longer be right: a webfont has arrived, or it is another stage. */
-export function forgetStill(canvas) { const W = watchers.get(canvas); if (W) { W.mode = PLAIN; W.last = null; W.held = 0; W.rest = 0; W.breaks = 0; } }
+export function forgetStill(canvas) { const W = watchers.get(canvas); if (W) { W.mode = PLAIN; W.last = null; W.held = 0; W.rest = 0; W.breaks = 0; } resting = false; }
 
 /**
  * Draw a stage, its unchanging opening from the picture.
@@ -177,7 +178,7 @@ export function stillFrame(canvas, render, again = () => {}) {
   let W = watchers.get(canvas);
   if (!W) { W = watcher(canvas); watchers.set(canvas, W); }
   // a stage whose opening keeps changing is left alone for a while
-  if (W.rest > 0) { W.rest--; W.mode = PLAIN; render(); return; }
+  if (W.rest > 0) { W.rest--; W.mode = PLAIN; resting = true; render(); return; }
   const r = canvas.getBoundingClientRect(), size = `${Math.round(r.width)}x${Math.round(r.height)}`;
   if (size !== W.size) { W.size = size; W.last = null; W.held = 0; }
   h = 0; W.n = 0; W.broke = false; W.split = -1; W.begun = 0; W.clipped = false; W.frames++;
@@ -214,7 +215,9 @@ export function stillFrame(canvas, render, again = () => {}) {
    Water runs on the clock, so a stage with a sea has no opening to keep, and what stands
    in front of it is repainted every frame: a cliff's strata, a wall's every stone. Such
    a piece, known to be the same at the same place, is kept on its own. It must lie inside
-   the box it names, and a canvas that is turned draws it the plain way. */
+   the box it names, must not draw on anyone else's random numbers, and a canvas that is
+   turned draws it the plain way. `always`: one so large that even making its calls is the
+   lag (twenty thousand bricks), kept whatever is under it. */
 const pieces = new Map();
 const theme = () => (typeof document !== 'undefined' ? document.documentElement?.dataset?.theme : '');
 /**
@@ -223,8 +226,10 @@ const theme = () => (typeof document !== 'undefined' ? document.documentElement?
  * @param key   everything else the piece depends on, as a string
  * @param draw  draws it on the context it is given
  */
-export function keptPiece(g, box, key, draw) {
+export function keptPiece(g, box, key, draw, { always = false } = {}) {
   const m = g.getTransform?.();
+  // (where the stage has an opening the picture already has this, and the same pixels)
+  if (!always && !resting) { draw(g); return; }
   if (!enabled || !m || m.b || m.c || g.globalAlpha !== 1 || g.canvas?.id !== 'scene') { draw(g); return; }
   const x0 = Math.floor(m.a * box.x + m.e) - 1, y0 = Math.floor(m.d * box.y + m.f) - 1;
   const cw = Math.ceil(m.a * box.w) + 3, ch = Math.ceil(m.d * box.h) + 3;
