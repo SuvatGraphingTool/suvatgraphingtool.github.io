@@ -135,21 +135,43 @@ export function fromRest(x, words = '') {
    needs no model: the height goes into the reading the chat is already on, so
    it runs at once and costs none of the day's allowance. Only a bare height, and
    only when the last reading lacks one; anything else goes to the model. */
-const JUST_A_HEIGHT = /^(?:(?:it(?:'?s| is)|about|around|roughly|say|from|the height is|height(?: is)?|h\s*=)\s+)*(\d+(?:\.\d+)?)\s*(?:m|metres?|meters?)?(?:\s+(?:high|tall|up|above the ground))?\s*\.?$/i;
+const FILLER = /\b(?:it(?:'?s| is)|about|around|roughly|say|from|at|and|the|height|speed|angle|is|of|h|u|theta|high|tall|up|above the ground|m\/?s)\b|[=,.]/gi;
+const ar = (t) => String(t).replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+/** The values a bare answer gives: { h?, u?, theta? }, or null if it says anything else. */
+function readAnswer(words) {
+  let t = ar(words).trim().toLowerCase();
+  const out = {};
+  t = t.replace(/(\d+(?:\.\d+)?)\s*(?:m\/s|m s-?1|ms-?1|mps|met(?:re|er)s? per second|م\/ث)/g, (_, n) => { out.u = Number(n); return ' '; });
+  t = t.replace(/(\d+(?:\.\d+)?)\s*(?:°|deg(?:ree)?s?\b|درجة)/g, (_, n) => { out.theta = Number(n); return ' '; });
+  t = t.replace(/(\d+(?:\.\d+)?)\s*(?:m\b|met(?:re|er)s?\b|متر|م(?=\s|$))/g, (_, n) => { out.h = Number(n); return ' '; });
+  // a number alone, in answer to a question about a height
+  if (!Object.keys(out).length) t = t.replace(/^(?:[a-z' =]*?)(\d+(?:\.\d+)?)(?:\s*(?:high|tall|up))?\s*\.?$/, (_, n) => { out.h = Number(n); return ' '; });
+  if (!Object.keys(out).length || Object.values(out).some((v) => !(v > 0) && v !== 0)) return null;
+  if (out.h === 0) return null;
+  return t.replace(FILLER, ' ').replace(/[^\p{L}\d]+/gu, '').length ? null : out;
+}
 export function answered(words, earlier = []) {
-  const m = JUST_A_HEIGHT.exec(String(words || '').trim());
-  if (!m || !(Number(m[1]) > 0)) return null;
+  const said = readAnswer(words);
+  if (!said) return null;
   const last = [...earlier].reverse().find((h) => h.role === 'model');
   let x;
   try { x = JSON.parse(last?.parts?.[0]?.text); } catch { return null; }
   if (!x?.understood) return null;
-  const h = Number(m[1]);
-  const empty = (v) => v == null || v === 0;
-  if (x.scenario === 'compose' && x.recipe && BACKDROPS[x.recipe.backdrop]?.edge && (!x.recipe.engine || x.recipe.engine === 'projectile') && empty(x.recipe.numbers?.h)) {
-    return { ...x, recipe: { ...x.recipe, numbers: { ...x.recipe.numbers, h } } };
+  const gap = (o, k) => (k === 'h' ? o[k] == null || o[k] === 0 : o[k] == null);
+  const fill = (o, names = {}) => {
+    const n = { ...o };
+    for (const [k, v] of Object.entries(said)) { const key = names[k] || k; if (!gap(n, key)) return null; n[key] = v; }
+    return n;
+  };
+  if (x.scenario === 'compose' && x.recipe && (!x.recipe.engine || x.recipe.engine === 'projectile') && (!said.h || BACKDROPS[x.recipe.backdrop]?.edge)) {
+    const numbers = fill(x.recipe.numbers || {});
+    return numbers && { ...x, recipe: { ...x.recipe, numbers } };
   }
-  if (x.scenario === 'library' && x.library === 'from-a-height' && x.boxes && empty(x.boxes.h)) return { ...x, boxes: { ...x.boxes, h } };
-  if (['dropped', 'down', 'platform', 'platform-angle', 'platform-down'].includes(x.scenario) && empty(x.h)) return { ...x, h };
+  if (x.scenario === 'library' && x.library === 'from-a-height' && x.boxes) {
+    const boxes = fill(x.boxes);
+    return boxes && { ...x, boxes };
+  }
+  if (['dropped', 'down', 'platform', 'platform-angle', 'platform-down', 'up', 'arc'].includes(x.scenario)) return fill(x, { theta: 'angleDegrees' });
   return null;
 }
 

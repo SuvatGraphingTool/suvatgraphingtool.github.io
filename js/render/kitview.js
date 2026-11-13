@@ -54,4 +54,4 @@ export function kitView(canvas, cam) {
 }
 
 /** The stage has drawn: the next renderer (one of the twelve) draws unmoved. */
-export function kitViewDone(canvas) { canvas._view = null; }
+export function kitViewDone(canvas) { canvas._shown = canvas._view; canvas._view = null; }

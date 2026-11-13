@@ -80,7 +80,8 @@ css/app.css             laptop-first three-column layout
 css/math.css            how a typeset equation looks
 css/rtl.css             Arabic mode only: the face, and what mirrors and what does not
 js/notation.js          maths set as maths — the source notation and its output
-js/i18n.js              the language: lang(), t(), the switch; js/i18n/ar.js, loaded only in Arabic (design/arabic-glossary.md)
+js/i18n.js              the language: lang(), t(), the switch, the page and canvas turned Arabic; js/i18n/ar.js, loaded only in Arabic (design/arabic-glossary.md)
+js/compose/arabicwords.js  an Arabic question, read for the stages that match English
 js/scenarios.js         the scenarios, as data
 js/working.js           the working out, with real numbers substituted
 js/core/suvat.js        the five equations and a solver that shows its working
@@ -114,6 +115,7 @@ design/                 tokens, notation, scenario research, preset list,
 node test/engine.test.mjs       # the physics
 node test/solve.test.mjs        # what the engine does with partial information
 node test/question.test.mjs     # the question reader
+node test/fit.test.mjs          # a reading fits its question: each number in a box of its own kind
 node test/pace.test.mjs         # how fast a flight should be played back
 node test/scenarios.test.mjs    # the scenarios, as data
 node test/preload.test.mjs      # the modulepreload hints match the real graph
@@ -125,6 +127,10 @@ node test/library.test.mjs      # the Past-paper library: each scenario against 
 node test/chats.test.mjs       # Ask Suvat's chats, kept in this browser
 node test/account.test.mjs     # accounts: sign-in, sessions, chats kept per account (site/)
 node test/sense.test.mjs       # common sense: everyday sentences always run, and what is assumed is said
+node test/standin.test.mjs     # a library scene draws the student's own object, never a bystander's
+node test/still.test.mjs       # the unchanging part of a stage is kept, not repainted
+node test/tracks.test.mjs      # every moving thing leaves a trajectory, and all of it resolves
 node test/focus.test.mjs       # the reader sends each question only the catalogue it needs (worker/src/focus.js)
-node test/i18n.test.mjs        # Arabic mode: the dictionary, templates, maths left to right, the toggle, the reader told the language
+node test/i18n.test.mjs        # Arabic mode: the dictionary, symbols and units, templates, the toggle, the reader told the language and reading Arabic
+# (node test/notation.test.mjs sweeps everything twice, the second time in Arabic. In a browser: tools/verify/arabic-sweep.cjs)
 ```

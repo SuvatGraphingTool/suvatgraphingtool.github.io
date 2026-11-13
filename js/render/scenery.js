@@ -15,7 +15,9 @@
 //
 // Everything is seeded: the same scene draws the same clouds every frame.
 
+import { lang } from '../i18n.js';
 import { cssVar, withAlpha } from './util.js';
+import { keptPiece } from './still.js';
 
 /** The scenery colours for this frame, from the theme. */
 export function env() {
@@ -230,6 +232,9 @@ export function water(g, x0, x1, Y, y1, o = {}) {
 
 /** A block of stone with courses: (x, y) its top-left, w × h px; lit from the left. */
 export function stone(g, x, y, w, h, o = {}) {
+  keptPiece(g, { x: x - 1, y: y - 1, w: w + 2, h: h + 2 }, `stone|${o.seed ?? 19}|${o.course ?? 12}|${o.color ?? ''}`, (q) => stonesOf(q, x, y, w, h, o));
+}
+function stonesOf(g, x, y, w, h, o) {
   const E = env(), r = rng(o.seed ?? 19), course = o.course ?? 12;
   const base = o.color ?? (E.night ? '#6b6066' : '#bfb2ab');
   const gr = g.createLinearGradient(x, 0, x + w, 0);
@@ -892,7 +897,8 @@ export function compassRose(g, x, y, R, P) {
   g.fillStyle = P.ink; g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fill();
   g.font = `700 15px ${cssVar('--font', 'system-ui, sans-serif')}`; g.textAlign = 'center'; g.textBaseline = 'bottom';
   g.lineWidth = 4; g.strokeStyle = withAlpha(cssVar('--surface', '#131210'), 0.85); g.lineJoin = 'round';
-  g.strokeText('N', x, y - R - 3); g.fillStyle = P.ink; g.fillText('N', x, y - R - 3);
+  const north = lang() === 'ar' ? 'ش' : 'N';   // شمال: the letter on an Arabic compass
+  g.strokeText(north, x, y - R - 3); g.fillStyle = P.ink; g.fillText(north, x, y - R - 3);
   g.restore();
 }
 

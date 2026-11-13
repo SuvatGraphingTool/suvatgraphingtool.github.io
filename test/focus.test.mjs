@@ -64,6 +64,7 @@ const CASES = [
   ['A dog chases a ball thrown along the beach and catches it. How fast must it accelerate?', 'catch-it'],
   ['A car brakes for a sign; model the driver three ways. Which reaches the sign first?', 'three-models'],
   ['A helicopter over the sea has constant acceleration; find its speed and bearing and whether it passes over the rock.', 'over-the-rock'],
+  ['A batter hits a cricket ball at 23.8 m/s at 50° to the horizontal. A fielder on the boundary 55 m away can only take the catch if the ball is under 3 m above where it was hit. Can it be caught? Its mass is 0.14 kg: find its momentum.', 'boundary-catch'],
 ];
 
 group('The scenario that fits is sent in full', () => {
@@ -123,7 +124,7 @@ console.log('\nThe Worker, end to end');
   ok(shown.prompts.length === 1 && shown.data.ok, 'the scenario it needs was in full: one call');
   ok(shown.prompts[0].length < SYSTEM_PROMPT.length * 0.6, 'and that call carried about half the prompt');
 
-  const missed = await read({ text: 'A ball is kicked from the ground at 20 m/s at 35 degrees.' }, robots);
+  const missed = await read({ text: 'A ball is kicked from the ground and lands on the grass.' }, robots);
   ok(missed.prompts.length === 2, 'it chose one it was shown only as a line: asked once more');
   ok(!/robots-closest — [^\n]*\n {2}boxes:/.test(missed.prompts[0]) && /robots-closest — [^\n]*\n {2}boxes:/.test(missed.prompts[1]),
     'the second time, that one is in full');

@@ -26,7 +26,7 @@
 // THE PLATE IS DARK IN BOTH THEMES, like a strobe photograph — the same
 // decision js/render/exhibit.js made for the range.
 
-import { fitCanvas, palette, fmt, clamp, labels, cssVar } from './util.js';
+import { fitCanvas, palette, fmt, clamp, labels, cssVar, noteMover } from './util.js';
 import { T, num } from '../notation.js';
 import { room, light } from './workshop.js';
 import * as SR from './stringrig.js';
@@ -301,6 +301,7 @@ export function render(canvas, cam, o) {
     if (pS) {
       const XS = sx(pS.x) + DX, YS = sy(pS.y);
       shadow(XS, pS.y); round(g, XS, YS, 0, 1, C.ink);
+      noteMover(g, XS, YS, 26, { strong: true });
       if (!landed) text(g, o.secondLabel || 'released', XS - 22, YS + (t > 0 ? 0 : -24), { color: C.ink, align: 'right', size: 14, weight: 700 });
     }
     if (t > 0) {
@@ -312,6 +313,7 @@ export function render(canvas, cam, o) {
         g.fillStyle = sg; g.fillRect(XF - len, YF - 2, len, 4);
       }
       round(g, XF, YF, Math.atan2(-f.vel(t).y, f.vel(t).x), 1, P.vel);
+      noteMover(g, XF, YF, 26, { strong: true });
       if (!landed) text(g, 'fired', XF + 20, YF - 20, { color: C.orangeHi, size: 14, weight: 700 });
     }
     muzzleFlash(g, sx(0) + 4, mY, t > 0 ? clamp(1 - t / 0.03, 0, 1) : 0);

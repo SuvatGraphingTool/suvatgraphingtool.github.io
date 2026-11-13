@@ -14,10 +14,15 @@ import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
 import { composeSensibly, heightSensibly, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
+import { overGiven } from './compose/sense.js';
 import { figureOf, belowOf, placeOf, ownWord } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { prepare, DEADLINE_MS } from './compose/pictures.js';
 import { clearMovers, moverAt, markMover } from './render/util.js';
+import { recordTracks, trackAt, drawTracks, tracksToFill, resetTracks, OWN_PATH } from './render/tracks.js';
+import { setStandIn, ownWords } from './render/standin.js';
+import { stillFrame, useStill, forgetStill } from './render/still.js';
+import { standInFor } from './compose/standins.js';
 import { LIBRARY } from './library.js';
 import { KITS } from './kits/index.js';
 import { buildWorking, obstacleCheck, resolveAt } from './working.js';
@@ -46,6 +51,7 @@ import { stripHTML, ticksHTML, markGraphs, workingCardHTML, replyHTML, askHTML, 
 import { answerOf } from './parts/parts.js';
 import { fromReader, boxesOf } from './parts/answers.js';
 import { initShell } from './shell.js';
+import { readArabic } from './compose/arabicwords.js';
 import { initAccount } from './account.js';
 
 const $ = (id) => document.getElementById(id);
@@ -156,6 +162,7 @@ let board = null;                // the whiteboard, made once the page is up —
 const win = panes.createWindow(4);
 let paneSig = null;                 // the solve the panes were last built from
 let scenario = null, solved = null, traj = null, second = null, ghost = null, dirty = true;
+let veiled = null;                   // a composed scene's arrival still under way: one at a time, and only its own launch
 
 /** Does this scenario replace the single view with the pane window? */
 const windowed = () => !!scenario?.descent;
@@ -421,6 +428,15 @@ function chooseScenario(id, { example = false } = {}) {
   scenario = byId(id);
   state.id = id;
   state.given = {};
+  // another scenario: the last one's speed card, veil and stand-in are not this one's,
+  // nor its clock: it has not flown, and starts at the start
+  closePace(); hideDone(); closeResolve(); forgetStill($('scene'));
+  state.t = 0; state.playing = false; state.launched = false; state.pre = null; setPlayIcon(false);
+  setStandIn(null);
+  veiled = null;
+  $('canvas-wrap').querySelector('.cmp-reveal')?.remove();
+  // a new scenario starts with the Display panel put away (the user, 8 Nov)
+  if (state.options) $('options-btn').click();
   // The scenario picks the SITUATION. Every box starts empty unless PREFILL
   // is on and the pick came from a card (`example`), when the scenario's own
   // `example` numbers go in — see applyExample. A reading from Ask Suvat or
@@ -823,14 +839,14 @@ function buildKitScreen() {
   $('mode-say').innerHTML = '';
   valuesVoice(false);
   VOICE.el.h.innerHTML = K.voice.h;
-  VOICE.el.sub.innerHTML = K.voice.sub;
+  VOICE.el.sub.innerHTML = ownWords(K.voice.sub);
 
   const val = (k) => state.kit[k];
   const box = (f) => {
     const id = `k-${f.key.replace('.', '-')}`;
     if (f.type === 'choice') {
       // a choice with a default shows it pressed: what the engine assumes is on screen
-      return `<div class="xrow wide choice${f.full ? ' full' : ''}" data-x="${f.key}"><span class="xlabel" id="${id}-l">${f.label}</span>
+      return `<div class="xrow wide choice${f.full ? ' full' : ''}" data-x="${f.key}"><span class="xlabel" id="${id}-l">${ownWords(f.label)}</span>
         <div class="chips" role="group" aria-labelledby="${id}-l"${f.hint ? ` aria-describedby="${id}-h"` : ''} data-choice="${f.key}">${f.options.map((o) =>
           `<button class="chip" data-v="${o.v}" aria-pressed="${(val(f.key) ?? f.default) === o.v}">${o.label}</button>`).join('')}</div>
         ${f.hint ? `<p class="xhint" id="${id}-h">${f.hint}</p>` : ''}</div>`;
@@ -840,7 +856,7 @@ function buildKitScreen() {
     // row may say its own (f.aria), and its hint is read with it
     const whose = f.col && K.cols?.[f.col] ? `${K.cols[f.col]}: ` : '';
     const plain = (x) => x.replace(/<[^>]+>/g, '');
-    return `<div class="xrow${f.narrow ? ' narrow' : ''}" data-x="${f.key}"><label for="${id}">${f.label}</label>
+    return `<div class="xrow${f.narrow ? ' narrow' : ''}" data-x="${f.key}"><label for="${id}">${ownWords(f.label)}</label>
       <input id="${id}" type="text" inputmode="decimal" autocomplete="off" data-k="${f.key}"
              aria-label="${f.aria ? plain(f.aria) : `${whose}${plain(f.label)}`}"${f.hint ? ` aria-describedby="${id}-h"` : ''}
              value="${val(f.key) ?? ''}" placeholder="${f.placeholder ?? (f.optional ? '0' : '—')}">
@@ -1033,12 +1049,13 @@ function originalParts() {
  */
 function showPart(k, { play = false } = {}) {
   if (!state.runs) return;
-  hideDone(); closeResolve(); state.pre = null;
+  hideDone(); closeResolve(); closePace(); state.pre = null;
   const run = k >= 0 ? state.runs[k] : state.runs.find(Boolean);
   if (!run?.solved?.ok) return;
   const fresh = !!kit() && solved !== run.solved;
   if (fresh) { solved = run.solved; traj = solved.f; }
   state.part = k;
+  if (k >= 0) state.launched = true;    // the part's moment is shown on the motion, launched or not
   if (k < 0) { state.stopAt = null; state.playing = false; setPlayIcon(false); state.t = 0; }
   else {
     const t = run.moment.t;
@@ -2045,19 +2062,20 @@ function say(el, bad, html) {
    a wall. */
 function launch() {
   if (!traj) return;
-  closeIntro();
-  // ONE PRESS, AND IT FLIES. The redesign took the speed card out of the way:
-  // Launch used to stop at "How fast should it go?" every time, a decision
-  // with a good default asked before the thing you came for. The flight runs
-  // at once; the speed is a press away in the transport bar, with the same
-  // recommendation pin, and the pane layout is in the Display panel.
+  closeIntro(); hideDone(); closeResolve();
+  // nothing runs on behind the card, and a part's stop is not this flight's
+  state.playing = false; setPlayIcon(false); state.stopAt = null;
+  // EVERY LAUNCH STOPS AT "How fast should it go?" (the user, 8 Nov: "that screen
+  // before launching … a rule for every scenario"), set to the speed this flight
+  // calls for, so Enter and it flies. Replays go straight off.
   // EVERY LAUNCH STARTS AT THE RECOMMENDED SPEED (the user, 1 Nov): a fresh set
   // of values is a fresh flight, played at the pace its own length calls for.
   // A speed chosen on the slider holds for the replays of that flight only.
   state.rate = recommend(traj.tMax) / 100;
   state.rateTouched = false;
   syncRate();
-  runFlight();
+  if (state.step !== 'flight') go('flight');
+  openPace();
 }
 
 function openPace() {
@@ -2181,7 +2199,7 @@ function syncPanes() {
   const sig = JSON.stringify(solved.params);
   if (sig === paneSig) return;
   paneSig = sig;
-  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; }, click: () => openResolve(state.t) });
+  panes.mount($('panes'), win, descentPanes(traj), { change: () => { dirty = true; }, click: (t) => openResolve(t ?? state.t) });
   panes.setLayout(win, state.layout);
 }
 
@@ -2199,11 +2217,12 @@ function runFlight() {
   closePace();
   closeIntro();
   closeResolve();
+  resetTracks($('scene'));              // a launch is a first run: its trajectory is drawn as it flies. A replay keeps it.
   // a motion with no path (one of the older engines) simply leaves no ghost
   if (state.firedBefore) ghost = typeof traj.path === 'function' ? traj.path(260) : null;
   state.firedBefore = true; state.launched = true;
   state.overview = false;               // every run starts from the panes
-  state.t = 0; state.playing = true;
+  state.t = 0; state.playing = true; state.stopAt = null;
   // THE AIRCRAFT, THE DOOR AND THE STEP OUT, none of which is inside t. See
   // the pre-roll note in js/render/drop.js for why it is outside the clock.
   state.pre = windowed() ? 0 : null;
@@ -2244,7 +2263,9 @@ function go(step) {
   if (state.step === 'flight' && step !== 'flight' && state.playing) {
     state.playing = false; setPlayIcon(false);
   }
-  if (step !== 'flight') { hideDone(); closeAskAt(); }
+  // (the speed card too: left open, it went on answering Enter and Escape from
+  // every other screen, the chat's box included)
+  if (step !== 'flight') { hideDone(); closeAskAt(); closePace(); }
   state.step = step;
   $('app').dataset.step = step;
   // The whiteboard draws only while it is on screen.
@@ -2288,7 +2309,8 @@ function refreshSteps() {
 
 function togglePlay() {
   if (!traj) return;
-  hideDone(); closeResolve();
+  hideDone(); closeResolve(); closePace();
+  state.launched = true;      // Play is as good a way to start it as Launch
   // THE BULLET IS STARTED BY ITS STRING. Play trips the rig the same way a
   // pull does; play after the landing re-arms it and waits for the next pull.
   if (scenario?.stage === 'range') {
@@ -2532,6 +2554,11 @@ function wireAskAt() {
 }
 
 /* ── readouts, on the diagram ───────────────────────────────────────── */
+/* WRITTEN ONLY WHEN IT CHANGED. innerHTML rebuilds the boxes, which makes the browser
+   work out style and layout again, every frame, whatever the number did. */
+const written = new WeakMap();
+function setHTML(el, html) { if (written.get(el) !== html) { written.set(el, html); el.innerHTML = html; } }
+function setText(el, text) { if (el.textContent !== text) el.textContent = text; }
 function renderHud() {
   if (!traj) return;
   // An exhibit happens somewhere else and says where in its own `place`.
@@ -2542,21 +2569,21 @@ function renderHud() {
   // picture says where it is. A scenario that happens elsewhere still names it.
   // the road's caption follows what it stands on: a track has no road
   const ground = scenario?.road ? (FIGURES[state.who] || FIGURES.lorry).ground : null;
-  $('place').textContent = ground === 'rail' ? 'A straight, level railway from A to B'
+  setText($('place'), ground === 'rail' ? 'A straight, level railway from A to B'
     : ground === 'track' ? 'A straight, level running track from A to B'
-    : scenario?.place || '';
-  $('place-note').textContent = '';
+    : ownWords(scenario?.place) || '');
+  setText($('place-note'), '');
   // In the window there is no corner for a readout to sit in, and the clock
   // is in the transport where all four panes share it.
-  if (windowed()) { $('hud-left').innerHTML = ''; $('hud-right').innerHTML = ''; return; }
+  if (windowed()) { setHTML($('hud-left'), ''); setHTML($('hud-right'), ''); return; }
   const b = (k, val, unit, hue) =>
     `<div class="hbox"${hue ? ` data-hue="${hue}"` : ''}><div class="hbox-k">${k}</div>
      <div class="hbox-v">${val}<small>${unit}</small></div></div>`;
   // A kit says what its stage reads out.
   if (kit()) {
     const r = kit().hud(traj, state.t, { rate: state.rate });
-    $('hud-left').innerHTML = r.left.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
-    $('hud-right').innerHTML = r.right.map((x) => b(x.k, x.v, x.unit, x.hue)).join('');
+    setHTML($('hud-left'), r.left.map((x) => b(ownWords(x.k), x.v, x.unit, x.hue)).join(''));
+    setHTML($('hud-right'), r.right.map((x) => b(ownWords(x.k), x.v, x.unit, x.hue)).join(''));
     return;
   }
   // AFTER the kit's turn: a kit's motion need not have a pos() — two
@@ -2565,14 +2592,14 @@ function renderHud() {
   // In a straight line the horizontal distance is always zero, so show the
   // signed displacement along the line instead — that is the s being solved.
   if (scenario?.road) {
-    $('hud-left').innerHTML = [
+    setHTML($('hud-left'), [
       b('Displacement from A', fmt(p.x, 1), 'm', 'disp'),
       b('Velocity', fmt(v.x, 1), 'm s⁻¹', 'vel'),
       b('Acceleration', fmt(traj.params.a, 2), 'm s⁻²', 'acc'),
       ...(state.extras.energy ? [b('Kinetic energy', fmt(traj.kineticEnergy(state.t), 0), 'J'),
                                  b('Momentum', fmt(traj.momentum(state.t), 1), 'kg m s⁻¹')] : []),
-    ].join('');
-    $('hud-right').innerHTML = b('Time', fmt(state.t, 2), 's');
+    ].join(''));
+    setHTML($('hud-right'), b('Time', fmt(state.t, 2), 's'));
     return;
   }
   const line = solved?.mode === '1d';
@@ -2601,8 +2628,8 @@ function renderHud() {
     left.push(b('Kinetic energy', fmt(traj.kineticEnergy(state.t), 0), 'J'));
     left.push(b('Momentum', fmt(traj.momentum(state.t), 1), 'kg m s⁻¹'));
   }
-  $('hud-left').innerHTML = left.join('');
-  $('hud-right').innerHTML = b('Time', fmt(state.t, 2), 's');
+  setHTML($('hud-left'), left.join(''));
+  setHTML($('hud-right'), b('Time', fmt(state.t, 2), 's'));
 }
 
 /* ── the landing card: the whole of SUVAT, once it has settled ───────── */
@@ -2935,6 +2962,12 @@ function renderWorking() {
 }
 
 /* ── loop ───────────────────────────────────────────────────────────── */
+/** Whether this stage keeps a trajectory: one in its own pixels, or the bullet's, once launched. */
+let graphTurn = 0;
+/** How far this motion has ever got: all of that is its trajectory, wherever the clock is now. */
+let flown = { motion: null, t: 0 };
+const refilling = () => !!$('scene')._tracks?.fill;
+const tracksHere = () => !windowed() && (!cam._map?.sx || scenario?.stage === 'range') && state.launched;
 function draw() {
   // syncPanes BEFORE the early return as well as after it. With no flight to
   // draw there is nothing for a window to be a window onto, and leaving four
@@ -2944,6 +2977,10 @@ function draw() {
   if (state.step !== 'flight' || !traj) { syncPanes(); dirty = false; return; }
   syncPanes();
   clearMovers();
+  // new numbers can make the motion shorter than the clock already says
+  if (!second && state.t > traj.tMax) state.t = traj.tMax;
+  if (flown.motion !== traj) flown = { motion: traj, t: 0 };
+  if (state.launched && state.t > flown.t) flown.t = state.t;
   const R = state.resolve ? resolveNow() : null;
   // Resolve open on a library stage: its arrows on, split into components
   // where the stage draws them (dashed across, solid up), so the card's
@@ -2984,37 +3021,62 @@ function draw() {
     // rule 1 — and it reads zero for the whole of the pre-roll because the
     // pre-roll is outside the clock and nothing in it has been measured.
     $('t-read').innerHTML = M`t = ${fmt(state.pre == null ? state.t : 0, 2)} [s]`;
-  } else if (kit()) { kitView($('scene'), cam); kit().render($('scene'), cam, opts); kitViewDone($('scene')); }
-  else if (scenario?.stage === 'range') range.render($('scene'), cam, opts);
-  // the road maps nothing to the pointer: no map left from the last stage,
-  // so a click on it is a click on the motion (js/render/scene.js)
-  else if (scenario?.stage === 'road') { cam._map = null; roadStage.render($('scene'), cam, opts); }
-  else if (scenario?.plate) exhibit.render($('scene'), cam, opts);
-  else scene.render($('scene'), cam, opts);
+  } else {
+    const paint = (o) => {
+      $('scene')._frame = null;
+      // the place, once, as a picture: what the stage draws that does not change (js/render/still.js)
+      if (kit()) stillFrame($('scene'), () => { kitView($('scene'), cam); kit().render($('scene'), cam, o); kitViewDone($('scene')); }, clearMovers);
+      else if (scenario?.stage === 'range') range.render($('scene'), cam, o);
+      // the road maps nothing to the pointer: no map left from the last stage,
+      // so a click on it is a click on the motion (js/render/scene.js)
+      else if (scenario?.stage === 'road') { cam._map = null; roadStage.render($('scene'), cam, o); }
+      else if (scenario?.plate) exhibit.render($('scene'), cam, o);
+      else scene.render($('scene'), cam, o);
+    };
+    // the trajectory, kept whole across a new layout or a scrub ahead (js/render/tracks.js):
+    // these are painted over by the frame that follows, and never seen
+    if (tracksHere()) {
+      for (const t of tracksToFill($('scene'), traj, state.t, traj.tMax) || []) {
+        clearMovers(); paint({ ...opts, t }); recordTracks($('scene'), traj, t, true);
+      }
+      clearMovers();
+    }
+    paint(opts);
+  }
   // on a stage in its own pixels, what is under the pointer is what it said it drew:
   // the ring and the words the twelve show, Resolve on a click (js/render/scene.js)
-  if (!windowed() && !cam._map?.sx && state.launched && !state.resolve && cam._pointer) {
-    markMover($('scene'), moverAt(cam._pointer.x, cam._pointer.y));
+  // and everywhere it has been is its trajectory: drawn, and on offer too (js/render/tracks.js)
+  if (tracksHere()) {
+    const c = $('scene');
+    recordTracks(c, traj, state.t);
+    if (!OWN_PATH.has(state.id) && !scenario?.composed) drawTracks(c);
+    if (!state.resolve && cam._pointer) markMover(c, moverAt(cam._pointer.x, cam._pointer.y) || trackAt(c, cam._pointer.x, cam._pointer.y));
   }
 
-  if (state.extras.graphs) {
+  // THE GRAPHS, A LITTLE LESS OFTEN WHILE IT PLAYS: three canvases for a dot moving along
+  // a line, every frame, is not what the eye is on. Exact the moment it stops.
+  if (state.extras.graphs && (!state.playing || (graphTurn = (graphTurn + 1) % 3) === 0)) {
     const P = palette();
     const specs = kit() ? kit().graphs(traj, state.t, P) : graphSpecs(traj, state.t, P);
     if (state.part >= 0) markGraphs(specs, state.runs?.[state.part], P.mark);
     for (const spec of specs) drawGraph($(spec.canvas), spec);
   }
-  renderHud(); renderWorking(); renderResolve(R);
-  $('scrub').value = traj.tMax ? state.t / traj.tMax : 0;
+  renderHud();
+  // the working and the card say the same for the same instant: nothing to rebuild while
+  // what they show has not moved
+  renderWorking(); renderResolve(R);
+  const sv = String(traj.tMax ? state.t / traj.tMax : 0);
+  if ($('scrub').value !== sv) $('scrub').value = sv;
   // The view button lights up while the whole flight IS what you are looking
   // at, and dims the moment a pan or a zoom takes you off it — so it reads as
   // the way back rather than as a mode you are in.
-  $('fit-btn').setAttribute('aria-pressed', String(!cam.touched));
-  dirty = false;
+  if ($('fit-btn').getAttribute('aria-pressed') !== String(!cam.touched)) $('fit-btn').setAttribute('aria-pressed', String(!cam.touched));
+  dirty = refilling();
 }
 
 let last = performance.now();
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const dt = clamp((now - last) / 1000, 0, 0.05);   // (a frame's timestamp can be older than the clock last read)
   last = now;
   /* ── the staging, and then the clock ──────────────────────────────────
      THE PRE-ROLL RUNS IN REAL SECONDS, not in playback seconds. The speed
@@ -3132,7 +3194,8 @@ $('pace-use').addEventListener('click', () => {
 $('intro-values').addEventListener('click', () => { closeIntro(); go('values'); });
 $('play').addEventListener('click', togglePlay);
 const replay = () => {
-  hideDone(); closeResolve();
+  hideDone(); closeResolve(); closePace();
+  state.launched = true; state.stopAt = null;
   if (armRange()) return;
   state.t = 0; state.pre = windowed() ? 0 : null;
   state.playing = true; setPlayIcon(true); dirty = true;
@@ -3153,7 +3216,8 @@ $('exdone-all').addEventListener('click', () => {
 });
 $('scrub').addEventListener('input', (e) => {
   if (!traj) return;
-  hideDone();
+  hideDone(); closePace();
+  state.launched = true;      // an instant named is an instant shown
   // Naming an instant ends the staging: the student has asked to be at a
   // time, and every time there is belongs to the flight.
   state.pre = null; state.stopAt = null;
@@ -3216,9 +3280,19 @@ $('options-btn').addEventListener('click', () => {
 document.addEventListener('keydown', (e) => {
   // The speed card first, and above the input guard: its slider IS an input,
   // and Enter on a slider means nothing, so it can mean "go".
-  if (!$('pace').hidden) {
-    if (e.key === 'Enter') { e.preventDefault(); runFlight(); }
+  // Only for a key meant for it: the command menu's box has its own Enter.
+  if (!$('pace').hidden && (e.target === document.body || e.target.closest?.('#pace'))) {
+    // a button in the card answers Enter as itself ("Back to the values" goes back),
+    // and a key held down from the screen before is not a second decision
+    if (e.key === 'Enter') { if (!e.repeat && !e.target.closest('button')) { e.preventDefault(); runFlight(); } }
     else if (e.key === 'Escape') { closePace(); go('values'); }
+    // the arrows are the speed, wherever in the card the focus has got to
+    else if (/^Arrow/.test(e.key) && e.target !== $('pace-rate')) {
+      e.preventDefault();
+      const r = $('pace-rate');
+      if (/Right|Up/.test(e.key)) r.stepUp(); else r.stepDown();
+      r.focus(); r.dispatchEvent(new Event('input', { bubbles: true }));
+    }
     return;
   }
   // The question card owns Escape while it is open; its own inputs handle
@@ -3229,7 +3303,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
-  if (state.step === 'values' && e.key === 'Enter' && !$('launch').disabled) { launch(); return; }
+  if (state.step === 'values' && e.key === 'Enter' && !e.repeat && !$('launch').disabled) { launch(); return; }
   if (state.step !== 'flight') return;
   if (e.key === 'Escape') { if (state.resolve) closeResolve(); else hideDone(); return; }
   if (e.key === 'r' || e.key === 'R') {
@@ -3237,15 +3311,15 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-  else if (e.key === 'ArrowRight') { hideDone(); state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.min(traj.tMax, state.t + traj.tMax / 60); dirty = true; }
-  else if (e.key === 'ArrowLeft')  { hideDone(); state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.max(0, state.t - traj.tMax / 60); dirty = true; }
+  else if (e.key === 'ArrowRight') { hideDone(); state.launched = true; state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.min(traj.tMax, state.t + traj.tMax / 60); dirty = true; }
+  else if (e.key === 'ArrowLeft')  { hideDone(); state.launched = true; state.pre = null; state.playing = false; setPlayIcon(false); state.t = Math.max(0, state.t - traj.tMax / 60); dirty = true; }
 });
 
 addEventListener('resize', () => {
   if (!cam.touched) cam.fit = true;
   dirty = true;
 });
-const pickScene = () => ({ markers: state.markers, scenario, traj, t: state.t,
+const pickScene = () => ({ markers: state.markers, scenario, traj, t: state.t, flown: flown.motion === traj ? flown.t : 0,
                            fired: state.launched, resolving: state.resolve });
 const resolveHooks = {
   // The INSTANT under the pointer, or null — not a bare yes/no. The ring and
@@ -3341,7 +3415,8 @@ requestAnimationFrame(frame);
 // wrong metrics, wrong widths for the collision test that places them, and
 // visibly lighter than the page around it. One more frame once the fonts are
 // in costs nothing and fixes all of it.
-document.fonts?.ready.then(() => { dirty = true; });
+document.fonts?.ready.then(() => { forgetStill($('scene')); dirty = true; });
+document.fonts?.addEventListener?.('loadingdone', () => { forgetStill($('scene')); dirty = true; });
 
 // ASK FOR THE MATHS FACE BEFORE AN EQUATION NEEDS IT. A webfont is fetched
 // when something that uses it is first painted, and the first thing on this
@@ -3379,7 +3454,8 @@ function applyReading(x, opts) {
   // the student's g, where the question gives none: the one just picked in the
   // reply, else the last one they chose (js/ai/gchoice.js)
   if (!opts?.part) { x = withChosenG(x, opts?.g ?? loadG()); lastRead = { raw, opts: { ...opts, g: undefined } }; }
-  if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? opts.words : '';
+  // Arabic words reach the reading stages as the English they read (js/compose/arabicwords.js)
+  if (opts && 'words' in opts) heard = typeof opts.words === 'string' ? readArabic(opts.words) : '';
   // the student's own word for what moves wins over the model's ball (js/compose/registry.js)
   if (!opts?.part) x = ownWord(x, heard);
   if (!opts?.part) gFrom = typeof x?.gFrom === 'string' ? x.gFrom.slice(0, 20) : '';
@@ -3466,7 +3542,7 @@ function sceneLinks() {
     next: n < chain.list.length ? { label: chain.list[n].label, id: `part:${n}` } : null,
   };
 }
-function readOne(x, { graph = true, solve = false } = {}) {
+function readOne(x, { graph = true, solve = false, assume = false } = {}) {
   // what moves is what is drawn: a diver, a parcel, a skateboarder launched
   // as one of the twelve or From a height becomes a composed scene with that
   // figure in that place, on the same engine (js/compose/recipe.js)
@@ -3475,9 +3551,9 @@ function readOne(x, { graph = true, solve = false } = {}) {
   const blank = x && x.understood !== false && ['dropped', 'down', 'platform', 'platform-angle', 'platform-down', 'up', 'arc'].includes(x.scenario)
     && !['u', 'v', 's', 't'].some((k) => typeof x[k] === 'number') && !(x.scenario === 'dropped' && x.h > 0);
   const drawn = fromReading(x) || (blank ? fromReading(x, { always: true }) : null);
-  if (drawn) return applyComposed(drawn, { graph });
-  if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph });
-  if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph });
+  if (drawn) return applyComposed(drawn, { graph, assume });
+  if (x && x.understood !== false && x.scenario === 'library') return applyLibrary(x, { graph, assume });
+  if (x && x.understood !== false && x.scenario === 'compose') return applyComposed(x, { graph, assume });
   const r = toApp(x);
   if (!r.ok) return r;
   chooseScenario(r.id);
@@ -3494,6 +3570,21 @@ function readOne(x, { graph = true, solve = false } = {}) {
   if (scenario.descent) state.descent = { ...r.descent };
   if (scenario.road) { state.mark = r.mark; state.atTime = r.at; state.nth = r.nth; state.fromRest = !!r.fromRest; state.who = r.who || 'lorry'; }
   buildValuesScreen();              // which recomputes
+  // One number too many (js/compose/sense.js): a speed, an angle and a range
+  // that disagree. The engine says which can go; the run is from the launch,
+  // and the reply says what was left out and why.
+  if (!solved?.ok && !scenario.road && !scenario.descent) {
+    const before = { ...state.given };
+    const put = (m) => { for (const k of Object.keys(state.given)) delete state.given[k]; Object.assign(state.given, m); };
+    const runs = (m) => { const { theta, ...rest } = m; put(rest); recompute(); return !!solved?.ok; };
+    const over = overGiven({ ...before, theta: state.theta }, runs);
+    if (over) {
+      runs(over.numbers);
+      r.items = r.items.filter((it) => !(it.k in before) || it.k in over.numbers);
+      r.notes = [...(r.notes || []), ...over.notes];
+      buildValuesScreen();
+    } else { put(before); recompute(); }
+  }
   // The answer is shown in the chat, where the question was asked (js/ai/
   // ask.js opens it); the flight waits for the student to ask for it.
   refreshSteps();
@@ -3520,16 +3611,27 @@ function readOne(x, { graph = true, solve = false } = {}) {
  * filled with what the question gives (only boxes that scenario has), its
  * parts read, and the reply the engine's answer to each part.
  */
-function applyLibrary(x, { graph = true } = {}) {
+function applyLibrary(x, { graph = true, assume = false } = {}) {
   const s = byId(x.library);
   if (!s?.kit) return { ok: false, error: 'That reads as an exam question the Past-paper library has no scenario for yet. Pick the closest one and type the numbers in.' };
   // "show me one": the reader picks the scenario, and its own exam numbers and
   // parts fill it — known to run, where numbers made up in the chat might not
   if (x.example === true && s.example) x = { ...x, boxes: s.example, parts: undefined };
   // From a height, short of a value: common sense, said in the summary (js/compose/sense.js)
-  x = heightSensibly(x, state.kit?.g ?? 9.81);
+  if (assume) {
+    x = heightSensibly(x, state.kit?.g ?? 9.81);
+    // any other scenario, handed over: the paper's own numbers fill what was not given
+    const K = KITS[s.kit];
+      if (x.library !== 'from-a-height' && s.example && !K.solve(K.read({ g: 9.81, ...(x.boxes || {}) }))?.ok) {
+      x = { ...x, boxes: { ...s.example, ...(x.boxes || {}) }, summary: [x.summary, 'I’ve filled in what was missing with the paper’s own numbers. Tell me the real ones and I’ll run it again.'].filter(Boolean).join(' ') };
+    }
+  }
   chooseScenario(s.id);
   closeIntro();
+  // what the question says moves is what the stage draws (js/render/standin.js)
+  const stand = standInFor(x.who);
+  setStandIn(stand, s.id);
+  if (stand?.thing) prepare({ objects: [{ figure: 'thing', thing: stand.thing }] }, { until: showBy() }).then(() => { dirty = true; });
   const fields = boxesOf(KITS[s.kit], s.example);
   const keys = new Set([...fields.map((f) => f.key), ...Object.keys(s.example || {}), 'g']);
   // a choice takes only one of its own options: a word the scenario does not
@@ -3556,8 +3658,8 @@ function applyLibrary(x, { graph = true } = {}) {
     + (typeof x.summary === 'string' && x.summary ? `<p class="ro-sum">${esc(x.summary)}</p>` : '');
   const body = solved?.ok
     ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
-    : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved?.reason || ''} Just tell me here, or press “Add the missing values”.</div>`;
-  return { ok: true, runnable: !!traj, html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example, !!KITS[s.kit].g) + body };
+    : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${solved?.reason || ''} Just tell me here, or say “use your own”.</div>`;
+  return { ok: true, runnable: !!traj, need: solved?.ok ? '' : solved?.reason || '', html: head + libraryGiven(fields, gAssumed && !!KITS[s.kit].g, x.summary, x.example === true && !!s.example, !!KITS[s.kit].g) + body };
 }
 /**
  * What Ask Suvat read into a library scenario's boxes, listed the way the
@@ -3566,7 +3668,7 @@ function applyLibrary(x, { graph = true } = {}) {
  */
 // gAssumed only where the engine uses g (its kit offers a g): a lift or a road has none to assume
 function libraryGiven(fields, gAssumed, summary = '', example = false, usesG = true) {
-  const plain = (h) => String(h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const plain = (h) => ownWords(String(h)).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
   const angleAssumed = /No angle was given/.test(summary || '');
   const atRest = /No speed was given/.test(summary || '');
   const heightAssumed = /No height was given/.test(summary || '');
@@ -3657,7 +3759,7 @@ const QUANTITY = new Set(['h', 'u', 'v', 's', 't', 'a', 'g', 'theta']);
 /** One value read into a box, set as maths: "h = 20 m", "θ = 90°", "u_A = 6 m s⁻¹" — the unit is the box's own. */
 function quantityHTML(f, n) {
   // a box's `given` is its name in the reply's list, where its label is a question for the values screen
-  const plain = String(f.given ?? f.label ?? '').replace(/<[^>]+>/g, '');
+  const plain = ownWords(String(f.given ?? f.label ?? '')).replace(/<[^>]+>/g, '');
   const unit = (/\(([^()]*)\)\s*$/.exec(plain)?.[1] || '').trim().replace(/⁻¹/g, '^-1').replace(/⁻²/g, '^-2');
   const val = num(n, 2, { trim: true });
   // "A.u" is u for A; "a1" is a for stage 1; "tTop" the time to the top
@@ -3679,7 +3781,7 @@ function quantityHTML(f, n) {
  * into a scenario with the engine's own kit, then read exactly as a library
  * scenario is — its boxes, its parts, the engine's answer to each.
  */
-function applyComposed(x, { graph = true } = {}) {
+function applyComposed(x, { graph = true, assume = false } = {}) {
   // the reader's own word for what moves wins over a ball it put in the recipe
   const who = figureOf(x.who);
   if (who.figure && !['ball', 'stone', 'particle'].includes(who.figure) && x.recipe?.objects?.length === 1
@@ -3688,7 +3790,7 @@ function applyComposed(x, { graph = true } = {}) {
   }
   // the surface below, when the reader left it out but the question names one ("a bridge above a road")
   if (x.recipe?.backdrop && !x.recipe.below) { const b = belowOf(x.recipe.backdrop, `${x.summary || ''} ${x.words || ''}`); if (b) x = { ...x, recipe: { ...x.recipe, below: b } }; }
-  const c = composeSensibly(x.recipe, `${x.words || ''} ${x.summary || ''}`);
+  const c = composeSensibly(x.recipe, `${x.words || ''} ${x.summary || ''}`, { assume });
   if (!c.ok) return { ok: false, chat: true, error: 'I can see the idea, but I need a little more to set it up. What moves, where from, and do you know a height or a speed?' };
   const s = register(c, null);
   // its picture starts on its way now, so the veil has as little as possible to wait for;
@@ -3722,12 +3824,12 @@ function applyComposed(x, { graph = true } = {}) {
   const body = solved?.ok
     ? (state.runs?.some(Boolean) ? replyHTML(state.runs) : `<div class="ro-engine" data-ok="true">${askedHTML(scenario.id, x, solved)}${resultsHTML(solved.derived)}</div>`)
     : `<div class="ro-engine" data-ok="false"><b>Nearly there.</b> ${x.recipe?.engine !== 'pair' && state.kit?.h == null && placeOf(s.recipe).edge
-      ? 'How high up does it start? Just tell me here, like “20 m”, and I’ll run it.'
-      : `${solved?.reason || ''} Just tell me here, or press “Add the missing values”.`}</div>`;
+      ? 'How high up does it start? Just tell me here, like “20 m”, or say “use your own”.'
+      : `${solved?.reason || ''} Just tell me here, or say “use your own”.`}</div>`;
   // the values it read, each from the question or assumed, as a library reply lists them
   const given = libraryGiven(boxesOf(c.kit, c.boxes), !!c.kit.g && x.recipe?.numbers?.g == null && !s.recipe.numbers.g && !placeOf(s.recipe).g,
     `${x.summary || ''} ${said.join(' ')}`, false, !!c.kit.g);
-  return { ok: true, runnable: !!traj, composed: !!traj, html: head + given + body + more };
+  return { ok: true, runnable: !!traj, composed: !!traj, need: solved?.ok ? '' : solved?.reason || '', html: head + given + body + more };
 }
 /** A composed scene, kept with the boxes and parts it was read with. */
 const scenes = new Map();
@@ -3756,14 +3858,15 @@ function openGraphs() {
   const box = $('extras').querySelector('input[data-k="graphs"]');
   if (box) box.checked = true;
   $('graphs-wrap').hidden = false;
-  // where the graphs live (not on a phone, where that panel would cover the scene just asked for)
-  if (!state.options && !windowed() && !matchMedia('(max-width: 560px)').matches) $('options-btn').click();
 }
 function showFlight() {
   if (!traj) return;
   // Graph was on: the stage opens with its graphs showing, as the reply did.
   openGraphs();
-  if (scenario.exhibit) runFlight();
+  // ALREADY ON ITS WAY: back to it, never a second launch. Two launches from one
+  // arrival put the speed card over a flight already running.
+  if (veiled?.s === scenario) { if (state.step !== 'flight') go('flight'); return; }
+  if (scenario.exhibit) launch();
   // a scene just composed arrives behind its veil, which names its pieces and
   // lifts onto the motion (js/compose/reveal.js); once seen, it launches as
   // any scenario does
@@ -3771,10 +3874,14 @@ function showFlight() {
     scenario.seen = true;
     closeIntro(); go('flight');
     // "Working out the motion" is the engine, working it out
-    reveal($('canvas-wrap'), scenario.recipe, { until: showBy(), solve: () => { const K = kit(); if (K) K.solve(K.read(state.kit)); } }).then(() => runFlight());
+    const me = veiled = { s: scenario };
+    // (only if the student is still here for it: nobody is pulled back to a stage they left)
+    reveal($('canvas-wrap'), scenario.recipe, { until: showBy(), solve: () => { const K = kit(); if (K) K.solve(K.read(state.kit)); } })
+      .then(() => { if (veiled !== me) return; veiled = null; if (state.step === 'flight') launch(); });
   } else if (scenario.composed) {
     // (a drawing that came too late for the last run is taken here, between runs)
-    prepare(scenario.recipe, { until: showBy() }).then(() => launch());
+    const me = veiled = { s: scenario }, from = state.step;
+    prepare(scenario.recipe, { until: showBy() }).then(() => { if (veiled !== me) return; veiled = null; if (state.step === from) launch(); });
   } else launch();
 }
 const ask = createAsk({
@@ -3806,7 +3913,7 @@ window.SUVAT = { state, get traj() { return traj; }, get solved() { return solve
                  cam, win, choose: chooseScenario, launch, runFlight, go,
                  showDone, showEnding, hideDone, openResolve, closeResolve,
                  openAskAt, closeAskAt, easeAngle, applyReading, gravity, get board() { return board; },
-                 redraw() { recompute(); draw(); }, showPart, showFlight,
+                 redraw() { recompute(); draw(); }, showPart, showFlight, useStill,
                  /** Compose a scene from a recipe, as the reader would: SUVAT.compose({ backdrop, engine, objects, numbers, parts }). */
                  compose(recipe, parts = recipe?.parts) {
                    const r = applyComposed({ scenario: 'compose', recipe, parts });

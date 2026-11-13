@@ -62,7 +62,7 @@ kbd.kbd {
 }
 .brand:hover .logo { transform: rotate(-6deg) scale(1.06); }
 .brand:active .logo { transform: scale(.92); transition-duration: 80ms; }
-.brand-word { font-size: 18px; font-weight: 700; letter-spacing: .06em; color: var(--ink); background: none; -webkit-background-clip: initial; background-clip: initial; }
+.brand-word { font-size: 18px; font-weight: 700; letter-spacing: -.025em; color: var(--ink); background: none; -webkit-background-clip: initial; background-clip: initial; }
 @supports (background-clip: text) or (-webkit-background-clip: text) {
   .brand-word { background: none; color: var(--ink); }
   :root[data-theme='light'] .brand-word { background-image: none; }
@@ -711,7 +711,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
    only orange is the Spark, which is the AI's, and the focus ring.
    js/ai/ask.js sets data-hist (the panel put away, or not) and data-drawer. */
 .app[data-step='chat'] #screen-chat {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr);
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
   position: relative; overflow: hidden;
 }
 .chat-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
@@ -812,68 +812,35 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 #chat-dock .pbox-go { border-radius: 50%; }
 #screen-chat .ask-fine { margin: var(--sp-2) 0 0; font-size: 13px; color: var(--ink-faint); text-align: center; }
 
-/* the chats kept: a panel on the right */
-.chat-side {
-  display: flex; flex-direction: column; gap: var(--sp-2); width: 280px; min-height: 0; overflow: hidden;
-  padding: var(--sp-3); background: var(--sidebar); border-inline-start: 1px solid var(--border-soft);
-  transition: width var(--dur-3) var(--ease-out), padding var(--dur-3) var(--ease-out);
+/* the chats kept: a dropdown in the sidebar, under the pages, open by default */
+.side-chats { margin-top: var(--sp-5); min-height: 0; flex: 0 1 auto; display: flex; flex-direction: column; }
+.side-chats-h {
+  display: flex; align-items: center; gap: var(--sp-1); width: 100%; height: 30px; padding: 0 var(--sp-2);
+  border-radius: var(--r-md); font-size: 13px; font-weight: 500; color: var(--ink-faint); text-align: start;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
 }
-.chat-side > * { flex: none; width: 255px; }
-.cs-head { display: flex; align-items: center; justify-content: space-between; height: 36px; padding: 0 var(--sp-1) 0 var(--sp-2); }
-.cs-h { margin: 0; font-size: var(--fs-sm); font-weight: var(--w-semi); color: var(--ink-strong); }
-.cs-close { display: none; }
-.cs-new {
-  display: flex; align-items: center; gap: var(--sp-2); height: 36px; padding: 0 var(--sp-3);
-  border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--card); box-shadow: var(--highlight);
-  font-size: var(--fs-sm); font-weight: 500; color: var(--ink); transition: background var(--dur-1);
-}
-.cs-new:hover { background: var(--card-hover); }
-.cs-new svg { width: 16px; height: 16px; flex: none; }
-.cs-search {
-  display: flex; align-items: center; gap: var(--sp-2); height: 34px; padding: 0 var(--sp-3);
-  border: 1px solid var(--border-soft); border-radius: var(--r-lg); background: var(--input); color: var(--ink-faint);
-}
-.cs-search:focus-within { border-color: var(--border-strong); outline: 2px solid var(--ring); outline-offset: 1px; }
-.cs-search svg { width: 15px; height: 15px; flex: none; }
-.cs-search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; font-size: var(--fs-sm); }
-.cs-search input::placeholder { color: var(--ink-faint); }
-.cs-search input::-webkit-search-cancel-button { filter: grayscale(1); }
-.cs-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin-top: var(--sp-1); }
-.cs-group + .cs-group { margin-top: var(--sp-3); }
-.cs-g { margin: 0; padding: var(--sp-1) var(--sp-2); font-size: 13px; font-weight: 500; color: var(--ink-faint); }
-.chat-side .cl-row { border-radius: var(--r-md); box-shadow: none; }
-.chat-side .cl-row[aria-current='true'] { background: var(--press); box-shadow: none; }
-.chat-side .cl-row[aria-current='true'] .cl-t { color: var(--ink); font-weight: 500; }
-.chat-side .cl-open { padding: 7px var(--sp-2); }
-.chat-side .cl-t { font-size: var(--fs-sm); color: var(--ink-strong); }
-.chat-side .cl-x { width: 28px; height: 28px; margin-inline-end: 2px; }
-.chat-side .cl-x svg { width: 15px; height: 15px; }
-.chat-side .cl-x:hover { background: var(--press); }
-.chat-side .cl-none { margin: var(--sp-2); font-size: 13px; line-height: 1.5; }
-.chat-side .cl-note { margin: 0; padding: var(--sp-3) var(--sp-2) var(--sp-1); line-height: 1.5; }
+.side-chats-h:hover { background: var(--hover); color: var(--ink); }
+.side-chats-h:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.side-chats-c { width: 14px; height: 14px; flex: none; transition: transform var(--dur-2) var(--ease); }
+.side-chats-h[aria-expanded='false'] .side-chats-c { transform: rotate(-90deg); }
+[dir='rtl'] .side-chats-h[aria-expanded='false'] .side-chats-c { transform: rotate(90deg); }
+.side-chats-body[hidden] { display: none; }
+.cs-list { max-height: min(38vh, 340px); overflow-y: auto; overscroll-behavior: contain; }
+/* one column no wider than the sidebar: a long name ends in an ellipsis, never a sideways scroll */
+.side-chats .cl-ul { overflow: visible; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; }
+.side-chats-body { min-width: 0; }
+.side-chats .cl-row { border-radius: var(--r-md); box-shadow: none; }
+.side-chats .cl-row[aria-current='true'] { background: var(--press); box-shadow: none; }
+.side-chats .cl-row[aria-current='true'] .cl-t { color: var(--ink); font-weight: 500; }
+.side-chats .cl-open { padding: 6px var(--sp-2); }
+.side-chats .cl-t { font-size: var(--fs-sm); color: var(--ink-muted); }
+.side-chats .cl-row:hover .cl-t { color: var(--ink); }
+.side-chats .cl-x { width: 26px; height: 26px; margin-inline-end: 2px; }
+.side-chats .cl-x svg { width: 14px; height: 14px; }
+.side-chats .cl-x:hover { background: var(--press); }
+.side-chats .cl-none { margin: var(--sp-1) var(--sp-2); font-size: 13px; line-height: 1.5; color: var(--ink-faint); }
+.side-chats .cl-note { margin: var(--sp-1) 0 0; padding: var(--sp-1) var(--sp-2); border: 0; font-size: 13px; line-height: 1.5; color: var(--ink-faint); }
 
-@media (min-width: 901px) {
-  #screen-chat[data-hist='open'] #chat-new { display: none; }
-  #screen-chat[data-hist='closed'] .chat-side { width: 0; padding-inline: 0; border-inline-start-color: transparent; }
-  .chat-scrim { display: none; }
-}
-@media (max-width: 900px) {
-  .app[data-step='chat'] #screen-chat { grid-template-columns: minmax(0, 1fr); }
-  .chat-side {
-    position: absolute; inset: 0 0 0 auto; z-index: 40; width: min(320px, 86vw);
-    transform: translateX(102%); visibility: hidden; box-shadow: var(--shadow-lg);
-    transition: transform var(--dur-3) var(--ease-out), visibility 0s linear var(--dur-3);
-  }
-  .chat-side > * { width: auto; }
-  #screen-chat[data-drawer='open'] .chat-side { transform: none; visibility: visible; transition: transform var(--dur-3) var(--ease-out); }
-  .cs-close { display: inline-flex; }
-  .chat-scrim {
-    position: absolute; inset: 0; z-index: 35; background: color-mix(in srgb, var(--scrim) 45%, transparent);
-    opacity: 0; pointer-events: none; transition: opacity var(--dur-2) var(--ease);
-  }
-  :root[data-theme='light'] .chat-scrim { background: color-mix(in srgb, var(--scrim) 22%, transparent); }
-  #screen-chat[data-drawer='open'] .chat-scrim { opacity: 1; pointer-events: auto; }
-}
 @media (max-width: 560px) {
   .chat-bar { padding: var(--sp-2) var(--sp-2); }
   #screen-chat .ask-thread { padding-top: var(--sp-6); gap: var(--sp-6); }
@@ -887,7 +854,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 @media (prefers-reduced-motion: reduce) {
   .ask-think-t { animation: none; background: none; color: var(--ink-muted); }
   .ask-reply[data-busy='true'] > .ai-orb svg { animation: none; }
-  .chat-side, .chat-scrim, .chat-sug { transition: none; }
+  .chat-sug { transition: none; }
 }
 .tw-caret { background: var(--ink-muted); }
 
@@ -1181,3 +1148,8 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
 .ask-gq-in:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
 .ask-gq-in[aria-invalid='true'] { border-color: var(--bad); }
 .ask-gq-err { flex-basis: 100%; color: var(--bad); }
+
+/* A part answered by a sentence the engine wrote (an exam verdict, "Yes: … so the
+   fielder can catch it"): it wraps in a column of its own width, and the question
+   keeps the rest of the strip. */
+.pans:has(.exam-verdict) { white-space: normal; max-width: 46ch; font-size: var(--fs-base); line-height: 1.45; text-align: start; }

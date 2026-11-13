@@ -26,8 +26,19 @@
 .i18n-wait body { visibility: hidden; }
 
 /* ── what never turns round ─────────────────────────────────────────── */
-/* an equation from js/notation.js: left to right, isolated from the Arabic */
-[dir="rtl"] .m { direction: ltr; unicode-bidi: isolate; }
+/* An equation reads right to left, as Arabic school maths does, isolated from
+   the sentence round it. Only a number's own digits run left to right. */
+[dir="rtl"] .m { direction: rtl; unicode-bidi: isolate; font-family: var(--font); }
+[dir="rtl"] .m .m-num { direction: ltr; unicode-bidi: isolate; font-family: var(--font-math); }
+/* Arabic has no italic, and a slanted one is a fake: the letter stands upright and a step heavier */
+[dir="rtl"] .m-var { font-style: normal; font-family: var(--font); font-weight: 600; }
+[dir="rtl"] .m-vec { font-style: normal; }
+[dir="rtl"] .m-unit { font-family: var(--font); }
+[dir="rtl"] .m-fn { font-family: var(--font); }
+[dir="rtl"] .m-radix { display: inline-block; transform: scaleX(-1); padding-right: 0; }
+[dir="rtl"] .m-rad { margin-left: 0; margin-right: -0.04em; padding: 0.1em 0.06em 0 0.14em; }
+/* the five letters at the head of a box or a card */
+[dir="rtl"] :is(.s-sym, .d-sym, .r-sym) { font-family: var(--font); font-style: normal; font-weight: 650; }
 /* the stage and the graphs: physics x goes to the right, always */
 [dir="rtl"] canvas { direction: ltr; }
 [dir="rtl"] kbd, [dir="rtl"] .kbd, [dir="rtl"] code { direction: ltr; unicode-bidi: isolate; }
@@ -46,22 +57,52 @@
 [dir="rtl"] #chat-back svg, [dir="rtl"] .done-back svg { transform: scaleX(-1); }
 [dir="rtl"] .linkbtn:hover .ic, [dir="rtl"] .bento-lib:hover .bl-go .ic { transform: scaleX(-1) translateX(3px); }
 
-/* things placed with left and right: the mirror of css/shell.css and css/ask.css */
+/* Everything placed with left and right, or padded unevenly: the mirror of the
+   other sheets, rule for rule. A Resolve card's side is not here: it keeps clear
+   of the moving thing on a stage that is not mirrored. */
+[dir="rtl"] .ex-why li::before { left: auto; right: 0; }
+[dir="rtl"] .ptick { left: auto; right: calc(var(--f) * 100%); }
+[dir="rtl"] .pband { left: auto; right: calc(var(--a) * 100%); }
+[dir="rtl"] .pstrip { padding: var(--sp-3) var(--sp-5) var(--sp-3) var(--sp-4); }
+[dir="rtl"] .pchip[data-done='true']::after { left: 1px; right: auto; }
+[dir="rtl"] .step[data-part='on']::before { left: auto; right: -12px; }
+@media (max-width: 1240px) { [dir="rtl"] .main[data-options='on'] .opts { left: 0; right: auto; } }
+[dir="rtl"] .place { margin: 0 auto 0 0; }
+[dir="rtl"] .rrow { padding: 7px var(--sp-3) 7px 0; }
+[dir="rtl"] .ask-att { padding: 4px 4px 4px 6px; }
+[dir="rtl"] .ask-fine { margin: var(--sp-2) var(--sp-4) 0 0; }
+[dir="rtl"] .brand { padding: 4px 4px 4px 8px; }
+[dir="rtl"] .side-search { padding: 0 10px 0 6px; }
 [dir="rtl"] .side .steps li::before { left: auto; right: 17px; }
-[dir="rtl"] .acct-x { right: auto; left: var(--sp-3); }
-[dir="rtl"] .ask-view-x { right: auto; left: 12px; }
-[dir="rtl"] .ro-steps > li::before { left: auto; right: 0; }
-[dir="rtl"] .chat-list { right: auto; left: var(--sp-6); }
-[dir="rtl"] .speed-pop { right: auto; left: 0; }
-[dir="rtl"] .done-back { left: auto; right: var(--sp-4); }
 [dir="rtl"] .step-sub { padding: 0 38px 8px 8px; }
-/* a switch is on towards the reading start */
-[dir="rtl"] .box-ck { transform: scaleX(-1); }
+[dir="rtl"] .top { padding: 0 var(--sp-6) 0 var(--sp-4); }
+[dir="rtl"] .hero-chip { padding: 0 8px 0 12px; }
+[dir="rtl"] .solve[data-ok='true']::before { margin: 0 0 1px 8px; }
+[dir="rtl"] .speed-pop { left: 0; right: auto; }
+[dir="rtl"] .done-back { left: auto; right: var(--sp-4); }
+[dir="rtl"] .ask-tools { margin: var(--sp-2) -8px 0 0; }
+@media (max-width: 680px) { [dir="rtl"] .speed-pop { left: -48px; right: auto; } }
+[dir="rtl"] .ask-view-x { left: 12px; right: auto; }
+[dir="rtl"] .ro-steps > li::before { left: auto; right: 0; }
+@media (max-width: 560px) { [dir="rtl"] .ask-card { padding: 8px 8px 8px 10px; } }
+[dir="rtl"] .chat-list { left: var(--sp-6); right: auto; }
+@media (max-width: 600px) { [dir="rtl"] .chat-list { left: var(--sp-4); right: auto; } }
+[dir="rtl"] .bd-note { border-radius: 4px 4px 4px var(--r-lg); }
+[dir="rtl"] .bd-dock { padding: 8px 12px 8px 8px; }
+[dir="rtl"] .acct-x { left: var(--sp-3); right: auto; }
+[dir="rtl"] .acct-msg { margin: 0 0 var(--sp-4) var(--sp-8); }
+[dir="rtl"] .step-sub { padding: 0 38px 8px 8px; }
+/* on a phone Resolve and the time stack at the stage's right, clear of the readouts, as in English */
+@media (max-width: 680px) { [dir="rtl"] .canvas-wrap:not([data-panes='on']) .hud-r { align-items: flex-start; } }
+/* a word CSS itself writes */
+[dir="rtl"] .pace-pin::after { content: 'الأنسب'; letter-spacing: 0; }
+/* the back arrow of the privacy page */
+[dir="rtl"] main > .home > [aria-hidden="true"] { display: inline-block; transform: scaleX(-1); }
+[dir="rtl"] main ul { padding-left: 0; padding-right: 20px; }
 /* the time and speed sliders keep the stage's direction: time runs the way x does */
 [dir="rtl"] input[type="range"] { direction: ltr; }
 
 @media (max-width: 900px) {
   [dir="rtl"] .side { inset: 0 0 0 auto; transform: translateX(102%); }
   [dir="rtl"] .app[data-side='open'] .side { transform: none; }
-  [dir="rtl"] .chat-side { inset: 0 auto 0 0; transform: translateX(-102%); }
 }

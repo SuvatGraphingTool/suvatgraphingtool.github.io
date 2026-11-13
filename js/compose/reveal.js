@@ -91,10 +91,15 @@ export function reveal(wrap, R, { per = 1800, until = Date.now() + DEADLINE_MS, 
   // taken again while the stage settles into its new size
   const snap = el.querySelector('.cr-snap'), src = wrap.querySelector('canvas');
   // a canvas caught mid-resize is blank: such a copy is skipped, never kept
+  const probe = Object.assign(document.createElement('canvas'), { width: 16, height: 16 });
   const drawn = () => {
     try {
-      const d = src.getContext('2d').getImageData(0, 0, src.width, src.height).data;
-      for (let i = 3; i < d.length; i += 4 * 997) if (d[i] > 0) return true;
+      // never read the stage itself back: a browser answers that by moving the
+      // canvas off the graphics card for good, and every scene after it crawls.
+      // A tiny copy is read instead.
+      probe.getContext('2d', { willReadFrequently: true }).drawImage(src, 0, 0, 16, 16);
+      const d = probe.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, 16, 16).data;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return true;
     } catch { return true; }
     return false;
   };

@@ -30,6 +30,7 @@ export const EXTRACTION_SCHEMA = {
     },
     confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
     scenario: { type: 'string', enum: SCENARIO_IDS },
+    title: { type: 'string', description: 'The name of this chat: 2 to 5 words on what the question is about.' },
     summary: { type: 'string', description: 'One short sentence describing the situation, in plain English.' },
 
     // ── the five, as given ──────────────────────────────────────────────
@@ -198,10 +199,14 @@ RULES
   five sentences. Explain in words — write no equations and no symbols such as ^ or sqrt,
   because the app sets the maths itself.
 - Set confidence to low if values are unclear, handwritten, or partly cut off.
+- Set title to the name of this chat: 2 to 5 words on what the question is about, in the
+  student's language, with no full stop: "Ball off a rooftop", "Two trains meeting".
 - If the question or the photo shows its exam board or paper ("Edexcel", "Pearson", "M1", "OCR",
   "AQA"), set paper to it, as "Edexcel M1". The app takes g from the paper's rules.
 
 THE PAST-PAPER LIBRARY
+Check this list FIRST: if one of these IS the situation the student describes, use it, and set
+who to their own word for what moves, even if a composed scene could also draw it.
 Exam situations the twelve above cannot set up: two objects, a bounce, stages, i and j
 vectors, graphs to read, answers in letters. When one fits, return scenario "library",
 library: its id, and boxes: each GIVEN value keyed exactly as its boxes say. Choice boxes
@@ -411,10 +416,10 @@ scenario "library" or "compose", and leave out boxes, recipe and parts. Answer w
 export const ARABIC_NOTE = `
 
 ARABIC MODE. The student is using the app in Arabic and may write in Arabic.
-- Read Arabic questions as you read English ones. Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩, and ٫ as the decimal point) are ordinary numbers: write them in the JSON as Western numbers (٢٫٥ → 2.5).
-- Write "summary", every chat reply and any written answer in natural Modern Standard Arabic, as a friendly physics teacher would say it to an A-level student (المقذوف، السرعة الابتدائية، التسارع، الإزاحة، زمن الطيران، أقصى ارتفاع، المدى، الجاذبية).
-- Keep symbols, numbers and units as they are on an A-level paper: u, v, s, t, a, g, θ, Western digits, m s⁻¹.
-- Everything else stays exactly as specified above: the same JSON keys, the same ids, scenario names, place and figure words, and numbers. Those are data, not prose — never translate them.`;
+- Read Arabic questions as you read English ones. Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩, and ٫ as the decimal point) and Arabic units (م، ث، م/ث، م/ث²، كم/س، كجم، نيوتن) are ordinary numbers and units: write them in the JSON as plain Western numbers in metres and seconds (٢٫٥ → 2.5).
+- Write "summary", "title", every chat reply and any written answer in natural Modern Standard Arabic, as a friendly physics teacher would say it to an A-level student (المقذوف، السرعة الابتدائية، التسارع، الإزاحة، زمن الطيران، أقصى ارتفاع، المدى، الجاذبية).
+- In all of that writing, every symbol and unit is Arabic and only the digits are Western: ع for v, ع₀ for u, ز for t, ف for s, ت for a, جـ for g, ل for h, هـ for θ, جا جتا ظا for sin cos tan; م، ث، م/ث، م/ث²، كجم، نيوتن. The app's name is سوفات. Not one Latin letter.
+- Everything else stays exactly as specified above: the same JSON keys, the same ids, scenario names, place and figure words ("who", "backdrop", "figure", "place" stay the English words the catalogue uses), and numbers. Those are data, not prose — never translate them.`;
 
 /** The system prompt for a request, in the language it came in. */
 export const inLang = (text, lang) => (lang === 'ar' ? text + ARABIC_NOTE : text);

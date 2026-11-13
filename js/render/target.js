@@ -18,6 +18,7 @@
 // Everything drawn is read from js/core/target.js (rule 4). The thrower's
 // arm is posed from the engine's angle; the effects run off its times.
 
+import { keptPiece } from './still.js';
 import { dust, pulse, flash, ageOf, phaseOf } from './effects.js';
 import { landscape, env, rng, softShadow, fitSide } from './scenery.js';
 import { thrower, throwerHand, ballAt, THROWER_MIN } from './figures.js';
@@ -37,6 +38,9 @@ const TAU = Math.PI * 2;
     the light from the left. `course` is a course's height in px. */
 function bricks(g, x, y, w, h, { course = 6, seed = 5, base = null } = {}) {
   if (w <= 0 || h <= 0) return;
+  keptPiece(g, { x, y, w, h }, `bricks|${course}|${seed}|${base}`, (q) => courses(q, x, y, w, h, { course, seed, base }), { always: true });
+}
+function courses(g, x, y, w, h, { course, seed, base }) {
   const E = env(), r = rng(seed);
   const c = Math.max(2, course), bw = c * 2.3;
   g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();

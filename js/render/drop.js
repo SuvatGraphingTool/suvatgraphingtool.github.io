@@ -461,8 +461,16 @@ export function drawJump(canvas, view, o) {
   // hover, in this pane's own pixels (js/render/panes.js)
   const mover = o.pre == null ? { x: px, y: stand, r: Math.max(26, D.prop.person.h * sS) } : null;
   canvas._mover = mover;
+  // and all the way down the line it has fallen, at the moment it was there (js/render/tracks.js)
+  canvas._along = o.pre == null ? (x, y) => {
+    if (Math.abs(x - px) > 11 || y < Y(H) - 4 || y > py + 4) return null;
+    let lo = 0, hi = t;
+    for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (Y(f.pos(mid).y) < y) lo = mid; else hi = mid; }
+    return { x: px, y, r: 8, t: lo };
+  } : null;
   const over = canvas._pointer;
   if (mover && over && Math.hypot(over.x - mover.x, over.y - mover.y) < mover.r) markMover(canvas, mover);
+  else if (over) { const q = canvas._along?.(over.x, over.y); if (q) markMover(canvas, q); }
 
   if (o.pre != null) {
     // The one line of text the pre-roll is allowed, and it names itself as

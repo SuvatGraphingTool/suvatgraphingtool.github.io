@@ -66,7 +66,8 @@ export function gStated(x) {
 export function gAskHTML(ask) {
   if (!ask) return '';
   const mine = ask.from === 'choice';
-  const note = mine ? 'your choice' : ask.from === 'Edexcel' ? 'assumed · Edexcel’s 9.8' : 'assumed · Earth’s 9.81';
+  // only 9.81 is Earth's assumed value: anything else came with the paper
+  const note = mine ? 'your choice' : ask.from === 'Edexcel' ? 'assumed · Edexcel’s 9.8' : Math.abs(ask.g - 9.81) > 1e-9 ? 'from the paper' : 'assumed · Earth’s 9.81';
   const chips = G_CHIPS.map((v) => `<button type="button" class="chip" data-g="${v}" aria-pressed="${v === ask.g}">${v}</button>`).join('');
   const other = G_CHIPS.includes(ask.g) ? '' : String(ask.g);
   return `<div class="ask-gq" role="group" aria-label="Which g? The question gives none">

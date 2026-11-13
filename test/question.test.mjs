@@ -798,5 +798,23 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   ok(!hi.find && hi.either?.length === 2 && hi.either.every((q) => q.kind === 'height'), '"how high", with two heights it cannot choose between: both kept, for the reply to say when they agree');
 }
 
+// the owner's cricket question (paraphrased, never the paper's words): the reader's library reading is kept, its parts answered by the engine
+{
+  const { toPlace } = await import('../worker/src/place.js');
+  const { fromReader } = await import('../js/parts/answers.js');
+  const { byId } = await import('../js/scenarios.js'), { KITS } = await import('../js/kits/index.js');
+  const { focusFor } = await import('../worker/src/focus.js');
+  const words = 'A cricketer strikes the ball at 23.8 m/s, 50.0° above the horizontal. On the boundary, 55.0 m away, a fielder can only hold the catch if the ball is less than 3 m above the height it was struck from when it gets there. (a) Is it catchable? (b) The ball is 0.140 kg: show its momentum straight after the hit is roughly 3.3 N s.';
+  ok(focusFor(words).ids.has('boundary-catch'), 'the cricket question puts A catch on the boundary in front of the reader in full');
+  const read = { understood: true, confidence: 'high', scenario: 'library', library: 'boundary-catch', summary: 'A cricket ball struck towards a fielder on the boundary.',
+    boxes: { u: 23.8, theta: 50, d: 55, L: 3, m: 0.14 }, parts: [{ label: 'a', asks: 'can the fielder catch it', answer: 'height1' }, { label: 'b', asks: 'show its momentum just after the hit is about 3.3 N s', answer: 'show' }] };
+  const x = toPlace(read, words);
+  ok(x.library === 'boundary-catch' && x.boxes.u === 23.8 && x.boxes.theta === 50 && x.boxes.d === 55 && x.boxes.L === 3 && x.boxes.m === 0.14, 'the library reading is kept, its boxes as read');
+  const ps = fromReader('boundary-catch', x.parts);
+  ok(ps?.length === 2 && ps[0].expr === 'verdictHTML' && ps[1].find === 'p', '(a) is the engine’s verdict, (b) its momentum');
+  const K = KITS[byId('boundary-catch').kit], sv = K.solve(K.read({ ...x.boxes, g: 9.81 }));
+  ok(sv.ok && sv.caught && />Yes: /.test(sv.verdictHTML) && Math.abs(sv.p - 3.332) < 1e-9, 'and the engine says yes, 2.15 m up, and 3.332 N s');
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

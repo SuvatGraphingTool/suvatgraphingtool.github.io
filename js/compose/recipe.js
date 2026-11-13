@@ -20,7 +20,7 @@
 // Nothing here calculates (CLAUDE.md rule 4). The engine solves; this file
 // only says which engine, with which boxes.
 
-import { sensible } from './sense.js';
+import { sensible, overGiven } from './sense.js';
 import { BACKDROPS, FIGURES, EFFECTS, ENGINES, ANSWERS, LANDS_WITH, MOMENTS, CARRIERS, LAUNCHERS, figureOf, belowOf, placeOf, placeIn, carrierIn, launcherIn, pieceOf, ownWord, senderIn } from './registry.js';
 import { thingName, materialOf, landingFor, floats, shownName } from './things.js';
 import { toApp } from '../core/question.js';
@@ -493,13 +493,26 @@ export function composeKindly(raw) {
 }
 
 /**
- * composeKindly(), then common sense (js/compose/sense.js): what the engine
- * cannot run without gets a sensible value, and the scene's notes say so.
+ * composeKindly(), then, when the student has handed it over (`assume`), common
+ * sense (js/compose/sense.js): what the engine cannot run without gets a sensible
+ * value, and the scene's notes say so.
  * @param text  the question's words
  */
-export function composeSensibly(raw, text = '') {
-  const c = composeKindly(raw);
+export function composeSensibly(raw, text = '', { assume = true } = {}) {
+  let c = composeKindly(raw);
   if (!c.ok || c.scenario?.recipe?.engine !== 'projectile') return c;
+  // one number too many (sense.js): run from the launch, and say what was left
+  // out — not an assumption, so it needs no handing over
+  {
+    const r = c.scenario.recipe, g = c.boxes.g;
+    const without = (n) => { const b = { ...c.boxes }; for (const k of Object.keys(r.numbers)) if (!(k in n)) delete b[k]; return { ...b, ...n, g }; };
+    const over = overGiven({ ...r.numbers }, (n) => !!c.kit.solve(c.kit.read(without(n)))?.ok);
+    if (over) {
+      const next = compose({ ...r, numbers: over.numbers });
+      if (next.ok) { next.scenario.recipe.notes = [...(next.scenario.recipe.notes || []), ...over.notes]; c = next; }
+    }
+  }
+  if (!assume) return c;
   const r = c.scenario.recipe, B = placeOf(r), g = c.boxes.g;
   const runs = (n) => { const b = { ...c.boxes, ...n, g }; return !!c.kit.solve(c.kit.read(b))?.ok; };
   const got = sensible({ numbers: { ...r.numbers }, place: r.backdrop, edge: !!B.edge, text, runs });

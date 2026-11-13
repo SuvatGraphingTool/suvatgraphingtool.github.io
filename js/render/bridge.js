@@ -130,7 +130,9 @@ export function render(canvas, cam, o) {
   const flown = []; for (let i = 0; i <= 60; i++) { const q = f.pos((i / 60) * t); flown.push({ x: X(q.x), y: Y(Hp + q.y) }); }
   if (t > 0) stroke(g, flown, { color: P.disp, width: 2.6 });
   if (show.velocity !== false && t < f.tMax - 1e-9) {
-    const sc = clamp(k * 0.12, 3, 8);
+    // pixels a m s⁻¹, held so the fastest moment's arrow stays a third of the stage
+    const vMax = Math.max(Math.hypot(f.vel(0).x, f.vel(0).y), Math.hypot(f.vel(f.tMax).x, f.vel(f.tMax).y));
+    const sc = Math.min(clamp(k * 0.12, 3, 8), (0.33 * Math.min(w, h)) / Math.max(vMax, 1e-9));
     if (show.components) {
       arrow(g, bx, by, bx + s * v.x * sc, by, { color: P.velVec, width: 2, head: 8, dash: [5, 4] });
       arrow(g, bx + s * v.x * sc, by, bx + s * v.x * sc, by - v.y * sc, { color: P.velVec, width: 2, head: 8 });

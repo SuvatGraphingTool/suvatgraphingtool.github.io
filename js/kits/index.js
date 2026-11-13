@@ -58,5 +58,6 @@ import { airdrag } from './airdrag.js';
 import { force } from './force.js';
 import { dropramp } from './dropramp.js';
 import { twin } from './twin.js';
+import { boundary } from './boundary.js';
 
-export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket, runway, river, wind, heli, ice, twin, wall, hill, rough, sink, slide, cable, rope, runout, drive, tank, lastfall, course, slopedrop, bicycle, slopegates, airdrag, dropramp, force };
+export const KITS = { pair, journey, lanes, plane, target, bounce, height, catcher, trip, jump, twoplane, models, bench, clears, chain, collide, snapshots, xtgraph, robots, letters, twotrains, posts, vtgraph, marks, towards, ceiling, flighttime, apples, bridge, heightrange, together, roof, lift, rocket, runway, river, wind, heli, ice, twin, wall, hill, rough, sink, slide, cable, rope, runout, drive, tank, lastfall, course, slopedrop, bicycle, slopegates, airdrag, dropramp, force, boundary };

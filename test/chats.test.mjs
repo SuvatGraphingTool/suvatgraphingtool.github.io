@@ -7,7 +7,7 @@
 // full the pictures go first, then the oldest chats; when it is shut nothing
 // throws and nothing is claimed kept.
 
-import { loadChats, getChat, saveChat, deleteChat, clearChats, putChats, onChats, newChatRecord, titleOf, whenOf, dayGroup, CHATS_MAX } from '../js/ai/chats.js';
+import { loadChats, getChat, saveChat, deleteChat, clearChats, putChats, onChats, newChatRecord, titleOf, nameFrom, whenOf, dayGroup, CHATS_MAX } from '../js/ai/chats.js';
 import { mergeChats } from '../js/account.js';
 
 let pass = 0, fail = 0;
@@ -86,6 +86,17 @@ group('Each chat is named by what was asked', () => {
   ok(titleOf('', { kind: 'image' }) === 'A photo of a question', 'a photo alone');
   ok(titleOf('  ', { kind: 'pdf' }) === 'A question paper', 'a paper alone');
   ok(titleOf('a\n\nb') === 'a b', 'spacing tidied');
+});
+
+group('…and then by what it is about', () => {
+  ok(nameFrom({ title: 'Ball off a rooftop', summary: 'A ball is dropped.' }) === 'Ball off a rooftop', 'the reader’s own title');
+  ok(nameFrom({ title: '"ball off a rooftop."' }) === 'Ball off a rooftop', 'tidied');
+  ok(nameFrom({ recipe: { title: 'A car off a cliff' }, summary: 'x y z.' }) === 'A car off a cliff', 'a scene’s title, if it has none');
+  ok(nameFrom({ summary: 'A stone falls down a well. It takes 3 s.' }) === 'A stone falls down a well', 'the summary’s first sentence, if neither');
+  ok(nameFrom({ summary: 'An example: A book dropped from a shelf.' }) === 'A book dropped from a shelf', 'without "An example:"');
+  ok(nameFrom({ title: 'كرة من فوق سطح' }) === 'كرة من فوق سطح', 'in Arabic too');
+  ok(nameFrom({ title: 'x'.repeat(90) }).length <= 65, 'never too long for the list');
+  ok(nameFrom({}) === null && nameFrom(null) === null, 'nothing to go on: the first words asked stand');
 });
 
 group('…and says when it was last had', () => {

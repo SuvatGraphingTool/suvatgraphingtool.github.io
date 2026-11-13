@@ -32,15 +32,6 @@
   content: ''; position: absolute; inset: 0; background: rgba(20,14,16,0.28); pointer-events: none;
 }
 .ask-col { position: relative; width: min(640px, 100%); display: flex; flex-direction: column; gap: var(--sp-3); }
-.ask-resume {
-  align-self: center; display: inline-flex; align-items: center; gap: var(--sp-2);
-  height: 36px; padding: 0 var(--sp-4) 0 var(--sp-2); border-radius: var(--r-pill);
-  background: rgba(31,32,35,0.82); color: #F3F4F6; font-size: var(--fs-sm); font-weight: var(--w-semi);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18); transition: background 150ms;
-}
-.ask-resume:hover { background: rgba(31,32,35,0.95); }
-.ask-resume:focus-visible { outline: 2px solid #FF7E5F; outline-offset: 2px; }
-.ask-resume[hidden] { display: none; }
 .ask-hero .ask-fine { color: rgba(31,32,35,0.78); text-align: center; margin: var(--sp-1) 0 0; font-weight: var(--w-small); }
 .ask-hero .ask-modes + .ask-fine { margin-top: var(--sp-4); }
 .pick-h { font-size: var(--fs-2xl); margin-bottom: var(--sp-2); }

@@ -2,6 +2,7 @@
 
 import { num } from '../notation.js';
 import { D } from '../world/dims.js';
+import { standIn, standInFrame, ownWords } from './standin.js';
 
 /* ── what moves on this frame ──────────────────────────────────────────
    Hovering over what moves offers Resolve. On one of the twelve the camera says
@@ -11,14 +12,14 @@ import { D } from '../world/dims.js';
    that has not. Read in the canvas's own pixels, through whatever pan and zoom is
    on. No physics: this is where things were drawn. */
 export const movers = { list: [], vel: null, tip: null };
-export function clearMovers() { movers.list.length = 0; movers.vel = null; movers.tip = null; }
+export function clearMovers() { movers.list.length = 0; movers.vel = null; movers.tip = null; standInFrame(); }
 /** Note a moving thing at (x, y), radius r px, in the context's current coordinates. */
-export function noteMover(ctx, x, y, r = 22, { strong = false, label = null } = {}) {
+export function noteMover(ctx, x, y, r = 22, { strong = false, label = null, arrow = false } = {}) {
   const dpr = ctx._dpr || 1;
   const m = ctx.getTransform?.();
   if (!m || !isFinite(x) || !isFinite(y)) return;
   const scale = Math.hypot(m.a, m.b) / dpr;
-  movers.list.push({ x: (m.a * x + m.c * y + m.e) / dpr, y: (m.b * x + m.d * y + m.f) / dpr, r: r * scale, strong, label });
+  movers.list.push({ x: (m.a * x + m.c * y + m.e) / dpr, y: (m.b * x + m.d * y + m.f) / dpr, r: r * scale, strong, label, arrow });
 }
 /** The moving thing under the pointer, or null: exact reports first. */
 export function moverAt(x, y) {
@@ -76,8 +77,17 @@ export function unview(ctx) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
+// asked for many times a frame, and only a change of theme or language changes the
+// answers: kept until then, so a frame never forces the browser to recompute style
+const VARS = new Map();
+if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.documentElement?.nodeType) {
+  new MutationObserver(() => VARS.clear()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'lang', 'dir', 'class', 'style'] });
+}
 export function cssVar(name, fallback) {
-  return (getComputedStyle(document.documentElement).getPropertyValue(name) || fallback).trim();
+  if (VARS.has(name)) return VARS.get(name) || fallback;
+  const v = (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim();
+  VARS.set(name, v);
+  return v || fallback;
 }
 
 export function palette() {
@@ -129,6 +139,7 @@ export function palette() {
    @param fired  before launch the ring is lighter — nothing is moving yet */
 export function ballSprite(ctx, x, y, r, { ring = null, fired = true } = {}) {
   noteMover(ctx, x, y, Math.max(16, r + 4));
+  if (standIn('ball', ctx, x, y, r * 2, { r, ring })) return;
   const P = palette();
 
   if (r < 5 && ring) {
@@ -438,15 +449,37 @@ export function stroke(ctx, pts, { color, width = 2, dash = null, alpha = 1 } = 
  * protects is arrow-shaped. Pushing the stadium back behind the flight took
  * most of the work off it in the first place.
  */
+/** The tip of an arrow from (x0, y0), brought back inside the visible canvas
+    when it would leave it; unchanged when the tail is off screen already. */
+function onStage(ctx, x0, y0, x1, y1) {
+  const m = ctx.getTransform?.(), c = ctx.canvas;
+  if (!m || !c || m.b || m.c || !m.a || !m.d) return [x1, y1];
+  const lo = { x: (0 - m.e) / m.a, y: (0 - m.f) / m.d }, hi = { x: (c.width - m.e) / m.a, y: (c.height - m.f) / m.d };
+  const pad = 6 / Math.abs(m.a / (globalThis.devicePixelRatio || 1));
+  const x = [Math.min(lo.x, hi.x) + pad, Math.max(lo.x, hi.x) - pad], y = [Math.min(lo.y, hi.y) + pad, Math.max(lo.y, hi.y) - pad];
+  const inside = (px, py) => px >= x[0] && px <= x[1] && py >= y[0] && py <= y[1];
+  if (!inside(x0, y0) || inside(x1, y1)) return [x1, y1];
+  const dx = x1 - x0, dy = y1 - y0;
+  let f = 1;
+  if (dx > 0) f = Math.min(f, (x[1] - x0) / dx); else if (dx < 0) f = Math.min(f, (x[0] - x0) / dx);
+  if (dy > 0) f = Math.min(f, (y[1] - y0) / dy); else if (dy < 0) f = Math.min(f, (y[0] - y0) / dy);
+  return [x0 + dx * f, y0 + dy * f];
+}
+
 export function arrow(ctx, x0, y0, x1, y1,
                       { color, width = 2.4, head = 11, dash = null, casing = true, alpha = 1 } = {}) {
+  // AN ARROW NEVER LEAVES THE STAGE: a tip past the edge of what is on screen is
+  // drawn at it, the arrow shortened along its own line (a cricket ball misread as
+  // a 125 m s⁻¹ throw drew its velocity off the top of the canvas). The edge is
+  // found through the canvas's transform, so a zoomed or panned stage keeps it.
+  [x1, y1] = onStage(ctx, x0, y0, x1, y1);
   const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy);
   // a velocity arrow starts on what is moving: a stage that says nothing else is still heard
   // (a second part drawn head to tail from the last one starts on nothing)
   movers.vel ??= [cssVar('--vel-vec', '#fb923c'), cssVar('--vel', '#ea580c'), cssVar('--second', '#db2777')];
   if (movers.vel.includes(color)) {
     const tail = movers.tip && Math.hypot(movers.tip[0] - x0, movers.tip[1] - y0) < 1;
-    if (!tail) noteMover(ctx, x0, y0, 26);
+    if (!tail) noteMover(ctx, x0, y0, 26, { arrow: true });
     movers.tip = [x1, y1];
   }
   if (len < 2) return;
@@ -500,7 +533,7 @@ const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && 
 export function labels() {
   const q = [], held = [];
   return {
-    add(text, x, y, o = {}) { q.push({ text, x, y, o, pri: o.pri ?? 0 }); },
+    add(text, x, y, o = {}) { q.push({ text: ownWords(text), x, y, o, pri: o.pri ?? 0 }); },
     /** Keep labels off a drawn thing — a figure, a post — as if it were a
         label already placed: { x, y, w, h }, top-left and size. */
     reserve(box) { held.push(box); },

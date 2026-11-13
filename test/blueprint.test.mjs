@@ -88,5 +88,16 @@ group('A board with something missing says what, and an edit fills it', () => {
   near(g10.traj.tFlight, flight({ u: 12, theta: 0, h: 30, g: 10 }).tFlight, 1e-9, 'and g = 10, where the paper says so');
 });
 
+// "NaN%": a frame's timestamp older than the clock sent the camera to infinity. The time
+// step of every clock that eases something is floored at zero.
+{
+  const { readFileSync } = await import('node:fs');
+  for (const file of ['js/board/board.js', 'js/app.js']) {
+    const src = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    if (/Math\.min\(0\.05, \(now - last\)/.test(src)) { fail++; console.log(`  FAIL ${file}: a time step that can go backwards`); }
+    else { pass++; console.log(`  ok   ${file}: the clock never runs backwards`); }
+  }
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

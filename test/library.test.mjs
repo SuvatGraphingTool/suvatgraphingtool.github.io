@@ -43,6 +43,7 @@ import { solveBicycle, bicycleWorking } from '../js/core/bicycle.js';
 import { solveSlopeGates, slopeGatesWorking } from '../js/core/slopegates.js';
 import { solveAirDrag, airDragWorking } from '../js/core/airdrag.js';
 import { solveDropRamp, dropRampWorking } from '../js/core/dropramp.js';
+import { solveBoundary, boundaryWorking } from '../js/core/boundary.js';
 import { solveTowards } from '../js/core/towards.js';
 
 let pass = 0, fail = 0;
@@ -1783,6 +1784,42 @@ group('OCR 4728 Jan 2009 Q6: dropped, or slid down a ramp', () => {
   ok(!solveDropRamp({ h: 2.5, theta: 10, mu: 0.3 }).ok && !solveDropRamp({ h: 2.5, theta: 30, thetaV: 60 }).ok && !solveDropRamp({ h: 2.5 }).ok, 'friction holds it, both angles, or none: refused');
   ok(!solveDropRamp({ h: 2.5, theta: 30, g: -9.8 }).ok && !solveDropRamp({ h: -1, theta: 30 }).ok, 'a negative g or height: refused');
   ok(dropRampWorking(s).map((x) => x.title).join('|') === 'Dropped|Down the ramp', 'the working, both ways');
+});
+
+group('Owner-supplied physics Q4–5: a catch on the boundary', () => {
+  const k = { u: 23.8, theta: 50, d: 55, L: 3, m: 0.14, g: 9.81 };
+  const s = solveBoundary(k);
+  ok(s.ok && near(s.at.t, 55 / (23.8 * Math.cos(50 * Math.PI / 180)), 1e-9) && near(s.at.t, 3.595, 5e-4), 'Q4: t at the boundary = 55.0 ÷ (23.8 cos 50°) = 3.595 s', s.reason);
+  ok(near(s.at.y, 2.148, 5e-4) && s.verdict === 'catch' && s.caught, 'Q4: 2.15 m above the height it was struck from, under 3 m: caught', s.at?.y);
+  ok(/^<span class="exam-verdict">Yes: /.test(s.verdictHTML) && /2\.15/.test(s.verdictHTML) && /can catch it/.test(s.verdictHTML), 'Q4: said as the exam answer, from the engine’s own height');
+  ok(near(solveBoundary({ ...k, g: 9.8 }).at.y, 2.213, 5e-4) && solveBoundary({ ...k, g: 9.8 }).caught, 'with g = 9.8 it is 2.21 m: still caught');
+  ok(near(s.p, 3.332, 1e-9), 'Q5: p = mv = 0.140 × 23.8 = 3.332 N s, about 3.3');
+  ok(near(s.R, 56.86, 0.005) && near(s.H, 16.94, 0.005) && s.R > s.d, 'on level ground it would come down 56.9 m out, just past the rope, after rising to 16.9 m');
+  ok(near(s.f.tMax, s.at.t, 1e-12) && near(s.f.pos(s.f.tMax).y, s.at.y, 1e-9) && s.f.speed(s.f.tMax + 1) === 0, 'the motion ends at the catch, the ball at rest in the hands after it');
+  const hi = solveBoundary({ ...k, u: 26 });
+  ok(hi.ok && hi.verdict === 'over' && near(hi.at.y, 12.42, 0.005) && near(hi.R, 67.86, 0.005) && near(hi.f.tMax, hi.T, 1e-12) && />No: /.test(hi.verdictHTML), 'u = 26: 12.4 m up at the rope, over the reach; down 67.9 m out');
+  const lo = solveBoundary({ ...k, u: 20 });
+  ok(lo.ok && lo.verdict === 'short' && near(lo.R, 40.16, 0.005) && !lo.reached && /short of the boundary/.test(lo.verdictHTML) && near(lo.tShow, lo.T, 1e-12), 'u = 20: back down 40.2 m out, 14.8 m short: never reaches the fielder on the full');
+  // exactly at the reach is not under it ("less than 3 m")
+  const ux = 23.8 * Math.cos(50 * Math.PI / 180), atL = solveBoundary({ ...k, L: solveBoundary(k).at.y });
+  ok(atL.verdict === 'over' && solveBoundary({ ...k, L: s.at.y + 1e-6 }).verdict === 'catch', 'exactly at the reach is not under it; a hair above it is');
+  ok(solveBoundary({ ...k, d: 56.86386 }).verdict === 'catch' && solveBoundary({ ...k, d: 57 }).verdict === 'short', 'at the very edge of its range it is caught at its own height; a metre on, it never gets there');
+  ok(solveBoundary({ ...k, d: 10 }).verdict === 'over' && solveBoundary({ ...k, theta: 10 }).verdict === 'short', 'a short boundary: over the fielder, still rising; struck flat: short');
+  for (const [bad, why] of [[{ u: 0 }, 'no speed'], [{ u: -5 }, 'a negative speed'], [{ theta: 0 }, 'struck level'], [{ theta: 90 }, 'struck straight up'], [{ theta: -10 }, 'struck down'],
+    [{ d: 0 }, 'no distance'], [{ L: 0 }, 'no reach'], [{ m: -1 }, 'a negative mass'], [{ g: -9.8 }, 'a negative g'], [{ g: undefined }, 'no g'], [{ L: undefined }, 'no reach given']]) {
+    const r = solveBoundary({ ...k, ...bad });
+    ok(!r.ok && typeof r.reason === 'string' && r.reason.length > 10, `${why}: refused in words`);
+  }
+  ok(solveBoundary({ ...k, m: undefined }).ok && solveBoundary({ ...k, m: undefined }).p == null && boundaryWorking(solveBoundary({ ...k, m: undefined })).length === 2, 'no mass: no momentum, and no momentum step');
+  ok(boundaryWorking(s).map((x) => x.title).join('|') === 'At the boundary|Over level ground|Its momentum' && boundaryWorking(s)[0].rows.length === 5, 'the working: at the boundary (components first, so part (a) shows them), level ground, momentum');
+  ok(/3\.5952/.test(boundaryWorking(s)[0].rows[3].s), 'the height row substitutes t to four places, so its numbers give 2.148');
+  ok(atL.atReach && /exactly/.test(atL.verdictHTML) && !atL.notes.some((n) => /over<\/span> the fielder|0 \[m\] over/.test(n)), 'exactly at the reach: said as at it, not over it');
+  ok(/^It rises to/.test(s.notes[2]) && /^Not caught, it would rise/.test(solveBoundary({ ...k, d: 20, L: 20 }).notes[2]), 'its top before the boundary is risen to either way; only a top after it is a "would"');
+  ok(near(lo.short, 55 - lo.R, 1e-9) && lo.f.short === lo.short, 'how far short it comes down is the engine’s');
+  const K = KITS.boundary, kv = K.solve(K.read({ ...k }));
+  ok(kv.ok && K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.length === 2 && gr.series[0].dash && !gr.series[1].dash), 'graphs: across dashed, up solid (rule 2)');
+  ok(resolveKit(K, kv, kv.f, kv.f.tMax / 2).blocks[0].rows.length > 0, 'Resolve reads the flight half way');
+  ok(/^Caught, 2\.15 m/.test(K.ending(kv).title) && /^Over the fielder: 12\.4 m/.test(K.ending(K.solve(K.read({ ...k, u: 26 }))).title) && /^Down 40\.2 m out/.test(K.ending(K.solve(K.read({ ...k, u: 20 }))).title), 'the ending says each outcome with its number');
 });
 
 group('AQA MM1B Jan 2010 Q4: with and without air resistance', () => {

@@ -156,6 +156,8 @@ this library: *covered* names the one of the twelve that does it.
 | 130 | OCR | 4728 M1 | Jan 2009 | 6 | [paper](https://expert-tuition.co.uk/wp-content/uploads/2019/08/jan-2009-q-17.pdf) | Parcels 2.5 m above a trolley: dropped (time, speed); slid down a ramp at 60° to the vertical, μ = 0.2, 2 kg: the speed at the trolley | 9.8 | **built** → `drop-or-ramp` |
 | 131 | Edexcel | 6677/01 M1 | Jan 2011 | 4 | — | 2 kg particle under a constant force: velocity 2i − 5j at t = 0 and 7i + 10j at t = 5; speed at t = 0, F, when parallel to i | — | **built** → `pushed-by-a-force` |
 | 132 | Edexcel | 6677/01 M1 | Jun 2008 | 3 | — | 0.4 kg particle accelerating at 6i + 8j: its angle with i, the size of F, the velocity at t = 5 from 9i − 10j | — | **built** → `pushed-by-a-force` |
+| 133 | owner-supplied (physics; board unknown) | online exam, paper unknown | unknown | 4 | — (a screenshot the owner sent) | A cricket ball struck at 23.8 m s⁻¹, 50.0° above the horizontal; a fielder on the boundary 55.0 m away catches it only below 3 m above the height it was struck from: can it be caught? | 9.81 | **built** → `boundary-catch` |
+| 134 | owner-supplied (physics; board unknown) | online exam, paper unknown | unknown | 5 | — (the same screenshot) | The same ball, 0.140 kg: show that its momentum just after the hit is about 3.3 N s | — | **built** → `boundary-catch` |
 | 114 | Edexcel | 6677 M1 | Nov 2004 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 30 kg sledge pulled along level ground by a rope at 20°, 150 N, μ = 0.2: the normal reaction, the acceleration; let go at 12 m/s: how far it slides | 9.8 | **built** → `pulled-by-a-rope` |
 | 115 | Edexcel | 6677/01 M1 | Jun 2005 | 4 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 2 kg box pulled up a rough 20° plane by a rope along the slope, 18 N, μ = 0.6: the normal reaction, the acceleration | 9.8 | **built** → `pulled-by-a-rope` (no release speed: the stage shows the pull alone, for its own 3 s) |
 | 116 | Edexcel | 6677 M1 | Jan 2001 | 7 | [paper](https://pmt.physicsandmathstutor.com/download/Maths/A-level/M1/Papers-Edexcel/QP/Combined%20QP%20(Reduced).pdf) | A 78 kg sledge pulled up a slope (tan α = 5/12, μ = 0.25) accelerating at 0.5 m/s²: the tension; the rope breaks: the acceleration back down after it stops | 9.8 | **built** → `pulled-by-a-rope` (tan α as given; no release speed: the pull alone, then the slide back worked) |
@@ -1592,3 +1594,43 @@ the kicker, the ball up and down, the ceiling moment ringed.
 
 **What the student varies.** The height it leaves from; its speed or its
 greatest height; the ceiling's height.
+
+### `boundary-catch` — A catch on the boundary
+
+**Papers.** Not from a board's archive: the owner supplied it as a screenshot of an
+online physics exam (question 4, 5 marks, and question 5, 1 mark); the board, the
+paper and the session are not known, and are recorded as unknown rather than
+guessed. A cricket ball struck at 23.8 m s⁻¹, 50.0° above the horizontal; a fielder
+on the boundary 55.0 m away can catch it only if it arrives less than 3 m above the
+height it was struck from. (Q4) Can it be caught? t = 55.0 ÷ (23.8 cos 50°) =
+3.595 s; the height then 23.8 sin 50° × t − ½gt² = 2.15 m with g = 9.81 (2.21 m
+with 9.8): under 3 m, so yes. (Q5) With m = 0.140 kg, p = mv = 3.332 ≈ 3.3 N s.
+
+**Why the others cannot.** `over-the-wall` reads a projectile at one point and
+says whether it clears a top; here the question is the opposite — whether it
+arrives *below* a height at a distance, with a third outcome (back down before the
+boundary, never reaching the fielder on the full) — and it adds the one-step link
+p = mv. Built new, as the library rule says, on target.js's `flight`.
+
+**How it is solved.** js/core/boundary.js: uₓ = u cos θ, u_y = u sin θ; t = d ÷ uₓ;
+y = u_y t − ½gt²; caught if 0 ≤ y < L, over if y ≥ L, short if it is back at its own
+height (y = 0) before the boundary. Then H = u_y² ÷ 2g, T = 2u_y ÷ g, R = uₓT on
+level ground (56.9 m here: it would have come down just over the rope), and
+p = mv just after the hit. The verdict is typeset by the engine as an exam answer.
+
+**The stage.** The composer's cricket ground (js/render/places.js `cricket`, now
+taking `pavilionX`): the square, the stumps, the outfield in mown bands. New in
+js/render/cricket.js: a batter in whites, pads with their canes and straps, gloves
+and a helmet with its grille, the bat with grip, splice and blade, swung through
+the ball as the clock starts and on into the follow-through; a fielder in whites
+and a sun hat on the rope, ready, rising to the height the engine found and closing
+the hands on it, or leaping at a ball over the reach, or stooping at one that falls
+short; the rope as an arc of the oval; the boards and a raked stand with its crowd,
+roof and floodlight. The reach is a band at the boundary, the height there a
+dimension in the displacement's hue, the 55 m a dimension along the ground. At the
+true scale a person is a few pixels, so two lenses show the batter (the swing, θ)
+and the boundary (the reach, the fielder, the catch with its burst) enlarged.
+
+**What the student varies.** u, θ, the distance to the boundary, the reach L, the
+mass (optional, for p), g. u = 26 carries the fielder (12.4 m up at the rope, down
+67.9 m out); u = 20 comes down 40.2 m out, 14.8 m short.

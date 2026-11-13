@@ -75,16 +75,16 @@ export function solveRope(k = {}) {
   }
   const F = snap(mu * R);
   pull.push(slant
-    ? { f: lvl ? M`R + T sin theta = m g` : M`R + T sin theta = m g cos alpha`, s: lvl ? M`R + ${have(k.T) ? d(T) : 'T'} sin ${d(theta)}° = ${d(m)} * ${d(g)}` : M`R + ${have(k.T) ? d(T) : 'T'} sin ${d(theta)}° = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: have(k.T) ? M`R = ${d(R)} [N]` : M`R = ${d(Wn)} - T sin ${d(theta)}°` }
+    ? { f: lvl ? M`R + Ten sin theta = m g` : M`R + Ten sin theta = m g cos alpha`, s: lvl ? M`R + ${have(k.T) ? d(T) : 'Ten'} sin ${d(theta)}° = ${d(m)} * ${d(g)}` : M`R + ${have(k.T) ? d(T) : 'Ten'} sin ${d(theta)}° = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: have(k.T) ? M`R = ${d(R)} [N]` : M`R = ${d(Wn)} - Ten sin ${d(theta)}°` }
     : { f: lvl ? M`R = m g` : M`R = m g cos alpha`, s: lvl ? M`R = ${d(m)} * ${d(g)}` : M`R = ${d(m)} * ${d(g)} cos ${d(alpha)}°`, r: M`R = ${d(R)} [N]` });
   if (have(k.T)) {
     if (mu > 0) pull.push({ f: M`F = mu R`, s: M`F = ${d(mu)} * ${d(R)}`, r: M`F = ${d(F)} [N]` });
     const lhs = `${slant ? `${d(T)} cos ${d(theta)}°` : d(T)}${lvl ? '' : ` - ${d(m)} * ${d(g)} sin ${d(alpha)}°`}${mu > 0 ? ` - ${d(F)}` : ''}`;
-    pull.push({ f: M`${slant ? 'T cos theta' : 'T'}${lvl ? '' : ' - m g sin alpha'}${mu > 0 ? ' - F' : ''} = ma`, s: M`${lhs} = ${d(m)}a`, r: M`a = ${d(a)} [m s^-2]` });
+    pull.push({ f: M`${slant ? 'Ten cos theta' : 'Ten'}${lvl ? '' : ' - m g sin alpha'}${mu > 0 ? ' - F' : ''} = ma`, s: M`${lhs} = ${d(m)}a`, r: M`a = ${d(a)} [m s^-2]` });
   } else {
-    pull.push({ f: M`${slant ? 'T cos theta' : 'T'}${lvl ? '' : ' - m g sin alpha'}${mu > 0 ? ' - mu R' : ''} = ma`,
-      s: M`T${slant ? ` cos ${d(theta)}°` : ''}${lvl ? '' : ` - ${d(m)} * ${d(g)} sin ${d(alpha)}°`}${mu > 0 ? ` - ${d(mu)}(${slant ? `${d(Wn)} - T sin ${d(theta)}°` : d(R)})` : ''} = ${d(m)} * ${d(a)}`, r: M`T = ${d(T)} [N]` });
-    if (slant) pull.push({ f: M`R = m g${lvl ? '' : ' cos alpha'} - T sin theta`, s: M`R = ${d(Wn)} - ${d(T)} sin ${d(theta)}°`, r: M`R = ${d(R)} [N]` });
+    pull.push({ f: M`${slant ? 'Ten cos theta' : 'Ten'}${lvl ? '' : ' - m g sin alpha'}${mu > 0 ? ' - mu R' : ''} = ma`,
+      s: M`Ten${slant ? ` cos ${d(theta)}°` : ''}${lvl ? '' : ` - ${d(m)} * ${d(g)} sin ${d(alpha)}°`}${mu > 0 ? ` - ${d(mu)}(${slant ? `${d(Wn)} - Ten sin ${d(theta)}°` : d(R)})` : ''} = ${d(m)} * ${d(a)}`, r: M`Ten = ${d(T)} [N]` });
+    if (slant) pull.push({ f: M`R = m g${lvl ? '' : ' cos alpha'} - Ten sin theta`, s: M`R = ${d(Wn)} - ${d(T)} sin ${d(theta)}°`, r: M`R = ${d(R)} [N]` });
   }
   // with no release speed, the stage shows the pull for its own few seconds (the paper gives no time)
   const SHOW = 3, v = letGo ? k.v : snap(a * SHOW);
@@ -146,7 +146,7 @@ export function solveRope(k = {}) {
   ];
   if (!lvl) notes.push(stays ? `At rest, ${M`mu = ${d(mu)}`} is at least ${M`tan ${d(alpha)}° = ${d(snap(sa / ca))}`}: friction holds it there.` : `${letGo ? 'At rest' : 'If it comes to rest'}, ${M`mu = ${d(mu)}`} is less than ${M`tan ${d(alpha)}° = ${d(snap(sa / ca))}`}: it slides back down, at ${M`${d(-aBack)} [m s^-2]`} down the slope.`);
   // what it found, not what was given
-  const derived = [`${M`R = ${d(R)} [N]`}`, have(k.a) ? `${M`T = ${d(T)} [N]`}` : `${M`a = ${d(a)} [m s^-2]`}`, ...(letGo ? [`${M`${d(s2)} [m]`} after it is let go`] : []), ...(aBack != null ? [`back down at ${M`${d(-aBack)} [m s^-2]`}`] : [])];
+  const derived = [`${M`R = ${d(R)} [N]`}`, have(k.a) ? `${M`Ten = ${d(T)} [N]`}` : `${M`a = ${d(a)} [m s^-2]`}`, ...(letGo ? [`${M`${d(s2)} [m]`} after it is let go`] : []), ...(aBack != null ? [`back down at ${M`${d(-aBack)} [m s^-2]`}`] : [])];
 
   const f = { kind: 'rope', look: lvl ? 'level' : 'slope', m, mu, alpha, tanA: have(k.tanA) ? k.tanA : null, theta, g, T, a, R, F, a2, R2, v, s1, s2, t1, t2, tRel, tRest, tMax, tFlight: tMax, stays, aBack, W, Wd, Wn,
     letGo, pos, vel, acc, phase, forces, tMid: snap(Math.min(tRel, tMax) / 2), tSlide: snap((tRel + tRest) / 2), params: { u: 0, theta: 0, h: 0, g } };

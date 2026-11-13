@@ -243,10 +243,10 @@ function attach(win, p, hooks) {
     if (!drag) {
       // what moves in this pane, if it draws one, offers Resolve (js/render/drop.js)
       const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, m = canvas._mover;
-      const on = !!m && Math.hypot(x - m.x, y - m.y) < m.r;
+      const on = (!!m && Math.hypot(x - m.x, y - m.y) < m.r) || !!canvas._along?.(x, y);
       canvas._pointer = { x, y };
       canvas.style.cursor = on ? 'pointer' : 'grab';
-      if (on !== canvas._onMover) { canvas._onMover = on; hooks.change?.(); }
+      if (on || on !== canvas._onMover) { canvas._onMover = on; hooks.change?.(); }
       return;
     }
     const [w, h] = size();
@@ -262,7 +262,11 @@ function attach(win, p, hooks) {
     if (clicked && down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) {
       const dbl = e.timeStamp - lastUp < 400;
       lastUp = e.timeStamp; clearTimeout(later);
-      if (!dbl) later = setTimeout(() => hooks.click?.(), 280);
+      if (!dbl) {
+        const r = canvas.getBoundingClientRect(), m = canvas._mover, x = e.clientX - r.left, y = e.clientY - r.top;
+        const on = !(m && Math.hypot(x - m.x, y - m.y) < m.r) && canvas._along?.(x, y);
+        later = setTimeout(() => hooks.click?.(on ? on.t : undefined), 280);
+      }
     }
     down = null;
   };

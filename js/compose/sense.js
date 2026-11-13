@@ -10,7 +10,18 @@
 // answer would teach a wrong one. Only inputs are chosen here, each one said
 // plainly and shown as assumed; every number worked out is the engine's (rule 4).
 
+import { readArabic } from './arabicwords.js';
 import { num } from '../notation.js';
+
+/**
+ * The student handing it over: "I don't know", "you pick", "use your own", "fill in
+ * the rest". The user, 8 Nov: "as easy as telling the AI when you don't know a value,
+ * or want it to complete the rest, whenever you want". Until they say so, it asks.
+ */
+const OWN = /\b(?:i\s*(?:do\s*not|don'?t|dont)\s*(?:know|have)|dunno|no idea|not sure|idk|you\s+(?:pick|choose|decide)|your\s+(?:own|choice|call)|ur\s+own|use\s+(?:your|ur|whatever|any)|whatever(?:\s+values?)?(?:\s+you)?|make\s+(?:it|them|some|one)\s+up|any\s+values?|(?:complete|fill(?:\s+in)?|finish|do)\s+(?:it|the\s+rest|them)|surprise\s+me|up\s+to\s+you)\b|لا\s*أعرف|ما\s*أعرف|لا\s*أدري|من\s*عندك|اختر\s*أنت|أكمل\s*الباقي|على\s*راحتك/i;
+export const wantsOwn = (text) => OWN.test(String(text || '')) || OWN.test(readArabic(String(text || '')));
+/** Whether the words give any number at all, in either set of digits. */
+export const saysNumber = (text) => /[0-9٠-٩]/.test(String(text || ''));
 
 /** How high a thing usually is, by the question's own word, first found wins. */
 const WORD_HEIGHTS = [
@@ -80,6 +91,37 @@ export function sensible({ numbers, place, edge, text, runs }) {
     const how = theta === 90 ? 'straight up' : theta === -90 ? 'straight down' : theta === 0 ? 'thrown flat' : 'launched at 45°';
     notes.push(`No angle was given, so it is taken as ${how}. Change it on the values screen to try another.`);
     if (runs(out)) return { numbers: out, notes };
+  }
+  return null;
+}
+
+/**
+ * One number too many. The user, 13 Nov: a cricket ball hit at 23.8 m s⁻¹ at 50°
+ * towards a fielder 55.0 m away was read with 55 m as where it lands, and the
+ * reply said only that the numbers did not fit — showing nothing. The speed, the
+ * angle and the height decide where it lands, how long it flies and how fast it
+ * lands; a question that also gives one of those, and a different one, gives a
+ * number that is about something else (a fielder, a wall, a mark). So: run it
+ * from the launch, leave that number out of the run, and say so. Nothing is
+ * worked out here: which one to leave out is the engine's to say (runs), and
+ * where it really lands is in its working (rule 4).
+ * @param numbers   what the question gave
+ * @param runs(n)   whether the engine can run with these numbers
+ * @returns { numbers, notes } without the one that did not fit, or null
+ */
+// one sentence each, whole, so the Arabic dictionary can hold it with the number as its slot
+const LANDING = [
+  ['s', (n) => `The question gives ${n} m, but the speed and the angle already decide where it lands, and it is not ${n} m. So I’ve run it from the speed and the angle and left the ${n} m out: it is about something else, like where a fielder or a wall is. The working shows where it lands.`],
+  ['t', (n) => `The question gives ${n} s, but the speed and the angle already decide how long it is in the air, and it is not ${n} s. So I’ve run it from the speed and the angle and left the ${n} s out: it is about something else. The working shows how long it is in the air.`],
+  ['v', (n) => `The question gives ${n} m s⁻¹, but the speed and the angle already decide how fast it lands, and it is not ${n} m s⁻¹. So I’ve run it from the speed and the angle and left the ${n} m s⁻¹ out: it is about something else. The working shows how fast it lands.`],
+];
+export function overGiven(numbers, runs) {
+  if (!numbers || runs(numbers) || !has(numbers.u) || !has(numbers.theta)) return null;
+  for (const [k, note] of LANDING) {
+    if (!has(numbers[k])) continue;
+    const out = { ...numbers };
+    delete out[k];
+    if (runs(out)) return { numbers: out, notes: [note(said(numbers[k]))] };
   }
   return null;
 }
