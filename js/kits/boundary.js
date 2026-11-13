@@ -9,7 +9,6 @@ import * as stage from '../render/boundary.js';
 import { M, T, num } from '../notation.js';
 
 const tr = (x, p = 3) => num(x, p, { trim: true });
-const s3 = (x) => num(x, Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x) || 1))));
 
 export const boundary = {
   id: 'boundary',
@@ -89,9 +88,10 @@ export const boundary = {
   },
 
   ending(s) {
-    const title = s.verdict === 'catch' ? `Caught, ${s3(s.at.y)} m above where it was struck.`
-      : s.verdict === 'over' ? `Over the fielder: ${s3(s.at.y)} m up at the boundary.`
-        : `Down ${s3(s.R)} m out, short of the boundary.`;
+    // to the same places as the notes under it
+    const title = s.verdict === 'catch' ? `Caught, ${tr(s.at.y)} m above where it was struck.`
+      : s.verdict === 'over' ? `Over the fielder: ${tr(s.at.y)} m up at the boundary.`
+        : `Down ${tr(s.R)} m out, short of the boundary.`;
     return {
       eyebrow: `A boundary ${tr(s.d)} m away, a reach of ${tr(s.L)} m`,
       title,

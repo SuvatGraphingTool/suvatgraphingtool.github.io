@@ -42,25 +42,46 @@ function reserveLine(L, pts, r = 6) {
   }
 }
 
-/** How the fielder stands at time t: the engine's moment at the boundary and
-    the height it found decide it; the art only eases into it. In metres. */
+/** Where the fielder stands, and how, at time t: the engine's moment at the
+    boundary and the height it found decide it; the art only eases into it.
+    In metres, from where it was struck: { feet, hands {x, y} | null, closed,
+    leap, crouch, gait, look {x, y}, onKnees }. The hands meet the ball at the
+    boundary, d; the rope lies just behind the fielder's heels (ROPE). */
+const ROPE = 0.8, STAND = 0.42, START = -0.3;
 function fielderPose(f, t) {
-  const v = f.verdict, tA = f.tAt, k0 = Math.min(0.7, tA * 0.22);
+  const v = f.verdict, tA = f.tAt, D = f.d, q = f.pos(t);
+  const look = { x: q.x, y: q.y };
+  const ready = { feet: D + START, hands: null, closed: 0, leap: 0, crouch: 0.35, gait: null, look, onKnees: false };
   if (v === 'short') {
-    // it comes down short: watch it, then stoop towards it as it lands
-    const u = ease(clamp((t - (f.tGround - k0)) / k0, 0, 1));
-    return { hands: null, stoop: 0.7 * u, leap: 0, closed: 0, look: null, ahead: 0 };
+    // it is coming down short: two steps in towards it, then hands on knees as it lands
+    const k0 = Math.min(0.9, f.tGround * 0.3), u = clamp((t - (f.tGround - k0)) / k0, 0, 1);
+    if (u <= 0) return ready;
+    return { ...ready, feet: D + START - 0.6 * ease(u), gait: u < 1 ? u : null, crouch: 0.35 + 0.2 * ease(u), onKnees: u > 0.75 };
   }
-  const u = ease(clamp((t - (tA - k0)) / k0, 0, 1));
-  const reach = FIELDER_REACH * PERSON;                 // standing, hands up
+  // two steps back to the rope, rising as the hands go up to meet it
+  const k0 = Math.min(0.9, tA * 0.3), u = clamp((t - (tA - k0)) / k0, 0, 1);
+  if (u <= 0) return ready;
+  const uh = ease(clamp((u - 0.25) / 0.75, 0, 1)), feet = D + START + (STAND - START) * ease(u);
+  const reachUp = FIELDER_REACH * PERSON;
+  const from = { x: feet - 0.42, y: 0.72 };
   if (v === 'catch') {
     const y = f.yAt;
-    return { hands: 1.2 + (y - 1.2) * u, ahead: 0.3 * u, closed: t >= tA - 1e-9 ? 1 : 0,
-      leap: Math.max(0, y - reach) * u, stoop: y < 0.8 ? (0.8 - y) / 0.8 * 0.8 * u : 0, look: y };
+    return { feet, hands: { x: from.x + (D - from.x) * uh, y: from.y + (y - from.y) * uh }, gait: u < 1 ? u : null,
+      closed: ease(clamp((t - (tA - 0.1)) / 0.1, 0, 1)), leap: Math.max(0, y - reachUp) * uh,
+      crouch: 0.35 + ((y > 1.4 ? 0.02 : y < 0.8 ? 0.65 : 0.25) - 0.35) * uh, look, onKnees: false };
   }
-  // over: a leap with the arms at full stretch, then down again as it goes on
-  const after = clamp((t - tA) / 0.45, 0, 1), up = u * (1 - ease(after));
-  return { hands: 1.2 + (reach + 0.45 - 1.2) * up, ahead: 0.15 * up, closed: 0, leap: 0.45 * up, stoop: 0, look: f.yAt };
+  // over: a leap with the arms at full stretch as it passes, then down onto bent knees
+  const bump = (x, w) => Math.max(0, 1 - Math.abs(x) / w);
+  const up = ease(bump(t - tA, 0.35)) * (t < tA ? uh : 1), land = ease(bump(t - (tA + 0.45), 0.3));
+  const stretch = t < tA ? uh : Math.max(up, 1 - ease(clamp((t - tA) / 0.6, 0, 1)));
+  return { feet, hands: { x: feet - 0.15 + (from.x - feet + 0.15) * (1 - stretch), y: from.y + (reachUp + 0.42 * up - from.y) * stretch }, gait: u < 1 ? u : null,
+    closed: 0, leap: 0.42 * up, crouch: 0.35 * (1 - stretch) + 0.45 * land, look, onKnees: false };
+}
+/** The fielder, drawn from a pose in metres through (mx, my) to px, `k` px a metre. */
+function drawFielder(g, fp, mx, my, k, holding = null) {
+  fielder(g, mx(fp.feet), my(0), PERSON * k, {
+    hands: fp.hands ? { x: mx(fp.hands.x), y: my(fp.hands.y) } : null, closed: fp.closed, leap: fp.leap * k,
+    crouch: fp.crouch, gait: fp.gait, look: { x: mx(fp.look.x), y: my(fp.look.y) }, onKnees: fp.onKnees, holding });
 }
 
 /** A round lens at (cx, cy), radius r: clips to it, draws `paint`, rims it, and leads back to (tx, ty). */
@@ -95,8 +116,9 @@ export function render(canvas, cam, o) {
 
   // ── the frame: the batter, the flight to where it comes down, the rope, the boards
   const xLand = f.R;
-  const xBoards = Math.max(D + 4, xLand + 3);
-  const box = { xLo: -3.2, xHi: xBoards + (phone ? 5 : 11), yLo: 0, yHi: Math.max(f.H, Lr + 0.6) * 1.1 };
+  // (a six comes down among the crowd: the boards just behind the rope when it carries the fielder)
+  const xBoards = v === 'over' ? D + 4 : Math.max(D + 4, xLand + 3);
+  const box = { xLo: -3.2, xHi: xBoards + (phone ? 5 : 15), yLo: 0, yHi: Math.max(f.H, Lr + 0.6) * 1.1 };
   const below = phone ? 108 : 100, rightPx = phone ? 10 : 16;
   // (on a phone the flight goes under the two readouts, never behind them)
   const areas = phone ? [{ left: 10, right: w - rightPx, top: HUD_PHONE.h + 12, bottom: h - below }]
@@ -124,15 +146,15 @@ export function render(canvas, cam, o) {
   PLACE_ART.cricket(g, { w, h, k, X, Y, oy, x0: X(0), top: oy, H0: 0, clearX: [X(xLand)], over, pavilionX: X(f.H > 0 ? F.apex.x : D / 2), reserve: (b) => L.reserve(b) });
   // the boards and the stand behind the rope, the rope itself crossing the outfield
   boundaryStand(g, X(xBoards), oy, w, k, { seed: 67 });
-  boundaryRope(g, X(D), oy, h, horizon, { back: clamp((X(D) - X(0)) * 0.07, 30, 80) });
+  boundaryRope(g, X(D + ROPE), oy, h, horizon, { back: clamp((X(D) - X(0)) * 0.07, 30, 80) });
 
   // ── the distances along the ground: to the boundary, and the metres
   const step = niceStep(box.xHi, phone ? 5 : 8);
   for (let x = step; x < xBoards; x += step) {
     stroke(g, [{ x: X(x), y: oy }, { x: X(x), y: oy + 6 }], { color: P.axis, width: 1.4 });
-    L.add(fmt(x, step < 1 ? 1 : 0), X(x), oy + 16, { color: P.faint, align: 'center', pri: 1, size: 13, bg: false, maxPush: 0 });
+    L.add(fmt(x, step < 1 ? 1 : 0), X(x), oy + 26, { color: P.faint, align: 'center', pri: 1, size: 13, bg: false, maxPush: 0 });
   }
-  const dy = oy + 40;
+  const dy = oy + 46;
   stroke(g, [{ x: X(0), y: dy }, { x: X(D), y: dy }], { color: P.strong, width: 1.4 });
   for (const xx of [X(0), X(D)]) stroke(g, [{ x: xx, y: dy - 5 }, { x: xx, y: dy + 5 }], { color: P.strong, width: 1.4 });
   L.add(`${T`${tr(D)} [m]`} to the boundary`, (X(0) + X(D)) / 2, dy + 14, { color: P.strong, align: 'center', pri: 9, size: 14, weight: 700, maxPush: 20 });
@@ -142,7 +164,8 @@ export function render(canvas, cam, o) {
   const pose = fired ? clamp(0.5 + 0.5 * t / Math.max(1e-6, 0.12 * f.tMax), 0.5, 1) : 0;
   const bc = batContact(TH);
   const feetX = X(0) - bc.x;
-  cricketBatter(g, feetX, oy, TH, { pose });
+  const smear = fired ? 1 - clamp(t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
+  cricketBatter(g, feetX, oy, TH, { pose, smear });
   L.reserve({ x: feetX - TH * 0.4, y: oy - TH * 1.15, w: TH * 0.9, h: TH * 1.15 });
 
   // ── the reach at the boundary: a band from the height it was struck from up to L
@@ -152,15 +175,15 @@ export function render(canvas, cam, o) {
   stroke(g, [{ x: bx - band, y: bTop }, { x: bx + band, y: bTop }], { color: P.mark, width: 2 });
   L.reserve({ x: bx - band, y: bTop - 3, w: band * 2, h: oy - bTop + 3 });
 
-  // ── the fielder on the rope, at the scene's own scale
+  // ── the fielder at the rope, at the scene's own scale (drawn with the ball, below, when it is caught)
   const fp = fielderPose(f, t);
-  const fieldX = X(D + 0.3);
-  fielder(g, fieldX, oy, TH, { hands: fp.hands == null ? null : fp.hands * k, ahead: fp.ahead * k, closed: fp.closed, leap: fp.leap * k, stoop: fp.stoop, look: fp.look == null ? null : fp.look * k });
+  const caught = v === 'catch' && t >= f.tAt - 1e-9;
+  if (!caught) drawFielder(g, fp, X, Y, k);
 
   // ── the path: where it goes faintly, flown strongly; after a catch, where it would have gone, dotted
   const mine = f.path(160).map((p) => ({ x: X(p.x), y: Y(p.y) }));
   stroke(g, mine, { color: P.vel, width: 1.6, alpha: 0.3 });
-  if (v === 'catch') {
+  if (v === 'catch' && t >= f.tAt - 1e-9) {
     const rest = pathAll.filter((p) => p.t >= f.tAt).map((p) => ({ x: X(p.x), y: Y(p.y) }));
     stroke(g, rest, { color: P.vel, width: 1.4, alpha: 0.45, dash: [3, 5] });
   }
@@ -210,8 +233,8 @@ export function render(canvas, cam, o) {
       const a = X(xLand), b = X(D), yy = oy + 8;
       stroke(g, [{ x: a, y: yy }, { x: b, y: yy }], { color: P.mark, width: 2.4 });
       for (const xx of [a, b]) stroke(g, [{ x: xx, y: yy - 5 }, { x: xx, y: yy + 5 }], { color: P.mark, width: 2.4 });
-      say(`down ${T`${sig3(xLand)} [m]`} out, ${T`${sig3(f.short)} [m]`} short`, P.mark, (a + b) / 2, oy + 68, { align: 'center' });
-    } else say(`down ${T`${sig3(xLand)} [m]`} out, over the boundary`, P.mark, gx, oy + 68, { align: 'center' });
+      say(`down ${T`${sig3(xLand)} [m]`} out, ${T`${sig3(f.short)} [m]`} short`, P.mark, (a + b) / 2, oy + 76, { align: 'center' });
+    } else say(`down ${T`${sig3(xLand)} [m]`} out, over the boundary`, P.mark, gx, oy + 76, { align: 'center' });
   }
   // (caught where it would have come down anyway — at its own height on the rope — there is nothing more to say)
   if (v === 'catch' && t >= f.tAt - 1e-9 && xLand - D > 0.05) {
@@ -226,9 +249,10 @@ export function render(canvas, cam, o) {
   let sx = X(r.x), sy = Math.min(Y(r.y), oy - rBall);
   if (!fired) { sx = X(0); sy = oy - rBall; }
   const vMax = Math.max(...pathAll.map((p) => Math.hypot(F.ux, F.vy(p.t))), 1e-6);
-  const room = (c, dv, lo, hi) => (dv > 0 ? (hi - c) / dv : dv < 0 ? (lo - c) / dv : Infinity);
+  const room = (c, dv, lo, hi) => (c < lo || c > hi ? Infinity : dv > 0 ? (hi - c) / dv : dv < 0 ? (lo - c) / dv : Infinity);
   let vl = clamp(w * 0.08, 40, 100) / vMax;
   for (const q of pathAll) vl = Math.min(vl, room(X(q.x), F.ux, 12, w - 70) * 0.9, room(Y(q.y), -F.vy(q.t), 12, h - 12) * 0.9);
+  vl = Math.max(vl, 25 / vMax);
   const moving = fired && f.speed(t) > 1e-6 && !(v === 'catch' && t >= f.tAt - 1e-9) && !(v !== 'catch' && t >= f.tGround - 1e-9);
   if (show.velocity !== false && moving) {
     if (show.components) {
@@ -239,15 +263,17 @@ export function render(canvas, cam, o) {
     L.add(T`${sig3(f.speed(t))} [m s^-1]`, sx + vv.x * vl + 10, sy - vv.y * vl, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700, maxPush: 80 });
   }
   if (show.acceleration && moving) arrow(g, sx, sy, sx, sy + 40, { color: P.acc, width: 2.4, head: 10 });
-  // caught: in the fielder's hands
-  if (v === 'catch' && t >= f.tAt - 1e-9) { sx = X(D); sy = Y(f.yAt); }
-  if (sy > oy - rBall * 3) softShadow(g, sx, oy + 1, rBall * 1.3, 2.5, 0.8);
-  PROPS.cricketBall(g, sx, sy, rBall, t * 9);
-  noteMover(g, sx, sy, 18, { strong: true });
+  const ball = (x, y, rb) => { PROPS.cricketBall(g, x, y, rb, t * 9); noteMover(g, x, y, 18, { strong: true }); };
+  if (caught) {
+    // in the fielder's hands: the ring behind them, the ball between palm and fingers
+    { const { age, life } = ageOf(t, f.tAt, f.tMax); pulse(g, X(D), Y(f.yAt), age, life, P.mark, { radius: 16 }); }
+    drawFielder(g, fp, X, Y, k, () => ball(X(D), Y(f.yAt), 5));
+  } else {
+    if (sy > oy - rBall * 3) softShadow(g, sx, oy + 1, rBall * 1.3, 2.5, 0.8);
+    ball(sx, sy, rBall);
+  }
   // the crack of the bat, as the clock starts
   if (fired) { const u = phaseOf(t, Math.max(1e-6, 0.05 * f.tMax)); if (u != null) crack(g, X(0) + 4, oy - rBall, u, 16); }
-  // the catch, in the main view too: a ring at the hands
-  if (v === 'catch' && t >= f.tAt - 1e-9) { const { age, life } = ageOf(t, f.tAt, f.tMax); pulse(g, X(D), Y(f.yAt), age, life, P.mark, { radius: 18 }); }
 
   // ── the lenses: the batter and the boundary, enlarged
   const lensR = phone ? 52 : clamp(Math.min(w, h) * 0.13, 64, 96);
@@ -266,25 +292,27 @@ export function render(canvas, cam, o) {
   ];
   const bLens = bCands.find((c) => clearOf(c, RB, pathPx, [hudBox, clockBox])) ?? null;
   // the batter's lens: under the readouts on a laptop, or beside the batter
-  const RA = phone ? 44 : clamp(Math.min(lensR, (feetX - 40) / 2, (oy - HUD_H - 40) / 2), 52, 96);
+  const RA0 = phone ? 44 : 88, RA = phone ? 44 : clamp(Math.min(lensR, (feetX - 40) / 2, (oy - HUD_H - 40) / 2), 52, 96);
+  const aBig = phone ? [] : [{ x: X(0) + 1.3 * RA0, y: 92 + RA0 + 10 }, { x: X(0) + 1.1 * RA0, y: 92 + RA0 + 40 }]
+    .filter((c) => clearOf(c, RA0, pathPx, [hudBox, clockBox, ...(bLens ? [{ x: bLens.x - RB, y: bLens.y - RB, w: 2 * RB, h: 2 * RB }] : [])]));
   const aCands = phone ? [{ x: RA + 10, y: HUD_PHONE.h + RA + 12 }, { x: feetX + RA + 30, y: oy - RA - 40 }] : [
     { x: Math.max(RA + 12, feetX - RA - 44), y: Math.min(oy - RA - 24, HUD_H + 22 + RA) },
     { x: feetX + lensR * 0.2, y: oy - lensR - TH * 1.4 - 40 },
     { x: feetX - lensR - 20, y: oy - lensR - 30 },
   ];
-  const aLens = aCands.find((c) => clearOf(c, RA, pathPx, [hudBox, clockBox, ...(bLens ? [{ x: bLens.x - RB, y: bLens.y - RB, w: 2 * RB, h: 2 * RB }] : [])])) ?? null;
+  const aLens = aBig[0] ? { ...aBig[0], R: RA0 } : aCands.find((c) => clearOf(c, RA, pathPx, [hudBox, clockBox, ...(bLens ? [{ x: bLens.x - RB, y: bLens.y - RB, w: 2 * RB, h: 2 * RB }] : [])])) ?? null;
 
   if (bLens) {
     const { x: cx, y: cy } = bLens, R = RB;
     const kL = (2 * R) / 4.5, gy = cy + R * 0.66, hz = cy - R * 0.02;
     const LX = (xm) => cx + R * 0.2 + (xm - D) * kL, LY = (ym) => gy - ym * kL;
-    lens(g, P, cx, cy, R, X(D), Y(Math.min(Lr, f.H) * 0.5), () => {
+    lens(g, P, cx, cy, R, X(D), Y(Lr), () => {
       skyscape(g, cx - R, cy - R, cx + R, hz - R * 0.3, { seed: 5, clouds: 1, sun: false, far: 'none' });
       // the crowd behind, out of focus beyond the rope, and the grass up to its boards
       boundaryStand(g, cx - R - 10, hz, cx + R + 4, R * 0.09, { seed: 71 });
       grass(g, cx - R, cx + R, hz, cy + R, { seed: 9 });
       // the rope at the fielder's feet
-      boundaryRope(g, LX(D) + kL * 0.12, gy, cy + R, hz + 2, { back: R * 0.9 });
+      boundaryRope(g, LX(D + ROPE), gy, cy + R, hz + 2, { back: R * 0.9 });
       // the reach: from the height it was struck from up to L
       const top = LY(Lr), bw = kL * 0.9;
       g.fillStyle = withAlpha(P.mark, 0.2); g.fillRect(LX(D) - bw / 2, top, bw, gy - top);
@@ -293,18 +321,18 @@ export function render(canvas, cam, o) {
       const seg = (pts) => pts.filter((p) => Math.abs(p.x - D) < 4).map((p) => ({ x: LX(p.x), y: LY(p.y) }));
       const fine = f.path(400);
       stroke(g, seg(fine), { color: P.vel, width: 1.8, alpha: 0.3 });
-      if (v === 'catch') stroke(g, seg(f.path(400, f.tGround).filter((p) => p.t >= f.tAt)), { color: P.vel, width: 1.6, alpha: 0.45, dash: [3, 5] });
+      if (caught) stroke(g, seg(f.path(400, f.tGround).filter((p) => p.t >= f.tAt)), { color: P.vel, width: 1.6, alpha: 0.45, dash: [3, 5] });
       if (t > 0) stroke(g, seg(f.path(400, t)), { color: P.vel, width: 3 });
-      // the fielder, large enough to read
-      const lp = fielderPose(f, t), LH = PERSON * kL;
-      fielder(g, LX(D + 0.3), gy, LH, { hands: lp.hands == null ? null : lp.hands * kL, ahead: lp.ahead * kL, closed: lp.closed, leap: lp.leap * kL, stoop: lp.stoop, look: lp.look == null ? null : lp.look * kL });
-      // the ball, when it is in view
-      const bxL = v === 'catch' && t >= f.tAt - 1e-9 ? LX(D) : LX(r.x), byL = v === 'catch' && t >= f.tAt - 1e-9 ? LY(f.yAt) : Math.min(LY(r.y), gy - kL * 0.036);
-      if (fired && Math.abs(bxL - cx) < R + 10) PROPS.cricketBall(g, bxL, byL, Math.max(4, kL * 0.036 * 1.6), t * 9);
-      // the catch: the hands close and a burst; a miss: a puff of air past the hands
+      // the ball's shadow sweeping over the grass, the sun overhead
+      const rb = Math.max(3, kL * 0.036);
+      if (fired && !caught && Math.abs(LX(r.x) - cx) < R) { g.save(); g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.ellipse(LX(r.x), gy + 2, rb * 1.6, rb * 0.5, 0, 0, TAU); g.fill(); g.restore(); }
+      // the catch: a small burst behind the hands as they close
+      if (caught) { const { age, life } = ageOf(t, f.tAt, f.tMax); flash(g, LX(D), LY(f.yAt), age, life * 0.7, { radius: 12 }); pulse(g, LX(D), LY(f.yAt), age, life, P.mark, { radius: 20 }); }
+      // the fielder, large enough to read; the ball in flight, or held
+      const lp = fielderPose(f, t);
+      if (!caught && fired && Math.abs(LX(r.x) - cx) < R + 10) PROPS.cricketBall(g, LX(r.x), Math.min(LY(r.y), gy - rb), rb, t * 9);
+      drawFielder(g, lp, LX, LY, kL, caught ? () => PROPS.cricketBall(g, LX(D), LY(f.yAt), rb, t * 9) : null);
       if (atRope) {
-        const { age, life } = ageOf(t, f.tAt, f.tMax);
-        if (v === 'catch') { flash(g, LX(D), LY(f.yAt), age, life * 0.7, { radius: 22 }); pulse(g, LX(D), LY(f.yAt), age, life, P.mark, { radius: 30 }); }
         // its height there, in the displacement's hue
         const hx = LX(D) - bw * 0.75 - 8, py = LY(f.yAt);
         if (py > cy - R) {
@@ -315,6 +343,19 @@ export function render(canvas, cam, o) {
       // the level it was struck from, along the grass
       stroke(g, [{ x: cx - R, y: gy }, { x: cx + R, y: gy }], { color: P.muted, width: 1, alpha: 0.6, dash: [3, 4] });
     });
+    // where the ball is when it is out of the lens: over its top at the boundary, or down short of its left edge
+    const chevron = (x, y, dir) => { g.save(); g.fillStyle = P.disp; g.beginPath();
+      if (dir === 'up') { g.moveTo(x - 8, y + 5); g.lineTo(x, y - 6); g.lineTo(x + 8, y + 5); } else { g.moveTo(x + 5, y - 8); g.lineTo(x - 6, y); g.lineTo(x + 5, y + 8); }
+      g.closePath(); g.fill(); g.restore(); };
+    if (atRope && LY(f.yAt) < cy - R + 6) {
+      const ax = LX(D), ay = cy - Math.sqrt(Math.max(0, R * R - (ax - cx) ** 2));
+      chevron(ax, ay - 2, 'up');
+      L.add(`${T`${sig3(f.yAt)} [m]`} up, over the fielder`, ax - 14, ay + 4, { color: P.disp, align: 'right', pri: 9, size: 14, weight: 700, maxPush: 40 });
+    }
+    if (v === 'short' && t >= f.tGround - 1e-9) {
+      chevron(cx - R - 2, gy, 'left');
+      L.add(`${T`${sig3(f.short)} [m]`} short`, cx - R - 14, gy, { color: P.disp, align: 'right', pri: 9, size: 14, weight: 700, maxPush: 20 });
+    }
     L.reserve({ x: cx - R - 3, y: cy - R - 3, w: 2 * R + 6, h: 2 * R + 6 });
     // its labels, outside the lens: the reach on its left, then what happened, under it
     L.add(T`L = ${tr(Lr)} [m]`, cx - R - 8, LY(Lr), { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700, maxPush: 20 });
@@ -325,7 +366,7 @@ export function render(canvas, cam, o) {
     say(v === 'catch' ? `caught: ${T`${sig3(f.yAt)} [m]`} up, under ${T`${tr(Lr)} [m]`}` : `over: ${T`${sig3(f.yAt)} [m]`} up, not under ${T`${tr(Lr)} [m]`}`, P.mark, X(D) - band - 14, Y(Math.max(f.yAt, Lr)) - 24, { align: 'right' });
   }
   if (aLens) {
-    const { x: cx, y: cy } = aLens, R = RA;
+    const { x: cx, y: cy } = aLens, R = aLens.R ?? RA;
     const kA = (2 * R) / 3.6, gy = cy + R * 0.62, BH = PERSON * kA, c = batContact(BH);
     const ox = cx - R * 0.05;                                 // where it is struck, in the lens
     lens(g, P, cx, cy, R, X(0), oy - TH * 0.4, () => {
@@ -345,9 +386,9 @@ export function render(canvas, cam, o) {
       if (gone > 0) stroke(g, [{ x: ox, y: gy }, { x: ox + (ex - ox) * gone, y: gy + (ey - gy) * gone }], { color: P.vel, width: 3 });
       stroke(g, [{ x: ox, y: gy }, { x: ox + R * 0.8, y: gy }], { color: P.muted, width: 1.2 });
       g.strokeStyle = P.strong; g.lineWidth = 1.6; g.beginPath(); g.arc(ox, gy, R * 0.5, -th, 0); g.stroke();
-      cricketBatter(g, ox - c.x, gy, BH, { pose });
+      cricketBatter(g, ox - c.x, gy, BH, { pose, smear });
       // the ball on the bat before the hit, leaving along the path after it
-      const bR = Math.max(4, 0.036 * kA * 1.3);
+      const bR = Math.max(2.5, 0.036 * kA);
       if (gone < 1) PROPS.cricketBall(g, ox + (ex - ox) * gone, (gy - bR) + (ey - gy) * gone, bR, t * 9);
       if (fired) { const u = phaseOf(t, Math.max(1e-6, 0.06 * f.tMax)); if (u != null) crack(g, ox, gy - bR, u, R * 0.35); }
     });
@@ -356,7 +397,7 @@ export function render(canvas, cam, o) {
   }
 
   // ── on a phone, what happened, in captions under the distances
-  caps.forEach((c, i) => L.add(c.text, 12, oy + 68 + i * 24, { color: c.color, align: 'left', pri: 10, size: 14, weight: 700 }));
+  caps.forEach((c, i) => L.add(c.text, 12, oy + 76 + i * 24, { color: c.color, align: 'left', pri: 10, size: 14, weight: 700 }));
 
   L.draw(g, w, h);
   return null;

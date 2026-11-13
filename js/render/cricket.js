@@ -107,14 +107,26 @@ export function batContact(H = 1) {
  * ball back over the bowler's head. Feet at (X, Y), H px tall, facing +x.
  * @param o { pose: 0 the bat up behind, 0.5 through the ball, 1 the follow-through }
  */
-export function cricketBatter(g, X, Y, H, { pose = 0 } = {}) {
+export function cricketBatter(g, X, Y, H, { pose = 0, smear = 0 } = {}) {
   const C = kit(), s = swing(pose), u = clamp01(pose);
   const P = (x, y) => ({ x: X + x * H, y: Y - y * H });
   softShadow(g, X + H * 0.02, Y + 1, H * 0.34, H * 0.05, 0.85);
+  // the downswing just gone, as a smear of faint bats along its arc (`smear` 0..1, fading)
+  if (smear > 0) {
+    for (const [q, al] of [[0.16, 0.12], [0.26, 0.18], [0.35, 0.26], [0.43, 0.34]]) {
+      const w = swing(q), hd = P(w.hands.x, w.hands.y), dd = { x: Math.cos(w.a), y: -Math.sin(w.a) };
+      g.save(); g.globalAlpha = al * clamp01(smear);
+      g.strokeStyle = C.willow; g.lineCap = 'round'; g.lineWidth = H * 0.05;
+      g.beginPath(); g.moveTo(hd.x + dd.x * BAT * H * 0.36, hd.y + dd.y * BAT * H * 0.36); g.lineTo(hd.x + dd.x * BAT * H, hd.y + dd.y * BAT * H); g.stroke();
+      g.restore();
+    }
+  }
   // the stride: the front foot out down the pitch, its knee bending into the shot
-  const stride = u < 0.5 ? lerp(0.15, 0.22, ease(u / 0.5)) : 0.22;
-  const back = P(-0.16, 0), front = P(stride, 0);
-  const hip = P(lerp(-0.01, 0.03, u), lerp(0.5, 0.47, Math.min(1, u * 2)));
+  const stride = u < 0.5 ? lerp(0.15, 0.27, ease(u / 0.5)) : 0.27;
+  // the back heel lifts as the weight goes through, pivoting on its toe
+  const heel = u > 0.5 ? ease((u - 0.5) / 0.5) : 0;
+  const back = P(-0.16 + 0.03 * heel, 0.025 * heel), front = P(stride, 0);
+  const hip = P(lerp(-0.01, 0.05, u), lerp(0.5, 0.42, Math.min(1, u * 2)) + 0.03 * heel);
   const sh = { x: hip.x + s.lean * H, y: hip.y - 0.28 * H };
   const thigh = H * 0.245, shin = H * 0.245;
   const kneeB = joint(hip, back, thigh, shin, 1), kneeF = joint(hip, front, thigh, shin, 1);
@@ -136,9 +148,12 @@ export function cricketBatter(g, X, Y, H, { pose = 0 } = {}) {
     g.strokeStyle = C.navy; g.lineWidth = Math.max(0.8, H * 0.01);
     for (const f of [0.35, 0.7]) { g.beginPath(); g.moveTo(len * f, -pw / 2); g.lineTo(len * f, pw / 2); g.stroke(); }
     g.restore();
-    // the boot, spikes under it
-    g.fillStyle = C.shoe; g.beginPath(); g.ellipse(foot.x + H * 0.035, foot.y - H * 0.018, H * 0.062, H * 0.024, 0, 0, TAU); g.fill();
-    g.fillStyle = C.sole; g.fillRect(foot.x - H * 0.02, foot.y - H * 0.006, H * 0.11, Math.max(1, H * 0.008));
+    // the boot, spikes under it; the back one up on its toe as the heel lifts
+    const tip = far ? heel * 0.55 : 0;
+    g.save(); g.translate(foot.x + H * 0.035, foot.y - H * 0.018); g.rotate(tip);
+    g.fillStyle = C.shoe; g.beginPath(); g.ellipse(0, 0, H * 0.062, H * 0.024, 0, 0, TAU); g.fill();
+    g.fillStyle = C.sole; g.fillRect(-H * 0.055, H * 0.012, H * 0.11, Math.max(1, H * 0.008));
+    g.restore();
   };
   leg(kneeB, back, true);
   // the far arm behind the body
@@ -177,13 +192,21 @@ export function cricketBatter(g, X, Y, H, { pose = 0 } = {}) {
   // the near arm over it, the gloves on the handle
   const handF = reach(sh, hands, ua + fa);
   shadedLimb(g, [sh, bend(sh, handF, ua, fa, lower), handF], C.whites, C.whitesHi, H * 0.066);
-  for (const [k, c] of [[0, C.glove], [0.09, C.glove]]) {
-    const gx = hands.x + dir.x * H * k, gy = hands.y + dir.y * H * k;
-    g.fillStyle = c; g.beginPath(); g.arc(gx, gy, H * 0.036, 0, TAU); g.fill();
-    g.fillStyle = C.gloveRoll; g.beginPath(); g.arc(gx - dir.y * H * 0.015, gy + dir.x * H * 0.015, H * 0.016, 0, TAU); g.fill();
+  // the gloves: padded mitts round the handle, their finger rolls across it, a cuff at the wrist
+  for (const k of [0, 0.085]) {
+    g.save(); g.translate(hands.x + dir.x * H * k, hands.y + dir.y * H * k); g.rotate(Math.atan2(dir.y, dir.x));
+    g.fillStyle = C.glove; g.beginPath(); g.roundRect(-H * 0.035, -H * 0.04, H * 0.07, H * 0.08, H * 0.022); g.fill();
+    g.strokeStyle = C.padLine; g.lineWidth = Math.max(0.6, H * 0.006);
+    for (const r of [-0.018, 0, 0.018]) { g.beginPath(); g.moveTo(-H * 0.03 + (r + 0.018) * H * 0.2, -H * 0.036); g.lineTo(-H * 0.03 + (r + 0.018) * H * 0.2, H * 0.036); g.stroke(); }
+    for (const r of [-0.016, 0.004, 0.024]) { g.beginPath(); g.moveTo(r * H, -H * 0.035); g.lineTo(r * H, H * 0.035); g.stroke(); }
+    g.fillStyle = C.gloveRoll; g.fillRect(-H * 0.04, -H * 0.04, H * 0.016, H * 0.08);
+    g.restore();
   }
   // the head in its helmet: the face behind a steel grille, the peak, the neck guard
-  const hx = sh.x + H * 0.045, hy = sh.y - H * 0.105, hr = H * 0.075;
+  const hx0 = sh.x + H * 0.045, hy0 = sh.y - H * 0.105, hr = H * 0.075;
+  // the head turns up the line of the shot as it follows through
+  g.save(); g.translate(hx0, hy0); g.rotate(-0.55 * heel); g.translate(-hx0, -hy0);
+  const hx = hx0, hy = hy0;
   g.fillStyle = C.skin; g.beginPath(); g.arc(hx + hr * 0.25, hy + hr * 0.15, hr * 0.85, 0, TAU); g.fill();
   const hg = g.createRadialGradient(hx - hr * 0.3, hy - hr * 0.5, hr * 0.1, hx, hy, hr * 1.1);
   hg.addColorStop(0, C.trim); hg.addColorStop(1, C.navy);
@@ -193,6 +216,7 @@ export function cricketBatter(g, X, Y, H, { pose = 0 } = {}) {
   g.strokeStyle = C.n ? '#9aa0a8' : '#8a9098'; g.lineWidth = Math.max(0.7, H * 0.008);
   for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(hx + hr * 0.75, hy + hr * (0.12 + i * 0.32)); g.lineTo(hx + hr * 1.18, hy + hr * (0.05 + i * 0.32)); g.stroke(); }
   g.beginPath(); g.moveTo(hx + hr * 1.18, hy); g.lineTo(hx + hr * 1.05, hy + hr * 0.85); g.stroke();
+  g.restore();
 }
 
 /* ── the fielder ────────────────────────────────────────────────────────── */
@@ -203,88 +227,98 @@ export const FIELDER_REACH = 1.24;
 /**
  * A fielder in whites and a sun hat, facing back towards the batter (−x).
  * Feet at (X, Y), H px tall.
- * @param o { hands: where the hands go, px above the feet (null: ready, at the chest),
- *            ahead: px towards the batter that the hands go out to,
+ * @param o { hands: { x, y } where the hands go, in px (null: ready, low in front),
  *            closed: 0..1 the hands closing on a ball, leap: px the feet leave the ground,
- *            stoop: 0..1 bending down low, look: px above the feet that the face turns to }
+ *            crouch: 0..1 the knees bent, gait: 0..1 through two short steps (null: standing),
+ *            look: { x, y } px the face turns to, onKnees: hands on the knees,
+ *            holding: draws the ball, between the palms and the fingers that close on it }
  */
-export function fielder(g, X, Y, H, { hands = null, ahead = 0, closed = 0, leap = 0, stoop = 0, look = null } = {}) {
+export function fielder(g, X, Y, H, { hands = null, closed = 0, leap = 0, crouch = 0.35, gait = null, look = null, onKnees = false, holding = null } = {}) {
   const C = kit();
-  softShadow(g, X, Y + 1, H * Math.max(0.12, 0.32 - (leap / H) * 0.4), H * 0.05, Math.max(0.3, 0.9 - leap / H));
-  const y0 = Y - leap;
-  // ready: knees bent and weight forward; stooping: lower still; reaching up: tall
-  const up = hands == null ? 0 : clamp01((hands / H - 0.9) / 0.4);
-  const crouch = clamp01(stoop + (hands == null ? 0.38 : 0.38 * (1 - up)));
-  // facing −x: forward is to the left
-  const P = (x, y) => ({ x: X - x * H, y: y0 - y * H });
-  const footF = P(0.12, 0), footB = P(-0.11, 0);
-  const hip = P(0.0 + crouch * 0.04, lerp(0.53, 0.4, crouch));
-  const sh = { x: hip.x - lerp(0.03, 0.13, crouch) * H + up * 0.02 * H, y: hip.y - lerp(0.29, 0.26, crouch) * H };
+  softShadow(g, X, Y + 1, H * Math.max(0.12, 0.3 - (leap / H) * 0.4), H * 0.05, Math.max(0.3, 0.9 - leap / H));
+  const y0 = Y - leap, c = clamp01(crouch);
+  // the feet: one ahead, one behind; in two short steps each lifts and passes in turn
+  const fF = { x: X - H * 0.13, y: y0 }, fB = { x: X + H * 0.12, y: y0 };
+  if (gait != null && leap <= 0) {
+    const ph = clamp01(gait) * 2, k = ph % 1, lift = Math.sin(k * Math.PI) * H * 0.06, f = Math.floor(ph) % 2 ? fF : fB;
+    f.y -= lift; f.x += (k - 0.5) * H * 0.12;
+  }
+  if (leap > 0) { const tuck = Math.min(1, leap / (H * 0.2)); fF.y -= H * 0.05 * tuck; fB.y -= H * 0.13 * tuck; fB.x += H * 0.04 * tuck; }
+  // the hips back and down as the knees bend; the chest forward over them
+  const hip = { x: X + H * 0.05 * c, y: y0 - H * (0.53 - 0.13 * c) };
+  const sh = { x: hip.x - H * (0.03 + 0.11 * c), y: hip.y - H * (0.3 - 0.03 * c) };
   const thigh = H * 0.25, shin = H * 0.255;
-  // in the air the legs tuck a little; on the ground they take the weight
-  const tuck = leap > 0 ? Math.min(1, leap / (H * 0.25)) : 0;
-  const fF = leap > 0 ? { x: footF.x + H * 0.03, y: footF.y - H * 0.08 * tuck } : footF;
-  const fB = leap > 0 ? { x: footB.x - H * 0.02, y: footB.y - H * 0.16 * tuck } : footB;
-  const leg = (foot, far) => {
-    const knee = bend(hip, foot, thigh, shin, (p, q) => p.x <= q.x);      // knees forward, towards −x
-    taper(g, hip, knee, foot, far ? C.whitesLo : C.whites, H * 0.12, H * 0.07);
-    g.save(); g.translate(-H * 0.012, -H * 0.006); taper(g, hip, knee, foot, withAlpha(C.whitesHi, 0.6), H * 0.04, H * 0.025); g.restore();
-    g.fillStyle = C.shoe; g.beginPath(); g.ellipse(foot.x - H * 0.03, foot.y - H * 0.02, H * 0.065, H * 0.026, 0, 0, TAU); g.fill();
-    g.fillStyle = C.sole; g.fillRect(foot.x - H * 0.095, foot.y - H * 0.006, H * 0.11, Math.max(1, H * 0.009));
+  const knees = [fB, fF].map((foot) => bend(hip, foot, thigh, shin, (p, q) => p.x <= q.x));   // knees forward, towards −x
+  const leg = (foot, knee, far) => {
+    taper(g, hip, knee, foot, far ? C.whitesLo : C.whites, H * 0.125, H * 0.07);
+    g.save(); g.translate(-H * 0.012, -H * 0.006); taper(g, hip, knee, foot, withAlpha(C.whitesHi, 0.55), H * 0.04, H * 0.022); g.restore();
+    // the boot, toe forward, its spikes
+    g.fillStyle = C.shoe; g.beginPath(); g.ellipse(foot.x - H * 0.03, foot.y - H * 0.022, H * 0.068, H * 0.027, 0, 0, TAU); g.fill();
+    g.fillStyle = C.sole; g.fillRect(foot.x - H * 0.098, foot.y - H * 0.006, H * 0.115, Math.max(1, H * 0.01));
   };
-  // where the hands go: ready in front at the waist, or out to the ball
-  const ua = H * 0.19, fa = H * 0.18;
-  const ready = { x: sh.x - H * 0.31, y: sh.y + H * 0.1 };
-  const want = hands == null ? ready : { x: X - ahead, y: Y - hands };
-  const handF = reach(sh, want, ua + fa - 0.5), handB = reach(sh, { x: want.x + H * 0.012, y: want.y + H * 0.03 }, ua + fa - 0.5);
-  // elbows below the line to a low ball, out in front to a high one
+  // the hands: low in front, on the knees, or out to the ball
+  const ua = H * 0.19, fa = H * 0.18, arm = ua + fa - 0.5;
+  const want = onKnees ? { x: knees[1].x - H * 0.02, y: knees[1].y + H * 0.01 }
+    : hands ?? { x: hip.x - H * 0.24, y: hip.y + H * 0.04 };
+  const shN = { x: sh.x - H * 0.015, y: sh.y + H * 0.005 }, shFar = { x: sh.x + H * 0.02, y: sh.y };
+  const handN = reach(shN, want, arm), handF = reach(shFar, { x: want.x + H * 0.015, y: want.y + H * 0.035 }, arm);
+  // elbows down and out to a low ball; to a high one, out in front of the face
   const elbow = want.y > sh.y - H * 0.05 ? lower : (p, q) => p.x <= q.x;
-  // the far arm and leg behind the body
-  leg(fB, true);
-  { const e = bend(sh, handB, ua, fa, elbow); taper(g, sh, e, e, C.whitesLo, H * 0.075, H * 0.06); taper(g, e, e, handB, C.skinLo, H * 0.05, H * 0.04); }
-  // the shirt, wider at the shoulders, tucked in at a belt
-  const tg = g.createLinearGradient(hip.x - H * 0.09, 0, hip.x + H * 0.09, 0);
+  /** A mitt pointing along the forearm (e → h): palm, fingers that curl as it closes, a thumb. */
+  const mitt = (e, h, skin, far) => {
+    const a = Math.atan2(h.y - e.y, h.x - e.x), s = H * 0.032, cl = clamp01(closed);
+    g.save(); g.translate(h.x, h.y); g.rotate(a);
+    g.fillStyle = skin; g.beginPath(); g.ellipse(0, 0, s * 1.15, s * 0.9, 0, 0, TAU); g.fill();
+    // the fingers, straight out and open, then curled over
+    g.beginPath(); g.ellipse(s * lerp(1.25, 0.95, cl), -s * lerp(0.05, 0.45, cl), s * lerp(0.95, 0.65, cl), s * 0.62, -lerp(0, 0.9, cl), 0, TAU); g.fill();
+    g.strokeStyle = withAlpha('#000000', 0.18); g.lineWidth = Math.max(0.6, H * 0.004);
+    for (const k of [-0.25, 0.15]) { g.beginPath(); g.moveTo(s * 0.7, k * s); g.lineTo(s * lerp(2, 1.4, cl), k * s - s * lerp(0, 0.6, cl)); g.stroke(); }
+    // the thumb, on the side towards the ball
+    g.fillStyle = far ? C.skinLo : C.skin; g.beginPath(); g.ellipse(s * 0.45, s * (far ? 0.85 : -0.85), s * 0.55, s * 0.3, far ? 0.5 : -0.5, 0, TAU); g.fill();
+    g.restore();
+  };
+  // behind the body: the far leg and the far arm
+  leg(fB, knees[0], true);
+  { const e = bend(shFar, handF, ua, fa, elbow); taper(g, shFar, e, e, C.whitesLo, H * 0.075, H * 0.06); taper(g, e, e, handF, C.skinLo, H * 0.05, H * 0.04); mitt(e, handF, C.skinLo, true); }
+  // the shirt: hips, a broad shoulder block, the collar, a belt
+  const tg = g.createLinearGradient(hip.x - H * 0.1, 0, hip.x + H * 0.1, 0);
   tg.addColorStop(0, C.whitesHi); tg.addColorStop(0.45, C.whites); tg.addColorStop(1, C.whitesLo);
   g.fillStyle = tg; g.beginPath();
-  g.moveTo(hip.x + H * 0.075, hip.y + H * 0.02); g.lineTo(sh.x + H * 0.085, sh.y + H * 0.015);
-  g.quadraticCurveTo(sh.x, sh.y - H * 0.055, sh.x - H * 0.085, sh.y + H * 0.025);
-  g.lineTo(hip.x - H * 0.075, hip.y + H * 0.02); g.closePath(); g.fill();
-  g.fillStyle = C.navy; g.fillRect(hip.x - H * 0.075, hip.y - H * 0.004, H * 0.15, Math.max(1, H * 0.016));
-  g.fillStyle = C.trim; g.beginPath(); g.moveTo(sh.x - H * 0.04, sh.y - H * 0.012); g.lineTo(sh.x, sh.y + H * 0.03); g.lineTo(sh.x + H * 0.03, sh.y - H * 0.015); g.lineWidth = Math.max(1, H * 0.01); g.strokeStyle = C.trim; g.stroke();
-  leg(fF, false);
+  g.moveTo(hip.x + H * 0.068, hip.y + H * 0.02);
+  g.quadraticCurveTo(hip.x + H * 0.08, (hip.y + sh.y) / 2, sh.x + H * 0.09, sh.y + H * 0.03);
+  g.quadraticCurveTo(sh.x + H * 0.085, sh.y - H * 0.03, sh.x + H * 0.02, sh.y - H * 0.035);
+  g.quadraticCurveTo(sh.x - H * 0.09, sh.y - H * 0.03, sh.x - H * 0.095, sh.y + H * 0.04);
+  g.quadraticCurveTo(hip.x - H * 0.085, (hip.y + sh.y) / 2 + H * 0.03, hip.x - H * 0.068, hip.y + H * 0.02);
+  g.closePath(); g.fill();
+  g.fillStyle = C.navy; g.fillRect(hip.x - H * 0.07, hip.y - H * 0.004, H * 0.14, Math.max(1, H * 0.016));
+  // the neck, and the collar's trim
+  const hx = sh.x - H * 0.03, hy = sh.y - H * 0.115, hr = H * 0.066;
+  g.strokeStyle = C.skinLo; g.lineWidth = H * 0.045; g.lineCap = 'round'; g.beginPath(); g.moveTo(sh.x - H * 0.005, sh.y - H * 0.02); g.lineTo(hx + H * 0.01, hy + hr * 0.6); g.stroke();
+  g.strokeStyle = C.trim; g.lineWidth = Math.max(1, H * 0.012); g.beginPath(); g.moveTo(sh.x - H * 0.045, sh.y - H * 0.02); g.lineTo(sh.x - H * 0.005, sh.y + H * 0.03); g.lineTo(sh.x + H * 0.03, sh.y - H * 0.025); g.stroke();
+  leg(fF, knees[1], false);
   // the head in its sun hat, turned up to the ball
-  const hx = sh.x - H * 0.025, hy = sh.y - H * 0.1, hr = H * 0.068;
-  // (canvas turns clockwise: facing −x, a clockwise turn lifts the face)
-  const tilt = look == null ? 0.05 : Math.max(-0.3, Math.min(0.7, Math.atan2(hy - (Y - look), H * 0.7)));
+  const tilt = look == null ? 0.05 : Math.max(-0.35, Math.min(0.75, Math.atan2(hy - look.y, Math.max(H * 0.3, hx - look.x))));
   g.save(); g.translate(hx, hy); g.rotate(tilt);
   const hg = g.createRadialGradient(-hr * 0.3, -hr * 0.3, hr * 0.1, 0, 0, hr);
   hg.addColorStop(0, C.skin); hg.addColorStop(1, C.skinLo);
   g.fillStyle = hg; g.beginPath(); g.arc(0, 0, hr, 0, TAU); g.fill();
-  g.fillStyle = C.skin; g.beginPath(); g.moveTo(-hr * 0.9, -hr * 0.1); g.lineTo(-hr * 1.18, hr * 0.12); g.lineTo(-hr * 0.85, hr * 0.25); g.closePath(); g.fill();
-  g.fillStyle = '#2b2628'; g.beginPath(); g.arc(-hr * 0.55, -hr * 0.1, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
-  g.fillStyle = C.skinLo; g.beginPath(); g.arc(hr * 0.2, hr * 0.05, hr * 0.2, 0, TAU); g.fill();
-  // the hat: a crown and a wide brim, its band
+  g.fillStyle = C.skin; g.beginPath(); g.moveTo(-hr * 0.9, -hr * 0.1); g.lineTo(-hr * 1.2, hr * 0.14); g.lineTo(-hr * 0.85, hr * 0.27); g.closePath(); g.fill();
+  g.fillStyle = '#2b2628'; g.beginPath(); g.arc(-hr * 0.55, -hr * 0.08, Math.max(0.8, hr * 0.12), 0, TAU); g.fill();
+  g.fillStyle = C.skinLo; g.beginPath(); g.arc(hr * 0.2, hr * 0.08, hr * 0.2, 0, TAU); g.fill();
   g.fillStyle = C.hat; g.beginPath(); g.ellipse(-hr * 0.1, -hr * 0.45, hr * 1.6, hr * 0.24, 0, 0, TAU); g.fill();
   g.beginPath(); g.ellipse(0, -hr * 0.6, hr * 0.9, hr * 0.58, 0, Math.PI, TAU); g.fill();
   g.fillStyle = C.hatBand; g.fillRect(-hr * 0.9, -hr * 0.74, hr * 1.8, Math.max(1, hr * 0.2));
+  g.fillStyle = withAlpha('#000000', 0.12); g.beginPath(); g.ellipse(-hr * 0.1, -hr * 0.38, hr * 1.5, hr * 0.12, 0, 0, Math.PI); g.fill();
   g.restore();
-  // the near arm, and the hands: open and spread, or closed round the ball
-  { const e = bend(sh, handF, ua, fa, elbow), m = { x: (sh.x + e.x) / 2, y: (sh.y + e.y) / 2 };
-    taper(g, e, e, handF, C.skin, H * 0.052, H * 0.042);
-    taper(g, sh, m, e, C.whites, H * 0.08, H * 0.062);
-    g.save(); g.translate(-H * 0.01, -H * 0.01); taper(g, sh, m, e, withAlpha(C.whitesHi, 0.7), H * 0.03, H * 0.02); g.restore(); }
-  const spread = (1 - clamp01(closed)) * H * 0.04, cup = clamp01(closed);
-  for (const [hxx, hyy, s] of [[handB.x, handB.y, 1], [handF.x, handF.y, -1]]) {
-    const cx = hxx, cy = hyy + s * spread * 0.5;
-    g.fillStyle = s < 0 ? C.skin : C.skinLo; g.beginPath(); g.ellipse(cx, cy, H * 0.032, H * 0.026, 0, 0, TAU); g.fill();
-    // the fingers: spread towards the ball, curled round it once it is caught
-    g.strokeStyle = s < 0 ? C.skin : C.skinLo; g.lineWidth = Math.max(1, H * 0.013); g.lineCap = 'round';
-    for (let i = -1; i <= 1; i++) {
-      const fx = cx - H * lerp(0.05, 0.035, cup), fy = cy + s * lerp(spread * 0.6, -H * 0.012, cup) + i * H * 0.011;
-      g.beginPath(); g.moveTo(cx - H * 0.02, cy + i * H * 0.01); g.lineTo(fx, fy); g.stroke();
-    }
-  }
-  return { hand: { x: (handF.x + handB.x) / 2 - H * 0.03, y: (handF.y + handB.y) / 2 } };
+  // the ball, between the far palm and the near hand's fingers
+  holding?.();
+  // the near arm: short sleeve, forearm, mitt
+  { const e = bend(shN, handN, ua, fa, elbow), m = { x: (shN.x + e.x) / 2, y: (shN.y + e.y) / 2 };
+    taper(g, e, e, handN, C.skin, H * 0.052, H * 0.042);
+    taper(g, shN, m, e, C.whites, H * 0.085, H * 0.064);
+    g.save(); g.translate(-H * 0.01, -H * 0.01); taper(g, shN, m, e, withAlpha(C.whitesHi, 0.7), H * 0.03, H * 0.02); g.restore();
+    mitt(e, handN, C.skin, false); }
+  return { hands: { x: (handN.x + handF.x) / 2, y: (handN.y + handF.y) / 2 } };
 }
 
 /* ── the boundary ───────────────────────────────────────────────────────── */

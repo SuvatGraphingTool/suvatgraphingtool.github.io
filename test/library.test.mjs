@@ -1819,7 +1819,7 @@ group('Owner-supplied physics Q4–5: a catch on the boundary', () => {
   const K = KITS.boundary, kv = K.solve(K.read({ ...k }));
   ok(kv.ok && K.graphs(kv.f, 1, { disp: '#0', vel: '#0', acc: '#0', mark: '#0' }).every((gr) => gr.series.length === 2 && gr.series[0].dash && !gr.series[1].dash), 'graphs: across dashed, up solid (rule 2)');
   ok(resolveKit(K, kv, kv.f, kv.f.tMax / 2).blocks[0].rows.length > 0, 'Resolve reads the flight half way');
-  ok(/^Caught, 2\.15 m/.test(K.ending(kv).title) && /^Over the fielder: 12\.4 m/.test(K.ending(K.solve(K.read({ ...k, u: 26 }))).title) && /^Down 40\.2 m out/.test(K.ending(K.solve(K.read({ ...k, u: 20 }))).title), 'the ending says each outcome with its number');
+  ok(/^Caught, 2\.148 m/.test(K.ending(kv).title) && /^Over the fielder: 12\.423 m/.test(K.ending(K.solve(K.read({ ...k, u: 26 }))).title) && /^Down 40\.155 m out/.test(K.ending(K.solve(K.read({ ...k, u: 20 }))).title), 'the ending says each outcome with its number');
 });
 
 group('AQA MM1B Jan 2010 Q4: with and without air resistance', () => {
