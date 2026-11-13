@@ -350,7 +350,7 @@ export function render(canvas, cam, o) {
     if (atRope && LY(f.yAt) < cy - R + 6) {
       const ax = LX(D), ay = cy - Math.sqrt(Math.max(0, R * R - (ax - cx) ** 2));
       chevron(ax, ay - 2, 'up');
-      L.add(`${T`${sig3(f.yAt)} [m]`} up, over the fielder`, ax - 14, ay + 4, { color: P.disp, align: 'right', pri: 9, size: 14, weight: 700, maxPush: 40 });
+      // (its height is said under the lens, in the caption: over, so many metres up)
     }
     if (v === 'short' && t >= f.tGround - 1e-9) {
       chevron(cx - R - 2, gy, 'left');
