@@ -346,7 +346,7 @@ export function render(canvas, cam, o) {
       stroke(g, [{ x: cx - R, y: gy }, { x: cx + R, y: gy }], { color: P.muted, width: 1, alpha: 0.6, dash: [3, 4] });
     });
     // where the ball is when it is out of the lens: over its top at the boundary, or down short of its left edge
-    const chevron = (x, y, dir) => { g.save(); g.fillStyle = P.disp; g.strokeStyle = P.disp; g.lineWidth = 2; g.setLineDash([3, 3]);
+    const chevron = (x, y, dir) => { g.save(); g.fillStyle = P.disp; g.strokeStyle = P.disp; g.lineWidth = 2; if (dir !== 'up') g.setLineDash([3, 3]);   // a vertical tracer solid, a horizontal one dashed (rule 2)
       g.beginPath(); if (dir === 'up') { g.moveTo(x, y + 26); g.lineTo(x, y + 6); } else { g.moveTo(x + 26, y); g.lineTo(x + 6, y); } g.stroke(); g.setLineDash([]);
       g.beginPath(); if (dir === 'up') { g.moveTo(x - 9, y + 6); g.lineTo(x, y - 8); g.lineTo(x + 9, y + 6); } else { g.moveTo(x + 6, y - 9); g.lineTo(x - 8, y); g.lineTo(x + 6, y + 9); }
       g.closePath(); g.fill(); g.restore(); };
