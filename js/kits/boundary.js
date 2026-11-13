@@ -31,7 +31,7 @@ export const boundary = {
   g: [9.81, 9.8, 10],
   hides: { shows: ['ruler', 'range', 'grid'], extras: ['energy'], bounce: true },
 
-  resolveEndWords: 'Caught here: the fielder holds it, and the engine follows it no further.',
+  resolveEndWords: 'Caught here, or down: the engine follows it no further.',
   read(v) { return { u: v.u, theta: v.theta, d: v.d, L: v.L, m: v.m, g: v.g }; },
   solve: solveBoundary,
   working: (s) => boundaryWorking(s),

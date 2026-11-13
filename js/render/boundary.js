@@ -183,7 +183,8 @@ export function render(canvas, cam, o) {
   // ── the top of its path, once it has been there
   if (show.apex !== false && f.H > 0 && t >= f.tTop - 1e-9) {
     const ax = X(F.apex.x), ay = Y(F.apex.y);
-    stroke(g, [{ x: ax, y: ay }, { x: ax, y: oy }], { color: P.disp, width: 1.3, alpha: 0.6, dash: [4, 4] });
+    // a vertical length: solid (rule 2)
+    stroke(g, [{ x: ax, y: ay }, { x: ax, y: oy }], { color: P.disp, width: 1.3, alpha: 0.6 });
     dot(g, ax, ay, 4.5, { fill: P.card, stroke: P.disp, width: 2 });
     L.add(T`H = ${sig3(f.H)} [m]`, ax, ay - 18, { color: P.disp, align: 'center', pri: 7, size: 14, weight: 700 });
   }
@@ -208,10 +209,11 @@ export function render(canvas, cam, o) {
       const a = X(xLand), b = X(D), yy = oy + 8;
       stroke(g, [{ x: a, y: yy }, { x: b, y: yy }], { color: P.mark, width: 2.4 });
       for (const xx of [a, b]) stroke(g, [{ x: xx, y: yy - 5 }, { x: xx, y: yy + 5 }], { color: P.mark, width: 2.4 });
-      say(`down ${T`${sig3(xLand)} [m]`} out, ${T`${sig3(D - xLand)} [m]`} short`, P.mark, (a + b) / 2, oy + 68, { align: 'center' });
+      say(`down ${T`${sig3(xLand)} [m]`} out, ${T`${sig3(f.short)} [m]`} short`, P.mark, (a + b) / 2, oy + 68, { align: 'center' });
     } else say(`down ${T`${sig3(xLand)} [m]`} out, over the boundary`, P.mark, gx, oy + 68, { align: 'center' });
   }
-  if (v === 'catch' && t >= f.tAt - 1e-9) {
+  // (caught where it would have come down anyway — at its own height on the rope — there is nothing more to say)
+  if (v === 'catch' && t >= f.tAt - 1e-9 && xLand - D > 0.05) {
     const gx = X(xLand);
     dot(g, gx, oy, 4, { fill: P.card, stroke: P.muted, width: 1.6 });
     L.add(`would have come down ${T`${sig3(xLand)} [m]`} out`, gx + 10, oy - 22, { color: P.muted, align: 'left', pri: 6, size: 13, weight: 700, maxPush: 40 });

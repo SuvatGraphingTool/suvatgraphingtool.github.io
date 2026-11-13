@@ -1152,4 +1152,4 @@ html[data-vt='theme']::view-transition-new(root) { animation: theme-reveal 560ms
 /* A part answered by a sentence the engine wrote (an exam verdict, "Yes: … so the
    fielder can catch it"): it wraps in a column of its own width, and the question
    keeps the rest of the strip. */
-.pans:has(.verdict) { white-space: normal; max-width: 46ch; font-size: var(--fs-base); line-height: 1.45; text-align: start; }
+.pans:has(.exam-verdict) { white-space: normal; max-width: 46ch; font-size: var(--fs-base); line-height: 1.45; text-align: start; }

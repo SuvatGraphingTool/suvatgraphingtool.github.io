@@ -1871,7 +1871,7 @@ export const LIBRARY = [
       realTitle: 'What the model leaves out',
       realLead: 'The question’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
       why: [
-        ['No air resistance', 'a real cricket ball struck at over 20 m s⁻¹ is slowed noticeably by the air, and its seam and spin can swing it: it would arrive lower and nearer, which here makes a catch only more likely.'],
+        ['No air resistance', 'a real cricket ball struck at over 20 m s⁻¹ is slowed a great deal by the air: with drag it would come down well short of a 55 m boundary, so a fielder standing on the rope would not catch it on the full. The 2.15 m answer belongs to the no-air model alone.'],
         ['Level ground, one height', 'the ground is taken level with the point it was struck from, so “where it comes down” is where it is back at that height; the fielder’s hands are measured from it too.'],
         ['A particle and a line', 'the ball has no size and the fielder stands exactly on the boundary: caught means its centre arrives under the reach there, at that one distance.'],
       ],
