@@ -1791,13 +1791,13 @@ group('Owner-supplied physics Q4–5: a catch on the boundary', () => {
   const s = solveBoundary(k);
   ok(s.ok && near(s.at.t, 55 / (23.8 * Math.cos(50 * Math.PI / 180)), 1e-9) && near(s.at.t, 3.595, 5e-4), 'Q4: t at the boundary = 55.0 ÷ (23.8 cos 50°) = 3.595 s', s.reason);
   ok(near(s.at.y, 2.148, 5e-4) && s.verdict === 'catch' && s.caught, 'Q4: 2.15 m above the height it was struck from, under 3 m: caught', s.at?.y);
-  ok(/^Yes: /.test(s.verdictHTML) && /2\.15/.test(s.verdictHTML) && /can catch it/.test(s.verdictHTML), 'Q4: said as the exam answer, from the engine’s own height');
+  ok(/^<span class="verdict">Yes: /.test(s.verdictHTML) && /2\.15/.test(s.verdictHTML) && /can catch it/.test(s.verdictHTML), 'Q4: said as the exam answer, from the engine’s own height');
   ok(near(solveBoundary({ ...k, g: 9.8 }).at.y, 2.213, 5e-4) && solveBoundary({ ...k, g: 9.8 }).caught, 'with g = 9.8 it is 2.21 m: still caught');
   ok(near(s.p, 3.332, 1e-9), 'Q5: p = mv = 0.140 × 23.8 = 3.332 N s, about 3.3');
   ok(near(s.R, 56.86, 0.005) && near(s.H, 16.94, 0.005) && s.R > s.d, 'on level ground it would come down 56.9 m out, just past the rope, after rising to 16.9 m');
   ok(near(s.f.tMax, s.at.t, 1e-12) && near(s.f.pos(s.f.tMax).y, s.at.y, 1e-9) && s.f.speed(s.f.tMax + 1) === 0, 'the motion ends at the catch, the ball at rest in the hands after it');
   const hi = solveBoundary({ ...k, u: 26 });
-  ok(hi.ok && hi.verdict === 'over' && near(hi.at.y, 12.42, 0.005) && near(hi.R, 67.86, 0.005) && near(hi.f.tMax, hi.T, 1e-12) && /^No: /.test(hi.verdictHTML), 'u = 26: 12.4 m up at the rope, over the reach; down 67.9 m out');
+  ok(hi.ok && hi.verdict === 'over' && near(hi.at.y, 12.42, 0.005) && near(hi.R, 67.86, 0.005) && near(hi.f.tMax, hi.T, 1e-12) && />No: /.test(hi.verdictHTML), 'u = 26: 12.4 m up at the rope, over the reach; down 67.9 m out');
   const lo = solveBoundary({ ...k, u: 20 });
   ok(lo.ok && lo.verdict === 'short' && near(lo.R, 40.16, 0.005) && !lo.reached && /short of the boundary/.test(lo.verdictHTML) && near(lo.tShow, lo.T, 1e-12), 'u = 20: back down 40.2 m out, 14.8 m short: never reaches the fielder on the full');
   // exactly at the reach is not under it ("less than 3 m")

@@ -813,7 +813,7 @@ group('Ask Suvat — M1 June 2015 Q2: straight up, and how long above 14.7 m', (
   const ps = fromReader('boundary-catch', x.parts);
   ok(ps?.length === 2 && ps[0].expr === 'verdictHTML' && ps[1].find === 'p', '(a) is the engine’s verdict, (b) its momentum');
   const K = KITS[byId('boundary-catch').kit], sv = K.solve(K.read({ ...x.boxes, g: 9.81 }));
-  ok(sv.ok && sv.caught && /^Yes: /.test(sv.verdictHTML) && Math.abs(sv.p - 3.332) < 1e-9, 'and the engine says yes, 2.15 m up, and 3.332 N s');
+  ok(sv.ok && sv.caught && />Yes: /.test(sv.verdictHTML) && Math.abs(sv.p - 3.332) < 1e-9, 'and the engine says yes, 2.15 m up, and 3.332 N s');
 }
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

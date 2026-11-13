@@ -91,12 +91,13 @@ export function solveBoundary(k = {}) {
     { f: M`p = mv`, s: M`${d(m)} * ${d(u)}`, r: M`p = ${d(p)} [N s]` },
   ];
 
-  // ── the verdict, as an exam answer
-  const verdictHTML = verdict === 'catch'
+  // ── the verdict, as an exam answer (a sentence: the parts strip lets it wrap, css/shell.css .verdict)
+  const said = verdict === 'catch'
     ? `Yes: at the boundary it is ${M`${s3(at.y)} [m]`} above the height it was struck from, under ${M`${d(L)} [m]`}, so the fielder can catch it.`
     : verdict === 'over'
       ? `No: at the boundary it is ${M`${s3(at.y)} [m]`} above the height it was struck from, not under ${M`${d(L)} [m]`}, so it goes over the fielder’s reach and lands ${M`${s3(R)} [m]`} out, beyond the boundary.`
       : `No: it comes back down to the height it was struck from ${M`${s3(R)} [m]`} out, ${M`${s3(snap(D - R))} [m]`} short of the boundary, so it never reaches the fielder on the full.`;
+  const verdictHTML = `<span class="verdict">${said}</span>`;
 
   const notes = [
     `Struck at ${M`${d(u)} [m s^-1]`} at ${M`${d(theta)}°`}, it travels across at a steady ${M`${d(ux)} [m s^-1]`} and starts up at ${M`${d(uy)} [m s^-1]`}.`,
