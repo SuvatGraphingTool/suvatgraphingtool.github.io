@@ -111,14 +111,22 @@ export function cricketBatter(g, X, Y, H, { pose = 0, smear = 0 } = {}) {
   const C = kit(), s = swing(pose), u = clamp01(pose);
   const P = (x, y) => ({ x: X + x * H, y: Y - y * H });
   softShadow(g, X + H * 0.02, Y + 1, H * 0.34, H * 0.05, 0.85);
-  // the downswing just gone, as a smear of faint bats along its arc (`smear` 0..1, fading)
+  // the downswing just gone (`smear` 0..1, fading): a swept fan from the grip, from the bat up
+  // behind round to the ball, brightening towards the contact, and ghost bats along it
   if (smear > 0) {
-    for (const [q, al] of [[0.16, 0.12], [0.26, 0.18], [0.35, 0.26], [0.43, 0.34]]) {
-      const w = swing(q), hd = P(w.hands.x, w.hands.y), dd = { x: Math.cos(w.a), y: -Math.sin(w.a) };
-      g.save(); g.globalAlpha = al * clamp01(smear);
-      g.strokeStyle = C.willow; g.lineCap = 'round'; g.lineWidth = H * 0.05;
-      g.beginPath(); g.moveTo(hd.x + dd.x * BAT * H * 0.36, hd.y + dd.y * BAT * H * 0.36); g.lineTo(hd.x + dd.x * BAT * H, hd.y + dd.y * BAT * H); g.stroke();
-      g.restore();
+    const hd = P(s.hands.x, s.hands.y), a0 = swing(0).a, a1 = swing(0.5).a, R0 = BAT * H * 0.3, R1 = BAT * H;
+    const n = 14, k = clamp01(smear);
+    for (let i = 0; i < n; i++) {
+      const p = i / n, q = (i + 1) / n, b0 = a0 + (a1 - a0) * p, b1 = a0 + (a1 - a0) * q;
+      g.fillStyle = withAlpha(C.willow, 0.35 * q * q * k);
+      g.beginPath(); g.arc(hd.x, hd.y, R1, -b0, -b1, true); g.arc(hd.x, hd.y, R0, -b1, -b0, false); g.closePath(); g.fill();
+    }
+    g.strokeStyle = withAlpha(C.willowLo, 0.5 * k); g.lineWidth = Math.max(1, H * 0.01);
+    g.beginPath(); g.arc(hd.x, hd.y, R1, -a0, -a1, true); g.stroke();
+    for (const [q, al] of [[0.3, 0.16], [0.55, 0.24], [0.78, 0.34]]) {
+      const b = a0 + (a1 - a0) * q, dd = { x: Math.cos(b), y: -Math.sin(b) };
+      g.strokeStyle = withAlpha(C.willow, al * k); g.lineCap = 'round'; g.lineWidth = H * 0.05;
+      g.beginPath(); g.moveTo(hd.x, hd.y); g.lineTo(hd.x + dd.x * R1, hd.y + dd.y * R1); g.stroke();
     }
   }
   // the stride: the front foot out down the pitch, its knee bending into the shot
@@ -261,7 +269,7 @@ export function fielder(g, X, Y, H, { hands = null, closed = 0, leap = 0, crouch
   const want = onKnees ? { x: knees[1].x - H * 0.02, y: knees[1].y + H * 0.01 }
     : hands ?? { x: hip.x - H * 0.24, y: hip.y + H * 0.04 };
   const shN = { x: sh.x - H * 0.015, y: sh.y + H * 0.005 }, shFar = { x: sh.x + H * 0.02, y: sh.y };
-  const handN = reach(shN, want, arm), handF = reach(shFar, { x: want.x + H * 0.015, y: want.y + H * 0.035 }, arm);
+  const handN = reach(shN, want, arm), handF = reach(shFar, { x: want.x + H * 0.035, y: want.y + H * 0.05 }, arm);
   // elbows down and out to a low ball; to a high one, out in front of the face
   const elbow = want.y > sh.y - H * 0.05 ? lower : (p, q) => p.x <= q.x;
   /** A mitt pointing along the forearm (e → h): palm, fingers that curl as it closes, a thumb. */

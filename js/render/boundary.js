@@ -23,6 +23,7 @@ import { PROPS } from './props.js';
 import { fitCanvas, palette, clamp, labels, stroke, arrow, dot, niceStep, withAlpha, sig3, noteMover, fmt } from './util.js';
 import { env, skyscape, grass, softShadow, fitSide } from './scenery.js';
 import { T, num } from '../notation.js';
+import { isAr } from '../i18n.js';
 
 const tr = (x, p = 3) => num(x, p, { trim: true });
 // The readouts this kit shows (js/kits/boundary.js): five boxes down the top
@@ -66,9 +67,9 @@ function fielderPose(f, t) {
   const from = { x: feet - 0.42, y: 0.72 };
   if (v === 'catch') {
     const y = f.yAt;
-    return { feet, hands: { x: from.x + (D - from.x) * uh, y: from.y + (y - from.y) * uh }, gait: u < 1 ? u : null,
+    return { feet, hands: { x: from.x + (D - from.x) * uh - 0.3 * Math.sin(Math.PI * uh), y: from.y + (y - from.y) * uh }, gait: u < 1 ? u : null,
       closed: ease(clamp((t - (tA - 0.1)) / 0.1, 0, 1)), leap: Math.max(0, y - reachUp) * uh,
-      crouch: 0.35 + ((y > 1.4 ? 0.02 : y < 0.8 ? 0.65 : 0.25) - 0.35) * uh, look, onKnees: false };
+      crouch: 0.35 + ((y > 1.4 ? 0.15 : y < 0.8 ? 0.65 : 0.25) - 0.35) * uh, look, onKnees: false };
   }
   // over: a leap with the arms at full stretch as it passes, then down onto bent knees
   const bump = (x, w) => Math.max(0, 1 - Math.abs(x) / w);
@@ -118,7 +119,8 @@ export function render(canvas, cam, o) {
   const xLand = f.R;
   // (a six comes down among the crowd: the boards just behind the rope when it carries the fielder)
   const xBoards = v === 'over' ? D + 4 : Math.max(D + 4, xLand + 3);
-  const box = { xLo: -3.2, xHi: xBoards + (phone ? 5 : 15), yLo: 0, yHi: Math.max(f.H, Lr + 0.6) * 1.1 };
+  // (wide enough for where it comes down, a six included)
+  const box = { xLo: -3.2, xHi: Math.max(xBoards + (phone ? 5 : 15), xLand + 3), yLo: 0, yHi: Math.max(f.H, Lr + 0.6) * 1.1 };
   const below = phone ? 108 : 100, rightPx = phone ? 10 : 16;
   // (on a phone the flight goes under the two readouts, never behind them)
   const areas = phone ? [{ left: 10, right: w - rightPx, top: HUD_PHONE.h + 12, bottom: h - below }]
@@ -164,7 +166,7 @@ export function render(canvas, cam, o) {
   const pose = fired ? clamp(0.5 + 0.5 * t / Math.max(1e-6, 0.12 * f.tMax), 0.5, 1) : 0;
   const bc = batContact(TH);
   const feetX = X(0) - bc.x;
-  const smear = fired ? 1 - clamp(t / Math.max(1e-6, 0.08 * f.tMax), 0, 1) : 0;
+  const smear = fired ? 1 - clamp(t / 0.15, 0, 1) : 0;
   cricketBatter(g, feetX, oy, TH, { pose, smear });
   L.reserve({ x: feetX - TH * 0.4, y: oy - TH * 1.15, w: TH * 0.9, h: TH * 1.15 });
 
@@ -260,7 +262,7 @@ export function render(canvas, cam, o) {
       arrow(g, sx + vv.x * vl, sy, sx + vv.x * vl, sy - vv.y * vl, { color: P.velVec, width: 2, head: 9 });
     }
     arrow(g, sx, sy, sx + vv.x * vl, sy - vv.y * vl, { color: P.velVec, width: 3, head: 12 });
-    L.add(T`${sig3(f.speed(t))} [m s^-1]`, sx + vv.x * vl + 10, sy - vv.y * vl, { color: P.vel, align: 'left', pri: 7, size: 15, weight: 700, maxPush: 80 });
+    L.add(T`${sig3(f.speed(t))} [m s^-1]`, sx + vv.x * vl + 10, sy - vv.y * vl, { color: P.vel, align: 'left', pri: 9, size: 15, weight: 700, maxPush: 40 });
   }
   if (show.acceleration && moving) arrow(g, sx, sy, sx, sy + 40, { color: P.acc, width: 2.4, head: 10 });
   const ball = (x, y, rb) => { PROPS.cricketBall(g, x, y, rb, t * 9); noteMover(g, x, y, 18, { strong: true }); };
@@ -325,7 +327,7 @@ export function render(canvas, cam, o) {
       if (t > 0) stroke(g, seg(f.path(400, t)), { color: P.vel, width: 3 });
       // the ball's shadow sweeping over the grass, the sun overhead
       const rb = Math.max(3, kL * 0.036);
-      if (fired && !caught && Math.abs(LX(r.x) - cx) < R) { g.save(); g.fillStyle = withAlpha('#000000', 0.25); g.beginPath(); g.ellipse(LX(r.x), gy + 2, rb * 1.6, rb * 0.5, 0, 0, TAU); g.fill(); g.restore(); }
+      if (fired && !caught && Math.abs(LX(r.x) - cx) < R) { g.save(); g.fillStyle = withAlpha('#000000', 0.35); g.beginPath(); g.ellipse(LX(r.x), gy + 2, kL * 0.25, kL * 0.07, 0, 0, TAU); g.fill(); g.restore(); }
       // the catch: a small burst behind the hands as they close
       if (caught) { const { age, life } = ageOf(t, f.tAt, f.tMax); flash(g, LX(D), LY(f.yAt), age, life * 0.7, { radius: 12 }); pulse(g, LX(D), LY(f.yAt), age, life, P.mark, { radius: 20 }); }
       // the fielder, large enough to read; the ball in flight, or held
@@ -344,8 +346,9 @@ export function render(canvas, cam, o) {
       stroke(g, [{ x: cx - R, y: gy }, { x: cx + R, y: gy }], { color: P.muted, width: 1, alpha: 0.6, dash: [3, 4] });
     });
     // where the ball is when it is out of the lens: over its top at the boundary, or down short of its left edge
-    const chevron = (x, y, dir) => { g.save(); g.fillStyle = P.disp; g.beginPath();
-      if (dir === 'up') { g.moveTo(x - 8, y + 5); g.lineTo(x, y - 6); g.lineTo(x + 8, y + 5); } else { g.moveTo(x + 5, y - 8); g.lineTo(x - 6, y); g.lineTo(x + 5, y + 8); }
+    const chevron = (x, y, dir) => { g.save(); g.fillStyle = P.disp; g.strokeStyle = P.disp; g.lineWidth = 2; g.setLineDash([3, 3]);
+      g.beginPath(); if (dir === 'up') { g.moveTo(x, y + 26); g.lineTo(x, y + 6); } else { g.moveTo(x + 26, y); g.lineTo(x + 6, y); } g.stroke(); g.setLineDash([]);
+      g.beginPath(); if (dir === 'up') { g.moveTo(x - 9, y + 6); g.lineTo(x, y - 8); g.lineTo(x + 9, y + 6); } else { g.moveTo(x + 6, y - 9); g.lineTo(x - 8, y); g.lineTo(x + 6, y + 9); }
       g.closePath(); g.fill(); g.restore(); };
     if (atRope && LY(f.yAt) < cy - R + 6) {
       const ax = LX(D), ay = cy - Math.sqrt(Math.max(0, R * R - (ax - cx) ** 2));
@@ -354,12 +357,11 @@ export function render(canvas, cam, o) {
     }
     if (v === 'short' && t >= f.tGround - 1e-9) {
       chevron(cx - R - 2, gy, 'left');
-      L.add(`${T`${sig3(f.short)} [m]`} short`, cx - R - 14, gy, { color: P.disp, align: 'right', pri: 9, size: 14, weight: 700, maxPush: 20 });
     }
     L.reserve({ x: cx - R - 3, y: cy - R - 3, w: 2 * R + 6, h: 2 * R + 6 });
     // its labels, outside the lens: the reach on its left, then what happened, under it
     L.add(T`L = ${tr(Lr)} [m]`, cx - R - 8, LY(Lr), { color: P.mark, align: 'right', pri: 9, size: 14, weight: 700, maxPush: 20 });
-    const head = !atRope ? (v === 'short' && t >= f.tGround - 1e-9 ? 'never reaches the fielder' : 'the boundary, enlarged')
+    const head = !atRope ? (v === 'short' && t >= f.tGround - 1e-9 ? `${T`${sig3(f.short)} [m]`} short: never reaches the fielder` : 'the boundary, enlarged')
       : v === 'catch' ? `caught: ${T`${sig3(f.yAt)} [m]`} up, under ${T`${tr(Lr)} [m]`}` : `over: ${T`${sig3(f.yAt)} [m]`} up, not under ${T`${tr(Lr)} [m]`}`;
     L.add(head, cx, cy + R + 15, { color: atRope ? P.mark : P.muted, align: 'center', pri: 10, size: atRope ? 14 : 13, weight: 700, maxPush: 20 });
   } else if (atRope) {
@@ -393,11 +395,12 @@ export function render(canvas, cam, o) {
       if (fired) { const u = phaseOf(t, Math.max(1e-6, 0.06 * f.tMax)); if (u != null) crack(g, ox, gy - bR, u, R * 0.35); }
     });
     L.reserve({ x: cx - R - 3, y: cy - R - 3, w: 2 * R + 6, h: 2 * R + 6 });
-    L.add('the batter, enlarged', cx, cy + R + 15, { color: P.muted, align: 'center', pri: 6, size: 13, maxPush: 20 });
+    L.add('the batter, enlarged', cx, aLens.R ? cy - R - 13 : cy + R + 15, { color: P.muted, align: 'center', pri: 8, size: 13, maxPush: 20 });
   }
 
   // ── on a phone, what happened, in captions under the distances
-  caps.forEach((c, i) => L.add(c.text, 12, oy + 76 + i * 24, { color: c.color, align: 'left', pri: 10, size: 14, weight: 700 }));
+  const rtl = isAr();
+  caps.forEach((c, i) => L.add(c.text, rtl ? w - 12 : 12, oy + 90 + i * 24, { color: c.color, align: rtl ? 'right' : 'left', pri: 10, size: 14, weight: 700 }));
 
   L.draw(g, w, h);
   return null;

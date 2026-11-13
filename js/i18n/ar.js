@@ -8802,6 +8802,7 @@ export default {
   "The hit in components first. Across, nothing acts, so the steady speed across gives the time to the boundary; up, gravity slows it at g, which gives the height then.": "الضربة بمركّبتيها أولًا. أفقيًا لا تؤثر قوة، فتعطي السرعة الأفقية الثابتة زمن الوصول إلى الحدّ؛ ورأسيًا تبطئها الجاذبية بمقدار جـ، فيُعرف الارتفاع عندئذ.",
   "Caught here, or down: the engine follows it no further.": "أُمسكت هنا، أو هبطت: ولا يتابعها المحرّك بعد ذلك.",
   "a real cricket ball struck at over {0} m s⁻¹ is slowed a great deal by the air: with drag it would come down well short of a {1} m boundary, so a fielder standing on the rope would not catch it on the full. The {2} m answer belongs to the no-air model alone.": "كرة الكريكيت الحقيقية المضروبة بأكثر من {0} م/ث يبطئها الهواء كثيرًا: فمع مقاومة الهواء تهبط قبل حدّ على بُعد {1} م بمسافة كبيرة، فلا يمسكها لاعب ميدان واقف على الحبل قبل أن تلمس الأرض. وجواب {2} م يخصّ النموذج الخالي من الهواء وحده.",
+  "{0} short: never reaches the fielder": "قبل الحدّ بـ{0}: لا تصل إلى لاعب الميدان",
 };
 
 /**
