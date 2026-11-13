@@ -123,7 +123,7 @@ console.log('\nThe Worker, end to end');
   ok(shown.prompts.length === 1 && shown.data.ok, 'the scenario it needs was in full: one call');
   ok(shown.prompts[0].length < SYSTEM_PROMPT.length * 0.6, 'and that call carried about half the prompt');
 
-  const missed = await read({ text: 'A ball is kicked from the ground at 20 m/s at 35 degrees.' }, robots);
+  const missed = await read({ text: 'A ball is kicked from the ground and lands on the grass.' }, robots);
   ok(missed.prompts.length === 2, 'it chose one it was shown only as a line: asked once more');
   ok(!/robots-closest — [^\n]*\n {2}boxes:/.test(missed.prompts[0]) && /robots-closest — [^\n]*\n {2}boxes:/.test(missed.prompts[1]),
     'the second time, that one is in full');

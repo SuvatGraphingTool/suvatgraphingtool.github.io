@@ -826,7 +826,9 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 [dir='rtl'] .side-chats-h[aria-expanded='false'] .side-chats-c { transform: rotate(90deg); }
 .side-chats-body[hidden] { display: none; }
 .cs-list { max-height: min(38vh, 340px); overflow-y: auto; overscroll-behavior: contain; }
-.side-chats .cl-ul { overflow: visible; display: grid; gap: 1px; }
+/* one column no wider than the sidebar: a long name ends in an ellipsis, never a sideways scroll */
+.side-chats .cl-ul { overflow: visible; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; }
+.side-chats-body { min-width: 0; }
 .side-chats .cl-row { border-radius: var(--r-md); box-shadow: none; }
 .side-chats .cl-row[aria-current='true'] { background: var(--press); box-shadow: none; }
 .side-chats .cl-row[aria-current='true'] .cl-t { color: var(--ink); font-weight: 500; }

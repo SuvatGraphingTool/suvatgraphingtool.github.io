@@ -115,6 +115,7 @@ design/                 tokens, notation, scenario research, preset list,
 node test/engine.test.mjs       # the physics
 node test/solve.test.mjs        # what the engine does with partial information
 node test/question.test.mjs     # the question reader
+node test/fit.test.mjs          # a reading fits its question: each number in a box of its own kind
 node test/pace.test.mjs         # how fast a flight should be played back
 node test/scenarios.test.mjs    # the scenarios, as data
 node test/preload.test.mjs      # the modulepreload hints match the real graph

@@ -449,8 +449,30 @@ export function stroke(ctx, pts, { color, width = 2, dash = null, alpha = 1 } = 
  * protects is arrow-shaped. Pushing the stadium back behind the flight took
  * most of the work off it in the first place.
  */
+/** The tip of an arrow from (x0, y0), brought back inside the visible canvas
+    when it would leave it; unchanged when the tail is off screen already. */
+function onStage(ctx, x0, y0, x1, y1) {
+  const m = ctx.getTransform?.(), c = ctx.canvas;
+  if (!m || !c || m.b || m.c || !m.a || !m.d) return [x1, y1];
+  const lo = { x: (0 - m.e) / m.a, y: (0 - m.f) / m.d }, hi = { x: (c.width - m.e) / m.a, y: (c.height - m.f) / m.d };
+  const pad = 6 / Math.abs(m.a / (globalThis.devicePixelRatio || 1));
+  const x = [Math.min(lo.x, hi.x) + pad, Math.max(lo.x, hi.x) - pad], y = [Math.min(lo.y, hi.y) + pad, Math.max(lo.y, hi.y) - pad];
+  const inside = (px, py) => px >= x[0] && px <= x[1] && py >= y[0] && py <= y[1];
+  if (!inside(x0, y0) || inside(x1, y1)) return [x1, y1];
+  const dx = x1 - x0, dy = y1 - y0;
+  let f = 1;
+  if (dx > 0) f = Math.min(f, (x[1] - x0) / dx); else if (dx < 0) f = Math.min(f, (x[0] - x0) / dx);
+  if (dy > 0) f = Math.min(f, (y[1] - y0) / dy); else if (dy < 0) f = Math.min(f, (y[0] - y0) / dy);
+  return [x0 + dx * f, y0 + dy * f];
+}
+
 export function arrow(ctx, x0, y0, x1, y1,
                       { color, width = 2.4, head = 11, dash = null, casing = true, alpha = 1 } = {}) {
+  // AN ARROW NEVER LEAVES THE STAGE: a tip past the edge of what is on screen is
+  // drawn at it, the arrow shortened along its own line (a cricket ball misread as
+  // a 125 m s⁻¹ throw drew its velocity off the top of the canvas). The edge is
+  // found through the canvas's transform, so a zoomed or panned stage keeps it.
+  [x1, y1] = onStage(ctx, x0, y0, x1, y1);
   const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy);
   // a velocity arrow starts on what is moving: a stage that says nothing else is still heard
   // (a second part drawn head to tail from the last one starts on nothing)
