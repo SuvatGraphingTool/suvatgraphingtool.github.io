@@ -28,7 +28,7 @@ const tr = (x, p = 3) => num(x, p, { trim: true });
 // The readouts this kit shows (js/kits/boundary.js): five boxes down the top
 // left, the clock top right — as js/render/target.js measured them.
 const HUD = 185, HUD_H = 376;
-const HUD_PHONE = { w: 150, h: 330 };
+const HUD_PHONE = { w: 150, h: 142 };          // phone: two boxes, height and speed (js/kits/boundary.js)
 const TAU = Math.PI * 2;
 const PERSON = 1.85;                 // m: the batter and the fielder
 const ease = (u) => u * u * (3 - 2 * u);
@@ -96,9 +96,10 @@ export function render(canvas, cam, o) {
   // ── the frame: the batter, the flight to where it comes down, the rope, the boards
   const xLand = f.R;
   const xBoards = Math.max(D + 4, xLand + 3);
-  const box = { xLo: -3.2, xHi: xBoards + 11, yLo: 0, yHi: Math.max(f.H, Lr + 0.6) * 1.1 };
+  const box = { xLo: -3.2, xHi: xBoards + (phone ? 5 : 11), yLo: 0, yHi: Math.max(f.H, Lr + 0.6) * 1.1 };
   const below = phone ? 108 : 100, rightPx = phone ? 10 : 16;
-  const areas = phone ? [{ left: 10, right: w - rightPx, top: 96, bottom: h - below }]
+  // (on a phone the flight goes under the two readouts, never behind them)
+  const areas = phone ? [{ left: 10, right: w - rightPx, top: HUD_PHONE.h + 12, bottom: h - below }]
     : [{ left: HUD + 18, right: w - rightPx, top: 92, bottom: h - below },
        { left: 16, right: w - rightPx, top: HUD_H + 16, bottom: h - below }];
   let fs = null;
@@ -265,8 +266,8 @@ export function render(canvas, cam, o) {
   ];
   const bLens = bCands.find((c) => clearOf(c, RB, pathPx, [hudBox, clockBox])) ?? null;
   // the batter's lens: under the readouts on a laptop, or beside the batter
-  const RA = phone ? lensR : clamp(Math.min(lensR, (feetX - 40) / 2, (oy - HUD_H - 40) / 2), 52, 96);
-  const aCands = phone ? [] : [
+  const RA = phone ? 44 : clamp(Math.min(lensR, (feetX - 40) / 2, (oy - HUD_H - 40) / 2), 52, 96);
+  const aCands = phone ? [{ x: RA + 10, y: HUD_PHONE.h + RA + 12 }, { x: feetX + RA + 30, y: oy - RA - 40 }] : [
     { x: Math.max(RA + 12, feetX - RA - 44), y: Math.min(oy - RA - 24, HUD_H + 22 + RA) },
     { x: feetX + lensR * 0.2, y: oy - lensR - TH * 1.4 - 40 },
     { x: feetX - lensR - 20, y: oy - lensR - 30 },

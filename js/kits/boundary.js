@@ -39,16 +39,16 @@ export const boundary = {
 
   hud(f, t) {
     const r = f.pos(t), v = f.vel(t);
-    return {
-      left: [
-        { k: 'Across', v: num(r.x, 2), unit: 'm', hue: 'disp' },
-        { k: 'Height', v: num(r.y, 2), unit: 'm', hue: 'disp' },
-        { k: 'Velocity across', v: num(v.x, 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Velocity up', v: num(v.y, 2), unit: 'm s⁻¹', hue: 'vel' },
-        { k: 'Speed', v: num(f.speed(t), 2), unit: 'm s⁻¹', hue: 'vel' },
-      ],
-      right: [{ k: 'Time', v: num(t, 2), unit: 's' }],
-    };
+    // a phone keeps two, so the flight is not behind them (js/render/boundary.js HUD_PHONE)
+    const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 560px)').matches;
+    const all = [
+      { k: 'Across', v: num(r.x, 2), unit: 'm', hue: 'disp' },
+      { k: 'Height', v: num(r.y, 2), unit: 'm', hue: 'disp' },
+      { k: 'Velocity across', v: num(v.x, 2), unit: 'm s⁻¹', hue: 'vel' },
+      { k: 'Velocity up', v: num(v.y, 2), unit: 'm s⁻¹', hue: 'vel' },
+      { k: 'Speed', v: num(f.speed(t), 2), unit: 'm s⁻¹', hue: 'vel' },
+    ];
+    return { left: phone ? [all[1], all[4]] : all, right: [{ k: 'Time', v: num(t, 2), unit: 's' }] };
   },
 
   /* Each graph has its two components: across dashed, up solid (rule 2).
