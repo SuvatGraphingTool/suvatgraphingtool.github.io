@@ -93,6 +93,7 @@ A kit is an object with:
 | `airdrag` — `js/kits/airdrag.js` | `with-air-resistance` (engine js/core/airdrag.js: one fall with no air resistance and with a constant one — mg − R = ma, or R from a or the landing speed; stage js/render/airdrag.js: `PLACE_ART.city` from js/render/places.js, the ball and its ghost side by side, its forces on it, `dust` from js/render/effects.js) |
 | `dropramp` — `js/kits/dropramp.js` | `drop-or-ramp` (engine js/core/dropramp.js: a drop at g and a slide down a rough ramp from the same height — R, F, mg sin θ − F = ma, its length; stage js/render/dropramp.js: `loadingBay` from js/render/runout.js, a ramp, a conveyor, two flatbed trolleys, `parcel` from js/render/figures.js, a forces card) |
 | `force` — `js/kits/force.js` | `pushed-by-a-force` (engine js/core/force.js: a from two velocities, the force or as given; F = ma, |F|, its angle with i; then js/core/plane.js; stage js/render/hovercraft.js: `frozenLake`, `pineAbove`, `hovercraftTop`, on `drawPlane` from js/render/vectors.js; the readouts, graphs and asks are the `plane` kit's) |
+| `boundary` — `js/kits/boundary.js` | `boundary-catch` (engine js/core/boundary.js on target.js's `flight`: the hit read at the boundary, caught under the reach L, over it, or back down short; H, T, R on level ground; p = mv. Stage js/render/boundary.js: the composer's `cricket` ground, the batter and the fielder from js/render/cricket.js, the reach as a band at the rope, two lenses enlarging the batter and the boundary) |
 | `rope` — `js/kits/rope.js` | `pulled-by-a-rope` (engine js/core/rope.js: R + T sin θ = m g cos α, F = μR, T cos θ − m g sin α − F = ma, then let go to rest and, on a slope, back; stage js/render/rope.js: a snowfield, the sledge and pines from js/render/rough.js, a person walking ahead with the rope, a free-body diagram on a card) |
 | `cable` — `js/kits/cable.js` | `lift-cable-floor` (engine js/core/cable.js: the journey's three stages, then T − (M + m)g = (M + m)a and R − mg = ma in each; stage js/render/cable.js: the lift's stage, with free-body diagrams of lift and passenger on a card) |
 | `slide` — `js/kits/slide.js` | `down-a-rough-slope` (engine js/core/slide.js: from rest down a rough slope, a from R, F = μR, F = ma — or μ from the run; stage js/render/slide.js: a lifeboat slipway into the sea, a house roof, a wedge on a lab bench, the forces on a card) |
@@ -698,6 +699,16 @@ mark, and where a wall that high is cleared.
 
 Used by: `over-the-wall`.
 
+### A ball struck towards a fielder on the boundary — `js/core/boundary.js`
+
+`solveBoundary({ u, theta, d, L, m?, g })` → `{ ok, verdict: 'catch' | 'over' | 'short', at: { t, y, speed, margin }, tShow, R, H, T, p, verdictHTML, f, … }`.
+The projectile of `flight` (js/core/target.js) read at the boundary: t = d ÷ uₓ, y = u_y t − ½gt².
+Caught when 0 ≤ y < L (strictly under the reach), over when y ≥ L, short when it is back at the
+height it was struck from before the boundary. Then H, T and R on level ground, and p = mv with v
+the speed it is struck at. `verdictHTML` is the exam answer, typeset by the engine. The motion `f`
+ends at the catch (the ball at rest in the hands after it) or where it comes down. Used by:
+`boundary-catch`.
+
 ### An impulse — `js/core/impulse.js`
 
 `impulseLink({ m, I, u, v })` — the one momentum step a SUVAT motion takes,
@@ -1248,6 +1259,26 @@ One scale both ways; the thing at the point drawn by its kind with its height
 and distance as dimension lines; a second answer's path faint; at the point,
 the clearance or the hit. Used by: `over-the-wall`.
 
+
+### A catch on the boundary, side on — `js/render/boundary.js`, `js/render/cricket.js`
+
+`render(canvas, cam, { traj, t, show, fired })` with `traj.kind === 'boundary'`. One scale both
+ways on the composer's `cricket` ground (js/render/places.js, which now takes `c.pavilionX` and
+exports `placeSky`, `crown`, `crowd`, `mownTurf`). The 55 m (d) is a dimension along the ground; the
+reach a band at the rope; the height there a dimension in the displacement's hue; a caught ball's
+unflown path dotted to where it would have come down. Two round lenses enlarge the batter (the
+swing, θ) and the boundary (the reach, the fielder, the catch). The ball reports itself with
+`noteMover(…, { strong: true })`, so the trajectory resolves anywhere after the first run.
+
+js/render/cricket.js, for any cricket stage: `cricketBatter(g, X, Y, H, { pose })` (whites, pads
+with canes and straps, gloves, a helmet with its grille, a bat with grip, splice and blade; pose 0
+up behind, 0.5 through the ball, 1 the follow-through) and `batContact(H)`, where the bat meets
+the ball; `fielder(g, X, Y, H, { hands, ahead, closed, leap, stoop, look })` (whites and a sun hat,
+facing −x: ready, reaching, leaping, stooping; hands open or closed on the ball) with
+`FIELDER_REACH`; `boundaryRope(g, x, oy, h, horizon, { back })`, an arc of the oval out to the
+line of the motion; `boundaryStand(g, x0, oy, w, k)`, the boards, a walkway and a raked stand with
+its crowd, roof and floodlight, rising away to the right; `crack(g, x, y, u, R)`, the flash of the
+bat on the ball. Used by: `boundary-catch`.
 
 ### A map in i and j — `js/render/vectors.js`
 

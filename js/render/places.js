@@ -2754,7 +2754,8 @@ function cricket(g, c) {
   for (let x = -10 + r() * 20; x < w + 20; x += 18 + r() * 24) crown(g, x, horizon - 14 - r() * 6, 12 + r() * 12, n);
   // the pavilion across the ground: white, a pitched roof with a clock turret, its balcony and seats
   const pw = clamp(w * 0.22, 120, 300), ph = clamp((oy - horizon) * 0.45, 20, 60), land = (c.clearX || [])[0] ?? w;
-  const pc = [land + 40 + pw / 2, x0 - 60 - pw / 2, w - pw / 2 - 10, x0 + (w - x0) * 0.5].map((x) => clamp(x, pw / 2 + 10, w - pw / 2 - 10)).find((x) => underSky(c, x - pw / 2, x + pw / 2, horizon - ph * 1.8, 50));
+  // (`c.pavilionX`: a stage that knows where its sky is free says where the pavilion goes)
+  const pc = [c.pavilionX, land + 40 + pw / 2, x0 - 60 - pw / 2, w - pw / 2 - 10, x0 + (w - x0) * 0.5].filter((x) => x != null).map((x) => clamp(x, pw / 2 + 10, w - pw / 2 - 10)).find((x) => underSky(c, x - pw / 2, x + pw / 2, horizon - ph * 1.8, 50));
   const px = pc == null ? null : pc - pw / 2;
   if (px != null) {
   g.fillStyle = n ? '#8a8e96' : '#f4f2ee'; g.fillRect(px, horizon - ph, pw, ph);
@@ -3287,4 +3288,7 @@ function fairground(g, c) {
 }
 
 /** The places this file draws, by the registry's names. */
+/** The pieces other stages build a ground from (js/render/cricket.js). */
+export { sky as placeSky, crown, crowd, mownTurf };
+
 export const PLACE_ART = { highjump, rugby, mineshaft, mountain, forest, harbour, city, moon, mars, snow, desert, pier, site, canyon, waterfall, lighthouse, pitch, golf, stadium, ship, dam, playground, beach, room, planet, carpark, volcano, quarry, court, arena, castle, runway, garden, farm, cricket, lake, island, skatepark, circus, polar, oilrig, treehouse, fairground };

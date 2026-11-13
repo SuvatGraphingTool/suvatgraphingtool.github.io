@@ -64,6 +64,7 @@ const CASES = [
   ['A dog chases a ball thrown along the beach and catches it. How fast must it accelerate?', 'catch-it'],
   ['A car brakes for a sign; model the driver three ways. Which reaches the sign first?', 'three-models'],
   ['A helicopter over the sea has constant acceleration; find its speed and bearing and whether it passes over the rock.', 'over-the-rock'],
+  ['A batter hits a cricket ball at 23.8 m/s at 50° to the horizontal. A fielder on the boundary 55 m away can only take the catch if the ball is under 3 m above where it was hit. Can it be caught? Its mass is 0.14 kg: find its momentum.', 'boundary-catch'],
 ];
 
 group('The scenario that fits is sent in full', () => {

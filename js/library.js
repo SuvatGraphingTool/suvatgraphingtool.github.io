@@ -1841,4 +1841,40 @@ export const LIBRARY = [
       ],
       caveat: 'What the engine did compute is above: the speed or greatest height, whether it reaches the ceiling, and when and how fast if it does.',
     } },
+  { id: 'boundary-catch', group: 'library', kit: 'boundary',
+    name: 'A catch on the boundary',
+    sub: 'a cricket ball struck towards the rope — is it low enough there for the fielder to catch?',
+    note: 'A batter strikes a cricket ball at a speed and an angle; a fielder stands on the boundary some distance away and can catch it only if it arrives less than a height above the point it was struck from. Across, its speed never changes, so the distance gives the time to the boundary; up, s = ut + ½at² then gives its height there. Under the reach it is caught; at or over it, it carries the fielder; back down to that height before the boundary, it never reaches them on the full. Then its greatest height, where it would come down, and its momentum p = mv just after the hit.',
+    params: { u: 23.8, theta: 50, d: 55, L: 3, m: 0.14, g: 9.81 },
+    place: 'Side on: a cricket ground, the batter, the fielder on the rope',
+    example: { u: 23.8, theta: 50, d: 55, L: 3, m: 0.14, g: 9.81 },
+    parts: [
+      { label: 'a', kind: 'height', ask: 'Can the fielder on the boundary catch the ball?', expr: 'verdictHTML', at: 'tShow', step: 'at the boundary' },
+      { label: 'b', kind: 'show', ask: 'The ball has a mass of 0.140 kg. Show that its momentum just after it is hit is about 3.3 N s.', find: 'p', sym: 'p', unit: 'N s', dp: 2, at: 0, step: 'momentum', paper: 3.3, tol: 0.05 },
+    ],
+    answers: [
+      { kind: 'time', say: 'the time it takes to reach the boundary (the fielder)', find: 'at.t', sym: 't', unit: 's', dp: 3, at: 'at.t', step: 'at the boundary' },
+      { kind: 'height', say: 'its height above the point it was struck from as it reaches the boundary', find: 'at.y', sym: 'y', unit: 'm', dp: 2, at: 'at.t', step: 'at the boundary' },
+      { kind: 'height', say: 'the greatest height it reaches', find: 'H', sym: 'H', unit: 'm', dp: 2, at: 'tTop', step: 'level ground' },
+      { kind: 'distance', say: 'how far away it would land on level ground (its range)', find: 'R', sym: 'R', unit: 'm', dp: 1, at: 'tShow', step: 'level ground' },
+    ],
+    sources: [
+      // supplied by the owner as a screenshot of an online physics exam: the board and the paper are not known
+      { board: 'Owner-supplied', paper: 'physics question, board unknown', session: 'date unknown', q: '4' },
+      { board: 'Owner-supplied', paper: 'physics question, board unknown', session: 'date unknown', q: '5', part: 'its momentum' },
+    ],
+    tags: ['cricket', 'cricket ball', 'batter', 'batsman', 'bat', 'hits', 'struck', 'fielder', 'catch', 'catches', 'caught', 'boundary', 'rope',
+           'six', 'projectile', 'angle above the horizontal', 'height when it reaches', 'less than', 'momentum', 'mass', 'show that',
+           'physics', 'A level'],
+    ending: {
+      close: 'See the diagram',
+      realTitle: 'What the model leaves out',
+      realLead: 'The question’s model, as it stands. None of this was computed; it is what the numbers were taken to mean.',
+      why: [
+        ['No air resistance', 'a real cricket ball struck at over 20 m s⁻¹ is slowed noticeably by the air, and its seam and spin can swing it: it would arrive lower and nearer, which here makes a catch only more likely.'],
+        ['Level ground, one height', 'the ground is taken level with the point it was struck from, so “where it comes down” is where it is back at that height; the fielder’s hands are measured from it too.'],
+        ['A particle and a line', 'the ball has no size and the fielder stands exactly on the boundary: caught means its centre arrives under the reach there, at that one distance.'],
+      ],
+      caveat: 'What the engine did compute is above: the hit in components, the time to the boundary and the height there, whether that is under the reach, its greatest height and where it would come down, and its momentum from its mass.',
+    } },
 ];

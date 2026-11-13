@@ -766,6 +766,26 @@ group('The Past-paper library: dropped, or slid down a ramp, everything it says'
   ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
 });
 
+group('The Past-paper library: a catch on the boundary, everything it says', () => {
+  const K = KITS.boundary, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
+  const bag = [];
+  const base = { u: 23.8, theta: 50, d: 55, L: 3, m: 0.14 };
+  for (const k of [base, { ...base, u: 26 }, { ...base, u: 20 }, { ...base, m: undefined }, { ...base, d: 10 }, { ...base, L: 0 }, { ...base, theta: 90 }, { ...base, u: -1 }, { ...base, d: -5 }, { ...base, m: -2 }, {}]) {
+    const r = K.solve(K.read({ g: 9.81, ...k }));
+    for (const x of [...(r.derived || []), ...(r.notes || []), ...(r.reason ? [r.reason] : []), ...(r.verdictHTML ? [r.verdictHTML] : [])]) check('said', x, bag);
+    if (r.ok) {
+      for (const st of K.working(r)) { check('title', st.title, bag); check('note', st.note, bag); for (const row of st.rows) for (const x of [row.f, row.s, row.r]) if (x) check('row', x, bag); }
+      const e = K.ending(r); for (const x of [e.eyebrow, e.title, e.body]) check('ending', x, bag);
+      for (const tt of [0, r.f.tMax / 2, r.f.tMax]) for (const row of K.hud(r.f, tt).left) check('hud', `${row.k} ${row.v} ${row.unit}`, bag);
+      for (const gr of K.graphs(r.f, r.f.tMax, P)) check('graph', `${gr.title} ${gr.unit}`, bag);
+    }
+  }
+  // the label and the hint are two elements on the page, each its own run
+  for (const f of K.fields) { check('box', f.label, bag); check('hint', f.hint, bag); }
+  check('voice', `${K.voice.h} ${K.voice.sub}`, bag);
+  ok(bag.length === 0, 'nothing in it is written as code', bag.join('\n         '));
+});
+
 group('The Past-paper library: with and without air resistance, everything it says', () => {
   const K = KITS.airdrag, P = { disp: '#000', vel: '#000', acc: '#000', mark: '#000', second: '#000' };
   const bag = [];
