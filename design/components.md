@@ -1273,8 +1273,10 @@ swing, θ) and the boundary (the reach, the fielder, the catch). The ball report
 js/render/cricket.js, for any cricket stage: `cricketBatter(g, X, Y, H, { pose })` (whites, pads
 with canes and straps, gloves, a helmet with its grille, a bat with grip, splice and blade; pose 0
 up behind, 0.5 through the ball, 1 the follow-through) and `batContact(H)`, where the bat meets
-the ball; `fielder(g, X, Y, H, { hands, ahead, closed, leap, stoop, look })` (whites and a sun hat,
-facing −x: ready, reaching, leaping, stooping; hands open or closed on the ball) with
+the ball, and `smear` (the downswing just gone, as faint bats along its arc); `fielder(g, X, Y, H,
+{ hands, closed, leap, crouch, gait, look, onKnees, holding })` (whites and a sun hat, a shoulder
+block and a neck, facing −x: ready with knees bent, two short steps, reaching, leaping and landing,
+hands on knees; mitts with thumbs whose fingers curl round a ball `holding` draws) with
 `FIELDER_REACH`; `boundaryRope(g, x, oy, h, horizon, { back })`, an arc of the oval out to the
 line of the motion; `boundaryStand(g, x0, oy, w, k)`, the boards, a walkway and a raked stand with
 its crowd, roof and floodlight, rising away to the right; `crack(g, x, y, u, R)`, the flash of the
