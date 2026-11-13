@@ -94,3 +94,34 @@ export function sensible({ numbers, place, edge, text, runs }) {
   }
   return null;
 }
+
+/**
+ * One number too many. The user, 13 Nov: a cricket ball hit at 23.8 m s⁻¹ at 50°
+ * towards a fielder 55.0 m away was read with 55 m as where it lands, and the
+ * reply said only that the numbers did not fit — showing nothing. The speed, the
+ * angle and the height decide where it lands, how long it flies and how fast it
+ * lands; a question that also gives one of those, and a different one, gives a
+ * number that is about something else (a fielder, a wall, a mark). So: run it
+ * from the launch, leave that number out of the run, and say so. Nothing is
+ * worked out here: which one to leave out is the engine's to say (runs), and
+ * where it really lands is in its working (rule 4).
+ * @param numbers   what the question gave
+ * @param runs(n)   whether the engine can run with these numbers
+ * @returns { numbers, notes } without the one that did not fit, or null
+ */
+// one sentence each, whole, so the Arabic dictionary can hold it with the number as its slot
+const LANDING = [
+  ['s', (n) => `The question gives ${n} m, but the speed and the angle already decide where it lands, and it is not ${n} m. So I’ve run it from the speed and the angle and left the ${n} m out: it is about something else, like where a fielder or a wall is. The working shows where it lands.`],
+  ['t', (n) => `The question gives ${n} s, but the speed and the angle already decide how long it is in the air, and it is not ${n} s. So I’ve run it from the speed and the angle and left the ${n} s out: it is about something else. The working shows how long it is in the air.`],
+  ['v', (n) => `The question gives ${n} m s⁻¹, but the speed and the angle already decide how fast it lands, and it is not ${n} m s⁻¹. So I’ve run it from the speed and the angle and left the ${n} m s⁻¹ out: it is about something else. The working shows how fast it lands.`],
+];
+export function overGiven(numbers, runs) {
+  if (!numbers || runs(numbers) || !has(numbers.u) || !has(numbers.theta)) return null;
+  for (const [k, note] of LANDING) {
+    if (!has(numbers[k])) continue;
+    const out = { ...numbers };
+    delete out[k];
+    if (runs(out)) return { numbers: out, notes: [note(said(numbers[k]))] };
+  }
+  return null;
+}

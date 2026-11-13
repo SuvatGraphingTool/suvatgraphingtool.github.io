@@ -14,6 +14,7 @@ import { intercept, corners } from './core/intercept.js';
 import { recommend, paceNote, lapseNote } from './core/pace.js';
 import { SCENARIOS, GROUPS, GRAVITY, byId, COMPOSED } from './scenarios.js';
 import { composeSensibly, heightSensibly, scenesOf, fromReading, assumedNotes } from './compose/recipe.js';
+import { overGiven } from './compose/sense.js';
 import { figureOf, belowOf, placeOf, ownWord } from './compose/registry.js';
 import { reveal } from './compose/reveal.js';
 import { prepare, DEADLINE_MS } from './compose/pictures.js';
@@ -3569,6 +3570,21 @@ function readOne(x, { graph = true, solve = false, assume = false } = {}) {
   if (scenario.descent) state.descent = { ...r.descent };
   if (scenario.road) { state.mark = r.mark; state.atTime = r.at; state.nth = r.nth; state.fromRest = !!r.fromRest; state.who = r.who || 'lorry'; }
   buildValuesScreen();              // which recomputes
+  // One number too many (js/compose/sense.js): a speed, an angle and a range
+  // that disagree. The engine says which can go; the run is from the launch,
+  // and the reply says what was left out and why.
+  if (!solved?.ok && !scenario.road && !scenario.descent) {
+    const before = { ...state.given };
+    const put = (m) => { for (const k of Object.keys(state.given)) delete state.given[k]; Object.assign(state.given, m); };
+    const runs = (m) => { const { theta, ...rest } = m; put(rest); recompute(); return !!solved?.ok; };
+    const over = overGiven({ ...before, theta: state.theta }, runs);
+    if (over) {
+      runs(over.numbers);
+      r.items = r.items.filter((it) => !(it.k in before) || it.k in over.numbers);
+      r.notes = [...(r.notes || []), ...over.notes];
+      buildValuesScreen();
+    } else { put(before); recompute(); }
+  }
   // The answer is shown in the chat, where the question was asked (js/ai/
   // ask.js opens it); the flight waits for the student to ask for it.
   refreshSteps();

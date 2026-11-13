@@ -89,5 +89,19 @@ ok(asked.c.boxes.h == null, '"how high is the cliff?": never made up');
 ok(play(blank('tower', { h: 20 }), 'a ball is thrown from a 20 m tower: find the initial speed').c.boxes.u == null, '"find the initial speed": never made up');
 ok(play(blank('cliff', { h: 20, u: 10 }), 'a ball thrown off a 20 m cliff at 10 m/s: at what angle?').c.boxes.theta == null, '"at what angle?": never made up');
 
+console.log('\nOne number too many: run from the launch, and say what was left out');
+{
+  // a ball hit towards a fielder, read with the fielder's distance as where it lands (13 Nov)
+  const raw = { title: 'A ball thrown from the ground', backdrop: 'field', engine: 'projectile', objects: [{ figure: 'ball' }], numbers: { h: 0, theta: 50, u: 23.8, s: 55 } };
+  for (const assume of [false, true]) {
+    const c = composeSensibly(raw, 'a ball hit at 23.8 m/s at 50 degrees towards a fielder 55 m away', { assume });
+    ok(c.ok && c.boxes.s == null && c.boxes.u === 23.8 && c.boxes.theta === 50, `the 55 m is left out, the launch kept (${assume ? 'handed over' : 'not handed over'})`);
+    ok(c.ok && c.kit.solve(c.kit.read({ ...c.boxes, g: 9.81 }))?.ok, 'and it runs');
+    ok(/left the 55 m out/.test((c.scenario.recipe.notes || []).join(' ')), 'and the reply says so');
+  }
+  const fits = composeSensibly({ ...raw, numbers: { h: 0, theta: 45, u: 20 } }, '', { assume: false });
+  ok(!(fits.scenario.recipe.notes || []).some((n) => /left the/.test(n)), 'a launch that fits says nothing');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
